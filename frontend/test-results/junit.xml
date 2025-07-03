@@ -1,0 +1,3252 @@
+<testsuites id="" name="" tests="795" failures="0" skipped="795" errors="0" time="0.442673">
+<testsuite name="admin.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该正确显示基础数据管理页面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该显示标签页导航" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该能够切换标签页" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够点击新增城市按钮" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够编辑城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够删除城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该能够管理中介公司" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该能够管理经纪人" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该能够管理小区" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该正确显示创建时间" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该处理删除确认" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 响应式设计 › 应该在移动端正确显示" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理API加载错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理删除操作错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据一致性 › 应该在不同标签页间保持数据一致性" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="用户认证模块 › 登录功能 › 应该正确显示登录页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够成功登录" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够使用记住我功能" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的用户名" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的密码" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该验证必填字段" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示加载状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够跳转到注册页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示微信登录选项" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该正确显示注册页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够成功注册新用户" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该验证密码确认" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该要求同意服务条款" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够跳转到登录页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在登录后保持认证状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该能够正确登出" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在未登录时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在token过期时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理网络错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理服务器错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 响应式设计 › 应该在移动端正确显示" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="communities.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该正确显示小区列表页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示搜索和筛选区域" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示小区列表表格" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按小区名称搜索" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按城市筛选" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该支持分页功能" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够查看小区详情" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该正确显示小区详情页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示小区基本信息" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示价格趋势图表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示该小区房源列表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示快捷操作" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该能够切换价格趋势时间段" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确显示小区统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确计算和显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示列表页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示详情页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理API加载错误" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理小区不存在的情况" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该正确显示加载状态" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="26" failures="0" skipped="26" time="0" errors="0">
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确显示看板页面标题和描述" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确加载所有数据" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该在移动端正确显示" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示所有核心指标卡片" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示正确的指标数值" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示指标单位" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该正确显示图标" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示趋势图表" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该能够切换时间段" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示图表图例" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该支持图表交互" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该在没有数据时显示空状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示近期动态区域" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近房源信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近看房笔记" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该能够跳转到详细页面" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示房源基本信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示看房笔记评分" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该验证看板数据与详细页面数据的一致性" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该正确处理API错误" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该正确显示加载状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该支持页面刷新" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的页面标题" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的语义化标签" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该支持键盘导航" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="data-import.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该正确显示数据导入页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该显示所有导入方式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示CSV导入说明" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够下载CSV模板" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示文件上传区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够选择CSV文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件格式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件大小" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够清除选中的文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够执行CSV导入" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示导入错误信息" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该显示API同步区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该能够执行API同步" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该在同步过程中禁用按钮" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该显示手动录入区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增房源页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增看房笔记页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 响应式设计 › 应该在移动端正确显示" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理CSV导入API错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理API同步错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理模板下载错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="properties.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="22" failures="0" skipped="22" time="0" errors="0">
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该正确显示房源列表页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源列表表格" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该支持分页功能" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源基本信息" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该显示搜索和筛选区域" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按小区名称搜索" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按状态筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按价格区间筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够重置筛选条件" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够跳转到新增房源页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够查看房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够编辑房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够删除房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该正确显示新增房源表单" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该能够创建新房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该验证必填字段" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该正确显示房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该显示房源统计数据" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该支持快捷操作" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 响应式设计 › 应该在移动端正确显示" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理API加载错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理删除操作错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="viewings.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="chromium" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该正确显示看房笔记列表页面" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该以卡片形式显示看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示评分系统" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示看房基本信息" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示笔记内容" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持编辑和删除操作" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持分页功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该正确显示新增看房笔记表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择关联房源" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择带看经纪人" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持评分功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够创建新的看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该验证必填字段" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持编辑现有笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够删除看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够查看关联房源详情" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示看房时间" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示评分星星" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该支持笔记内容的展开和收起" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理API加载错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理表单提交错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="admin.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该正确显示基础数据管理页面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该显示标签页导航" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该能够切换标签页" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够点击新增城市按钮" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够编辑城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够删除城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该能够管理中介公司" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该能够管理经纪人" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该能够管理小区" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该正确显示创建时间" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该处理删除确认" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 响应式设计 › 应该在移动端正确显示" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理API加载错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理删除操作错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据一致性 › 应该在不同标签页间保持数据一致性" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="用户认证模块 › 登录功能 › 应该正确显示登录页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够成功登录" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够使用记住我功能" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的用户名" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的密码" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该验证必填字段" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示加载状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够跳转到注册页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示微信登录选项" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该正确显示注册页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够成功注册新用户" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该验证密码确认" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该要求同意服务条款" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够跳转到登录页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在登录后保持认证状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该能够正确登出" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在未登录时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在token过期时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理网络错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理服务器错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 响应式设计 › 应该在移动端正确显示" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="communities.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该正确显示小区列表页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示搜索和筛选区域" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示小区列表表格" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按小区名称搜索" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按城市筛选" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该支持分页功能" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够查看小区详情" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该正确显示小区详情页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示小区基本信息" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示价格趋势图表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示该小区房源列表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示快捷操作" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该能够切换价格趋势时间段" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确显示小区统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确计算和显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示列表页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示详情页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理API加载错误" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理小区不存在的情况" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该正确显示加载状态" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="26" failures="0" skipped="26" time="0" errors="0">
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确显示看板页面标题和描述" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确加载所有数据" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该在移动端正确显示" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示所有核心指标卡片" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示正确的指标数值" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示指标单位" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该正确显示图标" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示趋势图表" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该能够切换时间段" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示图表图例" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该支持图表交互" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该在没有数据时显示空状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示近期动态区域" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近房源信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近看房笔记" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该能够跳转到详细页面" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示房源基本信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示看房笔记评分" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该验证看板数据与详细页面数据的一致性" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该正确处理API错误" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该正确显示加载状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该支持页面刷新" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的页面标题" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的语义化标签" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该支持键盘导航" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="data-import.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该正确显示数据导入页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该显示所有导入方式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示CSV导入说明" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够下载CSV模板" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示文件上传区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够选择CSV文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件格式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件大小" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够清除选中的文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够执行CSV导入" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示导入错误信息" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该显示API同步区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该能够执行API同步" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该在同步过程中禁用按钮" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该显示手动录入区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增房源页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增看房笔记页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 响应式设计 › 应该在移动端正确显示" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理CSV导入API错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理API同步错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理模板下载错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="properties.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="22" failures="0" skipped="22" time="0" errors="0">
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该正确显示房源列表页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源列表表格" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该支持分页功能" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源基本信息" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该显示搜索和筛选区域" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按小区名称搜索" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按状态筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按价格区间筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够重置筛选条件" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够跳转到新增房源页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够查看房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够编辑房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够删除房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该正确显示新增房源表单" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该能够创建新房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该验证必填字段" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该正确显示房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该显示房源统计数据" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该支持快捷操作" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 响应式设计 › 应该在移动端正确显示" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理API加载错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理删除操作错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="viewings.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="firefox" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该正确显示看房笔记列表页面" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该以卡片形式显示看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示评分系统" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示看房基本信息" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示笔记内容" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持编辑和删除操作" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持分页功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该正确显示新增看房笔记表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择关联房源" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择带看经纪人" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持评分功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够创建新的看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该验证必填字段" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持编辑现有笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够删除看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够查看关联房源详情" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示看房时间" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示评分星星" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该支持笔记内容的展开和收起" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理API加载错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理表单提交错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="admin.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该正确显示基础数据管理页面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该显示标签页导航" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该能够切换标签页" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够点击新增城市按钮" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够编辑城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够删除城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该能够管理中介公司" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该能够管理经纪人" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该能够管理小区" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该正确显示创建时间" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该处理删除确认" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 响应式设计 › 应该在移动端正确显示" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理API加载错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理删除操作错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据一致性 › 应该在不同标签页间保持数据一致性" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="用户认证模块 › 登录功能 › 应该正确显示登录页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够成功登录" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够使用记住我功能" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的用户名" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的密码" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该验证必填字段" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示加载状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够跳转到注册页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示微信登录选项" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该正确显示注册页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够成功注册新用户" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该验证密码确认" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该要求同意服务条款" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够跳转到登录页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在登录后保持认证状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该能够正确登出" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在未登录时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在token过期时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理网络错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理服务器错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 响应式设计 › 应该在移动端正确显示" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="communities.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该正确显示小区列表页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示搜索和筛选区域" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示小区列表表格" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按小区名称搜索" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按城市筛选" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该支持分页功能" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够查看小区详情" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该正确显示小区详情页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示小区基本信息" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示价格趋势图表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示该小区房源列表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示快捷操作" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该能够切换价格趋势时间段" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确显示小区统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确计算和显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示列表页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示详情页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理API加载错误" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理小区不存在的情况" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该正确显示加载状态" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="26" failures="0" skipped="26" time="0" errors="0">
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确显示看板页面标题和描述" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确加载所有数据" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该在移动端正确显示" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示所有核心指标卡片" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示正确的指标数值" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示指标单位" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该正确显示图标" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示趋势图表" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该能够切换时间段" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示图表图例" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该支持图表交互" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该在没有数据时显示空状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示近期动态区域" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近房源信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近看房笔记" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该能够跳转到详细页面" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示房源基本信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示看房笔记评分" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该验证看板数据与详细页面数据的一致性" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该正确处理API错误" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该正确显示加载状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该支持页面刷新" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的页面标题" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的语义化标签" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该支持键盘导航" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="data-import.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该正确显示数据导入页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该显示所有导入方式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示CSV导入说明" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够下载CSV模板" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示文件上传区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够选择CSV文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件格式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件大小" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够清除选中的文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够执行CSV导入" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示导入错误信息" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该显示API同步区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该能够执行API同步" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该在同步过程中禁用按钮" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该显示手动录入区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增房源页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增看房笔记页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 响应式设计 › 应该在移动端正确显示" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理CSV导入API错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理API同步错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理模板下载错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="properties.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="22" failures="0" skipped="22" time="0" errors="0">
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该正确显示房源列表页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源列表表格" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该支持分页功能" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源基本信息" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该显示搜索和筛选区域" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按小区名称搜索" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按状态筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按价格区间筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够重置筛选条件" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够跳转到新增房源页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够查看房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够编辑房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够删除房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该正确显示新增房源表单" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该能够创建新房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该验证必填字段" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该正确显示房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该显示房源统计数据" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该支持快捷操作" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 响应式设计 › 应该在移动端正确显示" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理API加载错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理删除操作错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="viewings.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="webkit" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该正确显示看房笔记列表页面" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该以卡片形式显示看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示评分系统" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示看房基本信息" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示笔记内容" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持编辑和删除操作" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持分页功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该正确显示新增看房笔记表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择关联房源" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择带看经纪人" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持评分功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够创建新的看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该验证必填字段" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持编辑现有笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够删除看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够查看关联房源详情" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示看房时间" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示评分星星" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该支持笔记内容的展开和收起" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理API加载错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理表单提交错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="admin.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该正确显示基础数据管理页面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该显示标签页导航" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该能够切换标签页" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够点击新增城市按钮" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够编辑城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够删除城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该能够管理中介公司" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该能够管理经纪人" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该能够管理小区" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该正确显示创建时间" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该处理删除确认" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 响应式设计 › 应该在移动端正确显示" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理API加载错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理删除操作错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据一致性 › 应该在不同标签页间保持数据一致性" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="用户认证模块 › 登录功能 › 应该正确显示登录页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够成功登录" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够使用记住我功能" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的用户名" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的密码" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该验证必填字段" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示加载状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够跳转到注册页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示微信登录选项" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该正确显示注册页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够成功注册新用户" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该验证密码确认" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该要求同意服务条款" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够跳转到登录页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在登录后保持认证状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该能够正确登出" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在未登录时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在token过期时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理网络错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理服务器错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 响应式设计 › 应该在移动端正确显示" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="communities.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该正确显示小区列表页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示搜索和筛选区域" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示小区列表表格" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按小区名称搜索" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按城市筛选" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该支持分页功能" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够查看小区详情" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该正确显示小区详情页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示小区基本信息" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示价格趋势图表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示该小区房源列表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示快捷操作" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该能够切换价格趋势时间段" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确显示小区统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确计算和显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示列表页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示详情页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理API加载错误" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理小区不存在的情况" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该正确显示加载状态" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="26" failures="0" skipped="26" time="0" errors="0">
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确显示看板页面标题和描述" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确加载所有数据" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该在移动端正确显示" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示所有核心指标卡片" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示正确的指标数值" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示指标单位" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该正确显示图标" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示趋势图表" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该能够切换时间段" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示图表图例" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该支持图表交互" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该在没有数据时显示空状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示近期动态区域" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近房源信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近看房笔记" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该能够跳转到详细页面" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示房源基本信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示看房笔记评分" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该验证看板数据与详细页面数据的一致性" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该正确处理API错误" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该正确显示加载状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该支持页面刷新" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的页面标题" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的语义化标签" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该支持键盘导航" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="data-import.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该正确显示数据导入页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该显示所有导入方式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示CSV导入说明" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够下载CSV模板" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示文件上传区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够选择CSV文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件格式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件大小" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够清除选中的文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够执行CSV导入" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示导入错误信息" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该显示API同步区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该能够执行API同步" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该在同步过程中禁用按钮" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该显示手动录入区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增房源页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增看房笔记页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 响应式设计 › 应该在移动端正确显示" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理CSV导入API错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理API同步错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理模板下载错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="properties.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="22" failures="0" skipped="22" time="0" errors="0">
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该正确显示房源列表页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源列表表格" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该支持分页功能" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源基本信息" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该显示搜索和筛选区域" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按小区名称搜索" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按状态筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按价格区间筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够重置筛选条件" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够跳转到新增房源页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够查看房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够编辑房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够删除房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该正确显示新增房源表单" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该能够创建新房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该验证必填字段" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该正确显示房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该显示房源统计数据" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该支持快捷操作" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 响应式设计 › 应该在移动端正确显示" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理API加载错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理删除操作错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="viewings.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Chrome" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该正确显示看房笔记列表页面" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该以卡片形式显示看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示评分系统" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示看房基本信息" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示笔记内容" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持编辑和删除操作" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持分页功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该正确显示新增看房笔记表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择关联房源" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择带看经纪人" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持评分功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够创建新的看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该验证必填字段" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持编辑现有笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够删除看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够查看关联房源详情" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示看房时间" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示评分星星" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该支持笔记内容的展开和收起" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理API加载错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理表单提交错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="admin.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该正确显示基础数据管理页面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该显示标签页导航" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 基础数据管理页面 (FR-6.1) › 应该能够切换标签页" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该显示城市列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够点击新增城市按钮" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够编辑城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 城市管理 › 应该能够删除城市" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该显示中介公司列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 中介公司管理 › 应该能够管理中介公司" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该显示经纪人列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 经纪人管理 › 应该能够管理经纪人" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区管理界面" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该显示小区列表" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 小区管理 › 应该能够管理小区" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该正确显示创建时间" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据操作 › 应该处理删除确认" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 响应式设计 › 应该在移动端正确显示" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理API加载错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 错误处理 › 应该处理删除操作错误" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="基础数据管理模块 › 数据一致性 › 应该在不同标签页间保持数据一致性" classname="admin.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="用户认证模块 › 登录功能 › 应该正确显示登录页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够成功登录" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够使用记住我功能" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的用户名" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该正确处理错误的密码" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该验证必填字段" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示加载状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该能够跳转到注册页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 登录功能 › 应该显示微信登录选项" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该正确显示注册页面元素" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够成功注册新用户" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该验证密码确认" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该要求同意服务条款" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 注册功能 › 应该能够跳转到登录页面" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在登录后保持认证状态" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该能够正确登出" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在未登录时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 认证状态管理 › 应该在token过期时重定向到登录页" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理网络错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 错误处理 › 应该处理服务器错误" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="用户认证模块 › 响应式设计 › 应该在移动端正确显示" classname="auth.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="communities.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该正确显示小区列表页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示搜索和筛选区域" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示小区列表表格" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按小区名称搜索" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够按城市筛选" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该支持分页功能" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区列表页面 (FR-4.1) › 应该能够查看小区详情" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该正确显示小区详情页面" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示小区基本信息" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示价格趋势图表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示该小区房源列表" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该显示快捷操作" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 小区详情页面 (FR-4.2) › 应该能够切换价格趋势时间段" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确显示小区统计数据" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 数据展示和交互 › 应该正确计算和显示统计概览" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示列表页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 响应式设计 › 应该在移动端正确显示详情页" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理API加载错误" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 错误处理 › 应该处理小区不存在的情况" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="小区分析模块 › 性能和用户体验 › 应该正确显示加载状态" classname="communities.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="dashboard.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="26" failures="0" skipped="26" time="0" errors="0">
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确显示看板页面标题和描述" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该正确加载所有数据" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 页面加载和基本元素 › 应该在移动端正确显示" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示所有核心指标卡片" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示正确的指标数值" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该显示指标单位" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 核心指标展示 (FR-1.1) › 应该正确显示图标" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示趋势图表" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该能够切换时间段" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该显示图表图例" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该支持图表交互" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 交易趋势图表 (FR-1.2) › 应该在没有数据时显示空状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示近期动态区域" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近房源信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示最近看房笔记" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该能够跳转到详细页面" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示房源基本信息" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 近期动态 (FR-1.3) › 应该显示看房笔记评分" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该验证看板数据与详细页面数据的一致性" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 数据一致性验证 › 应该正确处理API错误" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该在合理时间内加载完成" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该正确显示加载状态" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 性能和用户体验 › 应该支持页面刷新" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的页面标题" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该有正确的语义化标签" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据看板模块 › 无障碍性测试 › 应该支持键盘导航" classname="dashboard.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="data-import.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该正确显示数据导入页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 页面基本元素 (FR-2.1, FR-2.2, FR-2.3) › 应该显示所有导入方式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示CSV导入说明" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够下载CSV模板" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示文件上传区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够选择CSV文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件格式" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该验证文件大小" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够清除选中的文件" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该能够执行CSV导入" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › CSV文件导入功能 (FR-2.1) › 应该显示导入错误信息" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该显示API同步区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该能够执行API同步" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › API数据同步功能 (FR-2.2) › 应该在同步过程中禁用按钮" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该显示手动录入区域" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增房源页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 手动录入功能 (FR-2.3) › 应该能够跳转到新增看房笔记页面" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 响应式设计 › 应该在移动端正确显示" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理CSV导入API错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理API同步错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="数据导入模块 › 错误处理 › 应该处理模板下载错误" classname="data-import.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="properties.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="22" failures="0" skipped="22" time="0" errors="0">
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该正确显示房源列表页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源列表表格" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该支持分页功能" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源列表页面 (FR-3.1) › 应该显示房源基本信息" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该显示搜索和筛选区域" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按小区名称搜索" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按状态筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够按价格区间筛选" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 搜索和筛选功能 (FR-3.2) › 应该能够重置筛选条件" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够跳转到新增房源页面" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够查看房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够编辑房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源CRUD操作 (FR-3.3) › 应该能够删除房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该正确显示新增房源表单" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该能够创建新房源" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源表单页面 › 应该验证必填字段" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该正确显示房源详情" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该显示房源统计数据" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 房源详情页面 › 应该支持快捷操作" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 响应式设计 › 应该在移动端正确显示" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理API加载错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="房源管理模块 › 错误处理 › 应该处理删除操作错误" classname="properties.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="viewings.spec.js" timestamp="2025-07-03T02:53:35.604Z" hostname="Mobile Safari" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该正确显示看房笔记列表页面" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该以卡片形式显示看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示评分系统" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示看房基本信息" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该显示笔记内容" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持编辑和删除操作" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记列表页面 (FR-5.1) › 应该支持分页功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该正确显示新增看房笔记表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择关联房源" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够选择带看经纪人" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持评分功能" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该能够创建新的看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该验证必填字段" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记表单页面 (FR-5.2) › 应该支持编辑现有笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够删除看房笔记" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 看房笔记操作 › 应该能够查看关联房源详情" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示看房时间" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该正确显示评分星星" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 数据展示和交互 › 应该支持笔记内容的展开和收起" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 响应式设计 › 应该在移动端正确显示表单" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理API加载错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="个人看房管理模块 › 错误处理 › 应该处理表单提交错误" classname="viewings.spec.js" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>
