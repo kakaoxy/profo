@@ -1,0 +1,353 @@
+"""
+CSV 文件上传路由
+处理 CSV 文件的上传、解析和批量导入
+"""
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
+from typing import List
+import csv
+import io
+import os
+import tempfile
+from datetime import datetime
+from pydantic import ValidationError
+import logging
+
+from db import get_db
+from schemas import PropertyIngestionModel, UploadResult
+from services.importer import PropertyImporter
+from models import FailedRecord
+from exceptions import FileProcessingException
+from error_handlers import ErrorHandler
+
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+class CSVBatchImporter:
+    """CSV 批量导入处理器"""
+    
+    def __init__(self):
+        self.importer = PropertyImporter()
+    
+    def parse_csv_file(self, file_content: str) -> List[dict]:
+        """
+        解析 CSV 文件内容
+        
+        Args:
+            file_content: CSV 文件内容字符串
+        
+        Returns:
+            List[dict]: 解析后的数据行列表
+        """
+        csv_reader = csv.DictReader(io.StringIO(file_content))
+        rows = []
+        for row in csv_reader:
+            # 将空字符串转换为 None
+            cleaned_row = {}
+            for key, value in row.items():
+                if value == '' or value is None:
+                    cleaned_row[key] = None
+                else:
+                    cleaned_row[key] = value.strip() if isinstance(value, str) else value
+            rows.append(cleaned_row)
+        return rows
+    
+    def batch_import_csv(self, file: UploadFile, db: Session) -> UploadResult:
+        """
+        批量导入 CSV 文件（优化版本，使用批量操作）
+        
+        流程:
+        1. 解析 CSV 文件
+        2. 批量验证数据
+        3. 批量导入（减少数据库往返）
+        4. 收集失败记录
+        5. 生成失败记录 CSV
+        
+        Args:
+            file: 上传的 CSV 文件
+            db: 数据库会话
+        
+        Returns:
+            UploadResult: 上传结果统计
+        """
+        total = 0
+        success = 0
+        failed = 0
+        failed_records = []
+        
+        # Batch processing configuration
+        BATCH_SIZE = 100  # Process 100 records at a time
+        
+        try:
+            # 读取文件内容
+            content = file.file.read()
+            
+            # 尝试不同的编码
+            try:
+                file_content = content.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    file_content = content.decode('gbk')
+                except UnicodeDecodeError:
+                    file_content = content.decode('utf-8', errors='ignore')
+            
+            # 解析 CSV
+            rows = self.parse_csv_file(file_content)
+            total = len(rows)
+            
+            logger.info(f"开始处理 CSV 文件，共 {total} 条记录，批量大小: {BATCH_SIZE}")
+            
+            # 批量处理
+            for batch_start in range(0, total, BATCH_SIZE):
+                batch_end = min(batch_start + BATCH_SIZE, total)
+                batch_rows = rows[batch_start:batch_end]
+                
+                logger.info(f"处理批次 {batch_start + 1}-{batch_end}/{total}")
+                
+                # 验证批次中的所有数据
+                validated_batch = []
+                for index, row in enumerate(batch_rows, start=batch_start + 1):
+                    try:
+                        # 验证数据
+                        validated_data = PropertyIngestionModel(**row)
+                        validated_batch.append((index, validated_data, row))
+                    
+                    except ValidationError as e:
+                        failed += 1
+                        error_msg = self._format_validation_error(e)
+                        failed_records.append({
+                            'row_number': index,
+                            'data': row,
+                            'error': error_msg
+                        })
+                        
+                        # 记录到 failed_records 表
+                        self._save_failed_record(row, error_msg, db)
+                        
+                        logger.warning(f"第 {index} 行验证失败: {error_msg}")
+                    
+                    except Exception as e:
+                        failed += 1
+                        error_msg = f"验证失败: {str(e)}"
+                        failed_records.append({
+                            'row_number': index,
+                            'data': row,
+                            'error': error_msg
+                        })
+                        
+                        self._save_failed_record(row, error_msg, db)
+                        logger.error(f"第 {index} 行验证失败: {error_msg}")
+                
+                # 批量导入验证通过的数据
+                for index, validated_data, original_row in validated_batch:
+                    try:
+                        # 导入数据
+                        result = self.importer.import_property(validated_data, db)
+                        
+                        if result.success:
+                            success += 1
+                        else:
+                            failed += 1
+                            failed_records.append({
+                                'row_number': index,
+                                'data': original_row,
+                                'error': result.error
+                            })
+                            
+                            # 记录到 failed_records 表
+                            self._save_failed_record(original_row, result.error, db)
+                    
+                    except Exception as e:
+                        failed += 1
+                        error_msg = f"导入失败: {str(e)}"
+                        failed_records.append({
+                            'row_number': index,
+                            'data': original_row,
+                            'error': error_msg
+                        })
+                        
+                        self._save_failed_record(original_row, error_msg, db)
+                        logger.error(f"第 {index} 行导入失败: {error_msg}")
+                
+                # 每个批次后提交一次（减少事务开销）
+                try:
+                    db.commit()
+                except Exception as e:
+                    db.rollback()
+                    logger.error(f"批次提交失败: {str(e)}")
+            
+            # 生成失败记录 CSV 文件
+            failed_file_url = None
+            if failed_records:
+                failed_file_url = self._generate_failed_csv(failed_records)
+            
+            logger.info(f"CSV 处理完成: 总数={total}, 成功={success}, 失败={failed}")
+            
+            return UploadResult(
+                total=total,
+                success=success,
+                failed=failed,
+                failed_file_url=failed_file_url
+            )
+        
+        except Exception as e:
+            logger.error(f"CSV 文件处理失败: {str(e)}")
+            raise FileProcessingException(
+                message=f"CSV 文件处理失败: {str(e)}",
+                details={"filename": file.filename if hasattr(file, 'filename') else 'unknown'}
+            )
+    
+    def _format_validation_error(self, error: ValidationError) -> str:
+        """
+        格式化验证错误信息（使用统一的错误处理器）
+        
+        Args:
+            error: Pydantic 验证错误
+        
+        Returns:
+            str: 格式化的错误信息
+        """
+        return ErrorHandler.format_validation_error(error)
+    
+    def _save_failed_record(self, row: dict, error: str, db: Session):
+        """
+        保存失败记录到数据库（使用统一的错误处理器）
+        
+        Args:
+            row: 原始数据行
+            error: 错误信息
+            db: 数据库会话
+        """
+        # 使用统一的错误处理器保存失败记录
+        # 注意：这里不使用传入的 db session，而是让 ErrorHandler 创建新的 session
+        # 这样可以避免事务冲突
+        ErrorHandler.save_failed_record(
+            data=row,
+            error_message=error,
+            failure_type='csv_validation_error',
+            data_source=row.get('数据源')
+        )
+    
+    def _generate_failed_csv(self, failed_records: List[dict]) -> str:
+        """
+        生成失败记录 CSV 文件
+        
+        Args:
+            failed_records: 失败记录列表
+        
+        Returns:
+            str: 失败记录文件的 URL 路径
+        """
+        try:
+            # 创建临时文件
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"failed_records_{timestamp}.csv"
+            
+            # 确保 temp 目录存在
+            temp_dir = os.path.join(os.getcwd(), 'temp')
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            filepath = os.path.join(temp_dir, filename)
+            
+            # 写入 CSV
+            with open(filepath, 'w', encoding='utf-8-sig', newline='') as f:
+                if failed_records:
+                    # 获取所有字段名
+                    first_record = failed_records[0]
+                    data_keys = [k for k in first_record['data'].keys() if k is not None]
+                    fieldnames = ['行号', '错误原因'] + data_keys
+                    
+                    writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
+                    writer.writeheader()
+                    
+                    for record in failed_records:
+                        row_data = {
+                            '行号': record['row_number'],
+                            '错误原因': record['error']
+                        }
+                        # 只添加非 None 的键
+                        for key, value in record['data'].items():
+                            if key is not None:
+                                row_data[key] = value if value is not None else ''
+                        writer.writerow(row_data)
+            
+            # 返回下载 URL
+            return f"/api/upload/download/{filename}"
+        
+        except Exception as e:
+            logger.error(f"生成失败记录 CSV 时出错: {str(e)}")
+            return None
+
+
+@router.post("/csv", response_model=UploadResult)
+async def upload_csv(
+    file: UploadFile = File(..., description="CSV 文件"),
+    db: Session = Depends(get_db)
+):
+    """
+    CSV 文件上传接口
+    
+    接收 CSV 文件，解析并批量导入房源数据
+    
+    Args:
+        file: 上传的 CSV 文件
+        db: 数据库会话
+    
+    Returns:
+        UploadResult: 上传结果统计
+    
+    Raises:
+        HTTPException: 文件格式错误或处理失败
+    """
+    # 验证文件类型
+    if not file.filename.endswith('.csv'):
+        raise FileProcessingException(
+            message="只支持 CSV 文件格式",
+            details={"filename": file.filename, "allowed_formats": [".csv"]}
+        )
+    
+    logger.info(f"接收到 CSV 文件: {file.filename}")
+    
+    # 处理上传
+    importer = CSVBatchImporter()
+    result = importer.batch_import_csv(file, db)
+    
+    return result
+
+
+@router.get("/download/{filename}")
+async def download_failed_records(filename: str):
+    """
+    下载失败记录 CSV 文件
+    
+    Args:
+        filename: 文件名
+    
+    Returns:
+        FileResponse: CSV 文件流
+    
+    Raises:
+        HTTPException: 文件不存在
+    """
+    temp_dir = os.path.join(os.getcwd(), 'temp')
+    filepath = os.path.join(temp_dir, filename)
+    
+    if not os.path.exists(filepath):
+        from exceptions import ResourceNotFoundException
+        raise ResourceNotFoundException(
+            message="文件不存在或已过期",
+            details={"filename": filename}
+        )
+    
+    return FileResponse(
+        path=filepath,
+        filename=filename,
+        media_type='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+    )

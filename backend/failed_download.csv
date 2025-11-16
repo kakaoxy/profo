@@ -1,0 +1,4 @@
+﻿行号,错误原因,数据源,房源ID,状态,小区名,室,厅,卫,朝向,楼层,面积,挂牌价,上架时间,成交价,成交时间
+3,小区名: Input should be a valid string,链家,TEST005,在售,,3,2,1,南,15/28,120.5,500,2024-01-01 10:00:00,,
+4,"室: Input should be a valid integer, unable to parse string as an integer",贝壳,TEST006,成交,测试小区6,abc,1,1,东南,高楼层/18,95.0,,,380,2024-02-15 14:30:00
+5,面积: Input should be greater than 0,链家,TEST007,在售,测试小区7,3,2,1,南,15/28,-50,500,2024-01-01 10:00:00,,
