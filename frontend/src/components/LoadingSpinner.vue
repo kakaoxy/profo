@@ -1,6 +1,6 @@
 <template>
-  <div :class="['loading-spinner-container', sizeClass]">
-    <div :class="['spinner', sizeClass]"></div>
+  <div :class="['loading-spinner-container', 'loading-container', sizeClass]">
+    <div :class="['spinner', 'loading-spinner', sizeClass]"></div>
     <p v-if="text" :class="['loading-text', sizeClass]">{{ text }}</p>
   </div>
 </template>

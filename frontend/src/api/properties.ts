@@ -1,5 +1,6 @@
 import apiClient from './client'
-import type { PropertyFilters, PropertyListResponse } from './types'
+import type { PropertyFilters, PropertyListResponse, Property } from './types'
+import { normalizeStatus } from '@/utils/price'
 
 /**
  * Fetch properties with filters and pagination
@@ -23,7 +24,60 @@ export const fetchProperties = async (
   if (filters.page) params.page = filters.page
   if (filters.page_size) params.page_size = filters.page_size
   
-  return apiClient.get('/properties', { params })
+  const resp = await apiClient.get('/properties', { params }) as PropertyListResponse & { items: any[] }
+
+  const coerceNumber = (val: any): number | undefined => {
+    if (val === null || val === undefined) return undefined
+    const n = typeof val === 'string' ? parseFloat(val) : val
+    return Number.isFinite(n) ? n : undefined
+  }
+
+  const toWan = (val: any): number | undefined => coerceNumber(val)
+  const toWanFromYuan = (val: any): number | undefined => {
+    const n = coerceNumber(val)
+    return n === undefined ? undefined : n / 10000
+  }
+
+  const mapItem = (raw: any): Property => {
+    const statusNorm = normalizeStatus(raw.status)
+    const listedWanCandidate = toWan(raw.listed_price_wan)
+      ?? toWan(raw.listed_price)
+      ?? toWanFromYuan(raw.listed_price_yuan)
+      ?? toWan(raw.total_price_wan)
+      ?? toWan(raw.total_price)
+
+    const soldWanCandidate = toWan(raw.sold_price_wan)
+      ?? toWan(raw.sold_price)
+      ?? toWanFromYuan(raw.sold_price_yuan)
+      ?? toWan(raw.deal_price_wan)
+      ?? toWan(raw.deal_price)
+
+    const listedWan = statusNorm === 'FOR_SALE' 
+      ? (listedWanCandidate ?? toWan(raw.total_price)) 
+      : listedWanCandidate
+    const soldWan = statusNorm === 'SOLD' 
+      ? (soldWanCandidate ?? toWan(raw.total_price)) 
+      : soldWanCandidate
+
+    const buildArea = coerceNumber(raw.build_area) ?? 0
+    const unitPrice = coerceNumber(raw.unit_price) ?? (() => {
+      const totalWan = statusNorm === 'FOR_SALE' ? listedWan : (soldWan ?? listedWan)
+      if (totalWan && buildArea) return (totalWan * 10000) / buildArea
+      return undefined
+    })()
+
+    return {
+      ...raw,
+      listed_price_wan: listedWan,
+      sold_price_wan: soldWan,
+      unit_price: unitPrice
+    } as Property
+  }
+
+  return {
+    ...resp,
+    items: Array.isArray(resp.items) ? resp.items.map(mapItem) : []
+  }
 }
 
 /**

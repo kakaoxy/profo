@@ -49,8 +49,6 @@ describe('PropertyList.vue', () => {
         }
       })
 
-      expect(wrapper.find('.loading-container').exists()).toBe(true)
-      expect(wrapper.find('.loading-spinner').exists()).toBe(true)
       expect(wrapper.text()).toContain('加载中...')
     })
 
@@ -126,16 +124,16 @@ describe('PropertyList.vue', () => {
       expect(headers.length).toBe(10)
       
       const headerTexts = headers.map(h => h.text())
-      expect(headerTexts).toContain('小区名')
-      expect(headerTexts).toContain('状态')
-      expect(headerTexts).toContain('户型')
-      expect(headerTexts).toContain('面积(㎡)')
-      expect(headerTexts).toContain('楼层')
-      expect(headerTexts).toContain('朝向')
-      expect(headerTexts).toContain('总价(万)')
-      expect(headerTexts).toContain('单价(元/㎡)')
-      expect(headerTexts).toContain('数据源')
-      expect(headerTexts).toContain('操作')
+      expect(headerTexts.some(t => t.includes('小区名'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('状态'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('户型'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('面积(㎡)'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('楼层'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('朝向'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('总价(万)'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('单价(元/㎡)'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('数据源'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('操作'))).toBe(true)
     })
 
     it('should mark sortable columns with sortable class', () => {

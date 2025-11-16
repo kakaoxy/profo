@@ -44,6 +44,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Property } from '@/api/types'
+import { getDisplayPriceWan, getUnitPriceYuanPerSqm, statusBadgeClass } from '@/utils/price'
 
 interface Props {
   property: Property
@@ -57,9 +58,7 @@ const props = defineProps<Props>()
 defineEmits<Emits>()
 
 // Status badge class
-const statusClass = computed(() => {
-  return props.property.status === '在售' ? 'status-for-sale' : 'status-sold'
-})
+const statusClass = computed(() => statusBadgeClass(props.property.status))
 
 // Format room type (e.g., "3室2厅1卫")
 const formatRoomType = (property: Property): string => {
@@ -83,32 +82,14 @@ const formatFloor = (property: Property): string => {
 
 // Format total price based on status
 const formatTotalPrice = (property: Property): string => {
-  if (property.status === '在售' && property.listed_price_wan) {
-    return property.listed_price_wan.toFixed(0)
-  }
-  if (property.status === '成交' && property.sold_price_wan) {
-    return property.sold_price_wan.toFixed(0)
-  }
-  return '-'
+  const price = getDisplayPriceWan(property)
+  return price !== null ? price.toFixed(0) : '-'
 }
 
 // Format unit price
 const formatUnitPrice = (property: Property): string => {
-  if (property.unit_price) {
-    return property.unit_price.toFixed(0)
-  }
-  
-  // Calculate if not provided
-  const totalPrice = property.status === '在售' 
-    ? property.listed_price_wan 
-    : property.sold_price_wan
-  
-  if (totalPrice && property.build_area) {
-    const unitPrice = (totalPrice * 10000) / property.build_area
-    return unitPrice.toFixed(0)
-  }
-  
-  return '-'
+  const unit = getUnitPriceYuanPerSqm(property)
+  return unit !== null ? unit.toFixed(0) : '-'
 }
 </script>
 
