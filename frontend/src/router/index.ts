@@ -25,7 +25,7 @@ const router = createRouter({
 })
 
 // Optional: Add navigation guards for performance monitoring
-router.beforeEach((to, from, next) => {
+router.beforeEach((_to, _from, next) => {
   // You can add performance tracking here if needed
   next()
 })

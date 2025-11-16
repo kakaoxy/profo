@@ -54,32 +54,37 @@
               <div class="detail-grid">
                 <DetailItem label="状态" :value="property.status">
                   <template #value>
-                    <span :class="['status-badge', property.status === '在售' ? 'status-for-sale' : 'status-sold']">
+                    <span :class="['status-badge', statusClass]">
                       {{ property.status }}
                     </span>
                   </template>
                 </DetailItem>
                 <DetailItem 
-                  v-if="property.status === '在售'" 
+                  v-if="isForSale(property?.status)" 
                   label="挂牌价" 
                   :value="property.listed_price_wan ? `${property.listed_price_wan.toFixed(0)} 万` : '-'" 
                 />
                 <DetailItem 
-                  v-if="property.status === '成交'" 
+                  v-if="isSold(property?.status)" 
                   label="成交价" 
                   :value="property.sold_price_wan ? `${property.sold_price_wan.toFixed(0)} 万` : '-'" 
                 />
                 <DetailItem 
-                  label="单价" 
-                  :value="property.unit_price ? `${property.unit_price.toFixed(0)} 元/㎡` : '-'" 
+                  v-if="!isForSale(property?.status) && !isSold(property?.status)" 
+                  label="总价" 
+                  :value="displayPriceWan !== null ? `${displayPriceWan.toFixed(0)} 万` : '-'" 
                 />
                 <DetailItem 
-                  v-if="property.status === '在售'" 
+                  label="单价" 
+                  :value="unitPrice !== null ? `${unitPrice.toFixed(0)} 元/㎡` : '-'" 
+                />
+                <DetailItem 
+                  v-if="isForSale(property?.status)" 
                   label="上架时间" 
                   :value="formatDate(property.listed_date)" 
                 />
                 <DetailItem 
-                  v-if="property.status === '成交'" 
+                  v-if="isSold(property?.status)" 
                   label="成交时间" 
                   :value="formatDate(property.sold_date)" 
                 />
@@ -121,9 +126,10 @@
 </template>
 
 <script setup lang="ts">
-import { watch, onUnmounted } from 'vue'
+import { watch, onUnmounted, computed } from 'vue'
 import type { Property } from '@/api/types'
 import DetailItem from './DetailItem.vue'
+import { isForSale, isSold, statusBadgeClass, getDisplayPriceWan, getUnitPriceYuanPerSqm } from '@/utils/price'
 
 interface Props {
   visible: boolean
@@ -162,6 +168,10 @@ const formatDate = (dateString?: string): string => {
     return dateString
   }
 }
+
+const statusClass = computed(() => statusBadgeClass(props.property?.status))
+const displayPriceWan = computed(() => props.property ? getDisplayPriceWan(props.property) : null)
+const unitPrice = computed(() => props.property ? getUnitPriceYuanPerSqm(props.property) : null)
 
 // Add/remove escape key listener
 watch(() => props.visible, (newVal: boolean) => {
