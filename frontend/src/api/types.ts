@@ -20,6 +20,8 @@ export interface Property {
   source_property_id: string
   status: string
   community_name: string
+  district?: string
+  business_circle?: string
   rooms: number
   halls: number
   baths: number
@@ -44,6 +46,7 @@ export interface Property {
   last_transaction?: string
   mortgage_info?: string
   listing_remarks?: string
+  floor_plan_url?: string
   created_at: string
   updated_at: string
 }
