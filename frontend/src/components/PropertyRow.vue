@@ -1,5 +1,11 @@
 <template>
   <div class="property-row">
+    <div class="row-cell col-source_property_id" :title="property.source_property_id">
+      {{ property.source_property_id }}
+    </div>
+    <div class="row-cell col-floor_plan">
+      <img :src="getFloorPlan(property)" alt="户型图" class="floor-thumb" />
+    </div>
     <div class="row-cell col-community_name" :title="property.community_name">
       {{ property.community_name }}
     </div>
@@ -8,23 +14,32 @@
         {{ property.status }}
       </span>
     </div>
+    <div class="row-cell col-district">
+      {{ property.district || '-' }}
+    </div>
+    <div class="row-cell col-business_circle">
+      {{ property.business_circle || '-' }}
+    </div>
     <div class="row-cell col-rooms">
       {{ formatRoomType(property) }}
     </div>
-    <div class="row-cell col-build_area">
-      {{ property.build_area.toFixed(1) }}
+    <div class="row-cell col-orientation">
+      {{ property.orientation }}
     </div>
     <div class="row-cell col-floor_level" :title="property.floor_original">
       {{ formatFloor(property) }}
     </div>
-    <div class="row-cell col-orientation">
-      {{ property.orientation }}
+    <div class="row-cell col-build_area">
+      {{ property.build_area.toFixed(1) }}
     </div>
     <div class="row-cell col-total_price">
       {{ formatTotalPrice(property) }}
     </div>
     <div class="row-cell col-unit_price">
       {{ formatUnitPrice(property) }}
+    </div>
+    <div class="row-cell col-timeline">
+      {{ formatTimeline(property) }}
     </div>
     <div class="row-cell col-data_source">
       {{ property.data_source }}
@@ -80,16 +95,26 @@ const formatFloor = (property: Property): string => {
   return property.floor_original || '-'
 }
 
-// Format total price based on status
 const formatTotalPrice = (property: Property): string => {
   const price = getDisplayPriceWan(property)
   return price !== null ? price.toFixed(0) : '-'
 }
 
-// Format unit price
 const formatUnitPrice = (property: Property): string => {
   const unit = getUnitPriceYuanPerSqm(property)
   return unit !== null ? unit.toFixed(0) : '-'
+}
+
+const formatTimeline = (property: Property): string => {
+  const d = property.status === '在售' ? property.listed_date : property.sold_date || property.listed_date
+  if (!d) return '-'
+  const s = typeof d === 'string' ? d : new Date(d as any).toISOString()
+  return s.slice(0, 10)
+}
+
+const placeholderImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="72" height="48"><rect width="72" height="48" fill="%23e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="10">无图</text></svg>'
+const getFloorPlan = (property: Property): string => {
+  return (property as any).floor_plan_url || placeholderImage
 }
 </script>
 
@@ -125,14 +150,19 @@ const formatUnitPrice = (property: Property): string => {
 }
 
 /* Column widths - must match PropertyList columns */
+.col-source_property_id { width: 120px; }
+.col-floor_plan { width: 80px; justify-content: center; }
 .col-community_name { width: 150px; }
 .col-status { width: 80px; justify-content: center; }
+.col-district { width: 100px; }
+.col-business_circle { width: 120px; }
 .col-rooms { width: 100px; }
-.col-build_area { width: 100px; text-align: right; justify-content: flex-end; }
-.col-floor_level { width: 100px; }
 .col-orientation { width: 80px; }
+.col-floor_level { width: 100px; }
+.col-build_area { width: 100px; text-align: right; justify-content: flex-end; }
 .col-total_price { width: 100px; text-align: right; justify-content: flex-end; }
 .col-unit_price { width: 120px; text-align: right; justify-content: flex-end; }
+.col-timeline { width: 140px; }
 .col-data_source { width: 100px; }
 .col-actions { width: 80px; justify-content: center; }
 
@@ -156,6 +186,8 @@ const formatUnitPrice = (property: Property): string => {
   color: #065f46;
   box-shadow: 0 1px 2px rgba(6, 95, 70, 0.2);
 }
+
+.floor-thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #e5e7eb; }
 
 .view-btn {
   padding: 0.375rem 0.875rem;

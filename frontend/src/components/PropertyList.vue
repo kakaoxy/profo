@@ -88,14 +88,19 @@ const propertyStore = usePropertyStore()
 
 // Column definitions
 const columns: Column[] = [
-  { key: 'community_name', label: '小区名', sortable: true, width: '150px' },
+  { key: 'source_property_id', label: '房源ID', sortable: true, width: '120px' },
+  { key: 'floor_plan', label: '户型图', sortable: false, width: '80px' },
+  { key: 'community_name', label: '小区', sortable: true, width: '150px' },
   { key: 'status', label: '状态', sortable: true, width: '80px' },
+  { key: 'district', label: '区域', sortable: false, width: '100px' },
+  { key: 'business_circle', label: '商圈', sortable: false, width: '120px' },
   { key: 'rooms', label: '户型', sortable: false, width: '100px' },
-  { key: 'build_area', label: '面积(㎡)', sortable: true, width: '100px' },
-  { key: 'floor_level', label: '楼层', sortable: false, width: '100px' },
   { key: 'orientation', label: '朝向', sortable: false, width: '80px' },
+  { key: 'floor_level', label: '楼层', sortable: false, width: '100px' },
+  { key: 'build_area', label: '面积(㎡)', sortable: true, width: '100px' },
   { key: 'total_price', label: '总价(万)', sortable: true, width: '100px' },
   { key: 'unit_price', label: '单价(元/㎡)', sortable: true, width: '120px' },
+  { key: 'timeline', label: '挂牌/成交时间', sortable: false, width: '140px' },
   { key: 'data_source', label: '数据源', sortable: false, width: '100px' },
   { key: 'actions', label: '操作', sortable: false, width: '80px' }
 ]
