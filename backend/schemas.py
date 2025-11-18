@@ -125,6 +125,8 @@ class PropertyResponse(BaseModel):
     # 小区信息
     community_id: int
     community_name: str
+    district: Optional[str] = None
+    business_circle: Optional[str] = None
     
     # 户型信息
     rooms: int
@@ -165,7 +167,7 @@ class PropertyResponse(BaseModel):
     }
     
     @classmethod
-    def from_orm_with_calculations(cls, property_obj, community_name: str):
+    def from_orm_with_calculations(cls, property_obj, community: Community):
         """
         从 ORM 模型转换并计算附加字段
         
@@ -207,7 +209,9 @@ class PropertyResponse(BaseModel):
             source_property_id=property_obj.source_property_id,
             status=property_obj.status.value,
             community_id=property_obj.community_id,
-            community_name=community_name,
+            community_name=community.name,
+            district=community.district,
+            business_circle=community.business_circle,
             rooms=property_obj.rooms,
             halls=property_obj.halls,
             baths=property_obj.baths,
