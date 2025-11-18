@@ -12,6 +12,18 @@ export const fetchProperties = async (
   
   if (filters.status) params.status = filters.status
   if (filters.community_name) params.community_name = filters.community_name
+  if (filters.districts && filters.districts.length > 0) {
+    params.districts = filters.districts.join(',')
+  }
+  if (filters.business_circles && filters.business_circles.length > 0) {
+    params.business_circles = filters.business_circles.join(',')
+  }
+  if (filters.orientations && filters.orientations.length > 0) {
+    params.orientations = filters.orientations.join(',')
+  }
+  if (filters.floor_levels && filters.floor_levels.length > 0) {
+    params.floor_levels = filters.floor_levels.join(',')
+  }
   if (filters.min_price !== undefined) params.min_price = filters.min_price
   if (filters.max_price !== undefined) params.max_price = filters.max_price
   if (filters.min_area !== undefined) params.min_area = filters.min_area
@@ -19,6 +31,7 @@ export const fetchProperties = async (
   if (filters.rooms && filters.rooms.length > 0) {
     params.rooms = filters.rooms.join(',')
   }
+  if (filters.rooms_gte !== undefined) params.rooms_gte = filters.rooms_gte
   if (filters.sort_by) params.sort_by = filters.sort_by
   if (filters.sort_order) params.sort_order = filters.sort_order
   if (filters.page) params.page = filters.page
@@ -88,6 +101,18 @@ export const exportProperties = async (filters: PropertyFilters): Promise<void> 
   
   if (filters.status) params.status = filters.status
   if (filters.community_name) params.community_name = filters.community_name
+  if (filters.districts && filters.districts.length > 0) {
+    params.districts = filters.districts.join(',')
+  }
+  if (filters.business_circles && filters.business_circles.length > 0) {
+    params.business_circles = filters.business_circles.join(',')
+  }
+  if (filters.orientations && filters.orientations.length > 0) {
+    params.orientations = filters.orientations.join(',')
+  }
+  if (filters.floor_levels && filters.floor_levels.length > 0) {
+    params.floor_levels = filters.floor_levels.join(',')
+  }
   if (filters.min_price !== undefined) params.min_price = filters.min_price
   if (filters.max_price !== undefined) params.max_price = filters.max_price
   if (filters.min_area !== undefined) params.min_area = filters.min_area
@@ -95,6 +120,7 @@ export const exportProperties = async (filters: PropertyFilters): Promise<void> 
   if (filters.rooms && filters.rooms.length > 0) {
     params.rooms = filters.rooms.join(',')
   }
+  if (filters.rooms_gte !== undefined) params.rooms_gte = filters.rooms_gte
   if (filters.sort_by) params.sort_by = filters.sort_by
   if (filters.sort_order) params.sort_order = filters.sort_order
   
@@ -112,4 +138,38 @@ export const exportProperties = async (filters: PropertyFilters): Promise<void> 
   link.click()
   link.remove()
   window.URL.revokeObjectURL(url)
+}
+
+/**
+ * Fetch single property detail by id
+ */
+export const fetchPropertyDetail = async (id: number): Promise<Property> => {
+  const raw = await apiClient.get(`/properties/${id}`) as any
+
+  const coerceNumber = (val: any): number | undefined => {
+    if (val === null || val === undefined) return undefined
+    const n = typeof val === 'string' ? parseFloat(val) : val
+    return Number.isFinite(n) ? n : undefined
+  }
+
+  const toWan = (val: any): number | undefined => coerceNumber(val)
+
+  const statusNorm = normalizeStatus(raw.status)
+  const listedWan = toWan(raw.listed_price_wan)
+  const soldWan = toWan(raw.sold_price_wan)
+  const buildArea = coerceNumber(raw.build_area) ?? 0
+  const unitPrice = coerceNumber(raw.unit_price) ?? (() => {
+    const totalWan = statusNorm === 'FOR_SALE' ? listedWan : (soldWan ?? listedWan)
+    if (totalWan && buildArea) return (totalWan * 10000) / buildArea
+    return undefined
+  })()
+
+  const mapped: Property = {
+    ...raw,
+    listed_price_wan: listedWan,
+    sold_price_wan: soldWan,
+    unit_price: unitPrice
+  }
+
+  return mapped
 }

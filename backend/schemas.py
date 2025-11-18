@@ -6,6 +6,10 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator, model_validator
 from enum import Enum
+try:
+    from .models import Community
+except Exception:
+    from models import Community
 
 
 # ==================== 枚举类型 ====================
@@ -126,10 +130,11 @@ class PropertyResponse(BaseModel):
     rooms: int
     halls: int
     baths: int
+    layout_display: str
     orientation: str
     
     # 楼层信息
-    floor_display: str  # 格式化的楼层显示
+    floor_display: str
     floor_level: Optional[str] = None
     
     # 面积信息
@@ -186,10 +191,15 @@ class PropertyResponse(BaseModel):
             duration = property_obj.sold_date - property_obj.listed_date
             transaction_duration_days = duration.days
         
-        # 格式化楼层显示
-        floor_display = property_obj.floor_original
-        if property_obj.floor_number and property_obj.total_floors:
-            floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}"
+        # 户型展示
+        layout_display = f"{property_obj.rooms}室"
+        if property_obj.halls is not None and property_obj.halls > 0 and property_obj.baths is not None and property_obj.baths > 0:
+            layout_display = f"{property_obj.rooms}室{property_obj.halls}厅{property_obj.baths}卫"
+
+        # 楼层展示
+        floor_display = property_obj.floor_original or "暂无数据"
+        if property_obj.floor_number and property_obj.total_floors and property_obj.floor_number > 0 and property_obj.total_floors > 0:
+            floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}层"
         
         return cls(
             id=property_obj.id,
@@ -201,6 +211,7 @@ class PropertyResponse(BaseModel):
             rooms=property_obj.rooms,
             halls=property_obj.halls,
             baths=property_obj.baths,
+            layout_display=layout_display,
             orientation=property_obj.orientation,
             floor_display=floor_display,
             floor_level=property_obj.floor_level,
@@ -238,10 +249,12 @@ class PropertyDetailResponse(BaseModel):
     rooms: int
     halls: int
     baths: int
+    layout_display: str
     orientation: str
     
     # 楼层信息
     floor_original: str
+    floor_display: str
     floor_number: Optional[int] = None
     total_floors: Optional[int] = None
     floor_level: Optional[str] = None
@@ -254,6 +267,8 @@ class PropertyDetailResponse(BaseModel):
     listed_price_wan: Optional[float] = None
     sold_price_wan: Optional[float] = None
     unit_price: float
+    transaction_duration_display: Optional[str] = None
+    discount_rate_display: Optional[str] = None
     
     # 时间信息
     listed_date: Optional[datetime] = None
@@ -283,6 +298,74 @@ class PropertyDetailResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+    @classmethod
+    def from_orm_with_calculations(cls, property_obj, community: Community):
+        total_price = property_obj.listed_price_wan or 0 if property_obj.status.value == "在售" else property_obj.sold_price_wan or 0
+        unit_price = (total_price * 10000 / property_obj.build_area) if property_obj.build_area and property_obj.build_area > 0 else 0
+
+        transaction_duration_days = None
+        transaction_duration_display = None
+        if property_obj.status.value == "成交" and property_obj.listed_date and property_obj.sold_date:
+            duration = property_obj.sold_date - property_obj.listed_date
+            transaction_duration_days = duration.days
+            transaction_duration_display = f"{duration.days}天"
+
+        layout_display = f"{property_obj.rooms}室"
+        if property_obj.halls is not None and property_obj.halls > 0 and property_obj.baths is not None and property_obj.baths > 0:
+            layout_display = f"{property_obj.rooms}室{property_obj.halls}厅{property_obj.baths}卫"
+
+        floor_display = property_obj.floor_original or "暂无数据"
+        if property_obj.floor_number and property_obj.total_floors and property_obj.floor_number > 0 and property_obj.total_floors > 0:
+            floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}层"
+
+        discount_rate_display = None
+        if property_obj.listed_price_wan and property_obj.listed_price_wan > 0 and property_obj.sold_price_wan and property_obj.sold_price_wan >= 0:
+            rate = (property_obj.listed_price_wan - property_obj.sold_price_wan) / property_obj.listed_price_wan
+            discount_rate_display = f"{round(rate * 100, 2)}%"
+
+        return cls(
+            id=property_obj.id,
+            data_source=property_obj.data_source,
+            source_property_id=property_obj.source_property_id,
+            status=property_obj.status.value,
+            community_id=property_obj.community_id,
+            community_name=community.name,
+            district=community.district,
+            business_circle=community.business_circle,
+            rooms=property_obj.rooms,
+            halls=property_obj.halls,
+            baths=property_obj.baths,
+            layout_display=layout_display,
+            orientation=property_obj.orientation,
+            floor_original=property_obj.floor_original,
+            floor_display=floor_display,
+            floor_number=property_obj.floor_number,
+            total_floors=property_obj.total_floors,
+            floor_level=property_obj.floor_level,
+            build_area=property_obj.build_area,
+            inner_area=property_obj.inner_area,
+            listed_price_wan=property_obj.listed_price_wan,
+            sold_price_wan=property_obj.sold_price_wan,
+            unit_price=round(unit_price, 2),
+            listed_date=property_obj.listed_date,
+            sold_date=property_obj.sold_date,
+            transaction_duration_days=transaction_duration_days,
+            transaction_duration_display=transaction_duration_display,
+            discount_rate_display=discount_rate_display,
+            property_type=property_obj.property_type,
+            build_year=property_obj.build_year,
+            building_structure=property_obj.building_structure,
+            decoration=property_obj.decoration,
+            elevator=property_obj.elevator,
+            ownership_type=property_obj.ownership_type,
+            ownership_years=property_obj.ownership_years,
+            last_transaction=property_obj.last_transaction,
+            heating_method=property_obj.heating_method,
+            listing_remarks=property_obj.listing_remarks,
+            created_at=property_obj.created_at,
+            updated_at=property_obj.updated_at
+        )
 
 
 class PaginatedPropertyResponse(BaseModel):

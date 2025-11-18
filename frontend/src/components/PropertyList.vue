@@ -190,7 +190,7 @@ watch(() => props.properties, () => {
 .property-table {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   overflow: hidden;
@@ -262,6 +262,7 @@ watch(() => props.properties, () => {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+  max-height: 70vh;
 }
 
 .table-body::-webkit-scrollbar {

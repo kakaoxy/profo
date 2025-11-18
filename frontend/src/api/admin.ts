@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { CommunityListResponse, MergeResult } from './types'
+import type { CommunityListResponse, MergeResult, DictionaryResponse } from './types'
 
 /**
  * Fetch communities with search
@@ -32,4 +32,17 @@ export const mergeCommunities = async (
     primary_id: primaryId,
     merge_ids: mergeIds
   })
+}
+
+/**
+ * Fetch dictionaries for districts or business circles
+ */
+export const fetchDictionary = async (
+  type: 'district' | 'business_circle',
+  search?: string,
+  limit: number = 50
+): Promise<DictionaryResponse> => {
+  const params: Record<string, any> = { type, limit }
+  if (search) params.search = search
+  return apiClient.get('/admin/dictionaries', { params })
 }

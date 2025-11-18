@@ -121,10 +121,12 @@ describe('PropertyList.vue', () => {
       })
 
       const headers = wrapper.findAll('.header-cell')
-      expect(headers.length).toBe(10)
+      expect(headers.length).toBe(15)
       
       const headerTexts = headers.map(h => h.text())
-      expect(headerTexts.some(t => t.includes('小区名'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('房源ID'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('户型图'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('小区'))).toBe(true)
       expect(headerTexts.some(t => t.includes('状态'))).toBe(true)
       expect(headerTexts.some(t => t.includes('户型'))).toBe(true)
       expect(headerTexts.some(t => t.includes('面积(㎡)'))).toBe(true)
@@ -132,6 +134,7 @@ describe('PropertyList.vue', () => {
       expect(headerTexts.some(t => t.includes('朝向'))).toBe(true)
       expect(headerTexts.some(t => t.includes('总价(万)'))).toBe(true)
       expect(headerTexts.some(t => t.includes('单价(元/㎡)'))).toBe(true)
+      expect(headerTexts.some(t => t.includes('挂牌/成交时间'))).toBe(true)
       expect(headerTexts.some(t => t.includes('数据源'))).toBe(true)
       expect(headerTexts.some(t => t.includes('操作'))).toBe(true)
     })
