@@ -46,15 +46,55 @@ class CSVBatchImporter:
         csv_reader = csv.DictReader(io.StringIO(file_content))
         rows = []
         for row in csv_reader:
-            # 将空字符串转换为 None
             cleaned_row = {}
-            for key, value in row.items():
-                if value == '' or value is None:
-                    cleaned_row[key] = None
+            for raw_key, raw_value in row.items():
+                # 清理键名（移除 BOM/空白）
+                key = (raw_key or '')
+                if key.startswith('\ufeff'):
+                    key = key.lstrip('\ufeff')
+                key = key.strip()
+
+                # 将空字符串转换为 None，并去除值首尾空格
+                if raw_value is None:
+                    value = None
                 else:
-                    cleaned_row[key] = value.strip() if isinstance(value, str) else value
+                    value = raw_value.strip() if isinstance(raw_value, str) else raw_value
+                    if value == '':
+                        value = None
+
+                cleaned_row[key] = value
+
+            # 规范化日期字段
+            for date_key in ['上架时间', '成交时间']:
+                v = cleaned_row.get(date_key)
+                if isinstance(v, str) and v:
+                    normalized = self._normalize_date_string(v)
+                    cleaned_row[date_key] = normalized
+
             rows.append(cleaned_row)
         return rows
+
+    def _normalize_date_string(self, s: str) -> str:
+        """将多种日期格式规范化为 ISO 格式 YYYY-MM-DD"""
+        try:
+            s2 = s.replace('年', '-').replace('月', '-').replace('日', '')
+            s2 = s2.replace('.', '-').replace('/', '-')
+            s2 = s2.strip()
+            parts = s2.split('-')
+            if len(parts) >= 3:
+                y = parts[0]
+                m = parts[1].zfill(2)
+                d = parts[2].zfill(2)
+                s2 = f"{y}-{m}-{d}"
+            dt = datetime.fromisoformat(s2)
+            return dt.strftime('%Y-%m-%d')
+        except Exception:
+            try:
+                from dateutil import parser as dateparser
+                dt = dateparser.parse(s)
+                return dt.strftime('%Y-%m-%d')
+            except Exception:
+                return s
     
     def batch_import_csv(self, file: UploadFile, db: Session) -> UploadResult:
         """
@@ -86,14 +126,17 @@ class CSVBatchImporter:
             # 读取文件内容
             content = file.file.read()
             
-            # 尝试不同的编码
+            # 尝试不同的编码（优先 utf-8-sig 去除 BOM）
             try:
-                file_content = content.decode('utf-8')
+                file_content = content.decode('utf-8-sig')
             except UnicodeDecodeError:
                 try:
-                    file_content = content.decode('gbk')
+                    file_content = content.decode('utf-8')
                 except UnicodeDecodeError:
-                    file_content = content.decode('utf-8', errors='ignore')
+                    try:
+                        file_content = content.decode('gbk')
+                    except UnicodeDecodeError:
+                        file_content = content.decode('utf-8', errors='ignore')
             
             # 解析 CSV
             rows = self.parse_csv_file(file_content)

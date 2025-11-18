@@ -72,7 +72,7 @@ class PropertyQueryService:
         # 构建基础查询 - 使用 joinedload 优化关联查询
         from sqlalchemy.orm import joinedload
         
-        query = db.query(PropertyCurrent, Community.name).join(
+        query = db.query(PropertyCurrent, Community).join(
             Community,
             PropertyCurrent.community_id == Community.id
         ).filter(PropertyCurrent.is_active == True)
@@ -112,8 +112,8 @@ class PropertyQueryService:
         
         # 转换为响应模型
         items = []
-        for property_obj, community_name in results:
-            item = PropertyResponse.from_orm_with_calculations(property_obj, community_name)
+        for property_obj, community in results:
+            item = PropertyResponse.from_orm_with_calculations(property_obj, community)
             items.append(item)
         
         logger.info(f"查询完成: 总数={total}, 页码={page}, 每页={page_size}, 返回={len(items)}")
@@ -313,7 +313,7 @@ class PropertyQueryService:
             List[PropertyResponse]: 所有匹配的房源列表
         """
         # 构建基础查询
-        query = db.query(PropertyCurrent, Community.name).join(
+        query = db.query(PropertyCurrent, Community).join(
             Community,
             PropertyCurrent.community_id == Community.id
         ).filter(PropertyCurrent.is_active == True)
@@ -343,8 +343,8 @@ class PropertyQueryService:
         
         # 转换为响应模型
         items = []
-        for property_obj, community_name in results:
-            item = PropertyResponse.from_orm_with_calculations(property_obj, community_name)
+        for property_obj, community in results:
+            item = PropertyResponse.from_orm_with_calculations(property_obj, community)
             items.append(item)
         
         logger.info(f"导出查询完成: 总数={len(items)}")
