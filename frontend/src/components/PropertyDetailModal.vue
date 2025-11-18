@@ -24,27 +24,24 @@
                 <DetailItem label="物业类型" :value="property.property_type" />
                 <DetailItem label="建筑年代" :value="property.build_year" />
                 <DetailItem label="装修情况" :value="property.decoration" />
-                <DetailItem label="电梯" :value="property.elevator" />
+                <DetailItem label="电梯" :value="elevatorText" />
                 <DetailItem label="产权类型" :value="property.ownership_type" />
                 <DetailItem label="产权年限" :value="property.ownership_years" />
               </div>
             </section>
 
-            <!-- 户型信息 -->
+            <!-- 户型与楼层 -->
             <section class="detail-section">
-              <h3 class="section-title">户型信息</h3>
+              <h3 class="section-title">户型与楼层</h3>
               <div class="detail-grid">
-                <DetailItem label="室" :value="property.rooms" />
-                <DetailItem label="厅" :value="property.halls" />
-                <DetailItem label="卫" :value="property.baths" />
+                <DetailItem label="户型" :value="layoutText" />
                 <DetailItem label="朝向" :value="property.orientation" />
                 <DetailItem label="建筑面积" :value="property.build_area ? `${property.build_area.toFixed(1)} ㎡` : '-'" />
-                <DetailItem label="楼层" :value="property.floor_original" />
-                <DetailItem label="楼层级别" :value="property.floor_level" />
-                <DetailItem 
-                  label="楼层详情" 
-                  :value="property.floor_number && property.total_floors ? `${property.floor_number}/${property.total_floors}` : '-'" 
-                />
+                <DetailItem label="套内面积" :value="property.inner_area ? `${property.inner_area.toFixed(1)} ㎡` : '-'" />
+                <DetailItem label="楼层" :value="floorText" />
+                <DetailItem label="楼层等级" :value="property.floor_level" />
+                <DetailItem label="建筑结构" :value="property.building_structure" />
+                <DetailItem label="供暖方式" :value="property.heating_method" />
               </div>
             </section>
 
@@ -88,11 +85,8 @@
                   label="成交时间" 
                   :value="formatDate(property.sold_date)" 
                 />
-                <DetailItem 
-                  v-if="property.transaction_duration_days" 
-                  label="成交周期" 
-                  :value="`${property.transaction_duration_days} 天`" 
-                />
+                <DetailItem label="成交周期" :value="transactionDurationText" />
+                <DetailItem label="折价率" :value="discountRateText" />
                 <DetailItem label="上次交易" :value="property.last_transaction" />
               </div>
             </section>
@@ -172,6 +166,46 @@ const formatDate = (dateString?: string): string => {
 const statusClass = computed(() => statusBadgeClass(props.property?.status))
 const displayPriceWan = computed(() => props.property ? getDisplayPriceWan(props.property) : null)
 const unitPrice = computed(() => props.property ? getUnitPriceYuanPerSqm(props.property) : null)
+
+const layoutText = computed(() => {
+  const p = props.property
+  if (!p) return '-'
+  if (p.layout_display) return p.layout_display
+  const r = p.rooms
+  const h = p.halls
+  const b = p.baths
+  if (typeof h === 'number' && h > 0 && typeof b === 'number' && b > 0) return `${r}室${h}厅${b}卫`
+  return `${r}室`
+})
+
+const floorText = computed(() => {
+  const p = props.property
+  if (!p) return '-'
+  if (p.floor_display) return p.floor_display
+  if (p.floor_number && p.total_floors && p.floor_number > 0 && p.total_floors > 0) return `${p.floor_number}/${p.total_floors}层`
+  return p.floor_original || '-'
+})
+
+const transactionDurationText = computed(() => {
+  const p = props.property
+  if (!p) return '-'
+  if (p.transaction_duration_display) return p.transaction_duration_display
+  if (p.transaction_duration_days !== undefined) return `${p.transaction_duration_days} 天`
+  return '-'
+})
+
+const discountRateText = computed(() => {
+  const p = props.property
+  if (!p) return '-'
+  return p.discount_rate_display ?? '-'
+})
+
+const elevatorText = computed(() => {
+  const v = props.property?.elevator
+  if (v === true) return '是'
+  if (v === false) return '否'
+  return '-'
+})
 
 // Add/remove escape key listener
 watch(() => props.visible, (newVal: boolean) => {

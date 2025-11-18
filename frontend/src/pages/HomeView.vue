@@ -76,6 +76,7 @@ import PropertyDetailModal from '@/components/PropertyDetailModal.vue'
 import Pagination from '@/components/Pagination.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import type { Property } from '@/api/types'
+import { fetchPropertyDetail } from '@/api/properties'
 
 // Setup error boundary for this component
 useErrorBoundary('房源列表页')
@@ -114,8 +115,13 @@ const properties = computed(() => data.value?.items || [])
 const totalCount = computed(() => data.value?.total || 0)
 
 // Event handlers
-const handleViewDetail = (property: Property) => {
-  selectedProperty.value = property
+const handleViewDetail = async (property: Property) => {
+  try {
+    const detail = await fetchPropertyDetail(property.id)
+    selectedProperty.value = detail
+  } catch {
+    selectedProperty.value = property
+  }
   detailModalVisible.value = true
 }
 
@@ -187,7 +193,7 @@ const handlePageSizeChange = (size: number) => {
   background: white;
   border-radius: 0.5rem;
   overflow: hidden;
-  min-height: 600px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);

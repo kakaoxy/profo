@@ -4,7 +4,7 @@
 """
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, distinct
 from typing import Optional
 import logging
 
@@ -124,6 +124,38 @@ async def get_communities(
     )
     
     return result
+
+
+@router.get("/dictionaries")
+async def get_dictionaries(
+    type: str = Query(..., description="字典类型: district | business_circle"),
+    search: Optional[str] = Query(None, description="模糊搜索关键词"),
+    limit: int = Query(50, ge=1, le=500, description="返回数量上限"),
+    db: Session = Depends(get_db)
+):
+    """
+    返回行政区或商圈的去重列表，支持模糊搜索
+    """
+    if type not in {"district", "business_circle"}:
+        raise HTTPException(status_code=400, detail="不支持的字典类型")
+
+    query = db.query(Community)
+    # 仅选择非空字段
+    if type == "district":
+        query = query.filter(Community.district.isnot(None))
+        if search:
+            query = query.filter(Community.district.like(f"%{search}%"))
+        query = query.with_entities(distinct(Community.district)).order_by(Community.district)
+    else:
+        query = query.filter(Community.business_circle.isnot(None))
+        if search:
+            query = query.filter(Community.business_circle.like(f"%{search}%"))
+        query = query.with_entities(distinct(Community.business_circle)).order_by(Community.business_circle)
+
+    results = query.limit(limit).all()
+    # 扁平化结果
+    values = [r[0] for r in results if r and r[0]]
+    return {"type": type, "items": values}
 
 
 @router.post("/communities/merge", response_model=CommunityMergeResponse)

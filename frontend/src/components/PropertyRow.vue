@@ -27,7 +27,7 @@
       {{ property.orientation }}
     </div>
     <div class="row-cell col-floor_level" :title="property.floor_original">
-      {{ formatFloor(property) }}
+      <span :class="floorBadgeClasses">{{ formatFloor(property) }}</span>
     </div>
     <div class="row-cell col-build_area">
       {{ property.build_area.toFixed(1) }}
@@ -116,40 +116,22 @@ const placeholderImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/
 const getFloorPlan = (property: Property): string => {
   return (property as any).floor_plan_url || placeholderImage
 }
+
+const floorBadgeClasses = computed(() => {
+  const lvl = (props.property.floor_level || '').trim()
+  let variant = 'floor-mid'
+  if (lvl.includes('低')) variant = 'floor-low'
+  else if (lvl.includes('高')) variant = 'floor-high'
+  const disabled = (props.property as any).is_active === false
+  return ['status-badge', variant, disabled ? 'badge-disabled' : '']
+})
 </script>
 
 <style scoped>
-.property-row {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: white;
-  transition: all 0.2s ease;
-  align-items: center;
-}
-
-.property-row:hover {
-  background: #f9fafb;
-  box-shadow: inset 0 0 0 1px #e5e7eb;
-  transform: translateX(2px);
-}
-
-.row-cell {
-  padding: 0.75rem;
-  font-size: 0.875rem;
-  color: #374151;
-  border-right: 1px solid #e5e7eb;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-}
-
-.row-cell:last-child {
-  border-right: none;
-}
-
-/* Column widths - must match PropertyList columns */
+.property-row { display: flex; border-bottom: 1px solid #e5e7eb; background: white; transition: all 0.2s ease; align-items: center; }
+.property-row:hover { background: #f9fafb; box-shadow: inset 0 0 0 1px #e5e7eb; transform: translateX(2px); }
+.row-cell { padding: 0.75rem; font-size: 0.875rem; color: #374151; border-right: 1px solid #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
+.row-cell:last-child { border-right: none; }
 .col-source_property_id { width: 120px; }
 .col-floor_plan { width: 80px; justify-content: center; }
 .col-community_name { width: 150px; }
@@ -165,52 +147,29 @@ const getFloorPlan = (property: Property): string => {
 .col-timeline { width: 140px; }
 .col-data_source { width: 100px; }
 .col-actions { width: 80px; justify-content: center; }
-
-.status-badge {
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: inline-block;
-  letter-spacing: 0.025em;
-}
-
-.status-for-sale {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
-  box-shadow: 0 1px 2px rgba(30, 64, 175, 0.2);
-}
-
-.status-sold {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
-  box-shadow: 0 1px 2px rgba(6, 95, 70, 0.2);
-}
-
+.status-badge { padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-block; letter-spacing: 0.025em; border: 1px solid rgba(0,0,0,0.06); transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease; }
+.status-for-sale { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; box-shadow: 0 1px 2px rgba(30, 64, 175, 0.2); }
+.status-sold { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; box-shadow: 0 1px 2px rgba(6, 95, 70, 0.2); }
+.status-badge:hover { filter: brightness(0.98); }
+.status-badge:active { transform: scale(0.98); }
+.badge-disabled { background: #e5e7eb !important; color: #6b7280 !important; box-shadow: none !important; cursor: not-allowed; opacity: 0.75; }
+.floor-low { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; box-shadow: 0 1px 2px rgba(6, 95, 70, 0.2); }
+.floor-mid { background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); color: #374151; box-shadow: 0 1px 2px rgba(55, 65, 81, 0.15); }
+.floor-high { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; box-shadow: 0 1px 2px rgba(30, 64, 175, 0.2); }
 .floor-thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid #e5e7eb; }
-
-.view-btn {
-  padding: 0.375rem 0.875rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-}
-
-.view-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
-  transform: translateY(-1px);
-}
-
-.view-btn:active {
-  background: #1d4ed8;
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
-}
+.view-btn { padding: 0.375rem 0.875rem; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 0.375rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s ease; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
+.view-btn:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4); transform: translateY(-1px); }
+.view-btn:active { background: #1d4ed8; transform: translateY(0); box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3); }
 </style>
+const floorBadgeClasses = computed(() => {
+  const lvl = (props.property.floor_level || '').trim()
+  let variant = 'floor-mid'
+  if (lvl.includes('低')) variant = 'floor-low'
+  else if (lvl.includes('高')) variant = 'floor-high'
+  const disabled = (props.property as any).is_active === false
+  return [
+    'status-badge',
+    variant,
+    disabled ? 'badge-disabled' : ''
+  ]
+})

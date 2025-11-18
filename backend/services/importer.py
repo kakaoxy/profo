@@ -57,16 +57,45 @@ class PropertyImporter:
             Community.name == name,
             Community.is_active == True
         ).first()
-        
+
         if community:
+            updated = False
+            if city_id is not None and community.city_id is None:
+                community.city_id = city_id
+                updated = True
+            if district and not community.district:
+                community.district = district
+                updated = True
+            if business_circle and not community.business_circle:
+                community.business_circle = business_circle
+                updated = True
+            if updated:
+                community.updated_at = datetime.now()
+                db.commit()
             return community.id
         
         # 2. 在 community_aliases 表中查找
         alias = db.query(CommunityAlias).filter(
             CommunityAlias.alias_name == name
         ).first()
-        
+
         if alias:
+            community = db.query(Community).filter(Community.id == alias.community_id).first()
+            if community:
+                updated = False
+                if city_id is not None and community.city_id is None:
+                    community.city_id = city_id
+                    updated = True
+                if district and not community.district:
+                    community.district = district
+                    updated = True
+                if business_circle and not community.business_circle:
+                    community.business_circle = business_circle
+                    updated = True
+                if updated:
+                    community.updated_at = datetime.now()
+                    db.commit()
+                return community.id
             return alias.community_id
         
         # 3. 创建新小区记录

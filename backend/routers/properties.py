@@ -2,7 +2,7 @@
 房源查询路由
 处理房源数据的查询、筛选、排序和分页
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc, asc
@@ -13,7 +13,7 @@ import io
 
 from db import get_db
 from models import PropertyCurrent, Community, PropertyStatus
-from schemas import PropertyResponse, PaginatedPropertyResponse
+from schemas import PropertyResponse, PaginatedPropertyResponse, PropertyDetailResponse
 
 
 logger = logging.getLogger(__name__)
@@ -29,11 +29,16 @@ class PropertyQueryService:
         db: Session,
         status: Optional[str] = None,
         community_name: Optional[str] = None,
+        districts: Optional[List[str]] = None,
+        business_circles: Optional[List[str]] = None,
+        orientations: Optional[List[str]] = None,
+        floor_levels: Optional[List[str]] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
         min_area: Optional[float] = None,
         max_area: Optional[float] = None,
         rooms: Optional[List[int]] = None,
+        rooms_gte: Optional[int] = None,
         sort_by: str = "updated_at",
         sort_order: str = "desc",
         page: int = 1,
@@ -46,11 +51,16 @@ class PropertyQueryService:
             db: 数据库会话
             status: 房源状态 ("在售" | "成交" | None)
             community_name: 小区名称（模糊搜索）
+            districts: 行政区列表
+            business_circles: 商圈列表
+            orientations: 朝向关键字列表（南/北/东西等）
+            floor_levels: 楼层级别列表（低楼层/中楼层/高楼层）
             min_price: 最低价格（万）
             max_price: 最高价格（万）
             min_area: 最小面积（㎡）
             max_area: 最大面积（㎡）
             rooms: 室数量列表
+            rooms_gte: 最少室数量（用于“5室以上”）
             sort_by: 排序字段
             sort_order: 排序方向 ("asc" | "desc")
             page: 页码
@@ -72,11 +82,16 @@ class PropertyQueryService:
             query,
             status=status,
             community_name=community_name,
+            districts=districts,
+            business_circles=business_circles,
+            orientations=orientations,
+            floor_levels=floor_levels,
             min_price=min_price,
             max_price=max_price,
             min_area=min_area,
             max_area=max_area,
-            rooms=rooms
+            rooms=rooms,
+            rooms_gte=rooms_gte
         )
         
         # 优化：使用子查询获取总数（避免在大数据集上使用 count()）
@@ -115,11 +130,16 @@ class PropertyQueryService:
         query,
         status: Optional[str] = None,
         community_name: Optional[str] = None,
+        districts: Optional[List[str]] = None,
+        business_circles: Optional[List[str]] = None,
+        orientations: Optional[List[str]] = None,
+        floor_levels: Optional[List[str]] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
         min_area: Optional[float] = None,
         max_area: Optional[float] = None,
-        rooms: Optional[List[int]] = None
+        rooms: Optional[List[int]] = None,
+        rooms_gte: Optional[int] = None
     ):
         """
         应用筛选条件
@@ -128,11 +148,16 @@ class PropertyQueryService:
             query: SQLAlchemy 查询对象
             status: 房源状态
             community_name: 小区名称
+            districts: 行政区
+            business_circles: 商圈
+            orientations: 朝向
+            floor_levels: 楼层级别
             min_price: 最低价格
             max_price: 最高价格
             min_area: 最小面积
             max_area: 最大面积
             rooms: 室数量列表
+            rooms_gte: 最少室数量
         
         Returns:
             应用筛选后的查询对象
@@ -147,6 +172,14 @@ class PropertyQueryService:
         # 小区名称模糊搜索
         if community_name:
             query = query.filter(Community.name.like(f"%{community_name}%"))
+
+        # 行政区筛选（多选）
+        if districts:
+            query = query.filter(Community.district.in_(districts))
+
+        # 商圈筛选（多选）
+        if business_circles:
+            query = query.filter(Community.business_circle.in_(business_circles))
         
         # 价格范围筛选
         if min_price is not None or max_price is not None:
@@ -190,7 +223,22 @@ class PropertyQueryService:
         # 户型筛选
         if rooms:
             query = query.filter(PropertyCurrent.rooms.in_(rooms))
-        
+        if rooms_gte is not None:
+            query = query.filter(PropertyCurrent.rooms >= rooms_gte)
+
+        # 楼层级别筛选（多选）
+        if floor_levels:
+            query = query.filter(PropertyCurrent.floor_level.in_(floor_levels))
+
+        # 朝向筛选（包含任意关键字）
+        if orientations:
+            orientation_conditions = []
+            for ori in orientations:
+                if ori:
+                    orientation_conditions.append(PropertyCurrent.orientation.like(f"%{ori}%"))
+            if orientation_conditions:
+                query = query.filter(or_(*orientation_conditions))
+
         return query
     
     def _apply_sorting(self, query, sort_by: str, sort_order: str):
@@ -233,11 +281,16 @@ class PropertyQueryService:
         db: Session,
         status: Optional[str] = None,
         community_name: Optional[str] = None,
+        districts: Optional[List[str]] = None,
+        business_circles: Optional[List[str]] = None,
+        orientations: Optional[List[str]] = None,
+        floor_levels: Optional[List[str]] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
         min_area: Optional[float] = None,
         max_area: Optional[float] = None,
         rooms: Optional[List[int]] = None,
+        rooms_gte: Optional[int] = None,
         sort_by: str = "updated_at",
         sort_order: str = "desc"
     ) -> List[PropertyResponse]:
@@ -270,11 +323,16 @@ class PropertyQueryService:
             query,
             status=status,
             community_name=community_name,
+            districts=districts,
+            business_circles=business_circles,
+            orientations=orientations,
+            floor_levels=floor_levels,
             min_price=min_price,
             max_price=max_price,
             min_area=min_area,
             max_area=max_area,
-            rooms=rooms
+            rooms=rooms,
+            rooms_gte=rooms_gte
         )
         
         # 应用排序
@@ -290,7 +348,6 @@ class PropertyQueryService:
             items.append(item)
         
         logger.info(f"导出查询完成: 总数={len(items)}")
-        
         return items
 
 
@@ -298,11 +355,16 @@ class PropertyQueryService:
 async def get_properties(
     status: Optional[str] = Query(None, description="房源状态: 在售 | 成交"),
     community_name: Optional[str] = Query(None, description="小区名称（模糊搜索）"),
+    districts: Optional[str] = Query(None, description="行政区，逗号分隔，例如: 徐汇,静安"),
+    business_circles: Optional[str] = Query(None, description="商圈，逗号分隔，例如: 五角场,中关村"),
+    orientations: Optional[str] = Query(None, description="朝向关键词，逗号分隔，例如: 南,东南"),
+    floor_levels: Optional[str] = Query(None, description="楼层级别，逗号分隔: 低楼层,中楼层,高楼层"),
     min_price: Optional[float] = Query(None, ge=0, description="最低价格（万）"),
     max_price: Optional[float] = Query(None, ge=0, description="最高价格（万）"),
     min_area: Optional[float] = Query(None, ge=0, description="最小面积（㎡）"),
     max_area: Optional[float] = Query(None, ge=0, description="最大面积（㎡）"),
     rooms: Optional[str] = Query(None, description="室数量，逗号分隔，例如: 1,2,3"),
+    rooms_gte: Optional[int] = Query(None, ge=0, description="最少室数量，例如: 5 表示5室以上"),
     sort_by: str = Query("updated_at", description="排序字段"),
     sort_order: str = Query("desc", description="排序方向: asc | desc"),
     page: int = Query(1, ge=1, description="页码"),
@@ -338,6 +400,17 @@ async def get_properties(
             rooms_list = [int(r.strip()) for r in rooms.split(',') if r.strip()]
         except ValueError:
             logger.warning(f"无效的 rooms 参数: {rooms}")
+
+    # 解析多选参数
+    def parse_list_param(s: Optional[str]) -> Optional[List[str]]:
+        if not s:
+            return None
+        return [item.strip() for item in s.split(',') if item.strip()]
+
+    districts_list = parse_list_param(districts)
+    business_circles_list = parse_list_param(business_circles)
+    orientations_list = parse_list_param(orientations)
+    floor_levels_list = parse_list_param(floor_levels)
     
     # 执行查询
     service = PropertyQueryService()
@@ -345,11 +418,16 @@ async def get_properties(
         db=db,
         status=status,
         community_name=community_name,
+        districts=districts_list,
+        business_circles=business_circles_list,
+        orientations=orientations_list,
+        floor_levels=floor_levels_list,
         min_price=min_price,
         max_price=max_price,
         min_area=min_area,
         max_area=max_area,
         rooms=rooms_list,
+        rooms_gte=rooms_gte,
         sort_by=sort_by,
         sort_order=sort_order,
         page=page,
@@ -359,15 +437,36 @@ async def get_properties(
     return result
 
 
+@router.get("/{id}", response_model=PropertyDetailResponse)
+async def get_property_detail(id: int, db: Session = Depends(get_db)):
+    property_obj = db.query(PropertyCurrent).filter(
+        PropertyCurrent.id == id,
+        PropertyCurrent.is_active == True
+    ).first()
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="房源不存在")
+
+    community = db.query(Community).filter(Community.id == property_obj.community_id).first()
+    if not community:
+        raise HTTPException(status_code=404, detail="关联小区不存在")
+
+    return PropertyDetailResponse.from_orm_with_calculations(property_obj, community)
+
+
 @router.get("/export")
 async def export_properties(
     status: Optional[str] = Query(None, description="房源状态: 在售 | 成交"),
     community_name: Optional[str] = Query(None, description="小区名称（模糊搜索）"),
+    districts: Optional[str] = Query(None, description="行政区，逗号分隔"),
+    business_circles: Optional[str] = Query(None, description="商圈，逗号分隔"),
+    orientations: Optional[str] = Query(None, description="朝向关键词，逗号分隔"),
+    floor_levels: Optional[str] = Query(None, description="楼层级别，逗号分隔"),
     min_price: Optional[float] = Query(None, ge=0, description="最低价格（万）"),
     max_price: Optional[float] = Query(None, ge=0, description="最高价格（万）"),
     min_area: Optional[float] = Query(None, ge=0, description="最小面积（㎡）"),
     max_area: Optional[float] = Query(None, ge=0, description="最大面积（㎡）"),
     rooms: Optional[str] = Query(None, description="室数量，逗号分隔，例如: 1,2,3"),
+    rooms_gte: Optional[int] = Query(None, ge=0, description="最少室数量"),
     sort_by: str = Query("updated_at", description="排序字段"),
     sort_order: str = Query("desc", description="排序方向: asc | desc"),
     db: Session = Depends(get_db)
@@ -402,15 +501,30 @@ async def export_properties(
     
     # 执行查询（无分页）
     service = PropertyQueryService()
+    def parse_list_param(s: Optional[str]) -> Optional[List[str]]:
+        if not s:
+            return None
+        return [item.strip() for item in s.split(',') if item.strip()]
+
+    districts_list = parse_list_param(districts)
+    business_circles_list = parse_list_param(business_circles)
+    orientations_list = parse_list_param(orientations)
+    floor_levels_list = parse_list_param(floor_levels)
+
     properties = service.query_properties_for_export(
         db=db,
         status=status,
         community_name=community_name,
+        districts=districts_list,
+        business_circles=business_circles_list,
+        orientations=orientations_list,
+        floor_levels=floor_levels_list,
         min_price=min_price,
         max_price=max_price,
         min_area=min_area,
         max_area=max_area,
         rooms=rooms_list,
+        rooms_gte=rooms_gte,
         sort_by=sort_by,
         sort_order=sort_order
     )
