@@ -23,7 +23,8 @@ wheels/
 .coverage
 htmlcov/
 .vscode
-.kiro
+.kiro/
+.kiro/specs/profo-real-estate
 
 # UV
 .venv/
