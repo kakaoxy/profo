@@ -18,7 +18,7 @@ from db import get_db
 from schemas import PropertyIngestionModel, UploadResult
 from services.importer import PropertyImporter
 from models import FailedRecord
-from exceptions import FileProcessingException
+from exceptions import DateFormatException, DateParsingException, DateProcessingException, FileProcessingException
 from error_handlers import ErrorHandler
 
 
@@ -66,35 +66,73 @@ class CSVBatchImporter:
 
             # 规范化日期字段
             for date_key in ['上架时间', '成交时间']:
-                v = cleaned_row.get(date_key)
-                if isinstance(v, str) and v:
-                    normalized = self._normalize_date_string(v)
+                date_value = cleaned_row.get(date_key)
+                if isinstance(date_value, str) and date_value:
+                    normalized = self._normalize_date_string(date_value)
                     cleaned_row[date_key] = normalized
 
             rows.append(cleaned_row)
         return rows
 
-    def _normalize_date_string(self, s: str) -> str:
+    def _decode_file_content(self, content: bytes) -> str:
+        """
+        解码文件内容，尝试多种编码格式
+
+        Args:
+            content: 文件内容的字节数组
+
+        Returns:
+            str: 解码后的字符串
+
+        Raises:
+            FileProcessingException: 当所有编码尝试都失败时
+        """
+        encoding_attempts = ['utf-8-sig', 'utf-8', 'gbk']
+
+        for encoding in encoding_attempts:
+            try:
+                return content.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+
+        # 所有编码尝试都失败，使用错误忽略模式
+        logger.warning(f"文件编码检测失败，使用UTF-8错误忽略模式解码")
+        try:
+            return content.decode('utf-8', errors='ignore')
+        except Exception as e:
+            raise FileProcessingException(
+                f"文件编码解码失败",
+                details={"error": str(e), "encoding_attempts": encoding_attempts}
+            )
+
+    def _normalize_date_string(self, date_string: str) -> str:
         """将多种日期格式规范化为 ISO 格式 YYYY-MM-DD"""
         try:
-            s2 = s.replace('年', '-').replace('月', '-').replace('日', '')
-            s2 = s2.replace('.', '-').replace('/', '-')
-            s2 = s2.strip()
-            parts = s2.split('-')
-            if len(parts) >= 3:
-                y = parts[0]
-                m = parts[1].zfill(2)
-                d = parts[2].zfill(2)
-                s2 = f"{y}-{m}-{d}"
-            dt = datetime.fromisoformat(s2)
+            normalized_date = date_string.replace('年', '-').replace('月', '-').replace('日', '')
+            normalized_date = normalized_date.replace('.', '-').replace('/', '-')
+            normalized_date = normalized_date.strip()
+            date_parts = normalized_date.split('-')
+            if len(date_parts) >= 3:
+                year = date_parts[0]
+                month = date_parts[1].zfill(2)
+                day = date_parts[2].zfill(2)
+                normalized_date = f"{year}-{month}-{day}"
+            dt = datetime.fromisoformat(normalized_date)
             return dt.strftime('%Y-%m-%d')
-        except Exception:
+        except ValueError as e:
+            # ISO格式解析失败，使用dateutil解析
             try:
                 from dateutil import parser as dateparser
-                dt = dateparser.parse(s)
+                dt = dateparser.parse(date_string)
                 return dt.strftime('%Y-%m-%d')
-            except Exception:
-                return s
+            except ValueError:
+                # 日期解析失败，返回原始字符串
+                logger.warning(f"日期解析失败: {date_string}")
+                return date_string
+        except Exception as e:
+            # 其他异常，记录日志并返回原始字符串
+            logger.warning(f"日期规范化失败: {date_string}, 错误: {str(e)}")
+            return date_string
     
     def batch_import_csv(self, file: UploadFile, db: Session) -> UploadResult:
         """
@@ -125,18 +163,9 @@ class CSVBatchImporter:
         try:
             # 读取文件内容
             content = file.file.read()
-            
+
             # 尝试不同的编码（优先 utf-8-sig 去除 BOM）
-            try:
-                file_content = content.decode('utf-8-sig')
-            except UnicodeDecodeError:
-                try:
-                    file_content = content.decode('utf-8')
-                except UnicodeDecodeError:
-                    try:
-                        file_content = content.decode('gbk')
-                    except UnicodeDecodeError:
-                        file_content = content.decode('utf-8', errors='ignore')
+            file_content = self._decode_file_content(content)
             
             # 解析 CSV
             rows = self.parse_csv_file(file_content)
