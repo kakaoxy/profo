@@ -166,15 +166,36 @@ class PropertyResponse(BaseModel):
         "from_attributes": True
     }
     
+    @staticmethod
+    def _has_complete_layout(property_obj) -> bool:
+        """检查是否有完整的户型信息（室、厅、卫）"""
+        return (
+            property_obj.halls is not None and property_obj.halls > 0 and
+            property_obj.baths is not None and property_obj.baths > 0
+        )
+
+    @staticmethod
+    def _has_valid_floor_info(property_obj) -> bool:
+        """检查是否有有效的楼层信息"""
+        return (
+            property_obj.floor_number and property_obj.total_floors and
+            property_obj.floor_number > 0 and property_obj.total_floors > 0
+        )
+
+    @staticmethod
+    def _calculate_unit_price(total_price: float, build_area: float) -> float:
+        """计算单价（元/平米）"""
+        return (total_price * 10000 / build_area) if build_area > 0 else 0
+
     @classmethod
     def from_orm_with_calculations(cls, property_obj, community: Community):
         """
         从 ORM 模型转换并计算附加字段
-        
+
         Args:
             property_obj: PropertyCurrent ORM 对象
-            community_name: 小区名称
-        
+            community: Community ORM 对象
+
         Returns:
             PropertyResponse 实例
         """
@@ -185,7 +206,7 @@ class PropertyResponse(BaseModel):
             total_price = property_obj.sold_price_wan or 0
         
         # 计算单价
-        unit_price = (total_price * 10000 / property_obj.build_area) if property_obj.build_area > 0 else 0
+        unit_price = cls._calculate_unit_price(total_price, property_obj.build_area)
         
         # 计算成交周期
         transaction_duration_days = None
@@ -195,12 +216,12 @@ class PropertyResponse(BaseModel):
         
         # 户型展示
         layout_display = f"{property_obj.rooms}室"
-        if property_obj.halls is not None and property_obj.halls > 0 and property_obj.baths is not None and property_obj.baths > 0:
+        if cls._has_complete_layout(property_obj):
             layout_display = f"{property_obj.rooms}室{property_obj.halls}厅{property_obj.baths}卫"
 
         # 楼层展示
         floor_display = property_obj.floor_original or "暂无数据"
-        if property_obj.floor_number and property_obj.total_floors and property_obj.floor_number > 0 and property_obj.total_floors > 0:
+        if cls._has_valid_floor_info(property_obj):
             floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}层"
         
         return cls(
@@ -303,6 +324,14 @@ class PropertyDetailResponse(BaseModel):
         "from_attributes": True
     }
 
+    @staticmethod
+    def _has_valid_discount_data(property_obj) -> bool:
+        """检查是否有有效的议价数据来计算折扣率"""
+        return (
+            property_obj.listed_price_wan and property_obj.listed_price_wan > 0 and
+            property_obj.sold_price_wan and property_obj.sold_price_wan >= 0
+        )
+
     @classmethod
     def from_orm_with_calculations(cls, property_obj, community: Community):
         total_price = property_obj.listed_price_wan or 0 if property_obj.status.value == "在售" else property_obj.sold_price_wan or 0
@@ -316,15 +345,15 @@ class PropertyDetailResponse(BaseModel):
             transaction_duration_display = f"{duration.days}天"
 
         layout_display = f"{property_obj.rooms}室"
-        if property_obj.halls is not None and property_obj.halls > 0 and property_obj.baths is not None and property_obj.baths > 0:
+        if PropertyResponse._has_complete_layout(property_obj):
             layout_display = f"{property_obj.rooms}室{property_obj.halls}厅{property_obj.baths}卫"
 
         floor_display = property_obj.floor_original or "暂无数据"
-        if property_obj.floor_number and property_obj.total_floors and property_obj.floor_number > 0 and property_obj.total_floors > 0:
+        if PropertyResponse._has_valid_floor_info(property_obj):
             floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}层"
 
         discount_rate_display = None
-        if property_obj.listed_price_wan and property_obj.listed_price_wan > 0 and property_obj.sold_price_wan and property_obj.sold_price_wan >= 0:
+        if cls._has_valid_discount_data(property_obj):
             rate = (property_obj.listed_price_wan - property_obj.sold_price_wan) / property_obj.listed_price_wan
             discount_rate_display = f"{round(rate * 100, 2)}%"
 

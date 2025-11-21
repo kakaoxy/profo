@@ -77,10 +77,37 @@ class FileProcessingException(ProfoException):
 
 class BusinessLogicException(ProfoException):
     """业务逻辑异常"""
-    
+
     def __init__(self, message: str, details: Optional[Any] = None):
         super().__init__(
             message=message,
             code="BUSINESS_LOGIC_ERROR",
             details=details
         )
+
+
+class DateProcessingException(ProfoException):
+    """日期处理异常"""
+
+    def __init__(self, message: str, details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="DATE_PROCESSING_ERROR",
+            details=details
+        )
+
+
+class DateFormatException(DateProcessingException):
+    """日期格式错误异常"""
+
+    def __init__(self, message: str = "日期格式无效", details: Optional[Any] = None):
+        super().__init__(message, details)
+        self.code = "DATE_FORMAT_ERROR"
+
+
+class DateParsingException(DateProcessingException):
+    """日期解析错误异常"""
+
+    def __init__(self, message: str = "日期解析失败", details: Optional[Any] = None):
+        super().__init__(message, details)
+        self.code = "DATE_PARSING_ERROR"

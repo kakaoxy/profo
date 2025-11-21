@@ -44,7 +44,7 @@ class ErrorHandler:
         
         for err in error.errors():
             field = err.get('loc', ['unknown'])[-1]
-            msg = err.get('msg', '')
+            error_message = err.get('msg', '')
             error_type = err.get('type', '')
             
             # 转换为中文友好信息
@@ -60,14 +60,14 @@ class ErrorHandler:
                 else:
                     error_messages.append(f"字段 {field} 类型错误")
             elif 'value_error' in error_type:
-                if 'greater_than' in msg:
+                if 'greater_than' in error_message:
                     error_messages.append(f"字段 {field} 必须大于 0")
-                elif 'less_than' in msg:
+                elif 'less_than' in error_message:
                     error_messages.append(f"字段 {field} 超出允许范围")
                 else:
-                    error_messages.append(f"字段 {field} 值无效: {msg}")
+                    error_messages.append(f"字段 {field} 值无效: {error_message}")
             else:
-                error_messages.append(f"字段 {field}: {msg}")
+                error_messages.append(f"字段 {field}: {error_message}")
         
         return "; ".join(error_messages)
     
@@ -85,13 +85,13 @@ class ErrorHandler:
         error_messages = []
         
         for err in error.errors():
-            loc = err.get('loc', [])
-            msg = err.get('msg', '')
+            location = err.get('loc', [])
+            error_message = err.get('msg', '')
             error_type = err.get('type', '')
             
             # 提取字段名
-            if len(loc) > 1:
-                field = loc[-1]
+            if len(location) > 1:
+                field = location[-1]
             else:
                 field = '未知字段'
             
@@ -103,7 +103,7 @@ class ErrorHandler:
             elif 'value_error' in error_type:
                 error_messages.append(f"参数 {field} 值无效")
             else:
-                error_messages.append(f"参数 {field}: {msg}")
+                error_messages.append(f"参数 {field}: {error_message}")
         
         return "; ".join(error_messages) if error_messages else "请求参数验证失败"
     

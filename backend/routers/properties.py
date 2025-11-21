@@ -13,6 +13,8 @@ import io
 
 from db import get_db
 from models import PropertyCurrent, Community, PropertyStatus
+from utils.param_parser import parse_comma_separated_list
+from utils.query_params import PropertyQueryParams, PropertyExportParams
 from schemas import PropertyResponse, PaginatedPropertyResponse, PropertyDetailResponse
 
 
@@ -279,45 +281,40 @@ class PropertyQueryService:
     def query_properties_for_export(
         self,
         db: Session,
-        status: Optional[str] = None,
-        community_name: Optional[str] = None,
-        districts: Optional[List[str]] = None,
-        business_circles: Optional[List[str]] = None,
-        orientations: Optional[List[str]] = None,
-        floor_levels: Optional[List[str]] = None,
-        min_price: Optional[float] = None,
-        max_price: Optional[float] = None,
-        min_area: Optional[float] = None,
-        max_area: Optional[float] = None,
-        rooms: Optional[List[int]] = None,
-        rooms_gte: Optional[int] = None,
-        sort_by: str = "updated_at",
-        sort_order: str = "desc"
+        params: PropertyExportParams
     ) -> List[PropertyResponse]:
         """
         查询房源数据用于导出（无分页限制）
-        
+
         Args:
             db: 数据库会话
-            status: 房源状态 ("在售" | "成交" | None)
-            community_name: 小区名称（模糊搜索）
-            min_price: 最低价格（万）
-            max_price: 最高价格（万）
-            min_area: 最小面积（㎡）
-            max_area: 最大面积（㎡）
-            rooms: 室数量列表
-            sort_by: 排序字段
-            sort_order: 排序方向 ("asc" | "desc")
-        
+            params: PropertyExportParams 导出参数对象
+
         Returns:
-            List[PropertyResponse]: 所有匹配的房源列表
+            List[PropertyResponse]: 房源数据列表
         """
+        # 使用参数对象中的值
+        status = params.status
+        community_name = params.community_name
+        districts = params.districts
+        business_circles = params.business_circles
+        orientations = params.orientations
+        floor_levels = params.floor_levels
+        min_price = params.min_price
+        max_price = params.max_price
+        min_area = params.min_area
+        max_area = params.max_area
+        rooms = params.rooms
+        rooms_gte = params.rooms_gte
+        sort_by = params.sort_by
+        sort_order = params.sort_order
+
         # 构建基础查询
         query = db.query(PropertyCurrent, Community).join(
             Community,
             PropertyCurrent.community_id == Community.id
         ).filter(PropertyCurrent.is_active == True)
-        
+
         # 应用筛选条件
         query = self._apply_filters(
             query,
@@ -334,7 +331,7 @@ class PropertyQueryService:
             rooms=rooms,
             rooms_gte=rooms_gte
         )
-        
+
         # 应用排序
         query = self._apply_sorting(query, sort_by, sort_order)
         
@@ -402,15 +399,10 @@ async def get_properties(
             logger.warning(f"无效的 rooms 参数: {rooms}")
 
     # 解析多选参数
-    def parse_list_param(s: Optional[str]) -> Optional[List[str]]:
-        if not s:
-            return None
-        return [item.strip() for item in s.split(',') if item.strip()]
-
-    districts_list = parse_list_param(districts)
-    business_circles_list = parse_list_param(business_circles)
-    orientations_list = parse_list_param(orientations)
-    floor_levels_list = parse_list_param(floor_levels)
+    districts_list = parse_comma_separated_list(districts)
+    business_circles_list = parse_comma_separated_list(business_circles)
+    orientations_list = parse_comma_separated_list(orientations)
+    floor_levels_list = parse_comma_separated_list(floor_levels)
     
     # 执行查询
     service = PropertyQueryService()
@@ -501,18 +493,13 @@ async def export_properties(
     
     # 执行查询（无分页）
     service = PropertyQueryService()
-    def parse_list_param(s: Optional[str]) -> Optional[List[str]]:
-        if not s:
-            return None
-        return [item.strip() for item in s.split(',') if item.strip()]
+    districts_list = parse_comma_separated_list(districts)
+    business_circles_list = parse_comma_separated_list(business_circles)
+    orientations_list = parse_comma_separated_list(orientations)
+    floor_levels_list = parse_comma_separated_list(floor_levels)
 
-    districts_list = parse_list_param(districts)
-    business_circles_list = parse_list_param(business_circles)
-    orientations_list = parse_list_param(orientations)
-    floor_levels_list = parse_list_param(floor_levels)
-
-    properties = service.query_properties_for_export(
-        db=db,
+    # 创建导出参数对象
+    export_params = PropertyExportParams(
         status=status,
         community_name=community_name,
         districts=districts_list,
@@ -527,6 +514,11 @@ async def export_properties(
         rooms_gte=rooms_gte,
         sort_by=sort_by,
         sort_order=sort_order
+    )
+
+    properties = service.query_properties_for_export(
+        db=db,
+        params=export_params
     )
     
     # 创建 CSV 内容
