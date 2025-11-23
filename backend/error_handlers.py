@@ -43,7 +43,8 @@ class ErrorHandler:
         error_messages = []
         
         for err in error.errors():
-            field = err.get('loc', ['unknown'])[-1]
+            loc = err.get('loc', ['unknown'])
+            field = loc[-1] if loc and len(loc) > 0 else 'unknown'
             error_message = err.get('msg', '')
             error_type = err.get('type', '')
             
