@@ -16,6 +16,12 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "upload" */ '../pages/UploadView.vue')
     },
     {
+      path: '/projects',
+      name: 'projects',
+      // Lazy load project management page
+      component: () => import(/* webpackChunkName: "projects" */ '../pages/ProjectManagementView.vue')
+    },
+    {
       path: '/admin/merge',
       name: 'admin-merge',
       // Lazy load admin page

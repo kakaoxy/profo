@@ -3,7 +3,9 @@
     <!-- Header -->
     <div class="page-header">
       <h1 class="page-title">房源列表</h1>
-      <ExportBtn />
+      <div class="flex items-center gap-3">
+        <ExportBtn />
+      </div>
     </div>
 
     <!-- Main Content -->
