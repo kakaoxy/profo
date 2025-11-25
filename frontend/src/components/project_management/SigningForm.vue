@@ -113,7 +113,7 @@
       </div>
 
       <!-- Section 3: Required Materials -->
-      <div class="border-t border-slate-100 pt-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <h3 class="text-lg font-bold text-slate-800">必要签约材料 (必填)</h3>
         <PhotoUploadField label="合同照片" :photos="formData.contractPhotos || []" @add="(p) => addPhoto('contractPhotos', p)" @remove="(id) => removePhoto('contractPhotos', id)" required />
         <PhotoUploadField label="产证照片" :photos="formData.propertyDeedPhotos || []" @add="(p) => addPhoto('propertyDeedPhotos', p)" @remove="(id) => removePhoto('propertyDeedPhotos', id)" required />
@@ -123,9 +123,9 @@
       </div>
 
       <!-- Section 4: Optional Materials -->
-      <div class="border-t border-slate-100 pt-6 space-y-4">
-        <h3 class="text-lg font-bold text-slate-800">其他签约材料 (选填)</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+      <div class="border-t border-slate-100 pt-6">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">其他签约材料 (选填)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
            <PhotoUploadField label="装修合同" :photos="formData.decorationContractPhotos || []" @add="(p) => addPhoto('decorationContractPhotos', p)" @remove="(id) => removePhoto('decorationContractPhotos', id)" />
            <PhotoUploadField label="房屋交接书" :photos="formData.houseHandoverPhotos || []" @add="(p) => addPhoto('houseHandoverPhotos', p)" @remove="(id) => removePhoto('houseHandoverPhotos', id)" />
            <PhotoUploadField label="收款收据" :photos="formData.receiptPhotos || []" @add="(p) => addPhoto('receiptPhotos', p)" @remove="(id) => removePhoto('receiptPhotos', id)" />
