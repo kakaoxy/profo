@@ -17,7 +17,7 @@ export const usePropertyStore = defineStore('property', () => {
     max_area: 300,
     rooms: [],
     rooms_gte: undefined,
-    sort_by: 'updated_at',
+    sort_by: 'timeline',
     sort_order: 'desc',
     page: 1,
     page_size: 50
@@ -59,7 +59,7 @@ export const usePropertyStore = defineStore('property', () => {
       max_area: 300,
       rooms: [],
       rooms_gte: undefined,
-      sort_by: 'updated_at',
+      sort_by: 'timeline',
       sort_order: 'desc',
       page: 1,
       page_size: 50
