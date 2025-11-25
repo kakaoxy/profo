@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-4xl mx-auto space-y-6 px-4">
+  <div class="space-y-6 px-4">
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">改造施工阶段</h2>

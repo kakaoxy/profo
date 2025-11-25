@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-5xl mx-auto space-y-6 px-4">
+  <div class="space-y-6 px-4">
     <div class="flex items-center justify-between sticky top-0 z-40 bg-slate-50/95 py-4 border-b border-slate-200 backdrop-blur-sm">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">签约阶段</h2>
