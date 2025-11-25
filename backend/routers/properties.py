@@ -255,6 +255,8 @@ class PropertyQueryService:
         Returns:
             应用排序后的查询对象
         """
+        from sqlalchemy import case
+        
         # 映射排序字段
         sort_field_map = {
             "updated_at": PropertyCurrent.updated_at,
@@ -265,6 +267,20 @@ class PropertyQueryService:
             "rooms": PropertyCurrent.rooms,
             "listed_date": PropertyCurrent.listed_date,
             "sold_date": PropertyCurrent.sold_date,
+            # 前端使用的字段映射
+            "total_price": case(
+                (PropertyCurrent.status == PropertyStatus.FOR_SALE, PropertyCurrent.listed_price_wan),
+                else_=PropertyCurrent.sold_price_wan
+            ),
+            "unit_price": case(
+                (PropertyCurrent.status == PropertyStatus.FOR_SALE,
+                 (PropertyCurrent.listed_price_wan * 10000) / PropertyCurrent.build_area),
+                else_=(PropertyCurrent.sold_price_wan * 10000) / PropertyCurrent.build_area
+            ),
+            "timeline": case(
+                (PropertyCurrent.status == PropertyStatus.FOR_SALE, PropertyCurrent.listed_date),
+                else_=PropertyCurrent.sold_date
+            )
         }
         
         # 获取排序字段
