@@ -3,8 +3,20 @@
     <div class="row-cell col-source_property_id" :title="property.source_property_id">
       {{ property.source_property_id }}
     </div>
-    <div class="row-cell col-floor_plan">
-      <img :src="getFloorPlan(property)" alt="户型图" class="floor-thumb" />
+    <div class="row-cell col-floor_plan" @mouseenter="showZoomedImage = true" @mouseleave="showZoomedImage = false">
+      <div class="floor-thumb-container">
+        <img
+          :src="getFloorPlan(property)"
+          alt="户型图"
+          class="floor-thumb"
+          @error="handleImageError"
+          referrerpolicy="no-referrer"
+        />
+        <!-- 放大图片显示 -->
+        <div v-if="showZoomedImage" class="zoomed-image-container">
+          <img :src="getFloorPlan(property)" alt="放大户型图" class="zoomed-image"/>
+        </div>
+      </div>
     </div>
     <div class="row-cell col-community_name" :title="property.community_name">
       {{ property.community_name }}
@@ -58,6 +70,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { ref } from 'vue';
 import type { Property } from '@/api/types'
 import { getDisplayPriceWan, getUnitPriceYuanPerSqm, statusBadgeClass } from '@/utils/price'
 
@@ -113,8 +126,42 @@ const formatTimeline = (property: Property): string => {
 }
 
 const placeholderImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="72" height="48"><rect width="72" height="48" fill="%23e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="10">无图</text></svg>'
+
+const showZoomedImage = ref(false);
+
 const getFloorPlan = (property: Property): string => {
-  return (property as any).floor_plan_url || placeholderImage
+  console.log('>>> data_source:', property.data_source)
+  console.log('>>> picture_links:', property.picture_links)
+  // 如果没有图片链接，返回占位图
+  if (!property.picture_links || property.picture_links.length === 0) {
+    return placeholderImage
+  }
+  
+  const dataSource = property.data_source
+  let imageUrl: string
+  
+  // 根据数据源选择户型图
+  if (dataSource === '贝壳') {
+    // 贝壳：取第3张图（索引2）并添加CDN参数
+    imageUrl = property.picture_links[2] || property.picture_links[0]
+    if (imageUrl && !imageUrl.includes('!m_fill')) {
+      imageUrl += '!m_fill,w_1000,h_750,l_bk,f_jpg,ls_50'
+    }
+  } else if (dataSource === '我爱我家') {
+    // 我爱我家：取最后一张图
+    imageUrl = property.picture_links[property.picture_links.length - 1]
+  } else {
+    // 其他来源：默认显示第一张图
+    imageUrl = property.picture_links[0]
+  }
+  
+  console.log('>>> finalimage:',imageUrl)
+  return imageUrl || placeholderImage
+}
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.src = placeholderImage
 }
 
 const floorBadgeClasses = computed(() => {
@@ -160,16 +207,30 @@ const floorBadgeClasses = computed(() => {
 .view-btn { padding: 0.375rem 0.875rem; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 0.375rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s ease; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
 .view-btn:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4); transform: translateY(-1px); }
 .view-btn:active { background: #1d4ed8; transform: translateY(0); box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3); }
+/* 新增：户型图悬停放大容器 */
+/* 确保容器相对定位以便子元素可以绝对定位 */
+.floor-thumb-container {
+  position: relative;
+  width: 72px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.zoomed-image-container {
+  position: absolute;
+  top: 0;
+  left: 100%; /* 将放大图片放置在原始图片右侧 */
+  transform: translateX(-50%); /* 调整位置使图片居中 */
+  z-index: 999; /* 确保图片显示在最上层 */
+  background-color: white;
+  padding: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.zoomed-image {
+  max-width: 300px; /* 根据需要调整大小 */
+  max-height: 300px; /* 根据需要调整大小 */
+}
 </style>
-const floorBadgeClasses = computed(() => {
-  const lvl = (props.property.floor_level || '').trim()
-  let variant = 'floor-mid'
-  if (lvl.includes('低')) variant = 'floor-low'
-  else if (lvl.includes('高')) variant = 'floor-high'
-  const disabled = (props.property as any).is_active === false
-  return [
-    'status-badge',
-    variant,
-    disabled ? 'badge-disabled' : ''
-  ]
-})

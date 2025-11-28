@@ -59,6 +59,7 @@ export interface Property {
   mortgage_info?: string
   listing_remarks?: string
   floor_plan_url?: string
+  picture_links?: string[]
   created_at: string
   updated_at: string
 }

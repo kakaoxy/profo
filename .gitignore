@@ -25,6 +25,7 @@ htmlcov/
 .vscode
 .kiro/
 .kiro/specs/profo-real-estate
+.claude/
 
 # UV
 .venv/
