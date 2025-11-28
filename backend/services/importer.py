@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import logging
 
 from models import (
     Community, CommunityAlias, PropertyCurrent, PropertyHistory,
-    PropertyStatus, ChangeType
+    PropertyStatus, ChangeType, PropertyMedia, MediaType
 )
 from schemas import PropertyIngestionModel, ImportResult
 from services.parser import FloorParser
@@ -123,12 +123,13 @@ class PropertyImporter:
             PropertyCurrent.source_property_id == data.source_property_id
         ).first()
 
-    def _handle_update(self, existing: PropertyCurrent, data: PropertyIngestionModel, 
+    def _handle_update(self, existing: PropertyCurrent, data: PropertyIngestionModel,
                        community_id: int, db: Session):
         """处理更新逻辑：快照 + 更新当前表"""
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
         self._map_data_to_property(existing, data, community_id)
+        self._save_property_media(data, db)
 
     def _handle_creation(self, data: PropertyIngestionModel, community_id: int, db: Session) -> PropertyCurrent:
         """处理创建逻辑"""
@@ -141,6 +142,7 @@ class PropertyImporter:
         self._map_data_to_property(new_property, data, community_id)
         db.add(new_property)
         db.flush() # 确保获取ID，方便后续日志或返回
+        self._save_property_media(data, db)
         return new_property
 
     def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: int):
@@ -242,3 +244,38 @@ class PropertyImporter:
             property_id=None,
             error=error_msg
         )
+
+    def _save_property_media(self, data: PropertyIngestionModel, db: Session):
+        """保存房源图片链接到 property_media 表"""
+        if not data.image_urls:
+            logger.debug(f"房源 {data.source_property_id} 没有图片链接，跳过媒体资源保存")
+            return
+            
+        try:
+            # 删除该房源现有的所有图片记录（确保更新时不会重复）
+            db.query(PropertyMedia).filter(
+                PropertyMedia.data_source == data.data_source,
+                PropertyMedia.source_property_id == data.source_property_id
+            ).delete()
+            
+            # 批量插入新的图片记录
+            media_records = []
+            for index, url in enumerate(data.image_urls):
+                if url and url.strip():  # 确保URL不为空
+                    media_record = PropertyMedia(
+                        data_source=data.data_source,
+                        source_property_id=data.source_property_id,
+                        media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
+                        url=url.strip(),
+                        sort_order=index,  # 按传入顺序排序
+                        created_at=datetime.now()
+                    )
+                    media_records.append(media_record)
+            
+            if media_records:
+                db.bulk_save_objects(media_records)
+                logger.info(f"保存房源 {data.source_property_id} 的图片链接: {len(media_records)} 张")
+                
+        except Exception as e:
+            # 图片保存失败不影响主流程，记录警告即可
+            logger.warning(f"保存房源 {data.source_property_id} 图片链接失败: {str(e)}")

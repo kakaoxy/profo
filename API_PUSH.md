@@ -53,8 +53,12 @@
 | 城市ID | 城市ID | 否 |
 | 行政区 | 行政区 | 否 |
 | 商圈 | 商圈 | 否 |
+| 图片链接 | 房源图片URL列表 | 否 |
 
 说明：后端支持中文别名与英文字段名（已启用别名映射）。
+- `图片链接` 字段支持字符串（逗号分隔）或字符串数组格式
+- 所有图片统一存储，不区分户型图/室内图等类型
+- 前端负责从图片列表中选择展示方式
 
 ## 推送示例
 
@@ -151,7 +155,12 @@
     "产权年限": 70,
     "上次交易": "2020-06-01",
     "供暖方式": "集中供暖",
-    "房源描述": "满五唯一，采光好，无遮挡"
+    "房源描述": "满五唯一，采光好，无遮挡",
+    "图片链接": [
+      "https://example.com/images/living-room.jpg",
+      "https://example.com/images/bedroom.jpg",
+      "https://example.com/images/floor-plan.jpg"
+    ]
   }
 ]
 ```
@@ -186,10 +195,40 @@
     "产权年限": 70,
     "上次交易": "2021-09-12",
     "供暖方式": "自供暖",
-    "房源描述": "学区房，交通便利"
+    "房源描述": "学区房，交通便利",
+    "图片链接": "https://example.com/images/exterior.jpg,https://example.com/images/kitchen.jpg"
   }
 ]
 ```
+
+### 带图片链接的推送示例
+```json
+[
+  {
+    "数据源": "api_partner",
+    "房源ID": "A1002",
+    "状态": "在售",
+    "小区名": "示例小区",
+    "室": 3,
+    "厅": 2,
+    "卫": 2,
+    "朝向": "南",
+    "楼层": "15/28",
+    "面积": 120.5,
+    "挂牌价": 500.0,
+    "上架时间": "2024-01-15T10:00:00",
+    "图片链接": [
+      "https://cdn.example.com/property/123/living-room.jpg",
+      "https://cdn.example.com/property/123/bedroom-1.jpg",
+      "https://cdn.example.com/property/123/bedroom-2.jpg",
+      "https://cdn.example.com/property/123/floor-plan.jpg"
+    ]
+  }
+]
+```
+- 图片链接字段为可选，不影响无图房源的正常导入
+- 支持数组格式（推荐）或逗号分隔的字符串格式
+- 所有图片按传入顺序存储，前端可自由选择展示方式
 
 ### Curl 调用示例（Windows PowerShell）
 ```powershell
@@ -263,6 +302,8 @@ curl -X POST "http://localhost:8000/api/push" `
 - `面积` 为正数；价格单位为 `万`
 - 系统对小区名称做标准化与别名匹配，必要时会自动创建小区记录
 - 推送数组长度上限：`10000`
+- `图片链接` 字段为可选，不影响现有无图数据的正常导入
+- 图片URL会存储在 `property_media` 表中，与房源关联
 
 ## 相关端点
 - 推送：`POST /api/push`

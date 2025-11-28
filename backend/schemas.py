@@ -79,6 +79,9 @@ class PropertyIngestionModel(BaseModel):
     heating_method: Optional[str] = Field(None, alias="供暖方式", description="供暖方式")
     listing_remarks: Optional[str] = Field(None, alias="房源描述", description="房源描述")
     
+    # 图片信息
+    image_urls: Optional[List[str]] = Field(None, alias="图片链接", description="房源图片URL列表")
+    
     # 区域信息
     city_id: Optional[int] = Field(None, alias="城市ID", description="城市ID")
     district: Optional[str] = Field(None, alias="行政区", description="行政区")
@@ -90,6 +93,20 @@ class PropertyIngestionModel(BaseModel):
         """自动去除字符串字段的首尾空格"""
         if isinstance(v, str):
             return v.strip()
+        return v
+    
+    @field_validator('image_urls', mode='before')
+    @classmethod
+    def validate_image_urls(cls, v):
+        """验证图片URL列表"""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            # 如果是字符串，按逗号分割
+            return [url.strip() for url in v.split(',') if url.strip()]
+        if isinstance(v, list):
+            # 如果是列表，过滤空值
+            return [url.strip() for url in v if url and url.strip()]
         return v
     
     @model_validator(mode='after')
