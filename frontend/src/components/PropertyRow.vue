@@ -189,6 +189,7 @@ const updateZoomedImagePosition = () => {
 const getFloorPlan = (property: Property): string => {
   console.log('>>> data_source:', property.data_source)
   console.log('>>> picture_links:', property.picture_links)
+  
   // 如果没有图片链接，返回占位图
   if (!property.picture_links || property.picture_links.length === 0) {
     return placeholderImage
@@ -199,20 +200,26 @@ const getFloorPlan = (property: Property): string => {
   
   // 根据数据源选择户型图
   if (dataSource === '贝壳') {
-    // 贝壳：取第3张图（索引2）并添加CDN参数
-    imageUrl = property.picture_links[2] || property.picture_links[0]
+    // 贝壳：优先取包含 'hdic-frame' 的图片链接，并添加CDN参数
+    const hdicFrameImage = property.picture_links.find(link =>
+      link.toLowerCase().includes('hdic-frame')
+    );
+    imageUrl = hdicFrameImage || property.picture_links[2] || property.picture_links[0];
     if (imageUrl && !imageUrl.includes('!m_fill')) {
       imageUrl += '!m_fill,w_1000,h_750,l_bk,f_jpg,ls_50'
     }
   } else if (dataSource === '我爱我家') {
-    // 我爱我家：取最后一张图
-    imageUrl = property.picture_links[property.picture_links.length - 1]
+    // 我爱我家：优先取包含 'floorPlan' 的图片链接
+    const floorPlanImage = property.picture_links.find(link =>
+      link.toLowerCase().includes('floorplan') || link.toLowerCase().includes('layout')
+    );
+    imageUrl = floorPlanImage || property.picture_links[property.picture_links.length - 1];
   } else {
     // 其他来源：默认显示第一张图
     imageUrl = property.picture_links[0]
   }
   
-  console.log('>>> finalimage:',imageUrl)
+  console.log('>>> finalimage:', imageUrl)
   return imageUrl || placeholderImage
 }
 

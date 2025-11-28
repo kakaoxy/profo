@@ -258,19 +258,31 @@ class PropertyImporter:
                 PropertyMedia.source_property_id == data.source_property_id
             ).delete()
             
+            # 对URL进行去重处理，保持原始顺序
+            seen_urls = set()
+            unique_urls = []
+            for url in data.image_urls:
+                if url and url.strip():  # 确保URL不为空
+                    url_stripped = url.strip()
+                    if url_stripped not in seen_urls:
+                        seen_urls.add(url_stripped)
+                        unique_urls.append(url_stripped)
+            
+            if len(unique_urls) < len(data.image_urls):
+                logger.debug(f"房源 {data.source_property_id} 发现重复图片链接，已去重: {len(data.image_urls)} -> {len(unique_urls)}")
+            
             # 批量插入新的图片记录
             media_records = []
-            for index, url in enumerate(data.image_urls):
-                if url and url.strip():  # 确保URL不为空
-                    media_record = PropertyMedia(
-                        data_source=data.data_source,
-                        source_property_id=data.source_property_id,
-                        media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
-                        url=url.strip(),
-                        sort_order=index,  # 按传入顺序排序
-                        created_at=datetime.now()
-                    )
-                    media_records.append(media_record)
+            for index, url in enumerate(unique_urls):
+                media_record = PropertyMedia(
+                    data_source=data.data_source,
+                    source_property_id=data.source_property_id,
+                    media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
+                    url=url,
+                    sort_order=index,  # 按去重后的顺序排序
+                    created_at=datetime.now()
+                )
+                media_records.append(media_record)
             
             if media_records:
                 db.bulk_save_objects(media_records)
