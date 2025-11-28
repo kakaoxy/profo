@@ -12,7 +12,7 @@ import csv
 import io
 
 from db import get_db
-from models import PropertyCurrent, Community, PropertyStatus
+from models import PropertyCurrent, Community, PropertyStatus, PropertyMedia
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyQueryParams, PropertyExportParams
 from schemas import PropertyResponse, PaginatedPropertyResponse, PropertyDetailResponse
@@ -116,6 +116,12 @@ class PropertyQueryService:
         items = []
         for property_obj, community in results:
             item = PropertyResponse.from_orm_with_calculations(property_obj, community)
+            # 获取图片链接
+            picture_links = db.query(PropertyMedia.url).filter(
+                PropertyMedia.data_source == property_obj.data_source,
+                PropertyMedia.source_property_id == property_obj.source_property_id
+            ).order_by(PropertyMedia.sort_order).all()
+            item.picture_links = [link[0] for link in picture_links] if picture_links else []
             items.append(item)
         
         logger.info(f"查询完成: 总数={total}, 页码={page}, 每页={page_size}, 返回={len(items)}")
@@ -358,6 +364,12 @@ class PropertyQueryService:
         items = []
         for property_obj, community in results:
             item = PropertyResponse.from_orm_with_calculations(property_obj, community)
+            # 获取图片链接
+            picture_links = db.query(PropertyMedia.url).filter(
+                PropertyMedia.data_source == property_obj.data_source,
+                PropertyMedia.source_property_id == property_obj.source_property_id
+            ).order_by(PropertyMedia.sort_order).all()
+            item.picture_links = [link[0] for link in picture_links] if picture_links else []
             items.append(item)
         
         logger.info(f"导出查询完成: 总数={len(items)}")
@@ -458,7 +470,14 @@ async def get_property_detail(id: int, db: Session = Depends(get_db)):
     if not community:
         raise HTTPException(status_code=404, detail="关联小区不存在")
 
-    return PropertyDetailResponse.from_orm_with_calculations(property_obj, community)
+    detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, community)
+    # 获取图片链接
+    picture_links = db.query(PropertyMedia.url).filter(
+        PropertyMedia.data_source == property_obj.data_source,
+        PropertyMedia.source_property_id == property_obj.source_property_id
+    ).order_by(PropertyMedia.sort_order).all()
+    detail.picture_links = [link[0] for link in picture_links] if picture_links else []
+    return detail
 
 
 @router.get("/export")

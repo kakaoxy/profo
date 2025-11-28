@@ -175,6 +175,9 @@ class PropertyResponse(BaseModel):
     decoration: Optional[str] = None
     elevator: Optional[bool] = None
     
+    # 图片信息
+    picture_links: Optional[List[str]] = None
+    
     # 元数据
     created_at: datetime
     updated_at: datetime
@@ -332,6 +335,9 @@ class PropertyDetailResponse(BaseModel):
     # 其他信息
     heating_method: Optional[str] = None
     listing_remarks: Optional[str] = None
+    
+    # 图片信息
+    picture_links: Optional[List[str]] = None
     
     # 元数据
     created_at: datetime
