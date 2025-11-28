@@ -3,8 +3,8 @@
     <div class="row-cell col-source_property_id" :title="property.source_property_id">
       {{ property.source_property_id }}
     </div>
-    <div class="row-cell col-floor_plan" @mouseenter="showZoomedImage = true" @mouseleave="showZoomedImage = false">
-      <div class="floor-thumb-container">
+    <div class="row-cell col-floor_plan" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+      <div class="floor-thumb-container" ref="thumbContainer">
         <img
           :src="getFloorPlan(property)"
           alt="户型图"
@@ -12,12 +12,14 @@
           @error="handleImageError"
           referrerpolicy="no-referrer"
         />
-        <!-- 放大图片显示 -->
-        <div v-if="showZoomedImage" class="zoomed-image-container">
-          <img :src="getFloorPlan(property)" alt="放大户型图" class="zoomed-image"/>
-        </div>
       </div>
     </div>
+    <!-- 放大图片显示 - 使用Teleport渲染到body -->
+    <Teleport to="body" v-if="showZoomedImage">
+      <div class="zoomed-image-container" :style="zoomedImageStyle">
+        <img :src="getFloorPlan(property)" alt="放大户型图" class="zoomed-image"/>
+      </div>
+    </Teleport>
     <div class="row-cell col-community_name" :title="property.community_name">
       {{ property.community_name }}
     </div>
@@ -69,10 +71,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ref } from 'vue';
+import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import type { Property } from '@/api/types'
 import { getDisplayPriceWan, getUnitPriceYuanPerSqm, statusBadgeClass } from '@/utils/price'
+
+// 添加窗口大小变化监听
+const handleResize = () => {
+  if (showZoomedImage.value) {
+    updateZoomedImagePosition();
+  }
+};
+
+// 组件挂载时添加事件监听
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 
 interface Props {
   property: Property
@@ -128,6 +145,46 @@ const formatTimeline = (property: Property): string => {
 const placeholderImage = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="72" height="48"><rect width="72" height="48" fill="%23e5e7eb"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="10">无图</text></svg>'
 
 const showZoomedImage = ref(false);
+const thumbContainer = ref<HTMLElement | null>(null);
+const zoomedImageStyle = ref<Record<string, string>>({});
+
+const handleMouseEnter = async () => {
+  showZoomedImage.value = true;
+  await nextTick();
+  updateZoomedImagePosition();
+};
+
+const handleMouseLeave = () => {
+  showZoomedImage.value = false;
+};
+
+const updateZoomedImagePosition = () => {
+  if (!thumbContainer.value) return;
+  
+  const rect = thumbContainer.value.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+  
+  // 计算放大图片的位置（显示在户型图下方）
+  let top = rect.bottom + 8; // 8px 间距
+  let left = rect.left + rect.width / 2; // 水平居中
+  
+  // 检查下方空间是否足够，如果不够则显示在上方
+  if (top + 600 > viewportHeight && rect.top > 600) {
+    top = rect.top - 600 - 8; // 显示在上方
+  }
+  
+  // 确保不超出视口边界
+  left = Math.max(10, Math.min(left, viewportWidth - 610));
+  
+  zoomedImageStyle.value = {
+    position: 'fixed',
+    top: `${top}px`,
+    left: `${left}px`,
+    transform: 'translateX(-50%)',
+    zIndex: '9999'
+  };
+};
 
 const getFloorPlan = (property: Property): string => {
   console.log('>>> data_source:', property.data_source)
@@ -177,10 +234,10 @@ const floorBadgeClasses = computed(() => {
 <style scoped>
 .property-row { display: flex; border-bottom: 1px solid #e5e7eb; background: white; transition: all 0.2s ease; align-items: center; }
 .property-row:hover { background: #f9fafb; box-shadow: inset 0 0 0 1px #e5e7eb; transform: translateX(2px); }
-.row-cell { padding: 0.75rem; font-size: 0.875rem; color: #374151; border-right: 1px solid #e5e7eb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
+.row-cell { padding: 0.75rem; font-size: 0.875rem; color: #374151; border-right: 1px solid #e5e7eb; overflow: visible; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; position: relative; }
 .row-cell:last-child { border-right: none; }
 .col-source_property_id { width: 120px; }
-.col-floor_plan { width: 80px; justify-content: center; }
+.col-floor_plan { width: 80px; justify-content: center; overflow: visible; }
 .col-community_name { width: 150px; }
 .col-status { width: 80px; justify-content: center; }
 .col-district { width: 100px; }
@@ -207,30 +264,28 @@ const floorBadgeClasses = computed(() => {
 .view-btn { padding: 0.375rem 0.875rem; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 0.375rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s ease; font-weight: 500; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
 .view-btn:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4); transform: translateY(-1px); }
 .view-btn:active { background: #1d4ed8; transform: translateY(0); box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3); }
-/* 新增：户型图悬停放大容器 */
-/* 确保容器相对定位以便子元素可以绝对定位 */
+/* 户型图悬停放大容器 */
 .floor-thumb-container {
-  position: relative;
   width: 72px;
   height: 48px;
-  overflow: hidden;
   border-radius: 4px;
   border: 1px solid #e5e7eb;
+  position: relative; /* 添加相对定位，使子元素能相对于它定位 */
 }
 
 .zoomed-image-container {
-  position: absolute;
-  top: 0;
-  left: 100%; /* 将放大图片放置在原始图片右侧 */
-  transform: translateX(-50%); /* 调整位置使图片居中 */
-  z-index: 999; /* 确保图片显示在最上层 */
   background-color: white;
-  padding: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  padding: 15px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+  border-radius: 8px;
+  pointer-events: none;
+  max-width: 600px;
+  max-height: 600px;
 }
-
 .zoomed-image {
-  max-width: 300px; /* 根据需要调整大小 */
-  max-height: 300px; /* 根据需要调整大小 */
+  max-width: 600px;
+  max-height: 600px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 </style>
