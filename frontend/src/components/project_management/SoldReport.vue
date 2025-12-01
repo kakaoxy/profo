@@ -19,33 +19,33 @@
         <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">项目关键数据</h3>
            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+             <div>
+               <p class="text-xs text-slate-400">签约价</p>
+               <p class="text-xl font-bold text-slate-800">{{ project?.signing_price }}<span class="text-sm font-normal">万</span></p>
+             </div>
+             <div>
+               <p class="text-xs text-slate-400">成交价</p>
+               <p class="text-xl font-bold text-green-600">{{ project?.soldPrice }}<span class="text-sm font-normal">万</span></p>
+             </div>
               <div>
-                <p class="text-xs text-slate-400">签约价</p>
-                <p class="text-xl font-bold text-slate-800">{{ project?.signingPrice }}<span class="text-sm font-normal">万</span></p>
-              </div>
+               <p class="text-xs text-slate-400">装修周期</p>
+               <p class="text-xl font-bold text-slate-800">{{ renovationCycle }}<span class="text-sm font-normal">天</span></p>
+             </div>
               <div>
-                <p class="text-xs text-slate-400">成交价</p>
-                <p class="text-xl font-bold text-green-600">{{ project?.soldPrice }}<span class="text-sm font-normal">万</span></p>
-              </div>
-               <div>
-                <p class="text-xs text-slate-400">装修周期</p>
-                <p class="text-xl font-bold text-slate-800">{{ renovationCycle }}<span class="text-sm font-normal">天</span></p>
-              </div>
-               <div>
-                <p class="text-xs text-slate-400">销售周期</p>
-                <p class="text-xl font-bold text-slate-800">{{ salesCycle }}<span class="text-sm font-normal">天</span></p>
-              </div>
-           </div>
-        </div>
+               <p class="text-xs text-slate-400">销售周期</p>
+               <p class="text-xl font-bold text-slate-800">{{ salesCycle }}<span class="text-sm font-normal">天</span></p>
+             </div>
+          </div>
+       </div>
 
-        <div>
-           <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">生成简报内容</h3>
-           <textarea 
-             readonly 
-             class="w-full h-48 p-4 border border-slate-300 rounded-lg text-slate-700 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm leading-relaxed"
-             :value="reportText"
-           />
-        </div>
+       <div>
+          <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">生成简报内容</h3>
+          <textarea 
+            readonly 
+            class="w-full h-48 p-4 border border-slate-300 rounded-lg text-slate-700 bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm leading-relaxed"
+            :value="reportText"
+          />
+       </div>
 
         <div class="flex justify-end space-x-4">
            <button @click="handlePrint" class="flex items-center px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors">
@@ -83,13 +83,13 @@ const calculateDays = (start?: string, end?: string) => {
   return Math.max(0, Math.floor(diff / (1000 * 3600 * 24)));
 };
 
-const renovationCycle = computed(() => calculateDays(project.value?.signingDate, project.value?.renovationEndDate));
+const renovationCycle = computed(() => calculateDays(project.value?.signing_date, project.value?.renovationEndDate));
 const salesCycle = computed(() => calculateDays(project.value?.renovationEndDate, project.value?.soldDate));
-const totalCycle = computed(() => calculateDays(project.value?.signingDate, project.value?.soldDate));
+const totalCycle = computed(() => calculateDays(project.value?.signing_date, project.value?.soldDate));
 
 const reportText = computed(() => {
   if (!project.value) return '';
-  return `${project.value.community_name}项目（签约价：${project.value.signingPrice}万，成交价：${project.value.soldPrice}万）` +
+  return `${project.value.community_name}项目（签约价：${project.value.signing_price}万，成交价：${project.value.soldPrice}万）` +
   `由${project.value.manager}全程负责。` +
   `\n\n核心团队：\n- 渠道对接：${project.value.channelManager || '未录入'}\n- 讲房讲解：${project.value.presenter || '未录入'}\n- 谈判签约：${project.value.negotiator || '未录入'}` +
   `\n\n周期统计：\n- 装修周期：${renovationCycle.value}天` +

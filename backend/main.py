@@ -3,6 +3,8 @@ FastAPI 应用入口
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 from contextlib import asynccontextmanager
 from settings import settings
 from db import init_db
@@ -32,6 +34,11 @@ app = FastAPI(
     description="轻量级、本地化、高性能的房产数据仓库系统",
     lifespan=lifespan,
 )
+
+# 挂载静态文件目录
+if not os.path.exists("static"):
+    os.makedirs("static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # 配置 CORS 中间件
@@ -66,7 +73,7 @@ async def health_check():
 
 
 # ==================== 路由注册 ====================
-from routers import upload, push, properties, admin, projects_router, cashflow_router
+from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router
 
 app.include_router(upload.router, prefix=f"{settings.api_prefix}/upload", tags=["upload"])
 app.include_router(push.router, prefix=f"{settings.api_prefix}/push", tags=["push"])
@@ -74,6 +81,7 @@ app.include_router(properties.router, prefix=f"{settings.api_prefix}/properties"
 app.include_router(admin.router, prefix=f"{settings.api_prefix}/admin", tags=["admin"])
 app.include_router(projects_router, tags=["projects"])
 app.include_router(cashflow_router, tags=["cashflow"])
+app.include_router(files_router, prefix=f"{settings.api_prefix}/v1/files", tags=["files"])
 
 
 # ==================== 全局异常处理 ====================

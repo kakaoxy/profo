@@ -7,14 +7,29 @@
       </div>
       <div class="flex space-x-3">
         <button @click="handleCancel" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">返回总览</button>
-        <button @click="handleSave" class="px-4 py-2 flex items-center bg-white border border-blue-600 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button 
+          @click="handleSave" 
+          :disabled="isSaving"
+          class="px-4 py-2 flex items-center bg-white border border-blue-600 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg v-if="!isSaving" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-          </svg> 保存
+          </svg> 
+          <svg v-else class="animate-spin h-4 w-4 mr-2 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isSaving ? '保存中...' : '保存' }}
         </button>
-        <button @click="handleNextStage" class="px-4 py-2 flex items-center bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm">
+        <button 
+          @click="handleNextStage" 
+          :disabled="isSaving"
+          class="px-4 py-2 flex items-center bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+           <svg v-if="isSaving" class="animate-spin h-4 w-4 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
            {{ currentStage === RenovationStage.DELIVER ? (isAlreadyAdvanced ? '下一步: 在售' : '完成改造') : '下一阶段' }} 
-           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+           <svg v-if="!isSaving" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
         </button>
@@ -75,8 +90,8 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
-            <span class="mt-2 text-xs text-slate-500">上传照片</span>
-            <input type="file" accept="image/*" class="hidden" @change="handleFileChange" />
+            <span class="mt-2 text-xs text-slate-500">{{ isUploading ? '上传中...' : '上传照片' }}</span>
+            <input type="file" accept="image/*" class="hidden" @change="handleFileChange" :disabled="isUploading" />
           </label>
         </div>
         
@@ -92,6 +107,7 @@
 import { ref, computed, watch } from 'vue';
 import { useProjectManagementStore } from './store';
 import { RenovationStage, type PhotoRecord } from './types';
+import { fetchRenovationPhotos, updateProjectStatus } from '../../api/projects';
 
 const props = defineProps<{
   projectId: string;
@@ -106,7 +122,7 @@ const store = useProjectManagementStore();
 const project = computed(() => store.projects.find(p => p.id === props.projectId));
 
 const stages = Object.values(RenovationStage);
-const currentStage = ref<RenovationStage>(project.value?.currentRenovationStage || RenovationStage.DEMOLITION);
+const currentStage = ref<RenovationStage>(RenovationStage.DEMOLITION);
 
 const photos = ref<Record<RenovationStage, PhotoRecord[]>>({
   [RenovationStage.DEMOLITION]: [],
@@ -119,6 +135,8 @@ const photos = ref<Record<RenovationStage, PhotoRecord[]>>({
 });
 
 const stageDates = ref<Record<string, string>>({});
+const isUploading = ref(false);
+const isSaving = ref(false);
 
 // Initialize data
 watch(project, (newVal) => {
@@ -126,13 +144,39 @@ watch(project, (newVal) => {
     if (newVal.currentRenovationStage) {
       currentStage.value = newVal.currentRenovationStage;
     }
-    if (newVal.renovationPhotos) {
-      photos.value = { ...photos.value, ...newVal.renovationPhotos };
-    }
     if (newVal.renovationStageDates) {
       stageDates.value = { ...newVal.renovationStageDates };
     }
   }
+}, { immediate: true });
+
+// Load photos
+watch(() => props.projectId, async (newId) => {
+    if (newId) {
+        try {
+            const photoList = await fetchRenovationPhotos(newId);
+            const grouped: Record<string, PhotoRecord[]> = {};
+            
+            // Init arrays
+            Object.values(RenovationStage).forEach(s => grouped[s] = []);
+            
+            photoList.forEach((p: any) => {
+                const stage = p.stage || p.category;
+                 if (grouped[stage] !== undefined) {
+                    grouped[stage].push({
+                        id: p.id,
+                        url: p.url,
+                        category: stage,
+                        timestamp: new Date(p.created_at).getTime()
+                    });
+                 }
+            });
+            
+            photos.value = { ...photos.value, ...grouped };
+        } catch (e) {
+            console.error("Failed to load renovation photos", e);
+        }
+    }
 }, { immediate: true });
 
 const isAlreadyAdvanced = computed(() => {
@@ -153,25 +197,39 @@ const handleDateChange = (e: Event) => {
   };
 };
 
-const handleFileChange = (e: Event) => {
+const handleFileChange = async (e: Event) => {
   const input = e.target as HTMLInputElement;
   if (input.files && input.files[0]) {
+    if (!project.value) return;
+    
     const file = input.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const newPhoto: PhotoRecord = {
-        id: Date.now().toString(),
-        url: reader.result as string,
-        category: currentStage.value,
-        timestamp: Date.now()
-      };
-      
-      if (!photos.value[currentStage.value]) {
-        photos.value[currentStage.value] = [];
-      }
-      photos.value[currentStage.value].push(newPhoto);
-    };
-    reader.readAsDataURL(file);
+    isUploading.value = true;
+    
+    try {
+        const photoRecord = await store.uploadProjectRenovationPhoto(
+            project.value.id, 
+            currentStage.value, 
+            file
+        );
+        
+        if (!photos.value[currentStage.value]) {
+            photos.value[currentStage.value] = [];
+        }
+        
+        photos.value[currentStage.value].push({
+            id: photoRecord.id,
+            url: photoRecord.url,
+            category: currentStage.value,
+            timestamp: new Date(photoRecord.created_at).getTime()
+        });
+        
+    } catch (error) {
+        alert('照片上传失败，请重试');
+        console.error(error);
+    } finally {
+        isUploading.value = false;
+        input.value = ''; 
+    }
   }
 };
 
@@ -181,41 +239,62 @@ const removePhoto = (photoId: string) => {
   }
 };
 
-const handleSave = async () => {
+const handleSave = async (payload?: boolean | Event) => {
+  const silent = typeof payload === 'boolean' ? payload : false;
   if (project.value) {
     try {
-      const updatedDates = { ...stageDates.value, [currentStage.value]: getCurrentDateValue() };
-      await store.updateProject(project.value.id, {
-        currentRenovationStage: currentStage.value,
-        renovationPhotos: photos.value,
-        renovationStageDates: updatedDates
-      });
+      const completedAt = getCurrentDateValue();
+      await store.updateProjectRenovationStage(project.value.id, currentStage.value, completedAt);
+      
+      const updatedDates = { ...stageDates.value, [currentStage.value]: completedAt };
       stageDates.value = updatedDates;
-      alert('阶段进度及时间已保存');
+      
+      if (!silent) alert('阶段进度及时间已保存');
+      return true;
     } catch (error) {
       alert('保存失败，请重试');
+      return false;
     }
   }
+  return false;
 };
 
 const handleNextStage = async () => {
-  await handleSave();
-  const currentIndex = stages.indexOf(currentStage.value);
+  if (isSaving.value) return;
+  isSaving.value = true;
 
+  const saved = await handleSave(true);
+  if (!saved) {
+      isSaving.value = false;
+      return;
+  }
+
+  const currentIndex = stages.indexOf(currentStage.value);
   if (currentIndex < stages.length - 1) {
-    currentStage.value = stages[currentIndex + 1];
+    const nextStage = stages[currentIndex + 1];
+    try {
+        if (!project.value) {
+            isSaving.value = false;
+            return;
+        }
+        await store.updateProjectRenovationStage(project.value.id, nextStage);
+        currentStage.value = nextStage;
+    } catch (e) {
+        alert('切换阶段失败，请重试');
+    }
   } else {
-    // Finished all stages
     if (isAlreadyAdvanced.value) {
       emit('navigate', 'selling');
     } else {
       if (confirm('确认所有改造阶段已完成，准备进入【在售】阶段？')) {
         if (project.value) {
           try {
-            await store.updateProject(project.value.id, {
-              status: 'selling',
-              renovationEndDate: new Date().toISOString().split('T')[0]
-            });
+            // Use updateProjectStatus for status change
+            await updateProjectStatus(project.value.id, 'selling');
+            // Update local store manually
+            const p = store.projects.find(item => item.id === project.value?.id);
+            if (p) p.status = 'selling';
+            
             emit('navigate', 'selling');
           } catch (error) {
             alert('状态更新失败，请重试');
@@ -224,6 +303,7 @@ const handleNextStage = async () => {
       }
     }
   }
+  isSaving.value = false;
 };
 
 const handleCancel = () => {

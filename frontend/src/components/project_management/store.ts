@@ -6,8 +6,12 @@ import {
     fetchProject as fetchProjectApi,
     createProject,
     updateProject as updateProjectApi,
+    updateProjectStatus as updateProjectStatusApi,
     createCashFlowRecord,
-    deleteCashFlowRecord
+    deleteCashFlowRecord,
+    updateRenovationStage,
+    uploadRenovationPhoto,
+    uploadFile
 } from '../../api/projects.ts';
 
 export const useProjectManagementStore = defineStore('project-management', () => {
@@ -161,6 +165,49 @@ export const useProjectManagementStore = defineStore('project-management', () =>
         }
     };
 
+    const updateProjectStatus = async (id: string, status: string) => {
+        try {
+            console.log('[Store] Updating project status:', id, status);
+            const updatedProject = await updateProjectStatusApi(id, status);
+            
+            const index = projects.value.findIndex(p => p.id === id);
+            if (index !== -1) {
+                projects.value[index] = { ...projects.value[index], ...updatedProject };
+            }
+            return updatedProject;
+        } catch (error) {
+            console.error('[Store] Failed to update project status:', error);
+            throw error;
+        }
+    };
+
+    const updateProjectRenovationStage = async (id: string, stage: string, completedAt?: string) => {
+        try {
+             await updateRenovationStage(id, { renovation_stage: stage, stage_completed_at: completedAt });
+             // Update local state
+             const project = projects.value.find(p => p.id === id);
+             if (project) {
+                 project.currentRenovationStage = stage as RenovationStage;
+             }
+        } catch (error) {
+             console.error('Failed to update renovation stage:', error);
+             throw error;
+        }
+    };
+
+    const uploadProjectRenovationPhoto = async (id: string, stage: string, file: File) => {
+        try {
+            // 1. Upload file
+            const { url, filename } = await uploadFile(file);
+            // 2. Link to project
+            const photoRecord = await uploadRenovationPhoto(id, stage, url, filename);
+            return photoRecord;
+        } catch (error) {
+            console.error('Failed to upload renovation photo:', error);
+            throw error;
+        }
+    };
+
     const addCashFlow = async (record: CashFlowRecord) => {
         try {
             if (!record.projectId) return;
@@ -232,6 +279,9 @@ export const useProjectManagementStore = defineStore('project-management', () =>
         getProjectCashFlow,
         addProject,
         updateProject,
+        updateProjectStatus,
+        updateProjectRenovationStage,
+        uploadProjectRenovationPhoto,
         addCashFlow,
         deleteCashFlow,
         setFilters,
