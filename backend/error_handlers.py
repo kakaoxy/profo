@@ -19,7 +19,7 @@ import traceback
 from typing import Optional, Dict, Any
 
 from exceptions import ProfoException
-from models import FailedRecord
+from models.error import FailedRecord
 from db import SessionLocal
 
 

@@ -9,9 +9,10 @@ from typing import Optional
 import logging
 
 from db import get_db
-from models import Community, PropertyCurrent
-from schemas import (
-    CommunityResponse, 
+from models.community import Community
+from models.property import PropertyCurrent
+from schemas.community import (
+    CommunityResponse,
     CommunityListResponse,
     CommunityMergeRequest,
     CommunityMergeResponse

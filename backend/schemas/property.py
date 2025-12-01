@@ -1,33 +1,13 @@
 """
-数据验证模型 (Pydantic Schemas)
-包含数据接收、验证和响应的所有模型
+房源相关Schema
+包含房源数据接收、响应和历史记录等模型
 """
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator, model_validator
-from enum import Enum
-try:
-    from .models import Community
-except Exception:
-    from models import Community
+from .enums import IngestionStatus
 
 
-# ==================== 枚举类型 ====================
-class IngestionStatus(str, Enum):
-    """房源状态枚举 - 用于数据接收"""
-    FOR_SALE = "在售"
-    SOLD = "成交"
-
-
-class MediaTypeEnum(str, Enum):
-    """媒体类型枚举"""
-    FLOOR_PLAN = "floor_plan"
-    INTERIOR = "interior"
-    EXTERIOR = "exterior"
-    OTHER = "other"
-
-
-# ==================== 数据接收模型 ====================
 class PropertyIngestionModel(BaseModel):
     """
     统一的数据接收模型，支持 CSV 和 JSON
@@ -130,7 +110,6 @@ class PropertyIngestionModel(BaseModel):
     }
 
 
-# ==================== 响应模型 ====================
 class PropertyResponse(BaseModel):
     """房源列表响应模型，包含计算字段"""
     
@@ -208,7 +187,7 @@ class PropertyResponse(BaseModel):
         return (total_price * 10000 / build_area) if build_area > 0 else 0
 
     @classmethod
-    def from_orm_with_calculations(cls, property_obj, community: Community):
+    def from_orm_with_calculations(cls, property_obj, community):
         """
         从 ORM 模型转换并计算附加字段
 
@@ -356,7 +335,7 @@ class PropertyDetailResponse(BaseModel):
         )
 
     @classmethod
-    def from_orm_with_calculations(cls, property_obj, community: Community):
+    def from_orm_with_calculations(cls, property_obj, community):
         total_price = property_obj.listed_price_wan or 0 if property_obj.status.value == "在售" else property_obj.sold_price_wan or 0
         unit_price = (total_price * 10000 / property_obj.build_area) if property_obj.build_area and property_obj.build_area > 0 else 0
 
@@ -432,93 +411,6 @@ class PaginatedPropertyResponse(BaseModel):
     items: List[PropertyResponse]
 
 
-# ==================== 小区相关模型 ====================
-class CommunityResponse(BaseModel):
-    """小区响应模型"""
-    id: int
-    name: str
-    city_id: Optional[int] = None
-    district: Optional[str] = None
-    business_circle: Optional[str] = None
-    avg_price_wan: Optional[float] = None
-    total_properties: int
-    created_at: datetime
-    
-    model_config = {
-        "from_attributes": True
-    }
-
-
-class CommunityListResponse(BaseModel):
-    """小区列表响应"""
-    total: int
-    items: List[CommunityResponse]
-
-
-class CommunityMergeRequest(BaseModel):
-    """小区合并请求"""
-    primary_id: int = Field(..., description="主小区ID")
-    merge_ids: List[int] = Field(..., min_length=1, description="要合并的小区ID列表")
-    
-    @model_validator(mode='after')
-    def validate_merge_ids(self):
-        """验证合并ID列表"""
-        if self.primary_id in self.merge_ids:
-            raise ValueError("主小区ID不能出现在合并列表中")
-        if len(self.merge_ids) != len(set(self.merge_ids)):
-            raise ValueError("合并列表中存在重复的小区ID")
-        return self
-
-
-class CommunityMergeResponse(BaseModel):
-    """小区合并响应"""
-    success: bool
-    affected_properties: int
-    message: str
-
-
-# ==================== 上传相关模型 ====================
-class UploadResult(BaseModel):
-    """CSV上传结果"""
-    total: int = Field(..., description="总记录数")
-    success: int = Field(..., description="成功导入数")
-    failed: int = Field(..., description="失败记录数")
-    failed_file_url: Optional[str] = Field(None, description="失败记录CSV下载链接")
-
-
-class PushResult(BaseModel):
-    """JSON推送结果"""
-    total: int = Field(..., description="总记录数")
-    success: int = Field(..., description="成功导入数")
-    failed: int = Field(..., description="失败记录数")
-    errors: List[dict] = Field(default_factory=list, description="错误详情列表")
-
-
-# ==================== 导入结果模型 ====================
-class ImportResult(BaseModel):
-    """单条数据导入结果"""
-    success: bool
-    property_id: Optional[int] = None
-    error: Optional[str] = None
-
-
-class BatchImportResult(BaseModel):
-    """批量导入结果"""
-    total: int
-    success: int
-    failed: int
-    failed_records: List[dict] = Field(default_factory=list)
-
-
-# ==================== 楼层解析结果 ====================
-class FloorInfo(BaseModel):
-    """楼层解析结果"""
-    floor_number: Optional[int] = None
-    total_floors: Optional[int] = None
-    floor_level: Optional[str] = None
-
-
-# ==================== 历史记录模型 ====================
 class PropertyHistoryResponse(BaseModel):
     """房源历史记录响应"""
     id: int
@@ -534,16 +426,8 @@ class PropertyHistoryResponse(BaseModel):
     }
 
 
-# ==================== 失败记录模型 ====================
-class FailedRecordResponse(BaseModel):
-    """失败记录响应"""
-    id: int
-    data_source: Optional[str] = None
-    failure_type: str
-    failure_reason: str
-    occurred_at: datetime
-    is_handled: bool
-    
-    model_config = {
-        "from_attributes": True
-    }
+class FloorInfo(BaseModel):
+    """楼层解析结果"""
+    floor_number: Optional[int] = None
+    total_floors: Optional[int] = None
+    floor_level: Optional[str] = None
