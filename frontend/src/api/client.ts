@@ -1,5 +1,5 @@
-import axios, { AxiosError, AxiosResponse } from 'axios'
-import { useToast } from '@/composables/useToast'
+import axios from 'axios'
+// import { useToast } from '@/composables/useToast'
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
