@@ -345,8 +345,8 @@ const stats = computed(() => {
 const investmentData = computed(() => {
   if (!project.value) return { days: 0, roi: 0, annualizedRoi: 0 };
 
-  const startDate = project.value.signingDate 
-    ? new Date(project.value.signingDate) 
+  const startDate = project.value.signing_date 
+    ? new Date(project.value.signing_date) 
     : new Date(); // Fallback
   
   const endDate = project.value.soldDate 

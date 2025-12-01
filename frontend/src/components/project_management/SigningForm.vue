@@ -164,6 +164,7 @@ import { useProjectManagementStore } from './store';
 import type { Project, PhotoRecord } from './types';
 import PhotoUploadField from './PhotoUploadField.vue';
 import { AxiosError } from 'axios';
+import { updateProjectStatus } from '../../api/projects';
 
 const props = defineProps<{
   projectId: string | null;
@@ -359,15 +360,27 @@ const handleNext = async () => {
   payload.signing_materials = packMaterials();
 
   if (props.projectId) {
-    const project = store.projects.find(p => p.id === props.projectId);
-    const nextStatus = isAlreadyAdvanced.value ? project?.status : 'renovating';
+    // If already advanced (e.g. status is renovating/selling/sold), we keep it.
+    // If not advanced (status is signing), we want to move to renovating.
+    const shouldUpdateStatus = !isAlreadyAdvanced.value;
     
     try {
+        // 1. Update project data (excluding status)
         await store.updateProject(props.projectId, {
           ...payload,
-          status: nextStatus as any,
-          renovationStartDate: isAlreadyAdvanced.value ? project?.renovationStartDate : new Date().toISOString().split('T')[0]
+          // Note: Backend ignores status in updateProject, so we must call updateProjectStatus separately if needed
         });
+
+        // 2. Update status if needed
+        if (shouldUpdateStatus) {
+             // Use direct API call to avoid potential store sync issues
+             await updateProjectStatus(props.projectId, 'renovating');
+             // Update local store manually
+             const project = store.projects.find(p => p.id === props.projectId);
+             if (project) {
+                 project.status = 'renovating';
+             }
+        }
         
         emit('navigate', 'renovating');
     } catch (e) {

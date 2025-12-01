@@ -60,6 +60,22 @@ export const updateProject = async (projectId: string, updates: Partial<Project>
   return response.data
 }
 
+// ========== 文件上传 ==========
+
+/**
+ * 上传通用文件
+ */
+export const uploadFile = async (file: File): Promise<{ url: string; filename: string }> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await apiClient.post('/v1/files/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }) as BaseResponse<{ url: string; filename: string }>
+  return response.data
+}
+
 // ========== 项目状态流转 ==========
 
 /**
