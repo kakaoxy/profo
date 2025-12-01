@@ -26,10 +26,13 @@ htmlcov/
 .kiro/
 .kiro/specs/profo-real-estate
 .claude/
+*.jpg
+*.png
 
 # UV
 .venv/
 venv/
+
 
 # Node
 node_modules/
