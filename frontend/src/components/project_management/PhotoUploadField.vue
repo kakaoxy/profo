@@ -4,10 +4,10 @@
       {{ label }} <span v-if="required" class="text-red-500">*</span>
     </label>
     <div class="grid grid-cols-4 gap-2">
-      <div v-for="photo in photos" :key="photo.id" class="relative group aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-        <img :src="photo.url" :alt="label" class="w-full h-full object-cover" />
+      <div v-for="photo in photos" :key="photo.id" class="relative group aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden border border-slate-200 cursor-zoom-in" @click="openPreview(photo.url)">
+        <img :src="photo.url" :alt="label" class="w-full h-full object-contain" />
         <button
-          @click="$emit('remove', photo.id)"
+          @click.stop="$emit('remove', photo.id)"
           class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -40,6 +40,13 @@ const emit = defineEmits<{
   (e: 'remove', id: string): void;
   (e: 'add', photo: PhotoRecord): void;
 }>();
+
+const openPreview = (url: string) => {
+  const win = window.open();
+  if (win) {
+    win.document.write(`<img src="${url}" style="max-width: 100%; max-height: 100vh; display: block; margin: auto;" />`);
+  }
+};
 
 const handleFileChange = (e: Event) => {
   const input = e.target as HTMLInputElement;

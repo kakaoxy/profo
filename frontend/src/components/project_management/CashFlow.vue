@@ -13,7 +13,7 @@
         </button>
         <div>
           <h2 class="text-2xl font-bold text-slate-800">现金流管理</h2>
-          <p class="text-slate-500 text-sm mt-1" v-if="project">{{ project.community }} - {{ project.name }}</p>
+          <p class="text-slate-500 text-sm mt-1" v-if="project">{{ project.community_name }} - {{ project.name }}</p>
         </div>
       </div>
       <button 
@@ -397,34 +397,42 @@ const setRecordType = (type: CashFlowType) => {
   newRecord.value.category = type === CashFlowType.EXPENSE ? CashFlowCategory.RENOVATION_COST : CashFlowCategory.PREMIUM_INCOME;
 };
 
-const handleAddRecord = () => {
+const handleAddRecord = async () => {
   if (!project.value || !newRecord.value.amount || !newRecord.value.category) return;
   
-  const record: CashFlowRecord = {
-    id: Date.now().toString(),
-    projectId: props.projectId,
-    type: newRecord.value.type!,
-    category: newRecord.value.category!,
-    amount: Number(newRecord.value.amount),
-    date: newRecord.value.date!,
-    description: newRecord.value.description || '',
-  };
+  try {
+    const record: CashFlowRecord = {
+      id: Date.now().toString(),
+      projectId: props.projectId,
+      type: newRecord.value.type!,
+      category: newRecord.value.category!,
+      amount: Number(newRecord.value.amount),
+      date: newRecord.value.date!,
+      description: newRecord.value.description || '',
+    };
 
-  store.addCashFlow(record);
-  
-  showAddModal.value = false;
-  // Reset form
-  newRecord.value = {
-    type: CashFlowType.EXPENSE,
-    category: CashFlowCategory.RENOVATION_COST,
-    amount: 0,
-    date: new Date().toISOString().split('T')[0],
-    description: '',
-  };
+    await store.addCashFlow(record);
+    
+    showAddModal.value = false;
+    // Reset form
+    newRecord.value = {
+      type: CashFlowType.EXPENSE,
+      category: CashFlowCategory.RENOVATION_COST,
+      amount: 0,
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+    };
+  } catch (error) {
+    alert('添加记录失败，请重试');
+  }
 };
 
-const handleDeleteRecord = (id: string) => {
+const handleDeleteRecord = async (id: string) => {
   if (!window.confirm('确定要删除这条记录吗？')) return;
-  store.deleteCashFlow(id);
+  try {
+    await store.deleteCashFlow(id);
+  } catch (error) {
+    alert('删除失败，请重试');
+  }
 };
 </script>

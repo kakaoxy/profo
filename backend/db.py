@@ -65,7 +65,7 @@ def init_db():
     """
     from models import Base
     Base.metadata.create_all(bind=engine)
-    print("✅ 数据库表创建成功")
+    print("Database tables created successfully")
 
 
 def drop_all_tables():

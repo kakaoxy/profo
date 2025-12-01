@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">改造施工阶段</h2>
-        <p class="text-slate-500 text-sm mt-1" v-if="project">{{ project.community }} - {{ project.name }}</p>
+        <p class="text-slate-500 text-sm mt-1" v-if="project">{{ project.community_name }} - {{ project.name }}</p>
       </div>
       <div class="flex space-x-3">
         <button @click="handleCancel" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">返回总览</button>
@@ -181,21 +181,25 @@ const removePhoto = (photoId: string) => {
   }
 };
 
-const handleSave = () => {
+const handleSave = async () => {
   if (project.value) {
-    const updatedDates = { ...stageDates.value, [currentStage.value]: getCurrentDateValue() };
-    store.updateProject(project.value.id, {
-      currentRenovationStage: currentStage.value,
-      renovationPhotos: photos.value,
-      renovationStageDates: updatedDates
-    });
-    stageDates.value = updatedDates;
-    alert('阶段进度及时间已保存');
+    try {
+      const updatedDates = { ...stageDates.value, [currentStage.value]: getCurrentDateValue() };
+      await store.updateProject(project.value.id, {
+        currentRenovationStage: currentStage.value,
+        renovationPhotos: photos.value,
+        renovationStageDates: updatedDates
+      });
+      stageDates.value = updatedDates;
+      alert('阶段进度及时间已保存');
+    } catch (error) {
+      alert('保存失败，请重试');
+    }
   }
 };
 
-const handleNextStage = () => {
-  handleSave();
+const handleNextStage = async () => {
+  await handleSave();
   const currentIndex = stages.indexOf(currentStage.value);
 
   if (currentIndex < stages.length - 1) {
@@ -207,11 +211,15 @@ const handleNextStage = () => {
     } else {
       if (confirm('确认所有改造阶段已完成，准备进入【在售】阶段？')) {
         if (project.value) {
-          store.updateProject(project.value.id, {
-            status: 'selling',
-            renovationEndDate: new Date().toISOString().split('T')[0]
-          });
-          emit('navigate', 'selling');
+          try {
+            await store.updateProject(project.value.id, {
+              status: 'selling',
+              renovationEndDate: new Date().toISOString().split('T')[0]
+            });
+            emit('navigate', 'selling');
+          } catch (error) {
+            alert('状态更新失败，请重试');
+          }
         }
       }
     }

@@ -89,7 +89,7 @@ const totalCycle = computed(() => calculateDays(project.value?.signingDate, proj
 
 const reportText = computed(() => {
   if (!project.value) return '';
-  return `${project.value.community}项目（签约价：${project.value.signingPrice}万，成交价：${project.value.soldPrice}万）` +
+  return `${project.value.community_name}项目（签约价：${project.value.signingPrice}万，成交价：${project.value.soldPrice}万）` +
   `由${project.value.manager}全程负责。` +
   `\n\n核心团队：\n- 渠道对接：${project.value.channelManager || '未录入'}\n- 讲房讲解：${project.value.presenter || '未录入'}\n- 谈判签约：${project.value.negotiator || '未录入'}` +
   `\n\n周期统计：\n- 装修周期：${renovationCycle.value}天` +

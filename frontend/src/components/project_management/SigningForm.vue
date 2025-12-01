@@ -1,5 +1,24 @@
 <template>
-  <div class="space-y-6 px-4">
+  <div class="space-y-6 px-4 relative min-h-screen">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="absolute inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+      <div class="flex flex-col items-center">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="mt-4 text-slate-600 font-medium">加载签约数据...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between animate-fade-in">
+      <div class="flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+        <span>{{ error }}</span>
+      </div>
+      <button @click="retryFetch" class="text-sm font-medium hover:text-red-800 underline">重试</button>
+    </div>
+
     <div class="flex items-center justify-between sticky top-0 z-40 bg-slate-50/95 py-4 border-b border-slate-200 backdrop-blur-sm">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">签约阶段</h2>
@@ -29,7 +48,7 @@
          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">小区名称 <span class="text-red-500">*</span></label>
-            <input v-model="formData.community" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="输入小区名称" />
+            <input v-model="formData.community_name" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="输入小区名称" />
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约人/负责人 <span class="text-red-500">*</span></label>
@@ -39,30 +58,30 @@
             <label class="block text-sm font-medium text-slate-700 mb-1">签约价格 (万元) <span class="text-red-500">*</span></label>
             <div class="relative">
               <span class="absolute left-3 top-2 text-slate-400">¥</span>
-              <input v-model.number="formData.signingPrice" type="number" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="0.00" />
+              <input v-model.number="formData.signing_price" type="number" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="0.00" />
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约日期</label>
-            <input v-model="formData.signingDate" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+            <input v-model="formData.signing_date" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
           </div>
            <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约周期 (天)</label>
-            <input v-model.number="formData.signingPeriod" type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="30" />
+            <input v-model.number="formData.signing_period" type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="30" />
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">计划交房时间</label>
-            <input v-model="formData.plannedHandoverDate" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+            <input v-model="formData.planned_handover_date" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
           </div>
         </div>
       </div>
 
-      <!-- Section 2: Property & Owner Info (Optional) -->
+      <!-- Section 2: Property & Owner Info (Required) -->
       <div>
-         <h3 class="text-lg font-bold text-slate-800 border-l-4 border-green-500 pl-3 mb-4">物业及业主信息 (选填)</h3>
+         <h3 class="text-lg font-bold text-slate-800 border-l-4 border-green-500 pl-3 mb-4">物业及业主信息 (必填)</h3>
          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-slate-700 mb-1">物业地址</label>
+              <label class="block text-sm font-medium text-slate-700 mb-1">物业地址 <span class="text-red-500">*</span></label>
               <input v-model="formData.address" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="详细地址" />
            </div>
            <div>
@@ -71,15 +90,15 @@
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">业主姓名</label>
-              <input v-model="formData.ownerName" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model="formData.owner_name" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">联系方式</label>
-              <input v-model="formData.ownerPhone" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model="formData.owner_phone" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">身份证号</label>
-              <input v-model="formData.ownerIdCard" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" maxlength="18" />
+              <input v-model="formData.owner_id_card" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" maxlength="18" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">顺延期 (月)</label>
@@ -144,6 +163,7 @@ import { ref, computed, watch } from 'vue';
 import { useProjectManagementStore } from './store';
 import type { Project, PhotoRecord } from './types';
 import PhotoUploadField from './PhotoUploadField.vue';
+import { AxiosError } from 'axios';
 
 const props = defineProps<{
   projectId: string | null;
@@ -156,21 +176,24 @@ const emit = defineEmits<{
 
 const store = useProjectManagementStore();
 
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
 const formData = ref<Partial<Project>>({
-  community: '',
-  signingPrice: 0,
-  signingPeriod: 30,
-  plannedHandoverDate: '',
-  signingDate: new Date().toISOString().split('T')[0],
+  community_name: '',
+  signing_price: 0,
+  signing_period: 30,
+  planned_handover_date: '',
+  signing_date: new Date().toISOString().split('T')[0],
   manager: '',
   otherAgreements: '',
   remarks: '',
   
   // Extended fields
   address: '',
-  ownerName: '',
-  ownerPhone: '',
-  ownerIdCard: '',
+  owner_name: '',
+  owner_phone: '',
+  owner_id_card: '',
   area: 0,
   extensionPeriod: 0,
   extensionRent: 0,
@@ -191,13 +214,63 @@ const formData = ref<Partial<Project>>({
   otherPhotos: []
 });
 
+const loadProjectData = async (id: string) => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    const project = await store.fetchProject(id);
+    if (project) {
+      // Deep copy to avoid mutating store directly before save
+      formData.value = JSON.parse(JSON.stringify(project));
+      
+      // Unpack signing_materials if exists
+      if (project.signing_materials) {
+        // Merge signing_materials into formData so photo fields are populated
+        Object.assign(formData.value, project.signing_materials);
+      }
+    } else {
+        error.value = '未找到该项目数据';
+    }
+  } catch (err) {
+    console.error('Failed to load project:', err);
+    if (err instanceof AxiosError) {
+        if (err.response) {
+            // Server responded with 4xx/5xx
+            const status = err.response.status;
+            if (status === 404) {
+                error.value = '未找到该项目数据 (404)';
+            } else if (status >= 500) {
+                error.value = `服务器内部错误 (${status})，请联系管理员`;
+            } else {
+                error.value = `请求失败 (${status}): ${err.response.data?.detail || '未知错误'}`;
+            }
+        } else if (err.request) {
+            // No response received (Network error)
+            error.value = '网络连接失败，无法连接到服务器。请检查您的网络设置。';
+        } else {
+            error.value = `请求配置错误: ${err.message}`;
+        }
+        if (err.code === 'ECONNABORTED') {
+            error.value = '请求超时，请稍后重试';
+        }
+    } else {
+        error.value = '获取签约数据失败，请检查网络或联系管理员';
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const retryFetch = () => {
+  if (props.projectId) {
+    loadProjectData(props.projectId);
+  }
+};
+
 // Load existing project data
 watch(() => props.projectId, (newId) => {
   if (newId) {
-    const project = store.projects.find(p => p.id === newId);
-    if (project) {
-      formData.value = JSON.parse(JSON.stringify(project)); // Deep copy
-    }
+    loadProjectData(newId);
   }
 }, { immediate: true });
 
@@ -223,7 +296,7 @@ const removePhoto = (field: keyof Project, photoId: string) => {
 };
 
 const validate = () => {
-  if (!formData.value.community || !formData.value.signingPrice || !formData.value.manager) return false;
+  if (!formData.value.community_name || !formData.value.signing_price || !formData.value.manager || !formData.value.address) return false;
   // Check required photos
   if ((formData.value.contractPhotos?.length || 0) === 0) return false;
   if ((formData.value.propertyDeedPhotos?.length || 0) === 0) return false;
@@ -233,52 +306,86 @@ const validate = () => {
   return true;
 };
 
-const handleSave = () => {
+const packMaterials = () => {
+    const photos: Record<string, PhotoRecord[]> = {};
+    const photoFields = [
+        'contractPhotos', 'propertyDeedPhotos', 'propertySurveyPhotos', 
+        'idCardPhotos', 'bankCardPhotos', 'decorationContractPhotos',
+        'houseHandoverPhotos', 'receiptPhotos', 'cooperationConfirmationPhotos',
+        'storeInvestmentAgreementPhotos', 'valueAddedServiceConfirmationPhotos',
+        'otherPhotos'
+    ];
+    
+    photoFields.forEach(field => {
+        const val = (formData.value as any)[field];
+        if (val && val.length > 0) {
+            photos[field] = val;
+        }
+    });
+    return photos;
+};
+
+const handleSave = async () => {
+  const payload = { ...formData.value };
+  payload.signing_materials = packMaterials();
+
   if (props.projectId) {
-    store.updateProject(props.projectId, formData.value);
-    alert('已保存');
+    try {
+        await store.updateProject(props.projectId, payload);
+        alert('已保存');
+    } catch (e) {
+        console.error('Save failed', e);
+        alert('保存失败，请重试');
+    }
   } else {
     const newId = 'P' + Date.now();
     store.addProject({ 
-        ...formData.value, 
+        ...payload, 
         id: newId,
         status: 'signing',
-        name: formData.value.community + ' ' + (formData.value.address || '')
+        name: formData.value.community_name + ' ' + (formData.value.address || '')
     } as Project);
     alert('草稿已创建');
   }
 };
 
-const handleNext = () => {
+const handleNext = async () => {
   if (!validate()) {
     alert('请填写所有必填项并上传必要照片');
     return;
   }
 
+  const payload = { ...formData.value };
+  payload.signing_materials = packMaterials();
+
   if (props.projectId) {
     const project = store.projects.find(p => p.id === props.projectId);
     const nextStatus = isAlreadyAdvanced.value ? project?.status : 'renovating';
     
-    store.updateProject(props.projectId, {
-      ...formData.value,
-      status: nextStatus as any,
-      renovationStartDate: isAlreadyAdvanced.value ? project?.renovationStartDate : new Date().toISOString().split('T')[0]
-    });
-    
-    emit('navigate', 'renovating');
+    try {
+        await store.updateProject(props.projectId, {
+          ...payload,
+          status: nextStatus as any,
+          renovationStartDate: isAlreadyAdvanced.value ? project?.renovationStartDate : new Date().toISOString().split('T')[0]
+        });
+        
+        emit('navigate', 'renovating');
+    } catch (e) {
+        console.error('Update failed', e);
+        alert('提交失败，请重试');
+    }
   } else {
     // New project
     const newId = 'P' + Date.now();
     store.addProject({
-      ...formData.value,
+      ...payload,
       id: newId,
       status: 'renovating',
-      name: formData.value.community + ' ' + (formData.value.address || ''),
+      name: formData.value.community_name + ' ' + (formData.value.address || ''),
       renovationStartDate: new Date().toISOString().split('T')[0]
     } as Project);
     
-    alert('项目已创建并进入改造阶段');
-    emit('back');
+    emit('navigate', 'renovating');
   }
 };
 

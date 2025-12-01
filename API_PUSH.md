@@ -9,10 +9,17 @@
   - 在售必须提供 `挂牌价` 与 `上架时间`；成交必须提供 `成交价` 与 `成交时间`
 
 ## 接口概览
+
+### 房源管理接口
 - 路径：`POST /api/push`
 - 功能：批量推送房源 JSON 数据，支持在售与成交两类状态
 - 请求体：JSON 数组，每个元素为一条房源记录（支持中文字段别名）
 - 响应：统计结果与错误详情
+
+### 项目管理接口（新增）
+- 基础路径：`/api/v1/projects`
+- 功能：完整的项目生命周期管理，包括签约、改造、在售、已售四个阶段
+- 支持功能：项目创建、状态流转、现金流管理、改造阶段跟踪、销售记录管理等
 
 ## 请求格式
 - 内容类型：`application/json`
@@ -21,7 +28,7 @@
   - 在售（`状态: "在售"`）必须包含 `挂牌价`、`上架时间`
   - 成交（`状态: "成交"`）必须包含 `成交价`、`成交时间`
 
-### 字段列表（全部支持字段）
+### 房源字段列表（全部支持字段）
 
 | 参数 | 说明 | 必填 |
 |---|---|---|
@@ -54,6 +61,25 @@
 | 行政区 | 行政区 | 否 |
 | 商圈 | 商圈 | 否 |
 | 图片链接 | 房源图片URL列表 | 否 |
+
+### 项目管理接口字段（新增）
+
+#### 项目主状态
+- `signing`（签约阶段）
+- `renovating`（改造阶段）
+- `selling`（在售阶段）
+- `sold`（已售阶段）
+
+#### 改造子阶段
+- `拆除`、`设计`、`水电`、`木瓦`、`油漆`、`安装`、`交付`
+
+#### 现金流类型
+- `income`（收入）
+- `expense`（支出）
+
+#### 现金流分类
+- **支出类**：`履约保证金`、`中介佣金`、`装修费`、`营销费`、`其他支出`、`税费`、`运营杂费`
+- **收入类**：`回收保证金`、`溢价款`、`服务费`、`其他收入`、`售房款`
 
 说明：后端支持中文别名与英文字段名（已启用别名映射）。
 - `图片链接` 字段支持字符串（逗号分隔）或字符串数组格式
@@ -258,6 +284,248 @@ curl -X POST "http://localhost:8000/api/push" `
   - `failed`：失败的记录数
   - `errors`：失败详情列表（包含数组索引、房源ID、失败原因）
 
+## 项目管理接口说明（新增）
+
+### 基础接口
+
+#### 1. 项目统计
+```bash
+GET /api/v1/projects/stats
+```
+响应：
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "signing": 5,
+    "renovating": 3,
+    "selling": 2,
+    "sold": 1
+  }
+}
+```
+
+#### 2. 创建项目
+```bash
+POST /api/v1/projects
+Content-Type: application/json
+
+{
+  "name": "阳光花园 3-201",
+  "community_name": "阳光花园",
+  "address": "北京市朝阳区阳光街123号",
+  "owner_name": "张三",
+  "owner_phone": "13800138000",
+  "notes": "高品质装修项目"
+}
+```
+
+#### 3. 获取项目列表
+```bash
+GET /api/v1/projects?status=renovating&community_name=阳光&page=1&page_size=20
+```
+
+#### 4. 获取项目详情
+```bash
+GET /api/v1/projects/{project_id}
+```
+
+#### 5. 更新项目信息（仅签约阶段可修改）
+```bash
+PUT /api/v1/projects/{project_id}
+Content-Type: application/json
+
+{
+  "name": "更新后的项目名称",
+  "notes": "更新后的备注"
+}
+```
+
+### 状态流转接口
+
+#### 1. 更新项目状态
+```bash
+PUT /api/v1/projects/{project_id}/status
+Content-Type: application/json
+
+{
+  "status": "renovating"
+}
+```
+
+#### 2. 完成项目（标记为已售）
+```bash
+POST /api/v1/projects/{project_id}/complete
+Content-Type: application/json
+
+{
+  "sold_price": 1500000,
+  "sold_date": "2024-03-15T14:30:00"
+}
+```
+
+### 改造阶段管理接口
+
+#### 1. 更新改造阶段
+```bash
+PUT /api/v1/projects/{project_id}/renovation
+Content-Type: application/json
+
+{
+  "renovation_stage": "水电",
+  "stage_completed_at": "2024-03-15T14:30:00"
+}
+```
+
+#### 2. 上传改造照片
+```bash
+POST /api/v1/projects/{project_id}/renovation/photos?stage=水电&url=https://example.com/photo.jpg&filename=photo.jpg&description=水电改造完成
+```
+
+#### 3. 获取改造照片
+```bash
+GET /api/v1/projects/{project_id}/renovation/photos?stage=水电
+```
+
+### 销售管理接口
+
+#### 1. 更新销售角色
+```bash
+PUT /api/v1/projects/{project_id}/selling/roles
+Content-Type: application/json
+
+{
+  "property_agent": "房源维护人",
+  "client_agent": "客源维护人",
+  "first_viewer": "首看人"
+}
+```
+
+#### 2. 创建销售记录
+```bash
+# 带看记录
+POST /api/v1/projects/{project_id}/selling/viewings
+Content-Type: application/json
+
+{
+  "record_type": "viewing",
+  "customer_name": "客户姓名",
+  "customer_phone": "13800138001",
+  "record_date": "2024-03-15T14:30:00",
+  "notes": "客户对户型很满意"
+}
+
+# 出价记录
+POST /api/v1/projects/{project_id}/selling/offers
+Content-Type: application/json
+
+{
+  "record_type": "offer",
+  "customer_name": "客户姓名",
+  "customer_phone": "13800138001",
+  "record_date": "2024-03-15T14:30:00",
+  "price": 1200000,
+  "notes": "客户出价120万"
+}
+
+# 面谈记录
+POST /api/v1/projects/{project_id}/selling/negotiations
+Content-Type: application/json
+
+{
+  "record_type": "negotiation",
+  "customer_name": "客户姓名",
+  "customer_phone": "13800138001",
+  "record_date": "2024-03-15T14:30:00",
+  "notes": "面谈记录"
+}
+```
+
+#### 3. 获取销售记录
+```bash
+GET /api/v1/projects/{project_id}/selling/records?record_type=viewing
+```
+
+#### 4. 删除销售记录
+```bash
+DELETE /api/v1/projects/{project_id}/selling/records/{record_id}
+```
+
+### 现金流管理接口
+
+#### 1. 获取项目现金流
+```bash
+GET /api/v1/projects/{project_id}/cashflow
+```
+响应包含明细列表和汇总信息：
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "records": [...],
+    "summary": {
+      "total_income": 1500000,
+      "total_expense": 200000,
+      "net_cash_flow": 1300000,
+      "roi": 6.5
+    }
+  }
+}
+```
+
+#### 2. 创建现金流记录
+```bash
+POST /api/v1/projects/{project_id}/cashflow
+Content-Type: application/json
+
+{
+  "type": "expense",
+  "category": "装修费",
+  "amount": 50000,
+  "date": "2024-03-15T14:30:00",
+  "description": "装修费用",
+  "related_stage": "改造阶段"
+}
+```
+
+#### 3. 删除现金流记录
+```bash
+DELETE /api/v1/cashflow/{record_id}?project_id={project_id}
+```
+
+### 项目报告接口
+
+#### 获取项目报告
+```bash
+GET /api/v1/projects/{project_id}/report
+```
+响应包含项目完整报告：
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "project_id": "project-id",
+    "project_name": "阳光花园改造项目",
+    "status": "sold",
+    "signing_date": "2024-01-01T00:00:00",
+    "renovation_start_date": "2024-01-15T00:00:00",
+    "renovation_end_date": "2024-03-01T00:00:00",
+    "listing_date": "2024-03-02T00:00:00",
+    "sold_date": "2024-03-15T00:00:00",
+    "total_investment": 200000,
+    "total_income": 1500000,
+    "net_profit": 1300000,
+    "roi": 6.5,
+    "address": "北京市朝阳区阳光街123号",
+    "sale_price": 1500000,
+    "list_price": null
+  }
+}
+```
+
 ## 错误代码含义
 - 错误响应统一结构：
 ```json
@@ -305,7 +573,17 @@ curl -X POST "http://localhost:8000/api/push" `
 - `图片链接` 字段为可选，不影响现有无图数据的正常导入
 - 图片URL会存储在 `property_media` 表中，与房源关联
 
+## 项目管理接口注意事项（新增）
+- 项目状态流转必须遵循合法路径：签约 → 改造 → 在售 → 已售
+- 现金流类型和分类必须严格匹配：支出类型只能使用支出分类，收入类型只能使用收入分类
+- 只有在售阶段才能更新销售角色和创建销售记录
+- 只有在改造阶段才能更新改造子阶段和上传照片
+- 项目基本信息（名称、地址等）只能在签约阶段修改
+
 ## 相关端点
-- 推送：`POST /api/push`
-- 列表查询：`GET /api/properties`
-- 导出：`GET /api/properties/export`
+- 房源推送：`POST /api/push`
+- 房源列表查询：`GET /api/properties`
+- 房源导出：`GET /api/properties/export`
+- 项目管理：`/api/v1/projects/*`（新增）
+- 项目现金流：`/api/v1/projects/{id}/cashflow`（新增）
+- 项目销售记录：`/api/v1/projects/{id}/selling/*`（新增）

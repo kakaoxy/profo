@@ -13,57 +13,39 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    // Can add authentication token here if needed
-    // For example: config.headers.Authorization = `Bearer ${token}`
-    return config
+    // Log request details for debugging
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+      params: config.params,
+      headers: config.headers,
+    });
+    return config;
   },
   (error) => {
-    return Promise.reject(error)
+    console.error('[API Request Error]', error);
+    return Promise.reject(error);
   }
-)
+);
 
-// Response interceptor
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    // Return response data directly for easier consumption
-    return response.data
+  (response) => {
+    // Log successful response
+    console.log(`[API Response] ${response.status} ${response.config.url}`, response.data);
+    return response.data;
   },
-  (error: AxiosError) => {
-    const { showErrorToast } = useToast()
-    
-    // Extract error message from response
-    const status = error.response?.status
-    const errorData = error.response?.data as any
-    let message = errorData?.detail || '请求失败'
-    
-    // Handle specific HTTP status codes
-    if (status === 400) {
-      message = `请求参数错误: ${message}`
-    } else if (status === 404) {
-      message = '资源不存在'
-    } else if (status === 500) {
-      message = '服务器错误，请稍后重试'
-    } else if (status === 503) {
-      message = '服务暂时不可用，请稍后重试'
-    } else if (error.code === 'ECONNABORTED') {
-      message = '请求超时，请检查网络连接'
-    } else if (error.code === 'ERR_NETWORK') {
-      message = '网络连接失败，请检查网络设置'
+  (error) => {
+    // Enhanced error logging
+    if (error.response) {
+      // Server responded with a status code out of the range of 2xx
+      console.error(`[API Error] ${error.response.status} ${error.config.url}`, error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('[API Error] No response received', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('[API Error] Request setup failed', error.message);
     }
-    
-    // Show error toast notification
-    showErrorToast(message)
-    
-    // Log error for debugging
-    console.error('API Error:', {
-      status,
-      message,
-      url: error.config?.url,
-      method: error.config?.method
-    })
-    
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
 export default apiClient
