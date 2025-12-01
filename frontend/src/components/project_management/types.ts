@@ -62,27 +62,31 @@ export interface NegotiationRecord {
 export interface Project {
     id: string;
     name: string;
-    community: string;
+    community_name: string; // Changed from 'community' to match backend
     status: ProjectStatus;
     manager: string;
 
     // Signing Phase
-    signingPrice: number;
-    signingDate: string;
-    signingPeriod: number; // days
-    plannedHandoverDate: string;
+    signing_price: number;
+    signing_date: string;
+    signing_period: number; // days
+    planned_handover_date: string;
+    signing_materials?: Record<string, PhotoRecord[]>;
 
     // Property Info (Optional)
     address?: string;
     area?: number;
-    ownerName?: string;
-    ownerPhone?: string;
-    ownerIdCard?: string;
+    owner_name?: string;
+    owner_phone?: string;
+    owner_id_card?: string;
+    owner_info?: Record<string, any>; // Additional owner info from backend
     extensionPeriod?: number;
     extensionRent?: number;
     costAssumption?: string;
     otherAgreements?: string;
     remarks?: string;
+    notes?: string; // Backend uses 'notes' field
+    tags?: string[]; // Tags from backend
 
     // Photos
     contractPhotos?: PhotoRecord[];
@@ -102,14 +106,20 @@ export interface Project {
     renovationStartDate?: string;
     renovationEndDate?: string;
     currentRenovationStage?: RenovationStage;
+    renovation_stage?: string; // Backend field
     renovationPhotos?: Record<RenovationStage, PhotoRecord[]>;
     renovationStageDates?: Record<string, string>;
+    stage_completed_at?: string; // Backend field
 
     // Selling Phase
     sellingStartDate?: string;
     channelManager?: string;
     presenter?: string; // 讲房师
     negotiator?: string; // 谈判人
+    property_agent?: string; // Backend field: 房源维护人
+    client_agent?: string; // Backend field: 客源维护人
+    first_viewer?: string; // Backend field: 首看人
+    list_price?: number; // Backend field: 挂牌价
     viewingRecords?: ViewingRecord[];
     offerRecords?: OfferRecord[];
     negotiationRecords?: NegotiationRecord[];
@@ -117,6 +127,14 @@ export interface Project {
     // Sold Phase
     soldDate?: string;
     soldPrice?: number;
+    sold_at?: string; // Backend field
+    sale_price?: number; // Backend field
+    
+    // Metadata
+    status_changed_at?: string;
+    net_cash_flow?: number;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface CashFlowRecord {

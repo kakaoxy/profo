@@ -96,24 +96,24 @@
               <div class="text-sm text-gray-500">{{ project.id }}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ project.community }}
+              {{ project.community_name || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span
                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                :class="statusColors[project.status]"
+                :class="statusColors[project.status as ProjectStatus]"
               >
-                {{ statusLabels[project.status] }}
+                {{ statusLabels[project.status as ProjectStatus] }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ project.signingPrice }}
+              {{ project.signingPrice || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ project.soldPrice || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ project.manager }}
+              {{ project.manager || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" @click.stop="$emit('view-cashflow', project.id)">
               <span :class="getCashFlowColor(project.id)">
@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useProjectManagementStore } from './store';
 import type { ProjectStatus } from './types';
 
@@ -139,6 +139,11 @@ const store = useProjectManagementStore();
 
 const searchQuery = ref('');
 const statusFilter = ref<ProjectStatus | 'all'>('all');
+
+// Load projects when component mounts
+onMounted(async () => {
+  await store.loadProjects();
+});
 
 const statusLabels: Record<ProjectStatus, string> = {
   signing: '签约',

@@ -212,21 +212,25 @@ const isAlreadyAdvanced = computed(() => {
   return statusOrder.indexOf(project.value.status) > statusOrder.indexOf('selling');
 });
 
-const handleSave = () => {
+const handleSave = async () => {
   if (project.value) {
-    store.updateProject(project.value.id, {
-      channelManager: channelManager.value,
-      presenter: presenter.value,
-      negotiator: negotiator.value,
-      viewingRecords: viewings.value,
-      offerRecords: offers.value,
-      negotiationRecords: negotiations.value
-    });
-    alert('销售信息已保存');
+    try {
+      await store.updateProject(project.value.id, {
+        channelManager: channelManager.value,
+        presenter: presenter.value,
+        negotiator: negotiator.value,
+        viewingRecords: viewings.value,
+        offerRecords: offers.value,
+        negotiationRecords: negotiations.value
+      });
+      alert('销售信息已保存');
+    } catch (error) {
+      alert('保存失败，请重试');
+    }
   }
 };
 
-const handleSold = () => {
+const handleSold = async () => {
   if (isAlreadyAdvanced.value) {
     emit('navigate', 'sold');
     return;
@@ -234,14 +238,18 @@ const handleSold = () => {
 
   const finalPrice = prompt("请输入最终成交价格(万元):");
   if (finalPrice && !isNaN(parseFloat(finalPrice))) {
-    handleSave();
+    await handleSave();
     if (project.value) {
-      store.updateProject(project.value.id, {
-        status: 'sold',
-        soldPrice: parseFloat(finalPrice),
-        soldDate: new Date().toISOString().split('T')[0]
-      });
-      emit('navigate', 'sold');
+      try {
+        await store.updateProject(project.value.id, {
+          status: 'sold',
+          soldPrice: parseFloat(finalPrice),
+          soldDate: new Date().toISOString().split('T')[0]
+        });
+        emit('navigate', 'sold');
+      } catch (error) {
+        alert('状态更新失败，请重试');
+      }
     }
   }
 };

@@ -15,14 +15,14 @@ async def lifespan(app: FastAPI):
     在应用启动时初始化数据库
     """
     # 启动时执行
-    print("🚀 正在启动 Profo 房产数据中心...")
+    print("Starting Profo Real Estate Data Center...")
     init_db()
-    print(f"✅ 应用启动成功: {settings.app_name} v{settings.app_version}")
-    
+    print(f"Application started successfully: {settings.app_name} v{settings.app_version}")
+
     yield
-    
+
     # 关闭时执行
-    print("👋 应用正在关闭...")
+    print("Application is shutting down...")
 
 
 # 创建 FastAPI 应用实例
@@ -52,7 +52,7 @@ async def root():
         "app": settings.app_name,
         "version": settings.app_version,
         "status": "running",
-        "message": "欢迎使用 Profo 房产数据中心 API"
+        "message": "Welcome to Profo Real Estate Data Center API"
     }
 
 
@@ -66,12 +66,14 @@ async def health_check():
 
 
 # ==================== 路由注册 ====================
-from routers import upload, push, properties, admin
+from routers import upload, push, properties, admin, projects_router, cashflow_router
 
 app.include_router(upload.router, prefix=f"{settings.api_prefix}/upload", tags=["upload"])
 app.include_router(push.router, prefix=f"{settings.api_prefix}/push", tags=["push"])
 app.include_router(properties.router, prefix=f"{settings.api_prefix}/properties", tags=["properties"])
 app.include_router(admin.router, prefix=f"{settings.api_prefix}/admin", tags=["admin"])
+app.include_router(projects_router, tags=["projects"])
+app.include_router(cashflow_router, tags=["cashflow"])
 
 
 # ==================== 全局异常处理 ====================
