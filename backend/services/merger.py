@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 
-from models import Community, CommunityAlias, PropertyCurrent
+from models.community import Community, CommunityAlias
+from models.property import PropertyCurrent
 # 假设 MergeResult 定义在 schemas 或 dto 中，这里保留原有类定义
-# from schemas import CommunityMergeResponse 
+# from schemas import CommunityMergeResponse
 
 logger = logging.getLogger(__name__)
 
