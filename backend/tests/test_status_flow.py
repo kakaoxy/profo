@@ -266,6 +266,52 @@ class TestStatusFlow:
 
         response = client.put(f"/api/v1/projects/{project_id}/status", json={"status": "invalid_status"})
         assert response.status_code == 422  # Pydantic验证错误
+        
+    def test_selling_to_sold_direct_transition(self, client, sample_project_data):
+        """测试在售到已售的直接状态切换"""
+        project_id = self.create_test_project(client, sample_project_data)
+
+        # 流转到在售阶段
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "renovating"})
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "selling"})
+
+        # 测试直接从在售切换到已售
+        response = client.put(f"/api/v1/projects/{project_id}/status", json={"status": "sold"})
+        assert response.status_code == 200
+        assert response.json()["data"]["status"] == "sold"
+        
+    def test_sold_to_selling_direct_transition(self, client, sample_project_data):
+        """测试已售到在售的直接状态切换"""
+        project_id = self.create_test_project(client, sample_project_data)
+
+        # 正常流转到已售
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "renovating"})
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "selling"})
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "sold"})
+
+        # 测试直接从已售切换回在售
+        response = client.put(f"/api/v1/projects/{project_id}/status", json={"status": "selling"})
+        assert response.status_code == 200
+        assert response.json()["data"]["status"] == "selling"
+        
+    def test_sold_to_selling_to_sold_cycle(self, client, sample_project_data):
+        """测试已售-在售-已售的循环切换"""
+        project_id = self.create_test_project(client, sample_project_data)
+
+        # 正常流转到已售
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "renovating"})
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "selling"})
+        client.put(f"/api/v1/projects/{project_id}/status", json={"status": "sold"})
+
+        # 已售 -> 在售
+        response = client.put(f"/api/v1/projects/{project_id}/status", json={"status": "selling"})
+        assert response.status_code == 200
+        assert response.json()["data"]["status"] == "selling"
+        
+        # 在售 -> 已售
+        response = client.put(f"/api/v1/projects/{project_id}/status", json={"status": "sold"})
+        assert response.status_code == 200
+        assert response.json()["data"]["status"] == "sold"
 
     def test_status_flow_with_operations_in_each_stage(self, client, sample_project_data):
         """测试在每个阶段进行相应操作的完整流程"""
@@ -325,4 +371,4 @@ class TestStatusFlow:
         assert final_data["status"] == "sold"
         assert final_data["sale_price"] == 1000000
         assert final_data["property_agent"] == "房源维护人"
-        assert final_data["renovation_stage"] == "设计"""} "file_path":"C:\Users\Bugco\Desktop\test\profo\backend\tests\test_status_flow.py"}
+        assert final_data["renovation_stage"] == "设计"

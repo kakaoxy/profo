@@ -106,6 +106,9 @@ class ProjectUpdate(BaseModel):
     client_agent: Optional[str] = Field(None, max_length=100, description="客源维护人")
     first_viewer: Optional[str] = Field(None, max_length=100, description="首看人")
     list_price: Optional[Decimal] = Field(None, description="挂牌价")
+    
+    # 新增改造阶段完成时间字段
+    renovationStageDates: Optional[Dict[str, str]] = Field(None, description="改造阶段完成时间")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -161,6 +164,9 @@ class ProjectResponse(BaseModel):
     # 已售相关字段
     soldPrice: Optional[Decimal] = Field(None, description="成交价格")
     soldDate: Optional[datetime] = Field(None, description="成交日期")
+    
+    # 改造阶段完成时间字段
+    renovationStageDates: Optional[Dict[str, str]] = Field(None, description="改造阶段完成时间")
 
     model_config = ConfigDict(from_attributes=True)
 

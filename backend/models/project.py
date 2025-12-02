@@ -77,7 +77,10 @@ class Project(BaseModel):
     # 其他信息
     notes = Column(Text, comment="备注")
     tags = Column(JSON, comment="标签")
-
+    
+    # 改造阶段完成时间（前端使用，JSON格式存储，key为改造阶段名称，value为完成日期）
+    renovationStageDates = Column(JSON, nullable=True, comment="改造阶段完成时间")
+    
     # 关联关系
     cashflow_records = relationship("CashFlowRecord", back_populates="project", cascade="all, delete-orphan")
     renovation_photos = relationship("RenovationPhoto", back_populates="project", cascade="all, delete-orphan")

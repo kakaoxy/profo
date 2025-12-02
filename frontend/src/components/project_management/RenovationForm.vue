@@ -60,17 +60,21 @@
             </svg>
             {{ currentStage }} - 进度记录
           </h3>
-          <div class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-             </svg>
-             <span class="text-sm text-slate-600">本阶段完成时间:</span>
-             <input 
-               type="date" 
-               :value="getCurrentDateValue()" 
-               @input="handleDateChange"
-               class="bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-             />
+          <div class="flex flex-col items-start space-y-1 bg-slate-50 p-2 rounded-lg border border-slate-200">
+             <div class="flex items-center space-x-2">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+               </svg>
+               <span class="text-sm text-slate-600">本阶段完成时间:</span>
+               <input 
+                 type="date" 
+                 :value="getCurrentDateValue()" 
+                 @input="handleDateChange"
+                 class="bg-white border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                 :class="dateErrors[currentStage] ? 'border-red-500' : 'border-slate-300'"
+               />
+             </div>
+             <p v-if="dateErrors[currentStage]" class="text-red-500 text-xs ml-6">{{ dateErrors[currentStage] }}</p>
           </div>
         </div>
         
@@ -108,6 +112,12 @@ import { ref, computed, watch } from 'vue';
 import { useProjectManagementStore } from './store';
 import { RenovationStage, type PhotoRecord } from './types';
 import { fetchRenovationPhotos, updateProjectStatus } from '../../api/projects';
+import { 
+  formatDateToInput, 
+  isValidDateFormat, 
+  isDateInRange,
+  getCurrentDate 
+} from '../../utils/dateUtils';
 
 const props = defineProps<{
   projectId: string;
@@ -137,15 +147,39 @@ const photos = ref<Record<RenovationStage, PhotoRecord[]>>({
 const stageDates = ref<Record<string, string>>({});
 const isUploading = ref(false);
 const isSaving = ref(false);
+const dateErrors = ref<Record<string, string>>({});
 
 // Initialize data
 watch(project, (newVal) => {
   if (newVal) {
+    console.log('项目数据加载完成，开始初始化施工阶段数据...');
+    console.log('项目原始数据:', JSON.stringify({ 
+      renovationStageDates: newVal.renovationStageDates,
+      currentRenovationStage: newVal.currentRenovationStage
+    }));
+    
     if (newVal.currentRenovationStage) {
       currentStage.value = newVal.currentRenovationStage;
+      console.log('当前施工阶段:', currentStage.value);
     }
+    
     if (newVal.renovationStageDates) {
-      stageDates.value = { ...newVal.renovationStageDates };
+      console.log('从数据库读取的阶段完成时间:', JSON.stringify(newVal.renovationStageDates));
+      
+      // Format all stage dates to yyyy-MM-dd format for input display
+      const formattedDates: Record<string, string> = {};
+      Object.entries(newVal.renovationStageDates).forEach(([stage, date]) => {
+        const formattedDate = formatDateToInput(date);
+        formattedDates[stage] = formattedDate;
+        console.log(`阶段 ${stage} 转换前: ${date}, 转换后: ${formattedDate}`);
+      });
+      
+      stageDates.value = formattedDates;
+      console.log('初始化后的阶段完成时间:', JSON.stringify(stageDates.value));
+    } else {
+      console.log('数据库中未找到阶段完成时间');
+      // 初始化空的阶段日期对象
+      stageDates.value = {};
     }
   }
 }, { immediate: true });
@@ -185,22 +219,54 @@ const isAlreadyAdvanced = computed(() => {
   return statusOrder.indexOf(project.value.status) > statusOrder.indexOf('renovating');
 });
 
+// Validate date for current stage
+const validateStageDate = (date: string): boolean => {
+  if (!isValidDateFormat(date)) {
+    dateErrors.value[currentStage.value] = '日期格式不正确，请使用yyyy-MM-dd格式';
+    return false;
+  }
+  
+  if (!isDateInRange(date, '1900-01-01', getCurrentDate())) {
+    dateErrors.value[currentStage.value] = '日期超出有效范围';
+    return false;
+  }
+  
+  delete dateErrors.value[currentStage.value];
+  return true;
+};
+
 const getCurrentDateValue = () => {
-  return stageDates.value[currentStage.value] || new Date().toISOString().split('T')[0];
+  return stageDates.value[currentStage.value] || getCurrentDate();
 };
 
 const handleDateChange = (e: Event) => {
   const input = e.target as HTMLInputElement;
+  const dateValue = input.value;
+  
+  // Validate date immediately
+  validateStageDate(dateValue);
+  
   stageDates.value = {
     ...stageDates.value,
-    [currentStage.value]: input.value
+    [currentStage.value]: dateValue
   };
 };
+
+// Watch for stage changes to validate the date for the new stage
+watch(currentStage, (newStage) => {
+  const date = stageDates.value[newStage];
+  if (date) {
+    validateStageDate(date);
+  }
+});
 
 const handleFileChange = async (e: Event) => {
   const input = e.target as HTMLInputElement;
   if (input.files && input.files[0]) {
-    if (!project.value) return;
+    if (!project.value) {
+      alert('项目信息未加载完成，请稍后再试');
+      return;
+    }
     
     const file = input.files[0];
     isUploading.value = true;
@@ -220,12 +286,15 @@ const handleFileChange = async (e: Event) => {
             id: photoRecord.id,
             url: photoRecord.url,
             category: currentStage.value,
-            timestamp: new Date(photoRecord.created_at).getTime()
+            timestamp: photoRecord.created_at ? new Date(photoRecord.created_at).getTime() : Date.now()
         });
         
+        // alert('照片上传成功');
     } catch (error) {
-        alert('照片上传失败，请重试');
-        console.error(error);
+        console.error('照片上传失败:', error);
+        // 提供更详细的错误信息
+        const errorMsg = error instanceof Error ? error.message : '未知错误';
+        alert(`照片上传失败: ${errorMsg}，请重试`);
     } finally {
         isUploading.value = false;
         input.value = ''; 
@@ -235,75 +304,147 @@ const handleFileChange = async (e: Event) => {
 
 const removePhoto = (photoId: string) => {
   if (photos.value[currentStage.value]) {
+    const initialCount = photos.value[currentStage.value].length;
     photos.value[currentStage.value] = photos.value[currentStage.value].filter(p => p.id !== photoId);
+    
+    if (photos.value[currentStage.value].length < initialCount) {
+      alert('照片已成功删除');
+    } else {
+      alert('照片删除失败，请重试');
+    }
   }
 };
 
 const handleSave = async (payload?: boolean | Event) => {
   const silent = typeof payload === 'boolean' ? payload : false;
-  if (project.value) {
-    try {
-      const completedAt = getCurrentDateValue();
-      await store.updateProjectRenovationStage(project.value.id, currentStage.value, completedAt);
-      
-      const updatedDates = { ...stageDates.value, [currentStage.value]: completedAt };
-      stageDates.value = updatedDates;
-      
-      if (!silent) alert('阶段进度及时间已保存');
-      return true;
-    } catch (error) {
-      alert('保存失败，请重试');
+  console.log('开始保存阶段进度...');
+  console.log('当前所有阶段时间:', JSON.stringify(stageDates.value));
+  
+  if (!project.value) {
+    console.error('项目信息未加载完成，无法保存');
+    if (!silent) alert('项目信息未加载完成，无法保存');
+    return false;
+  }
+  
+  try {
+    const completedAt = getCurrentDateValue();
+    
+    // Validate date before saving
+    if (!validateStageDate(completedAt)) {
+      if (!silent) {
+        alert(`日期格式错误: ${dateErrors.value[currentStage.value]}`);
+      }
       return false;
     }
+    
+    console.log('保存当前阶段:', currentStage.value, '完成时间:', completedAt);
+    
+    // 保存当前阶段的完成时间
+    await store.updateProjectRenovationStage(project.value.id, currentStage.value, completedAt);
+    
+    // 更新本地状态
+    const updatedDates = { ...stageDates.value, [currentStage.value]: completedAt };
+    stageDates.value = updatedDates;
+    
+    console.log('更新后所有阶段时间:', JSON.stringify(stageDates.value));
+    
+    // 保存所有阶段时间到项目的renovationStageDates字段
+    await store.updateProject(project.value.id, {
+      renovationStageDates: stageDates.value
+    });
+    
+    console.log('所有阶段时间已保存到数据库');
+    
+    if (!silent) {
+      alert('阶段进度及时间已保存');
+    }
+    return true;
+  } catch (error) {
+    console.error('保存失败:', error);
+    const errorMsg = error instanceof Error ? error.message : '未知错误';
+    if (!silent) {
+      alert(`保存失败: ${errorMsg}，请重试`);
+    }
+    return false;
   }
-  return false;
 };
 
 const handleNextStage = async () => {
-  if (isSaving.value) return;
-  isSaving.value = true;
-
-  const saved = await handleSave(true);
-  if (!saved) {
-      isSaving.value = false;
-      return;
+  if (isSaving.value) {
+    console.log('操作正在进行中，请稍候...');
+    return;
   }
+  
+  isSaving.value = true;
+  console.log('开始执行下一个阶段操作...');
 
-  const currentIndex = stages.indexOf(currentStage.value);
-  if (currentIndex < stages.length - 1) {
-    const nextStage = stages[currentIndex + 1];
-    try {
-        if (!project.value) {
-            isSaving.value = false;
-            return;
-        }
-        await store.updateProjectRenovationStage(project.value.id, nextStage);
-        currentStage.value = nextStage;
-    } catch (e) {
-        alert('切换阶段失败，请重试');
+  try {
+    const saved = await handleSave(true);
+    console.log('保存结果:', saved);
+    
+    if (!saved) {
+      console.error('保存失败，无法执行下一阶段操作');
+      alert('保存失败，无法执行下一阶段操作');
+      return;
     }
-  } else {
-    if (isAlreadyAdvanced.value) {
-      emit('navigate', 'selling');
+
+    const currentIndex = stages.indexOf(currentStage.value);
+    console.log('当前阶段索引:', currentIndex, '总阶段数:', stages.length);
+    
+    if (currentIndex < stages.length - 1) {
+      const nextStage = stages[currentIndex + 1];
+      console.log('准备切换到下一阶段:', nextStage);
+      
+      if (!project.value) {
+        console.error('项目信息未加载完成');
+        alert('项目信息未加载完成，请稍后再试');
+        return;
+      }
+      
+      await store.updateProjectRenovationStage(project.value.id, nextStage);
+      currentStage.value = nextStage;
+      // alert(`已成功切换到${nextStage}阶段`);
     } else {
-      if (confirm('确认所有改造阶段已完成，准备进入【在售】阶段？')) {
-        if (project.value) {
-          try {
-            // Use updateProjectStatus for status change
-            await updateProjectStatus(project.value.id, 'selling');
-            // Update local store manually
-            const p = store.projects.find(item => item.id === project.value?.id);
-            if (p) p.status = 'selling';
-            
-            emit('navigate', 'selling');
-          } catch (error) {
-            alert('状态更新失败，请重试');
+      console.log('已到达最后一个阶段，准备进入在售阶段');
+      
+      if (isAlreadyAdvanced.value) {
+        console.log('项目已处于高级阶段，直接导航到在售页面');
+        emit('navigate', 'selling');
+      } else {
+        if (confirm('确认所有改造阶段已完成，准备进入【在售】阶段？')) {
+          if (project.value) {
+            try {
+              console.log('开始更新项目状态为在售');
+              // Use updateProjectStatus for status change
+              await updateProjectStatus(project.value.id, 'selling');
+              // Update local store manually
+              const p = store.projects.find(item => item.id === project.value?.id);
+              if (p) {
+                p.status = 'selling';
+                console.log('项目状态已更新为在售');
+              }
+              
+              alert('改造阶段已完成，项目已进入在售阶段');
+              emit('navigate', 'selling');
+            } catch (error) {
+              console.error('状态更新失败:', error);
+              const errorMsg = error instanceof Error ? error.message : '未知错误';
+              alert(`状态更新失败: ${errorMsg}，请重试`);
+            }
           }
+        } else {
+          console.log('用户取消了进入在售阶段的操作');
         }
       }
     }
+  } catch (error) {
+    console.error('执行下一个阶段操作时发生错误:', error);
+    const errorMsg = error instanceof Error ? error.message : '未知错误';
+    alert(`执行操作失败: ${errorMsg}，请重试`);
+  } finally {
+    isSaving.value = false;
+    console.log('下一个阶段操作执行完成');
   }
-  isSaving.value = false;
 };
 
 const handleCancel = () => {

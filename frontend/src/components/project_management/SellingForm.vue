@@ -13,7 +13,7 @@
           </svg> 保存记录
         </button>
         <button 
-          @click="handleSold" 
+          @click="showSoldDialog = true" 
           class="px-4 py-2 flex items-center text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
           :class="isAlreadyAdvanced ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'"
         >
@@ -29,6 +29,35 @@
             </svg> 确认成交
           </template>
         </button>
+      </div>
+    </div>
+    
+    <!-- Sold Confirmation Dialog -->
+    <div v-if="showSoldDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">确认成交</h3>
+        <p class="text-slate-600 mb-4">请输入最终成交价格(万元)</p>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">最终成交价格</label>
+            <div class="relative">
+              <span class="absolute left-3 top-2 text-slate-400">¥</span>
+              <input 
+                v-model.number="finalPrice" 
+                type="number" 
+                step="0.01" 
+                class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="请输入最终成交价格"
+                min="0"
+              />
+            </div>
+            <p v-if="priceError" class="text-red-500 text-xs mt-1">{{ priceError }}</p>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button @click="showSoldDialog = false; resetSoldForm()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">取消</button>
+            <button @click="confirmSold" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">确认</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -191,6 +220,11 @@ const channelManager = ref('');
 const presenter = ref('');
 const negotiator = ref('');
 
+// Sold confirmation dialog state
+const showSoldDialog = ref(false);
+const finalPrice = ref<number | null>(null);
+const priceError = ref<string | null>(null);
+
 const viewings = ref<ViewingRecord[]>([]);
 const offers = ref<OfferRecord[]>([]);
 const negotiations = ref<NegotiationRecord[]>([]);
@@ -241,22 +275,62 @@ const handleSold = async () => {
     emit('navigate', 'sold');
     return;
   }
+};
 
-  const finalPrice = prompt("请输入最终成交价格(万元):");
-  if (finalPrice && !isNaN(parseFloat(finalPrice))) {
+// Reset sold form state
+const resetSoldForm = () => {
+  finalPrice.value = null;
+  priceError.value = null;
+};
+
+// Validate final price
+const validateFinalPrice = (): boolean => {
+  if (finalPrice.value === null || finalPrice.value === undefined) {
+    priceError.value = '请输入最终成交价格';
+    return false;
+  }
+  
+  if (isNaN(finalPrice.value) || finalPrice.value <= 0) {
+    priceError.value = '请输入有效的成交价格';
+    return false;
+  }
+  
+  priceError.value = null;
+  return true;
+};
+
+// Confirm sold action
+const confirmSold = async () => {
+  if (!validateFinalPrice()) {
+    return;
+  }
+  
+  try {
+    // 1. Save existing changes first
     await handleSave();
-    if (project.value) {
-      try {
-        await store.updateProject(project.value.id, {
-          status: 'sold',
-          soldPrice: parseFloat(finalPrice),
-          soldDate: new Date().toISOString().split('T')[0]
-        });
-        emit('navigate', 'sold');
-      } catch (error) {
-        alert('状态更新失败，请重试');
-      }
+    
+    if (project.value && finalPrice.value !== null) {
+      // 2. Update project fields (excluding status)
+      await store.updateProject(project.value.id, {
+        soldPrice: finalPrice.value,
+        soldDate: new Date().toISOString().split('T')[0]
+      });
+      
+      // 3. Update project status separately using the dedicated method
+      // Note: Backend ignores status in updateProject, so we must call updateProjectStatus separately
+      await store.updateProjectStatus(project.value.id, 'sold');
+      
+      // 4. Navigate to sold stage
+      emit('navigate', 'sold');
     }
+  } catch (error) {
+    console.error('Failed to confirm sold:', error);
+    console.error('Error details:', error instanceof Error ? error.message : error);
+    alert('确认成交失败，请重试');
+  } finally {
+    // Close dialog and reset form
+    showSoldDialog.value = false;
+    resetSoldForm();
   }
 };
 
