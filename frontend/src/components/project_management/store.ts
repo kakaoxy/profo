@@ -140,6 +140,7 @@ export const useProjectManagementStore = defineStore('project-management', () =>
 
             projects.value.push(createdProject);
             console.log('[Store] Project added to store, total projects:', projects.value.length);
+            return createdProject;
         } catch (error) {
             console.error('[Store] Failed to create project:', error);
             throw error;

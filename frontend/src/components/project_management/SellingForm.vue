@@ -215,6 +215,7 @@ const isAlreadyAdvanced = computed(() => {
 const handleSave = async () => {
   if (project.value) {
     try {
+      // 1. 更新销售角色信息和记录
       await store.updateProject(project.value.id, {
         channelManager: channelManager.value,
         presenter: presenter.value,
@@ -223,9 +224,14 @@ const handleSave = async () => {
         offerRecords: offers.value,
         negotiationRecords: negotiations.value
       });
+      
       alert('销售信息已保存');
+      
+      // 2. 刷新项目数据，确保页面显示最新数据
+      await store.fetchProject(project.value.id);
     } catch (error) {
       alert('保存失败，请重试');
+      console.error('Save failed:', error);
     }
   }
 };

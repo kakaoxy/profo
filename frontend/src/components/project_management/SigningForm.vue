@@ -173,6 +173,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'back'): void;
   (e: 'navigate', stage: string): void;
+  (e: 'create', projectId: string): void;
 }>();
 
 const store = useProjectManagementStore();
@@ -184,7 +185,7 @@ const formData = ref<Partial<Project>>({
   community_name: '',
   signing_price: 0,
   signing_period: 30,
-  planned_handover_date: '',
+  planned_handover_date: null,
   signing_date: new Date().toISOString().split('T')[0],
   manager: '',
   otherAgreements: '',
@@ -327,7 +328,14 @@ const packMaterials = () => {
 };
 
 const handleSave = async () => {
+  // 构造payload，过滤掉无效的日期字段
   const payload = { ...formData.value };
+  
+  // 过滤掉空的或无效的日期字段
+  if (!payload.planned_handover_date || payload.planned_handover_date === '') {
+    delete payload.planned_handover_date;
+  }
+  
   payload.signing_materials = packMaterials();
 
   if (props.projectId) {
@@ -339,14 +347,18 @@ const handleSave = async () => {
         alert('保存失败，请重试');
     }
   } else {
-    const newId = 'P' + Date.now();
-    store.addProject({ 
-        ...payload, 
-        id: newId,
-        status: 'signing',
-        name: formData.value.community_name + ' ' + (formData.value.address || '')
-    } as Project);
-    alert('草稿已创建');
+    try {
+        const newProject = await store.addProject({
+            ...payload,
+            status: 'signing',
+            name: formData.value.community_name + ' ' + (formData.value.address || '')
+        } as Project);
+        emit('create', newProject.id);
+        alert('草稿已创建');
+    } catch (e) {
+        console.error('Save failed', e);
+        alert('保存失败，请重试');
+    }
   }
 };
 
@@ -356,7 +368,14 @@ const handleNext = async () => {
     return;
   }
 
+  // 构造payload，过滤掉无效的日期字段
   const payload = { ...formData.value };
+  
+  // 过滤掉空的或无效的日期字段
+  if (!payload.planned_handover_date || payload.planned_handover_date === '') {
+    delete payload.planned_handover_date;
+  }
+  
   payload.signing_materials = packMaterials();
 
   if (props.projectId) {
@@ -389,16 +408,19 @@ const handleNext = async () => {
     }
   } else {
     // New project
-    const newId = 'P' + Date.now();
-    store.addProject({
-      ...payload,
-      id: newId,
-      status: 'renovating',
-      name: formData.value.community_name + ' ' + (formData.value.address || ''),
-      renovationStartDate: new Date().toISOString().split('T')[0]
-    } as Project);
-    
-    emit('navigate', 'renovating');
+    try {
+        const newProject = await store.addProject({
+          ...payload,
+          status: 'renovating',
+          name: formData.value.community_name + ' ' + (formData.value.address || ''),
+          renovationStartDate: new Date().toISOString().split('T')[0]
+        } as Project);
+        emit('create', newProject.id);
+        emit('navigate', 'renovating');
+    } catch (e) {
+        console.error('Update failed', e);
+        alert('提交失败，请重试');
+    }
   }
 };
 

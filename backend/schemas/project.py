@@ -45,15 +45,24 @@ class ProjectCreate(BaseModel):
     signing_materials: Optional[Dict[str, Any]] = Field(None, description="签约材料")
     owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
     owner_phone: Optional[str] = Field(None, max_length=20, description="业主电话")
+    owner_id_card: Optional[str] = Field(None, max_length=18, description="业主身份证号")
     owner_info: Optional[Dict[str, Any]] = Field(None, description="业主其他信息")
     notes: Optional[str] = Field(None, description="备注")
     tags: Optional[List[str]] = Field(None, description="标签")
+    
+    # 新增字段
+    area: Optional[Decimal] = Field(None, description="产证面积(m²)")
+    extensionPeriod: Optional[int] = Field(None, description="顺延期(月)")
+    extensionRent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
+    costAssumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
+    otherAgreements: Optional[str] = Field(None, description="其他约定")
+    remarks: Optional[str] = Field(None, description="备注")
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ProjectUpdate(BaseModel):
-    """更新项目请求模型（仅签约阶段可修改字段）"""
+    """更新项目请求模型"""
     name: Optional[str] = Field(None, min_length=1, max_length=200, description="项目名称")
     community_name: Optional[str] = Field(None, min_length=1, max_length=200, description="小区名称")
     address: Optional[str] = Field(None, min_length=1, max_length=500, description="物业地址")
@@ -65,9 +74,38 @@ class ProjectUpdate(BaseModel):
     signing_materials: Optional[Dict[str, Any]] = Field(None, description="签约材料")
     owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
     owner_phone: Optional[str] = Field(None, max_length=20, description="业主电话")
+    owner_id_card: Optional[str] = Field(None, max_length=18, description="业主身份证号")
     owner_info: Optional[Dict[str, Any]] = Field(None, description="业主其他信息")
     notes: Optional[str] = Field(None, description="备注")
     tags: Optional[List[str]] = Field(None, description="标签")
+    
+    # 新增字段
+    area: Optional[Decimal] = Field(None, description="产证面积(m²)")
+    extensionPeriod: Optional[int] = Field(None, description="顺延期(月)")
+    extensionRent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
+    costAssumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
+    otherAgreements: Optional[str] = Field(None, description="其他约定")
+    remarks: Optional[str] = Field(None, description="备注")
+    
+    # 新增销售角色字段
+    channelManager: Optional[str] = Field(None, max_length=100, description="渠道负责人")
+    presenter: Optional[str] = Field(None, max_length=100, description="讲房师")
+    negotiator: Optional[str] = Field(None, max_length=100, description="联卖谈判")
+    
+    # 新增销售记录字段
+    viewingRecords: Optional[List[Dict[str, Any]]] = Field(None, description="带看记录")
+    offerRecords: Optional[List[Dict[str, Any]]] = Field(None, description="出价记录")
+    negotiationRecords: Optional[List[Dict[str, Any]]] = Field(None, description="面谈记录")
+    
+    # 新增已售相关字段
+    soldPrice: Optional[Decimal] = Field(None, description="成交价格")
+    soldDate: Optional[datetime] = Field(None, description="成交日期")
+    
+    # 新增销售相关字段
+    property_agent: Optional[str] = Field(None, max_length=100, description="房源维护人")
+    client_agent: Optional[str] = Field(None, max_length=100, description="客源维护人")
+    first_viewer: Optional[str] = Field(None, max_length=100, description="首看人")
+    list_price: Optional[Decimal] = Field(None, description="挂牌价")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -86,6 +124,7 @@ class ProjectResponse(BaseModel):
     signing_materials: Optional[Dict[str, Any]] = Field(None, description="签约材料")
     owner_name: Optional[str] = Field(None, description="业主姓名")
     owner_phone: Optional[str] = Field(None, description="业主电话")
+    owner_id_card: Optional[str] = Field(None, description="业主身份证号")
     owner_info: Optional[Dict[str, Any]] = Field(None, description="业主其他信息")
     status: str = Field(..., description="项目状态")
     renovation_stage: Optional[str] = Field(None, description="改造子阶段")
@@ -102,6 +141,26 @@ class ProjectResponse(BaseModel):
     net_cash_flow: Optional[Decimal] = Field(None, description="净现金流")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
+    
+    # 新增字段
+    area: Optional[Decimal] = Field(None, description="产证面积(m²)")
+    extensionPeriod: Optional[int] = Field(None, description="顺延期(月)")
+    extensionRent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
+    costAssumption: Optional[str] = Field(None, description="税费及佣金承担")
+    otherAgreements: Optional[str] = Field(None, description="其他约定")
+    remarks: Optional[str] = Field(None, description="备注")
+    
+    # 销售相关字段
+    channelManager: Optional[str] = Field(None, description="渠道负责人")
+    presenter: Optional[str] = Field(None, description="讲房师")
+    negotiator: Optional[str] = Field(None, description="联卖谈判")
+    viewingRecords: Optional[List[Dict[str, Any]]] = Field(None, description="带看记录")
+    offerRecords: Optional[List[Dict[str, Any]]] = Field(None, description="出价记录")
+    negotiationRecords: Optional[List[Dict[str, Any]]] = Field(None, description="面谈记录")
+    
+    # 已售相关字段
+    soldPrice: Optional[Decimal] = Field(None, description="成交价格")
+    soldDate: Optional[datetime] = Field(None, description="成交日期")
 
     model_config = ConfigDict(from_attributes=True)
 

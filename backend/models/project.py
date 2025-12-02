@@ -25,11 +25,22 @@ class Project(BaseModel):
     signing_period = Column(Integer, nullable=True, comment="签约周期(天)")
     planned_handover_date = Column(DateTime, nullable=True, comment="计划交房时间")
     signing_materials = Column(JSON, nullable=True, comment="签约材料(照片等)")
+    otherAgreements = Column(Text, nullable=True, comment="其他约定")
+    remarks = Column(Text, nullable=True, comment="备注")
 
     # 业主信息
     owner_name = Column(String(100), comment="业主姓名")
     owner_phone = Column(String(20), comment="业主电话")
+    owner_id_card = Column(String(18), comment="业主身份证号")
     owner_info = Column(JSON, comment="业主其他信息")
+    
+    # 延期信息
+    extensionPeriod = Column(Integer, nullable=True, comment="顺延期(月)")
+    extensionRent = Column(Numeric(15, 2), nullable=True, comment="顺延期租金(元/月)")
+    costAssumption = Column(String(50), nullable=True, comment="税费及佣金承担")
+    
+    # 物业信息
+    area = Column(Numeric(10, 2), nullable=True, comment="产证面积(m²)")
 
     # 项目状态
     status = Column(String(20), nullable=False, default=ProjectStatus.SIGNING.value, comment="项目状态")
@@ -48,6 +59,20 @@ class Project(BaseModel):
     property_agent = Column(String(100), comment="房源维护人")
     client_agent = Column(String(100), comment="客源维护人")
     first_viewer = Column(String(100), comment="首看人")
+    
+    # 新增销售角色字段（前端使用）
+    channelManager = Column(String(100), comment="渠道负责人")
+    presenter = Column(String(100), comment="讲房师")
+    negotiator = Column(String(100), comment="联卖谈判")
+
+    # 销售记录（前端使用，JSON格式存储）
+    viewingRecords = Column(JSON, nullable=True, comment="带看记录")
+    offerRecords = Column(JSON, nullable=True, comment="出价记录")
+    negotiationRecords = Column(JSON, nullable=True, comment="面谈记录")
+
+    # 已售相关字段（前端使用）
+    soldPrice = Column(Numeric(15, 2), comment="成交价格")
+    soldDate = Column(DateTime, comment="成交日期")
 
     # 其他信息
     notes = Column(Text, comment="备注")
