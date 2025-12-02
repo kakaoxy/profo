@@ -73,7 +73,7 @@ async def health_check():
 
 
 # ==================== 路由注册 ====================
-from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router
+from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users
 
 app.include_router(upload.router, prefix=f"{settings.api_prefix}/upload", tags=["upload"])
 app.include_router(push.router, prefix=f"{settings.api_prefix}/push", tags=["push"])
@@ -82,6 +82,8 @@ app.include_router(admin.router, prefix=f"{settings.api_prefix}/admin", tags=["a
 app.include_router(projects_router, tags=["projects"])
 app.include_router(cashflow_router, tags=["cashflow"])
 app.include_router(files_router, prefix=f"{settings.api_prefix}/v1/files", tags=["files"])
+app.include_router(auth.router, prefix=f"{settings.api_prefix}/auth", tags=["auth"])
+app.include_router(users.router, prefix=f"{settings.api_prefix}/users", tags=["users"])
 
 
 # ==================== 全局异常处理 ====================

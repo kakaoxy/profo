@@ -12,6 +12,7 @@ from .property import PropertyCurrent, PropertyHistory
 from .media import PropertyMedia
 from .error import FailedRecord
 from .project import Project, CashFlowRecord, RenovationPhoto, SalesRecord
+from .user import User, Role
 
 __all__ = [
     'Base',
@@ -33,4 +34,6 @@ __all__ = [
     'CashFlowRecord',
     'RenovationPhoto',
     'SalesRecord',
+    'User',
+    'Role',
 ]
