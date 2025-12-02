@@ -81,7 +81,7 @@ async def get_users(
     )
 
 
-@router.get("/users/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse)
 async def get_current_user(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -229,6 +229,52 @@ async def update_user(
     db.refresh(user)
     
     return user
+
+
+@router.put("/users/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: str,
+    password_data: dict,
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """
+    重置用户密码
+    
+    Args:
+        user_id: 用户ID
+        password_data: 包含新密码的字典
+        current_user: 当前管理员用户
+        db: 数据库会话
+        
+    Returns:
+        dict: 重置结果
+        
+    Raises:
+        HTTPException: 404 Not Found - 用户不存在
+    """
+    # 获取用户
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+    
+    # 设置新密码
+    new_password = password_data.get("password")
+    if not new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="密码不能为空"
+        )
+    
+    # 更新密码
+    from utils.auth import get_password_hash
+    user.password = get_password_hash(new_password)
+    db.commit()
+    
+    return {"message": "密码重置成功"}
 
 
 @router.delete("/users/{user_id}")
