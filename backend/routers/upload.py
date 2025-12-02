@@ -20,6 +20,7 @@ from services.importer import PropertyImporter
 from models import FailedRecord
 from exceptions import DateFormatException, DateParsingException, DateProcessingException, FileProcessingException, ResourceNotFoundException
 from error_handlers import ErrorHandler
+from dependencies.auth import get_current_operator_user, get_current_normal_user
 
 
 logger = logging.getLogger(__name__)
@@ -303,7 +304,8 @@ class CSVBatchImporter:
 @router.post("/csv", response_model=UploadResult)
 async def upload_csv(
     file: UploadFile = File(..., description="CSV 文件"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_operator_user)
 ):
     if not file.filename.endswith('.csv'):
         raise FileProcessingException(
@@ -319,7 +321,10 @@ async def upload_csv(
 
 
 @router.get("/download/{filename}")
-async def download_failed_records(filename: str):
+async def download_failed_records(
+    filename: str,
+    current_user = Depends(get_current_normal_user)
+):
     temp_dir = os.path.join(os.getcwd(), 'temp')
     filepath = os.path.join(temp_dir, filename)
 

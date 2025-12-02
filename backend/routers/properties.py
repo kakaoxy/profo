@@ -16,6 +16,7 @@ from models import PropertyCurrent, Community, PropertyStatus, PropertyMedia
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyQueryParams, PropertyExportParams
 from schemas import PropertyResponse, PaginatedPropertyResponse, PropertyDetailResponse
+from dependencies.auth import get_current_normal_user, get_current_operator_user
 
 
 logger = logging.getLogger(__name__)

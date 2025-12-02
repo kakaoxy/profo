@@ -41,6 +41,21 @@ from .project import (
     SalesRolesUpdate,
     ProjectReportResponse,
 )
+from .user import (
+    UserCreate,
+    UserUpdate,
+    UserResponse,
+    UserListResponse,
+    PasswordChange,
+    RoleCreate,
+    RoleUpdate,
+    RoleResponse,
+    RoleListResponse,
+    LoginRequest,
+    TokenResponse,
+    RefreshTokenRequest,
+    WechatLoginRequest,
+)
 
 __all__ = [
     # Enums
@@ -90,4 +105,19 @@ __all__ = [
     'SalesRecordResponse',
     'SalesRolesUpdate',
     'ProjectReportResponse',
+    
+    # User and auth schemas
+    'UserCreate',
+    'UserUpdate',
+    'UserResponse',
+    'UserListResponse',
+    'PasswordChange',
+    'RoleCreate',
+    'RoleUpdate',
+    'RoleResponse',
+    'RoleListResponse',
+    'LoginRequest',
+    'TokenResponse',
+    'RefreshTokenRequest',
+    'WechatLoginRequest',
 ]

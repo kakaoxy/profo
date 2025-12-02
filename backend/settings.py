@@ -32,6 +32,17 @@ class Settings(BaseSettings):
     # 数据导入配置
     batch_commit_size: int = 1000  # 批量提交大小
     
+    # JWT配置
+    jwt_secret_key: str = "your-secret-key-here"  # 生产环境中应通过环境变量设置
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30  # 访问令牌过期时间(分钟)
+    jwt_refresh_token_expire_days: int = 7  # 刷新令牌过期时间(天)
+    
+    # 微信配置
+    wechat_appid: str = "your-wechat-appid"  # 微信AppID
+    wechat_secret: str = "your-wechat-secret"  # 微信AppSecret
+    wechat_redirect_uri: str = "http://localhost:8000/api/auth/wechat/callback"  # 微信回调地址
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
