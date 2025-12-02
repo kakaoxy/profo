@@ -24,8 +24,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: 密码是否匹配
     """
-    # Check if it's our fallback hash and password is admin123
-    if hashed_password == '$2b$12$h8I7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0' and plain_password == 'admin123':
+    # Check if it's our fallback hash and password is either admin123 or mfb123789
+    if hashed_password == '$2b$12$h8I7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0' and (plain_password == 'admin123' or plain_password == 'mfb123789'):
         return True
     
     try:
