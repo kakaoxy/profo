@@ -80,18 +80,35 @@ class ProjectService:
         }
 
     def update_project(self, project_id: str, update_data: ProjectUpdate) -> Project:
-        """更新项目信息（仅签约阶段可修改）"""
+        """更新项目信息"""
         project = self.get_project(project_id)
-
-        # 只有签约阶段才能修改项目基本信息
-        if project.status != ProjectStatus.SIGNING.value:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="只有在签约阶段才能修改项目基本信息"
-            )
 
         # 更新字段
         update_dict = update_data.dict(exclude_unset=True)
+        
+        # 根据项目状态限制可修改的字段
+        if project.status != ProjectStatus.SIGNING.value:
+            # 非签约阶段，只允许修改特定字段
+            allowed_fields = {
+                'channelManager', 'presenter', 'negotiator',
+                'viewingRecords', 'offerRecords', 'negotiationRecords',
+                'status', 'soldPrice', 'soldDate',
+                'property_agent', 'client_agent', 'first_viewer',
+                'list_price'
+            }
+            
+            # 过滤掉不允许修改的字段
+            filtered_update_dict = {}
+            for field, value in update_dict.items():
+                if field in allowed_fields:
+                    filtered_update_dict[field] = value
+                else:
+                    # 对于不允许修改的字段，跳过
+                    continue
+            
+            update_dict = filtered_update_dict
+        
+        # 更新字段
         for field, value in update_dict.items():
             setattr(project, field, value)
 
@@ -153,11 +170,16 @@ class ProjectService:
         """更新改造阶段"""
         project = self.get_project(project_id)
 
-        # 验证当前状态
-        if project.status != ProjectStatus.RENOVATING.value:
+        # 验证当前状态：允许在改造、在售、已售阶段更新改造子阶段
+        allowed_statuses = [
+            ProjectStatus.RENOVATING.value,
+            ProjectStatus.SELLING.value,
+            ProjectStatus.SOLD.value
+        ]
+        if project.status not in allowed_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="只有在改造阶段才能更新改造子阶段"
+                detail="只有在改造、在售或已售阶段才能更新改造子阶段"
             )
 
         # 更新改造阶段
@@ -196,11 +218,16 @@ class ProjectService:
         """添加改造阶段照片"""
         project = self.get_project(project_id)
 
-        # 验证当前状态
-        if project.status != ProjectStatus.RENOVATING.value:
+        # 验证当前状态：允许在改造、在售、已售阶段上传改造照片
+        allowed_statuses = [
+            ProjectStatus.RENOVATING.value,
+            ProjectStatus.SELLING.value,
+            ProjectStatus.SOLD.value
+        ]
+        if project.status not in allowed_statuses:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="只有在改造阶段才能上传照片"
+                detail="只有在改造、在售或已售阶段才能上传改造照片"
             )
 
         photo = RenovationPhoto(

@@ -15,12 +15,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true
+      },
+      '/static': {
+        target: 'http://localhost:8000',
+        changeOrigin: true
       }
     }
-  },
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./src/tests/setup.ts']
   }
 })
