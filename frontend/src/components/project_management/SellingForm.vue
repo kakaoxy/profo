@@ -270,12 +270,7 @@ const handleSave = async () => {
   }
 };
 
-const handleSold = async () => {
-  if (isAlreadyAdvanced.value) {
-    emit('navigate', 'sold');
-    return;
-  }
-};
+
 
 // Reset sold form state
 const resetSoldForm = () => {

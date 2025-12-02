@@ -13,7 +13,8 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
-from db import get_db, Base
+from db import get_db
+from models import Base
 
 
 # 测试数据库配置

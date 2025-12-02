@@ -131,14 +131,16 @@ const steps = computed(() => {
       name: '在售',
       isCompleted: 2 < currentStatusIndex && 2 !== activeStageIndex,
       isCurrent: 2 === activeStageIndex,
-      isClickable: 2 <= currentStatusIndex
+      // Allow clicking selling stage when current status is sold (for direct transition)
+      isClickable: 2 <= currentStatusIndex || project.value?.status === 'sold'
     },
     { 
       id: 'sold', 
       name: '已售',
       isCompleted: false, // Last stage is never "completed" in the visual sense
       isCurrent: 3 === activeStageIndex,
-      isClickable: 3 <= currentStatusIndex
+      // Allow clicking sold stage when current status is selling (for direct transition)
+      isClickable: 3 <= currentStatusIndex || project.value?.status === 'selling'
     },
   ];
 });
