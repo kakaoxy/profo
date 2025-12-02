@@ -68,6 +68,9 @@
               <button class="btn btn-sm btn-secondary" @click="editUser(user)">
                 <i class="icon-edit"></i> 编辑
               </button>
+              <button class="btn btn-sm btn-warning" @click="resetPassword(user)">
+                <i class="icon-refresh"></i> 重置密码
+              </button>
               <button class="btn btn-sm btn-danger" @click="deleteUser(user)">
                 <i class="icon-delete"></i> 删除
               </button>
@@ -353,6 +356,21 @@ const deleteUser = async (user: User) => {
   }
 };
 
+const resetPassword = async (user: User) => {
+  if (confirm(`确定要将用户 ${user.username} 的密码重置为默认值 mfb123789 吗？`)) {
+    try {
+      await apiClient.put(`/users/users/${user.id}/reset-password`, {
+        password: 'mfb123789'
+      });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      alert('密码重置成功，新密码为：mfb123789');
+    } catch (error) {
+      console.error('重置密码失败:', error);
+      alert('重置密码失败，请重试');
+    }
+  }
+};
+
 const saveUser = async () => {
   isLoading.value = true;
   try {
@@ -510,6 +528,15 @@ const saveUser = async () => {
 
 .btn-danger:hover {
   background-color: #f78989;
+}
+
+.btn-warning {
+  background-color: #e6a23c;
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #ebb563;
 }
 
 .btn-sm {

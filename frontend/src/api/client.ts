@@ -46,7 +46,8 @@ apiClient.interceptors.response.use(
       console.error(`[API Error] ${error.response.status} ${error.config.url}`, error.response.data);
       
       // Handle 401 Unauthorized - token expired
-      if (error.response.status === 401 && error.config.url !== '/api/auth/refresh') {
+    // Exclude login requests from token refresh logic to avoid infinite loops
+    if (error.response.status === 401 && error.config.url !== '/auth/refresh' && error.config.url !== '/auth/login') {
         try {
           // Try to refresh token
           const refreshToken = localStorage.getItem('refresh_token');
