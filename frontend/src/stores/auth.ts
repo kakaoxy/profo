@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null);
 
   // Computed
-  const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
+  const isAuthenticated = computed(() => !!accessToken.value);
   const userRole = computed(() => user.value?.role.code || null);
   const userPermissions = computed(() => user.value?.role.permissions || []);
 
@@ -118,8 +118,8 @@ export const useAuthStore = defineStore('auth', () => {
       setTokens(response.access_token, response.refresh_token);
       return true;
     } catch (err) {
-      // If refresh fails, clear tokens and user info
-      logout();
+      // If refresh fails, don't logout immediately, just return false
+      // Let the caller decide what to do
       return false;
     }
   };
@@ -142,10 +142,16 @@ export const useAuthStore = defineStore('auth', () => {
       
       if (refreshed) {
         // If token refreshed successfully, try fetching user again
-        const response = await apiClient.get('/users/me') as unknown as User;
-        setUser(response);
+        try {
+          const response = await apiClient.get('/users/me') as unknown as User;
+          setUser(response);
+        } catch (secondErr) {
+          error.value = '获取用户信息失败';
+          // Don't logout here, just show error
+        }
       } else {
         error.value = err.response?.data?.detail || '获取用户信息失败';
+        // Don't logout here, let the route guard handle it
       }
     } finally {
       isLoading.value = false;
