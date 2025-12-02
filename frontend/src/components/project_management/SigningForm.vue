@@ -48,30 +48,50 @@
          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">小区名称 <span class="text-red-500">*</span></label>
-            <input v-model="formData.community_name" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="输入小区名称" />
+            <input v-model="formData.community_name" type="text" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="输入小区名称" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约人/负责人 <span class="text-red-500">*</span></label>
-            <input v-model="formData.manager" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="输入负责人姓名" />
+            <input v-model="formData.manager" type="text" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="输入负责人姓名" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约价格 (万元) <span class="text-red-500">*</span></label>
             <div class="relative">
               <span class="absolute left-3 top-2 text-slate-400">¥</span>
-              <input v-model.number="formData.signing_price" type="number" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="0.00" />
+              <input v-model.number="formData.signing_price" type="number" :readonly="isAlreadyAdvanced" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="0.00" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约日期</label>
-            <input v-model="formData.signing_date" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+            <input 
+              v-model="formData.signing_date" 
+              type="date" 
+              :readonly="isAlreadyAdvanced" 
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" 
+              :class="[
+                isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed border-slate-300' : 'border-slate-300',
+                errors.signing_date ? 'border-red-500' : ''
+              ]" 
+            />
+            <p v-if="errors.signing_date" class="text-red-500 text-xs mt-1">{{ errors.signing_date }}</p>
           </div>
            <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">签约周期 (天)</label>
-            <input v-model.number="formData.signing_period" type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="30" />
+            <input v-model.number="formData.signing_period" type="number" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" placeholder="30" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">计划交房时间</label>
-            <input v-model="formData.planned_handover_date" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+            <input 
+              v-model="formData.planned_handover_date" 
+              type="date" 
+              :readonly="isAlreadyAdvanced" 
+              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" 
+              :class="[
+                isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed border-slate-300' : 'border-slate-300',
+                errors.planned_handover_date ? 'border-red-500' : ''
+              ]" 
+            />
+            <p v-if="errors.planned_handover_date" class="text-red-500 text-xs mt-1">{{ errors.planned_handover_date }}</p>
           </div>
         </div>
       </div>
@@ -82,35 +102,35 @@
          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            <div class="md:col-span-2">
               <label class="block text-sm font-medium text-slate-700 mb-1">物业地址 <span class="text-red-500">*</span></label>
-              <input v-model="formData.address" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="详细地址" />
+              <input v-model="formData.address" type="text" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="详细地址" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">产证面积 (m²)</label>
-              <input v-model.number="formData.area" type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model.number="formData.area" type="number" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">业主姓名</label>
-              <input v-model="formData.owner_name" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model="formData.owner_name" type="text" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">联系方式</label>
-              <input v-model="formData.owner_phone" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model="formData.owner_phone" type="text" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">身份证号</label>
-              <input v-model="formData.owner_id_card" type="text" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" maxlength="18" />
+              <input v-model="formData.owner_id_card" type="text" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" maxlength="18" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">顺延期 (月)</label>
-              <input v-model.number="formData.extensionPeriod" type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model.number="formData.extensionPeriod" type="number" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">顺延期租金 (元/月)</label>
-              <input v-model.number="formData.extensionRent" type="number" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+              <input v-model.number="formData.extensionRent" type="number" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">税费及佣金承担</label>
-              <select v-model="formData.costAssumption" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+              <select v-model="formData.costAssumption" :disabled="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white" :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''">
                 <option value="不承担">不承担</option>
                 <option value="溢价部分承担">溢价部分承担</option>
                 <option value="全部承担">全部承担</option>
@@ -122,11 +142,11 @@
          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">其他约定</label>
-              <textarea v-model="formData.otherAgreements" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如有其他约定事项请在此填写..." />
+              <textarea v-model="formData.otherAgreements" rows="3" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如有其他约定事项请在此填写..." :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
            <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">备注</label>
-              <textarea v-model="formData.remarks" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="其他备注信息..." />
+              <textarea v-model="formData.remarks" rows="3" :readonly="isAlreadyAdvanced" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="其他备注信息..." :class="isAlreadyAdvanced ? 'bg-slate-50 cursor-not-allowed' : ''" />
            </div>
          </div>
       </div>
@@ -165,6 +185,12 @@ import type { Project, PhotoRecord } from './types';
 import PhotoUploadField from './PhotoUploadField.vue';
 import { AxiosError } from 'axios';
 import { updateProjectStatus } from '../../api/projects';
+import { 
+  formatDateToInput, 
+  isValidDateFormat, 
+  isDateInRange,
+  getCurrentDate 
+} from '../../utils/dateUtils';
 
 const props = defineProps<{
   projectId: string | null;
@@ -185,7 +211,7 @@ const formData = ref<Partial<Project>>({
   community_name: '',
   signing_price: 0,
   signing_period: 30,
-  planned_handover_date: null,
+  planned_handover_date: undefined,
   signing_date: new Date().toISOString().split('T')[0],
   manager: '',
   otherAgreements: '',
@@ -196,10 +222,38 @@ const formData = ref<Partial<Project>>({
   owner_name: '',
   owner_phone: '',
   owner_id_card: '',
+  owner_info: undefined,
   area: 0,
   extensionPeriod: 0,
   extensionRent: 0,
   costAssumption: '不承担',
+  
+  // Sales related fields
+  channelManager: '',
+  client_agent: '',
+  first_viewer: '',
+  list_price: 0,
+  property_agent: '',
+  presenter: '',
+  negotiator: '',
+  viewingRecords: [],
+  offerRecords: [],
+  negotiationRecords: [],
+  
+  // Sold related fields
+  soldPrice: 0,
+  soldDate: undefined,
+  sale_price: 0,
+  sold_at: undefined,
+  
+  // Renovation related fields
+  renovation_stage: undefined,
+  renovationStageDates: undefined,
+  stage_completed_at: undefined,
+  
+  // Metadata fields
+  notes: '',
+  tags: [],
 
   // Photos
   contractPhotos: [],
@@ -216,6 +270,39 @@ const formData = ref<Partial<Project>>({
   otherPhotos: []
 });
 
+// Error state for form validation
+const errors = ref<Record<string, string>>({});
+
+// Validate date fields in real-time
+const validateDateField = (field: string, value: string | null | undefined) => {
+  if (!value || value === '') {
+    delete errors.value[field];
+    return true;
+  }
+  
+  if (!isValidDateFormat(value)) {
+    errors.value[field] = '日期格式不正确，请使用yyyy-MM-dd格式';
+    return false;
+  }
+  
+  if (!isDateInRange(value, '1900-01-01', getCurrentDate())) {
+    errors.value[field] = '日期超出有效范围';
+    return false;
+  }
+  
+  delete errors.value[field];
+  return true;
+};
+
+// Watch date fields for real-time validation
+watch(() => formData.value.signing_date, (newValue) => {
+  validateDateField('signing_date', newValue);
+});
+
+watch(() => formData.value.planned_handover_date, (newValue) => {
+  validateDateField('planned_handover_date', newValue);
+});
+
 const loadProjectData = async (id: string) => {
   isLoading.value = true;
   error.value = null;
@@ -225,10 +312,32 @@ const loadProjectData = async (id: string) => {
       // Deep copy to avoid mutating store directly before save
       formData.value = JSON.parse(JSON.stringify(project));
       
-      // Unpack signing_materials if exists
+      // Format date fields to yyyy-MM-dd format for input elements using utility function
+      const dateFields = ['signing_date', 'planned_handover_date'] as const;
+      dateFields.forEach(field => {
+        if (formData.value[field]) {
+          formData.value[field] = formatDateToInput(formData.value[field] as string);
+        }
+      });
+      
+      // Unpack signing_materials if exists, but only for photo fields
       if (project.signing_materials) {
-        // Merge signing_materials into formData so photo fields are populated
-        Object.assign(formData.value, project.signing_materials);
+        // Only merge photo fields from signing_materials, not other fields
+        const photoFields = [
+          'contractPhotos', 'propertyDeedPhotos', 'propertySurveyPhotos', 
+          'idCardPhotos', 'bankCardPhotos', 'decorationContractPhotos',
+          'houseHandoverPhotos', 'receiptPhotos', 'cooperationConfirmationPhotos',
+          'storeInvestmentAgreementPhotos', 'valueAddedServiceConfirmationPhotos',
+          'otherPhotos'
+        ] as const;
+        
+        // Merge only photo fields
+        photoFields.forEach(field => {
+          const signingMaterials = project.signing_materials as Record<string, any>;
+          if (signingMaterials[field]) {
+            (formData.value as any)[field] = signingMaterials[field];
+          }
+        });
       }
     } else {
         error.value = '未找到该项目数据';
@@ -276,13 +385,8 @@ watch(() => props.projectId, (newId) => {
   }
 }, { immediate: true });
 
-const isAlreadyAdvanced = computed(() => {
-  if (!props.projectId) return false;
-  const project = store.projects.find(p => p.id === props.projectId);
-  if (!project) return false;
-  const statusOrder = ['signing', 'renovating', 'selling', 'sold'];
-  return statusOrder.indexOf(project.status) > statusOrder.indexOf('signing');
-});
+// 移除签约阶段的修改限制，允许在任何阶段补充和修改签约信息
+const isAlreadyAdvanced = computed(() => false);
 
 const addPhoto = (field: keyof Project, photo: PhotoRecord) => {
   if (!formData.value[field]) {
@@ -298,14 +402,41 @@ const removePhoto = (field: keyof Project, photoId: string) => {
 };
 
 const validate = () => {
-  if (!formData.value.community_name || !formData.value.signing_price || !formData.value.manager || !formData.value.address) return false;
+  let isValid = true;
+  
+  // Basic required fields validation
+  if (!formData.value.community_name || !formData.value.signing_price || !formData.value.manager || !formData.value.address) {
+    isValid = false;
+  }
+  
+  // Date fields validation
+  if (!validateDateField('signing_date', formData.value.signing_date)) {
+    isValid = false;
+  }
+  
+  if (formData.value.planned_handover_date) {
+    if (!validateDateField('planned_handover_date', formData.value.planned_handover_date)) {
+      isValid = false;
+    }
+    // Additional validation: planned_handover_date should be after or equal to signing_date
+    if (formData.value.signing_date && formData.value.planned_handover_date) {
+      const signingDate = new Date(formData.value.signing_date);
+      const handoverDate = new Date(formData.value.planned_handover_date);
+      if (handoverDate < signingDate) {
+        errors.value.planned_handover_date = '计划交房时间不能早于签约日期';
+        isValid = false;
+      }
+    }
+  }
+  
   // Check required photos
-  if ((formData.value.contractPhotos?.length || 0) === 0) return false;
-  if ((formData.value.propertyDeedPhotos?.length || 0) === 0) return false;
-  if ((formData.value.propertySurveyPhotos?.length || 0) === 0) return false;
-  if ((formData.value.idCardPhotos?.length || 0) === 0) return false;
-  if ((formData.value.bankCardPhotos?.length || 0) === 0) return false;
-  return true;
+  if ((formData.value.contractPhotos?.length || 0) === 0) isValid = false;
+  if ((formData.value.propertyDeedPhotos?.length || 0) === 0) isValid = false;
+  if ((formData.value.propertySurveyPhotos?.length || 0) === 0) isValid = false;
+  if ((formData.value.idCardPhotos?.length || 0) === 0) isValid = false;
+  if ((formData.value.bankCardPhotos?.length || 0) === 0) isValid = false;
+  
+  return isValid;
 };
 
 const packMaterials = () => {
@@ -328,19 +459,37 @@ const packMaterials = () => {
 };
 
 const handleSave = async () => {
-  // 构造payload，过滤掉无效的日期字段
+  // 构造payload，过滤掉无效的日期字段和冗余的照片字段
   const payload = { ...formData.value };
   
-  // 过滤掉空的或无效的日期字段
-  if (!payload.planned_handover_date || payload.planned_handover_date === '') {
-    delete payload.planned_handover_date;
+  // 移除照片字段，因为它们会被打包到signing_materials中，避免数据冗余
+  const photoFields = [
+    'contractPhotos', 'propertyDeedPhotos', 'propertySurveyPhotos', 
+    'idCardPhotos', 'bankCardPhotos', 'decorationContractPhotos',
+    'houseHandoverPhotos', 'receiptPhotos', 'cooperationConfirmationPhotos',
+    'storeInvestmentAgreementPhotos', 'valueAddedServiceConfirmationPhotos',
+    'otherPhotos'
+  ] as const;
+  
+  photoFields.forEach(field => {
+    delete (payload as any)[field];
+  });
+  
+  // 过滤掉空的或无效的字段
+  const filteredPayload: Partial<Project> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    // 过滤掉空字符串、空数组、null值，但保留0值
+    if (value !== '' && value !== null && !(Array.isArray(value) && value.length === 0) && value !== undefined) {
+      (filteredPayload as any)[key] = value;
+    }
   }
   
-  payload.signing_materials = packMaterials();
+  // 打包照片字段到signing_materials中
+  filteredPayload.signing_materials = packMaterials();
 
   if (props.projectId) {
     try {
-        await store.updateProject(props.projectId, payload);
+        await store.updateProject(props.projectId, filteredPayload);
         alert('已保存');
     } catch (e) {
         console.error('Save failed', e);
@@ -349,7 +498,7 @@ const handleSave = async () => {
   } else {
     try {
         const newProject = await store.addProject({
-            ...payload,
+            ...filteredPayload,
             status: 'signing',
             name: formData.value.community_name + ' ' + (formData.value.address || '')
         } as Project);
@@ -368,34 +517,51 @@ const handleNext = async () => {
     return;
   }
 
-  // 构造payload，过滤掉无效的日期字段
+  // 构造payload，过滤掉无效的日期字段和冗余的照片字段
   const payload = { ...formData.value };
   
-  // 过滤掉空的或无效的日期字段
-  if (!payload.planned_handover_date || payload.planned_handover_date === '') {
-    delete payload.planned_handover_date;
+  // 移除照片字段，因为它们会被打包到signing_materials中，避免数据冗余
+  const photoFields = [
+    'contractPhotos', 'propertyDeedPhotos', 'propertySurveyPhotos', 
+    'idCardPhotos', 'bankCardPhotos', 'decorationContractPhotos',
+    'houseHandoverPhotos', 'receiptPhotos', 'cooperationConfirmationPhotos',
+    'storeInvestmentAgreementPhotos', 'valueAddedServiceConfirmationPhotos',
+    'otherPhotos'
+  ];
+  
+  const payloadAny = payload as any;
+  photoFields.forEach(field => {
+    delete payloadAny[field];
+  });
+  
+  // 过滤掉空的或无效的字段
+  const filteredPayload: Partial<Project> = {};
+  const filteredPayloadAny = filteredPayload as any;
+  for (const [key, value] of Object.entries(payload)) {
+    // 过滤掉空字符串、空数组、null值，但保留0值
+    if (value !== '' && value !== null && !(Array.isArray(value) && value.length === 0) && value !== undefined) {
+      filteredPayloadAny[key] = value;
+    }
   }
   
-  payload.signing_materials = packMaterials();
+  // 打包照片字段到signing_materials中
+  filteredPayload.signing_materials = packMaterials();
 
   if (props.projectId) {
-    // If already advanced (e.g. status is renovating/selling/sold), we keep it.
-    // If not advanced (status is signing), we want to move to renovating.
-    const shouldUpdateStatus = !isAlreadyAdvanced.value;
-    
     try {
+        const project = store.projects.find(p => p.id === props.projectId);
+        
         // 1. Update project data (excluding status)
         await store.updateProject(props.projectId, {
-          ...payload,
+          ...filteredPayload,
           // Note: Backend ignores status in updateProject, so we must call updateProjectStatus separately if needed
         });
 
-        // 2. Update status if needed
-        if (shouldUpdateStatus) {
+        // 2. Update status only if current status is signing
+        if (project && project.status === 'signing') {
              // Use direct API call to avoid potential store sync issues
              await updateProjectStatus(props.projectId, 'renovating');
              // Update local store manually
-             const project = store.projects.find(p => p.id === props.projectId);
              if (project) {
                  project.status = 'renovating';
              }
@@ -410,7 +576,7 @@ const handleNext = async () => {
     // New project
     try {
         const newProject = await store.addProject({
-          ...payload,
+          ...filteredPayload,
           status: 'renovating',
           name: formData.value.community_name + ' ' + (formData.value.address || ''),
           renovationStartDate: new Date().toISOString().split('T')[0]

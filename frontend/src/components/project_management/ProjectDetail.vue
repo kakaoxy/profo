@@ -96,11 +96,12 @@ const project = computed(() => props.projectId ? store.projects.find(p => p.id =
 
 const activeStage = ref<ProjectStatus>('signing');
 
-// Initialize active stage based on project status
-watch(project, (newVal) => {
-  if (newVal) {
+// Initialize active stage based on project status - only when project changes, not when activeStage changes
+watch(project, (newVal, oldVal) => {
+  // Only update activeStage if this is a new project (oldVal is undefined) or project has been replaced
+  if (newVal && (!oldVal || newVal.id !== oldVal.id)) {
     activeStage.value = newVal.status;
-  } else {
+  } else if (!newVal) {
     activeStage.value = 'signing';
   }
 }, { immediate: true });
@@ -156,12 +157,16 @@ const currentStepComponent = computed(() => {
 
 const handleStepClick = (stepId: string) => {
   // Allow navigation to any step <= current project status
-  // Or if it's a new project, only 'signing' is allowed (which is handled by logic)
+  // Allow direct transition between selling and sold stages
   const statusOrder = ['signing', 'renovating', 'selling', 'sold'];
   const projectStatusIndex = project.value ? statusOrder.indexOf(project.value.status) : 0;
   const stepIndex = statusOrder.indexOf(stepId);
 
-  if (stepIndex <= projectStatusIndex) {
+  // Special rule: allow direct transition between selling and sold stages
+  const isDirectSellToSold = project.value?.status === 'selling' && stepId === 'sold';
+  const isDirectSoldToSell = project.value?.status === 'sold' && stepId === 'selling';
+  
+  if (stepIndex <= projectStatusIndex || isDirectSellToSold || isDirectSoldToSell) {
     activeStage.value = stepId as ProjectStatus;
   }
 };

@@ -86,13 +86,12 @@ class ProjectService:
         # 更新字段
         update_dict = update_data.dict(exclude_unset=True)
         
-        # 根据项目状态限制可修改的字段
-        if project.status != ProjectStatus.SIGNING.value:
-            # 非签约阶段，只允许修改特定字段
+        # 只限制已售状态不能修改某些字段，其他状态允许修改所有字段
+        if project.status == ProjectStatus.SOLD.value:
+            # 已售状态，只允许修改特定字段
             allowed_fields = {
                 'channelManager', 'presenter', 'negotiator',
                 'viewingRecords', 'offerRecords', 'negotiationRecords',
-                'status', 'soldPrice', 'soldDate',
                 'property_agent', 'client_agent', 'first_viewer',
                 'list_price'
             }
@@ -102,13 +101,10 @@ class ProjectService:
             for field, value in update_dict.items():
                 if field in allowed_fields:
                     filtered_update_dict[field] = value
-                else:
-                    # 对于不允许修改的字段，跳过
-                    continue
             
             update_dict = filtered_update_dict
         
-        # 更新字段
+        # 更新所有允许的字段
         for field, value in update_dict.items():
             setattr(project, field, value)
 
@@ -149,11 +145,11 @@ class ProjectService:
         """完成项目"""
         project = self.get_project(project_id)
 
-        # 验证当前状态
-        if project.status != ProjectStatus.SELLING.value:
+        # 验证当前状态：允许从在售或已售状态标记为已售
+        if project.status != ProjectStatus.SELLING.value and project.status != ProjectStatus.SOLD.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="只有在售阶段的项目才能标记为已售"
+                detail="只有在售或已售阶段的项目才能标记为已售"
             )
 
         # 更新项目信息
@@ -330,20 +326,23 @@ class ProjectService:
 
     def _validate_status_transition(self, current_status: str, new_status: str) -> None:
         """验证状态流转合法性"""
-        # 定义允许的状态流转路径
-        valid_transitions = {
-            ProjectStatus.SIGNING.value: [ProjectStatus.RENOVATING.value],
-            ProjectStatus.RENOVATING.value: [ProjectStatus.SELLING.value],
-            ProjectStatus.SELLING.value: [ProjectStatus.SOLD.value],
-            ProjectStatus.SOLD.value: []  # 已售状态不能再流转
-        }
-
-        allowed_transitions = valid_transitions.get(current_status, [])
-        if new_status not in allowed_transitions:
+        # 允许更灵活的状态流转，特别是允许从高级阶段切换回低级阶段修改信息
+        # 允许在售和已售状态之间直接切换
+        # 允许从任何状态切换到相同状态（幂等操作）
+        # 允许正常的单向流转
+        
+        # 特殊规则：只限制除了在售状态外，其他状态不能切换到已售状态
+        if new_status == ProjectStatus.SOLD.value and current_status != ProjectStatus.SELLING.value and current_status != ProjectStatus.SOLD.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不允许从状态 '{current_status}' 转换到 '{new_status}'"
+                detail="只有在售或已售状态才能切换到已售状态"
             )
+        
+        # 其他状态流转规则：
+        # 1. 已售 → 在售：允许直接切换
+        # 2. 在售 → 已售：允许直接切换
+        # 3. 其他状态间的切换保持灵活性
+        # 4. 允许从高级阶段切换回低级阶段修改信息
 
     def _calculate_net_cash_flow(self, project_id: str) -> Decimal:
         """计算项目净现金流"""
