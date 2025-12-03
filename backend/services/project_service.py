@@ -22,17 +22,31 @@ class ProjectService:
     def __init__(self, db: Session):
         self.db = db
 
-    # ========== 项目基础操作 ==========
-
     def create_project(self, project_data: ProjectCreate) -> Project:
         """创建项目"""
         project = Project(
             name=project_data.name,
             community_name=project_data.community_name,
             address=project_data.address,
+            manager=project_data.manager,
+            signing_price=project_data.signing_price,
+            signing_date=project_data.signing_date,
+            signing_period=project_data.signing_period,
+            planned_handover_date=project_data.planned_handover_date,
+            signing_materials=project_data.signing_materials,
             owner_name=project_data.owner_name,
             owner_phone=project_data.owner_phone,
+            owner_id_card=project_data.owner_id_card,
             owner_info=project_data.owner_info,
+            
+            # Extended fields
+            area=project_data.area,
+            extensionPeriod=project_data.extensionPeriod,
+            extensionRent=project_data.extensionRent,
+            costAssumption=project_data.costAssumption,
+            otherAgreements=project_data.otherAgreements,
+            remarks=project_data.remarks,
+            
             notes=project_data.notes,
             tags=project_data.tags,
             status=ProjectStatus.SIGNING.value,

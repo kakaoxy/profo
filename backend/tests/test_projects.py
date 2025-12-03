@@ -14,7 +14,8 @@ from decimal import Decimal
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
-from db import get_db, Base
+from db import get_db
+from models import Base
 from models import Project, CashFlowRecord
 from models.base import ProjectStatus, RenovationStage, CashFlowType, CashFlowCategory
 
@@ -123,8 +124,8 @@ class TestProjectAPI:
         assert data["data"]["name"] == "更新后的项目名称"
         assert data["data"]["notes"] == "更新后的备注"
 
-    def test_update_project_in_non_signing_stage(self, client, sample_project_data):
-        """测试在非签约阶段更新项目信息（应该失败）"""
+    def test_update_project_in_renovating_stage(self, client, sample_project_data):
+        """测试在改造阶段更新项目信息（应该成功）"""
         # 创建项目
         create_response = client.post("/api/v1/projects", json=sample_project_data)
         project_id = create_response.json()["data"]["id"]
@@ -133,12 +134,12 @@ class TestProjectAPI:
         status_update = {"status": "renovating"}
         client.put(f"/api/v1/projects/{project_id}/status", json=status_update)
 
-        # 尝试更新项目信息（应该失败）
-        update_data = {"name": "不应该成功的更新"}
+        # 尝试更新项目信息（应该成功）
+        update_data = {"name": "改造阶段更新名称"}
         response = client.put(f"/api/v1/projects/{project_id}", json=update_data)
-        assert response.status_code == 400
+        assert response.status_code == 200
         data = response.json()
-        assert "签约阶段" in data["detail"]
+        assert data["data"]["name"] == "改造阶段更新名称"
 
     def test_status_transition_flow(self, client, sample_project_data):
         """测试状态流转"""
@@ -172,7 +173,7 @@ class TestProjectAPI:
         response = client.put(f"/api/v1/projects/{project_id}/status", json={"status": "sold"})
         assert response.status_code == 400
         data = response.json()
-        assert "不允许" in data["detail"]
+        assert "不允许" in data["error"]["message"]
 
     def test_renovation_stage_update(self, client, sample_project_data):
         """测试改造阶段更新"""
@@ -201,7 +202,7 @@ class TestProjectAPI:
         response = client.put(f"/api/v1/projects/{project_id}/renovation", json=renovation_data)
         assert response.status_code == 400
         data = response.json()
-        assert "改造阶段" in data["detail"]
+        assert "改造阶段" in data["error"]["message"]
 
     def test_sales_roles_update(self, client, sample_project_data):
         """测试销售角色更新"""
@@ -236,7 +237,7 @@ class TestProjectAPI:
         response = client.put(f"/api/v1/projects/{project_id}/selling/roles", json=roles_data)
         assert response.status_code == 400
         data = response.json()
-        assert "在售阶段" in data["detail"]
+        assert "在售阶段" in data["error"]["message"]
 
     def test_renovation_photo_upload(self, client, sample_project_data):
         """测试改造阶段照片上传"""
@@ -387,7 +388,7 @@ class TestProjectAPI:
         response = client.get(f"/api/v1/projects/{fake_project_id}")
         assert response.status_code == 404
         data = response.json()
-        assert "项目不存在" in data["detail"]
+        assert "项目不存在" in data["error"]["message"]
 
     def test_project_filter_by_status(self, client, sample_project_data):
         """测试按状态筛选项目"""

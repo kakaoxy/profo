@@ -34,6 +34,7 @@
         v-else-if="currentView === 'detail'"
         :project-id="selectedProjectId"
         @back="handleBackToDashboard"
+        @create="handleProjectCreated"
       />
       <CashFlow
         v-else-if="currentView === 'cashflow'"
@@ -81,6 +82,10 @@ const handleViewCashFlow = (id: string): void => {
 const handleBackToDashboard = (): void => {
   currentView.value = 'dashboard'
   selectedProjectId.value = null
+}
+
+const handleProjectCreated = (id: string): void => {
+  selectedProjectId.value = id
 }
 </script>
 
