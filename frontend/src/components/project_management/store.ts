@@ -145,12 +145,12 @@ export const useProjectManagementStore = defineStore('project-management', () =>
     // Actions
     const addProject = async (project: Project) => {
         try {
-            console.log('[Store] Creating project:', project);
+            // console.log('[Store] Creating project:', project);
             const createdProject = await createProject(project);
-            console.log('[Store] Created project:', createdProject);
+            // console.log('[Store] Created project:', createdProject);
 
             projects.value.push(createdProject);
-            console.log('[Store] Project added to store, total projects:', projects.value.length);
+            // console.log('[Store] Project added to store, total projects:', projects.value.length);
             return createdProject;
         } catch (error) {
             console.error('[Store] Failed to create project:', error);
@@ -160,9 +160,9 @@ export const useProjectManagementStore = defineStore('project-management', () =>
 
     const updateProject = async (id: string, updates: Partial<Project>) => {
         try {
-            console.log('[Store] Updating project:', id, updates);
+            // console.log('[Store] Updating project:', id, updates);
             const updatedProject = await updateProjectApi(id, updates);
-            console.log('[Store] Updated project:', updatedProject);
+            // console.log('[Store] Updated project:', updatedProject);
 
             const index = projects.value.findIndex(p => p.id === id);
             if (index !== -1) {
@@ -179,7 +179,7 @@ export const useProjectManagementStore = defineStore('project-management', () =>
 
     const updateProjectStatus = async (id: string, status: string) => {
         try {
-            console.log('[Store] Updating project status:', id, status);
+            // console.log('[Store] Updating project status:', id, status);
             const updatedProject = await updateProjectStatusApi(id, status);
 
             const index = projects.value.findIndex(p => p.id === id);
@@ -232,7 +232,7 @@ export const useProjectManagementStore = defineStore('project-management', () =>
                 description: record.description
             });
 
-            console.log('[Store] Create cash flow response:', response);
+            // console.log('[Store] Create cash flow response:', response);
 
             // Handle wrapped response
             let createdRecord: CashFlowRecord | null = null;
@@ -240,12 +240,12 @@ export const useProjectManagementStore = defineStore('project-management', () =>
             // Case 1: Response wrapped in {code, msg, data: CashFlowRecord}
             if (response && typeof response === 'object' && 'data' in response && response.data) {
                 createdRecord = response.data as CashFlowRecord;
-                console.log('[Store] Created record from response.data');
+                // console.log('[Store] Created record from response.data');
             }
             // Case 2: Direct CashFlowRecord
             else if (response && typeof response === 'object') {
                 createdRecord = response as CashFlowRecord;
-                console.log('[Store] Created record from direct response');
+                // console.log('[Store] Created record from direct response');
             }
 
             // Add the created record to store with field mapping
@@ -263,8 +263,8 @@ export const useProjectManagementStore = defineStore('project-management', () =>
                     cashFlows.value = [];
                 }
                 cashFlows.value.push(mappedRecord);
-                console.log(`[Store] Added cash flow record with ID: ${mappedRecord.id}, projectId: ${mappedRecord.projectId}`);
-                console.log(`[Store] Total in store: ${cashFlows.value.length}`);
+                // console.log(`[Store] Added cash flow record with ID: ${mappedRecord.id}, projectId: ${mappedRecord.projectId}`);
+                // console.log(`[Store] Total in store: ${cashFlows.value.length}`);
             } else {
                 console.warn('[Store] Failed to extract created record from response:', response);
             }
@@ -287,19 +287,19 @@ export const useProjectManagementStore = defineStore('project-management', () =>
                 throw new Error('记录不存在或缺少项目ID');
             }
 
-            console.log(`[Store] Deleting cash flow record:`, {
-                id: record.id,
-                projectId: record.projectId,
-                category: record.category,
-                amount: record.amount
-            });
+            // console.log(`[Store] Deleting cash flow record:`, {
+            //     id: record.id,
+            //     projectId: record.projectId,
+            //     category: record.category,
+            //     amount: record.amount
+            // });
 
             await deleteCashFlowRecord(id, record.projectId);
 
             const index = cashFlows.value.findIndex(cf => cf.id === id);
             if (index !== -1) {
                 cashFlows.value.splice(index, 1);
-                console.log(`[Store] Record deleted successfully from store`);
+                // console.log(`[Store] Record deleted successfully from store`);
             }
         } catch (error) {
             console.error('Failed to delete cash flow record:', error);
@@ -316,25 +316,25 @@ export const useProjectManagementStore = defineStore('project-management', () =>
         error.value = null;
         try {
             const response = await fetchProjects();
-            console.log('[Store] Raw fetchProjects response:', response);
-            console.log('[Store] Response type:', typeof response);
-            console.log('[Store] Response keys:', response ? Object.keys(response) : 'null');
+            // console.log('[Store] Raw fetchProjects response:', response);
+            // console.log('[Store] Response type:', typeof response);
+            // console.log('[Store] Response keys:', response ? Object.keys(response) : 'null');
 
             // Handle different response structures
             // Case 1: Direct pagination response { items: [], total, page, page_size }
             if (response && typeof response === 'object' && 'items' in response && Array.isArray(response.items)) {
                 projects.value = response.items;
-                console.log('[Store] Projects loaded from response.items, count:', projects.value.length);
+                // console.log('[Store] Projects loaded from response.items, count:', projects.value.length);
             }
             // Case 2: Data wrapped in 'data' field { data: { items: [], total, page, page_size } }
             else if (response && typeof response === 'object' && 'data' in response && response.data && typeof response.data === 'object' && 'items' in response.data) {
                 projects.value = Array.isArray(response.data.items) ? response.data.items : [];
-                console.log('[Store] Projects loaded from response.data.items, count:', projects.value.length);
+                // console.log('[Store] Projects loaded from response.data.items, count:', projects.value.length);
             }
             // Case 3: Direct array response
             else if (Array.isArray(response)) {
                 projects.value = response;
-                console.log('[Store] Projects loaded from direct array, count:', projects.value.length);
+                // console.log('[Store] Projects loaded from direct array, count:', projects.value.length);
             }
             // Fallback: ensure projects is an empty array
             else {
@@ -372,11 +372,11 @@ export const useProjectManagementStore = defineStore('project-management', () =>
 
     const loadCashFlows = async (projectId: string) => {
         try {
-            console.log(`[Store] Loading cash flows for project: ${projectId}`);
+            // console.log(`[Store] Loading cash flows for project: ${projectId}`);
             const response = await fetchProjectCashFlow(projectId);
-            console.log(`[Store] Raw fetchProjectCashFlow response:`, response);
-            console.log(`[Store] Response type:`, typeof response);
-            console.log(`[Store] Response keys:`, response ? Object.keys(response) : 'null');
+            // console.log(`[Store] Raw fetchProjectCashFlow response:`, response);
+            // console.log(`[Store] Response type:`, typeof response);
+            // console.log(`[Store] Response keys:`, response ? Object.keys(response) : 'null');
 
             // Clear existing records for this project
             const existingIndices = cashFlows.value.map((cf, index) =>
@@ -395,11 +395,11 @@ export const useProjectManagementStore = defineStore('project-management', () =>
             if (response && typeof response === 'object' && 'data' in response && response.data && typeof response.data === 'object') {
                 if ('records' in response.data && Array.isArray(response.data.records)) {
                     records = response.data.records;
-                    console.log(`[Store] Loaded ${records.length} cash flow records from response.data.records for project ${projectId}`);
+                    // console.log(`[Store] Loaded ${records.length} cash flow records from response.data.records for project ${projectId}`);
                     // Log first record to see structure
                     if (records.length > 0) {
-                        console.log(`[Store] Sample record structure:`, records[0]);
-                        console.log(`[Store] Sample record keys:`, Object.keys(records[0]));
+                        // console.log(`[Store] Sample record structure:`, records[0]);
+                        // console.log(`[Store] Sample record keys:`, Object.keys(records[0]));
                     }
                 } else {
                     console.warn(`[Store] response.data exists but no records array found:`, response.data);
@@ -408,12 +408,12 @@ export const useProjectManagementStore = defineStore('project-management', () =>
             // Case 2: Direct response {records, summary}
             else if (response && typeof response === 'object' && 'records' in response && Array.isArray(response.records)) {
                 records = response.records;
-                console.log(`[Store] Loaded ${records.length} cash flow records from response.records for project ${projectId}`);
+                // console.log(`[Store] Loaded ${records.length} cash flow records from response.records for project ${projectId}`);
             }
             // Case 3: Direct array
             else if (Array.isArray(response)) {
                 records = response;
-                console.log(`[Store] Loaded ${records.length} cash flow records from direct array for project ${projectId}`);
+                // console.log(`[Store] Loaded ${records.length} cash flow records from direct array for project ${projectId}`);
             }
             else {
                 console.warn(`[Store] No valid records found in response for project ${projectId}:`, response);
@@ -429,11 +429,11 @@ export const useProjectManagementStore = defineStore('project-management', () =>
                 }));
 
                 cashFlows.value.push(...mappedRecords);
-                console.log(`[Store] Total cash flows in store after loading: ${cashFlows.value.length}`);
+                // console.log(`[Store] Total cash flows in store after loading: ${cashFlows.value.length}`);
 
                 // Verify the mapping worked
                 const projectRecords = cashFlows.value.filter(cf => cf.projectId === projectId);
-                console.log(`[Store] Cash flows for project ${projectId}: ${projectRecords.length}`);
+                // console.log(`[Store] Cash flows for project ${projectId}: ${projectRecords.length}`);
 
                 if (projectRecords.length === 0 && records.length > 0) {
                     console.error(`[Store] ERROR: Loaded ${records.length} records but projectId filter returns 0!`);
