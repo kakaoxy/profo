@@ -11,6 +11,8 @@ from schemas.project import (
     BaseResponse, CashFlowRecordCreate, CashFlowRecordResponse,
     CashFlowResponse, CashFlowSummary
 )
+from dependencies.auth import get_current_normal_user
+from models.user import User
 
 router = APIRouter(prefix="/api/v1", tags=["cashflow"])
 
@@ -25,7 +27,8 @@ def get_cashflow_service(db: Session = Depends(get_db)):
 async def create_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: CashFlowRecordCreate = ...,
-    service: CashFlowService = Depends(get_cashflow_service)
+    service: CashFlowService = Depends(get_cashflow_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """创建现金流记录"""
     record = service.create_cashflow_record(project_id, record_data)
@@ -35,7 +38,8 @@ async def create_cashflow_record(
 @router.get("/projects/{project_id}/cashflow", response_model=BaseResponse[CashFlowResponse])
 async def get_project_cashflow(
     project_id: str = Path(..., description="项目ID"),
-    service: CashFlowService = Depends(get_cashflow_service)
+    service: CashFlowService = Depends(get_cashflow_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """获取项目现金流明细和汇总"""
     records = service.get_cashflow_records(project_id)
@@ -48,11 +52,12 @@ async def get_project_cashflow(
     return BaseResponse(code=200, msg="success", data=response_data)
 
 
-@router.delete("/cashflow/{record_id}", response_model=BaseResponse)
+@router.delete("/projects/{project_id}/cashflow/{record_id}", response_model=BaseResponse)
 async def delete_cashflow_record(
+    project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
-    project_id: str = Query(..., description="项目ID"),
-    service: CashFlowService = Depends(get_cashflow_service)
+    service: CashFlowService = Depends(get_cashflow_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """删除现金流记录"""
     service.delete_cashflow_record(record_id, project_id)

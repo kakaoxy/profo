@@ -1,5 +1,36 @@
 <template>
   <div class="cash-flow max-w-6xl mx-auto space-y-6 px-4 pb-12">
+    <!-- Loading State -->
+    <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+      <p class="text-slate-600 text-lg font-medium">加载收支明细...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div v-else-if="error" class="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p class="text-red-700 text-lg font-semibold mb-2">{{ error }}</p>
+      <p class="text-red-600 mb-4">请检查网络连接或稍后重试</p>
+      <div class="flex gap-3 justify-center">
+        <button 
+          @click="$emit('back')" 
+          class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium"
+        >
+          返回
+        </button>
+        <button 
+          @click="loadData" 
+          class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+        >
+          重新加载
+        </button>
+      </div>
+    </div>
+    
+    <!-- Normal Content -->
+    <template v-else>
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
@@ -176,7 +207,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold"
                   :class="record.type === CashFlowType.INCOME ? 'text-green-600' : 'text-slate-900'"
                 >
-                  {{ record.type === CashFlowType.INCOME ? '+' : '-' }}{{ record.amount.toFixed(4) }}
+                  {{ record.type === CashFlowType.INCOME ? '+' : '-' }}{{ (record.amount / 10000).toFixed(4) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button @click="handleDeleteRecord(record.id)" class="text-slate-400 hover:text-red-600 transition-colors">
@@ -289,7 +320,7 @@
           </button>
           <button 
             @click="handleAddRecord"
-            :disabled="!newRecord.amount"
+            :disabled="!newRecord.amount || !newRecord.date || !newRecord.category"
             class="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             确认添加
@@ -297,11 +328,12 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useProjectManagementStore } from './store';
 import { CashFlowType, CashFlowCategory, type CashFlowRecord } from './types';
 
@@ -309,32 +341,67 @@ const props = defineProps<{
   projectId: string;
 }>();
 
-
-
 const store = useProjectManagementStore();
 
 const project = computed(() => store.projects.find(p => p.id === props.projectId));
-const records = computed(() => store.cashFlows.filter(cf => cf.projectId === props.projectId));
+
+// 从store获取当前项目的现金流记录
+const records = computed(() => {
+  // 确保store.cashFlows是数组
+  const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+  return cashFlowsArray.filter(cf => cf.projectId === props.projectId);
+});
+
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+// Load cash flow data
+const loadData = async () => {
+  loading.value = true;
+  error.value = null;
+  try {
+    console.log(`[CashFlow] Loading cash flows for project: ${props.projectId}`);
+    await store.loadCashFlows(props.projectId);
+    const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+    console.log(`[CashFlow] Cash flows loaded successfully, total records in store: ${cashFlowsArray.length}`);
+    console.log(`[CashFlow] Current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
+  } catch (err) {
+    console.error('[CashFlow] Error loading cash flows:', err);
+    error.value = '加载收支明细失败，请重试';
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Load data when component mounts
+onMounted(async () => {
+  await loadData();
+});
 
 const showAddModal = ref(false);
 const filterType = ref<'ALL' | CashFlowType>('ALL');
 
 const newRecord = ref<Partial<CashFlowRecord>>({
   type: CashFlowType.EXPENSE,
-  category: CashFlowCategory.RENOVATION_COST,
+  category: CashFlowCategory.RENOVATION_FEE,
   amount: 0,
   date: new Date().toISOString().split('T')[0],
   description: '',
 });
 
 const filteredRecords = computed(() => {
-  if (filterType.value === 'ALL') return records.value;
-  return records.value.filter(r => r.type === filterType.value);
+  // 确保records.value是数组
+  const recordsArray = Array.isArray(records.value) ? records.value : [];
+  if (filterType.value === 'ALL') return recordsArray;
+  return recordsArray.filter(r => r.type === filterType.value);
 });
 
 const stats = computed(() => {
-  const income = records.value.filter(r => r.type === CashFlowType.INCOME).reduce((sum, r) => sum + r.amount, 0);
-  const expense = records.value.filter(r => r.type === CashFlowType.EXPENSE).reduce((sum, r) => sum + r.amount, 0);
+  // 确保records.value是数组
+  const recordsArray = Array.isArray(records.value) ? records.value : [];
+  // 将实际金额转换为万元
+  const income = recordsArray.filter(r => r.type === CashFlowType.INCOME).reduce((sum, r) => sum + r.amount, 0) / 10000;
+  const expense = recordsArray.filter(r => r.type === CashFlowType.EXPENSE).reduce((sum, r) => sum + r.amount, 0) / 10000;
   return {
     income,
     expense,
@@ -356,6 +423,8 @@ const investmentData = computed(() => {
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
 
+  // 投资回报率计算：净利润 / 总投资 * 100%
+  // stats已经转换为万元，所以直接使用即可
   const totalInvestment = stats.value.expense;
   const netProfit = stats.value.net;
   
@@ -375,64 +444,79 @@ const investmentData = computed(() => {
 const currentCategories = computed(() => {
   const expenseCats = [
     CashFlowCategory.PERFORMANCE_BOND,
-    CashFlowCategory.COMMISSION,
-    CashFlowCategory.RENOVATION_COST,
-    CashFlowCategory.MARKETING_COST,
-    CashFlowCategory.OTHER_COST,
-    CashFlowCategory.TAXES,
-    CashFlowCategory.OPERATION_COST
+    CashFlowCategory.AGENCY_COMMISSION,
+    CashFlowCategory.RENOVATION_FEE,
+    CashFlowCategory.MARKETING_FEE,
+    CashFlowCategory.OTHER_EXPENSE,
+    CashFlowCategory.TAX_FEE,
+    CashFlowCategory.OPERATION_FEE
   ];
   const incomeCats = [
-    CashFlowCategory.PERFORMANCE_BOND_RETURN,
-    CashFlowCategory.PREMIUM_INCOME,
-    CashFlowCategory.SERVICE_FEE_INCOME,
+    CashFlowCategory.BOND_RETURN,
+    CashFlowCategory.PREMIUM,
+    CashFlowCategory.SERVICE_FEE,
     CashFlowCategory.OTHER_INCOME,
-    CashFlowCategory.SELLING_INCOME
+    CashFlowCategory.SALE_PRICE
   ];
   return newRecord.value.type === CashFlowType.EXPENSE ? expenseCats : incomeCats;
 });
 
 const setRecordType = (type: CashFlowType) => {
   newRecord.value.type = type;
-  newRecord.value.category = type === CashFlowType.EXPENSE ? CashFlowCategory.RENOVATION_COST : CashFlowCategory.PREMIUM_INCOME;
+  newRecord.value.category = type === CashFlowType.EXPENSE ? CashFlowCategory.RENOVATION_FEE : CashFlowCategory.PREMIUM;
 };
 
 const handleAddRecord = async () => {
   if (!project.value || !newRecord.value.amount || !newRecord.value.category) return;
   
   try {
+    console.log(`[CashFlow] Adding cash flow record for project: ${props.projectId}`);
+    // 前端输入的是万元，转换为实际金额（元）后传递给后端
+    const actualAmount = Number(newRecord.value.amount) * 10000;
+    
     const record: CashFlowRecord = {
       id: Date.now().toString(),
       projectId: props.projectId,
       type: newRecord.value.type!,
       category: newRecord.value.category!,
-      amount: Number(newRecord.value.amount),
+      amount: actualAmount,
       date: newRecord.value.date!,
       description: newRecord.value.description || '',
     };
 
+    // 添加记录
     await store.addCashFlow(record);
+    
+    // 确保store.cashFlows是数组
+    const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+    console.log(`[CashFlow] Cash flow record added successfully, current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
     
     showAddModal.value = false;
     // Reset form
     newRecord.value = {
       type: CashFlowType.EXPENSE,
-      category: CashFlowCategory.RENOVATION_COST,
+      category: CashFlowCategory.RENOVATION_FEE,
       amount: 0,
       date: new Date().toISOString().split('T')[0],
       description: '',
     };
   } catch (error) {
     alert('添加记录失败，请重试');
+    console.error('Error adding cash flow record:', error);
   }
 };
 
 const handleDeleteRecord = async (id: string) => {
   if (!window.confirm('确定要删除这条记录吗？')) return;
   try {
+    console.log(`[CashFlow] Deleting cash flow record: ${id} for project: ${props.projectId}`);
     await store.deleteCashFlow(id);
+    // 确保store.cashFlows是数组
+    const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+    console.log(`[CashFlow] Cash flow record deleted successfully, current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
   } catch (error) {
     alert('删除失败，请重试');
+    console.error('Error deleting cash flow record:', error);
   }
 };
 </script>

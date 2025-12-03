@@ -18,19 +18,19 @@ export enum RenovationStage {
 export enum CashFlowCategory {
     // Expense
     PERFORMANCE_BOND = '履约保证金',
-    COMMISSION = '中介佣金',
-    RENOVATION_COST = '装修费',
-    MARKETING_COST = '营销费',
-    OTHER_COST = '其他支出',
-    TAXES = '税费',
-    OPERATION_COST = '运营杂费',
+    AGENCY_COMMISSION = '中介佣金',
+    RENOVATION_FEE = '装修费',
+    MARKETING_FEE = '营销费',
+    OTHER_EXPENSE = '其他支出',
+    TAX_FEE = '税费',
+    OPERATION_FEE = '运营杂费',
 
     // Income
-    PERFORMANCE_BOND_RETURN = '回收保证金',
-    PREMIUM_INCOME = '溢价款',
-    SERVICE_FEE_INCOME = '服务费',
+    BOND_RETURN = '回收保证金',
+    PREMIUM = '溢价款',
+    SERVICE_FEE = '服务费',
     OTHER_INCOME = '其他收入',
-    SELLING_INCOME = '售房款'
+    SALE_PRICE = '售房款'
 }
 
 export interface PhotoRecord {

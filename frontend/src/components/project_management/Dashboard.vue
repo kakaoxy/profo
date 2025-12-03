@@ -1,5 +1,28 @@
 <template>
   <div class="dashboard space-y-6">
+    <!-- Loading State -->
+    <div v-if="store.loading" class="flex flex-col items-center justify-center py-20">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+      <p class="text-slate-600 text-lg font-medium">加载项目列表...</p>
+    </div>
+    
+    <!-- Error State -->
+    <div v-else-if="store.error" class="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <p class="text-red-700 text-lg font-semibold mb-2">{{ store.error }}</p>
+      <p class="text-red-600 mb-4">请检查网络连接或稍后重试</p>
+      <button 
+        @click="store.loadProjects()" 
+        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+      >
+        重新加载
+      </button>
+    </div>
+    
+    <!-- Normal Content -->
+    <template v-else>
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div 
@@ -124,9 +147,14 @@
         </tbody>
       </table>
       <div v-if="store.filteredProjects.length === 0" class="p-8 text-center text-gray-500">
-        未找到匹配的项目
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <p class="text-lg font-medium text-slate-600 mb-1">未找到匹配的项目</p>
+        <p class="text-sm text-slate-500">尝试调整搜索条件或创建新项目</p>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -159,32 +187,37 @@ const statusColors: Record<ProjectStatus, string> = {
   sold: 'bg-green-100 text-green-800',
 };
 
-const stats = computed(() => [
-  { 
-    label: '签约', 
-    value: store.projects.filter(p => p.status === 'signing').length,
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
-    color: 'bg-blue-500'
-  },
-  { 
-    label: '改造', 
-    value: store.projects.filter(p => p.status === 'renovating').length,
-    icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
-    color: 'bg-orange-500'
-  },
-  { 
-    label: '在售', 
-    value: store.projects.filter(p => p.status === 'selling').length,
-    icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
-    color: 'bg-purple-500'
-  },
-  { 
-    label: '已售', 
-    value: store.projects.filter(p => p.status === 'sold').length,
-    icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-    color: 'bg-green-500'
-  },
-]);
+const stats = computed(() => {
+  // Ensure projects is an array to prevent filter errors
+  const projectsArray = Array.isArray(store.projects) ? store.projects : [];
+  
+  return [
+    { 
+      label: '签约', 
+      value: projectsArray.filter(p => p.status === 'signing').length,
+      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+      color: 'bg-blue-500'
+    },
+    { 
+      label: '改造', 
+      value: projectsArray.filter(p => p.status === 'renovating').length,
+      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
+      color: 'bg-orange-500'
+    },
+    { 
+      label: '在售', 
+      value: projectsArray.filter(p => p.status === 'selling').length,
+      icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+      color: 'bg-purple-500'
+    },
+    { 
+      label: '已售', 
+      value: projectsArray.filter(p => p.status === 'sold').length,
+      icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+      color: 'bg-green-500'
+    },
+  ];
+});
 
 const handleSearch = () => {
   store.setFilters({ searchQuery: searchQuery.value });
