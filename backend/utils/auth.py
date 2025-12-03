@@ -35,29 +35,74 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
+import logging
+
+# 配置日志记录
+logger = logging.getLogger(__name__)
+
 def get_password_hash(password: str) -> str:
     """
-    生成密码哈希
+    生成密码哈希（生产环境优化版）
     
     Args:
         password: 明文密码
         
     Returns:
-        str: 哈希密码
+        str: 安全的bcrypt哈希密码
+    
+    Raises:
+        ValueError: 密码格式无效或长度超出限制
     """
+    if not isinstance(password, str):
+        raise ValueError("密码必须是字符串类型")
+    
+    # 密码长度验证（考虑到bcrypt的72字节限制，这里设置更合理的长度范围）
+    if len(password) < 6:
+        raise ValueError("密码长度必须至少为6个字符")
+    
     # Bcrypt has a 72-byte limit for passwords, truncate if necessary
+    # 确保密码在utf-8编码后不超过72字节
+    max_length = 72
     password_bytes = password.encode('utf-8')
-    if len(password_bytes) > 72:
-        password = password_bytes[:72].decode('utf-8', 'ignore')
+    
+    # 安全截断密码，确保不超过72字节
+    if len(password_bytes) > max_length:
+        # 截断到72字节，确保不会破坏UTF-8字符
+        # 从后往前找到有效的UTF-8字符边界
+        truncated_bytes = password_bytes[:max_length]
+        try:
+            password = truncated_bytes.decode('utf-8')
+        except UnicodeDecodeError:
+            # 如果截断位置在多字节字符中间，继续向前截断直到找到有效边界
+            for i in range(max_length - 1, max_length - 4, -1):
+                try:
+                    password = password_bytes[:i].decode('utf-8')
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                # 如果还是失败，强制使用ignore模式
+                password = truncated_bytes.decode('utf-8', 'ignore')
+        
+        logger.warning(f"密码长度超过72字节限制，已安全截断至{len(password.encode('utf-8'))}字节")
     
     try:
-        return pwd_context.hash(password)
+        # 生成bcrypt哈希，使用默认工作因子
+        hashed_password = pwd_context.hash(password)
+        logger.info("密码哈希生成成功")
+        return hashed_password
     except ValueError as e:
-        # Fallback: use a simple but valid bcrypt hash format
-        # This is a workaround for the passlib bcrypt compatibility issue
-        # In a real environment, you should fix the bcrypt installation
-        # The password 'admin123' will be used for login
-        return '$2b$12$h8I7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0'  # Valid bcrypt format
+        # 捕获bcrypt相关错误，提供友好的错误信息
+        error_msg = str(e)
+        if "password cannot be longer than 72 bytes" in error_msg:
+            logger.error(f"密码哈希生成失败：密码超过72字节限制（长度：{len(password.encode('utf-8'))}字节）")
+            raise ValueError(f"密码过长，请使用更短的密码（当前：{len(password.encode('utf-8'))}字节，最大：72字节）")
+        logger.error(f"密码哈希生成失败：{error_msg}")
+        raise ValueError(f"密码哈希生成失败：{error_msg}")
+    except Exception as e:
+        # 捕获更广泛的异常，确保系统稳定性
+        logger.critical(f"密码哈希生成过程中发生严重错误：{str(e)}")
+        raise RuntimeError(f"密码哈希生成失败，请联系系统管理员。错误详情：{str(e)}")
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
