@@ -360,11 +360,11 @@ const loadData = async () => {
   loading.value = true;
   error.value = null;
   try {
-    console.log(`[CashFlow] Loading cash flows for project: ${props.projectId}`);
+    // console.log(`[CashFlow] Loading cash flows for project: ${props.projectId}`);
     await store.loadCashFlows(props.projectId);
-    const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
-    console.log(`[CashFlow] Cash flows loaded successfully, total records in store: ${cashFlowsArray.length}`);
-    console.log(`[CashFlow] Current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
+    // const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+    // console.log(`[CashFlow] Cash flows loaded successfully, total records in store: ${cashFlowsArray.length}`);
+    // console.log(`[CashFlow] Current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
   } catch (err) {
     console.error('[CashFlow] Error loading cash flows:', err);
     error.value = '加载收支明细失败，请重试';
@@ -470,7 +470,7 @@ const handleAddRecord = async () => {
   if (!project.value || !newRecord.value.amount || !newRecord.value.category) return;
   
   try {
-    console.log(`[CashFlow] Adding cash flow record for project: ${props.projectId}`);
+    // console.log(`[CashFlow] Adding cash flow record for project: ${props.projectId}`);
     // 前端输入的是万元，转换为实际金额（元）后传递给后端
     const actualAmount = Number(newRecord.value.amount) * 10000;
     
@@ -488,8 +488,8 @@ const handleAddRecord = async () => {
     await store.addCashFlow(record);
     
     // 确保store.cashFlows是数组
-    const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
-    console.log(`[CashFlow] Cash flow record added successfully, current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
+    // const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+    // console.log(`[CashFlow] Cash flow record added successfully, current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
     
     showAddModal.value = false;
     // Reset form
@@ -509,11 +509,11 @@ const handleAddRecord = async () => {
 const handleDeleteRecord = async (id: string) => {
   if (!window.confirm('确定要删除这条记录吗？')) return;
   try {
-    console.log(`[CashFlow] Deleting cash flow record: ${id} for project: ${props.projectId}`);
+    // console.log(`[CashFlow] Deleting cash flow record: ${id} for project: ${props.projectId}`);
     await store.deleteCashFlow(id);
     // 确保store.cashFlows是数组
-    const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
-    console.log(`[CashFlow] Cash flow record deleted successfully, current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
+    // const cashFlowsArray = Array.isArray(store.cashFlows) ? store.cashFlows : [];
+    // console.log(`[CashFlow] Cash flow record deleted successfully, current project records: ${cashFlowsArray.filter(cf => cf.projectId === props.projectId).length}`);
   } catch (error) {
     alert('删除失败，请重试');
     console.error('Error deleting cash flow record:', error);
