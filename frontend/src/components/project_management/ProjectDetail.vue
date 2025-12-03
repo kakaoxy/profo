@@ -71,6 +71,7 @@
         :projectId="projectId" 
         @back="$emit('back')"
         @navigate="handleNavigate"
+        @create="(id: string) => $emit('create', id)"
       />
     </div>
   </div>
