@@ -22,8 +22,8 @@ export const fetchProjects = async (params?: {
   page?: number
   page_size?: number
 }): Promise<{ items: Project[]; total: number; page: number; page_size: number }> => {
-  const response = await apiClient.get('/v1/projects', { params }) as BaseResponse<{ items: Project[]; total: number; page: number; page_size: number }>
-  return response.data
+  // 由于响应拦截器直接返回response.data，所以这里不需要再访问response.data
+  return await apiClient.get('/v1/projects', { params }) as { items: Project[]; total: number; page: number; page_size: number }
 }
 
 /**
@@ -209,8 +209,8 @@ export const createCashFlowRecord = async (
     related_stage?: string
   }
 ): Promise<CashFlowRecord> => {
-  const response = await apiClient.post(`/v1/projects/${projectId}/cashflow`, recordData)
-  return response.data
+  // 由于响应拦截器直接返回response.data，所以这里不需要再访问response.data
+  return await apiClient.post(`/v1/projects/${projectId}/cashflow`, recordData) as CashFlowRecord
 }
 
 /**
@@ -225,15 +225,23 @@ export const fetchProjectCashFlow = async (projectId: string): Promise<{
     roi: number
   }
 }> => {
-  const response = await apiClient.get(`/v1/projects/${projectId}/cashflow`)
-  return response.data
+  // 由于响应拦截器直接返回response.data，所以这里不需要再访问response.data
+  return await apiClient.get(`/v1/projects/${projectId}/cashflow`) as {
+    records: CashFlowRecord[]
+    summary: {
+      total_income: number
+      total_expense: number
+      net_cash_flow: number
+      roi: number
+    }
+  }
 }
 
 /**
  * 删除现金流记录
  */
 export const deleteCashFlowRecord = async (recordId: string, projectId: string): Promise<void> => {
-  await apiClient.delete(`/v1/cashflow/${recordId}?project_id=${projectId}`)
+  await apiClient.delete(`/v1/projects/${projectId}/cashflow/${recordId}`)
 }
 
 // ========== 项目报告 ==========

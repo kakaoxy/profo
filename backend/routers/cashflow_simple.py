@@ -48,10 +48,10 @@ async def get_project_cashflow(
     return {"code": 200, "msg": "success", "data": response_data}
 
 
-@router.delete("/cashflow/{record_id}")
+@router.delete("/projects/{project_id}/cashflow/{record_id}")
 async def delete_cashflow_record(
+    project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
-    project_id: str = Query(..., description="项目ID"),
     service: CashFlowService = Depends(get_cashflow_service)
 ):
     """删除现金流记录"""
