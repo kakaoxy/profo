@@ -1,12 +1,13 @@
 """
 FastAPI 应用入口
 """
+import sys
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
-import os
 from contextlib import asynccontextmanager
 from settings import settings
 from db import init_db
@@ -16,10 +17,25 @@ from db import init_db
 async def lifespan(app: FastAPI):
     """
     应用生命周期管理
-    在应用启动时初始化数据库
+    在应用启动时初始化数据库和验证配置
     """
     # 启动时执行
     print("Starting Profo Real Estate Data Center...")
+    
+    # 验证JWT配置
+    try:
+        from utils.jwt_validator import check_jwt_configuration
+        check_jwt_configuration()
+        print("JWT配置验证通过")
+    except SystemExit:
+        # JWT配置验证失败，应用无法启动
+        print("JWT配置验证失败，应用无法启动", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"JWT配置验证失败: {e}", file=sys.stderr)
+        sys.exit(1)
+    
+    # 初始化数据库
     init_db()
     print(f"Application started successfully: {settings.app_name} v{settings.app_version}")
 
