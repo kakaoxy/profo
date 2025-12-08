@@ -18,7 +18,6 @@ engine = create_engine(
         "check_same_thread": False,  # SQLite 特定配置
         # SQLite 性能优化参数
         "timeout": 30,  # 增加超时时间到30秒
-        "isolation_level": None,  # 使用自动提交模式以提高并发性能
     },
     poolclass=StaticPool,  # 使用静态连接池
     # 连接池优化配置

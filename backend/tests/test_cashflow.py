@@ -14,7 +14,8 @@ from decimal import Decimal
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
-from db import get_db, Base
+from db import get_db
+from models import Base
 from models import Project, CashFlowRecord
 from models.base import CashFlowType, CashFlowCategory
 
@@ -338,4 +339,4 @@ class TestCashFlowAPI:
                 "description": f"测试{category}"
             }
             response = client.post(f"/api/v1/projects/{project_id}/cashflow", json=record_data)
-            assert response.status_code == 200, f"收入分类 {category} 应该有效"""}
+            assert response.status_code == 200, f"收入分类 {category} 应该有效"

@@ -168,7 +168,7 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
 
 def decode_token(token: str) -> Optional[Dict[str, Any]]:
     """
-    解码JWT令牌
+    解码JWT令牌（支持密钥轮换）
     
     Args:
         token: JWT令牌
@@ -176,15 +176,32 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
     Returns:
         Optional[Dict[str, Any]]: 令牌负载数据，如果解码失败则返回None
     """
+    # 首先尝试使用当前密钥解码
     try:
         payload = jwt.decode(
-            token, 
-            settings.jwt_secret_key, 
+            token,
+            settings.jwt_secret_key,
             algorithms=[settings.jwt_algorithm]
         )
         return payload
     except JWTError:
-        return None
+        pass
+    
+    # 如果启用了密钥轮换且旧密钥存在，尝试使用旧密钥解码
+    if settings.jwt_key_rotation_enabled and settings.jwt_secret_key_old:
+        try:
+            payload = jwt.decode(
+                token,
+                settings.jwt_secret_key_old,
+                algorithms=[settings.jwt_algorithm]
+            )
+            # 记录使用旧密钥成功解码的日志（可用于监控密钥轮换进度）
+            logger.info("使用旧JWT密钥成功解码令牌")
+            return payload
+        except JWTError:
+            pass
+    
+    return None
 
 
 def validate_token(token: str, token_type: str = "access") -> Optional[Dict[str, Any]]:
