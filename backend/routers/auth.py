@@ -25,6 +25,7 @@ from utils.auth import (
     validate_token,
     get_password_hash,
 )
+from dependencies.auth import get_current_active_user
 from settings import settings
 
 
@@ -49,6 +50,7 @@ async def login_for_access_token(
         
     Raises:
         HTTPException: 401 Unauthorized - 用户名或密码错误
+        HTTPException: 403 Forbidden - 必须修改密码
     """
     # 验证用户
     user = db.query(User).filter(User.username == form_data.username).first()
@@ -57,6 +59,14 @@ async def login_for_access_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 检查是否必须修改密码
+    if user.must_change_password:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="首次登录必须修改密码",
+            headers={"X-Must-Change-Password": "true"}
         )
     
     # 更新最后登录时间
@@ -501,14 +511,19 @@ async def wechat_app_login(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(lambda: User())
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     获取当前用户信息
     
-    Note: 实际使用时需要替换依赖为真实的用户认证依赖
-    
+    Args:
+        current_user: 当前认证用户，通过依赖注入自动获取
+        
     Returns:
         UserResponse: 当前用户信息
+        
+    Raises:
+        HTTPException: 401 Unauthorized - 用户未认证
+        HTTPException: 400 Bad Request - 用户未激活
     """
     return current_user

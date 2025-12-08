@@ -57,6 +57,7 @@ class User(BaseModel):
     # 状态
     status = Column(String(20), default="active", comment="用户状态: active/inactive/banned")
     last_login_at = Column(DateTime, nullable=True, comment="最后登录时间")
+    must_change_password = Column(Boolean, default=False, comment="是否必须修改密码")
     
     # 关联关系
     role = relationship("Role", back_populates="users")

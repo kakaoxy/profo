@@ -1,6 +1,7 @@
 """
 认证相关工具函数
 """
+import re
 from datetime import datetime, timedelta
 from typing import Optional, Any, Dict
 from jose import JWTError, jwt
@@ -24,10 +25,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: 密码是否匹配
     """
-    # Check if it's our fallback hash and password is either admin123 or mfb123789
-    if hashed_password == '$2b$12$h8I7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0q9p8o7i6u5y4t3r2e1w0' and (plain_password == 'admin123' or plain_password == 'mfb123789'):
-        return True
-    
     try:
         return pwd_context.verify(plain_password, hashed_password)
     except ValueError:
@@ -56,9 +53,21 @@ def get_password_hash(password: str) -> str:
     if not isinstance(password, str):
         raise ValueError("密码必须是字符串类型")
     
-    # 密码长度验证（考虑到bcrypt的72字节限制，这里设置更合理的长度范围）
-    if len(password) < 6:
-        raise ValueError("密码长度必须至少为6个字符")
+    # 密码策略验证
+    if len(password) < 8:
+        raise ValueError("密码长度必须至少为8个字符")
+    
+    if not re.search(r"[A-Z]", password):
+        raise ValueError("密码必须包含至少一个大写字母")
+    
+    if not re.search(r"[a-z]", password):
+        raise ValueError("密码必须包含至少一个小写字母")
+    
+    if not re.search(r"\d", password):
+        raise ValueError("密码必须包含至少一个数字")
+    
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        raise ValueError("密码必须包含至少一个特殊字符 (!@#$%^&*(),.?\":{}|<>)")
     
     # Bcrypt has a 72-byte limit for passwords, truncate if necessary
     # 确保密码在utf-8编码后不超过72字节

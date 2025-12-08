@@ -13,87 +13,89 @@ def check_permissions(
     permission_type: str = "any"  # "any" 或 "all"，表示需要满足任一权限或所有权限
 ) -> Callable:
     """
-    权限检查装饰器，用于检查用户是否具有所需的权限
+    权限检查装饰器工厂函数，用于创建权限检查依赖
     
     Args:
         required_permissions: 所需的权限列表
         permission_type: 权限检查类型，"any" 表示满足任一权限即可，"all" 表示需要满足所有权限
         
     Returns:
-        Callable: 装饰器函数
+        Callable: 依赖函数
     """
-    def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            # 从kwargs中获取current_user
-            current_user: User = kwargs.get("current_user")
+    async def permission_checker(current_user: User) -> User:
+        """
+        权限检查依赖函数
+        
+        Args:
+            current_user: 当前活跃用户，通过依赖注入自动获取
             
-            # 如果current_user不存在，尝试从依赖中获取
-            if not current_user:
-                from dependencies.auth import get_current_active_user
-                current_user = await get_current_active_user()
+        Returns:
+            User: 验证通过的用户对象
             
-            # 获取用户的权限列表
-            user_permissions = current_user.role.permissions or []
-            
-            # 检查权限
-            if permission_type == "any":
-                # 检查是否具有任一所需权限
-                has_permission = any(perm in user_permissions for perm in required_permissions)
-            else:
-                # 检查是否具有所有所需权限
-                has_permission = all(perm in user_permissions for perm in required_permissions)
-            
-            # 如果没有权限，抛出HTTP异常
-            if not has_permission:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="权限不足"
-                )
-            
-            # 执行原始函数
-            return await func(*args, **kwargs)
-        return wrapper
-    return decorator
+        Raises:
+            HTTPException: 403 Forbidden - 权限不足
+        """
+        # 获取用户的权限列表
+        user_permissions = current_user.role.permissions or []
+        
+        # 检查权限
+        if permission_type == "any":
+            # 检查是否具有任一所需权限
+            has_permission = any(perm in user_permissions for perm in required_permissions)
+        else:
+            # 检查是否具有所有所需权限
+            has_permission = all(perm in user_permissions for perm in required_permissions)
+        
+        # 如果没有权限，抛出HTTP异常
+        if not has_permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="权限不足"
+            )
+        
+        return current_user
+    
+    return permission_checker
 
 
 def check_role(
     required_roles: List[str]
 ) -> Callable:
     """
-    角色检查装饰器，用于检查用户是否具有所需的角色
+    角色检查装饰器工厂函数，用于创建角色检查依赖
     
     Args:
         required_roles: 所需的角色列表
         
     Returns:
-        Callable: 装饰器函数
+        Callable: 依赖函数
     """
-    def decorator(func: Callable) -> Callable:
-        @wraps(func)
-        async def wrapper(*args, **kwargs):
-            # 从kwargs中获取current_user
-            current_user: User = kwargs.get("current_user")
+    async def role_checker(current_user: User) -> User:
+        """
+        角色检查依赖函数
+        
+        Args:
+            current_user: 当前活跃用户，通过依赖注入自动获取
             
-            # 如果current_user不存在，尝试从依赖中获取
-            if not current_user:
-                from dependencies.auth import get_current_active_user
-                current_user = await get_current_active_user()
+        Returns:
+            User: 验证通过的用户对象
             
-            # 检查角色
-            has_role = current_user.role.code in required_roles
-            
-            # 如果没有所需角色，抛出HTTP异常
-            if not has_role:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="权限不足"
-                )
-            
-            # 执行原始函数
-            return await func(*args, **kwargs)
-        return wrapper
-    return decorator
+        Raises:
+            HTTPException: 403 Forbidden - 权限不足
+        """
+        # 检查角色
+        has_role = current_user.role.code in required_roles
+        
+        # 如果没有所需角色，抛出HTTP异常
+        if not has_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="权限不足"
+            )
+        
+        return current_user
+    
+    return role_checker
 
 
 # 预定义的权限装饰器
