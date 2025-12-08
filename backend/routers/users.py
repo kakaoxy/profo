@@ -252,6 +252,7 @@ async def reset_user_password(
         
     Raises:
         HTTPException: 404 Not Found - 用户不存在
+        HTTPException: 400 Bad Request - 密码格式错误
     """
     # 获取用户
     user = db.query(User).filter(User.id == user_id).first()
@@ -271,8 +272,15 @@ async def reset_user_password(
     
     # 更新密码
     from utils.auth import get_password_hash
-    user.password = get_password_hash(new_password)
-    db.commit()
+    try:
+        user.password = get_password_hash(new_password)
+        db.commit()
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     
     return {"message": "密码重置成功"}
 
@@ -593,18 +601,24 @@ async def delete_role(
 
 @router.post("/init-data")
 async def init_system_data(
-    current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
     """
     初始化系统数据，包括默认角色和管理员用户
     
+    首次部署时调用此接口创建初始数据。
+    系统会创建默认角色和一个临时管理员账户。
+    
     Args:
-        current_user: 当前管理员用户
         db: 数据库会话
         
     Returns:
-        dict: 初始化结果
+        dict: 初始化结果，包含临时管理员密码
+        
+    Security:
+        - 此接口仅在系统未初始化时可调用
+        - 临时密码仅显示一次，请妥善保存
+        - 首次登录必须修改密码
     """
     # 检查是否已初始化
     existing_roles = db.query(Role).count()
@@ -644,13 +658,23 @@ async def init_system_data(
     # 获取管理员角色
     admin_role = next(r for r in roles if r.code == "admin")
     
-    # 创建默认管理员用户
+    # 生成临时密码（符合强密码策略）
+    import secrets
+    import string
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    
+    # 确保密码符合策略
+    temp_password = "Temp" + temp_password + "9!"
+    
+    # 创建临时管理员用户
     admin_user = User(
         username="admin",
-        password=get_password_hash("admin123"),
+        password=get_password_hash(temp_password),
         nickname="系统管理员",
         role_id=admin_role.id,
-        status="active"
+        status="active",
+        must_change_password=True  # 标记必须修改密码
     )
     
     db.add(admin_user)
@@ -658,8 +682,10 @@ async def init_system_data(
     
     return {
         "message": "系统数据初始化成功",
-        "default_admin": {
+        "warning": "请立即使用临时密码登录并修改密码",
+        "temp_admin": {
             "username": "admin",
-            "password": "admin123"
+            "temp_password": temp_password,
+            "note": "此密码仅显示一次，请妥善保存。首次登录必须修改密码。"
         }
     }

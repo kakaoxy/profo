@@ -1,6 +1,7 @@
 """
 应用配置文件
 """
+import os
 from pydantic_settings import BaseSettings
 from pathlib import Path
 
@@ -33,7 +34,7 @@ class Settings(BaseSettings):
     batch_commit_size: int = 1000  # 批量提交大小
     
     # JWT配置
-    jwt_secret_key: str = "your-secret-key-here"  # 生产环境中应通过环境变量设置
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")  # 从环境变量读取，开发环境使用默认值
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30  # 访问令牌过期时间(分钟)
     jwt_refresh_token_expire_days: int = 7  # 刷新令牌过期时间(天)

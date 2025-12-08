@@ -111,3 +111,14 @@ class DateParsingException(DateProcessingException):
     def __init__(self, message: str = "日期解析失败", details: Optional[Any] = None):
         super().__init__(message, details)
         self.code = "DATE_PARSING_ERROR"
+
+
+class PasswordValidationException(ProfoException):
+    """密码验证异常"""
+    
+    def __init__(self, message: str, details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="PASSWORD_VALIDATION_ERROR",
+            details=details
+        )
