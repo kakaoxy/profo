@@ -73,12 +73,17 @@ class PropertyQueryService:
             PaginatedPropertyResponse: 分页查询结果
         """
         # 构建基础查询 - 使用 joinedload 优化关联查询
-        from sqlalchemy.orm import joinedload
+        from sqlalchemy.orm import joinedload, selectinload
         
         query = db.query(PropertyCurrent, Community).join(
             Community,
             PropertyCurrent.community_id == Community.id
         ).filter(PropertyCurrent.is_active == True)
+        
+        # 关键优化：使用selectinload预加载图片
+        query = query.options(
+            selectinload(PropertyCurrent.property_media)
+        )
         
         # 应用筛选条件
         query = self._apply_filters(
@@ -116,13 +121,10 @@ class PropertyQueryService:
         # 转换为响应模型
         items = []
         for property_obj, community in results:
-            item = PropertyResponse.from_orm_with_calculations(property_obj, community)
-            # 获取图片链接
-            picture_links = db.query(PropertyMedia.url).filter(
-                PropertyMedia.data_source == property_obj.data_source,
-                PropertyMedia.source_property_id == property_obj.source_property_id
-            ).order_by(PropertyMedia.sort_order).all()
-            item.picture_links = [link[0] for link in picture_links] if picture_links else []
+            item = PropertyResponse.from_orm_with_calculations(
+                property_obj, community,
+                property_obj.property_media  # 传递预加载的图片
+            )
             items.append(item)
         
         logger.info(f"查询完成: 总数={total}, 页码={page}, 每页={page_size}, 返回={len(items)}")
@@ -333,10 +335,17 @@ class PropertyQueryService:
         sort_order = params.sort_order
 
         # 构建基础查询
+        from sqlalchemy.orm import selectinload
+        
         query = db.query(PropertyCurrent, Community).join(
             Community,
             PropertyCurrent.community_id == Community.id
         ).filter(PropertyCurrent.is_active == True)
+        
+        # 关键优化：使用selectinload预加载图片
+        query = query.options(
+            selectinload(PropertyCurrent.property_media)
+        )
 
         # 应用筛选条件
         query = self._apply_filters(
@@ -364,13 +373,10 @@ class PropertyQueryService:
         # 转换为响应模型
         items = []
         for property_obj, community in results:
-            item = PropertyResponse.from_orm_with_calculations(property_obj, community)
-            # 获取图片链接
-            picture_links = db.query(PropertyMedia.url).filter(
-                PropertyMedia.data_source == property_obj.data_source,
-                PropertyMedia.source_property_id == property_obj.source_property_id
-            ).order_by(PropertyMedia.sort_order).all()
-            item.picture_links = [link[0] for link in picture_links] if picture_links else []
+            item = PropertyResponse.from_orm_with_calculations(
+                property_obj, community,
+                property_obj.property_media  # 传递预加载的图片
+            )
             items.append(item)
         
         logger.info(f"导出查询完成: 总数={len(items)}")

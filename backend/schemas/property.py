@@ -186,14 +186,42 @@ class PropertyResponse(BaseModel):
         """计算单价（元/平米）"""
         return (total_price * 10000 / build_area) if build_area > 0 else 0
 
+    @staticmethod
+    def _get_picture_links(property_obj, preloaded_media=None):
+        """
+        获取图片链接
+        
+        Args:
+            property_obj: PropertyCurrent ORM 对象
+            preloaded_media: 预加载的媒体列表（可选）
+            
+        Returns:
+            List[str]: 图片URL列表
+        """
+        # 定义图片类型的枚举值
+        IMAGE_TYPES = {"interior", "exterior", "floor_plan", "other"}
+        
+        # 从预加载数据获取图片链接
+        if preloaded_media:
+            return [media.url for media in preloaded_media
+                   if media.media_type.value in IMAGE_TYPES]
+        
+        # 如果没有预加载数据，尝试从关系属性获取
+        if hasattr(property_obj, 'property_media') and property_obj.property_media:
+            return [media.url for media in property_obj.property_media
+                   if media.media_type.value in IMAGE_TYPES]
+        
+        return []
+
     @classmethod
-    def from_orm_with_calculations(cls, property_obj, community):
+    def from_orm_with_calculations(cls, property_obj, community, preloaded_media=None):
         """
         从 ORM 模型转换并计算附加字段
 
         Args:
             property_obj: PropertyCurrent ORM 对象
             community: Community ORM 对象
+            preloaded_media: 预加载的媒体列表（可选）
 
         Returns:
             PropertyResponse 实例
@@ -251,7 +279,8 @@ class PropertyResponse(BaseModel):
             decoration=property_obj.decoration,
             elevator=property_obj.elevator,
             created_at=property_obj.created_at,
-            updated_at=property_obj.updated_at
+            updated_at=property_obj.updated_at,
+            picture_links=cls._get_picture_links(property_obj, preloaded_media)
         )
 
 

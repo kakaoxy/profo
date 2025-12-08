@@ -4,6 +4,7 @@
 """
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, Index, Enum as SQLEnum
+from sqlalchemy.orm import relationship
 from .base import Base, MediaType
 
 
@@ -30,5 +31,8 @@ class PropertyMedia(Base):
         Index("idx_property_media", "source_property_id", "data_source", "media_type"),
     )
     
+    # 关系 - 移除反向关系，避免方向冲突
+    # property = relationship(...)  # 注释掉反向关系
+
     def __repr__(self):
         return f"<PropertyMedia(id={self.id}, type={self.media_type}, property='{self.source_property_id}')>"
