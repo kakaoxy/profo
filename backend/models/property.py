@@ -78,6 +78,14 @@ class PropertyCurrent(Base):
     
     # 关系
     community = relationship("Community", back_populates="properties")
+    property_media = relationship(
+        "PropertyMedia",
+        primaryjoin="and_(PropertyCurrent.data_source==PropertyMedia.data_source, "
+                   "PropertyCurrent.source_property_id==PropertyMedia.source_property_id)",
+        foreign_keys="[PropertyMedia.data_source, PropertyMedia.source_property_id]",
+        lazy="select",  # 默认懒加载，查询时通过selectinload覆盖
+        viewonly=True   # 标记为只读关系，避免级联操作问题
+    )
     
     # 约束和索引
     __table_args__ = (
