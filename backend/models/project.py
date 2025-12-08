@@ -1,7 +1,7 @@
 """
 项目管理相关模型
 """
-from sqlalchemy import Column, String, Float, DateTime, Text, ForeignKey, Integer, Numeric
+from sqlalchemy import Column, String, Float, DateTime, Text, ForeignKey, Integer, Numeric, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.sqlite import JSON
 from datetime import datetime
@@ -85,6 +85,18 @@ class Project(BaseModel):
     cashflow_records = relationship("CashFlowRecord", back_populates="project", cascade="all, delete-orphan")
     renovation_photos = relationship("RenovationPhoto", back_populates="project", cascade="all, delete-orphan")
     sales_records = relationship("SalesRecord", back_populates="project", cascade="all, delete-orphan")
+    
+    # 索引
+    __table_args__ = (
+        # 项目状态查询索引
+        Index("idx_project_status", "status"),
+        # 日期范围查询索引
+        Index("idx_project_dates", "signing_date", "sold_at", "status_changed_at"),
+        # 价格查询索引
+        Index("idx_project_price", "signing_price", "sale_price"),
+        # 负责人查询索引
+        Index("idx_project_manager", "manager"),
+    )
 
 
 class CashFlowRecord(BaseModel):
@@ -107,6 +119,14 @@ class CashFlowRecord(BaseModel):
 
     # 关联关系
     project = relationship("Project", back_populates="cashflow_records")
+    
+    # 索引
+    __table_args__ = (
+        # 项目日期查询索引
+        Index("idx_cashflow_project_date", "project_id", "date"),
+        # 类型分类查询索引
+        Index("idx_cashflow_type_category", "type", "category"),
+    )
 
 
 class RenovationPhoto(BaseModel):
@@ -156,3 +176,11 @@ class SalesRecord(BaseModel):
 
     # 关联关系
     project = relationship("Project", back_populates="sales_records")
+    
+    # 索引
+    __table_args__ = (
+        # 项目日期查询索引
+        Index("idx_sales_project_date", "project_id", "record_date"),
+        # 记录类型查询索引
+        Index("idx_sales_type", "record_type"),
+    )

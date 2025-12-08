@@ -3,7 +3,7 @@
 包含Community和CommunityAlias表
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -26,6 +26,16 @@ class Community(Base):
     # 关系
     properties = relationship("PropertyCurrent", back_populates="community")
     aliases = relationship("CommunityAlias", back_populates="community")
+    
+    # 索引
+    __table_args__ = (
+        # 地理位置查询索引
+        Index("idx_community_location", "district", "business_circle"),
+        # 均价查询索引
+        Index("idx_community_price_avg", "avg_price_wan"),
+        # 活跃状态查询索引
+        Index("idx_community_active", "is_active"),
+    )
     
     def __repr__(self):
         return f"<Community(id={self.id}, name='{self.name}')>"

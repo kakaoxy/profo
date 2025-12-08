@@ -93,6 +93,22 @@ class PropertyCurrent(Base):
         Index("idx_community_price", "community_id", "listed_price_wan"),
         Index("idx_owner_visibility", "owner_id", "visibility"),
         Index("idx_status", "status"),
+        # 价格范围查询索引
+        Index("idx_price_range", "listed_price_wan", "sold_price_wan"),
+        # 面积查询索引
+        Index("idx_area_range", "build_area"),
+        # 房型查询索引
+        Index("idx_rooms", "rooms"),
+        # 楼层信息查询索引
+        Index("idx_floor_info", "floor_level", "floor_number"),
+        # 日期范围查询索引
+        Index("idx_dates", "listed_date", "sold_date", "updated_at"),
+        # 建筑年代查询索引
+        Index("idx_build_year", "build_year"),
+        # 物业类型查询索引
+        Index("idx_property_type", "property_type"),
+        # 朝向查询索引
+        Index("idx_orientation", "orientation"),
     )
     
     def __repr__(self):

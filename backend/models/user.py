@@ -1,7 +1,7 @@
 """
 用户和角色相关模型
 """
-from sqlalchemy import Column, String, Integer, Text, ForeignKey, Boolean, DateTime
+from sqlalchemy import Column, String, Integer, Text, ForeignKey, Boolean, DateTime, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.sqlite import JSON
 from datetime import datetime
@@ -61,6 +61,16 @@ class User(BaseModel):
     
     # 关联关系
     role = relationship("Role", back_populates="users")
+    
+    # 索引
+    __table_args__ = (
+        # 用户状态查询索引
+        Index("idx_user_status", "status"),
+        # 电话查询索引
+        Index("idx_user_phone", "phone"),
+        # 微信信息查询索引
+        Index("idx_user_wechat", "wechat_openid", "wechat_unionid"),
+    )
 
     def __repr__(self):
         return f"<User(id='{self.id}', username='{self.username}', nickname='{self.nickname}')>"
