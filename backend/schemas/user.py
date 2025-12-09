@@ -59,7 +59,12 @@ class RoleUpdate(BaseModel):
 class PasswordChange(BaseModel):
     """密码修改模型"""
     current_password: str = Field(..., description="当前密码")
-    new_password: str = Field(..., min_length=6, max_length=255, description="新密码")
+    new_password: str = Field(..., min_length=8, max_length=255, description="新密码")
+
+
+class PasswordResetRequest(BaseModel):
+    """密码重置请求模型"""
+    password: str = Field(..., min_length=8, max_length=255, description="新密码")
 
 
 # =======================================
@@ -141,6 +146,7 @@ __all__ = [
     'UserResponse',
     'UserListResponse',
     'PasswordChange',
+    'PasswordResetRequest',
     
     # 角色相关
     'RoleCreate',

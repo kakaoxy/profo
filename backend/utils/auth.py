@@ -2,16 +2,60 @@
 认证相关工具函数
 """
 import re
+import logging
 from datetime import datetime, timedelta
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Tuple, Literal
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from settings import settings
 
 
+# 配置日志记录
+logger = logging.getLogger(__name__)
+
 # 密码上下文，用于密码哈希和验证
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def validate_password_strength(password: str) -> Tuple[bool, str]:
+    """
+    验证密码强度
+    
+    密码策略:
+    - 长度至少8个字符
+    - 必须包含至少一个大写字母
+    - 必须包含至少一个小写字母
+    - 必须包含至少一个数字
+    - 必须包含至少一个特殊字符
+    
+    Args:
+        password: 待验证的密码
+        
+    Returns:
+        Tuple[bool, str]: (是否通过验证, 错误信息)
+        - 通过时返回 (True, "")
+        - 失败时返回 (False, "具体错误原因")
+    """
+    if not isinstance(password, str):
+        return False, "密码必须是字符串类型"
+    
+    if len(password) < 8:
+        return False, "密码长度必须至少为8个字符"
+    
+    if not re.search(r"[A-Z]", password):
+        return False, "密码必须包含至少一个大写字母"
+    
+    if not re.search(r"[a-z]", password):
+        return False, "密码必须包含至少一个小写字母"
+    
+    if not re.search(r"\d", password):
+        return False, "密码必须包含至少一个数字"
+    
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False, "密码必须包含至少一个特殊字符 (!@#$%^&*(),.?\":{}|<>)"
+    
+    return True, ""
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -25,91 +69,77 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: 密码是否匹配
     """
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def _truncate_password_safely(password: str, max_bytes: int = 72) -> str:
+    """
+    安全截断密码，确保不破坏 UTF-8 编码
+    
+    Args:
+        password: 原始密码
+        max_bytes: 最大字节数（bcrypt 限制为 72）
+        
+    Returns:
+        str: 截断后的密码
+    """
+    password_bytes = password.encode('utf-8')
+    
+    if len(password_bytes) <= max_bytes:
+        return password
+    
+    # 从 max_bytes 位置向前查找有效的 UTF-8 边界
+    truncated_bytes = password_bytes[:max_bytes]
+    
+    # 尝试直接解码
     try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except ValueError:
-        # Fallback for invalid hash formats
-        return False
+        return truncated_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        pass
+    
+    # 向前查找有效的 UTF-8 字符边界（UTF-8 最多 4 字节）
+    for i in range(max_bytes - 1, max_bytes - 4, -1):
+        try:
+            result = password_bytes[:i].decode('utf-8')
+            logger.warning(f"密码长度超过{max_bytes}字节限制，已安全截断至{i}字节")
+            return result
+        except UnicodeDecodeError:
+            continue
+    
+    # 最后的回退：使用 errors='ignore' 模式
+    logger.warning(f"密码截断时遇到编码问题，使用忽略模式处理")
+    return truncated_bytes.decode('utf-8', 'ignore')
 
-
-import logging
-
-# 配置日志记录
-logger = logging.getLogger(__name__)
 
 def get_password_hash(password: str) -> str:
     """
-    生成密码哈希（生产环境优化版）
+    生成密码哈希
+    
+    注意：此函数不进行密码强度验证，调用方应先使用 validate_password_strength() 验证。
     
     Args:
         password: 明文密码
         
     Returns:
-        str: 安全的bcrypt哈希密码
-    
+        str: 安全的 bcrypt 哈希密码
+        
     Raises:
-        ValueError: 密码格式无效或长度超出限制
+        ValueError: 密码格式无效
+        RuntimeError: 哈希生成过程中发生严重错误
     """
     if not isinstance(password, str):
         raise ValueError("密码必须是字符串类型")
     
-    # 密码策略验证
-    if len(password) < 8:
-        raise ValueError("密码长度必须至少为8个字符")
-    
-    if not re.search(r"[A-Z]", password):
-        raise ValueError("密码必须包含至少一个大写字母")
-    
-    if not re.search(r"[a-z]", password):
-        raise ValueError("密码必须包含至少一个小写字母")
-    
-    if not re.search(r"\d", password):
-        raise ValueError("密码必须包含至少一个数字")
-    
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-        raise ValueError("密码必须包含至少一个特殊字符 (!@#$%^&*(),.?\":{}|<>)")
-    
-    # Bcrypt has a 72-byte limit for passwords, truncate if necessary
-    # 确保密码在utf-8编码后不超过72字节
-    max_length = 72
-    password_bytes = password.encode('utf-8')
-    
-    # 安全截断密码，确保不超过72字节
-    if len(password_bytes) > max_length:
-        # 截断到72字节，确保不会破坏UTF-8字符
-        # 从后往前找到有效的UTF-8字符边界
-        truncated_bytes = password_bytes[:max_length]
-        try:
-            password = truncated_bytes.decode('utf-8')
-        except UnicodeDecodeError:
-            # 如果截断位置在多字节字符中间，继续向前截断直到找到有效边界
-            for i in range(max_length - 1, max_length - 4, -1):
-                try:
-                    password = password_bytes[:i].decode('utf-8')
-                    break
-                except UnicodeDecodeError:
-                    continue
-            else:
-                # 如果还是失败，强制使用ignore模式
-                password = truncated_bytes.decode('utf-8', 'ignore')
-        
-        logger.warning(f"密码长度超过72字节限制，已安全截断至{len(password.encode('utf-8'))}字节")
+    # 安全截断超长密码（bcrypt 72 字节限制）
+    password = _truncate_password_safely(password)
     
     try:
-        # 生成bcrypt哈希，使用默认工作因子
-        hashed_password = pwd_context.hash(password)
-        logger.info("密码哈希生成成功")
-        return hashed_password
+        return pwd_context.hash(password)
     except ValueError as e:
-        # 捕获bcrypt相关错误，提供友好的错误信息
         error_msg = str(e)
-        if "password cannot be longer than 72 bytes" in error_msg:
-            logger.error(f"密码哈希生成失败：密码超过72字节限制（长度：{len(password.encode('utf-8'))}字节）")
-            raise ValueError(f"密码过长，请使用更短的密码（当前：{len(password.encode('utf-8'))}字节，最大：72字节）")
         logger.error(f"密码哈希生成失败：{error_msg}")
         raise ValueError(f"密码哈希生成失败：{error_msg}")
     except Exception as e:
-        # 捕获更广泛的异常，确保系统稳定性
         logger.critical(f"密码哈希生成过程中发生严重错误：{str(e)}")
         raise RuntimeError(f"密码哈希生成失败，请联系系统管理员。错误详情：{str(e)}")
 
@@ -204,13 +234,13 @@ def decode_token(token: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def validate_token(token: str, token_type: str = "access") -> Optional[Dict[str, Any]]:
+def validate_token(token: str, token_type: Literal["access", "refresh"] = "access") -> Optional[Dict[str, Any]]:
     """
     验证JWT令牌并检查令牌类型
     
     Args:
         token: JWT令牌
-        token_type: 令牌类型（access或refresh）
+        token_type: 令牌类型，仅接受 "access" 或 "refresh"
         
     Returns:
         Optional[Dict[str, Any]]: 令牌负载数据，如果验证失败则返回None
@@ -235,3 +265,4 @@ def get_user_id_from_token(token: str) -> Optional[str]:
     if payload:
         return payload.get("sub")
     return None
+
