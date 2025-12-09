@@ -82,7 +82,7 @@ def admin_user(db_session, sample_roles):
     admin_role = next(r for r in sample_roles if r.code == "admin")
     admin = User(
         username="admin",
-        password=get_password_hash("admin123"),
+        password=get_password_hash("Admin123!@#"),
         nickname="系统管理员",
         role_id=admin_role.id,
         status="active"
@@ -98,7 +98,7 @@ def operator_user(db_session, sample_roles):
     operator_role = next(r for r in sample_roles if r.code == "operator")
     operator = User(
         username="operator",
-        password=get_password_hash("operator123"),
+        password=get_password_hash("Operator123!@#"),
         nickname="运营人员",
         role_id=operator_role.id,
         status="active"
@@ -114,7 +114,7 @@ def normal_user(db_session, sample_roles):
     user_role = next(r for r in sample_roles if r.code == "user")
     user = User(
         username="user",
-        password=get_password_hash("user123"),
+        password=get_password_hash("User1234!"),
         nickname="普通用户",
         role_id=user_role.id,
         status="active"
@@ -131,7 +131,7 @@ def admin_token(client, admin_user):
         "/api/auth/token",
         data={
             "username": "admin",
-            "password": "admin123"
+            "password": "Admin123!@#"
         }
     )
     assert response.status_code == 200
@@ -145,7 +145,7 @@ def operator_token(client, operator_user):
         "/api/auth/token",
         data={
             "username": "operator",
-            "password": "operator123"
+            "password": "Operator123!@#"
         }
     )
     assert response.status_code == 200
@@ -159,7 +159,7 @@ def normal_token(client, normal_user):
         "/api/auth/token",
         data={
             "username": "user",
-            "password": "user123"
+            "password": "User1234!"
         }
     )
     assert response.status_code == 200
@@ -174,7 +174,7 @@ def test_login(client, admin_user):
         "/api/auth/login",
         json={
             "username": "admin",
-            "password": "admin123"
+            "password": "Admin123!@#"
         }
     )
     assert response.status_code == 200
@@ -204,7 +204,7 @@ def test_token_refresh(client, admin_user):
         "/api/auth/login",
         json={
             "username": "admin",
-            "password": "admin123"
+            "password": "Admin123!@#"
         }
     )
     assert login_response.status_code == 200
@@ -231,7 +231,7 @@ def test_create_user(client, admin_token, sample_roles):
         "/api/users/users",
         json={
             "username": "testuser",
-            "password": "test123",
+            "password": "Test1234!@#",
             "nickname": "测试用户",
             "role_id": user_role.id,
             "status": "active"
@@ -266,7 +266,7 @@ def test_update_user(client, admin_token, sample_roles):
         "/api/users/users",
         json={
             "username": "updatetest",
-            "password": "test123",
+            "password": "Test1234!@#",
             "nickname": "更新测试用户",
             "role_id": user_role.id,
             "status": "active"
@@ -301,7 +301,7 @@ def test_delete_user(client, admin_token):
         "/api/users/users",
         json={
             "username": "deletetest",
-            "password": "test123",
+            "password": "Test1234!@#",
             "nickname": "删除测试用户",
             "role_id": "",  # We'll fix this later
             "status": "active"

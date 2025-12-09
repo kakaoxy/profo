@@ -13,12 +13,13 @@ from schemas.user import (
     UserResponse,
     UserListResponse,
     PasswordChange,
+    PasswordResetRequest,
     RoleCreate,
     RoleUpdate,
     RoleResponse,
     RoleListResponse,
 )
-from utils.auth import get_password_hash, verify_password
+from utils.auth import get_password_hash, verify_password, validate_password_strength
 from dependencies.auth import get_current_admin_user, get_current_active_user
 
 
@@ -165,6 +166,14 @@ async def create_user(
                 detail="手机号已被使用"
             )
     
+    # 验证密码强度
+    is_valid, error_msg = validate_password_strength(user_data.password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg
+        )
+    
     # 创建用户
     db_user = User(
         **user_data.model_dump(exclude={"password"}),
@@ -234,7 +243,7 @@ async def update_user(
 @router.put("/users/{user_id}/reset-password")
 async def reset_user_password(
     user_id: str,
-    password_data: dict,
+    password_data: PasswordResetRequest,
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
@@ -243,7 +252,7 @@ async def reset_user_password(
     
     Args:
         user_id: 用户ID
-        password_data: 包含新密码的字典
+        password_data: 密码重置请求数据
         current_user: 当前管理员用户
         db: 数据库会话
         
@@ -252,7 +261,7 @@ async def reset_user_password(
         
     Raises:
         HTTPException: 404 Not Found - 用户不存在
-        HTTPException: 400 Bad Request - 密码格式错误
+        HTTPException: 400 Bad Request - 密码不符合强度要求
     """
     # 获取用户
     user = db.query(User).filter(User.id == user_id).first()
@@ -262,25 +271,17 @@ async def reset_user_password(
             detail="用户不存在"
         )
     
-    # 设置新密码
-    new_password = password_data.get("password")
-    if not new_password:
+    # 验证密码强度
+    is_valid, error_msg = validate_password_strength(password_data.password)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="密码不能为空"
+            detail=error_msg
         )
     
     # 更新密码
-    from utils.auth import get_password_hash
-    try:
-        user.password = get_password_hash(new_password)
-        db.commit()
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+    user.password = get_password_hash(password_data.password)
+    db.commit()
     
     return {"message": "密码重置成功"}
 
@@ -353,6 +354,14 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="当前密码错误"
+        )
+    
+    # 验证新密码强度
+    is_valid, error_msg = validate_password_strength(password_data.new_password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_msg
         )
     
     # 更新密码
