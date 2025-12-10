@@ -1,6 +1,6 @@
-# API 推送文档
+# API 接口文档
 
-## 注意事项
+## 文档说明
 - 标有<span style="color:red">*</span>的字段为必填项（仅用于文档标识，实际推送请勿包含星号或注释）
 - 未提供必填字段时返回 `VALIDATION_ERROR`，`error.details` 会列出缺失字段
 - 格式与验证规则：
@@ -10,18 +10,220 @@
 
 ## 接口概览
 
+### 认证与授权接口
+- 基础路径：`/api/auth`
+- 功能：用户认证、令牌管理、微信登录
+- 支持：密码登录、微信登录、令牌刷新
+
+### 用户管理接口
+- 基础路径：`/api/users`
+- 功能：用户管理、角色管理、密码管理
+- 支持：用户 CRUD、角色管理、密码修改
+
 ### 房源管理接口
 - 路径：`POST /api/push`
 - 功能：批量推送房源 JSON 数据，支持在售与成交两类状态
 - 请求体：JSON 数组，每个元素为一条房源记录（支持中文字段别名）
 - 响应：统计结果与错误详情
 
-### 项目管理接口（新增）
+### 房源查询接口
+- 基础路径：`GET /api/properties`
+- 功能：多维度房源查询、筛选、排序、分页
+- 支持：状态筛选、小区搜索、价格范围、面积范围、户型筛选等
+
+### 文件上传接口
+- 基础路径：`POST /api/v1/files`
+- 功能：文件上传（图片、文档等）
+- 支持：图片、PDF、Excel 等格式
+
+### 小区管理接口
+- 基础路径：`/api/admin`
+- 功能：小区查询、字典管理、小区合并
+- 支持：小区搜索、行政区/商圈字典、小区合并
+
+### 项目管理接口
 - 基础路径：`/api/v1/projects`
 - 功能：完整的项目生命周期管理，包括签约、改造、在售、已售四个阶段
 - 支持功能：项目创建、状态流转、现金流管理、改造阶段跟踪、销售记录管理等
 
-## 请求格式
+### 现金流管理接口
+- 基础路径：`/api/v1/projects/{project_id}/cashflow`
+- 功能：项目现金流记录和管理
+- 支持：收支记录、自动汇总、ROI 计算
+
+## 认证与授权接口
+
+### 1. 用户登录
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "your_password"
+}
+```
+
+**响应：**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "user": {
+    "id": "user_id",
+    "username": "admin",
+    "nickname": "系统管理员",
+    "role": {
+      "code": "admin",
+      "name": "管理员",
+      "permissions": ["view_data", "edit_data", "manage_users", "manage_roles"]
+    }
+  }
+}
+```
+
+### 2. 令牌刷新
+```bash
+POST /api/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### 3. 获取当前用户信息
+```bash
+GET /api/auth/me
+Authorization: Bearer {access_token}
+```
+
+### 4. 微信登录
+```bash
+# 获取微信授权URL
+GET /api/auth/wechat/authorize?redirect_uri=http://localhost:3000/callback
+
+# 微信小程序登录
+POST /api/auth/wechat/login
+Content-Type: application/json
+
+{
+  "code": "wechat_miniapp_code"
+}
+```
+
+## 用户管理接口
+
+### 1. 获取用户列表
+```bash
+GET /api/users?page=1&page_size=50&username=admin
+Authorization: Bearer {access_token}
+```
+
+**权限要求：** 管理员角色
+
+### 2. 创建用户
+```bash
+POST /api/users
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "password": "StrongPass123!",
+  "nickname": "新用户",
+  "phone": "13800138000",
+  "role_id": "role_id",
+  "status": "active"
+}
+```
+
+### 3. 更新用户信息
+```bash
+PUT /api/users/{user_id}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "nickname": "更新昵称",
+  "phone": "13800138001",
+  "status": "active"
+}
+```
+
+### 4. 修改密码
+```bash
+POST /api/users/change-password
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "current_password": "old_password",
+  "new_password": "NewStrongPass123!"
+}
+```
+
+### 5. 重置用户密码
+```bash
+PUT /api/users/{user_id}/reset-password
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "password": "NewResetPass123!"
+}
+```
+
+### 6. 删除用户
+```bash
+DELETE /api/users/{user_id}
+Authorization: Bearer {access_token}
+```
+
+### 7. 角色管理
+```bash
+# 获取角色列表
+GET /api/roles?page=1&page_size=50
+
+# 创建角色
+POST /api/roles
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "name": "运营人员",
+  "code": "operator",
+  "description": "拥有数据修改权限",
+  "permissions": ["view_data", "edit_data"]
+}
+
+# 更新角色
+PUT /api/roles/{role_id}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "name": "更新角色",
+  "permissions": ["view_data", "edit_data", "manage_users"]
+}
+
+# 删除角色
+DELETE /api/roles/{role_id}
+Authorization: Bearer {access_token}
+```
+
+### 8. 系统数据初始化
+```bash
+POST /api/users/init-data
+```
+
+**说明：** 首次部署时调用，创建默认角色和临时管理员账户。
+
+## 房源推送接口
+
+### 请求格式
 - 内容类型：`application/json`
 - 价格单位：`万`（例如 `挂牌价: 500.0` 表示 500 万）
 - 必填字段（按状态动态要求）：
@@ -61,25 +263,6 @@
 | 行政区 | 行政区 | 否 |
 | 商圈 | 商圈 | 否 |
 | 图片链接 | 房源图片URL列表 | 否 |
-
-### 项目管理接口字段（新增）
-
-#### 项目主状态
-- `signing`（签约阶段）
-- `renovating`（改造阶段）
-- `selling`（在售阶段）
-- `sold`（已售阶段）
-
-#### 改造子阶段
-- `拆除`、`设计`、`水电`、`木瓦`、`油漆`、`安装`、`交付`
-
-#### 现金流类型
-- `income`（收入）
-- `expense`（支出）
-
-#### 现金流分类
-- **支出类**：`履约保证金`、`中介佣金`、`装修费`、`营销费`、`其他支出`、`税费`、`运营杂费`
-- **收入类**：`回收保证金`、`溢价款`、`服务费`、`其他收入`、`售房款`
 
 说明：后端支持中文别名与英文字段名（已启用别名映射）。
 - `图片链接` 字段支持字符串（逗号分隔）或字符串数组格式
