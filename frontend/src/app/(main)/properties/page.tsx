@@ -51,7 +51,7 @@ export default async function PropertiesPage(props: PageProps) {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-screen flex flex-col bg-white">
       <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
         <h1 className="text-xl font-bold tracking-tight">房源列表</h1>
         <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export default async function PropertiesPage(props: PageProps) {
            <div className="flex-1 overflow-auto border rounded-md bg-white shadow-sm">
               <DataTable columns={columns} data={data?.items || []} />
            </div>
-           <div className="mt-2">
+           <div className="mt-2 relative z-50 bg-white">
              <PropertyPagination total={data?.total || 0}  />
            </div>
         </div>
