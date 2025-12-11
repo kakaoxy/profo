@@ -4,6 +4,7 @@ import { columns } from "./columns";
 import { PropertyFilters } from "./_components/property-filters";
 import { ExportButton } from "./_components/export-button";
 import { searchParamsCache } from "./search-params";
+import { PropertyPagination } from "./_components/property-pagination"; // 引入分页组件
 
 // 1. 修改类型定义：searchParams 是一个 Promise
 type PageProps = {
@@ -68,6 +69,9 @@ export default async function PropertiesPage(props: PageProps) {
         <div className="flex-1 overflow-hidden p-4 flex flex-col min-w-0">
            <div className="flex-1 overflow-auto border rounded-md bg-white shadow-sm">
               <DataTable columns={columns} data={data?.items || []} />
+           </div>
+           <div className="mt-2">
+             <PropertyPagination total={data?.total || 0}  />
            </div>
         </div>
       </div>
