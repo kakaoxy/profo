@@ -17,8 +17,6 @@
 /.next/
 /out/
 
-example/
-
 # production
 /build
 
