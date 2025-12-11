@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { fetchClient } from "@/lib/api-client";
+// import { fetchClient } from "@/lib/api-client";
 import { useSearchParams } from "next/navigation";
 
 export function ExportButton() {
