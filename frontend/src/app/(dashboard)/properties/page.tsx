@@ -1,10 +1,11 @@
-import { fetchClient } from "@/lib/api-client";
+import { fetchClient } from "@/lib/api-server";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 import { PropertyFilters } from "./_components/property-filters";
 import { ExportButton } from "./_components/export-button";
 import { searchParamsCache } from "./search-params";
 import { PropertyPagination } from "./_components/property-pagination"; // 引入分页组件
+import { PropertyDetailSheet } from "./_components/property-detail-sheet";
 
 // 1. 修改类型定义：searchParams 是一个 Promise
 type PageProps = {
@@ -75,6 +76,7 @@ export default async function PropertiesPage(props: PageProps) {
            </div>
         </div>
       </div>
+      <PropertyDetailSheet />
     </div>
   );
 }

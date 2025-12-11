@@ -1,6 +1,6 @@
 "use server";
 
-import { fetchClient } from "@/lib/api-client";
+import { fetchClient } from "@/lib/api-server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { fetchClient } from "@/lib/api-client";
+import { fetchClient } from "@/lib/api-server";
 import { Separator } from "@/components/ui/separator";
 
 async function getUser() {
