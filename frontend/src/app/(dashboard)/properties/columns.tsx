@@ -95,7 +95,7 @@ const SortableHeader = ({ title, value }: { title: string; value: string }) => {
 
 const ActionCell = ({ id }: { id: number }) => {
   // 使用 nuqs 的 hook
-  const [, setPropertyId] = useQueryState("propertyId", { shallow: false });
+  const [, setPropertyId] = useQueryState("propertyId", { shallow: true });
 
   return (
     <Button

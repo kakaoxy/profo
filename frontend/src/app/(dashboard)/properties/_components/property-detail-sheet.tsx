@@ -28,7 +28,7 @@ interface FieldProps {
 
 export function PropertyDetailSheet() {
   // 1. 监听 URL 中的 propertyId
-  const [propertyId, setPropertyId] = useQueryState("propertyId", { shallow: false });
+  const [propertyId, setPropertyId] = useQueryState("propertyId", { shallow: true });
   
   const [data, setData] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(false);
