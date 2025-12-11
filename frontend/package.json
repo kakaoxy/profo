@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@douyinfe/semi-ui": "^2.89.0",
     "next": "16.0.8",
     "react": "19.2.1",
     "react-dom": "19.2.1"
