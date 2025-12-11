@@ -50,7 +50,7 @@ export default function RightSidebar() {
         {/* Gallery Preview */}
         <div className="flex space-x-2 mb-6 overflow-x-auto pb-2">
             {selectedProperty.images.map((img, idx) => (
-                <div key={idx} className="w-16 h-12 flex-shrink-0 rounded bg-gray-100 overflow-hidden border border-gray-100">
+                <div key={idx} className="w-16 h-12 shrink-0 rounded bg-gray-100 overflow-hidden border border-gray-100">
                     <img src={img} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity cursor-pointer" />
                 </div>
             ))}
