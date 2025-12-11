@@ -16,6 +16,8 @@ export const searchParamsParsers = {
   business_circles: parseAsString.withDefault(""), // 商圈
   sort_by: parseAsString.withDefault("listed_date"),
   sort_order: parseAsString.withDefault("desc"),
+
+  propertyId: parseAsString,
 };
 
 // 创建服务端缓存（用于 page.tsx 读取）

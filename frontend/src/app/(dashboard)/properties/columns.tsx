@@ -7,6 +7,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpDown, ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -88,6 +93,26 @@ const SortableHeader = ({ title, value }: { title: string; value: string }) => {
   );
 };
 
+const ActionCell = ({ id }: { id: number }) => {
+  // 使用 nuqs 的 hook
+  const [, setPropertyId] = useQueryState("propertyId", { shallow: false });
+
+  return (
+    <Button
+      variant="link"
+      size="sm"
+      className="text-primary p-0 h-auto"
+      onClick={(e) => {
+        e.stopPropagation();
+        // 设置 ID，这会触发 Sheet 打开
+        setPropertyId(String(id));
+      }}
+    >
+      查看
+    </Button>
+  );
+};
+
 export const columns: ColumnDef<Property>[] = [
   // 1. 房源ID
   {
@@ -101,30 +126,64 @@ export const columns: ColumnDef<Property>[] = [
     id: "image",
     header: "户型图",
     cell: ({ row }) => {
-      // 调用顶部的辅助函数
+      // 调用辅助函数获取图片URL
       const cover = getFloorPlan(row.original.data_source, row.original.picture_links);
 
-      if (cover) {
+      // 如果没图，显示占位符 (保持不变)
+      if (!cover) {
         return (
-          <div className="relative w-12 h-9 rounded overflow-hidden border bg-slate-100 group cursor-zoom-in">
-            {/* 添加下面这行注释来忽略警告 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={cover}
-              alt="户型图"
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-              referrerPolicy="no-referrer"
-              loading="lazy"
-            />
+          <div className="w-12 h-9 bg-slate-100 rounded border flex items-center justify-center text-slate-400">
+            <ImageIcon className="h-4 w-4" />
           </div>
         );
       }
 
-      // 没图显示占位符
+      // 有图，使用 HoverCard 包裹
       return (
-        <div className="w-12 h-9 bg-slate-100 rounded border flex items-center justify-center text-slate-400">
-          <ImageIcon className="h-4 w-4" />
-        </div>
+        // openDelay: 鼠标放上去多少毫秒后显示，避免快速划过时闪烁
+        <HoverCard openDelay={200} closeDelay={100}>
+          {/* 触发区：原来的小图 */}
+          <HoverCardTrigger asChild>
+            <div className="relative w-12 h-9 rounded overflow-hidden border bg-slate-100 cursor-zoom-in group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={cover}
+                alt="户型图缩略"
+                className="w-full h-full object-cover transition-opacity group-hover:opacity-80"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+              />
+            </div>
+          </HoverCardTrigger>
+
+          {/* 弹出区：大图预览卡片 */}
+          <HoverCardContent
+            // w-[400px]: 设置大图卡片的宽度
+            // z-50: 确保浮在表格上方
+            className="w-[400px] p-2 bg-white z-50 shadow-lg"
+            // side="bottom" align="start": 优先显示在触发元素的下方左侧
+            side="bottom"
+            align="start"
+            // sideOffset: 与触发元素保持一点距离
+            sideOffset={10}
+            // Radix UI 会自动处理碰撞：如果下方空间不足，它会自动翻转显示到上方
+          >
+            <div className="rounded overflow-hidden bg-slate-50 border aspect-[4/3] flex items-center justify-center relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={cover}
+                alt="户型图大图预览"
+                // object-contain: 保证图片完整显示，不被裁切
+                className="object-contain w-full h-full"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            {/* 底部附加信息 */}
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              数据来源: {row.original.data_source || "未知"}
+            </p>
+          </HoverCardContent>
+        </HoverCard>
       );
     },
     size: 70,
@@ -250,21 +309,10 @@ export const columns: ColumnDef<Property>[] = [
     cell: ({ row }) => <Badge variant="outline" className="text-[10px]">{row.getValue("data_source")}</Badge>,
   },
   // 14. 操作
+  // 14. 操作
   {
     id: "actions",
     header: "操作",
-    cell: ({ row }) => (
-      <Button
-        variant="link"
-        size="sm"
-        className="text-primary p-0 h-auto"
-        onClick={(e) => {
-          e.stopPropagation();
-          alert(`查看详情 ID: ${row.original.id}`);
-        }}
-      >
-        查看
-      </Button>
-    ),
+    cell: ({ row }) => <ActionCell id={row.original.id} />,
   },
 ];
