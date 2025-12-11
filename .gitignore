@@ -32,7 +32,7 @@ htmlcov/
 # UV
 .venv/
 venv/
-
+example/
 
 # Node
 node_modules/
