@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { components } from "@/lib/api-types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, ImageIcon, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, ImageIcon } from "lucide-react"
 
 export type Property = components["schemas"]["PropertyResponse"]
 
