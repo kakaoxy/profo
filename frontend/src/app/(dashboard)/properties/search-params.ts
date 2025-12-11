@@ -14,7 +14,7 @@ export const searchParamsParsers = {
   max_area: parseAsInteger,
   districts: parseAsString.withDefault(""), // 行政区 (逗号分隔)
   business_circles: parseAsString.withDefault(""), // 商圈
-  sort_by: parseAsString.withDefault("updated_at"),
+  sort_by: parseAsString.withDefault("listed_date"),
   sort_order: parseAsString.withDefault("desc"),
 };
 

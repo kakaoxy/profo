@@ -5,7 +5,7 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  getPaginationRowModel, // 1. 保留这个引用
+  // getPaginationRowModel, // 1. 删除这一行引用
 } from "@tanstack/react-table"
 
 import {
@@ -16,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -27,11 +26,15 @@ export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(), // 2. 这里使用了它，开启前端分页功能
+    // getPaginationRowModel: getPaginationRowModel(), // 2. 删除这一行配置
+    // 3. 显式告诉表格：别管分页，我有多少条你就显示多少条
+    manualPagination: true, 
+    // 虽然删掉 getPaginationRowModel 通常就够了，但加 manualPagination 是双保险
   })
 
   return (
@@ -82,7 +85,7 @@ export function DataTable<TData, TValue>({
       </div>
       
       {/* 分页按钮区 */}
-      <div className="flex items-center justify-end space-x-2 py-4">
+      {/* <div className="flex items-center justify-end space-x-2 py-4">
         <Button
           variant="outline"
           size="sm"
@@ -99,7 +102,7 @@ export function DataTable<TData, TValue>({
         >
           下一页
         </Button>
-      </div>
+      </div> */}
     </div>
   )
 }
