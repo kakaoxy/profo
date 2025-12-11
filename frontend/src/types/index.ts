@@ -48,3 +48,37 @@ export interface AuthState {
   accessToken: string | null;
   loading: boolean;
 }
+
+// 统计项类型
+export interface StatItem {
+  label: string;
+  value: string;
+  trend?: {
+    value: string;
+    isUp: boolean;
+  };
+  highlight?: boolean;
+}
+
+// 线索信息类型
+export interface Lead {
+  id: string;
+  community: string;
+  layout: string;
+  orientation: string;
+  floor: string;
+  area: string;
+  totalPrice: string;
+  unitPrice: string;
+  time: string;
+  floorPlanUrl: string;
+}
+
+// 任务摘要类型
+export interface TaskSummary {
+  title: string;
+  pending: number;
+  processed: number;
+  iconBg: string;
+  icon: React.ReactNode;
+}
