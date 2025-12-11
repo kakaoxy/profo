@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Building2,
@@ -9,6 +11,7 @@ import {
   Users,
   LogOut,
   ChevronRight,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   Collapsible,
@@ -28,12 +31,23 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { logoutAction } from "@/app/login/actions";
 
-// 定义用户类型，解决 any 报错
 interface User {
   username: string;
   nickname?: string | null;
@@ -43,7 +57,6 @@ interface User {
   };
 }
 
-// 菜单配置
 const data = {
   navMain: [
     {
@@ -84,62 +97,144 @@ const data = {
   ],
 };
 
-// 这里把 user: any 改成了 user: User | null
 export function AppSidebar({ user }: { user: User | null }) {
+  const { state, isMobile } = useSidebar();
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            P
-          </div>
-          <span className="truncate font-semibold">Profo Admin</span>
+        <div className="flex items-center justify-between px-1 py-2">
+          {state === "expanded" && (
+             <div className="flex items-center gap-2 px-2 transition-all">
+               <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground font-bold text-xs">
+                 P
+               </div>
+               <span className="truncate font-semibold text-sm">Profo Admin</span>
+             </div>
+          )}
+          <SidebarTrigger />
         </div>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {data.navMain.map((item) => (
-              <Collapsible
-                key={item.title}
-                asChild
-                defaultOpen={item.isActive}
-                className="group/collapsible"
-              >
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton tooltip={item.title}>
-                      {item.icon && <item.icon />}
-                      <span>{item.title}</span>
-                      {item.items && (
-                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  {/* 二级菜单逻辑 */}
-                  {item.items && (
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild>
-                              <a href={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </a>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  )}
+            {data.navMain.map((item) => {
+              const hasSubmenu = item.items && item.items.length > 0;
+              const isActive = pathname === item.url || item.items?.some(sub => pathname.startsWith(sub.url));
+
+              // 修复点 1: 替换 any 为具体类型
+              const MenuButton = React.forwardRef<
+                HTMLButtonElement, 
+                React.ComponentProps<typeof SidebarMenuButton>
+              >((props, ref) => {
+                const ButtonContent = (
+                  <SidebarMenuButton 
+                    ref={ref}
+                    // 修复点 2: 将 null 改为 undefined
+                    tooltip={state === "collapsed" && !hasSubmenu ? item.title : undefined}
+                    isActive={isActive}
+                    {...props}
+                  >
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                    {state === "expanded" && hasSubmenu && (
+                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    )}
+                  </SidebarMenuButton>
+                );
+
+                if (item.url && item.url !== "#") {
+                  return <Link href={item.url} className="w-full">{ButtonContent}</Link>;
+                }
+                return ButtonContent;
+              });
+              MenuButton.displayName = "MenuButton";
+
+              if (state === "collapsed") {
+                if (hasSubmenu) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <HoverCard openDelay={100} closeDelay={200}>
+                        <HoverCardTrigger asChild>
+                          <div><MenuButton /></div>
+                        </HoverCardTrigger>
+                        <HoverCardContent 
+                          side="right" 
+                          align="start" 
+                          className="min-w-56 p-2 bg-white border shadow-lg rounded-lg z-[100]"
+                        >
+                           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b mb-1">
+                              {item.title}
+                           </div>
+                           <div className="flex flex-col gap-1">
+                             {item.items!.map(sub => (
+                               <Link 
+                                 key={sub.title} 
+                                 href={sub.url}
+                                 className={`
+                                   block px-2 py-1.5 text-sm rounded-md transition-colors hover:bg-slate-100
+                                   ${pathname === sub.url ? "bg-slate-100 font-medium text-primary" : ""}
+                                 `}
+                               >
+                                 {sub.title}
+                               </Link>
+                             ))}
+                           </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </SidebarMenuItem>
+                  );
+                }
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <MenuButton />
+                  </SidebarMenuItem>
+                );
+              }
+
+              if (hasSubmenu) {
+                return (
+                  <Collapsible
+                    key={item.title}
+                    asChild
+                    defaultOpen={isActive}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <MenuButton /> 
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.items!.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
+                                <Link href={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              }
+
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <MenuButton />
                 </SidebarMenuItem>
-              </Collapsible>
-            ))}
+              );
+            })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       
-      {/* 底部用户信息 */}
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -159,12 +254,12 @@ export function AppSidebar({ user }: { user: User | null }) {
                     <span className="truncate font-semibold">{user?.nickname || user?.username}</span>
                     <span className="truncate text-xs">{user?.role?.name || "管理员"}</span>
                   </div>
-                  <LogOut className="ml-auto size-4" />
+                  <MoreHorizontal className="ml-auto size-4" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-white"
+                side={isMobile ? "bottom" : "right"}
                 align="end"
                 sideOffset={4}
               >
