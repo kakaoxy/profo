@@ -25,26 +25,25 @@ const formatWan = (value: number | string | undefined | null) => {
 const statusConfig: Record<string, { label: string; className: string }> = {
   signing: {
     label: "签约",
-    // 柔和蓝背景 + 深蓝文字
-    className: "bg-blue-100/80 text-blue-700 hover:bg-blue-100",
+    // 使用纯色背景 + 白色文字
+    className: "bg-blue-500 text-white hover:bg-blue-600",
   },
   renovating: {
-    label: "改造",
-    // 柔和橙背景 + 深橙文字
-    className: "bg-orange-100/80 text-orange-700 hover:bg-orange-100",
+    label: "装修",
+    // 使用纯色背景 + 白色文字
+    className: "bg-orange-500 text-white hover:bg-orange-600",
   },
   selling: {
     label: "在售",
-    // 柔和紫背景 + 深紫文字
-    className: "bg-purple-100/80 text-purple-700 hover:bg-purple-100",
+    // 使用中灰背景 + 浅灰色文字（不同于其他状态）
+    className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
   },
   sold: {
     label: "已售",
-    // 柔和绿背景 + 深绿文字
-    className: "bg-emerald-100/80 text-emerald-700 hover:bg-emerald-100",
+    // 使用纯色背景 + 白色文字
+    className: "bg-emerald-500 text-white hover:bg-emerald-600",
   },
 };
-
 export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
@@ -66,7 +65,7 @@ export const columns: ColumnDef<Project>[] = [
             </span>
             <Badge 
               variant="secondary" 
-              className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none ${config?.className}`}
+              className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${config?.className}`}
             >
               {config?.label}
             </Badge>
@@ -99,7 +98,7 @@ export const columns: ColumnDef<Project>[] = [
           {/* 这里去掉了 border，使用了更圆润的 pill 形状 */}
           <Badge
             variant="secondary" // 使用 secondary 变体去除默认的黑色边框
-            className={`px-3 py-1 text-xs font-semibold rounded-full border-none shadow-none ${config.className}`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${config.className}`}
           >
             {config.label}
           </Badge>
