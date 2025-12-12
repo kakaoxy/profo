@@ -4,10 +4,16 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
 
 async function getUser() {
-  const client = await fetchClient();
-  const { data, error } = await client.GET("/api/auth/me");
-  if (error) return null;
-  return data;
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET("/api/auth/me");
+    if (error) return null;
+    return data;
+  } catch (e) {
+    // 捕获网络错误 (例如后端没启动)，返回 null 防止页面崩溃
+    console.error("获取用户信息失败 (可能是后端未启动):", e);
+    return null;
+  }
 }
 
 export default async function DashboardLayout({

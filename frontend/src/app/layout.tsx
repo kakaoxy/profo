@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; // 这里引用 globals.css 是正确的，因为它们在同一级
-import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import "./globals.css";
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
+// 1. 引入组件 (现在文件应该存在了)
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,12 +18,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
-        {/* 这里包裹适配器 */}
         <NuqsAdapter>
           {children}
         </NuqsAdapter>
+        
+        {/* 2. 关键修复：把组件放在这里渲染 */}
+        <Toaster />
       </body>
     </html>
   );
