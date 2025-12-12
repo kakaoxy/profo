@@ -17,6 +17,7 @@ from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyQueryParams, PropertyExportParams
 from schemas import PropertyResponse, PaginatedPropertyResponse, PropertyDetailResponse
 from dependencies.auth import get_current_normal_user, get_current_operator_user
+from models.user import User
 
 
 logger = logging.getLogger(__name__)
@@ -401,7 +402,8 @@ async def get_properties(
     sort_order: str = Query("desc", description="排序方向: asc | desc"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """
     查询房源列表
@@ -465,7 +467,7 @@ async def get_properties(
 
 
 @router.get("/{id}", response_model=PropertyDetailResponse)
-async def get_property_detail(id: int, db: Session = Depends(get_db)):
+async def get_property_detail(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_normal_user)):
     property_obj = db.query(PropertyCurrent).filter(
         PropertyCurrent.id == id,
         PropertyCurrent.is_active == True
@@ -503,7 +505,8 @@ async def export_properties(
     rooms_gte: Optional[int] = Query(None, ge=0, description="最少室数量"),
     sort_by: str = Query("updated_at", description="排序字段"),
     sort_order: str = Query("desc", description="排序方向: asc | desc"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """
     导出房源数据为 CSV 文件

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
@@ -24,6 +25,10 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar:state")?.value === "true";
   const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
