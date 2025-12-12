@@ -1,50 +1,179 @@
 "use server";
 
-import { fetchClient } from "@/lib/api-server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-// 1. 定义一个类型，告诉 TS 这个状态里可能有什么
-// 这里我们规定：状态要么是 null（初始），要么包含一个 error 字符串
+// 定义登录接口返回的结构
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  // 有些后端会在 403 时返回 payload，这里预留类型
+  detail?: string; 
+}
+
 export type LoginState = {
   error?: string;
+  mustChangePassword?: boolean; // 新增：是否强制修改密码
+  username?: string;            // 新增：回传用户名以便修改密码使用
+  tempToken?: string;           // 新增：如果有临时Token
 } | null;
 
-// 2. 将 prevState: any 修改为 prevState: LoginState
 export async function loginAction(prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const username = formData.get("username") as string;
+  const username = formData.get("username") as string; 
   const password = formData.get("password") as string;
 
-  const client = await fetchClient();
-
-  const { data, error } = await client.POST("/api/auth/login", {
-    body: {
-      username,
-      password,
-    },
-  });
-
-  if (error) {
-    // 登录失败，返回错误信息
-    // 注意：这里我们假设 error 对象里有 detail 字段，如果没有，可以根据实际情况调整
-    // 这里的 string(error) 是为了兜底，防止 error 是复杂对象导致报错
-    return { error: "登录失败：用户名或密码错误" };
+  if (!username || !password) {
+    return { error: "请输入账号和密码" };
   }
 
-  // 登录成功
-  const cookieStore = await cookies();
-  cookieStore.set("access_token", data.access_token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: data.expires_in,
-    path: "/",
-  });
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  const apiUrl = `${baseUrl}/api/auth/token`; 
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "password", username, password }),
+    });
+
+    // --- 针对 403 的详细处理 ---
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      
+      console.log("❌ [Debug] Login Failed Body:", JSON.stringify(errorData, null, 2));
+
+      // 1. 解析错误对象的层级
+      // 你的后端返回结构是: { error: { message: { temp_token: "..." } } }
+      const errorObj = errorData.error || errorData.detail || {};
+      
+      // 有时候 message 是字符串，有时候是对象（如现在的情况）
+      const messageObj = (typeof errorObj.message === 'object') ? errorObj.message : {};
+
+      // 2. 判断是否是强制修改密码
+      const isForceChange = response.status === 403 && (
+        errorObj.code === "HTTP_403" ||
+        messageObj.code === "HTTP_403" ||
+        JSON.stringify(errorData).includes("首次登录")
+      );
+
+      if (isForceChange) {
+        // 3. 深度挖掘 Token
+        // 尝试从所有可能的层级获取 token，确保万无一失
+        const tempToken = 
+            messageObj.temp_token ||  // 最匹配你当前日志的路径
+            errorObj.temp_token ||    // 备选路径
+            errorData.temp_token;     // 根路径备选
+
+        if (!tempToken) {
+          console.error("💀 [Fatal] 无法提取 temp_token，请检查后端返回结构");
+          return { error: "系统错误：未获取到修改密码凭证" };
+        }
+
+        console.log("✅ [Debug] 成功抓取到临时 Token:", tempToken.substring(0, 10) + "...");
+
+        return { 
+          mustChangePassword: true, 
+          username: username,
+          tempToken: tempToken 
+        };
+      }
+
+      // 返回通用错误信息
+      const errorMsg = typeof errorObj.message === 'string' 
+        ? errorObj.message 
+        : (messageObj.message || "登录失败");
+        
+      return { error: errorMsg };
+    }
+    // --- 核心修复逻辑结束 ---
+
+    const data: LoginResponse = await response.json();
+
+    // 3. 写入 Cookie
+    const cookieStore = await cookies();
+    cookieStore.set("access_token", data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, 
+      sameSite: "lax",
+    });
+
+    console.log("✅ [登录成功] Token 已写入 Cookie");
+
+  } catch (error) {
+    console.error("登录异常:", error);
+    return { error: "网络错误，请连接后端服务" };
+  }
 
   redirect("/");
 }
 
+// --- 新增：修改初始密码 Action ---
+export async function changePasswordAction(prevState: LoginState, formData: FormData): Promise<LoginState> {
+  const username = formData.get("username") as string;
+  const currentPassword = formData.get("current_password") as string;
+  const newPassword = formData.get("new_password") as string;
+  const tempToken = formData.get("temp_token") as string;
+
+  if (!newPassword || newPassword.length < 8) {
+    return { error: "新密码长度至少需要 8 位", mustChangePassword: true, username };
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  // 注意：这里调用的是修改密码接口
+  const apiUrl = `${baseUrl}/api/users/users/change-password`; 
+
+  try {
+    // 这里有个策略问题：如果没有 Token，我们如何调用这个接口？
+    // 1. 如果有 tempToken，放在 Header 里
+    // 2. 如果没有，我们可能需要先尝试用 login 接口获取 token (但 login 报 403...)
+    // 3. 只能假设：
+    //    A. 用户此时其实已经有了某种 Session
+    //    B. 或者后端在 403 响应里给了 Token (上面 loginAction 尝试获取了)
+    //    C. 这是一个开放接口但需要验证旧密码 (不太常见)
+    
+    // 我们先尝试带上 Cookie 里的 Token (如果有的话) 或者 tempToken
+    let token = tempToken;
+    if (!token) {
+        const cookieStore = await cookies();
+        token = cookieStore.get("access_token")?.value || "";
+    }
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { 
+        error: errorData.detail || "修改密码失败", 
+        mustChangePassword: true, // 保持在修改密码界面
+        username 
+      };
+    }
+
+    // 修改成功后，通常需要用新密码重新登录一次
+    // 或者如果后端直接返回了新 Token，我们可以在这里 set cookie
+    // 这里简单起见，提示成功并让用户重新登录
+    return { error: undefined }; // Success state
+
+  } catch (error) {
+    console.error(error)
+    return { error: "请求失败，请稍后重试", mustChangePassword: true, username };
+  }
+}
+
 export async function logoutAction() {
   const cookieStore = await cookies();
-  cookieStore.delete("access_token"); // 删除 Token
-  redirect("/login"); // 踢回登录页
+  cookieStore.delete("access_token");
+  redirect("/login");
 }
