@@ -88,6 +88,7 @@ export function PropertyFilters() {
             <Input 
               placeholder="搜索小区..." 
               className="pl-8 h-8 text-sm" 
+              maxLength={50}
               value={q || ""} 
               onChange={(e) => setQ(e.target.value || null)} 
             />
@@ -142,6 +143,7 @@ export function PropertyFilters() {
               placeholder="最低" 
               className="h-8 text-xs"
               value={minPrice || ""} 
+              maxLength={50}
               onChange={e => setMinPrice(e.target.value || null)}
             />
             <span className="text-muted-foreground">-</span>
@@ -150,6 +152,7 @@ export function PropertyFilters() {
               placeholder="最高" 
               className="h-8 text-xs"
               value={maxPrice || ""} 
+              maxLength={50}
               onChange={e => setMaxPrice(e.target.value || null)}
             />
           </div>
@@ -164,6 +167,7 @@ export function PropertyFilters() {
               placeholder="最小" 
               className="h-8 text-xs"
               value={minArea || ""} 
+              maxLength={50}
               onChange={e => setMinArea(e.target.value || null)}
             />
             <span className="text-muted-foreground">-</span>
@@ -172,6 +176,7 @@ export function PropertyFilters() {
               placeholder="最大" 
               className="h-8 text-xs"
               value={maxArea || ""} 
+              maxLength={50}
               onChange={e => setMaxArea(e.target.value || null)}
             />
           </div>

@@ -192,6 +192,11 @@
         "summary": "Get Properties",
         "description": "查询房源列表\n\n支持多维度筛选、排序和分页\n\nArgs:\n    status: 房源状态筛选\n    community_name: 小区名称模糊搜索\n    min_price: 最低价格\n    max_price: 最高价格\n    min_area: 最小面积\n    max_area: 最大面积\n    rooms: 室数量列表（逗号分隔）\n    sort_by: 排序字段\n    sort_order: 排序方向\n    page: 页码\n    page_size: 每页数量\n    db: 数据库会话\n\nReturns:\n    PaginatedPropertyResponse: 分页查询结果",
         "operationId": "get_properties_api_properties_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "status",
@@ -497,6 +502,11 @@
         ],
         "summary": "Get Property Detail",
         "operationId": "get_property_detail_api_properties__id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
@@ -540,6 +550,11 @@
         "summary": "Export Properties",
         "description": "导出房源数据为 CSV 文件\n\n使用与查询接口相同的筛选和排序参数，但移除分页限制，导出所有匹配的记录\n\nArgs:\n    status: 房源状态筛选\n    community_name: 小区名称模糊搜索\n    min_price: 最低价格\n    max_price: 最高价格\n    min_area: 最小面积\n    max_area: 最大面积\n    rooms: 室数量列表（逗号分隔）\n    sort_by: 排序字段\n    sort_order: 排序方向\n    db: 数据库会话\n\nReturns:\n    StreamingResponse: CSV 文件流",
         "operationId": "export_properties_api_properties_export_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "status",
@@ -817,8 +832,13 @@
           "admin"
         ],
         "summary": "Get Communities",
-        "description": "查询小区列表\n\n支持按名称搜索和分页\n\nArgs:\n    search: 小区名称搜索关键词\n    page: 页码\n    page_size: 每页数量\n    db: 数据库会话\n\nReturns:\n    CommunityListResponse: 小区列表响应",
+        "description": "查询小区列表\n\n支持按名称搜索和分页\n\nArgs:\n    search: 小区名称搜索关键词\n    page: 页码\n    page_size: 每页数量\n    db: 数据库会话\n    current_user: 当前用户\n\nReturns:\n    CommunityListResponse: 小区列表响应",
         "operationId": "get_communities_api_admin_communities_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "search",
@@ -898,6 +918,11 @@
         "summary": "Get Dictionaries",
         "description": "返回行政区或商圈的去重列表，支持模糊搜索",
         "operationId": "get_dictionaries_api_admin_dictionaries_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "type",
@@ -973,7 +998,7 @@
           "admin"
         ],
         "summary": "Merge Communities",
-        "description": "合并小区\n\n将多个小区合并到一个主小区，包括：\n1. 创建别名映射\n2. 更新所有关联房源\n3. 软删除被合并的小区\n\nArgs:\n    request: 合并请求（包含主小区ID和要合并的小区ID列表）\n    db: 数据库会话\n\nReturns:\n    CommunityMergeResponse: 合并结果",
+        "description": "合并小区\n\n将多个小区合并到一个主小区，包括：\n1. 创建别名映射\n2. 更新所有关联房源\n3. 软删除被合并的小区\n\nArgs:\n    request: 合并请求（包含主小区ID和要合并的小区ID列表）\n    db: 数据库会话\n    current_user: 当前用户\n\nReturns:\n    CommunityMergeResponse: 合并结果",
         "operationId": "merge_communities_api_admin_communities_merge_post",
         "requestBody": {
           "content": {
@@ -1006,7 +1031,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/projects": {
@@ -2271,7 +2301,6 @@
           "auth"
         ],
         "summary": "Login For Access Token",
-        "description": "OAuth2密码流登录，获取访问令牌\n\nArgs:\n    form_data: OAuth2密码表单数据\n    db: 数据库会话\n    \nReturns:\n    TokenResponse: 包含访问令牌、刷新令牌和用户信息的响应\n    \nRaises:\n    HTTPException: 401 Unauthorized - 用户名或密码错误\n    HTTPException: 403 Forbidden - 必须修改密码",
         "operationId": "login_for_access_token_api_auth_token_post",
         "requestBody": {
           "content": {
