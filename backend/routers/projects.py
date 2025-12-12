@@ -15,6 +15,8 @@ from schemas.project import (
     SalesRecordCreate, SalesRecordResponse, SalesRolesUpdate,
     ProjectReportResponse
 )
+from dependencies.auth import get_current_operator_user, get_current_normal_user
+from models.user import User
 
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
@@ -28,7 +30,8 @@ def get_project_service(db: Session = Depends(get_db)):
 @router.post("", response_model=BaseResponse)
 async def create_project(
     project_data: ProjectCreate,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """创建项目"""
     project = service.create_project(project_data)
@@ -41,7 +44,8 @@ async def get_projects(
     community_name: Optional[str] = Query(None, description="小区名称筛选"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """获取项目列表"""
     result = service.get_projects(
@@ -55,7 +59,8 @@ async def get_projects(
 
 @router.get("/stats", response_model=BaseResponse[ProjectStatsResponse])
 async def get_project_stats(
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """获取项目统计"""
     stats = service.get_project_stats()
@@ -65,7 +70,8 @@ async def get_project_stats(
 @router.get("/{project_id}", response_model=BaseResponse[ProjectResponse])
 async def get_project(
     project_id: str = Path(..., description="项目ID"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """获取项目详情"""
     project = service.get_project(project_id)
@@ -76,7 +82,8 @@ async def get_project(
 async def update_project(
     project_id: str = Path(..., description="项目ID"),
     update_data: ProjectUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """更新项目信息（仅签约阶段可修改）"""
     project = service.update_project(project_id, update_data)
@@ -89,7 +96,8 @@ async def update_project(
 async def update_project_status(
     project_id: str = Path(..., description="项目ID"),
     status_update: StatusUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """更新项目状态"""
     project = service.update_status(project_id, status_update)
@@ -100,7 +108,8 @@ async def update_project_status(
 async def complete_project(
     project_id: str = Path(..., description="项目ID"),
     complete_data: ProjectCompleteRequest = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """完成项目（标记为已售）"""
     project = service.complete_project(project_id, complete_data)
@@ -113,7 +122,8 @@ async def complete_project(
 async def update_renovation_stage(
     project_id: str = Path(..., description="项目ID"),
     renovation_data: RenovationUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """更新改造阶段"""
     project = service.update_renovation_stage(project_id, renovation_data)
@@ -127,7 +137,8 @@ async def upload_renovation_photo(
     url: str = Query(..., description="图片URL"),
     filename: Optional[str] = Query(None, description="文件名"),
     description: Optional[str] = Query(None, description="描述"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """上传改造阶段照片"""
     photo = service.add_renovation_photo(project_id, stage, url, filename, description)
@@ -138,7 +149,8 @@ async def upload_renovation_photo(
 async def get_renovation_photos(
     project_id: str = Path(..., description="项目ID"),
     stage: Optional[str] = Query(None, description="改造阶段筛选"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """获取改造阶段照片"""
     photos = service.get_renovation_photos(project_id, stage)
@@ -151,7 +163,8 @@ async def get_renovation_photos(
 async def update_sales_roles(
     project_id: str = Path(..., description="项目ID"),
     roles_data: SalesRolesUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """更新销售角色"""
     project = service.update_sales_roles(project_id, roles_data)
@@ -162,7 +175,8 @@ async def update_sales_roles(
 async def create_viewing_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """创建带看记录"""
     record = service.create_sales_record(project_id, record_data)
@@ -173,7 +187,8 @@ async def create_viewing_record(
 async def create_offer_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """创建出价记录"""
     record = service.create_sales_record(project_id, record_data)
@@ -184,7 +199,8 @@ async def create_offer_record(
 async def create_negotiation_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """创建面谈记录"""
     record = service.create_sales_record(project_id, record_data)
@@ -195,7 +211,8 @@ async def create_negotiation_record(
 async def get_sales_records(
     project_id: str = Path(..., description="项目ID"),
     record_type: Optional[str] = Query(None, description="记录类型筛选"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """获取销售记录"""
     records = service.get_sales_records(project_id, record_type)
@@ -206,7 +223,8 @@ async def get_sales_records(
 async def delete_sales_record(
     project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """删除销售记录"""
     service.delete_sales_record(project_id, record_id)
@@ -218,7 +236,8 @@ async def delete_sales_record(
 @router.get("/{project_id}/report", response_model=BaseResponse[ProjectReportResponse])
 async def get_project_report(
     project_id: str = Path(..., description="项目ID"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_normal_user)
 ):
     """获取项目报告"""
     report = service.get_project_report(project_id)
@@ -231,7 +250,8 @@ async def get_project_report(
 async def export_projects(
     status: Optional[str] = Query(None, description="项目状态筛选"),
     community_name: Optional[str] = Query(None, description="小区名称筛选"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """导出项目数据到Excel"""
     # 获取所有项目数据（不分页）

@@ -18,6 +18,8 @@ from schemas.community import (
     CommunityMergeResponse
 )
 from services.merger import CommunityMerger
+from dependencies.auth import get_current_operator_user, get_current_admin_user
+from models.user import User
 
 
 logger = logging.getLogger(__name__)
@@ -100,7 +102,8 @@ async def get_communities(
     search: Optional[str] = Query(None, description="小区名称搜索（模糊匹配）"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """
     查询小区列表
@@ -112,6 +115,7 @@ async def get_communities(
         page: 页码
         page_size: 每页数量
         db: 数据库会话
+        current_user: 当前用户
     
     Returns:
         CommunityListResponse: 小区列表响应
@@ -132,7 +136,8 @@ async def get_dictionaries(
     type: str = Query(..., description="字典类型: district | business_circle"),
     search: Optional[str] = Query(None, description="模糊搜索关键词"),
     limit: int = Query(50, ge=1, le=500, description="返回数量上限"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_operator_user)
 ):
     """
     返回行政区或商圈的去重列表，支持模糊搜索
@@ -162,7 +167,8 @@ async def get_dictionaries(
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
 async def merge_communities(
     request: CommunityMergeRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
 ):
     """
     合并小区
@@ -175,6 +181,7 @@ async def merge_communities(
     Args:
         request: 合并请求（包含主小区ID和要合并的小区ID列表）
         db: 数据库会话
+        current_user: 当前用户
     
     Returns:
         CommunityMergeResponse: 合并结果

@@ -5,13 +5,13 @@ export default async function UploadPage() {
   const cookieStore = await cookies();
   
   // --- 调试代码开始 ---
-  console.log("🛠️ [服务端调试] 所有 Cookies:", cookieStore.getAll().map(c => c.name));
+  // console.log("🛠️ [服务端调试] 所有 Cookies:", cookieStore.getAll().map(c => c.name));
   
   const tokenCookie = cookieStore.get("access_token");
-  console.log("🛠️ [服务端调试] 尝试读取 access_token:", tokenCookie);
+  // console.log("🛠️ [服务端调试] 尝试读取 access_token:", tokenCookie);
   
   const token = tokenCookie?.value || "";
-  console.log("🛠️ [服务端调试] 最终传给组件的 Token:", token ? "有值 (长度 " + token.length + ")" : "空字符串");
+  // console.log("🛠️ [服务端调试] 最终传给组件的 Token:", token ? "有值 (长度 " + token.length + ")" : "空字符串");
   // --- 调试代码结束 ---
       
 
