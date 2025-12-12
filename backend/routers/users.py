@@ -366,6 +366,9 @@ async def change_password(
     
     # 更新密码
     current_user.password = get_password_hash(password_data.new_password)
+
+    current_user.must_change_password = False
+    
     db.commit()
     
     return {"message": "密码修改成功"}

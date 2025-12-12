@@ -33,26 +33,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+# ... 之前的引用保持不变 ...
+
 @router.post("/token", response_model=TokenResponse)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    """
-    OAuth2密码流登录，获取访问令牌
-    
-    Args:
-        form_data: OAuth2密码表单数据
-        db: 数据库会话
-        
-    Returns:
-        TokenResponse: 包含访问令牌、刷新令牌和用户信息的响应
-        
-    Raises:
-        HTTPException: 401 Unauthorized - 用户名或密码错误
-        HTTPException: 403 Forbidden - 必须修改密码
-    """
-    # 验证用户
+    # ... 验证用户名密码逻辑保持不变 ...
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
@@ -61,13 +49,31 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # --- 核心修改开始 ---
     # 检查是否必须修改密码
     if user.must_change_password:
+        # 1. 在抛出异常前，先生成一个临时的 Access Token
+        # 设置一个较短的过期时间，比如 10 分钟，仅用于修改密码
+        temp_expires = timedelta(minutes=10)
+        temp_token = create_access_token(
+            data={"sub": user.id, "role": user.role.code, "scope": "reset_password"}, # 可以加个 scope 标记
+            expires_delta=temp_expires
+        )
+
+        # 2. 将 token 放入 detail 字典中返回
+        # 注意：FastAPI 的 HTTPException detail 可以是一个字典
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="首次登录必须修改密码",
+            detail={
+                "code": "HTTP_403",
+                "message": "首次登录必须修改密码",
+                "temp_token": temp_token  # <--- 把 Token 塞在这里！
+            },
             headers={"X-Must-Change-Password": "true"}
         )
+    # --- 核心修改结束 ---
+    
+    # ... 后面的正常登录逻辑保持不变 ...
     
     # 更新最后登录时间
     from datetime import datetime
