@@ -83,6 +83,16 @@ async def update_project(
     return {"code": 200, "msg": "success", "data": project}
 
 
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: str = Path(..., description="项目ID"),
+    service: ProjectService = Depends(get_project_service)
+):
+    """删除项目（软删除）"""
+    service.delete_project(project_id)
+    return {"code": 200, "msg": "success", "data": None}
+
+
 # ========== 项目状态流转 ==========
 
 @router.put("/{project_id}/status")

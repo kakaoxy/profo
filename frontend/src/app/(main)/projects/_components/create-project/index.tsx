@@ -25,25 +25,47 @@ import { OwnerTab } from "./tabs/owner-tab";
 import { AgreementTab } from "./tabs/agreement-tab";
 import { AttachmentsTab } from "./tabs/attachments-tab";
 
-export function CreateProjectDialog() {
-  // 一行代码获取所有逻辑
+import { Project } from "../../types";
+
+interface CreateProjectDialogProps {
+  project?: Project;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void; // 添加 onSuccess 回调 prop
+}
+
+export function CreateProjectDialog({ 
+  project, 
+  trigger, 
+  open: controlledOpen, 
+  onOpenChange: controlledOnOpenChange,
+  onSuccess // 解构 onSuccess
+}: CreateProjectDialogProps = {}) {
   const {
     form,
-    open,
-    setOpen,
+    open: internalOpen,
+    setOpen: setInternalOpen,
     loading,
     activeTab,
     setActiveTab,
     clearDraft,
     onSubmit,
-  } = useCreateProject();
+    isEditMode,
+  } = useCreateProject({ project, onSuccess }); // 将 onSuccess 传给 hook
+
+  // 支持受控和非受控模式
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> 新建项目
-        </Button>
+        {trigger || (
+           <Button>
+             <Plus className="mr-2 h-4 w-4" /> 新建项目
+           </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[750px] p-0 gap-0 overflow-hidden h-[85vh] flex flex-col">
@@ -51,27 +73,29 @@ export function CreateProjectDialog() {
         <DialogHeader className="px-6 py-4 border-b bg-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle>新建项目</DialogTitle>
+              <DialogTitle>{project ? "编辑项目" : "新建项目"}</DialogTitle>
               <DialogDescription className="mt-1">
-                录入新项目信息。支持自动保存草稿。
+                {project ? "修改项目详细信息。" : "录入新项目信息。支持自动保存草稿。"}
               </DialogDescription>
             </div>
-            {/* 顶部工具栏：清空 & 状态提示 */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearDraft}
-                className="h-8 text-xs text-muted-foreground hover:text-red-600"
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                清空
-              </Button>
-              <div className="flex items-center rounded-full bg-green-50 px-2 py-1 text-xs text-green-600">
-                <Save className="mr-1 h-3 w-3" />
-                自动保存中
+            {/* 顶部工具栏：仅在新建模式显示草稿控制 */}
+            {!isEditMode && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearDraft}
+                  className="h-8 text-xs text-muted-foreground hover:text-red-600"
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  清空
+                </Button>
+                <div className="flex items-center rounded-full bg-green-50 px-2 py-1 text-xs text-green-600">
+                  <Save className="mr-1 h-3 w-3" />
+                  自动保存中
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </DialogHeader>
 
@@ -132,7 +156,7 @@ export function CreateProjectDialog() {
                 </Button>
                 <Button type="submit" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  创建项目
+                  {isEditMode ? "保存修改" : "创建项目"}
                 </Button>
               </DialogFooter>
             </form>

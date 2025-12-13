@@ -1,53 +1,64 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-// 1. 引入 Resolver 类型，以便做精确的类型断言（比 as any 更安全）
 import { useForm, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-import { createProjectAction } from "../../actions";
-import { formSchema, FormValues, DRAFT_KEY, ProjectCreateReq } from "./schema";
+import { createProjectAction, updateProjectAction } from "../../actions";
+import { formSchema, FormValues, DRAFT_KEY, ProjectCreateReq, ProjectUpdateReq, AttachmentCategory, AttachmentType } from "./schema";
+import { Project } from "../../types";
 
-export const useCreateProject = () => {
+interface UseCreateProjectProps {
+  project?: Project;
+  onSuccess?: () => void;
+}
+
+export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps = {}) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
 
+  const isEditMode = !!project;
+
   const form = useForm<FormValues>({
-    // [关键修复] 使用类型断言
-    // 告诉 TS：虽然 Schema 接受 string，但请把这个 Resolver 当作是只输出 FormValues 的 Resolver
-    // 这解决了 2322 类型不兼容报错
     resolver: zodResolver(formSchema) as unknown as Resolver<FormValues>,
     defaultValues: {
-      name: "",
-      community_name: "",
-      address: "",
-      manager: "",
-      tags: "",
-      owner_name: "",
-      owner_phone: "",
-      owner_id_card: "",
-      costAssumption: "",
-      otherAgreements: "",
-      notes: "",
-      remarks: "",
-      // 数字和日期字段保持 undefined
-      signing_price: undefined,
-      area: undefined,
-      signing_period: undefined,
-      extensionPeriod: undefined,
-      extensionRent: undefined,
-      signing_date: undefined,
-      planned_handover_date: undefined,
-      // 附件列表
-      attachments: [],
+      name: project?.name || "",
+      community_name: project?.community_name || project?.communityName || "",
+      address: project?.address || "",
+      manager: project?.manager || "",
+      tags: project?.tags?.join(", ") || "",
+      owner_name: project?.owner_name || project?.ownerName || "",
+      owner_phone: project?.owner_phone || project?.ownerPhone || "",
+      owner_id_card: project?.owner_id_card || project?.ownerIdCard || "",
+      costAssumption: project?.costAssumption || project?.cost_assumption || "",
+      otherAgreements: project?.otherAgreements || project?.other_agreements || "",
+      notes: project?.notes || "",
+      remarks: project?.remarks || "",
+      
+      signing_price: project?.signing_price ?? project?.signingPrice,
+      area: project?.area,
+      signing_period: project?.signing_period ?? project?.signingPeriod,
+      extensionPeriod: project?.extensionPeriod ?? project?.extension_period,
+      extensionRent: project?.extensionRent ?? project?.extension_rent,
+      
+      signing_date: (project?.signing_date || project?.signingDate) ? new Date(project.signing_date || project.signingDate!) : undefined,
+      planned_handover_date: (project?.planned_handover_date || project?.plannedHandoverDate) ? new Date(project.planned_handover_date || project.plannedHandoverDate!) : undefined,
+      
+      attachments: project?.signing_materials?.attachments?.map(att => ({
+        ...att,
+        id: Math.random().toString(36).substring(7), // Generate temp ID if needed
+        uploadedAt: new Date().toISOString(),
+        category: att.category as AttachmentCategory,
+        fileType: att.fileType as AttachmentType,
+      })) || [],
     },
   });
 
-  // 草稿恢复
+  // 草稿恢复 - 仅新建模式有效
   useEffect(() => {
-    if (open) {
+    if (open && !isEditMode) {
       const draft = localStorage.getItem(DRAFT_KEY);
       if (draft) {
         try {
@@ -55,9 +66,7 @@ export const useCreateProject = () => {
           if (parsed.signing_date)
             parsed.signing_date = new Date(parsed.signing_date);
           if (parsed.planned_handover_date)
-            parsed.planned_handover_date = new Date(
-              parsed.planned_handover_date
-            );
+            parsed.planned_handover_date = new Date(parsed.planned_handover_date);
           form.reset(parsed);
           toast.info("已恢复上次未保存的草稿");
         } catch (e) {
@@ -65,16 +74,51 @@ export const useCreateProject = () => {
         }
       }
     }
-  }, [open, form]);
+  }, [open, form, isEditMode]);
 
-  // 草稿保存
+  // 草稿保存 - 仅新建模式有效
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEditMode) return;
     const subscription = form.watch((val) => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(val));
     });
     return () => subscription.unsubscribe();
-  }, [open, form]);
+  }, [open, form, isEditMode]);
+
+  // 重置表单 - 编辑模式重置为 initialData，新建模式重置为空
+  useEffect(() => {
+    if (open && isEditMode && project) {
+       form.reset({
+          name: project.name || "",
+          community_name: project.community_name || project.communityName || "",
+          address: project.address || "",
+          manager: project.manager || "",
+          tags: project.tags?.join(", ") || "",
+          owner_name: project.owner_name || project.ownerName || "",
+          owner_phone: project.owner_phone || project.ownerPhone || "",
+          owner_id_card: project.owner_id_card || project.ownerIdCard || "",
+          costAssumption: project.costAssumption || project.cost_assumption || "",
+          otherAgreements: project.otherAgreements || project.other_agreements || "",
+          notes: project.notes || "",
+          remarks: project.remarks || "",
+          signing_price: project.signing_price ?? project.signingPrice,
+          area: project.area,
+          signing_period: project.signing_period ?? project.signingPeriod,
+          extensionPeriod: project.extensionPeriod ?? project.extension_period,
+          extensionRent: project.extensionRent ?? project.extension_rent,
+          signing_date: (project.signing_date || project.signingDate) ? new Date(project.signing_date || project.signingDate!) : undefined,
+          planned_handover_date: (project.planned_handover_date || project.plannedHandoverDate) ? new Date(project.planned_handover_date || project.plannedHandoverDate!) : undefined,
+          attachments: project.signing_materials?.attachments?.map(att => ({
+            ...att,
+            id: Math.random().toString(36).substring(7),
+            uploadedAt: new Date().toISOString(),
+            category: att.category as AttachmentCategory,
+            fileType: att.fileType as AttachmentType,
+          })) || [],
+       });
+    }
+  }, [open, isEditMode, project, form]);
+
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
@@ -82,33 +126,26 @@ export const useCreateProject = () => {
     toast.success("草稿已清空");
   }, [form]);
 
-  // 提交逻辑
-  // [修复]：因为 form 定义修复了，handleSubmit 这里的类型也会自动正确推断，解决了 2345 报错
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
 
     try {
       const tagArray = values.tags
-        ? values.tags
-            .split(/[,，]/)
-            .map((t) => t.trim())
-            .filter(Boolean)
+        ? values.tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean)
         : null;
 
-      const payload: ProjectCreateReq = {
+      // 构造通用 payload
+      const basePayload = {
         name: values.name,
         community_name: values.community_name || null,
         address: values.address || null,
         manager: values.manager || null,
         tags: tagArray,
-
-        // Zod 已经把空字符串转为了 undefined，这里只需处理 undefined -> null
         signing_price: values.signing_price ?? null,
         area: values.area ?? null,
         signing_period: values.signing_period ?? null,
         extensionPeriod: values.extensionPeriod ?? null,
         extensionRent: values.extensionRent ?? null,
-
         owner_name: values.owner_name || null,
         owner_phone: values.owner_phone || null,
         owner_id_card: values.owner_id_card || null,
@@ -116,12 +153,8 @@ export const useCreateProject = () => {
         otherAgreements: values.otherAgreements || null,
         notes: values.notes || null,
         remarks: values.remarks || null,
-
         signing_date: values.signing_date?.toISOString() || null,
-        planned_handover_date:
-          values.planned_handover_date?.toISOString() || null,
-
-        // 附件数据存储到 signing_materials JSON 字段
+        planned_handover_date: values.planned_handover_date?.toISOString() || null,
         signing_materials: values.attachments?.length
           ? {
               attachments: values.attachments.map((att) => ({
@@ -136,16 +169,28 @@ export const useCreateProject = () => {
         owner_info: null,
       };
 
-      const res = await createProjectAction(payload);
+      let res;
+      if (isEditMode && project) {
+          // 更新模式
+          const payload: ProjectUpdateReq = basePayload;
+          res = await updateProjectAction(project.id, payload);
+      } else {
+          // 新建模式
+          const payload: ProjectCreateReq = basePayload;
+          res = await createProjectAction(payload);
+      }
 
       if (res.success) {
-        toast.success("项目创建成功");
-        localStorage.removeItem(DRAFT_KEY);
+        toast.success(isEditMode ? "项目更新成功" : "项目创建成功");
+        if (!isEditMode) {
+           localStorage.removeItem(DRAFT_KEY);
+           form.reset();
+        }
         setOpen(false);
-        form.reset();
         setActiveTab("basic");
+        onSuccess?.();
       } else {
-        toast.error(res.message || "创建失败");
+        toast.error(res.message || (isEditMode ? "更新失败" : "创建失败"));
       }
     } catch (error) {
       toast.error("网络请求错误");
@@ -164,5 +209,6 @@ export const useCreateProject = () => {
     setActiveTab,
     clearDraft,
     onSubmit: form.handleSubmit(onSubmit),
+    isEditMode, // 导出模式标记
   };
 };
