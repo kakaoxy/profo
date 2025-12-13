@@ -1,10 +1,10 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, TrendingUp } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Project } from "../../types";
-import { getDaysUntil, getStatusColor } from "./utils";
+import { getDaysUntil } from "./utils";
 
 interface ProjectSummaryProps {
   project: Project;
@@ -15,57 +15,73 @@ interface ProjectSummaryProps {
  */
 export function ProjectSummary({ project }: ProjectSummaryProps) {
   const daysUntilHandover = getDaysUntil(project.planned_handover_date);
+  const netCashFlow = (project.net_cash_flow || 0) / 10000;
+  const isProfitable = netCashFlow >= 0;
 
   return (
-    <div className="grid grid-cols-3 gap-3 py-4">
-      {/* 状态 */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-3 text-center">
-          <div
-            className={cn(
-              "w-3 h-3 rounded-full mx-auto mb-1",
-              getStatusColor(project.status)
-            )}
-          />
-          <p className="text-lg font-bold">{project.status}</p>
-          <p className="text-xs text-muted-foreground">当前状态</p>
-        </CardContent>
-      </Card>
-
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {/* 签约价 */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-3 text-center">
-          <TrendingUp className="h-4 w-4 mx-auto mb-1 text-blue-500" />
-          <p className="text-lg font-bold font-mono">
-            {project.signing_price ? `${project.signing_price}万` : "-"}
-          </p>
-          <p className="text-xs text-muted-foreground">签约价</p>
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground font-medium mb-1">签约总价</p>
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-bold font-mono tracking-tight">
+              {project.signing_price ? project.signing_price.toLocaleString() : "-"}
+            </span>
+            <span className="text-xs text-muted-foreground">万</span>
+          </div>
         </CardContent>
       </Card>
 
-      {/* 距交房天数 */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-3 text-center">
-          <Calendar className="h-4 w-4 mx-auto mb-1 text-orange-500" />
-          <p
-            className={cn(
-              "text-lg font-bold",
-              daysUntilHandover !== null &&
-                daysUntilHandover < 0 &&
-                "text-red-500",
-              daysUntilHandover !== null &&
-                daysUntilHandover >= 0 &&
-                daysUntilHandover <= 7 &&
-                "text-orange-500"
-            )}
-          >
-            {daysUntilHandover !== null
-              ? daysUntilHandover >= 0
-                ? `${daysUntilHandover}天`
-                : `超${Math.abs(daysUntilHandover)}天`
-              : "-"}
-          </p>
-          <p className="text-xs text-muted-foreground">距交房</p>
+      {/* 现金流 */}
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground font-medium mb-1">净现金流</p>
+          <div className={cn("flex items-baseline gap-1", isProfitable ? "text-red-600" : "text-green-600")}>
+            <span className="text-2xl font-bold font-mono tracking-tight">
+              {project.net_cash_flow !== undefined ? (isProfitable ? "+" : "") + netCashFlow.toLocaleString() : "-"}
+            </span>
+            <span className="text-xs text-muted-foreground">万</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 距交房 */}
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground font-medium mb-1">距交房</p>
+          <div className="flex items-baseline gap-1">
+            <span
+              className={cn(
+                "text-2xl font-bold font-mono tracking-tight",
+                daysUntilHandover !== null && daysUntilHandover < 0 && "text-red-500",
+                daysUntilHandover !== null && daysUntilHandover >= 0 && daysUntilHandover <= 7 ? "text-orange-500" : "text-foreground"
+              )}
+            >
+              {daysUntilHandover !== null ? Math.abs(daysUntilHandover) : "-"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {daysUntilHandover !== null ? (daysUntilHandover >= 0 ? "天" : "天 (已超时)") : ""}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+       {/* 当前状态 - 只有这个卡片有背景色区分 */}
+       <Card className={cn("border-l-4", 
+          project.status === "签约中" && "border-l-blue-500",
+          project.status === "装修中" && "border-l-orange-500",
+          project.status === "在售" && "border-l-green-500",
+          project.status === "已成交" && "border-l-purple-500"
+       )}>
+        <CardContent className="p-4 flex flex-col justify-center h-full">
+          <div className="flex items-center justify-between">
+             <span className="text-xs text-muted-foreground font-medium">当前阶段</span>
+             <Calendar className="h-4 w-4 text-muted-foreground opacity-50"/>
+          </div>
+          <div className="mt-1">
+             <span className="text-lg font-bold">{project.status}</span>
+          </div>
         </CardContent>
       </Card>
     </div>

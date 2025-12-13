@@ -17,7 +17,6 @@ export function InfoTab({ project }: InfoTabProps) {
     <div className="space-y-4">
       {/* 基础信息 */}
       <InfoSection title="基础信息" icon={<MapPin className="h-4 w-4" />}>
-        <div className="grid grid-cols-2 gap-2">
           <InfoItem label="小区" value={project.community_name} />
           <InfoItem label="负责人" value={project.manager} />
           <InfoItem
@@ -28,16 +27,14 @@ export function InfoTab({ project }: InfoTabProps) {
           <InfoItem
             label="地址"
             value={project.address}
-            className="col-span-2"
+            className="sm:col-span-2"
             copyable
             copyValue={project.address}
           />
-        </div>
       </InfoSection>
 
       {/* 交易数据 */}
       <InfoSection title="交易数据" icon={<TrendingUp className="h-4 w-4" />}>
-        <div className="grid grid-cols-2 gap-2">
           <InfoItem
             label="签约价"
             value={formatPrice(project.signing_price)}
@@ -68,7 +65,7 @@ export function InfoTab({ project }: InfoTabProps) {
                     project.net_cash_flow >= 0 ? "text-green-600" : "text-red-500"
                   )}
                 >
-                  {formatPrice(project.net_cash_flow)}
+                  {formatPrice((project.net_cash_flow || 0) / 10000)}
                 </span>
               ) : undefined
             }
@@ -87,12 +84,10 @@ export function InfoTab({ project }: InfoTabProps) {
             value={formatDate(project.planned_handover_date)}
           />
           <InfoItem label="成交日期" value={formatDate(project.sold_date)} />
-        </div>
       </InfoSection>
 
       {/* 业主信息 */}
       <InfoSection title="业主信息" icon={<User className="h-4 w-4" />}>
-        <div className="grid grid-cols-2 gap-2">
           <InfoItem label="业主姓名" value={project.owner_name} />
           <InfoItem
             label="联系电话"
@@ -109,9 +104,8 @@ export function InfoTab({ project }: InfoTabProps) {
             }
             copyable
             copyValue={project.owner_id_card}
-            className="col-span-2"
+            className="sm:col-span-2"
           />
-        </div>
       </InfoSection>
 
       {/* 合同与备注 */}
@@ -120,11 +114,9 @@ export function InfoTab({ project }: InfoTabProps) {
         project.notes ||
         project.remarks) && (
         <InfoSection title="合同与备注" icon={<FileText className="h-4 w-4" />}>
-          <div className="space-y-2">
-            <InfoItem label="费用承担" value={project.cost_assumption} />
-            <InfoItem label="其他约定" value={project.other_agreements} />
-            <InfoItem label="备注" value={project.notes || project.remarks} />
-          </div>
+            <InfoItem label="费用承担" value={project.cost_assumption} className="sm:col-span-2" />
+            <InfoItem label="其他约定" value={project.other_agreements} className="sm:col-span-2" />
+            <InfoItem label="备注" value={project.notes || project.remarks} className="sm:col-span-2" />
         </InfoSection>
       )}
     </div>
