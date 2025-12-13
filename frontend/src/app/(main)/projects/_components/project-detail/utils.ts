@@ -4,7 +4,7 @@
 
 // 格式化日期
 export function formatDate(dateStr?: string | null): string {
-  if (!dateStr) return "";
+  if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("zh-CN");
 }
 
@@ -35,8 +35,11 @@ export function getDaysUntil(dateStr?: string | null): number | null {
 
 // 格式化金额（带千分位）
 export function formatPrice(price?: number | null): string {
-  if (price === undefined || price === null) return "";
-  return `¥ ${price.toLocaleString("zh-CN")} 万`;
+  if (price === undefined || price === null) return "-";
+  // Determine if we need to divide by 10000 (usually backend sends cents or units, user request implies correction needed)
+  // However, user manually changed call site. Let's stick to simple formatting here for now unless specified.
+  // User manual change was: formatPrice(project.net_cash_flow/10000)
+  return `¥ ${price.toLocaleString("zh-CN", { maximumFractionDigits: 2 })} 万`;
 }
 
 // 获取状态颜色

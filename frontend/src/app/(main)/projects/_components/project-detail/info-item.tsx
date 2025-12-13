@@ -29,7 +29,7 @@ export function InfoItem({
   const [copied, setCopied] = useState(false);
 
   // 隐藏空值
-  if (!value && value !== 0) return null;
+  if (value === undefined || value === null || value === "") return null;
 
   const handleCopy = () => {
     if (copyValue) {
@@ -41,23 +41,26 @@ export function InfoItem({
   };
 
   return (
-    <div className={cn("flex items-start gap-2", className)}>
-      <span className="text-muted-foreground text-sm whitespace-nowrap">
-        {label}：
+    <div className={cn("flex flex-col gap-1", className)}>
+      <span className="text-xs text-muted-foreground">
+        {label}
       </span>
-      <span className={cn("text-sm flex-1", highlight && "font-bold font-mono")}>
-        {value}
-      </span>
-      {copyable && copyValue && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-5 w-5 text-muted-foreground hover:text-foreground"
-          onClick={handleCopy}
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        <span className={cn("text-sm font-medium text-slate-900", highlight && "font-bold font-mono")}>
+          {value}
+        </span>
+        {copyable && copyValue && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-4 w-4 text-muted-foreground hover:text-foreground p-0"
+            onClick={handleCopy}
+            title="复制"
+          >
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

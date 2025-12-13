@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/dialog";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 import { ProjectSummary } from "./project-summary";
 import { InfoTab } from "./tabs/info-tab";
 import { AttachmentsTab } from "./tabs/attachments-tab";
-import { formatDate, getRelativeTime } from "./utils";
+import { formatDate, getRelativeTime, getStatusColor } from "./utils";
 import type { ProjectDetailSheetProps, AttachmentHandlers } from "./types";
 
 /**
@@ -71,12 +72,16 @@ export function ProjectDetailSheet({
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="sm:max-w-3xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="text-xl flex items-center gap-2">
+        <SheetContent className="sm:max-w-3xl w-full flex flex-col p-0">
+          <SheetHeader className="px-6 py-4 border-b sticky top-0 bg-background z-10 shrink-0">
+            <div className="flex items-center justify-between">
+            <SheetTitle className="text-lg font-semibold text-slate-900">
               {project.name}
-              <Badge variant="outline">{project.status}</Badge>
+              <Badge variant="secondary" className={cn(getStatusColor(project.status), "text-white border-transparent")}>
+                {project.status}
+              </Badge>
             </SheetTitle>
+            </div>
             <SheetDescription className="flex items-center gap-2 text-xs">
               <Clock className="h-3 w-3" />
               创建于 {formatDate(project.created_at)}
@@ -86,25 +91,29 @@ export function ProjectDetailSheet({
             </SheetDescription>
           </SheetHeader>
 
-          {/* 摘要区域 */}
-          <ProjectSummary project={project} />
+          <div className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide" style={{ scrollbarGutter: 'stable' }}>
+            <div className="space-y-6"> 
+            {/* 摘要区域 */}
+            <ProjectSummary project={project} />
 
-          <Tabs defaultValue="info" className="mt-2">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="info">项目信息</TabsTrigger>
-              <TabsTrigger value="attachments">
-                附件 {attachments.length > 0 && `(${attachments.length})`}
-              </TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="info" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info">项目信息</TabsTrigger>
+                <TabsTrigger value="attachments">
+                  附件 {attachments.length > 0 && `(${attachments.length})`}
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="info" className="mt-4">
-              <InfoTab project={project} />
-            </TabsContent>
+              <TabsContent value="info" className="mt-4 focus-visible:outline-none">
+                <InfoTab project={project} />
+              </TabsContent>
 
-            <TabsContent value="attachments" className="mt-4">
-              <AttachmentsTab attachments={attachments} handlers={handlers} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="attachments" className="mt-4 focus-visible:outline-none">
+                <AttachmentsTab attachments={attachments} handlers={handlers} />
+              </TabsContent>
+            </Tabs>
+            </div>
+          </div>
         </SheetContent>
       </Sheet>
 

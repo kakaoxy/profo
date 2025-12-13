@@ -18,7 +18,7 @@ export function InfoSection({ title, icon, children }: InfoSectionProps) {
           {title}
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-4 pt-0">{children}</CardContent>
+      <CardContent className="px-4 pb-4 pt-0 grid gap-4 sm:grid-cols-2">{children}</CardContent>
     </Card>
   );
 }
