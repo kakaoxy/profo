@@ -6,6 +6,7 @@ import { FileList } from "./file-preview";
 import { type FormValues } from "../schema";
 import { type Attachment } from "../attachment-types";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TabProps {
   form: UseFormReturn<FormValues>;
@@ -60,7 +61,11 @@ export function AttachmentsTab({ form }: TabProps) {
             </span>
           )}
         </h3>
-        <FileList attachments={attachments} onRemove={handleRemove} />
+        <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+          <div className="pr-4">
+            <FileList attachments={attachments} onRemove={handleRemove} />
+          </div>
+        </ScrollArea>
       </div>
     </div>
   );

@@ -28,6 +28,11 @@ interface FileUploaderProps {
   disabled?: boolean;
 }
 
+interface UploadProgress {
+  filename: string;
+  progress: number;
+}
+
 /**
  * 文件上传组件
  * 支持拖拽上传，自动检测文件类型，支持分类选择
@@ -35,32 +40,33 @@ interface FileUploaderProps {
 export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadProgress[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<AttachmentCategory>("signing_contract");
 
+  const isUploading = uploadingFiles.length > 0;
+
   const uploadFile = useCallback(
-    async (file: File) => {
-      // 验证文件类型
-      if (!isAllowedFile(file)) {
-        toast.error("不支持的文件格式", {
-          description: "请上传 Excel、图片、PDF 或 Word 文件",
-        });
-        return;
-      }
+    (file: File): Promise<boolean> => {
+      return new Promise((resolve) => {
+        // 验证文件类型
+        if (!isAllowedFile(file)) {
+          toast.error(`${file.name}: 不支持的文件格式`);
+          resolve(false);
+          return;
+        }
 
-      // 验证文件大小
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error("文件过大", {
-          description: `文件大小不能超过 ${formatFileSize(MAX_FILE_SIZE)}`,
-        });
-        return;
-      }
+        // 验证文件大小
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name}: 文件过大`, {
+            description: `文件大小不能超过 ${formatFileSize(MAX_FILE_SIZE)}`,
+          });
+          resolve(false);
+          return;
+        }
 
-      setIsUploading(true);
-      setProgress(0);
+        // 添加到上传队列
+        setUploadingFiles((prev) => [...prev, { filename: file.name, progress: 0 }]);
 
-      try {
         const formData = new FormData();
         formData.append("file", file);
 
@@ -73,12 +79,19 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             const percent = Math.round((event.loaded / event.total) * 100);
-            setProgress(percent);
+            setUploadingFiles((prev) =>
+              prev.map((f) =>
+                f.filename === file.name ? { ...f, progress: percent } : f
+              )
+            );
           }
         };
 
         // 完成处理
         xhr.onload = () => {
+          // 从上传队列移除
+          setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
+          
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const result = JSON.parse(xhr.responseText);
@@ -105,41 +118,55 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
               };
 
               onUploadComplete(attachment);
-              toast.success("上传成功", {
-                description: `${file.name} 已添加到附件列表`,
-              });
+              toast.success(`${file.name}: 上传成功`);
+              resolve(true);
             } catch {
-              toast.error("解析响应失败");
+              toast.error(`${file.name}: 解析响应失败`);
+              resolve(false);
             }
           } else {
             try {
               const error = JSON.parse(xhr.responseText);
-              toast.error("上传失败", {
+              toast.error(`${file.name}: 上传失败`, {
                 description: error.detail || `状态码: ${xhr.status}`,
               });
             } catch {
-              toast.error("上传失败", { description: xhr.statusText });
+              toast.error(`${file.name}: 上传失败`);
             }
+            resolve(false);
           }
-          setIsUploading(false);
-          setProgress(0);
         };
 
         xhr.onerror = () => {
-          toast.error("网络错误", { description: "请检查网络连接和后端服务" });
-          setIsUploading(false);
-          setProgress(0);
+          setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
+          toast.error(`${file.name}: 网络错误`);
+          resolve(false);
         };
 
         xhr.send(formData);
-      } catch (error) {
-        console.error("Upload error:", error);
-        toast.error("上传失败");
-        setIsUploading(false);
-        setProgress(0);
-      }
+      });
     },
     [selectedCategory, onUploadComplete]
+  );
+
+  // 处理多文件上传
+  const uploadFiles = useCallback(
+    async (files: FileList) => {
+      const fileArray = Array.from(files);
+      if (fileArray.length > 1) {
+        toast.info(`开始上传 ${fileArray.length} 个文件...`);
+      }
+      
+      const results = await Promise.all(fileArray.map((file) => uploadFile(file)));
+      const successCount = results.filter(Boolean).length;
+      
+      if (fileArray.length > 1) {
+        toast.success(`上传完成`, {
+          description: `成功 ${successCount} 个，共 ${fileArray.length} 个文件`,
+        });
+      }
+    },
+    [uploadFile]
   );
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -159,13 +186,13 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
 
     const files = e.dataTransfer.files;
     if (files?.length) {
-      uploadFile(files[0]);
+      uploadFiles(files);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
-      uploadFile(e.target.files[0]);
+      uploadFiles(e.target.files);
     }
     e.target.value = "";
   };
@@ -219,6 +246,7 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept={ALLOWED_EXTENSIONS}
           onChange={handleFileSelect}
           className="hidden"
@@ -226,22 +254,32 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
         />
 
         {isUploading ? (
-          <>
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <div className="w-full max-w-xs space-y-2">
-              <Progress value={progress} className="h-2" />
-              <p className="text-center text-sm text-muted-foreground">
-                上传中... {progress}%
-              </p>
+          <div className="w-full space-y-3">
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">
+                正在上传 {uploadingFiles.length} 个文件...
+              </span>
             </div>
-          </>
+            <div className="space-y-2">
+              {uploadingFiles.map((file) => (
+                <div key={file.filename} className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="truncate max-w-[200px]">{file.filename}</span>
+                    <span>{file.progress}%</span>
+                  </div>
+                  <Progress value={file.progress} className="h-1" />
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             <UploadCloud className="h-10 w-10 text-muted-foreground" />
             <div className="text-center">
               <p className="text-sm font-medium">点击或拖拽文件到此处上传</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                支持 Excel、图片、PDF、Word 格式，单文件最大 10MB
+                支持多文件上传，Excel、图片、PDF、Word 格式，单文件最大 10MB
               </p>
             </div>
           </>
