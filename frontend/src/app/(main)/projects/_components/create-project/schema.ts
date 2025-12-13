@@ -15,6 +15,33 @@ const optionalNumber = z
     return isNaN(num) ? undefined : num;
   });
 
+// 附件分类枚举
+const attachmentCategoryEnum = z.enum([
+  "signing_contract",
+  "property_certificate",
+  "property_survey",
+  "owner_id_card",
+  "owner_bank_card",
+  "renovation_contract",
+  "handover_document",
+  "receipt",
+  "cooperation_confirmation",
+  "store_investment_agreement",
+  "value_added_service",
+  "other",
+]);
+
+// 附件验证 schema
+const attachmentSchema = z.object({
+  id: z.string(),
+  filename: z.string(),
+  url: z.string(),
+  category: attachmentCategoryEnum,
+  fileType: z.enum(["excel", "image", "pdf", "word"]),
+  size: z.number(),
+  uploadedAt: z.string(),
+});
+
 export const formSchema = z.object({
   name: z.string().min(1, "项目名称不能为空").max(200),
   community_name: z.string().max(200).optional(),
@@ -43,6 +70,9 @@ export const formSchema = z.object({
   otherAgreements: z.string().optional(),
   notes: z.string().optional(),
   remarks: z.string().optional(),
+
+  // 附件列表
+  attachments: z.array(attachmentSchema).optional(),
 });
 
 // 这个类型现在被强制用于 useForm 泛型
