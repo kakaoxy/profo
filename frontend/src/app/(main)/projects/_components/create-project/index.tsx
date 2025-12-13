@@ -23,6 +23,7 @@ import { BasicInfoTab } from "./tabs/basic-info-tab";
 import { TransactionTab } from "./tabs/transaction-tab";
 import { OwnerTab } from "./tabs/owner-tab";
 import { AgreementTab } from "./tabs/agreement-tab";
+import { AttachmentsTab } from "./tabs/attachments-tab";
 
 export function CreateProjectDialog() {
   // 一行代码获取所有逻辑
@@ -85,11 +86,12 @@ export function CreateProjectDialog() {
               >
                 {/* Tabs 导航 */}
                 <div className="px-6 pt-4 flex-shrink-0">
-                  <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="basic">基础信息</TabsTrigger>
                     <TabsTrigger value="transaction">交易数据</TabsTrigger>
                     <TabsTrigger value="owner">业主信息</TabsTrigger>
                     <TabsTrigger value="agreement">合同与备注</TabsTrigger>
+                    <TabsTrigger value="attachments">附件上传</TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -110,6 +112,10 @@ export function CreateProjectDialog() {
 
                     <TabsContent value="agreement" className="m-0">
                       <AgreementTab form={form} />
+                    </TabsContent>
+
+                    <TabsContent value="attachments" className="m-0">
+                      <AttachmentsTab form={form} />
                     </TabsContent>
                   </div>
                 </ScrollArea>

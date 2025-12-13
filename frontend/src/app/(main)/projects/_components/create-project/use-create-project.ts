@@ -40,6 +40,8 @@ export const useCreateProject = () => {
       extensionRent: undefined,
       signing_date: undefined,
       planned_handover_date: undefined,
+      // 附件列表
+      attachments: [],
     },
   });
 
@@ -119,7 +121,18 @@ export const useCreateProject = () => {
         planned_handover_date:
           values.planned_handover_date?.toISOString() || null,
 
-        signing_materials: null,
+        // 附件数据存储到 signing_materials JSON 字段
+        signing_materials: values.attachments?.length
+          ? {
+              attachments: values.attachments.map((att) => ({
+                filename: att.filename,
+                url: att.url,
+                category: att.category,
+                fileType: att.fileType,
+                size: att.size,
+              })),
+            }
+          : null,
         owner_info: null,
       };
 
