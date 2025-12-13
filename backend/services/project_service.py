@@ -73,14 +73,17 @@ class ProjectService:
         """获取项目列表"""
         query = self.db.query(Project)
 
+        # 默认不显示已删除的项目
         if status_filter:
             query = query.filter(Project.status == status_filter)
+        else:
+            query = query.filter(Project.status != ProjectStatus.DELETED.value)
 
         if community_name:
             query = query.filter(Project.community_name.contains(community_name))
 
         total = query.count()
-        projects = query.offset((page - 1) * page_size).limit(page_size).all()
+        projects = query.order_by(Project.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
         # 计算每个项目的净现金流
         for project in projects:
@@ -127,9 +130,10 @@ class ProjectService:
         return project
 
     def delete_project(self, project_id: str) -> None:
-        """删除项目"""
+        """删除项目 (软删除)"""
         project = self.get_project(project_id)
-        self.db.delete(project)
+        project.status = ProjectStatus.DELETED.value
+        project.status_changed_at = datetime.utcnow()
         self.db.commit()
 
     # ========== 项目状态流转 ==========

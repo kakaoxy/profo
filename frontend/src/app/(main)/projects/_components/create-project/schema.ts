@@ -2,6 +2,7 @@ import { z } from "zod";
 import { components } from "@/lib/api-types";
 
 export type ProjectCreateReq = components["schemas"]["ProjectCreate"];
+export type ProjectUpdateReq = components["schemas"]["ProjectUpdate"];
 
 // 使用 z.union 明确允许 string (输入) 和 number (存储)
 // 配合 use-create-project.ts 中的 resolver 断言，完美解决类型冲突
@@ -41,6 +42,9 @@ const attachmentSchema = z.object({
   size: z.number(),
   uploadedAt: z.string(),
 });
+
+export type AttachmentCategory = z.infer<typeof attachmentCategoryEnum>;
+export type AttachmentType = z.infer<typeof attachmentSchema>["fileType"];
 
 export const formSchema = z.object({
   name: z.string().min(1, "项目名称不能为空").max(200),
