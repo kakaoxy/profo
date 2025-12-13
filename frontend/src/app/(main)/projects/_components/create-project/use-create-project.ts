@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useForm } from "react-hook-form";
+// 1. 引入 Resolver 类型，以便做精确的类型断言（比 as any 更安全）
+import { useForm, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -13,11 +14,11 @@ export const useCreateProject = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
 
-  // 初始化 Form
-  // 此时 FormValues 中的数字字段严格为 number | undefined
-  // 并且 Zod Resolver 也会输出严格的 number | undefined
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    // [关键修复] 使用类型断言
+    // 告诉 TS：虽然 Schema 接受 string，但请把这个 Resolver 当作是只输出 FormValues 的 Resolver
+    // 这解决了 2322 类型不兼容报错
+    resolver: zodResolver(formSchema) as unknown as Resolver<FormValues>,
     defaultValues: {
       name: "",
       community_name: "",
@@ -31,7 +32,7 @@ export const useCreateProject = () => {
       otherAgreements: "",
       notes: "",
       remarks: "",
-      // 数字和日期保持 undefined
+      // 数字和日期字段保持 undefined
       signing_price: undefined,
       area: undefined,
       signing_period: undefined,
@@ -73,7 +74,6 @@ export const useCreateProject = () => {
     return () => subscription.unsubscribe();
   }, [open, form]);
 
-  // 清空草稿
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
     form.reset({ name: "" });
@@ -81,6 +81,7 @@ export const useCreateProject = () => {
   }, [form]);
 
   // 提交逻辑
+  // [修复]：因为 form 定义修复了，handleSubmit 这里的类型也会自动正确推断，解决了 2345 报错
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
 
@@ -99,7 +100,7 @@ export const useCreateProject = () => {
         manager: values.manager || null,
         tags: tagArray,
 
-        // 转换 undefined 为 null
+        // Zod 已经把空字符串转为了 undefined，这里只需处理 undefined -> null
         signing_price: values.signing_price ?? null,
         area: values.area ?? null,
         signing_period: values.signing_period ?? null,
