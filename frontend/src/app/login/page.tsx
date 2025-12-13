@@ -17,10 +17,16 @@ import { toast } from "sonner"; // 引入 toast
 
 export default function LoginPage() {
   // 登录表单状态
-  const [loginState, loginFormAction, isLoginPending] = useActionState(loginAction, null);
-  
+  const [loginState, loginFormAction, isLoginPending] = useActionState(
+    loginAction,
+    null
+  );
+
   // 修改密码表单状态
-  const [changeState, changeFormAction, isChangePending] = useActionState(changePasswordAction, null);
+  const [changeState, changeFormAction, isChangePending] = useActionState(
+    changePasswordAction,
+    null
+  );
 
   // 监听修改密码成功的情况
   useEffect(() => {
@@ -28,26 +34,28 @@ export default function LoginPage() {
     // 但这里的逻辑稍显复杂，我们简单点：
     // changeAction 如果返回空 error，说明成功。
     if (changeState && !changeState.error && !changeState.mustChangePassword) {
-        toast.success("密码修改成功，请使用新密码登录");
-        // 刷新页面重置状态
-        window.location.reload();
+      toast.success("密码修改成功，请使用新密码登录");
+      // 刷新页面重置状态
+      window.location.reload();
     }
   }, [changeState]);
 
   // 判断当前显示哪个模式
-  const isChangePasswordMode = loginState?.mustChangePassword || changeState?.mustChangePassword;
+  const isChangePasswordMode =
+    loginState?.mustChangePassword || changeState?.mustChangePassword;
   const currentUsername = loginState?.username || changeState?.username || "";
   const tempToken = loginState?.tempToken || "";
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100">
       <Card className="w-full max-w-sm">
-        
         {/* --- 模式 A: 修改密码 --- */}
         {isChangePasswordMode ? (
           <>
             <CardHeader>
-              <CardTitle className="text-xl text-orange-600">需修改初始密码</CardTitle>
+              <CardTitle className="text-xl text-orange-600">
+                需修改初始密码
+              </CardTitle>
               <CardDescription>
                 为了账号安全，首次登录请设置新密码。
               </CardDescription>
@@ -60,40 +68,44 @@ export default function LoginPage() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="current_password">当前密码 (初始密码)</Label>
-                  <Input 
-                    id="current_password" 
-                    name="current_password" 
-                    type="password" 
-                    required 
+                  <Input
+                    id="current_password"
+                    name="current_password"
+                    type="password"
+                    required
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="new_password">新密码</Label>
-                  <Input 
-                    id="new_password" 
-                    name="new_password" 
-                    type="password" 
+                  <Input
+                    id="new_password"
+                    name="new_password"
+                    type="password"
                     placeholder="至少8位字符"
-                    required 
+                    required
                   />
                 </div>
-                {(changeState?.error) && (
+                {changeState?.error && (
                   <div className="text-sm text-red-500 font-medium">
                     {changeState.error}
                   </div>
                 )}
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                <Button className="w-full" type="submit" disabled={isChangePending}>
+                <Button
+                  className="w-full"
+                  type="submit"
+                  disabled={isChangePending}
+                >
                   {isChangePending ? "提交中..." : "确认修改"}
                 </Button>
-                <Button 
-                    variant="ghost" 
-                    className="w-full" 
-                    type="button" 
-                    onClick={() => window.location.reload()}
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  type="button"
+                  onClick={() => window.location.reload()}
                 >
-                    返回登录
+                  返回登录
                 </Button>
               </CardFooter>
             </form>
@@ -110,21 +122,21 @@ export default function LoginPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="username">用户名</Label>
                   {/* 注意：actions.ts 已经改成了取 username，所以这里 name="username" */}
-                  <Input 
-                    id="username" 
-                    name="username" 
-                    type="text" 
-                    placeholder="admin" 
-                    required 
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    placeholder="admin"
+                    required
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="password">密码</Label>
-                  <Input 
-                    id="password" 
-                    name="password" 
-                    type="password" 
-                    required 
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
                   />
                 </div>
                 {loginState?.error && (
@@ -133,8 +145,12 @@ export default function LoginPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter>
-                <Button className="w-full" type="submit" disabled={isLoginPending}>
+              <CardFooter className="mt-4">
+                <Button
+                  className="w-full"
+                  type="submit"
+                  disabled={isLoginPending}
+                >
                   {isLoginPending ? "登录中..." : "立即登录"}
                 </Button>
               </CardFooter>
