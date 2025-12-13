@@ -41,8 +41,8 @@ export function InfoItem({
   };
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
-      <span className="text-xs text-muted-foreground">
+    <div className={cn("group flex items-center justify-between py-0.5 min-h-[24px]", className)}>
+      <span className="text-xs text-muted-foreground font-medium shrink-0 mr-4">
         {label}
       </span>
       <div className="flex items-center gap-2">

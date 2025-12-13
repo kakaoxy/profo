@@ -77,7 +77,7 @@ export function ProjectDetailSheet({
             <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold text-slate-900">
               {project.name}
-              <Badge variant="secondary" className={cn(getStatusColor(project.status), "text-white border-transparent")}>
+              <Badge variant="secondary" className={cn(getStatusColor(project.status), "ml-2 text-white border-transparent")}>
                 {project.status}
               </Badge>
             </SheetTitle>
