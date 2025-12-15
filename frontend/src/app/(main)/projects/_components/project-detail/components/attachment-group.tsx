@@ -13,13 +13,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Trash2, Download, Eye, FileSpreadsheet, FileImage, FileText, File } from "lucide-react";
+import {
+  Trash2,
+  Download,
+  Eye,
+  FileSpreadsheet,
+  FileImage,
+  FileText,
+  File,
+} from "lucide-react";
 import {
   CATEGORY_LABELS,
   FILE_ICON_COLORS,
   type AttachmentGroupConfig,
-} from "./constants";
-import type { AttachmentInfo, AttachmentHandlers } from "./types";
+} from "../constants";
+import type { AttachmentInfo, AttachmentHandlers } from "../types";
 
 interface AttachmentGroupProps {
   groupKey: string;
@@ -66,10 +74,16 @@ export function AttachmentGroup({
 /**
  * 文件图标组件 - 根据文件类型渲染对应图标
  */
-function FileIcon({ fileType, className }: { fileType: string; className?: string }) {
+function FileIcon({
+  fileType,
+  className,
+}: {
+  fileType: string;
+  className?: string;
+}) {
   const iconColor = FILE_ICON_COLORS[fileType] || FILE_ICON_COLORS.default;
   const combinedClassName = `${className || ""} ${iconColor}`.trim();
-  
+
   switch (fileType) {
     case "excel":
       return <FileSpreadsheet className={combinedClassName} />;

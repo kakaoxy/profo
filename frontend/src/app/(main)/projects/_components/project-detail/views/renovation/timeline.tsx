@@ -27,8 +27,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Project } from "../../types";
-import { RENOVATION_STAGES } from "./constants";
+import { Project } from "../../../../types";
+import { RENOVATION_STAGES } from "../../constants";
 
 interface RenovationTimelineProps {
   project: Project;

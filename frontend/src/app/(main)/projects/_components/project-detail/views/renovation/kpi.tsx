@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Image as ImageIcon } from "lucide-react";
-import { Project } from "../../types";
-import { RENOVATION_STAGES } from "./constants";
+import { Project } from "../../../../types";
+import { RENOVATION_STAGES } from "../../constants";
 import { differenceInDays, addDays } from "date-fns";
 
 interface RenovationKPIsProps {

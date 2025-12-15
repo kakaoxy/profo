@@ -1,9 +1,9 @@
 "use client";
 
 import { FileText } from "lucide-react";
-import { AttachmentGroup } from "../attachment-group";
-import { ATTACHMENT_GROUPS } from "../constants";
-import type { AttachmentInfo, AttachmentHandlers } from "../types";
+import { AttachmentGroup } from "../../../components/attachment-group";
+import { ATTACHMENT_GROUPS } from "../../../constants";
+import type { AttachmentInfo, AttachmentHandlers } from "../../../types";
 
 interface AttachmentsTabProps {
   attachments: AttachmentInfo[];
