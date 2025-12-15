@@ -19,6 +19,23 @@ export interface AttachmentHandlers {
   onDelete?: (url: string) => void;
 }
 
+export interface RenovationPhoto {
+  id: string;
+  project_id: string;
+  stage: string; // 对应后端 RenovationStage 枚举
+  url: string;
+  filename?: string;
+  description?: string;
+  created_at: string;
+}
+
+// [修改] 保持之前的 NodeData 结构供前端 UI 使用，但数据来源变了
+export interface RenovationNodeData {
+  status: "pending" | "active" | "completed";
+  date?: string | null;
+  photos?: RenovationPhoto[]; // 修改这里，使用真实的照片对象
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -96,4 +113,5 @@ export interface Project {
   address?: string;
   tags?: string[] | null; // Log 显示 tags 可能是 null
   renovation_stage?: string;
+  stage_completed_at?: string | null; // 后端返回的最后一次完成时间
 }
