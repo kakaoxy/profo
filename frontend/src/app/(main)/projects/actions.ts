@@ -219,13 +219,24 @@ export async function uploadFileAction(formData: FormData) {
     });
 
     if (!res.ok) {
-      // 尝试读取后端返回的错误详情
-      const errorData = await res.json().catch(() => ({}));
-      console.error("Upload failed:", errorData);
-      return {
-        success: false,
-        message: errorData.detail || `上传失败: ${res.status}`,
-      };
+      // [新增] 专门处理 413 Payload Too Large
+      if (res.status === 413) {
+        return { success: false, message: "文件大小超过服务器限制 (10MB)" };
+      }
+
+      const errorText = await res.text();
+      console.error("❌ [Upload Action] Failed:", res.status, errorText);
+
+      // 尝试解析 JSON 错误，如果解析失败则返回状态码
+      try {
+        const errorJson = JSON.parse(errorText);
+        return {
+          success: false,
+          message: errorJson.detail || `上传失败 (${res.status})`,
+        };
+      } catch {
+        return { success: false, message: `上传失败 (${res.status})` };
+      }
     }
 
     const json = await res.json();
