@@ -26,6 +26,8 @@ import {
   uploadFileAction,
 } from "../../../../../actions";
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 interface TimelineItemProps {
   stage: (typeof RENOVATION_STAGES)[number];
   index: number;
@@ -57,6 +59,19 @@ export function TimelineItem({
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    const file = files[0]; // 获取当前要上传的文件
+
+    // [新增] 1. 前端校验文件大小
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("文件过大", {
+        description: `当前文件 ${(file.size / 1024 / 1024).toFixed(
+          2
+        )}MB，最大允许 10MB`,
+      });
+      e.target.value = ""; // 清空选择，允许用户重新选
+      return;
+    }
 
     setIsLoading(true);
     const toastId = toast.loading("正在上传...");
