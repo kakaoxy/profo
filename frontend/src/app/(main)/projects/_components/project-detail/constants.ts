@@ -101,19 +101,18 @@ export const FILE_ICON_COLORS: Record<string, string> = {
   default: "text-gray-500",
 };
 
-// 装修阶段定义 (顺序敏感)
+// [修复] 增加 value 字段，对应后端的中文 Enum
 export const RENOVATION_STAGES = [
-  { key: "demolition", label: "拆除阶段" },
-  { key: "design", label: "设计阶段" },
-  { key: "hydro", label: "水电阶段" },
-  { key: "wood", label: "木瓦阶段" },
-  { key: "paint", label: "油漆阶段" },
-  { key: "install", label: "安装阶段" },
-  { key: "delivery", label: "交付阶段" },
+  { key: "demolition", value: "拆除", label: "拆除阶段" },
+  { key: "design", value: "设计", label: "设计阶段" },
+  { key: "hydro", value: "水电", label: "水电阶段" },
+  { key: "wood", value: "木瓦", label: "木瓦阶段" },
+  { key: "paint", value: "油漆", label: "油漆阶段" },
+  { key: "install", value: "安装", label: "安装阶段" },
+  { key: "delivery", value: "交付", label: "交付阶段" },
 ] as const;
 
-export type RenovationStageKey = (typeof RENOVATION_STAGES)[number]["key"];
-
+// 保持原来的 aliases 配置不变，或者你可以把 value 加入 aliases
 export const STAGE_CONFIG = [
   { key: "signing", label: "签约阶段", aliases: ["signing", "签约"] },
   {
@@ -128,10 +127,18 @@ export const STAGE_CONFIG = [
       "wood",
       "paint",
       "install",
+      "拆除",
+      "设计",
+      "水电",
+      "木瓦",
+      "油漆",
+      "安装",
+      "交付",
     ],
   },
   { key: "listing", label: "在售阶段", aliases: ["listing", "sales", "在售"] },
   { key: "sold", label: "已售阶段", aliases: ["sold", "done", "已售"] },
 ] as const;
 
+export type RenovationStageKey = (typeof RENOVATION_STAGES)[number]["key"];
 export type ViewMode = (typeof STAGE_CONFIG)[number]["key"];
