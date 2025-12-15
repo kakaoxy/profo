@@ -1,8 +1,8 @@
 "use client";
 
-import { Project } from "../../../types";
-import { RenovationKPIs } from "../renovation-kpi";
-import { RenovationTimeline } from "../renovation-timeline";
+import { Project } from "../../../../types";
+import { RenovationKPIs } from "./kpi";
+import { RenovationTimeline } from "./timeline";
 
 interface RenovationViewProps {
   project: Project;

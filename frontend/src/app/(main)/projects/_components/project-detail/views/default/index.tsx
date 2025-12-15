@@ -1,11 +1,11 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ProjectSummary } from "../project-summary";
-import { InfoTab } from "../tabs/info-tab";
-import { AttachmentsTab } from "../tabs/attachments-tab";
+import { ProjectSummary } from "./summary";
+import { InfoTab } from "./tabs/info-tab";
+import { AttachmentsTab } from "./tabs/attachments-tab";
 // [修复] 引入 AttachmentInfo 和 AttachmentHandlers
-import { Project, AttachmentHandlers, AttachmentInfo } from "../../../types";
+import { Project, AttachmentHandlers, AttachmentInfo } from "../../../../types";
 
 interface DefaultViewProps {
   project: Project;

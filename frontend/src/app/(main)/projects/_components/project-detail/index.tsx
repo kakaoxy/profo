@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-import { ProjectDetailHeader } from "./project-detail-header";
-import { RenovationView } from "./views/renovation-view";
-import { DefaultView } from "./views/default-view";
+import { ProjectDetailHeader } from "./header";
+import { RenovationView } from "./views/renovation";
+import { DefaultView } from "./views/default";
 import { STAGE_CONFIG, ViewMode } from "./constants";
 import type { ProjectDetailSheetProps, AttachmentHandlers } from "./types";
 
