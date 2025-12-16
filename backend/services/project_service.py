@@ -258,10 +258,28 @@ class ProjectService:
 
     def get_renovation_photos(self, project_id: str, stage: Optional[str] = None) -> List[RenovationPhoto]:
         """获取改造阶段照片"""
-        query = self.db.query(RenovationPhoto).filter(RenovationPhoto.project_id == project_id)
+        query = self.db.query(RenovationPhoto).filter(RenovationPhoto.project_id == project_id,RenovationPhoto.deleted_at.is_(None))
         if stage:
             query = query.filter(RenovationPhoto.stage == stage)
         return query.order_by(RenovationPhoto.created_at.desc()).all()
+    
+    # [新增] 删除方法
+    def delete_renovation_photo(self, project_id: str, photo_id: str) -> None:
+        """删除改造阶段照片 (软删除)"""
+        photo = self.db.query(RenovationPhoto).filter(
+            RenovationPhoto.id == photo_id,
+            RenovationPhoto.project_id == project_id
+        ).first()
+
+        if not photo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="照片不存在"
+            )
+
+        # [新增] 核心：不真删，只标记时间
+        photo.deleted_at = datetime.utcnow()
+        self.db.commit()
 
     # ========== 销售记录管理 ==========
 

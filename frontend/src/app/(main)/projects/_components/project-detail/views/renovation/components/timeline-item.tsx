@@ -21,9 +21,8 @@ import { RENOVATION_STAGES } from "../../../constants";
 import {
   addRenovationPhotoAction,
   updateRenovationStageAction,
-  // Assuming you have an upload action now, or we use the direct fetch approach
-  // based on your previous messages, you likely have or need 'uploadFileAction'
   uploadFileAction,
+  deleteRenovationPhotoAction,
 } from "../../../../../actions";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -150,6 +149,28 @@ export function TimelineItem({
     }
   };
 
+  // [新增] 删除处理函数
+  const handleDelete = async (photoId: string) => {
+    // 防止重复点击
+    const toastId = toast.loading("正在删除...");
+
+    try {
+      const res = await deleteRenovationPhotoAction(project.id, photoId);
+
+      if (res.success) {
+        toast.success("删除成功");
+        onPhotoUploaded(); // 复用刷新逻辑 (重新 fetch 列表)
+      } else {
+        throw new Error(res.message);
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "删除失败";
+      toast.error(msg);
+    } finally {
+      toast.dismiss(toastId);
+    }
+  };
+
   return (
     <AccordionItem
       value={stage.key}
@@ -220,6 +241,7 @@ export function TimelineItem({
             isFuture={isFuture}
             isLoading={isLoading}
             onUpload={handleUpload}
+            onDelete={handleDelete}
           />
 
           {/* 2. 操作栏 (仅当前阶段) */}

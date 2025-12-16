@@ -18,7 +18,7 @@ interface ApiResponse<T> {
 }
 
 // ==========================================
-// 基础项目操作 (Create / Update / Delete)
+// 1. 基础项目操作 (CRUD)
 // ==========================================
 
 export async function createProjectAction(data: ProjectCreate) {
@@ -62,11 +62,10 @@ export async function updateProjectAction(id: string, data: ProjectUpdate) {
   }
 }
 
+// [Restored] This was missing in your provided code
 export async function deleteProjectAction(id: string) {
   try {
     const client = await fetchClient();
-    // [修复 1] 路径类型可能未同步，加回指令忽略 TS 检查
-    // @ts-expect-error - delete endpoint types might be missing in current generation
     const { error } = await client.DELETE("/api/v1/projects/{project_id}", {
       params: { path: { project_id: id } },
     });
@@ -85,8 +84,45 @@ export async function deleteProjectAction(id: string) {
 }
 
 // ==========================================
-// 装修业务操作 (Renovation)
+// 2. 装修业务操作 (Renovation)
 // ==========================================
+
+/**
+ * 删除装修照片
+ */
+export async function deleteRenovationPhotoAction(
+  projectId: string,
+  photoId: string
+) {
+  try {
+    const client = await fetchClient();
+
+    // 直接调用 client.DELETE，TypeScript 现在能正确推断参数了
+    const { error } = await client.DELETE(
+      "/api/v1/projects/{project_id}/renovation/photos/{photo_id}",
+      {
+        params: {
+          path: {
+            project_id: projectId,
+            photo_id: photoId,
+          },
+        },
+      }
+    );
+
+    if (error) {
+      // error 类型通常为 { detail?: string } 或 unknown
+      const errorMsg = (error as { detail?: string })?.detail || "删除照片失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/projects");
+    return { success: true, message: "照片已删除" };
+  } catch (e) {
+    console.error("删除照片异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
 
 /**
  * 获取装修照片列表
@@ -109,7 +145,6 @@ export async function getRenovationPhotosAction(projectId: string) {
       return { success: false, message: errorMsg };
     }
 
-    // [修复 2] 添加 eslint-disable 注释允许使用 any，因为 openapi 推断 data 为 unknown
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const responseData = data as unknown as ApiResponse<any[]>;
 
@@ -176,10 +211,8 @@ export async function updateRenovationStageAction(payload: {
       {
         params: { path: { project_id: payload.projectId } },
         body: {
-          // [修复 3] 添加 eslint-disable 注释，强制绕过后端中文枚举的类型检查
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           renovation_stage: payload.renovation_stage as any,
-
           stage_completed_at: payload.stage_completed_at,
         },
       }
@@ -198,19 +231,19 @@ export async function updateRenovationStageAction(payload: {
   }
 }
 
+// ==========================================
+// 3. 通用文件上传 Action
+// ==========================================
+
 export async function uploadFileAction(formData: FormData) {
   try {
     // 1. 获取基础 URL
-    // FileUploader 使用的是 NEXT_PUBLIC_API_URL 或 http://127.0.0.1:8000
-    // 我们保持一致，并去掉末尾的 /api/v1 (如果环境变量里包含的话)
     const envUrl = process.env.NEXT_PUBLIC_API_URL;
     const defaultUrl = "http://127.0.0.1:8000";
     const apiBase = (envUrl || defaultUrl).replace(/\/api\/v1\/?$/, "");
 
     // 2. 拼接正确的上传接口地址: /api/v1/files/upload (复数)
     const uploadUrl = `${apiBase}/api/v1/files/upload`;
-
-    // console.log("正在上传文件到:", uploadUrl); // 调试用
 
     const res = await fetch(uploadUrl, {
       method: "POST",
@@ -241,14 +274,12 @@ export async function uploadFileAction(formData: FormData) {
 
     const json = await res.json();
 
-    // 3. 校验业务状态码 (FileUploader 里判断的是 xhr.status，这里判断 json.code)
-    // 根据您的后端代码，成功返回 { code: 200, data: { ... } }
+    // 3. 校验业务状态码
     if (json.code !== 200) {
       return { success: false, message: json.msg || "上传被后端拒绝" };
     }
 
     // 4. 返回数据
-    // 您的后端返回结构: { data: { url: "/static/...", filename: "..." } }
     return { success: true, data: json.data };
   } catch (e) {
     console.error("文件上传网络异常:", e);
@@ -269,7 +300,7 @@ export async function updateProjectStatusAction(
     const { error } = await client.PUT("/api/v1/projects/{project_id}/status", {
       params: { path: { project_id: projectId } },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      body: { status: status as any }, // 根据后端 Enum 定义，可能需要 as any
+      body: { status: status as any },
     });
 
     if (error) {

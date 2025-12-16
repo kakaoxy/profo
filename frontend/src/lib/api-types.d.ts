@@ -221,6 +221,7 @@ export interface paths {
          *         page: 页码
          *         page_size: 每页数量
          *         db: 数据库会话
+         *         current_user: 当前用户
          *
          *     Returns:
          *         CommunityListResponse: 小区列表响应
@@ -275,6 +276,7 @@ export interface paths {
          *     Args:
          *         request: 合并请求（包含主小区ID和要合并的小区ID列表）
          *         db: 数据库会话
+         *         current_user: 当前用户
          *
          *     Returns:
          *         CommunityMergeResponse: 合并结果
@@ -348,7 +350,11 @@ export interface paths {
          */
         put: operations["update_project_api_v1_projects__project_id__put"];
         post?: never;
-        delete?: never;
+        /**
+         * Delete Project
+         * @description 删除项目（软删除）
+         */
+        delete: operations["delete_project_api_v1_projects__project_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -433,6 +439,26 @@ export interface paths {
          */
         post: operations["upload_renovation_photo_api_v1_projects__project_id__renovation_photos_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/renovation/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Renovation Photo
+         * @description 删除改造阶段照片
+         */
+        delete: operations["delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -668,21 +694,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Login For Access Token
-         * @description OAuth2密码流登录，获取访问令牌
-         *
-         *     Args:
-         *         form_data: OAuth2密码表单数据
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         TokenResponse: 包含访问令牌、刷新令牌和用户信息的响应
-         *
-         *     Raises:
-         *         HTTPException: 401 Unauthorized - 用户名或密码错误
-         *         HTTPException: 403 Forbidden - 必须修改密码
-         */
+        /** Login For Access Token */
         post: operations["login_for_access_token_api_auth_token_post"];
         delete?: never;
         options?: never;
@@ -1562,7 +1574,7 @@ export interface components {
          * @description 项目主状态枚举
          * @enum {string}
          */
-        ProjectStatus: "signing" | "renovating" | "selling" | "sold";
+        ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "deleted";
         /**
          * ProjectUpdate
          * @description 更新项目请求模型
@@ -2965,6 +2977,38 @@ export interface operations {
             };
         };
     };
+    delete_project_api_v1_projects__project_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_project_status_api_v1_projects__project_id__status_put: {
         parameters: {
             query?: never;
@@ -3124,6 +3168,40 @@ export interface operations {
             path: {
                 /** @description 项目ID */
                 project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 照片ID */
+                photo_id: string;
             };
             cookie?: never;
         };

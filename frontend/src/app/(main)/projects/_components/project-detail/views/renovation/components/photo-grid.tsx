@@ -1,6 +1,6 @@
 "use client";
 
-import { UploadCloud, Plus, Loader2, Eye } from "lucide-react";
+import { UploadCloud, Plus, Loader2, Trash2, Eye } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getFileUrl } from "../../../utils";
 // [修复 1] 引入 DialogTitle
@@ -11,12 +11,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 interface PhotoGridProps {
   photos: RenovationPhoto[];
   isCurrent: boolean;
   isFuture: boolean;
   isLoading: boolean;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDelete: (photoId: string) => void;
 }
 
 export function PhotoGrid({
@@ -25,6 +38,7 @@ export function PhotoGrid({
   isFuture,
   isLoading,
   onUpload,
+  onDelete,
 }: PhotoGridProps) {
   return (
     <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
@@ -45,6 +59,43 @@ export function PhotoGrid({
                 <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md" />
               </div>
             </DialogTrigger>
+
+            {/* [新增] 删除按钮 (右上角) */}
+            {/* 仅在非未来阶段显示，防止误删 */}
+            {!isFuture && (
+              <div
+                className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()} // 防止触发预览
+              >
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="bg-white/90 p-1.5 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm transition-colors"
+                      title="删除照片"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>确认删除这张照片吗？</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        此操作将删除该照片记录，如果配置了物理删除，文件也将被移除。
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>取消</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => onDelete(photo.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        确认删除
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
           </div>
 
           {/* 大图预览 Modal */}

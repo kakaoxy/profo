@@ -154,6 +154,16 @@ async def get_renovation_photos(
     photos = service.get_renovation_photos(project_id, stage)
     return {"code": 200, "msg": "success", "data": photos}
 
+@router.delete("/{project_id}/renovation/photos/{photo_id}")
+async def delete_renovation_photo(
+    project_id: str = Path(..., description="项目ID"),
+    photo_id: str = Path(..., description="照片ID"),
+    service: ProjectService = Depends(get_project_service)
+):
+    """删除改造阶段照片"""
+    service.delete_renovation_photo(project_id, photo_id)
+    return {"code": 200, "msg": "success", "data": None}
+
 
 # ========== 在售阶段管理 ==========
 
