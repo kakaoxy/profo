@@ -36,12 +36,12 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   selling: {
     label: "在售",
     // 使用中灰背景 + 浅灰色文字（不同于其他状态）
-    className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
+    className: "bg-emerald-500 text-white hover:bg-emerald-600",
   },
   sold: {
     label: "已售",
     // 使用纯色背景 + 白色文字
-    className: "bg-emerald-500 text-white hover:bg-emerald-600",
+    className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
   },
 };
 export const columns: ColumnDef<Project>[] = [
@@ -58,13 +58,13 @@ export const columns: ColumnDef<Project>[] = [
           <span className="font-bold text-slate-800 text-[15px] truncate max-w-[200px] md:max-w-xs">
             {row.original.name}
           </span>
-          
+
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[11px] text-slate-400 font-mono tracking-tight">
               ID: {row.original.id.slice(0, 8)}
             </span>
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${config?.className}`}
             >
               {config?.label}
@@ -76,7 +76,9 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "community_name",
-    header: () => <div className="hidden lg:block text-slate-500 font-medium">小区</div>,
+    header: () => (
+      <div className="hidden lg:block text-slate-500 font-medium">小区</div>
+    ),
     cell: ({ row }) => (
       <span className="hidden lg:block text-sm text-slate-600 font-medium truncate max-w-[120px]">
         {row.original.community_name || "-"}
@@ -85,14 +87,18 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "status",
-    header: () => <div className="hidden md:block pl-2 text-slate-500 font-medium">状态</div>,
+    header: () => (
+      <div className="hidden md:block pl-2 text-slate-500 font-medium">
+        状态
+      </div>
+    ),
     cell: ({ row }) => {
       const status = row.original.status || "signing";
       const config = statusConfig[status] || {
         label: status,
         className: "bg-slate-100 text-slate-600",
       };
-      
+
       return (
         <div className="hidden md:block">
           {/* 这里去掉了 border，使用了更圆润的 pill 形状 */}
@@ -108,7 +114,11 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "signing_price",
-    header: () => <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">签约价(万)</div>,
+    header: () => (
+      <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
+        签约价(万)
+      </div>
+    ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4 font-semibold text-slate-700 tabular-nums">
         {formatWan(row.original.signing_price)}
@@ -117,7 +127,11 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "soldPrice",
-    header: () => <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">成交价(万)</div>,
+    header: () => (
+      <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
+        成交价(万)
+      </div>
+    ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4 font-semibold text-slate-700 tabular-nums">
         {formatWan(row.original.soldPrice)}
@@ -126,7 +140,9 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "manager",
-    header: () => <div className="hidden xl:block text-slate-500 font-medium">负责人</div>,
+    header: () => (
+      <div className="hidden xl:block text-slate-500 font-medium">负责人</div>
+    ),
     cell: ({ row }) => (
       <div className="hidden xl:flex items-center gap-2">
         <span className="text-sm text-slate-600 font-medium bg-slate-50 px-2 py-1 rounded-md">
@@ -137,7 +153,11 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "net_cash_flow",
-    header: () => <div className="hidden lg:block text-right text-slate-500 font-medium">现金流</div>,
+    header: () => (
+      <div className="hidden lg:block text-right text-slate-500 font-medium">
+        现金流
+      </div>
+    ),
     cell: ({ row }) => {
       const val = row.original.net_cash_flow || 0;
       // 颜色逻辑：蓝色代表正向，灰色代表0，红色代表负向（更符合财务直觉）

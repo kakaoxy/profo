@@ -18,7 +18,7 @@ interface ProjectViewProps {
 }
 
 export function ProjectView({ data, total }: ProjectViewProps) {
-  // 1. Local State for Filtering (No longer using URL searchParams for active filtering)
+  // 1. Local State for Filtering
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -31,7 +31,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
       // Status Filter
       const statusMatch = activeTab === "all" || project.status === activeTab;
 
-      // Search Filter (Case-insensitive check on community name or project name)
+      // Search Filter
       const searchLower = searchQuery.toLowerCase().trim();
       const searchMatch =
         !searchLower ||
@@ -96,13 +96,15 @@ export function ProjectView({ data, total }: ProjectViewProps) {
               </TabsTrigger>
               <TabsTrigger
                 value="selling"
-                className="text-xs px-3 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800"
+                // [修改] 在售改为 Emerald (翠绿)，与详情页保持一致
+                className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
               >
                 在售
               </TabsTrigger>
               <TabsTrigger
                 value="sold"
-                className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+                // [修改] 已售改为 Slate (灰色)，代表归档/终态
+                className="text-xs px-3 data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800"
               >
                 已售
               </TabsTrigger>

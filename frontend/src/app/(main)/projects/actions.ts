@@ -338,3 +338,117 @@ export async function getProjectDetailAction(projectId: string) {
     return { success: false, message: "网络错误" };
   }
 }
+
+// ==========================================
+// 4. 销售业务操作 (Sales/Selling)
+// ==========================================
+
+/**
+ * 创建销售记录 (带看/出价/面谈)
+ */
+export async function createSalesRecordAction(payload: {
+  projectId: string;
+  recordType: "viewing" | "bid" | "negotiation";
+  customerName?: string;
+  price?: number;
+  recordDate: string;
+  notes?: string;
+}) {
+  try {
+    const client = await fetchClient();
+
+    // 1. 类型映射：前端 "bid" -> 后端 "offer"
+    const backendRecordType =
+      payload.recordType === "bid" ? "offer" : payload.recordType;
+
+    // 2. 构造请求 Body
+    const requestBody = {
+      record_type: backendRecordType as "viewing" | "offer" | "negotiation",
+      customer_name: payload.customerName,
+      price: payload.price,
+      record_date: payload.recordDate,
+      notes: payload.notes,
+      result: null,
+      feedback: null,
+    };
+
+    let result;
+
+    // 3. 动态分发请求
+    if (payload.recordType === "viewing") {
+      result = await client.POST(
+        "/api/v1/projects/{project_id}/selling/viewings",
+        {
+          params: { path: { project_id: payload.projectId } },
+          body: requestBody,
+        }
+      );
+    } else if (payload.recordType === "bid") {
+      result = await client.POST(
+        "/api/v1/projects/{project_id}/selling/offers",
+        {
+          params: { path: { project_id: payload.projectId } },
+          body: requestBody,
+        }
+      );
+    } else if (payload.recordType === "negotiation") {
+      result = await client.POST(
+        "/api/v1/projects/{project_id}/selling/negotiations",
+        {
+          params: { path: { project_id: payload.projectId } },
+          body: requestBody,
+        }
+      );
+    } else {
+      return { success: false, message: "未知的记录类型" };
+    }
+
+    const { error } = result;
+
+    if (error) {
+      const errorMsg = error.detail || "添加记录失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/projects");
+    return { success: true, message: "记录已添加" };
+  } catch (e) {
+    console.error("添加销售记录异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+/**
+ * 删除销售记录
+ */
+export async function deleteSalesRecordAction(
+  projectId: string,
+  recordId: string
+) {
+  try {
+    const client = await fetchClient();
+
+    const { error } = await client.DELETE(
+      "/api/v1/projects/{project_id}/selling/records/{record_id}",
+      {
+        params: {
+          path: {
+            project_id: projectId,
+            record_id: recordId,
+          },
+        },
+      }
+    );
+
+    if (error) {
+      const errorMsg = error.detail || "删除记录失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/projects");
+    return { success: true, message: "记录已删除" };
+  } catch (e) {
+    console.error("删除销售记录异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}

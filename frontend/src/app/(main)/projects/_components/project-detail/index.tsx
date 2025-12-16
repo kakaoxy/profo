@@ -14,10 +14,12 @@ import { toast } from "sonner";
 import { ProjectDetailHeader } from "./header";
 import { RenovationView } from "./views/renovation";
 import { DefaultView } from "./views/default";
+import { SellingView } from "./views/selling";
+
 import { STAGE_CONFIG, ViewMode } from "./constants";
 import type { ProjectDetailSheetProps, AttachmentHandlers } from "./types";
 
-import { getProjectDetailAction } from "../../actions"; // <-- 使用 Action 替代
+import { getProjectDetailAction } from "../../actions";
 
 export * from "./types";
 export * from "./utils";
@@ -41,11 +43,10 @@ export function ProjectDetailSheet({
     }
   }, [initialProject]);
 
-  // [修复] 使用 Server Action 刷新数据
+  // 使用 Server Action 刷新数据
   const refreshProjectData = useCallback(async () => {
     if (!project?.id) return;
 
-    // 调用 Server Action (它是异步的，且运行在服务端，所以安全)
     const res = await getProjectDetailAction(project.id);
 
     if (res.success && res.data) {
@@ -56,9 +57,11 @@ export function ProjectDetailSheet({
   const handleHandoverSuccess = async () => {
     router.refresh();
     await refreshProjectData();
+    // 交房后自动切到装修视图
     setViewMode("renovation");
   };
 
+  // 监听 isOpen 和 project 变化，自动切换到当前状态对应的视图
   useEffect(() => {
     if (isOpen && project) {
       const index = STAGE_CONFIG.findIndex((s) =>
@@ -76,6 +79,7 @@ export function ProjectDetailSheet({
 
   if (!project) return null;
 
+  // 计算当前阶段索引用于 Header 进度条
   const currentStatusIndex = STAGE_CONFIG.findIndex((s) =>
     (s.aliases as readonly string[]).includes(project.status)
   );
@@ -83,6 +87,8 @@ export function ProjectDetailSheet({
     currentStatusIndex === -1 ? 0 : currentStatusIndex;
 
   const attachments = project.signing_materials?.attachments || [];
+
+  // 附件操作句柄
   const handlers: AttachmentHandlers = {
     onPreview: (url, fileType) => {
       if (fileType === "image") setPreviewImage(url);
@@ -106,14 +112,22 @@ export function ProjectDetailSheet({
       : undefined,
   };
 
+  // [修改] 视图渲染分发逻辑
   const renderContent = () => {
     switch (viewMode) {
       case "renovation":
         return (
           <RenovationView project={project} onRefresh={refreshProjectData} />
         );
-      case "listing":
+
+      // [新增] 对应 "在售" 状态
+      case "selling":
+        return <SellingView project={project} onRefresh={refreshProjectData} />;
+
+      // [新增] 对应 "已售" 状态 (暂时复用 SellingView 查看历史，或后续新建 SoldView)
       case "sold":
+        return <SellingView project={project} onRefresh={refreshProjectData} />;
+
       case "signing":
       default:
         return (
@@ -147,6 +161,7 @@ export function ProjectDetailSheet({
         </SheetContent>
       </Sheet>
 
+      {/* 图片预览弹窗 */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
