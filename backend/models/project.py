@@ -142,6 +142,8 @@ class RenovationPhoto(BaseModel):
     filename = Column(String(200), comment="文件名")
     description = Column(Text, comment="描述")
 
+    deleted_at = Column(DateTime, nullable=True, default=None, comment="软删除时间")
+
     # 关联关系
     project = relationship("Project", back_populates="renovation_photos")
 
