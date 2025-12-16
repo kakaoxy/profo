@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # JWT配置
     jwt_secret_key: str  # 强制从环境变量读取，不再提供默认值
     jwt_algorithm: str = "HS256"
-    jwt_access_token_expire_minutes: int = 30  # 访问令牌过期时间(分钟)
+    jwt_access_token_expire_minutes: int = 600  # 访问令牌过期时间(分钟)
     jwt_refresh_token_expire_days: int = 7  # 刷新令牌过期时间(天)
     
     # JWT密钥轮换配置

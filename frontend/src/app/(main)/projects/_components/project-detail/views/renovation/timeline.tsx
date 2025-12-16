@@ -12,17 +12,21 @@ interface RenovationTimelineProps {
   onRefresh?: () => void;
 }
 
-export function RenovationTimeline({ project }: RenovationTimelineProps) {
+export function RenovationTimeline({
+  project,
+  onRefresh,
+}: RenovationTimelineProps) {
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
 
-  // 1. 计算当前阶段索引
-  // 优先匹配 value (中文 "拆除"), 其次 key ("demolition")
-  const rawIndex = RENOVATION_STAGES.findIndex(
+  // 1. 计算当前阶段的 Key (例如 "painting")
+  const currentStageConfig = RENOVATION_STAGES.find(
     (s) =>
       s.value === project.renovation_stage || s.key === project.renovation_stage
   );
-  const currentIndex = rawIndex === -1 ? 0 : rawIndex;
-  const currentStageKey = RENOVATION_STAGES[currentIndex].key;
+  // 如果找不到（比如项目刚创建），默认使用第一个阶段
+  const currentStageKey = currentStageConfig
+    ? currentStageConfig.key
+    : RENOVATION_STAGES[0].key;
 
   // 2. 获取照片数据的方法
   const fetchPhotos = useCallback(async () => {
@@ -48,7 +52,6 @@ export function RenovationTimeline({ project }: RenovationTimelineProps) {
 
     // 填充
     photos.forEach((p) => {
-      // 这里的 p.stage 是中文 "拆除"，我们要找到它对应的英文 key 用来做 Map 的 key
       const stageConfig = RENOVATION_STAGES.find(
         (s) => s.value === p.stage || s.key === p.stage
       );
@@ -59,19 +62,28 @@ export function RenovationTimeline({ project }: RenovationTimelineProps) {
     return map;
   }, [photos]);
 
+  // 计算索引用于传参
+  const rawIndex = RENOVATION_STAGES.findIndex(
+    (s) => s.key === currentStageKey
+  );
+  const currentIndex = rawIndex === -1 ? 0 : rawIndex;
+
   return (
     <div className="relative pl-4 space-y-6 pb-12">
       {/* 灰色垂直贯穿线 */}
       <div className="absolute left-[27px] top-4 bottom-10 w-0.5 bg-slate-200" />
 
+      {/* [关键修复] 
+         1. 移除了 useState 和 useEffect 对 activeItem 的控制。
+         2. 添加 key={currentStageKey}：
+            当 project 更新导致 currentStageKey 变化时，React 会认为这是一个"新"的 Accordion。
+            这会触发组件重置，从而自动应用新的 defaultValue，实现自动展开新阶段的效果。
+      */}
       <Accordion
         type="single"
         collapsible
+        key={currentStageKey}
         defaultValue={currentStageKey}
-        // 关键：当 project 更新导致 currentStageKey 变化时，这里最好能受控，
-        // 但 shadcn accordion defaultValue 只在初次渲染生效。
-        // 如果要完全受控，可以用 value={currentStageKey} 并配合 onValueChange，
-        // 不过对于时间轴，默认展开当前项通常够用了。
         className="w-full space-y-6"
       >
         {RENOVATION_STAGES.map((stage, index) => (
@@ -82,7 +94,8 @@ export function RenovationTimeline({ project }: RenovationTimelineProps) {
             currentIndex={currentIndex}
             project={project}
             photos={groupedPhotos[stage.key] || []}
-            onPhotoUploaded={fetchPhotos} // 子组件上传成功后调用
+            onPhotoUploaded={fetchPhotos}
+            onRefresh={onRefresh}
           />
         ))}
       </Accordion>
