@@ -9,6 +9,7 @@ import { TimelineItem } from "./components/timeline-item";
 
 interface RenovationTimelineProps {
   project: Project;
+  onRefresh?: () => void;
 }
 
 export function RenovationTimeline({ project }: RenovationTimelineProps) {
