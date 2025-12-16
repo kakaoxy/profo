@@ -1,24 +1,30 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-// [修复] 移除未使用的 Badge 引用
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Image as ImageIcon } from "lucide-react";
 import { Project } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
 import { differenceInDays, addDays } from "date-fns";
+// [新增] 引入获取照片的 Action
+import { getRenovationPhotosAction } from "../../../../actions";
 
 interface RenovationKPIsProps {
   project: Project;
 }
 
 export function RenovationKPIs({ project }: RenovationKPIsProps) {
+  // [新增] 用于存储照片总数的状态
+  const [photoCount, setPhotoCount] = useState(0);
+
   // 1. 计算倒计时逻辑
   const today = new Date();
   const handoverDate = project.planned_handover_date
     ? new Date(project.planned_handover_date)
     : new Date();
+
   const deadlineDate = addDays(handoverDate, 65);
   const daysLeft = differenceInDays(deadlineDate, today);
 
@@ -26,16 +32,42 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   if (daysLeft < 10) daysColor = "text-red-600 animate-pulse";
   else if (daysLeft <= 30) daysColor = "text-orange-500";
 
-  // 2. 计算当前阶段和进度
-  const currentStageKey = project.renovation_stage || "demolition";
-  const currentIndex = RENOVATION_STAGES.findIndex(
-    (s) => s.key === currentStageKey
+  // 2. 计算当前阶段
+  const currentStageConfig = RENOVATION_STAGES.find(
+    (s) =>
+      s.value === project.renovation_stage || s.key === project.renovation_stage
   );
+
+  const currentIndex = currentStageConfig
+    ? RENOVATION_STAGES.indexOf(currentStageConfig)
+    : 0;
+
+  const currentStageLabel = currentStageConfig?.label || "准备中";
+
+  // 3. 计算总体进度
   const progressValue = Math.round(
     ((currentIndex + 1) / RENOVATION_STAGES.length) * 100
   );
-  const currentStageLabel =
-    RENOVATION_STAGES.find((s) => s.key === currentStageKey)?.label || "未开始";
+
+  // 4. [关键修改] 异步获取照片总数
+  useEffect(() => {
+    const fetchTotalPhotos = async () => {
+      try {
+        // 调用接口获取该项目下 *所有* 照片 (不传 stage 参数即为获取全部)
+        const res = await getRenovationPhotosAction(project.id);
+        if (res.success && Array.isArray(res.data)) {
+          // 直接取数组长度作为总数
+          setPhotoCount(res.data.length);
+        }
+      } catch (error) {
+        console.error("获取照片统计失败", error);
+      }
+    };
+
+    if (project.id) {
+      fetchTotalPhotos();
+    }
+  }, [project.id]);
 
   return (
     <div className="grid grid-cols-4 gap-4 mb-8">
@@ -92,11 +124,6 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
             <div className="text-2xl font-bold text-slate-900 mb-1">
               {progressValue}%
             </div>
-            {/* [关键修改]
-               1. 移除了 indicatorClassName (因为它不存在)
-               2. 在 className 中添加 [&>*]:bg-orange-500
-                  这会强制覆盖 Progress 内部指示条(Indicator)的颜色
-            */}
             <Progress
               value={progressValue}
               className="h-2 bg-slate-100 [&>*]:bg-orange-500"
@@ -113,7 +140,8 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
           </span>
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold text-slate-900">
-              24{" "}
+              {/* 显示计算出来的 photoCount */}
+              {photoCount}{" "}
               <span className="text-xs font-normal text-muted-foreground">
                 张
               </span>
