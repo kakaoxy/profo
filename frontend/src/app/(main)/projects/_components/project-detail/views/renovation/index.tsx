@@ -6,13 +6,14 @@ import { RenovationTimeline } from "./timeline";
 
 interface RenovationViewProps {
   project: Project;
+  onRefresh?: () => void;
 }
 
-export function RenovationView({ project }: RenovationViewProps) {
+export function RenovationView({ project, onRefresh }: RenovationViewProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
       <RenovationKPIs project={project} />
-      <RenovationTimeline project={project} />
+      <RenovationTimeline project={project} onRefresh={onRefresh} />
     </div>
   );
 }

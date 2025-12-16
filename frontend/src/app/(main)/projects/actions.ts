@@ -255,3 +255,55 @@ export async function uploadFileAction(formData: FormData) {
     return { success: false, message: "网络连接错误，请检查后端服务是否启动" };
   }
 }
+
+/**
+ * 更新项目主状态 (例如: signing -> renovating)
+ */
+export async function updateProjectStatusAction(
+  projectId: string,
+  status: string
+) {
+  try {
+    const client = await fetchClient();
+
+    const { error } = await client.PUT("/api/v1/projects/{project_id}/status", {
+      params: { path: { project_id: projectId } },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      body: { status: status as any }, // 根据后端 Enum 定义，可能需要 as any
+    });
+
+    if (error) {
+      const errorMsg = (error as { detail?: string }).detail || "状态更新失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/projects");
+    return { success: true, message: "状态已更新" };
+  } catch (e) {
+    console.error("更新状态异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+/**
+ * [新增] 获取项目详情 (Server Action)
+ * 供 Client Component 调用以刷新数据，避免直接引入 api-server 导致崩溃
+ */
+export async function getProjectDetailAction(projectId: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET("/api/v1/projects/{project_id}", {
+      params: { path: { project_id: projectId } },
+    });
+
+    if (error) {
+      return { success: false, message: "获取详情失败" };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { success: true, data: (data as any).data };
+  } catch (e) {
+    console.error("获取详情异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   Dialog,
@@ -16,22 +17,48 @@ import { DefaultView } from "./views/default";
 import { STAGE_CONFIG, ViewMode } from "./constants";
 import type { ProjectDetailSheetProps, AttachmentHandlers } from "./types";
 
-// 导出组件供外部使用
+import { getProjectDetailAction } from "../../actions"; // <-- 使用 Action 替代
+
 export * from "./types";
 export * from "./utils";
 export * from "./constants";
 
 export function ProjectDetailSheet({
-  project,
+  project: initialProject,
   isOpen,
   onClose,
   onUpdateAttachments,
 }: ProjectDetailSheetProps) {
-  // 1. Hooks
+  const router = useRouter();
+
+  const [project, setProject] = useState(initialProject);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("signing");
 
-  // 2. [还原逻辑] 初始化 Effect
+  useEffect(() => {
+    if (initialProject) {
+      setProject(initialProject);
+    }
+  }, [initialProject]);
+
+  // [修复] 使用 Server Action 刷新数据
+  const refreshProjectData = useCallback(async () => {
+    if (!project?.id) return;
+
+    // 调用 Server Action (它是异步的，且运行在服务端，所以安全)
+    const res = await getProjectDetailAction(project.id);
+
+    if (res.success && res.data) {
+      setProject(res.data);
+    }
+  }, [project?.id]);
+
+  const handleHandoverSuccess = async () => {
+    router.refresh();
+    await refreshProjectData();
+    setViewMode("renovation");
+  };
+
   useEffect(() => {
     if (isOpen && project) {
       const index = STAGE_CONFIG.findIndex((s) =>
@@ -40,7 +67,6 @@ export function ProjectDetailSheet({
       const safeIndex = index === -1 ? 0 : index;
       const targetMode = STAGE_CONFIG[safeIndex].key;
 
-      // 只有当 当前视图 != 目标视图 时才更新
       if (viewMode !== targetMode) {
         setViewMode(targetMode);
       }
@@ -50,14 +76,12 @@ export function ProjectDetailSheet({
 
   if (!project) return null;
 
-  // 3. 计算当前项目的真实阶段索引 (用于 Header 锁定逻辑)
   const currentStatusIndex = STAGE_CONFIG.findIndex((s) =>
     (s.aliases as readonly string[]).includes(project.status)
   );
   const currentProjectStageIndex =
     currentStatusIndex === -1 ? 0 : currentStatusIndex;
 
-  // 4. 附件处理逻辑
   const attachments = project.signing_materials?.attachments || [];
   const handlers: AttachmentHandlers = {
     onPreview: (url, fileType) => {
@@ -82,11 +106,12 @@ export function ProjectDetailSheet({
       : undefined,
   };
 
-  // 5. 视图渲染工厂
   const renderContent = () => {
     switch (viewMode) {
       case "renovation":
-        return <RenovationView project={project} />;
+        return (
+          <RenovationView project={project} onRefresh={refreshProjectData} />
+        );
       case "listing":
       case "sold":
       case "signing":
@@ -96,6 +121,7 @@ export function ProjectDetailSheet({
             project={project}
             attachments={attachments}
             handlers={handlers}
+            onHandoverSuccess={handleHandoverSuccess}
           />
         );
     }
@@ -105,7 +131,6 @@ export function ProjectDetailSheet({
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent className="sm:max-w-3xl w-full flex flex-col p-0">
-          {/* Header 模块 */}
           <ProjectDetailHeader
             project={project}
             viewMode={viewMode}
@@ -113,8 +138,6 @@ export function ProjectDetailSheet({
             currentProjectStageIndex={currentProjectStageIndex}
             onClose={onClose}
           />
-
-          {/* Content 模块 */}
           <div
             className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
             style={{ scrollbarGutter: "stable" }}
@@ -124,7 +147,6 @@ export function ProjectDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* 图片预览全局弹窗 */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
