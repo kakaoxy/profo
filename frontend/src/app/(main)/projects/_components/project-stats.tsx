@@ -33,13 +33,13 @@ export function ProjectStats({ stats }: StatsProps) {
       label: "在售",
       value: stats.selling || 0,
       icon: TrendingUp,
-      color: "bg-purple-500",
+      color: "bg-emerald-500",
     },
     {
       label: "已售",
       value: stats.sold || 0,
       icon: CircleDollarSign,
-      color: "bg-emerald-500",
+      color: "bg-purple-500",
     },
   ];
 
@@ -56,7 +56,9 @@ export function ProjectStats({ stats }: StatsProps) {
           >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-500">{item.label}</p>
+                <p className="text-xs font-medium text-slate-500">
+                  {item.label}
+                </p>
                 <p className="text-2xl font-bold text-slate-800 tabular-nums">
                   {item.value}
                 </p>

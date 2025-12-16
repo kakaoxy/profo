@@ -12,7 +12,7 @@ interface SigningMaterials {
   attachments?: AttachmentInfo[];
 }
 
-// [新增] 定义并导出附件操作句柄接口
+// 定义并导出附件操作句柄接口
 export interface AttachmentHandlers {
   onPreview: (url: string, fileType: string) => void;
   onDownload: (url: string, filename: string) => void;
@@ -29,33 +29,45 @@ export interface RenovationPhoto {
   created_at: string;
 }
 
-// [修改] 保持之前的 NodeData 结构供前端 UI 使用，但数据来源变了
+// 保持之前的 NodeData 结构供前端 UI 使用，但数据来源变了
 export interface RenovationNodeData {
   status: "pending" | "active" | "completed";
   date?: string | null;
-  photos?: RenovationPhoto[]; // 修改这里，使用真实的照片对象
+  photos?: RenovationPhoto[];
+}
+
+// 销售记录类型
+export interface SalesRecord {
+  id: string;
+  project_id: string;
+  // 后端可能是 "offer", 前端有时候叫 "bid", 这里做宽容处理
+  record_type: "viewing" | "offer" | "bid" | "negotiation";
+  customer_name?: string;
+  price?: number; // 出价金额
+  record_date: string; // ISO 8601 string
+  notes?: string;
+  created_at?: string;
 }
 
 export interface Project {
   id: string;
   name: string;
   community_name?: string;
-  // 为了兼容可能的驼峰返回 (如社区名称)
   communityName?: string;
 
   status: string;
 
   // --- 核心金额字段 (混合命名兼容) ---
-  signing_price?: number; // Log 显示是下划线
+  signing_price?: number; //
   signingPrice?: number; // 兼容驼峰引用
 
   sold_price?: number;
-  soldPrice?: number; // Log 显示可能存在
+  soldPrice?: number; //
 
-  list_price?: number; // Log 显示是下划线
+  list_price?: number; //
   listPrice?: number; // 兼容驼峰引用
 
-  net_cash_flow?: number; // Log 显示是下划线
+  net_cash_flow?: number; //
   netCashFlow?: number; // 兼容驼峰引用
 
   area?: number;
@@ -86,7 +98,7 @@ export interface Project {
   soldDate?: string | null;
 
   // --- 签约相关 ---
-  signing_period?: number; // Log 显示是下划线
+  signing_period?: number; //
   signingPeriod?: number; // 兼容驼峰引用
 
   // [新增] 延期相关
@@ -111,7 +123,16 @@ export interface Project {
 
   // --- 其他 ---
   address?: string;
-  tags?: string[] | null; // Log 显示 tags 可能是 null
+  tags?: string[] | null; //
   renovation_stage?: string;
   stage_completed_at?: string | null; // 后端返回的最后一次完成时间
+
+  // --- [新增] 装修与销售相关 ---
+  renovation_photos?: RenovationPhoto[]; // 装修照片
+  sales_records?: SalesRecord[]; // 销售记录
+
+  // --- [新增] 销售团队字段 ---
+  channel_manager?: string; // 渠道维护
+  presenter?: string; // 房源主讲
+  negotiator?: string; // 谈判专家
 }

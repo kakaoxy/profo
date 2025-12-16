@@ -136,7 +136,7 @@ export const STAGE_CONFIG = [
       "交付",
     ],
   },
-  { key: "listing", label: "在售阶段", aliases: ["listing", "sales", "在售"] },
+  { key: "selling", label: "在售阶段", aliases: ["selling", "sales", "在售"] },
   { key: "sold", label: "已售阶段", aliases: ["sold", "done", "已售"] },
 ] as const;
 
