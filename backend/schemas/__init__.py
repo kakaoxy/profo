@@ -4,6 +4,16 @@
 """
 
 from .enums import IngestionStatus, MediaTypeEnum
+
+# 1. 优先导入 Common (包含 BaseResponse)
+from .common import (
+    BaseResponse,          # <--- 现在从 common 导入
+    GenericBaseResponse,   # <--- 现在从 common 导入
+    FailedRecordResponse,
+    PropertyHistoryResponse,
+    FloorInfo
+)
+
 from .property import (
     PropertyIngestionModel,
     PropertyResponse,
@@ -19,7 +29,9 @@ from .community import (
     CommunityMergeResponse,
 )
 from .upload import UploadResult, PushResult, ImportResult, BatchImportResult
-from .common import FailedRecordResponse
+
+# 2. 导入 Project (从聚合文件导入，或直接从子模块导入)
+# 这里保持从 .project 导入，因为我们在上一步已经把 .project 做成了聚合入口
 from .project import (
     BaseResponse,
     ProjectCreate,
@@ -41,6 +53,7 @@ from .project import (
     SalesRolesUpdate,
     ProjectReportResponse,
 )
+
 from .user import (
     UserCreate,
     UserUpdate,
@@ -57,12 +70,20 @@ from .user import (
     WechatLoginRequest,
 )
 
+
 __all__ = [
     # Enums
     'IngestionStatus',
     'MediaTypeEnum',
 
-    # Property schemas
+    # Common
+    'BaseResponse',
+    'GenericBaseResponse',
+    'FailedRecordResponse',
+    'PropertyHistoryResponse',
+    'FloorInfo',
+
+    # Property
     'PropertyIngestionModel',
     'PropertyResponse',
     'PropertyDetailResponse',
@@ -70,23 +91,19 @@ __all__ = [
     'PropertyHistoryResponse',
     'FloorInfo',
 
-    # Community schemas
+    # Community
     'CommunityResponse',
     'CommunityListResponse',
     'CommunityMergeRequest',
     'CommunityMergeResponse',
 
-    # Upload schemas
+    # Upload
     'UploadResult',
     'PushResult',
     'ImportResult',
     'BatchImportResult',
 
-    # Common schemas
-    'FailedRecordResponse',
-
-    # Project schemas
-    'BaseResponse',
+    # Project
     'ProjectCreate',
     'ProjectUpdate',
     'ProjectResponse',
@@ -106,7 +123,7 @@ __all__ = [
     'SalesRolesUpdate',
     'ProjectReportResponse',
     
-    # User and auth schemas
+    # User
     'UserCreate',
     'UserUpdate',
     'UserResponse',
