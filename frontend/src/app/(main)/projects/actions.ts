@@ -348,7 +348,7 @@ export async function getProjectDetailAction(projectId: string) {
  */
 export async function createSalesRecordAction(payload: {
   projectId: string;
-  recordType: "viewing" | "bid" | "negotiation";
+  recordType: "viewing" | "offer" | "negotiation";
   customerName?: string;
   price?: number;
   recordDate: string;
@@ -357,9 +357,9 @@ export async function createSalesRecordAction(payload: {
   try {
     const client = await fetchClient();
 
-    // 1. 类型映射：前端 "bid" -> 后端 "offer"
+    // 1. 类型映射：前端 "offer" -> 后端 "offer"
     const backendRecordType =
-      payload.recordType === "bid" ? "offer" : payload.recordType;
+      payload.recordType === "offer" ? "offer" : payload.recordType;
 
     // 2. 构造请求 Body
     const requestBody = {
@@ -383,7 +383,7 @@ export async function createSalesRecordAction(payload: {
           body: requestBody,
         }
       );
-    } else if (payload.recordType === "bid") {
+    } else if (payload.recordType === "offer") {
       result = await client.POST(
         "/api/v1/projects/{project_id}/selling/offers",
         {

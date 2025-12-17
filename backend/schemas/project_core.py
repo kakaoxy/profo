@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 from models.base import ProjectStatus
+from .project_sales import SalesRecordResponse
 
 # ========== 基础项目模型 ==========
 
@@ -107,10 +108,8 @@ class ProjectResponse(ProjectBase):
     presenter: Optional[str] = None
     negotiator: Optional[str] = None
     
-    # 关联数据 (这些字段在 ORM 模型中是 relationship，Pydantic 会自动序列化)
-    # 注意：为了避免循环依赖，这里可以使用 forward reference 或者在具体业务中按需加载
-    # 简单起见，我们定义为 Optional[List[Dict]] 或者具体的子模型
-    # 这里先用 List[Dict] 以解耦，或者引用后面定义的模型
+    sales_records: Optional[List[SalesRecordResponse]] = Field(default=[], description="销售记录")
+
     viewingRecords: Optional[List[Dict[str, Any]]] = None 
     offerRecords: Optional[List[Dict[str, Any]]] = None
     negotiationRecords: Optional[List[Dict[str, Any]]] = None

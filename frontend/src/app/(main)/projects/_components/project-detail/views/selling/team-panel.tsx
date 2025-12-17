@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // [新增]
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -12,9 +13,20 @@ interface SalesTeamPanelProps {
 }
 
 export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
-  const [channel, setChannel] = useState(project.channel_manager || "");
-  const [presenter, setPresenter] = useState(project.presenter || "");
-  const [negotiator, setNegotiator] = useState(project.negotiator || "");
+  const router = useRouter();
+
+  // 1. 初始化本地状态
+  const [channel, setChannel] = useState("");
+  const [presenter, setPresenter] = useState("");
+  const [negotiator, setNegotiator] = useState("");
+
+  // 2. [核心修复] 当 project 属性变化时（比如刷新后），同步到本地状态
+  useEffect(() => {
+    // 优先读取驼峰 channelManager，兼容下划线
+    setChannel(project.channelManager || project.channel_manager || "");
+    setPresenter(project.presenter || "");
+    setNegotiator(project.negotiator || "");
+  }, [project]);
 
   // 通用的失焦保存处理
   const handleBlur = async (
@@ -22,23 +34,27 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
     value: string,
     oldValue?: string
   ) => {
-    // 如果值没有变化，不发送请求
-    // 注意：oldValue 可能是 undefined，所以要做空值处理
     if (value === (oldValue || "")) return;
 
-    const toastId = toast.loading("正在保存团队信息...");
+    // console.log(`[调试] 提交更新: ${field} = ${value}`);
+
+    const toastId = toast.loading("正在保存...");
     try {
-      // 构造更新 Payload
       const payload = { [field]: value };
 
       const res = await updateProjectAction(project.id, payload);
 
       if (res.success) {
         toast.success("保存成功");
+        // 3. [核心修复] 保存成功后刷新路由，获取最新数据
+        // 这会触发上面的 useEffect，确保数据一致性
+        router.refresh();
       } else {
         toast.error(res.message);
+        // 如果失败，建议重置回旧值 (可选)
       }
-    } catch {
+    } catch (error) {
+      console.error(error);
       toast.error("保存失败");
     } finally {
       toast.dismiss(toastId);
@@ -54,23 +70,28 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
         </span>
       </h3>
       <div className="grid grid-cols-3 gap-4">
-        {/* 1. 渠道维护 */}
+        {/* 1. 渠道 */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-500">渠道维护</Label>
+          <Label className="text-xs text-slate-500">渠道</Label>
           <Input
             value={channel}
             onChange={(e) => setChannel(e.target.value)}
+            // 这里的 oldValue 也要取正确，防止重复提交
             onBlur={() =>
-              handleBlur("channel_manager", channel, project.channel_manager)
+              handleBlur(
+                "channelManager",
+                channel,
+                project.channelManager || project.channel_manager
+              )
             }
             className="h-8 text-sm bg-white focus-visible:ring-emerald-500"
             placeholder="姓名"
           />
         </div>
 
-        {/* 2. 房源主讲 */}
+        {/* 2. 讲房 */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-500">房源主讲</Label>
+          <Label className="text-xs text-slate-500">讲房</Label>
           <Input
             value={presenter}
             onChange={(e) => setPresenter(e.target.value)}
@@ -80,9 +101,9 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
           />
         </div>
 
-        {/* 3. 谈判专家 */}
+        {/* 3. 谈判 */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-500">谈判专家</Label>
+          <Label className="text-xs text-slate-500">谈判</Label>
           <Input
             value={negotiator}
             onChange={(e) => setNegotiator(e.target.value)}

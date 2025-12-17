@@ -63,7 +63,8 @@ export function ProjectDetailSheet({
 
   // 监听 isOpen 和 project 变化，自动切换到当前状态对应的视图
   useEffect(() => {
-    if (isOpen && project) {
+    if (isOpen && project?.id) {
+      // 1. 自动切换视图模式 (原有逻辑)
       const index = STAGE_CONFIG.findIndex((s) =>
         (s.aliases as readonly string[]).includes(project.status)
       );
@@ -72,6 +73,10 @@ export function ProjectDetailSheet({
 
       if (viewMode !== targetMode) {
         setViewMode(targetMode);
+      }
+
+      if (project.sales_records === undefined) {
+        refreshProjectData();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
