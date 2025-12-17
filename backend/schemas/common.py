@@ -3,9 +3,28 @@
 包含历史记录、失败记录、楼层解析等通用模型
 """
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, Any
+from pydantic import BaseModel, Field, ConfigDict
 
+
+# ========== [新增] 基础响应模型 (从 project.py 移入) ==========
+
+class BaseResponse(BaseModel):
+    """基础响应模型"""
+    code: int = Field(default=200, description="响应码")
+    msg: str = Field(default="success", description="响应消息")
+    data: Optional[Any] = Field(default=None, description="响应数据")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GenericBaseResponse(BaseModel):
+    """通用基础响应模型"""
+    code: int = Field(default=200, description="响应码")
+    msg: str = Field(default="success", description="响应消息")
+    data: Optional[Any] = Field(default=None, description="响应数据")
+
+    model_config = ConfigDict(from_attributes=True)
 
 class FloorInfo(BaseModel):
     """楼层解析结果"""
