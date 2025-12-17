@@ -2,8 +2,22 @@
 
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Gavel, MessageSquare, TrendingUp } from "lucide-react";
-import { isSameWeek, parseISO } from "date-fns";
+import {
+  Eye,
+  Gavel,
+  MessageSquare,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import {
+  startOfWeek,
+  endOfWeek,
+  subWeeks,
+  isWithinInterval,
+  parseISO,
+  isSameWeek,
+} from "date-fns";
+import { cn } from "@/lib/utils";
 import { Project, SalesRecord } from "../../../../types";
 
 interface ListingKPIsProps {
@@ -11,62 +25,113 @@ interface ListingKPIsProps {
 }
 
 export function ListingKPIs({ project }: ListingKPIsProps) {
-  // [修复 ESLint] 将 records 的获取逻辑移入 useMemo 内部
-  // 这样依赖项只需监听 project，更加稳定
   const stats = useMemo(() => {
     const records: SalesRecord[] = project.sales_records || [];
 
-    const now = new Date();
-
-    // 1. 本周带看 (Viewing)
+    // 1. Data Filtering
     const viewings = records.filter((r) => r.record_type === "viewing");
-    const thisWeekViewings = viewings.filter(
-      (r) => r.record_date && isSameWeek(parseISO(r.record_date), now)
-    );
-
-    // 模拟数据：假设上周带看量是本周的 80%
-    const growthRate = 12;
-
-    // 2. 本周出价 (Offer/Bid)
-    // 兼容后端类型 'offer' 和前端可能使用的 'bid'
-    const bids = records.filter(
-      (r) => r.record_type === "offer" || r.record_type === "bid"
-    );
-    const thisWeekBids = bids.filter(
-      (r) => r.record_date && isSameWeek(parseISO(r.record_date), now)
-    );
-
-    // 计算最高价
-    const maxBid =
-      bids.length > 0 ? Math.max(...bids.map((b) => b.price || 0)) : 0;
-
-    // 3. 本周面谈 (Negotiation)
+    const offers = records.filter((r) => r.record_type === "offer");
     const talks = records.filter((r) => r.record_type === "negotiation");
-    const thisWeekTalks = talks.filter(
-      (r) => r.record_date && isSameWeek(parseISO(r.record_date), now)
-    );
 
-    // 获取最新面谈时间
+    // 2. Time Range Definition (Week starts on Monday)
+    const now = new Date();
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+    const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+
+    // 3. Viewings Calculation
+    let thisWeekViewingsCount = 0;
+    let lastWeekViewingsCount = 0;
+
+    viewings.forEach((record) => {
+      const date = parseISO(record.record_date);
+      if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
+        thisWeekViewingsCount++;
+      } else if (
+        isWithinInterval(date, { start: lastWeekStart, end: lastWeekEnd })
+      ) {
+        lastWeekViewingsCount++;
+      }
+    });
+
+    // Growth Rate Calculation
+    let growthRate = 0;
+    let isGrowthPositive = true;
+    let isInfinite = false;
+
+    if (lastWeekViewingsCount === 0) {
+      if (thisWeekViewingsCount > 0) {
+        isInfinite = true; // 0 -> N
+      }
+    } else {
+      growthRate = Math.round(
+        ((thisWeekViewingsCount - lastWeekViewingsCount) /
+          lastWeekViewingsCount) *
+          100
+      );
+    }
+    isGrowthPositive = growthRate >= 0;
+
+    // 4. Bids Calculation
+    let thisWeekBidsCount = 0;
+    offers.forEach((record) => {
+      const date = parseISO(record.record_date);
+      if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
+        thisWeekBidsCount++;
+      }
+    });
+
+    const maxBid =
+      offers.length > 0
+        ? Math.max(...offers.map((o) => Number(o.price) || 0))
+        : 0;
+
+    // 5. Talks Calculation
+    let thisWeekTalksCount = 0;
+    talks.forEach((record) => {
+      const date = parseISO(record.record_date);
+      if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
+        thisWeekTalksCount++;
+      }
+    });
+
+    // Get latest talk date
     const sortedTalks = [...talks].sort(
       (a, b) =>
         new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
     );
     const latestTalk = sortedTalks[0];
+    let latestTalkText = "暂无";
 
-    let latestTalkText = "无";
     if (latestTalk) {
       const date = parseISO(latestTalk.record_date);
-      latestTalkText = isSameWeek(date, now)
-        ? "本周"
-        : date.toLocaleDateString();
+      if (isSameWeek(date, now, { weekStartsOn: 1 })) {
+        latestTalkText = "本周";
+      } else {
+        // Format as MM-dd
+        latestTalkText = `${date.getMonth() + 1}月${date.getDate()}日`;
+      }
     }
 
     return {
-      viewings: { count: thisWeekViewings.length, growth: growthRate },
-      bids: { count: thisWeekBids.length, max: maxBid },
-      talks: { count: thisWeekTalks.length, latest: latestTalkText },
+      viewings: {
+        count: thisWeekViewingsCount,
+        growth: Math.abs(growthRate),
+        isPositive: isGrowthPositive,
+        isInfinite,
+        lastWeekCount: lastWeekViewingsCount,
+      },
+      bids: {
+        count: thisWeekBidsCount,
+        max: maxBid,
+      },
+      talks: {
+        count: thisWeekTalksCount,
+        latest: latestTalkText,
+      },
     };
-  }, [project]); // 依赖项改为 project，它是 Props，引用相对稳定
+  }, [project.sales_records]);
 
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
@@ -83,9 +148,31 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
             </span>
             <span className="text-xs text-muted-foreground">组</span>
           </div>
-          <div className="mt-1 flex items-center text-[10px] text-emerald-600 font-medium">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            {stats.viewings.growth}% 较上周
+          <div
+            className={cn(
+              "mt-1 flex items-center text-[10px] font-medium",
+              stats.viewings.isInfinite
+                ? "text-emerald-600"
+                : stats.viewings.isPositive
+                ? "text-emerald-600"
+                : "text-red-600"
+            )}
+          >
+            {stats.viewings.isInfinite ? (
+              <>
+                <TrendingUp className="h-3 w-3 mr-1" />
+                新增爆发
+              </>
+            ) : (
+              <>
+                {stats.viewings.isPositive ? (
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                )}
+                {stats.viewings.growth}% 较上周
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
