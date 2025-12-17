@@ -40,8 +40,7 @@ export interface RenovationNodeData {
 export interface SalesRecord {
   id: string;
   project_id: string;
-  // 后端可能是 "offer", 前端有时候叫 "bid", 这里做宽容处理
-  record_type: "viewing" | "offer" | "bid" | "negotiation";
+  record_type: "viewing" | "offer" | "negotiation";
   customer_name?: string;
   price?: number; // 出价金额
   record_date: string; // ISO 8601 string
@@ -132,7 +131,8 @@ export interface Project {
   sales_records?: SalesRecord[]; // 销售记录
 
   // --- [新增] 销售团队字段 ---
-  channel_manager?: string; // 渠道维护
+  channelManager?: string; // 渠道维护
   presenter?: string; // 房源主讲
   negotiator?: string; // 谈判专家
+  channel_manager?: string;
 }
