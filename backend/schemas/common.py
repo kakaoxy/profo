@@ -7,7 +7,6 @@ from typing import Optional, Any
 from pydantic import BaseModel, Field, ConfigDict
 
 
-# ========== [新增] 基础响应模型 (从 project.py 移入) ==========
 
 class BaseResponse(BaseModel):
     """基础响应模型"""
