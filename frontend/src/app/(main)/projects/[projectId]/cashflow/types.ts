@@ -12,7 +12,7 @@ export const EXPENSE_CATEGORIES = [
   "营销费",
   "其他支出",
   "税费",
-  "运营杂费",
+  "运营费",
 ] as const;
 
 export const INCOME_CATEGORIES = [
