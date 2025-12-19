@@ -115,7 +115,8 @@ class ProjectSalesService:
 
         # 更新状态和核心成交数据
         project.status = ProjectStatus.SOLD.value
-        project.sale_price = complete_data.sold_price
+        project.soldPrice = complete_data.sold_price 
+        project.soldDate = complete_data.sold_date
         project.sold_at = complete_data.sold_date
         project.status_changed_at = datetime.utcnow()
 
