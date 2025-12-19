@@ -151,8 +151,8 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                       className={cn(
                         "font-normal",
                         record.type === "income"
-                          ? "border-emerald-200 text-emerald-700 bg-emerald-50/30"
-                          : "border-orange-200 text-orange-700 bg-orange-50/30"
+                          ? "border-red-200 text-red-700 bg-red-50/30"
+                          : "border-emerald-200 text-emerald-700 bg-emerald-50/30"
                       )}
                     >
                       {record.category}
@@ -171,8 +171,8 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                       className={cn(
                         "font-mono font-medium text-sm",
                         record.type === "income"
-                          ? "text-emerald-600"
-                          : "text-red-600"
+                          ? "text-red-600"
+                          : "text-emerald-600"
                       )}
                     >
                       {record.type === "income" ? "+" : "-"}

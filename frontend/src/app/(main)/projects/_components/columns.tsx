@@ -161,8 +161,8 @@ export const columns: ColumnDef<Project>[] = [
     cell: ({ row }) => {
       const val = row.original.net_cash_flow || 0;
       let colorClass = "text-slate-400";
-      if (val > 0) colorClass = "text-blue-600";
-      if (val < 0) colorClass = "text-rose-600";
+      if (val > 0) colorClass = "text-red-600";
+      if (val < 0) colorClass = "text-emerald-600";
 
       return (
         <div className="hidden lg:block text-right">
