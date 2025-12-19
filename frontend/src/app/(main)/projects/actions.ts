@@ -320,11 +320,19 @@ export async function updateProjectStatusAction(
  * [新增] 获取项目详情 (Server Action)
  * 供 Client Component 调用以刷新数据，避免直接引入 api-server 导致崩溃
  */
-export async function getProjectDetailAction(projectId: string) {
+export async function getProjectDetailAction(
+  projectId: string,
+  isFull: boolean = false
+) {
   try {
     const client = await fetchClient();
+
     const { data, error } = await client.GET("/api/v1/projects/{project_id}", {
-      params: { path: { project_id: projectId } },
+      params: {
+        path: { project_id: projectId },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query: { full: isFull } as any,
+      },
     });
 
     if (error) {
