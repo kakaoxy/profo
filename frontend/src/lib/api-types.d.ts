@@ -1277,33 +1277,21 @@ export interface components {
         CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营杂费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
         /**
          * CashFlowRecordCreate
-         * @description 创建现金流记录请求模型
+         * @description 创建现金流
          */
         CashFlowRecordCreate: {
-            /** @description 类型：income/expense */
             type: components["schemas"]["CashFlowType"];
-            /** @description 分类 */
             category: components["schemas"]["CashFlowCategory"];
-            /**
-             * Amount
-             * @description 金额
-             */
+            /** Amount */
             amount: number | string;
             /**
              * Date
              * Format: date-time
-             * @description 日期
              */
             date: string;
-            /**
-             * Description
-             * @description 描述
-             */
+            /** Description */
             description?: string | null;
-            /**
-             * Related Stage
-             * @description 关联阶段
-             */
+            /** Related Stage */
             related_stage?: string | null;
         };
         /**
@@ -1439,18 +1427,14 @@ export interface components {
         };
         /**
          * ProjectCompleteRequest
-         * @description 项目完成请求模型
+         * @description 确认成交请求
          */
         ProjectCompleteRequest: {
-            /**
-             * Sold Price
-             * @description 售价
-             */
+            /** Sold Price */
             sold_price: number | string;
             /**
              * Sold Date
              * Format: date-time
-             * @description 售出日期
              */
             sold_date: string;
         };
@@ -1568,6 +1552,26 @@ export interface components {
              * @description 备注
              */
             remarks?: string | null;
+            /**
+             * Total Income
+             * @default 0
+             */
+            total_income: number | string;
+            /**
+             * Total Expense
+             * @default 0
+             */
+            total_expense: number | string;
+            /**
+             * Net Cash Flow
+             * @default 0
+             */
+            net_cash_flow: number | string;
+            /**
+             * Roi
+             * @default 0
+             */
+            roi: number;
         };
         /**
          * ProjectStatus
@@ -1577,191 +1581,69 @@ export interface components {
         ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "deleted";
         /**
          * ProjectUpdate
-         * @description 更新项目请求模型
+         * @description 更新项目请求模型 (所有字段可选)
          */
         ProjectUpdate: {
-            /**
-             * Name
-             * @description 项目名称
-             */
+            /** Name */
             name?: string | null;
-            /**
-             * Community Name
-             * @description 小区名称
-             */
+            /** Community Name */
             community_name?: string | null;
-            /**
-             * Address
-             * @description 物业地址
-             */
+            /** Address */
             address?: string | null;
-            /**
-             * Manager
-             * @description 负责人
-             */
+            /** Manager */
             manager?: string | null;
-            /**
-             * Signing Price
-             * @description 签约价格
-             */
+            /** Signing Price */
             signing_price?: number | string | null;
-            /**
-             * Signing Date
-             * @description 签约日期
-             */
+            /** Signing Date */
             signing_date?: string | null;
-            /**
-             * Signing Period
-             * @description 签约周期
-             */
+            /** Signing Period */
             signing_period?: number | null;
-            /**
-             * Planned Handover Date
-             * @description 计划交房时间
-             */
+            /** Planned Handover Date */
             planned_handover_date?: string | null;
-            /**
-             * Signing Materials
-             * @description 签约材料
-             */
+            /** Signing Materials */
             signing_materials?: {
                 [key: string]: unknown;
             } | null;
-            /**
-             * Owner Name
-             * @description 业主姓名
-             */
+            /** Owner Name */
             owner_name?: string | null;
-            /**
-             * Owner Phone
-             * @description 业主电话
-             */
+            /** Owner Phone */
             owner_phone?: string | null;
-            /**
-             * Owner Id Card
-             * @description 业主身份证号
-             */
+            /** Owner Id Card */
             owner_id_card?: string | null;
-            /**
-             * Owner Info
-             * @description 业主其他信息
-             */
+            /** Owner Info */
             owner_info?: {
                 [key: string]: unknown;
             } | null;
-            /**
-             * Notes
-             * @description 备注
-             */
+            /** Notes */
             notes?: string | null;
-            /**
-             * Tags
-             * @description 标签
-             */
+            /** Tags */
             tags?: string[] | null;
-            /**
-             * Area
-             * @description 产证面积(m²)
-             */
+            /** Area */
             area?: number | string | null;
-            /**
-             * Extensionperiod
-             * @description 顺延期(月)
-             */
+            /** Extensionperiod */
             extensionPeriod?: number | null;
-            /**
-             * Extensionrent
-             * @description 顺延期租金(元/月)
-             */
+            /** Extensionrent */
             extensionRent?: number | string | null;
-            /**
-             * Costassumption
-             * @description 税费及佣金承担
-             */
+            /** Costassumption */
             costAssumption?: string | null;
-            /**
-             * Otheragreements
-             * @description 其他约定
-             */
+            /** Otheragreements */
             otherAgreements?: string | null;
-            /**
-             * Remarks
-             * @description 备注
-             */
+            /** Remarks */
             remarks?: string | null;
-            /**
-             * Channelmanager
-             * @description 渠道负责人
-             */
+            /** Channelmanager */
             channelManager?: string | null;
-            /**
-             * Presenter
-             * @description 讲房师
-             */
+            /** Presenter */
             presenter?: string | null;
-            /**
-             * Negotiator
-             * @description 联卖谈判
-             */
+            /** Negotiator */
             negotiator?: string | null;
-            /**
-             * Viewingrecords
-             * @description 带看记录
-             */
-            viewingRecords?: {
-                [key: string]: unknown;
-            }[] | null;
-            /**
-             * Offerrecords
-             * @description 出价记录
-             */
-            offerRecords?: {
-                [key: string]: unknown;
-            }[] | null;
-            /**
-             * Negotiationrecords
-             * @description 面谈记录
-             */
-            negotiationRecords?: {
-                [key: string]: unknown;
-            }[] | null;
-            /**
-             * Soldprice
-             * @description 成交价格
-             */
-            soldPrice?: number | string | null;
-            /**
-             * Solddate
-             * @description 成交日期
-             */
-            soldDate?: string | null;
-            /**
-             * Property Agent
-             * @description 房源维护人
-             */
+            /** Property Agent */
             property_agent?: string | null;
-            /**
-             * Client Agent
-             * @description 客源维护人
-             */
+            /** Client Agent */
             client_agent?: string | null;
-            /**
-             * First Viewer
-             * @description 首看人
-             */
+            /** First Viewer */
             first_viewer?: string | null;
-            /**
-             * List Price
-             * @description 挂牌价
-             */
+            /** List Price */
             list_price?: number | string | null;
-            /**
-             * Renovationstagedates
-             * @description 改造阶段完成时间
-             */
-            renovationStageDates?: {
-                [key: string]: string;
-            } | null;
         };
         /**
          * PropertyDetailResponse
@@ -2109,92 +1991,56 @@ export interface components {
         };
         /**
          * SalesRecordCreate
-         * @description 创建销售记录请求模型
+         * @description 创建销售记录
          */
         SalesRecordCreate: {
-            /** @description 记录类型 */
             record_type: components["schemas"]["RecordType"];
-            /**
-             * Customer Name
-             * @description 客户姓名
-             */
+            /** Customer Name */
             customer_name?: string | null;
-            /**
-             * Customer Phone
-             * @description 客户电话
-             */
+            /** Customer Phone */
             customer_phone?: string | null;
-            /**
-             * Customer Info
-             * @description 客户其他信息
-             */
+            /** Customer Info */
             customer_info?: {
                 [key: string]: unknown;
             } | null;
             /**
              * Record Date
              * Format: date-time
-             * @description 记录日期
              */
             record_date: string;
-            /**
-             * Record Time
-             * @description 记录时间
-             */
+            /** Record Time */
             record_time?: string | null;
-            /**
-             * Price
-             * @description 出价/售价
-             */
+            /** Price */
             price?: number | string | null;
-            /**
-             * Notes
-             * @description 备注
-             */
+            /** Notes */
             notes?: string | null;
-            /**
-             * Feedback
-             * @description 反馈
-             */
+            /** Feedback */
             feedback?: string | null;
-            /**
-             * Result
-             * @description 结果
-             */
+            /** Result */
             result?: string | null;
-            /**
-             * Related Agent
-             * @description 相关经纪人
-             */
+            /** Related Agent */
             related_agent?: string | null;
         };
         /**
          * SalesRolesUpdate
-         * @description 更新销售角色请求模型
+         * @description 更新销售角色
          */
         SalesRolesUpdate: {
-            /**
-             * Property Agent
-             * @description 房源维护人
-             */
+            /** Channelmanager */
+            channelManager?: string | null;
+            /** Presenter */
+            presenter?: string | null;
+            /** Negotiator */
+            negotiator?: string | null;
+            /** Property Agent */
             property_agent?: string | null;
-            /**
-             * Client Agent
-             * @description 客源维护人
-             */
+            /** Client Agent */
             client_agent?: string | null;
-            /**
-             * First Viewer
-             * @description 首看人
-             */
+            /** First Viewer */
             first_viewer?: string | null;
         };
-        /**
-         * StatusUpdate
-         * @description 状态更新请求模型
-         */
+        /** StatusUpdate */
         StatusUpdate: {
-            /** @description 目标状态 */
             status: components["schemas"]["ProjectStatus"];
         };
         /**
@@ -2911,7 +2757,10 @@ export interface operations {
     };
     get_project_api_v1_projects__project_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 是否获取完整详情(包含大字段) */
+                full?: boolean;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
