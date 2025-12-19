@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LineChart } from "lucide-react";
-import { toast } from "sonner";
+import Link from "next/link";
 import { Project } from "../types";
 
 const formatMoney = (value: number | undefined | null) => {
@@ -160,20 +160,26 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => {
       const val = row.original.net_cash_flow || 0;
-      // 颜色逻辑：蓝色代表正向，灰色代表0，红色代表负向（更符合财务直觉）
       let colorClass = "text-slate-400";
       if (val > 0) colorClass = "text-blue-600";
       if (val < 0) colorClass = "text-rose-600";
 
       return (
-        <div
-          className={`hidden lg:block text-right font-bold cursor-pointer hover:opacity-80 tabular-nums ${colorClass}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            toast.info(`查看「${row.original.name}」资金流水`);
-          }}
-        >
-          {formatMoney(val)}
+        <div className="hidden lg:block text-right">
+          {/* 关键修改：
+             1. href 改为 "?" + 参数，表示停留在当前页
+             2. scroll={false} 防止页面滚动到顶部
+          */}
+          <Link
+            href={`?cashflow_id=${
+              row.original.id
+            }&project_name=${encodeURIComponent(row.original.name)}`}
+            scroll={false}
+            onClick={(e) => e.stopPropagation()}
+            className={`font-bold cursor-pointer hover:opacity-70 hover:underline decoration-2 underline-offset-4 transition-all tabular-nums ${colorClass}`}
+          >
+            {formatMoney(val)}
+          </Link>
         </div>
       );
     },
@@ -183,20 +189,22 @@ export const columns: ColumnDef<Project>[] = [
     header: "操作",
     cell: ({ row }) => {
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 px-3 flex items-center gap-1.5 transition-all rounded-full"
-          onClick={(e) => {
-            e.stopPropagation();
-            toast.info(`正在跳转`, {
-              description: `即将进入 ${row.original.name} 的数据监控面板`,
-            });
-          }}
+        <Link
+          href={`?cashflow_id=${
+            row.original.id
+          }&project_name=${encodeURIComponent(row.original.name)}`}
+          scroll={false}
+          onClick={(e) => e.stopPropagation()}
         >
-          <LineChart className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline text-xs font-medium">监控</span>
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 px-3 flex items-center gap-1.5 transition-all rounded-full"
+          >
+            <LineChart className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline text-xs font-medium">监控</span>
+          </Button>
+        </Link>
       );
     },
   },
