@@ -100,12 +100,31 @@ export function TrendChart({ data }: TrendChartProps) {
               fill={COLOR_INCOME}
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
+              label={{
+                position: "top",
+                fill: COLOR_INCOME,
+                fontSize: 10,
+                formatter: (value) =>
+                  typeof value === "number" && value !== 0
+                    ? `¥${value.toLocaleString()}`
+                    : "", // ← 0 或非数字时返回空字符串，Recharts 会自动隐藏标签
+              }}
             />
+
             <Bar
               dataKey="expense"
               fill={COLOR_EXPENSE}
               radius={[0, 0, 4, 4]}
               maxBarSize={40}
+              label={{
+                position: "bottom",
+                fill: COLOR_EXPENSE,
+                fontSize: 10,
+                formatter: (value) =>
+                  typeof value === "number" && value !== 0
+                    ? `¥${Math.abs(value).toLocaleString()}`
+                    : "",
+              }}
             />
           </BarChart>
         </ResponsiveContainer>
