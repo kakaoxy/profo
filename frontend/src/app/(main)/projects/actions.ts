@@ -452,3 +452,38 @@ export async function deleteSalesRecordAction(
     return { success: false, message: "网络错误" };
   }
 }
+
+/**
+ * 完成项目 (成交)
+ * 同时更新状态为 SOLD 并保存成交信息
+ */
+export async function completeProjectAction(
+  projectId: string,
+  payload: { soldPrice: number; soldDate: string }
+) {
+  const client = await fetchClient();
+
+  // 调用后端专门的完成接口
+  const { data, error } = await client.POST(
+    "/api/v1/projects/{project_id}/complete",
+    {
+      params: {
+        path: { project_id: projectId },
+      },
+      body: {
+        // 这里的字段名要对应后端 ProjectCompleteRequest 模型
+        sold_price: payload.soldPrice,
+        sold_date: payload.soldDate,
+      },
+    }
+  );
+
+  if (error) {
+    console.error("成交操作失败:", error);
+    return { success: false, message: "操作失败，请重试" };
+  }
+
+  revalidatePath("/projects");
+
+  return { success: true, message: "恭喜！项目已成交", data };
+}
