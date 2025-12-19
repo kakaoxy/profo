@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -15,11 +20,16 @@ import { ProjectDetailHeader } from "./header";
 import { RenovationView } from "./views/renovation";
 import { DefaultView } from "./views/default";
 import { SellingView } from "./views/selling";
+import { SoldView } from "./views/sold";
 
 import { STAGE_CONFIG, ViewMode } from "./constants";
+
 import type { ProjectDetailSheetProps, AttachmentHandlers } from "./types";
+import type { Project } from "../../types";
 
 import { getProjectDetailAction } from "../../actions";
+// [优化] 移除 getProjectCashFlowAction，因为数据已集成在详情接口中
+// import { getProjectCashFlowAction } from "../../[projectId]/cashflow/actions";
 
 export * from "./types";
 export * from "./utils";
@@ -33,38 +43,88 @@ export function ProjectDetailSheet({
 }: ProjectDetailSheetProps) {
   const router = useRouter();
 
+  const isFetchingRef = useRef(false);
+
   const [project, setProject] = useState(initialProject);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("signing");
 
+  // 初始化逻辑
   useEffect(() => {
     if (initialProject) {
       setProject(initialProject);
+      setPreviewImage(null);
     }
   }, [initialProject]);
 
-  // 使用 Server Action 刷新数据
   const refreshProjectData = useCallback(async () => {
     if (!project?.id) return;
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
 
-    const res = await getProjectDetailAction(project.id);
+    try {
+      const currentId = project.id;
+      const res = await getProjectDetailAction(project.id);
 
-    if (res.success && res.data) {
-      setProject(res.data);
+      if (res.success && res.data) {
+        setProject((prev) => {
+          if (!prev || prev.id !== currentId) return prev;
+          return {
+            ...prev,
+            ...res.data,
+            renovation_photos: prev.renovation_photos,
+          } as Project;
+        });
+      }
+    } finally {
+      // [新增] 请求结束，释放锁
+      isFetchingRef.current = false;
+    }
+  }, [project?.id]);
+
+  // [极速版] 只需获取照片，财务数据已在 project 对象中
+  const fetchSoldViewData = useCallback(async () => {
+    if (!project?.id) return;
+
+    const currentId = project.id;
+
+    try {
+      // 只请求照片
+      const photosRes = await fetch(
+        `/api/v1/projects/${currentId}/renovation/photos`
+      );
+
+      let photosData = { data: [] };
+      if (photosRes.ok) {
+        photosData = await photosRes.json();
+      } else if (photosRes.status !== 404) {
+        // 404 是正常的（无照片），其他错误才打印
+        console.warn("Fetch photos failed:", photosRes.status);
+      }
+
+      setProject((prev) => {
+        if (!prev || prev.id !== currentId) return prev;
+
+        return {
+          ...prev,
+          // 更新照片数据
+          renovation_photos: photosData?.data || prev.renovation_photos || [],
+        };
+      });
+    } catch (error) {
+      console.error("Failed to fetch photos:", error);
     }
   }, [project?.id]);
 
   const handleHandoverSuccess = async () => {
     router.refresh();
     await refreshProjectData();
-    // 交房后自动切到装修视图
     setViewMode("renovation");
   };
 
-  // 监听 isOpen 和 project 变化，自动切换到当前状态对应的视图
+  // 视图切换与数据加载监听
   useEffect(() => {
     if (isOpen && project?.id) {
-      // 1. 自动切换视图模式 (原有逻辑)
       const index = STAGE_CONFIG.findIndex((s) =>
         (s.aliases as readonly string[]).includes(project.status)
       );
@@ -75,8 +135,11 @@ export function ProjectDetailSheet({
         setViewMode(targetMode);
       }
 
-      if (project.sales_records === undefined) {
-        refreshProjectData();
+      refreshProjectData();
+
+      // 进入已售视图时，加载照片
+      if (targetMode === "sold") {
+        fetchSoldViewData();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,7 +147,6 @@ export function ProjectDetailSheet({
 
   if (!project) return null;
 
-  // 计算当前阶段索引用于 Header 进度条
   const currentStatusIndex = STAGE_CONFIG.findIndex((s) =>
     (s.aliases as readonly string[]).includes(project.status)
   );
@@ -93,7 +155,6 @@ export function ProjectDetailSheet({
 
   const attachments = project.signing_materials?.attachments || [];
 
-  // 附件操作句柄
   const handlers: AttachmentHandlers = {
     onPreview: (url, fileType) => {
       if (fileType === "image") setPreviewImage(url);
@@ -117,56 +178,65 @@ export function ProjectDetailSheet({
       : undefined,
   };
 
-  // [修改] 视图渲染分发逻辑
-  const renderContent = () => {
-    switch (viewMode) {
-      case "renovation":
-        return (
-          <RenovationView project={project} onRefresh={refreshProjectData} />
-        );
-
-      // [新增] 对应 "在售" 状态
-      case "selling":
-        return <SellingView project={project} onRefresh={refreshProjectData} />;
-
-      // [新增] 对应 "已售" 状态 (暂时复用 SellingView 查看历史，或后续新建 SoldView)
-      case "sold":
-        return <SellingView project={project} onRefresh={refreshProjectData} />;
-
-      case "signing":
-      default:
-        return (
-          <DefaultView
-            project={project}
-            attachments={attachments}
-            handlers={handlers}
-            onHandoverSuccess={handleHandoverSuccess}
-          />
-        );
-    }
-  };
+  const isSoldMode = viewMode === "sold";
 
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="sm:max-w-3xl w-full flex flex-col p-0">
-          <ProjectDetailHeader
-            project={project}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            currentProjectStageIndex={currentProjectStageIndex}
-            onClose={onClose}
-          />
-          <div
-            className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
-            style={{ scrollbarGutter: "stable" }}
-          >
-            {renderContent()}
-          </div>
+        <SheetContent className="w-full sm:max-w-3xl flex flex-col p-0 transition-all duration-300">
+          <SheetTitle className="sr-only">项目详情 - {project.name}</SheetTitle>
+          <SheetDescription className="sr-only">
+            查看和管理项目 {project.name} 的详细信息、装修进度及销售状态。
+          </SheetDescription>
+
+          {isSoldMode ? (
+            <SoldView
+              project={project}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              currentProjectStageIndex={currentProjectStageIndex}
+              // [优化] 不再需要 isLoading，因为核心数据是秒开的
+            />
+          ) : (
+            <>
+              <ProjectDetailHeader
+                project={project}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                currentProjectStageIndex={currentProjectStageIndex}
+                onClose={onClose}
+              />
+              <div
+                className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
+                style={{ scrollbarGutter: "stable" }}
+              >
+                {viewMode === "renovation" && (
+                  <RenovationView
+                    project={project}
+                    onRefresh={refreshProjectData}
+                  />
+                )}
+                {viewMode === "selling" && (
+                  <SellingView
+                    project={project}
+                    onRefresh={refreshProjectData}
+                  />
+                )}
+                {(viewMode === "signing" ||
+                  !["renovation", "selling"].includes(viewMode)) && (
+                  <DefaultView
+                    project={project}
+                    attachments={attachments}
+                    handlers={handlers}
+                    onHandoverSuccess={handleHandoverSuccess}
+                  />
+                )}
+              </div>
+            </>
+          )}
         </SheetContent>
       </Sheet>
 
-      {/* 图片预览弹窗 */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>

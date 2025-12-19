@@ -81,6 +81,11 @@ class Project(BaseModel):
     # 改造阶段完成时间（前端使用，JSON格式存储，key为改造阶段名称，value为完成日期）
     renovationStageDates = Column(JSON, nullable=True, comment="改造阶段完成时间")
     
+    total_income = Column(Numeric(15, 2), default=0, nullable=False, server_default="0", comment="累计收入(缓存)")
+    total_expense = Column(Numeric(15, 2), default=0, nullable=False, server_default="0", comment="累计支出(缓存)")
+    net_cash_flow = Column(Numeric(15, 2), default=0, nullable=False, server_default="0", comment="净现金流(缓存)")
+    roi = Column(Float, default=0.0, nullable=False, server_default="0", comment="投资回报率(缓存)")
+    
     # 关联关系
     cashflow_records = relationship("CashFlowRecord", back_populates="project", cascade="all, delete-orphan")
     renovation_photos = relationship("RenovationPhoto", back_populates="project", cascade="all, delete-orphan")

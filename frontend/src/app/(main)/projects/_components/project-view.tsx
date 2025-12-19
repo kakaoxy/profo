@@ -148,6 +148,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
       </div>
 
       <ProjectDetailSheet
+        key={selectedProject?.id}
         project={selectedProject}
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}

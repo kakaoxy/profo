@@ -27,6 +27,7 @@ htmlcov/
 .claude/
 *.jpg
 *.png
+alembic/
 
 # UV
 .venv/

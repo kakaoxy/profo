@@ -4,15 +4,14 @@
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
-from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func
 from fastapi import HTTPException, status
 
-from models import Project, CashFlowRecord
+from models import Project
 from models.base import ProjectStatus
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, defer, noload
 
 class ProjectCoreService:
     def __init__(self, db: Session):
@@ -20,7 +19,9 @@ class ProjectCoreService:
 
     def _get_project(self, project_id: str) -> Project:
         project = self.db.query(Project).options(
-            selectinload(Project.sales_records)
+            selectinload(Project.sales_records),
+            noload(Project.renovation_photos),
+            noload(Project.cashflow_records)
         ).filter(Project.id == project_id).first()
 
         if not project:
@@ -58,7 +59,13 @@ class ProjectCoreService:
             notes=project_data.notes,
             tags=project_data.tags,
             status=ProjectStatus.SIGNING.value,
-            status_changed_at=datetime.utcnow()
+            status_changed_at=datetime.utcnow(),
+            
+            # [新增] 初始化财务缓存字段 (虽然数据库有default 0，显式初始化是个好习惯)
+            total_income=0,
+            total_expense=0,
+            net_cash_flow=0,
+            roi=0.0
         )
         self.db.add(project)
         self.db.commit()
@@ -72,7 +79,12 @@ class ProjectCoreService:
     def get_projects(self, status_filter: Optional[str] = None,
                     community_name: Optional[str] = None,
                     page: int = 1, page_size: int = 50) -> Dict[str, Any]:
-        """获取项目列表 (终极优化版：Defer大字段 + 批量计算现金流)"""
+        """
+        获取项目列表 
+        [终极性能版] 
+        1. Defer 大文本字段
+        2. Noload 关联关系 (解决 N+1 问题)
+        """
         
         # 1. 基础查询构造
         query = self.db.query(Project)
@@ -88,11 +100,11 @@ class ProjectCoreService:
         # 2. 获取总数
         total = query.count()
 
-        # 3. 获取当前页的项目 (应用 defer 排除大字段)
-        # 这里的 defer 非常重要，是提速的关键
-        from sqlalchemy.orm import defer
-        
+        # 3. 获取当前页的项目
+        # [核心修复] 使用 noload 强制不加载关联关系
+        # 列表页不需要展示几百条带看记录或装修照片，切断它们！
         projects = query.options(
+            # 文本大字段优化
             defer(Project.signing_materials),
             defer(Project.owner_info),
             defer(Project.otherAgreements),
@@ -100,44 +112,15 @@ class ProjectCoreService:
             defer(Project.viewingRecords),
             defer(Project.offerRecords),
             defer(Project.negotiationRecords),
-            defer(Project.renovationStageDates)
+            defer(Project.renovationStageDates),
+            
+            # [关键] 关系字段优化：彻底切断查询
+            # 如果前端列表页真的需要展示"几条带看"，请改成 selectinload
+            # 但通常列表页不需要，noload 是最快的（0次额外查询）
+            noload(Project.sales_records),
+            noload(Project.renovation_photos),
+            noload(Project.cashflow_records)
         ).order_by(Project.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-
-        # 如果当前页没有数据，直接返回
-        if not projects:
-            return {
-                "items": [],
-                "total": total,
-                "page": page,
-                "page_size": page_size
-            }
-        
-        # A. 提取当前页所有项目的 ID 列表
-        project_ids = [p.id for p in projects]
-
-        # B. 发起一次聚合查询，计算这些项目的收支差
-        # SQL 逻辑: SELECT project_id, SUM(CASE...) FROM cashflow WHERE project_id IN (...) GROUP BY project_id
-        
-        cash_flow_data = self.db.query(
-            CashFlowRecord.project_id,
-            (
-                func.sum(case((CashFlowRecord.type == "income", CashFlowRecord.amount), else_=0)) -
-                func.sum(case((CashFlowRecord.type == "expense", CashFlowRecord.amount), else_=0))
-            ).label("net_cash_flow")
-        ).filter(
-            CashFlowRecord.project_id.in_(project_ids) # 关键：只查这20个ID
-        ).group_by(
-            CashFlowRecord.project_id
-        ).all()
-
-        # C. 将查询结果转为字典映射: { 'id1': 10000, 'id2': -500 }
-        # 如果没有记录，默认为 0
-        cash_flow_map = {res.project_id: (res.net_cash_flow or Decimal(0)) for res in cash_flow_data}
-
-        # D. 在内存中将钱填回 Project 对象
-        for project in projects:
-            # dict.get(key, default) -> 如果没查到（说明没记账），就是 0
-            project.net_cash_flow = cash_flow_map.get(project.id, Decimal(0))
 
         return {
             "items": projects,
@@ -238,25 +221,3 @@ class ProjectCoreService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="只有在售或已售状态才能切换到已售状态"
             )
-
-    def _calculate_net_cash_flow(self, project_id: str) -> Decimal:
-        """计算项目净现金流 (仅供列表页展示使用)"""
-        result = self.db.query(
-            func.sum(
-                case(
-                    (CashFlowRecord.type == "income", CashFlowRecord.amount),
-                    else_=0
-                )
-            ).label("total_income"),
-            func.sum(
-                case(
-                    (CashFlowRecord.type == "expense", CashFlowRecord.amount),
-                    else_=0
-                )
-            ).label("total_expense")
-        ).filter(CashFlowRecord.project_id == project_id).first()
-
-        total_income = result.total_income or Decimal('0')
-        total_expense = result.total_expense or Decimal('0')
-
-        return total_income - total_expense

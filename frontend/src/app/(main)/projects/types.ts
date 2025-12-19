@@ -1,3 +1,5 @@
+// src/app/(main)/projects/types.ts
+
 // 附件信息接口
 export interface AttachmentInfo {
   filename: string;
@@ -29,7 +31,7 @@ export interface RenovationPhoto {
   created_at: string;
 }
 
-// 保持之前的 NodeData 结构供前端 UI 使用，但数据来源变了
+// 保持之前的 NodeData 结构供前端 UI 使用
 export interface RenovationNodeData {
   status: "pending" | "active" | "completed";
   date?: string | null;
@@ -40,12 +42,20 @@ export interface RenovationNodeData {
 export interface SalesRecord {
   id: string;
   project_id: string;
-  record_type: "viewing" | "offer" | "negotiation";
+  record_type: "viewing" | "offer" | "negotiation" | "sold";
   customer_name?: string;
   price?: number; // 出价金额
   record_date: string; // ISO 8601 string
   notes?: string;
   created_at?: string;
+}
+
+// [新增] 现金流汇总 (用于 HeroMetrics，如果后端将来直接返回 summary 对象)
+export interface CashFlowSummary {
+  total_income: number;
+  total_expense: number;
+  net_cash_flow: number;
+  roi: number;
 }
 
 export interface Project {
@@ -56,30 +66,29 @@ export interface Project {
 
   status: string;
 
-  // --- 核心金额字段 (混合命名兼容) ---
-  signing_price?: number; //
-  signingPrice?: number; // 兼容驼峰引用
+  // --- 核心金额字段 ---
+  signing_price?: number;
+  signingPrice?: number;
 
   sold_price?: number;
-  soldPrice?: number; //
+  soldPrice?: number;
 
-  list_price?: number; //
-  listPrice?: number; // 兼容驼峰引用
+  list_price?: number;
+  listPrice?: number;
+  listing_price?: number; // [新增] 兼容 Sold View 组件可能使用的别名
 
-  net_cash_flow?: number; //
-  netCashFlow?: number; // 兼容驼峰引用
+  // [关键修复] 投资总额 (Sold View 强依赖此字段)
+  // 目前后端未返回，前端会得到 undefined，组件显示为 0 是安全的
+  total_investment?: number;
 
   area?: number;
 
-  // --- 人员信息 (Log 显示主要是下划线) ---
+  // --- 人员信息 ---
   manager?: string;
-
   owner_name?: string;
   ownerName?: string;
-
   owner_phone?: string;
   ownerPhone?: string;
-
   owner_id_card?: string;
   ownerIdCard?: string;
 
@@ -95,44 +104,54 @@ export interface Project {
 
   sold_date?: string | null;
   soldDate?: string | null;
+  sold_at?: string | null;
+
+  // [新增] 关键节点日期 (Sold View 时间轴需要)
+  renovation_start_date?: string | null; // 开工日期
+  listing_date?: string | null; // 上架日期
 
   // --- 签约相关 ---
-  signing_period?: number; //
-  signingPeriod?: number; // 兼容驼峰引用
+  signing_period?: number;
+  signingPeriod?: number;
 
-  // [新增] 延期相关
-  extensionPeriod?: number; // 延长期 (月)
-  extension_period?: number; // 下划线兼容
+  extensionPeriod?: number;
+  extension_period?: number;
 
-  extensionRent?: number; // 延期租金 (元/月)
-  extension_rent?: number; // 下划线兼容
+  extensionRent?: number;
+  extension_rent?: number;
 
   signing_materials?: SigningMaterials | null;
 
-  // --- 合同与备注 (这是导致不显示的关键差异) ---
-  // Log 明确显示后端返回了驼峰命名：costAssumption, otherAgreements
+  // --- 合同与备注 ---
   costAssumption?: string;
-  cost_assumption?: string; // 保留旧定义以防万一
+  cost_assumption?: string;
 
   otherAgreements?: string;
-  other_agreements?: string; // 保留旧定义以防万一
+  other_agreements?: string;
 
   notes?: string;
   remarks?: string;
 
   // --- 其他 ---
   address?: string;
-  tags?: string[] | null; //
+  tags?: string[] | null;
   renovation_stage?: string;
-  stage_completed_at?: string | null; // 后端返回的最后一次完成时间
+  stage_completed_at?: string | null;
 
-  // --- [新增] 装修与销售相关 ---
-  renovation_photos?: RenovationPhoto[]; // 装修照片
-  sales_records?: SalesRecord[]; // 销售记录
+  // --- 装修与销售相关 ---
+  renovation_photos?: RenovationPhoto[];
+  sales_records?: SalesRecord[];
 
-  // --- [新增] 销售团队字段 ---
-  channelManager?: string; // 渠道维护
-  presenter?: string; // 房源主讲
-  negotiator?: string; // 谈判专家
+  // [新增] 现金流汇总 (可选)
+  cashflow_summary?: CashFlowSummary;
+  total_income?: number;
+  total_expense?: number;
+  net_cash_flow?: number;
+  roi?: number;
+
+  // --- 销售团队字段 ---
+  channelManager?: string;
+  presenter?: string;
+  negotiator?: string;
   channel_manager?: string;
 }
