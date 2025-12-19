@@ -51,5 +51,10 @@ class SalesRecordResponse(BaseModel):
 
 class ProjectCompleteRequest(BaseModel):
     """确认成交请求"""
-    sold_price: Decimal = Field(..., gt=0)
-    sold_date: datetime
+    sold_price: Decimal = Field(..., alias="soldPrice")
+    sold_date: datetime = Field(..., alias="soldDate")
+
+    model_config = ConfigDict(
+        populate_by_name=True, # 允许 Python 代码里用 sold_price 赋值
+        from_attributes=True
+    )
