@@ -57,30 +57,43 @@ export function ProjectDetailSheet({
     }
   }, [initialProject]);
 
-  const refreshProjectData = useCallback(async () => {
-    if (!project?.id) return;
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
+  const refreshProjectData = useCallback(
+    async (isFull: boolean = false) => {
+      if (!project?.id) return;
+      if (isFetchingRef.current) return;
 
-    try {
-      const currentId = project.id;
-      const res = await getProjectDetailAction(project.id);
+      isFetchingRef.current = true;
+      try {
+        const currentId = project.id;
+        // 调用 Action 时传入 isFull
+        const res = await getProjectDetailAction(project.id, isFull);
 
-      if (res.success && res.data) {
-        setProject((prev) => {
-          if (!prev || prev.id !== currentId) return prev;
-          return {
-            ...prev,
-            ...res.data,
-            renovation_photos: prev.renovation_photos,
-          } as Project;
-        });
+        if (res.success && res.data) {
+          setProject((prev) => {
+            if (!prev || prev.id !== currentId) return prev;
+            return {
+              ...prev,
+              ...res.data,
+              renovation_photos: prev.renovation_photos,
+            } as Project;
+          });
+        }
+      } finally {
+        isFetchingRef.current = false;
       }
-    } finally {
-      // [新增] 请求结束，释放锁
-      isFetchingRef.current = false;
+    },
+    [project?.id]
+  );
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+
+    // 如果切换到"签约"视图，且当前项目没有签约材料 (说明可能是一个已售项目，数据被阉割了)
+    if (mode === "signing" && !project?.signing_materials) {
+      // 强制拉取完整数据
+      refreshProjectData(true);
     }
-  }, [project?.id]);
+  };
 
   // [极速版] 只需获取照片，财务数据已在 project 对象中
   const fetchSoldViewData = useCallback(async () => {
@@ -193,7 +206,7 @@ export function ProjectDetailSheet({
             <SoldView
               project={project}
               viewMode={viewMode}
-              setViewMode={setViewMode}
+              setViewMode={handleViewModeChange}
               currentProjectStageIndex={currentProjectStageIndex}
               // [优化] 不再需要 isLoading，因为核心数据是秒开的
             />
@@ -202,7 +215,7 @@ export function ProjectDetailSheet({
               <ProjectDetailHeader
                 project={project}
                 viewMode={viewMode}
-                setViewMode={setViewMode}
+                setViewMode={handleViewModeChange}
                 currentProjectStageIndex={currentProjectStageIndex}
                 onClose={onClose}
               />

@@ -17,11 +17,19 @@ class ProjectCoreService:
     def __init__(self, db: Session):
         self.db = db
 
-    def _get_project(self, project_id: str) -> Project:
+    def _get_project(self, project_id: str, include_all: bool = False) -> Project:
         project = self.db.query(Project).options(
             selectinload(Project.sales_records),
             noload(Project.renovation_photos),
-            noload(Project.cashflow_records)
+            noload(Project.cashflow_records),
+            defer(Project.signing_materials), 
+            defer(Project.owner_info),
+            defer(Project.viewingRecords),
+            defer(Project.offerRecords),
+            defer(Project.negotiationRecords),
+            defer(Project.renovationStageDates),
+            defer(Project.otherAgreements),
+            defer(Project.notes)
         ).filter(Project.id == project_id).first()
 
         if not project:
@@ -29,6 +37,30 @@ class ProjectCoreService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="项目不存在"
             )
+
+        # [核心修复] 动态加载逻辑
+        
+        # 情况A：前端明确要求加载完整数据 (比如用户切换到了签约视图)
+        if include_all:
+            _ = project.signing_materials
+            _ = project.owner_info
+            _ = project.otherAgreements
+            _ = project.notes
+            # 这里依然不加载 viewingRecords 等超大历史记录，除非你也需要展示它们
+
+        # 情况B：项目处于签约状态 (必须显示材料)
+        elif project.status == ProjectStatus.SIGNING.value:
+            _ = project.signing_materials
+            _ = project.owner_info
+            _ = project.otherAgreements
+            _ = project.notes
+        
+        # 情况C：项目处于已售状态 (且没有要求完整数据 -> 保持极速模式)
+        elif project.status == ProjectStatus.SOLD.value:
+            project.signing_materials = None
+            project.owner_info = None
+            project.otherAgreements = None
+
         return project
 
     def create_project(self, project_data: ProjectCreate) -> Project:
@@ -72,9 +104,9 @@ class ProjectCoreService:
         self.db.refresh(project)
         return project
 
-    def get_project(self, project_id: str) -> Optional[Project]:
+    def get_project(self, project_id: str, include_all: bool = False) -> Optional[Project]:
         """获取项目详情"""
-        return self._get_project(project_id)
+        return self._get_project(project_id, include_all)
 
     def get_projects(self, status_filter: Optional[str] = None,
                     community_name: Optional[str] = None,

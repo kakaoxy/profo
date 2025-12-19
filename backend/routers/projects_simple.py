@@ -65,10 +65,12 @@ async def get_project_stats(
 @router.get("/{project_id}")
 async def get_project(
     project_id: str = Path(..., description="项目ID"),
+    full: bool = Query(False, description="是否获取完整详情(包含大字段)"), # [新增]
     service: ProjectService = Depends(get_project_service)
 ):
     """获取项目详情"""
-    project = service.get_project(project_id)
+    # 传递 full 参数给 service
+    project = service.get_project(project_id, include_all=full)
     return {"code": 200, "msg": "success", "data": project}
 
 
