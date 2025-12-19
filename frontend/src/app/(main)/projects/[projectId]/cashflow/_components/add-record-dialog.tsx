@@ -1,9 +1,8 @@
-// src/app/(main)/projects/[projectId]/cashflow/_components/add-record-dialog.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -25,13 +24,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { createCashFlowRecordAction } from "../actions";
 import {
@@ -62,10 +54,12 @@ export function AddRecordDialog({
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
 
+  // 切换收支类型时，重置分类
   useEffect(() => {
     setCategory("");
   }, [type]);
 
+  // 打开弹窗时重置所有状态
   useEffect(() => {
     if (isOpen) {
       setType("expense");
@@ -111,13 +105,13 @@ export function AddRecordDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle>记一笔</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-5 py-2">
-          {/* Tabs */}
+          {/* 1. 收支切换 Tabs */}
           <Tabs
             value={type}
             onValueChange={(v) => setType(v as TransactionType)}
@@ -126,13 +120,13 @@ export function AddRecordDialog({
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger
                 value="expense"
-                className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600"
+                className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600"
               >
                 支出
               </TabsTrigger>
               <TabsTrigger
                 value="income"
-                className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600"
+                className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600"
               >
                 收入
               </TabsTrigger>
@@ -140,6 +134,7 @@ export function AddRecordDialog({
           </Tabs>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* 2. 金额输入 */}
             <div className="grid gap-2">
               <Label className="text-xs text-slate-500">金额 (元)</Label>
               <Input
@@ -148,14 +143,15 @@ export function AddRecordDialog({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className={cn(
-                  "font-mono focus-visible:ring-1",
+                  "font-mono focus-visible:ring-1 text-lg font-semibold", // 字体加大一点
                   type === "income"
-                    ? "text-emerald-600 focus-visible:ring-emerald-500"
-                    : "text-red-600 focus-visible:ring-red-500"
+                    ? "text-red-600 focus-visible:ring-red-500 placeholder:text-red-200"
+                    : "text-emerald-600 focus-visible:ring-emerald-500 placeholder:text-emerald-200"
                 )}
               />
             </div>
 
+            {/* 3. 日期选择 */}
             <div className="grid gap-2">
               <Label className="text-xs text-slate-500">发生日期</Label>
               <Popover>
@@ -183,29 +179,47 @@ export function AddRecordDialog({
             </div>
           </div>
 
+          {/* 4. 分类选择 (Tag 模式) */}
           <div className="grid gap-2">
             <Label className="text-xs text-slate-500">分类</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="选择分类" />
-              </SelectTrigger>
-              <SelectContent>
-                {categoryOptions.map((c) => (
-                  <SelectItem key={c} value={c}>
+            <div className="flex flex-wrap gap-2">
+              {categoryOptions.map((c) => {
+                const isSelected = category === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 flex items-center gap-1.5",
+                      // 未选中样式 (统一灰色)
+                      !isSelected &&
+                        "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                      // 选中样式 (根据收支类型变色)
+                      isSelected &&
+                        type === "expense" &&
+                        "bg-emerald-600 border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
+                      isSelected &&
+                        type === "income" &&
+                        "bg-red-600 border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1"
+                    )}
+                  >
+                    {isSelected && <Check className="h-3 w-3" />}
                     {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
+          {/* 5. 备注 */}
           <div className="grid gap-2">
             <Label className="text-xs text-slate-500">备注说明</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="例如：支付首期款..."
-              className="h-20"
+              className="h-20 resize-none"
             />
           </div>
         </div>
@@ -215,10 +229,10 @@ export function AddRecordDialog({
             onClick={handleSubmit}
             disabled={isSubmitting}
             className={cn(
-              "w-full text-white",
+              "w-full text-white shadow-sm transition-all active:scale-[0.98]",
               type === "income"
-                ? "bg-emerald-600 hover:bg-emerald-700"
-                : "bg-red-600 hover:bg-red-700"
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-emerald-600 hover:bg-emerald-700"
             )}
           >
             {isSubmitting ? (
