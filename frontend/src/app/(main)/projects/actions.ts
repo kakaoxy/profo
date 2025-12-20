@@ -333,6 +333,10 @@ export async function getProjectDetailAction(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query: { full: isFull } as any,
       },
+      // [核心修复] 添加 Fetch 选项，强制禁用缓存
+      // 这告诉 Next.js 和浏览器：每次都要去服务器拿最新数据，不要存缓存
+      cache: "no-store",
+      next: { revalidate: 0 },
     });
 
     if (error) {
