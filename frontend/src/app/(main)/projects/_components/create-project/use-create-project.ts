@@ -5,7 +5,7 @@ import { useForm, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-import { createProjectAction, updateProjectAction } from "../../actions";
+import { createProjectAction, updateProjectAction } from "../../actions/core";
 import { formSchema, FormValues, DRAFT_KEY, ProjectCreateReq, ProjectUpdateReq, AttachmentCategory, AttachmentType } from "./schema";
 import { Project } from "../../types";
 
@@ -167,17 +167,22 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
             }
           : null,
         owner_info: null,
+        // 下面四个字段在 ProjectCreate 实体中是必填的（默认值为 0）
+        total_income: 0,
+        total_expense: 0,
+        net_cash_flow: 0,
+        roi: 0,
       };
 
       let res;
       if (isEditMode && project) {
-          // 更新模式
-          const payload: ProjectUpdateReq = basePayload;
-          res = await updateProjectAction(project.id, payload);
+        // 更新模式 - ProjectUpdateReq 字段皆为可选，多传无妨
+        const payload: ProjectUpdateReq = basePayload as ProjectUpdateReq;
+        res = await updateProjectAction(project.id, payload);
       } else {
-          // 新建模式
-          const payload: ProjectCreateReq = basePayload;
-          res = await createProjectAction(payload);
+        // 新建模式 - 补齐必填字段后符合 ProjectCreateReq
+        const payload: ProjectCreateReq = basePayload as ProjectCreateReq;
+        res = await createProjectAction(payload);
       }
 
       if (res.success) {

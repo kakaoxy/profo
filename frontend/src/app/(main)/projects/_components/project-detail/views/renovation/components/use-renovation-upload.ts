@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { addRenovationPhotoAction } from "../../../../../actions";
+import { addRenovationPhotoAction } from "../../../../../actions/renovation";
 import { UploadingPhoto } from "./photo-grid";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;

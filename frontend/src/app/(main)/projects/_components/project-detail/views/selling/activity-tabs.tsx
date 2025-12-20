@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 import { Project, SalesRecord } from "../../../../types";
-import { deleteSalesRecordAction } from "../../../../actions";
+import { deleteSalesRecordAction } from "../../../../actions/sales";
 import { ActivityList } from "./components/activity-list";
 import { AddRecordDialog } from "./components/add-record-dialog";
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Accordion } from "@/components/ui/accordion";
 import { Project, RenovationPhoto } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
-import { getRenovationPhotosAction } from "../../../../actions";
+import { getRenovationPhotosAction } from "../../../../actions/renovation";
 import { TimelineItem } from "./components/timeline-item";
 
 interface RenovationTimelineProps {

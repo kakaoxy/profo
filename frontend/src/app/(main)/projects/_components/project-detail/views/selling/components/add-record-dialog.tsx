@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { createSalesRecordAction } from "../../../../../actions";
+import { createSalesRecordAction } from "../../../../../actions/sales";
 
 interface AddRecordDialogProps {
   projectId: string;

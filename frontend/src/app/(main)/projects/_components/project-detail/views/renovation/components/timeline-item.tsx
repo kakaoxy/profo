@@ -20,10 +20,7 @@ import { useRenovationUpload } from "./use-renovation-upload";
 
 import { Project, RenovationPhoto } from "../../../../../types";
 import { RENOVATION_STAGES } from "../../../constants";
-import {
-  updateRenovationStageAction,
-  deleteRenovationPhotoAction,
-} from "../../../../../actions";
+import { updateRenovationStageAction, deleteRenovationPhotoAction } from "../../../../../actions/renovation";
 
 interface TimelineItemProps {
   stage: (typeof RENOVATION_STAGES)[number];

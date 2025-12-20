@@ -13,10 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import {
-  updateProjectAction,
-  updateProjectStatusAction,
-} from "../../../../actions";
+import { updateProjectAction, updateProjectStatusAction } from "../../../../actions/core";
 import { Project } from "../../../../types";
 // [新增] 引入通用组件
 import { StatusTransitionDialog } from "../../status-transition-dialog";

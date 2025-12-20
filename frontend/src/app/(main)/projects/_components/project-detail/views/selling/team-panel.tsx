@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Project } from "../../../../types";
-import { updateProjectAction } from "../../../../actions";
+import { updateProjectAction } from "../../../../actions/core";
 
 interface SalesTeamPanelProps {
   project: Project;

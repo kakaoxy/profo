@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/popover";
 
 import { Project } from "../../../../types";
-import { completeProjectAction } from "../../../../actions";
+import { completeProjectAction } from "../../../../actions/sales";
 
 interface DealDialogProps {
   project: Project;
