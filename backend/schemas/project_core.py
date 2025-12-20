@@ -128,6 +128,9 @@ class ProjectResponse(ProjectBase):
     viewingRecords: Optional[List[Dict[str, Any]]] = None 
     offerRecords: Optional[List[Dict[str, Any]]] = None
     negotiationRecords: Optional[List[Dict[str, Any]]] = None
+    
+    # 改造阶段完成时间
+    renovationStageDates: Optional[Dict[str, str]] = None
 
 class ProjectListResponse(BaseModel):
     items: List[ProjectResponse]

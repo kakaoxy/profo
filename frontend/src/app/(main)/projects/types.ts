@@ -142,8 +142,8 @@ export interface Project {
   renovation_photos?: RenovationPhoto[];
   sales_records?: SalesRecord[];
 
-  // [新增] 现金流汇总 (可选)
-  cashflow_summary?: CashFlowSummary;
+  // 改造阶段完成时间（JSON 格式存储，key 为阶段中文名，value 为 yyyy-MM-dd）
+  renovationStageDates?: Record<string, string> | null;
   total_income?: number;
   total_expense?: number;
   net_cash_flow?: number;

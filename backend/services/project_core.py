@@ -27,7 +27,6 @@ class ProjectCoreService:
             defer(Project.viewingRecords),
             defer(Project.offerRecords),
             defer(Project.negotiationRecords),
-            defer(Project.renovationStageDates),
             defer(Project.otherAgreements),
             defer(Project.notes)
         ).filter(Project.id == project_id).first()
@@ -138,7 +137,7 @@ class ProjectCoreService:
             defer(Project.viewingRecords),
             defer(Project.offerRecords),
             defer(Project.negotiationRecords),
-            defer(Project.renovationStageDates),
+
             
             # [关键] 关系字段优化：彻底切断查询
             # 如果前端列表页真的需要展示"几条带看"，请改成 selectinload
@@ -214,6 +213,10 @@ class ProjectCoreService:
         # 更新状态
         project.status = new_status
         project.status_changed_at = datetime.utcnow()
+
+        # 如果进入装修阶段且当前没有子阶段，初始化为第一个阶段
+        if new_status == ProjectStatus.RENOVATING.value and not project.renovation_stage:
+            project.renovation_stage = "拆除"
 
         # 特殊状态处理
         if new_status == ProjectStatus.SOLD.value:
