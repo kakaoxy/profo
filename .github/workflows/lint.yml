@@ -1,18 +1,13 @@
-name: Lint Check
-
-on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
-
 jobs:
   lint:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # 方案一：推荐。在 Setup Node 之前安装 pnpm 以便支持缓存逻辑
+      - name: Install pnpm
+        run: npm install -g pnpm@10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -20,12 +15,6 @@ jobs:
           node-version: 20
           cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10
-
-      - name: Verify pnpm
-        run: pnpm --version
 
       - name: Install dependencies
         run: pnpm install
