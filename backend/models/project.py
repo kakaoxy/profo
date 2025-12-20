@@ -49,6 +49,7 @@ class Project(BaseModel):
     # 时间记录
     status_changed_at = Column(DateTime, comment="状态变更时间")
     stage_completed_at = Column(DateTime, comment="阶段完成时间")
+    listing_date = Column(DateTime, nullable=True, comment="上架日期")
     sold_at = Column(DateTime, comment="售出时间")
 
     # 销售信息（在售阶段）

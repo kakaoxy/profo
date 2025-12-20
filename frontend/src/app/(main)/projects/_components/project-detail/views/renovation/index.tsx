@@ -1,8 +1,9 @@
-"use client";
-
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Store } from "lucide-react";
+import { Store, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 
 // 确保这里的 types 路径是正确的，通常是 4 层 ../
 import { Project } from "../../../../types";
@@ -11,6 +12,14 @@ import { updateProjectStatusAction } from "../../../../actions";
 import { RenovationKPIs } from "./kpi";
 import { RenovationTimeline } from "./timeline";
 import { StatusTransitionDialog } from "../../status-transition-dialog";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface RenovationViewProps {
   project: Project;
@@ -19,12 +28,17 @@ interface RenovationViewProps {
 
 export function RenovationView({ project, onRefresh }: RenovationViewProps) {
   const router = useRouter();
+  const [listingDate, setListingDate] = useState<Date | undefined>(new Date());
 
   // 定义完工逻辑
   const handleCompletion = async () => {
     try {
-      // 调用 Action 更新状态为 selling
-      const res = await updateProjectStatusAction(project.id, "selling");
+      // 调用 Action 更新状态为 selling，并传入上架时间
+      const res = await updateProjectStatusAction(
+        project.id, 
+        "selling", 
+        listingDate?.toISOString()
+      );
       if (!res.success) throw new Error(res.message);
 
       toast.success("装修已完成，项目已转为在售状态！");
@@ -54,14 +68,45 @@ export function RenovationView({ project, onRefresh }: RenovationViewProps) {
             <>
               此操作表示所有装修阶段已全部结束。
               <br />
-              {/* [修复 3] 使用 &quot; 转义双引号 */}
               项目状态将流转为 <b>&quot;在售 (Selling)&quot;</b>
               ，并进入销售管理流程。
             </>
           }
           confirmLabel="确认上架"
           onConfirm={handleCompletion}
-        />
+        >
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">上架日期</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-10",
+                      !listingDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {listingDate ? format(listingDate, "PPP", { locale: zhCN }) : <span>选择日期</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={listingDate}
+                    onSelect={setListingDate}
+                    initialFocus
+                    locale={zhCN}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-[12px] text-muted-foreground">
+                请选择该项目实际在平台上架销售的日期
+              </p>
+            </div>
+          </div>
+        </StatusTransitionDialog>
       </div>
     </div>
   );

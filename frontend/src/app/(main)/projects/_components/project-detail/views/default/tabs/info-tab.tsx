@@ -128,6 +128,10 @@ export function InfoTab({ project }: InfoTabProps) {
           label="成交日期"
           value={formatDate(project.soldDate || project.sold_date)}
         />
+        <InfoItem
+          label="上架日期"
+          value={formatDate(project.listing_date)}
+        />
       </InfoSection>
 
       {/* --- 业主信息 --- */}

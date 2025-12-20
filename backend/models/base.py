@@ -51,6 +51,7 @@ class RenovationStage(str, enum.Enum):
     PAINTING = "油漆"        # 油漆
     INSTALLATION = "安装"    # 安装
     DELIVERY = "交付"        # 交付
+    COMPLETED = "已完成"     # 已完成
 
 
 class CashFlowType(str, enum.Enum):
@@ -68,7 +69,7 @@ class CashFlowCategory(str, enum.Enum):
     MARKETING_FEE = "营销费"
     OTHER_EXPENSE = "其他支出"
     TAX_FEE = "税费"
-    OPERATION_FEE = "运营杂费"
+    OPERATION_FEE = "运营费"
 
     # 收入类
     BOND_RETURN = "回收保证金"

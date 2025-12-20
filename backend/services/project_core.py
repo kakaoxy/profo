@@ -214,6 +214,10 @@ class ProjectCoreService:
         project.status = new_status
         project.status_changed_at = datetime.utcnow()
 
+        # 处理上架时间
+        if status_update.listing_date:
+            project.listing_date = status_update.listing_date
+
         # 如果进入装修阶段且当前没有子阶段，初始化为第一个阶段
         if new_status == ProjectStatus.RENOVATING.value and not project.renovation_stage:
             project.renovation_stage = "拆除"

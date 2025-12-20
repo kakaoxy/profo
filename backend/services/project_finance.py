@@ -76,7 +76,7 @@ class ProjectFinanceService:
             "address": project.address,
             "signing_date": project.created_at if project.status != ProjectStatus.SIGNING.value else None,
             "renovation_start_date": project.status_changed_at if project.status == ProjectStatus.RENOVATING.value else None,
-            "renovation_end_date": project.stage_completed_at if project.renovation_stage == RenovationStage.DELIVERY.value else None,
+            "renovation_end_date": project.stage_completed_at if project.renovation_stage == RenovationStage.COMPLETED.value else None,
             "listing_date": project.status_changed_at if project.status == ProjectStatus.SELLING.value else None,
             "sold_date": project.sold_at,
             

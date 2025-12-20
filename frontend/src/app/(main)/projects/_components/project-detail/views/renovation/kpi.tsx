@@ -32,22 +32,27 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   if (daysLeft < 10) daysColor = "text-red-600 animate-pulse";
   else if (daysLeft <= 30) daysColor = "text-orange-500";
 
-  // 2. 计算当前阶段
-  const currentStageConfig = RENOVATION_STAGES.find(
-    (s) =>
-      s.value === project.renovation_stage || s.key === project.renovation_stage
-  );
+  // 2. 计算索引用于传参 (与 RenovationTimeline 同步逻辑)
+  const currentIndex = (() => {
+    // 如果阶段是 "已完成"，或者项目已经进入在售/已售状态，说明装修已全部结束
+    if (project.renovation_stage === "已完成" || ["selling", "sold"].includes(project.status)) {
+      return RENOVATION_STAGES.length;
+    }
+    const idx = RENOVATION_STAGES.findIndex(
+      (s) => s.value === project.renovation_stage || s.key === project.renovation_stage
+    );
+    return idx === -1 ? 0 : idx;
+  })();
 
-  const currentIndex = currentStageConfig
-    ? RENOVATION_STAGES.indexOf(currentStageConfig)
-    : 0;
-
-  const currentStageLabel = currentStageConfig?.label || "准备中";
+  const currentStageLabel = currentIndex < RENOVATION_STAGES.length 
+    ? RENOVATION_STAGES[currentIndex].label 
+    : "已完成";
 
   // 3. 计算总体进度
-  const progressValue = Math.round(
-    ((currentIndex + 1) / RENOVATION_STAGES.length) * 100
-  );
+  // 如果已经完成，进度定死 100%
+  const progressValue = currentIndex >= RENOVATION_STAGES.length
+    ? 100
+    : Math.round(((currentIndex + 1) / RENOVATION_STAGES.length) * 100);
 
   // 4. [关键修改] 异步获取照片总数
   useEffect(() => {

@@ -84,6 +84,7 @@ class ProjectUpdate(BaseModel):
     client_agent: Optional[str] = Field(None, max_length=100)
     first_viewer: Optional[str] = Field(None, max_length=100)
     list_price: Optional[Decimal] = Field(None)
+    listing_date: Optional[datetime] = Field(None, description="上架日期")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,6 +102,7 @@ class ProjectResponse(ProjectBase):
     renovation_stage: Optional[str] = None
     status_changed_at: Optional[datetime] = None
     stage_completed_at: Optional[datetime] = None
+    listing_date: Optional[datetime] = None
     sold_at: Optional[datetime] = None
     
     # [冗余声明] 确保净现金流一定存在，虽然父类有，这里覆盖也没问题
@@ -148,3 +150,4 @@ class ProjectStatsResponse(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: ProjectStatus
+    listing_date: Optional[datetime] = Field(None, description="上架日期")

@@ -82,15 +82,18 @@ export async function deleteProjectAction(id: string) {
  */
 export async function updateProjectStatusAction(
   projectId: string,
-  status: string
+  status: string,
+  listingDate?: string
 ) {
   try {
     const client = await fetchClient();
 
     const { error } = await client.PUT("/api/v1/projects/{project_id}/status", {
       params: { path: { project_id: projectId } },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      body: { status: status as any },
+      body: { 
+        status: status as components["schemas"]["ProjectStatus"],
+        listing_date: listingDate
+      },
     });
 
     if (error) {
