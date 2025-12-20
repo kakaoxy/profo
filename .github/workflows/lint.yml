@@ -1,25 +1,43 @@
+name: Lint Check (Frontend)
+
+on:
+  push:
+    branches: [main, master] # 根据你的主分支调整
+  pull_request:
+    branches: [main, master]
+
 jobs:
-  lint:
+  lint-frontend:
     runs-on: ubuntu-latest
+
+    # 可选：只在 frontend 目录有文件变更时才运行，提高效率
+    # 如果不需要这个优化，可以删除下面的 if 条件
+    if: |
+      contains(github.event.commits.*.modified.*, 'frontend/') ||
+      contains(github.event.commits.*.added.*, 'frontend/') ||
+      contains(github.event.commits.*.removed.*, 'frontend/') ||
+      github.event_name == 'pull_request'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 方案一：推荐。在 Setup Node 之前安装 pnpm 以便支持缓存逻辑
       - name: Install pnpm
-        run: npm install -g pnpm@10
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20" # 根据你的 frontend 项目调整
           cache: "pnpm"
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: frontend/pnpm-lock.yaml # 关键：指定 frontend 的 lockfile
 
-      - name: Install dependencies
-        run: pnpm install
-        working-directory: ./frontend
+      - name: Install dependencies (frontend)
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend # 在 frontend 目录下执行安装
 
-      - name: Run ESLint
+      - name: Run lint (frontend)
         run: pnpm run lint
-        working-directory: ./frontend
+        working-directory: frontend # 只在 frontend 目录运行 lint
