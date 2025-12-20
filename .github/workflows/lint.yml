@@ -9,25 +9,21 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # 👈 升级到 Node 20（Next.js 16 要求）
-          cache: "pnpm" # 👈 缓存 pnpm 依赖
+          node-version: 20
+          cache: "pnpm"
           cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Install dependencies in frontend
-        run: pnpm install
+      - name: Install deps and run lint
         working-directory: ./frontend
-
-      - name: Run ESLint
-        run: pnpm run lint
-        working-directory: ./frontend
+        run: |
+          pnpm install
+          pnpm run lint   # 现在会正确执行 eslint src ...
