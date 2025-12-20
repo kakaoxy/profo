@@ -111,13 +111,7 @@ class ProjectCoreService:
     def get_projects(self, status_filter: Optional[str] = None,
                     community_name: Optional[str] = None,
                     page: int = 1, page_size: int = 50) -> Dict[str, Any]:
-        """
-        获取项目列表 
-        [终极性能版] 
-        1. Defer 大文本字段
-        2. Noload 关联关系 (解决 N+1 问题)
-        """
-        
+
         # 1. 基础查询构造
         query = self.db.query(Project)
 
@@ -163,7 +157,7 @@ class ProjectCoreService:
 
     def update_project(self, project_id: str, update_data: ProjectUpdate) -> Project:
         """更新项目信息"""
-        project = self._get_project(project_id)
+        project = self.db.query(Project).filter(Project.id == project_id).first()
 
         # 更新字段
         update_dict = update_data.model_dump(exclude_unset=True)
@@ -175,7 +169,7 @@ class ProjectCoreService:
                 'channelManager', 'presenter', 'negotiator',
                 'viewingRecords', 'offerRecords', 'negotiationRecords',
                 'property_agent', 'client_agent', 'first_viewer',
-                'list_price'
+                'list_price','signing_materials', 'owner_info', 'otherAgreements', 'notes'
             }
             
             # 过滤掉不允许修改的字段
@@ -204,7 +198,13 @@ class ProjectCoreService:
 
     def update_status(self, project_id: str, status_update: StatusUpdate) -> Project:
         """更新项目状态"""
-        project = self._get_project(project_id)
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="项目不存在"
+            )
         new_status = status_update.status.value
         current_status = project.status
 
