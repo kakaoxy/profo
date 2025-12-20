@@ -120,8 +120,8 @@ export function SoldHeader({
             🎉 已售罄 (Sold)
           </Badge>
           <span className="text-xs text-slate-400 font-mono">
-            结案日期:{" "}
-            {project.sold_date ? project.sold_date.split("T")[0] : "-"}
+            成交日期:{" "}
+            {(project.soldDate || project.sold_at || project.sold_date)?.split("T")[0] || "-"}
           </span>
         </div>
       </div>
