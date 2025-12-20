@@ -57,6 +57,8 @@ class CashFlowSummary(BaseModel):
     total_expense: Decimal
     net_cash_flow: Decimal
     roi: float
+    annualized_return: float = 0.0
+    holding_days: int = 0
     model_config = ConfigDict(from_attributes=True)
 
 class CashFlowResponse(BaseModel):

@@ -80,7 +80,7 @@ export function SummaryReport({ project }: { project: Project }) {
       <CardHeader>
         <CardTitle className="text-base font-medium flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Quote className="h-4 w-4 text-emerald-400" />
+            <Quote className="h-4 w-4 text-red-400" />
             项目总结 (Summary)
           </span>
           <Badge variant="outline" className={`border-0 ${tagColor}`}>
@@ -102,7 +102,7 @@ export function SummaryReport({ project }: { project: Project }) {
           最终实现净利润{" "}
           <span
             className={`font-bold font-mono text-lg ${
-              netProfit >= 0 ? "text-emerald-400" : "text-red-400"
+              netProfit >= 0 ? "text-red-400" : "text-red-400"
             }`}
           >
             {netProfit >= 0 ? "+" : ""}¥{(netProfit / 10000).toFixed(2)}万

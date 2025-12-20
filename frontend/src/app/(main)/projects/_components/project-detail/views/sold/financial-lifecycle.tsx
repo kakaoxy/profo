@@ -1,6 +1,6 @@
 "use client";
 
-import { differenceInDays, parseISO, isValid, addDays, format } from "date-fns";
+import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Project } from "../../../../types";
@@ -14,27 +14,34 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   const soldPrice = Number(project.sold_price || project.soldPrice || 0);
 
   // 计算关键日期
-  const signingDate = project.signing_date ? parseISO(project.signing_date) : null;
-  const handoverDate = project.planned_handover_date ? parseISO(project.planned_handover_date) : null;
-  const listingDate = handoverDate ? addDays(handoverDate, 65) : null;
-  const soldDate = project.sold_at
-    ? parseISO(project.sold_at)
-    : project.sold_date
-    ? parseISO(project.sold_date)
-    : null;
+  // [修复] 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
+  const rawStartDate = project.signing_date || project.signingDate || project.created_at;
+  const signingDate = rawStartDate ? parseISO(rawStartDate) : null;
+  
+  const rawHandoverDate = project.planned_handover_date || project.plannedHandoverDate;
+  const handoverDate = rawHandoverDate ? parseISO(rawHandoverDate) : null;
+  
+  // [修复] 使用真实上架日期，不再硬编码 +65 天
+  const listingDate = project.listing_date ? parseISO(project.listing_date) : null;
+  
+  const rawSoldDate = project.soldDate || project.sold_at || project.sold_date;
+  const soldDate = rawSoldDate ? parseISO(rawSoldDate) : null;
 
-  // 计算资金占用周期 (成交 - 签约)
+  // 计算资金占用周期
   let occupationDays = 0;
-  if (signingDate && soldDate && isValid(signingDate) && isValid(soldDate)) {
-    occupationDays = differenceInDays(soldDate, signingDate);
+  if (signingDate && isValid(signingDate)) {
+    // 如果已售取成交日期，未售取今天
+    const end = (soldDate && isValid(soldDate)) ? soldDate : new Date();
+    // 统一逻辑：差值天数，保底 0
+    occupationDays = Math.max(0, differenceInDays(end, signingDate));
   }
 
   const formatNodeDate = (date: Date | null) => (date && isValid(date) ? format(date, "MM/dd") : "--/--");
 
   const steps = [
     { label: "签约", date: signingDate },
-    { label: "开工", date: handoverDate }, // 开工取交房时间
-    { label: "上架", date: listingDate }, // 上架取交房+65天
+    { label: "开工", date: handoverDate },
+    { label: "上架", date: listingDate },
     { label: "售出", date: soldDate },
   ];
 
@@ -61,12 +68,12 @@ export function FinancialLifecycle({ project }: { project: Project }) {
           <div className="px-8 flex flex-col justify-center">
             <span className="text-sm text-slate-500 mb-1">累计回款 (实收)</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-emerald-600 font-mono">
+              <span className="text-2xl font-bold text-red-600 font-mono">
                 ¥{(totalIncome / 10000).toFixed(1)}
               </span>
-              <span className="text-sm font-bold text-emerald-600">万</span>
+              <span className="text-sm font-bold text-red-600">万</span>
             </div>
-            <span className="text-xs text-emerald-600/60 mt-1 font-medium">
+            <span className="text-xs text-red-600/60 mt-1 font-medium">
               款项已全部结清
             </span>
           </div>
