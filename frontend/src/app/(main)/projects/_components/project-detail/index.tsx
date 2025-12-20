@@ -192,6 +192,9 @@ export function ProjectDetailSheet({
   };
 
   const isSoldMode = viewMode === "sold";
+  const viewKey = `${project?.id}-${JSON.stringify(
+    project?.signing_materials || ""
+  )}-${project?.updated_at}`;
 
   return (
     <>
@@ -218,6 +221,7 @@ export function ProjectDetailSheet({
                 setViewMode={handleViewModeChange}
                 currentProjectStageIndex={currentProjectStageIndex}
                 onClose={onClose}
+                onRefresh={refreshProjectData}
               />
               <div
                 className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
@@ -225,12 +229,14 @@ export function ProjectDetailSheet({
               >
                 {viewMode === "renovation" && (
                   <RenovationView
+                    key={viewKey}
                     project={project}
                     onRefresh={refreshProjectData}
                   />
                 )}
                 {viewMode === "selling" && (
                   <SellingView
+                    key={viewKey}
                     project={project}
                     onRefresh={refreshProjectData}
                   />
@@ -238,6 +244,7 @@ export function ProjectDetailSheet({
                 {(viewMode === "signing" ||
                   !["renovation", "selling"].includes(viewMode)) && (
                   <DefaultView
+                    key={viewKey}
                     project={project}
                     attachments={attachments}
                     handlers={handlers}

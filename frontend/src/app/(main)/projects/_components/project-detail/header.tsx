@@ -26,7 +26,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-// [修复] 移除了未使用的 Badge 引用
 import {
   Pencil,
   Trash2,
@@ -51,6 +50,8 @@ interface HeaderProps {
   setViewMode: (mode: ViewMode) => void;
   currentProjectStageIndex: number;
   onClose: () => void;
+  // [新增] 用于强制刷新完整数据的回调
+  onRefresh?: (isFull?: boolean) => Promise<void>;
 }
 
 export function ProjectDetailHeader({
@@ -59,9 +60,36 @@ export function ProjectDetailHeader({
   setViewMode,
   currentProjectStageIndex,
   onClose,
+  onRefresh,
 }: HeaderProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // [新增] 编辑前加载完整数据的 Loading 状态
+  const [isLoadingFullData, setIsLoadingFullData] = useState(false);
+
+  // [新增] 处理编辑点击：先拉取完整数据，再打开窗口
+  const handleEditClick = async () => {
+    if (!onRefresh) {
+      // 如果没有提供刷新方法，直接打开（兜底）
+      setIsEditOpen(true);
+      return;
+    }
+
+    try {
+      setIsLoadingFullData(true);
+      // 1. 强制请求 full=true 的数据 (包含 signing_materials 等大字段)
+      await onRefresh(true);
+
+      // 2. 数据更新完毕后，project prop 会自动更新，此时再打开弹窗
+      setIsEditOpen(true);
+    } catch (error) {
+      console.error("Failed to load full project data", error);
+      toast.error("加载项目数据失败，请重试");
+    } finally {
+      setIsLoadingFullData(false);
+    }
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -79,6 +107,9 @@ export function ProjectDetailHeader({
       setIsDeleting(false);
     }
   };
+  const formKey = `${project.id}-${project.updated_at}-${
+    project.signing_materials ? "loaded" : "empty"
+  }`;
 
   return (
     <SheetHeader className="px-6 py-4 border-b sticky top-0 bg-background z-10 shrink-0">
@@ -94,13 +125,13 @@ export function ProjectDetailHeader({
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    // 1. 基础布局与交互样式 (模仿 Shadcn Button)
+                    // 1. 基础布局与交互样式
                     "inline-flex items-center justify-center rounded-full text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
                     // 2. 尺寸与边距
                     "h-6 px-3 shadow-sm",
                     // 3. 动态颜色 (背景色)
                     getStatusColor(project.status),
-                    // 4. 强制字体颜色 & Hover 效果 (使用透明度变化，而不是改背景色，这样适配所有颜色的按钮)
+                    // 4. 强制字体颜色 & Hover 效果
                     "text-white border-0 hover:opacity-85 hover:shadow-md active:scale-95"
                   )}
                 >
@@ -153,21 +184,33 @@ export function ProjectDetailHeader({
         {/* 操作按钮 (非装修视图显示) */}
         {viewMode !== "renovation" && (
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditClick}
+              disabled={isLoadingFullData}
+            >
+              {isLoadingFullData ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Pencil className="mr-2 h-4 w-4" />
+              )}
+              编辑
+            </Button>
+
+            {/* 2. 编辑弹窗 */}
             <ProjectFormDialog
+              key={formKey}
               project={project}
               open={isEditOpen}
               onOpenChange={setIsEditOpen}
-              trigger={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditOpen(true)}
-                >
-                  <Pencil className="mr-2 h-4 w-4" />
-                  编辑
-                </Button>
-              }
-              onSuccess={() => setIsEditOpen(false)}
+              onSuccess={async () => {
+                setIsEditOpen(false);
+                if (onRefresh) {
+                  await onRefresh(true);
+                }
+              }}
+              trigger={<span className="hidden" />}
             />
 
             <AlertDialog>
