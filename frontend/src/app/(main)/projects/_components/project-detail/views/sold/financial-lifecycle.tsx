@@ -1,97 +1,132 @@
 "use client";
 
-import { differenceInDays, parseISO, isValid } from "date-fns";
+import { differenceInDays, parseISO, isValid, addDays, format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Project } from "../../../../types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function FinancialLifecycle({ project }: { project: Project }) {
   // [优化] 直接读取缓存字段
   const totalInvestment = Number(project.total_expense) || 0;
   const totalIncome = Number(project.total_income) || 0;
+  const listPrice = Number(project.list_price || project.listing_price || 0);
+  const soldPrice = Number(project.sold_price || project.soldPrice || 0);
 
-  // 资金回笼率 = (总回款 / 总投入) * 100
-  const returnRate =
-    totalInvestment > 0 ? (totalIncome / totalInvestment) * 100 : 0;
+  // 计算关键日期
+  const signingDate = project.signing_date ? parseISO(project.signing_date) : null;
+  const handoverDate = project.planned_handover_date ? parseISO(project.planned_handover_date) : null;
+  const listingDate = handoverDate ? addDays(handoverDate, 65) : null;
+  const soldDate = project.sold_at
+    ? parseISO(project.sold_at)
+    : project.sold_date
+    ? parseISO(project.sold_date)
+    : null;
 
-  // 优先使用后端返回的 soldPrice (Number 类型)，如果没有则尝试从字符串转换
-  const soldPrice = Number(project.soldPrice) || 0;
-
-  // 计算持有天数
-  let daysHeld = 0;
-  if (project.created_at && project.sold_at) {
-    const start = parseISO(project.created_at as unknown as string);
-    const end = parseISO(project.sold_at as unknown as string);
-    if (isValid(start) && isValid(end)) {
-      daysHeld = differenceInDays(end, start);
-    }
+  // 计算资金占用周期 (成交 - 签约)
+  let occupationDays = 0;
+  if (signingDate && soldDate && isValid(signingDate) && isValid(soldDate)) {
+    occupationDays = differenceInDays(soldDate, signingDate);
   }
 
+  const formatNodeDate = (date: Date | null) => (date && isValid(date) ? format(date, "MM/dd") : "--/--");
+
+  const steps = [
+    { label: "签约", date: signingDate },
+    { label: "开工", date: handoverDate }, // 开工取交房时间
+    { label: "上架", date: listingDate }, // 上架取交房+65天
+    { label: "售出", date: soldDate },
+  ];
+
   return (
-    <Card className="mt-6 shadow-sm border-slate-200">
+    <Card className="mt-6 shadow-sm border-slate-200 overflow-hidden">
       <CardContent className="p-0">
+        {/* 上半部分：资金构成 */}
         <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 py-6">
-          {/* Col 1: 合同价 */}
-          <div className="px-6 flex flex-col gap-1">
-            <span className="text-sm text-slate-500">合同成交价</span>
-            <span className="text-2xl font-bold text-slate-900 font-mono">
-              ¥{soldPrice.toLocaleString()}万
-            </span>
-            <span className="text-xs text-slate-400">
-              挂牌价 ¥{Number(project.list_price || 0).toLocaleString()}万
+          {/* Col 1: 成交总价 */}
+          <div className="px-8 flex flex-col justify-center">
+            <span className="text-sm text-slate-500 mb-1">成交总价</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-slate-900 font-mono">
+                ¥{soldPrice.toFixed(1)}
+              </span>
+              <span className="text-sm font-bold text-slate-900">万</span>
+            </div>
+            <span className="text-xs text-slate-400 mt-1">
+              挂牌 ¥{listPrice.toFixed(1)}万
             </span>
           </div>
 
           {/* Col 2: 累计回款 */}
-          <div className="px-6 flex flex-col gap-1 pt-4 md:pt-0">
-            <span className="text-sm text-slate-500">累计回款 (实收)</span>
-            <span className="text-2xl font-bold text-emerald-600 font-mono">
-              ¥{(totalIncome / 10000).toFixed(2)}万
-            </span>
-            <span className="text-xs text-emerald-600/60">
-              资金回笼率 {returnRate.toFixed(0)}%
+          <div className="px-8 flex flex-col justify-center">
+            <span className="text-sm text-slate-500 mb-1">累计回款 (实收)</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold text-emerald-600 font-mono">
+                ¥{(totalIncome / 10000).toFixed(1)}
+              </span>
+              <span className="text-sm font-bold text-emerald-600">万</span>
+            </div>
+            <span className="text-xs text-emerald-600/60 mt-1 font-medium">
+              款项已全部结清
             </span>
           </div>
 
           {/* Col 3: 累计投入 */}
-          <div className="px-6 flex flex-col gap-1 pt-4 md:pt-0">
-            <span className="text-sm text-slate-500">累计投入 (实付)</span>
-            <span className="text-2xl font-bold text-red-500 font-mono">
-              ¥{(totalInvestment / 10000).toFixed(2)}万
-            </span>
-            <span className="text-xs text-slate-400">全周期总支出</span>
-          </div>
+          <TooltipProvider>
+            <div className="px-8 flex flex-col justify-center">
+              <span className="text-sm text-slate-500 mb-1">累计投入 (实付)</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-baseline gap-1 cursor-help">
+                    <span className="text-2xl font-bold text-red-500 font-mono">
+                      ¥{(totalInvestment / 10000).toFixed(1)}
+                    </span>
+                    <span className="text-sm font-bold text-red-500">万</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>含收房、装修、持有成本等全周期支出</p>
+                </TooltipContent>
+              </Tooltip>
+              <span className="text-xs text-slate-400 mt-1">
+                包含所有财务支出明细
+              </span>
+            </div>
+          </TooltipProvider>
         </div>
 
         <Separator />
 
-        <div className="flex flex-col md:flex-row items-center justify-between p-6 gap-6 md:gap-0">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-1 bg-slate-900 rounded-full" />
-            <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
-                Project Duration
-              </p>
-              <p className="text-sm font-medium text-slate-700">
-                项目总周期{" "}
-                <span className="text-slate-900 font-bold">{daysHeld}</span> 天
-              </p>
+        {/* 下半部分：全周期时间轴 */}
+        <div className="flex flex-col md:flex-row items-center justify-between py-8 px-8 gap-8">
+          {/* 可视化组件 (Stepper) */}
+          <div className="flex-1 w-full max-w-2xl relative">
+            <div className="flex items-center justify-between relative">
+              {/* 背景线 */}
+              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+              
+              {steps.map((step, idx) => (
+                <div key={idx} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                  <span className="text-[10px] font-mono font-medium text-slate-400">
+                    {formatNodeDate(step.date)}
+                  </span>
+                  <div className={`h-3 w-3 rounded-full border-2 ${step.date ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`} />
+                  <span className="text-xs font-bold text-slate-600">
+                    {step.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 进度条可视化 (时间轴) */}
-          <div className="flex-1 max-w-md w-full px-4">
-            <div className="relative pt-1">
-              <div className="overflow-hidden h-2 text-xs flex rounded bg-slate-100">
-                <div
-                  style={{ width: "100%" }}
-                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-slate-300"
-                ></div>
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                <span>SIGNING</span>
-                <span>SOLD</span>
-              </div>
+          {/* 关键指标 (右侧) */}
+          <div className="flex flex-col items-end border-l border-slate-100 pl-8 md:min-w-[140px]">
+            <span className="text-xs text-slate-500 font-medium mb-1">资金占用周期</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-mono font-bold text-foreground">
+                {occupationDays}
+              </span>
+              <span className="text-sm font-bold text-slate-600">天</span>
             </div>
           </div>
         </div>
