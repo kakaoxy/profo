@@ -1430,13 +1430,13 @@ export interface components {
          * @description 确认成交请求
          */
         ProjectCompleteRequest: {
-            /** Sold Price */
-            sold_price: number | string;
+            /** Soldprice */
+            soldPrice: number | string;
             /**
-             * Sold Date
+             * Solddate
              * Format: date-time
              */
-            sold_date: string;
+            soldDate: string;
         };
         /**
          * ProjectCreate
