@@ -34,7 +34,7 @@ export function SoldView({
 
       {/* 2. 滚动内容区域 */}
       <ScrollArea className="flex-1">
-        <div className="max-w-5xl mx-auto p-6 md:p-8 space-y-2">
+        <div className="max-w-5xl mx-auto px-6 py-2 md:px-6 md:py-2 space-y-2">
           <HeroMetrics project={project} />
 
           <FinancialLifecycle project={project} />
