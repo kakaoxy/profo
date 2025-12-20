@@ -71,18 +71,16 @@ export function InfoTab({ project }: InfoTabProps) {
         <InfoItem
           label="现金流"
           value={
-            (project.netCashFlow ?? project.net_cash_flow) !== undefined ? (
+            project.net_cash_flow !== undefined ? (
               <span
                 className={cn(
                   "font-bold font-mono",
-                  (project.netCashFlow ?? project.net_cash_flow ?? 0) >= 0
+                  (project.net_cash_flow ?? 0) >= 0
                     ? "text-green-600"
                     : "text-red-500"
                 )}
               >
-                {formatPrice(
-                  ((project.netCashFlow ?? project.net_cash_flow) || 0) / 10000
-                )}
+                {formatPrice((project.net_cash_flow || 0) / 10000)}
               </span>
             ) : undefined
           }

@@ -6,7 +6,9 @@ import { redirect } from "next/navigation";
 // 定义登录接口返回的结构
 interface LoginResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
+  expires_in: number;
   // 有些后端会在 403 时返回 payload，这里预留类型
   detail?: string; 
 }
@@ -89,17 +91,28 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
 
     const data: LoginResponse = await response.json();
 
-    // 3. 写入 Cookie
+    // 3. 写入 Cookies (access_token 和 refresh_token)
     const cookieStore = await cookies();
+    
+    // Access Token: 有效期与后端返回的 expires_in 一致 (通常 600 分钟)
     cookieStore.set("access_token", data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, 
+      maxAge: data.expires_in, // 使用后端返回的实际过期秒数
       sameSite: "lax",
     });
 
-    console.log("✅ [登录成功] Token 已写入 Cookie");
+    // Refresh Token: 有效期 7 天 (与后端 jwt_refresh_token_expire_days 一致)
+    cookieStore.set("refresh_token", data.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: "lax",
+    });
+
+    console.log("✅ [登录成功] access_token 和 refresh_token 已写入 Cookie");
 
   } catch (error) {
     console.error("登录异常:", error);
@@ -175,5 +188,6 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
 export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete("access_token");
+  cookieStore.delete("refresh_token");
   redirect("/login");
 }
