@@ -65,10 +65,12 @@ async def get_project_stats(
 @router.get("/{project_id}")
 async def get_project(
     project_id: str = Path(..., description="项目ID"),
+    full: bool = Query(False, description="是否获取完整详情(包含大字段)"), # [新增]
     service: ProjectService = Depends(get_project_service)
 ):
     """获取项目详情"""
-    project = service.get_project(project_id)
+    # 传递 full 参数给 service
+    project = service.get_project(project_id, include_all=full)
     return {"code": 200, "msg": "success", "data": project}
 
 
@@ -81,6 +83,16 @@ async def update_project(
     """更新项目信息（仅签约阶段可修改）"""
     project = service.update_project(project_id, update_data)
     return {"code": 200, "msg": "success", "data": project}
+
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: str = Path(..., description="项目ID"),
+    service: ProjectService = Depends(get_project_service)
+):
+    """删除项目（软删除）"""
+    service.delete_project(project_id)
+    return {"code": 200, "msg": "success", "data": None}
 
 
 # ========== 项目状态流转 ==========
@@ -143,6 +155,16 @@ async def get_renovation_photos(
     """获取改造阶段照片"""
     photos = service.get_renovation_photos(project_id, stage)
     return {"code": 200, "msg": "success", "data": photos}
+
+@router.delete("/{project_id}/renovation/photos/{photo_id}")
+async def delete_renovation_photo(
+    project_id: str = Path(..., description="项目ID"),
+    photo_id: str = Path(..., description="照片ID"),
+    service: ProjectService = Depends(get_project_service)
+):
+    """删除改造阶段照片"""
+    service.delete_renovation_photo(project_id, photo_id)
+    return {"code": 200, "msg": "success", "data": None}
 
 
 # ========== 在售阶段管理 ==========

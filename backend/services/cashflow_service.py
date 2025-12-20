@@ -1,4 +1,5 @@
 """
+backend/services/cashflow_service.py
 现金流业务逻辑服务
 """
 from typing import Optional, List, Dict, Any
@@ -12,6 +13,9 @@ import logging
 from models import CashFlowRecord, Project
 from models.base import CashFlowType, CashFlowCategory
 
+# [新增] 引入负责计算财务数据的服务
+from services.project_finance import ProjectFinanceService
+
 # 配置日志记录
 logger = logging.getLogger(__name__)
 
@@ -21,6 +25,8 @@ class CashFlowService:
 
     def __init__(self, db: Session):
         self.db = db
+        # [新增] 初始化财务服务实例
+        self.finance_service = ProjectFinanceService(db)
 
     def create_cashflow_record(self, project_id: str, record_data) -> CashFlowRecord:
         """创建现金流记录"""
@@ -56,6 +62,15 @@ class CashFlowService:
         self.db.commit()
         self.db.refresh(record)
         
+        # [关键修复] 创建成功后，触发财务数据同步计算
+        # 这会更新 Project 表的 total_income, net_cash_flow 等字段
+        try:
+            self.finance_service.sync_project_financials(project_id)
+            logger.info(f"Project financials synced for project {project_id}")
+        except Exception as e:
+            # 同步失败不应影响记录创建，记录日志即可
+            logger.error(f"Failed to sync project financials: {str(e)}")
+
         logger.info(f"Cashflow record created successfully: {record.id}")
         return record
 
@@ -94,10 +109,19 @@ class CashFlowService:
         self.db.delete(record)
         self.db.commit()
         
+        # [关键修复] 删除成功后，触发财务数据同步计算
+        try:
+            self.finance_service.sync_project_financials(project_id)
+            logger.info(f"Project financials synced for project {project_id}")
+        except Exception as e:
+            logger.error(f"Failed to sync project financials: {str(e)}")
+        
         logger.info(f"Cashflow record deleted successfully: {record_id}")
 
     def get_cashflow_summary(self, project_id: str) -> Dict[str, Any]:
-        """获取现金流汇总"""
+        """
+        获取现金流汇总
+        """
         logger.info(f"Getting cashflow summary for project {project_id}")
         
         try:
@@ -120,17 +144,14 @@ class CashFlowService:
             total_expense = result.total_expense or Decimal('0')
             net_cash_flow = total_income - total_expense
             
-            # 使用Decimal进行精确计算，避免浮点数精度问题
             roi = (net_cash_flow / total_expense) if total_expense > 0 else Decimal('0.0')
-            
-            # 保留两位小数
             roi = roi.quantize(Decimal('0.00'))
 
             summary = {
                 "total_income": total_income,
                 "total_expense": total_expense,
                 "net_cash_flow": net_cash_flow,
-                "roi": float(roi)  # 转换为float返回给前端，但内部计算使用Decimal确保精度
+                "roi": float(roi) 
             }
             
             logger.info(f"Cashflow summary calculated for project {project_id}: {summary}")

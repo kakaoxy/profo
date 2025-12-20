@@ -39,6 +39,7 @@ class ProjectStatus(str, enum.Enum):
     RENOVATING = "renovating"  # 改造阶段
     SELLING = "selling"      # 在售阶段
     SOLD = "sold"           # 已售阶段
+    DELETED = "deleted"     # 已删除
 
 
 class RenovationStage(str, enum.Enum):
