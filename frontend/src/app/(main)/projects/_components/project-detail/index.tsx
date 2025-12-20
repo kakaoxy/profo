@@ -74,7 +74,6 @@ export function ProjectDetailSheet({
             return {
               ...prev,
               ...res.data,
-              renovation_photos: prev.renovation_photos,
             } as Project;
           });
         }
@@ -88,46 +87,11 @@ export function ProjectDetailSheet({
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
 
-    // 如果切换到"签约"视图，且当前项目没有签约材料 (说明可能是一个已售项目，数据被阉割了)
-    if (mode === "signing" && !project?.signing_materials) {
-      // 强制拉取完整数据
+    // 如果切换到"签约"或"已售"视图，强制拉取完整数据
+    if ((mode === "signing" && !project?.signing_materials) || mode === "sold") {
       refreshProjectData(true);
     }
   };
-
-  // [极速版] 只需获取照片，财务数据已在 project 对象中
-  const fetchSoldViewData = useCallback(async () => {
-    if (!project?.id) return;
-
-    const currentId = project.id;
-
-    try {
-      // 只请求照片
-      const photosRes = await fetch(
-        `/api/v1/projects/${currentId}/renovation/photos`
-      );
-
-      let photosData = { data: [] };
-      if (photosRes.ok) {
-        photosData = await photosRes.json();
-      } else if (photosRes.status !== 404) {
-        // 404 是正常的（无照片），其他错误才打印
-        console.warn("Fetch photos failed:", photosRes.status);
-      }
-
-      setProject((prev) => {
-        if (!prev || prev.id !== currentId) return prev;
-
-        return {
-          ...prev,
-          // 更新照片数据
-          renovation_photos: photosData?.data || prev.renovation_photos || [],
-        };
-      });
-    } catch (error) {
-      console.error("Failed to fetch photos:", error);
-    }
-  }, [project?.id]);
 
   const handleHandoverSuccess = async () => {
     router.refresh();
@@ -148,12 +112,8 @@ export function ProjectDetailSheet({
         setViewMode(targetMode);
       }
 
-      refreshProjectData();
-
-      // 进入已售视图时，加载照片
-      if (targetMode === "sold") {
-        fetchSoldViewData();
-      }
+      // 关键逻辑：如果初始状态就是 sold，直接加载 full 数据
+      refreshProjectData(targetMode === "sold");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, project?.id, project?.status]);

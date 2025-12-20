@@ -1,123 +1,211 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Quote, ImageIcon } from "lucide-react";
+import { Quote, ImageIcon, Copy, Check } from "lucide-react";
 import { Project } from "../../../../types";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RENOVATION_STAGES } from "../../constants";
+import { cn } from "@/lib/utils";
+import { differenceInDays, parseISO, format } from "date-fns";
+import { getFileUrl } from "../../utils";
 
-// VisualJourney 组件保持不变...
 export function VisualJourney({ project }: { project: Project }) {
   const photos = project.renovation_photos || [];
-  const displayPhotos = photos.slice(0, 4);
+  const stageDates = project.renovationStageDates || {};
+
+  // 按阶段分组照片
+  const groupedPhotos = RENOVATION_STAGES.map((stage) => {
+    const stagePhotos = photos.filter(
+      (p) => p.stage === stage.value || p.stage === stage.key
+    );
+    const date = stageDates[stage.value];
+    return {
+      ...stage,
+      photos: stagePhotos,
+      date: date || null,
+    };
+  }).filter((s) => s.photos.length > 0);
+
+  const totalPhotos = photos.length;
 
   return (
-    <Card className="h-full border-slate-200 shadow-sm flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-base font-medium flex items-center gap-2">
+    <Card className="border-slate-200 shadow-sm flex flex-col overflow-hidden">
+      <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-slate-500" />
-          视觉回顾 (Visual Journey)
+          项目蜕变影像 (Visual Journey)
         </CardTitle>
+        <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+          📸 全生命周期影像记录 (共 {totalPhotos} 张)
+        </span>
       </CardHeader>
-      <CardContent className="flex-1">
-        {displayPhotos.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 h-full">
-            {displayPhotos.map((photo, index) => (
-              <div
-                key={photo.id || index}
-                className="relative aspect-square rounded-md overflow-hidden bg-slate-100 group"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.url}
-                  alt={photo.description || "Project photo"}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                {photo.stage && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-2 py-1 truncate">
-                    {photo.stage}
+      <CardContent className="p-0">
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex p-6 gap-6">
+            {groupedPhotos.length > 0 ? (
+              groupedPhotos.map((stage, idx) => (
+                <div key={stage.key} className="flex-none w-[200px] group">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-slate-100">
+                        <AspectRatio ratio={4 / 3}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={getFileUrl(stage.photos[0].url)}
+                            alt={stage.label}
+                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                          />
+                        </AspectRatio>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                          <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
+                            {stage.photos.length} 张
+                          </Badge>
+                        </div>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl p-0 bg-black/90 border-0 overflow-hidden">
+                      <DialogHeader className="sr-only">
+                        <DialogTitle>{stage.label} 影像记录</DialogTitle>
+                        <DialogDescription>
+                          正在查看 {stage.label} 阶段的照片背景。
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[80vh]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                          {stage.photos.map((p, i) => (
+                            <div key={i} className="relative aspect-video rounded-lg overflow-hidden">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={getFileUrl(p.url)} className="object-contain w-full h-full" alt="" />
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <div className="mt-4 space-y-1 pl-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+                      <span className="text-sm font-bold text-slate-700">
+                        {idx + 1}. {stage.value}{stage.label.includes("阶段") ? "" : "阶段"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-mono text-slate-400 pl-3">
+                      ({stage.date ? format(parseISO(stage.date), "MM/dd") : "--/--"})
+                    </p>
                   </div>
-                )}
+                </div>
+              ))
+            ) : (
+              <div className="w-full py-12 flex flex-col items-center justify-center text-slate-400">
+                <ImageIcon className="h-8 w-8 mb-2 opacity-30" />
+                <span className="text-xs">暂无影像记录</span>
               </div>
-            ))}
+            )}
           </div>
-        ) : (
-          <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-            <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
-            <span className="text-xs">暂无影像记录</span>
-          </div>
-        )}
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </CardContent>
     </Card>
   );
 }
 
-// SummaryReport 组件
 export function SummaryReport({ project }: { project: Project }) {
+  const [copied, setCopied] = useState(false);
+
   const netProfit = Number(project.net_cash_flow) || 0;
   const roi = Number(project.roi) || 0;
   const totalInvestment = Number(project.total_expense) || 0;
-
-  // [修复 3] 移除了未使用的 'duration' 变量
-  // const duration = project.signing_period || 0;
-
-  let performanceTag = "稳健收益";
-  let tagColor = "bg-blue-100 text-blue-700";
-
-  if (roi >= 20) {
-    performanceTag = "超额收益 🚀";
-    tagColor = "bg-red-100 text-red-700";
-  } else if (roi >= 10) {
-    performanceTag = "优质资产 🌟";
-    tagColor = "bg-amber-100 text-amber-700";
-  } else if (roi < 0) {
-    performanceTag = "亏损警示 ⚠️";
-    tagColor = "bg-slate-100 text-slate-700";
+  
+  const signingDate = (project.signing_date || project.signingDate || project.created_at);
+  const soldDateStr = (project.soldDate || project.sold_at || project.sold_date);
+  
+  let occupationDays = 0;
+  if (signingDate) {
+    const start = parseISO(signingDate);
+    const end = soldDateStr ? parseISO(soldDateStr) : new Date();
+    occupationDays = Math.max(0, differenceInDays(end, start));
   }
 
+  const formatSimpleDate = (dStr: string | null | undefined) => {
+    if (!dStr) return "--";
+    try {
+      return format(parseISO(dStr), "yyyy/MM/dd");
+    } catch {
+      return "--";
+    }
+  };
+
+  const reportContent = `【项目结案喜报】🎉
+--------------------------------
+🏠 项目：${project.name}
+📍 地址：${project.address || project.community_name || "--"}
+
+💰 财务复盘
+• 成交价格：¥${Number(project.soldPrice || project.sold_price || 0).toFixed(1)} 万
+• 投资总额：¥${(totalInvestment / 10000).toFixed(1)} 万
+• 净 利 润：${netProfit >= 0 ? "+" : ""}¥${(netProfit / 10000).toFixed(1)} 万 
+• 投资回报：${roi.toFixed(1)}% (ROI)
+
+⏱ 项目周期
+• 拿房日期：${formatSimpleDate(signingDate)}
+• 售出日期：${formatSimpleDate(soldDateStr)}
+• 历时天数：${occupationDays} 天
+
+📸 影像记录：已归档 ${project.renovation_photos?.length || 0} 张
+
+感谢团队的辛勤付出！🚀`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(reportContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <Card className="h-full bg-slate-900 text-white border-0 shadow-md">
-      {/* 保持原有的 JSX 内容不变 */}
-      <CardHeader>
-        <CardTitle className="text-base font-medium flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Quote className="h-4 w-4 text-red-400" />
-            项目总结 (Summary)
-          </span>
-          <Badge variant="outline" className={`border-0 ${tagColor}`}>
-            {performanceTag}
-          </Badge>
+    <Card className="border-slate-200 shadow-sm flex flex-col h-full bg-slate-50/50">
+      <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+        <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-700">
+          <Quote className="h-4 w-4 text-red-400 rotate-180" />
+          项目结案简报
         </CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-8 gap-2 font-medium transition-all group",
+            copied ? "border-emerald-500 text-emerald-600 bg-emerald-50" : "hover:border-slate-400"
+          )}
+          onClick={handleCopy}
+        >
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              已复制
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" />
+              复制完整报告
+            </>
+          )}
+        </Button>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm text-slate-300 leading-relaxed">
-        <p>
-          该项目 <span className="text-white font-medium">{project.name}</span>{" "}
-          已圆满结案。 全周期总投入资金{" "}
-          <span className="text-white font-mono">
-            ¥{(totalInvestment / 10000).toFixed(2)}万
-          </span>
-          。
-        </p>
-
-        <p>
-          最终实现净利润{" "}
-          <span
-            className={`font-bold font-mono text-lg ${
-              netProfit >= 0 ? "text-red-400" : "text-red-400"
-            }`}
-          >
-            {netProfit >= 0 ? "+" : ""}¥{(netProfit / 10000).toFixed(2)}万
-          </span>
-          ，投资回报率 (ROI) 达到{" "}
-          <span className="text-amber-400 font-bold font-mono">
-            {roi.toFixed(2)}%
-          </span>
-          。
-        </p>
-
-        <div className="pt-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500">
-            * 数据基于最终财务核算，记录归档于 {new Date().toLocaleDateString()}
-          </p>
+      <CardContent className="p-5">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-inner p-6 font-mono text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+          {reportContent}
         </div>
       </CardContent>
     </Card>
