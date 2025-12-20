@@ -1274,7 +1274,7 @@ export interface components {
          * @description 现金流分类枚举
          * @enum {string}
          */
-        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营杂费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
+        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
         /**
          * CashFlowRecordCreate
          * @description 创建现金流
@@ -1644,6 +1644,11 @@ export interface components {
             first_viewer?: string | null;
             /** List Price */
             list_price?: number | string | null;
+            /**
+             * Listing Date
+             * @description 上架日期
+             */
+            listing_date?: string | null;
         };
         /**
          * PropertyDetailResponse
@@ -1859,7 +1864,7 @@ export interface components {
          * @description 改造子阶段枚举
          * @enum {string}
          */
-        RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "安装" | "交付";
+        RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "安装" | "交付" | "已完成";
         /**
          * RenovationUpdate
          * @description 更新改造阶段请求模型
@@ -2042,6 +2047,11 @@ export interface components {
         /** StatusUpdate */
         StatusUpdate: {
             status: components["schemas"]["ProjectStatus"];
+            /**
+             * Listing Date
+             * @description 上架日期
+             */
+            listing_date?: string | null;
         };
         /**
          * TokenResponse
