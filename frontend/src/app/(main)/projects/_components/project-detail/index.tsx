@@ -27,7 +27,7 @@ import { STAGE_CONFIG, ViewMode } from "./constants";
 import type { ProjectDetailSheetProps, AttachmentHandlers } from "./types";
 import type { Project } from "../../types";
 
-import { getProjectDetailAction } from "../../actions";
+import { getProjectDetailAction } from "../../actions/core";
 // [优化] 移除 getProjectCashFlowAction，因为数据已集成在详情接口中
 // import { getProjectCashFlowAction } from "../../[projectId]/cashflow/actions";
 

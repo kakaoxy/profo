@@ -3,9 +3,23 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LineChart } from "lucide-react";
+import { LineChart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Project } from "../types";
+import { deleteProjectAction } from "../actions/core";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const formatMoney = (value: number | undefined | null) => {
   if (value === undefined || value === null) return "-";
@@ -187,24 +201,79 @@ export const columns: ColumnDef<Project>[] = [
   {
     id: "actions",
     header: "操作",
-    cell: ({ row }) => {
+    cell: function ActionCell({ row }) {
+      const [isDeleting, setIsDeleting] = useState(false);
+      
+      const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+          const res = await deleteProjectAction(row.original.id);
+          if (res.success) {
+            toast.success("项目已删除");
+            // Need a way to refresh the list, but for now we just show feedback
+          } else {
+            toast.error(res.message);
+          }
+        } catch {
+          toast.error("删除失败");
+        } finally {
+          setIsDeleting(false);
+        }
+      };
+
       return (
-        <Link
-          href={`?cashflow_id=${
-            row.original.id
-          }&project_name=${encodeURIComponent(row.original.name)}`}
-          scroll={false}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 px-3 flex items-center gap-1.5 transition-all rounded-full"
+        <div className="flex items-center gap-2">
+          <Link
+            href={`?cashflow_id=${
+              row.original.id
+            }&project_name=${encodeURIComponent(row.original.name)}`}
+            scroll={false}
+            onClick={(e) => e.stopPropagation()}
           >
-            <LineChart className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline text-xs font-medium">监控</span>
-          </Button>
-        </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 px-3 flex items-center gap-1.5 transition-all rounded-full"
+            >
+              <LineChart className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs font-medium">监控</span>
+            </Button>
+          </Link>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+              <AlertDialogHeader>
+                <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  此操作将把项目标记为删除状态。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleDelete();
+                  }}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  确认删除
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       );
     },
   },

@@ -40,7 +40,7 @@ import { toast } from "sonner";
 
 import { formatDate, getRelativeTime, getStatusColor } from "./utils";
 import { CreateProjectDialog as ProjectFormDialog } from "../create-project";
-import { deleteProjectAction } from "../../actions";
+import { deleteProjectAction } from "../../actions/core";
 import { Project } from "../../types";
 import { STAGE_CONFIG, ViewMode } from "./constants";
 
