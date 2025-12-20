@@ -18,16 +18,6 @@ export function RenovationTimeline({
 }: RenovationTimelineProps) {
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
 
-  // 1. 计算当前阶段的 Key (例如 "painting")
-  const currentStageConfig = RENOVATION_STAGES.find(
-    (s) =>
-      s.value === project.renovation_stage || s.key === project.renovation_stage
-  );
-  // 如果找不到（比如项目刚创建），默认使用第一个阶段
-  const currentStageKey = currentStageConfig
-    ? currentStageConfig.key
-    : RENOVATION_STAGES[0].key;
-
   // 2. 获取照片数据的方法
   const fetchPhotos = useCallback(async () => {
     const res = await getRenovationPhotosAction(project.id);
@@ -63,10 +53,19 @@ export function RenovationTimeline({
   }, [photos]);
 
   // 计算索引用于传参
-  const rawIndex = RENOVATION_STAGES.findIndex(
-    (s) => s.key === currentStageKey
-  );
-  const currentIndex = rawIndex === -1 ? 0 : rawIndex;
+  const currentIndex = useMemo(() => {
+    if (project.renovation_stage === "已完成" || ["selling", "sold"].includes(project.status)) {
+      return RENOVATION_STAGES.length;
+    }
+    const idx = RENOVATION_STAGES.findIndex(
+      (s) => s.value === project.renovation_stage || s.key === project.renovation_stage
+    );
+    return idx === -1 ? 0 : idx;
+  }, [project.renovation_stage, project.status]);
+
+  const currentStageKey = currentIndex < RENOVATION_STAGES.length 
+    ? RENOVATION_STAGES[currentIndex].key 
+    : "";
 
   return (
     <div className="relative pl-4 space-y-6 pb-12">
