@@ -12,17 +12,19 @@ export function HeroMetrics({ project }: { project: Project }) {
   const roi = Number(project.roi) || 0;
 
   // 计算资金占用天数
-  const signingDate = project.signing_date ? parseISO(project.signing_date) : null;
-  // 优先使用 sold_at (成交时间), 其次 sold_date (可能仅日期), 再次 updated_at
-  const soldDate = project.sold_at
-    ? parseISO(project.sold_at)
-    : project.sold_date
-    ? parseISO(project.sold_date)
-    : null;
-
+  // [修复] 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
+  const rawStartDate = project.signing_date || project.signingDate || project.created_at;
+  const signingDate = rawStartDate ? parseISO(rawStartDate) : null;
+  
+  const rawSoldDate = project.soldDate || project.sold_at || project.sold_date;
+  const soldDate = rawSoldDate ? parseISO(rawSoldDate) : null;
+ 
   let occupationDays = 0;
-  if (signingDate && soldDate && isValid(signingDate) && isValid(soldDate)) {
-    occupationDays = differenceInDays(soldDate, signingDate);
+  if (signingDate && isValid(signingDate)) {
+    // 如果已售取成交日期，未售取今天
+    const end = (soldDate && isValid(soldDate)) ? soldDate : new Date();
+    // 统一逻辑：差值天数，保底 0
+    occupationDays = Math.max(0, differenceInDays(end, signingDate));
   }
 
   // 确保天数至少为 1，避免除零错误 (如果当天买卖算1天或0天，根据业务逻辑，这里作为分母通常保底1)
@@ -35,20 +37,20 @@ export function HeroMetrics({ project }: { project: Project }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
       {/* 卡片 1：净利润 */}
-      <Card className="bg-emerald-50/50 border-emerald-200 shadow-sm transition-all hover:shadow-md">
+      <Card className="bg-red-50/50 border-red-200 shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-emerald-800">
+          <CardTitle className="text-sm font-medium text-red-800">
             净利润 (Net Profit)
           </CardTitle>
-          <Wallet className="h-4 w-4 text-emerald-600" />
+          <Wallet className="h-4 w-4 text-red-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-extrabold text-emerald-600 tracking-tight font-mono">
+          <div className="text-2xl font-extrabold text-red-600 tracking-tight font-mono">
             {netProfit > 0 ? "+" : ""}
             {(netProfit / 10000).toFixed(2)}{" "}
             <span className="text-sm font-bold">万</span>
           </div>
-          <p className="text-xs text-emerald-700/60 mt-1">
+          <p className="text-xs text-red-700/60 mt-1">
             真实净现金流
           </p>
         </CardContent>

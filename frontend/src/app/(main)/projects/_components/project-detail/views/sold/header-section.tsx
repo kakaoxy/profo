@@ -35,7 +35,7 @@ export function SoldHeader({
       : 0;
 
   return (
-    <div className="w-full bg-gradient-to-r from-emerald-50/80 via-white to-white border-b px-6 py-5">
+    <div className="w-full bg-gradient-to-r from-red-50/80 via-white to-white border-b px-6 py-5">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         {/* 左侧：房源身份 + 阶段切换器 */}
         <div className="space-y-2">
@@ -82,7 +82,7 @@ export function SoldHeader({
                         {stage.label}
                       </span>
                       {isCurrentView && (
-                        <Check className="h-4 w-4 text-emerald-600" />
+                        <Check className="h-4 w-4 text-red-600" />
                       )}
                       {!isAccessible && (
                         <Lock className="h-3 w-3 text-muted-foreground" />
@@ -107,7 +107,7 @@ export function SoldHeader({
             </Badge>
             <Badge
               variant="outline"
-              className="border-emerald-200 text-emerald-700 font-mono"
+              className="border-red-200 text-red-700 font-mono"
             >
               成交单价 ¥{Math.round(unitPrice).toLocaleString()}/m²
             </Badge>
@@ -116,7 +116,7 @@ export function SoldHeader({
 
         {/* 右侧：结案状态 (保持不变) */}
         <div className="flex flex-col items-end gap-1">
-          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-base px-3 py-1 shadow-sm">
+          <Badge className="bg-red-600 hover:bg-red-700 text-base px-3 py-1 shadow-sm">
             🎉 已售罄 (Sold)
           </Badge>
           <span className="text-xs text-slate-400 font-mono">

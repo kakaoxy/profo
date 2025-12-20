@@ -125,6 +125,12 @@ class CashFlowService:
         logger.info(f"Getting cashflow summary for project {project_id}")
         
         try:
+            # 1. 获取项目基本信息用于日期计算
+            project = self.db.query(Project).filter(Project.id == project_id).first()
+            if not project:
+                raise HTTPException(status_code=404, detail="项目不存在")
+
+            # 2. 聚合计算收入支出
             result = self.db.query(
                 func.sum(
                     case(
@@ -144,14 +150,38 @@ class CashFlowService:
             total_expense = result.total_expense or Decimal('0')
             net_cash_flow = total_income - total_expense
             
-            roi = (net_cash_flow / total_expense) if total_expense > 0 else Decimal('0.0')
-            roi = roi.quantize(Decimal('0.00'))
+            # 3. 计算 ROI (转为百分比数值)
+            roi_decimal = (net_cash_flow / total_expense) if total_expense > 0 else Decimal('0.0')
+            roi = float(roi_decimal * 100)
+
+            # 4. 计算资金占用天数 (Holding Days)
+            # 逻辑：已售取 (成交日期 - 签约日期)，未售取 (今天 - 签约日期)
+            holding_days = 0
+            start_date = project.signing_date or project.created_at
+            
+            if start_date:
+                # 统一转为 date 对象计算天数，忽略时分秒
+                end_date = datetime.now()
+                # 只有状态为已售且有成交日期时才取成交日期
+                if project.status == "sold" and project.soldDate:
+                    end_date = project.soldDate
+                
+                delta = end_date.date() - start_date.date()
+                holding_days = max(delta.days, 0)
+
+            # 5. 计算年化收益率 (Annualized Return)
+            # 公式：(ROI / 占用天数) * 365
+            annualized_return = 0.0
+            if holding_days > 0:
+                annualized_return = (roi / holding_days) * 365
 
             summary = {
                 "total_income": total_income,
                 "total_expense": total_expense,
                 "net_cash_flow": net_cash_flow,
-                "roi": float(roi) 
+                "roi": round(roi, 2),
+                "holding_days": holding_days,
+                "annualized_return": round(annualized_return, 2)
             }
             
             logger.info(f"Cashflow summary calculated for project {project_id}: {summary}")
