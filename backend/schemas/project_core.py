@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 from models.base import ProjectStatus
 from .project_sales import SalesRecordResponse
+from .project_renovation import RenovationPhotoResponse
 
 # ========== 基础项目模型 ==========
 
@@ -130,6 +131,9 @@ class ProjectResponse(ProjectBase):
     viewingRecords: Optional[List[Dict[str, Any]]] = None 
     offerRecords: Optional[List[Dict[str, Any]]] = None
     negotiationRecords: Optional[List[Dict[str, Any]]] = None
+    
+    # 装修照片
+    renovation_photos: Optional[List[RenovationPhotoResponse]] = Field(default=[], description="装修照片")
     
     # 改造阶段完成时间
     renovationStageDates: Optional[Dict[str, str]] = None

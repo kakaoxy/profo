@@ -18,9 +18,9 @@ class ProjectCoreService:
         self.db = db
 
     def _get_project(self, project_id: str, include_all: bool = False) -> Project:
-        project = self.db.query(Project).options(
+        # 基础加载选项
+        options = [
             selectinload(Project.sales_records),
-            noload(Project.renovation_photos),
             noload(Project.cashflow_records),
             defer(Project.signing_materials), 
             defer(Project.owner_info),
@@ -29,7 +29,15 @@ class ProjectCoreService:
             defer(Project.negotiationRecords),
             defer(Project.otherAgreements),
             defer(Project.notes)
-        ).filter(Project.id == project_id).first()
+        ]
+
+        # 如果要求完整数据，则预加载装修照片
+        if include_all:
+            options.append(selectinload(Project.renovation_photos))
+        else:
+            options.append(noload(Project.renovation_photos))
+
+        project = self.db.query(Project).options(*options).filter(Project.id == project_id).first()
 
         if not project:
             raise HTTPException(
@@ -37,16 +45,15 @@ class ProjectCoreService:
                 detail="项目不存在"
             )
 
-        # [核心修复] 动态加载逻辑
-        
-        # 情况A：前端明确要求加载完整数据 (比如用户切换到了签约视图)
+        # [核心修复] 动态加载逻辑 (对 defer 字段进行按需加载)
         if include_all:
             _ = project.signing_materials
             _ = project.owner_info
             _ = project.otherAgreements
             _ = project.notes
-            # 这里依然不加载 viewingRecords 等超大历史记录，除非你也需要展示它们
-
+            # 显式触发装修照片加载，确保序列化时数据存在
+            _ = project.renovation_photos
+        
         # 情况B：项目处于签约状态 (必须显示材料)
         elif project.status == ProjectStatus.SIGNING.value:
             _ = project.signing_materials

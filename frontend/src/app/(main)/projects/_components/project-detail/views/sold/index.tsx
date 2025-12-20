@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Project } from "../../../../types";
 import { ViewMode } from "../../constants";
 
@@ -32,25 +31,22 @@ export function SoldView({
         currentProjectStageIndex={currentProjectStageIndex}
       />
 
-      {/* 2. 滚动内容区域 */}
-      <ScrollArea className="flex-1">
-        <div className="max-w-5xl mx-auto px-6 py-2 md:px-6 md:py-2 space-y-2">
+      {/* 2. 内容区域 (使用原生滚动确保稳定性) */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="max-w-5xl mx-auto px-6 py-6 space-y-8">
           <HeroMetrics project={project} />
 
           <FinancialLifecycle project={project} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
-            <div>
-              <VisualJourney project={project} />
-            </div>
-            <div>
-              <SummaryReport project={project} />
-            </div>
+          <div className="flex flex-col gap-8">
+            <VisualJourney project={project} />
+            <SummaryReport project={project} />
           </div>
 
+          {/* 底部留白 */}
           <div className="h-10" />
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
