@@ -84,11 +84,11 @@ export async function createCashFlowRecordAction(
 
   // 构造 Request Body，映射前端字段到后端 Schema
   const requestBody = {
-    type: payload.type, // 前端 type -> 后端 type
+    type: payload.type,
     category: payload.category,
     amount: Number(payload.amount),
-    date: payload.date, // 前端 date -> 后端 date
-    description: payload.notes, // 前端 notes -> 后端 description
+    date: payload.date,
+    description: payload.notes,
   };
 
   const { error } = await client.POST(
