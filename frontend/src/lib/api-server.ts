@@ -34,21 +34,29 @@ async function tryRefreshToken(): Promise<string | null> {
     const data = await response.json();
     
     // 更新 cookies
-    cookieStore.set("access_token", data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: data.expires_in || 36000, // 默认 10 小时
-      sameSite: "lax",
-    });
+    try {
+      cookieStore.set("access_token", data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: data.expires_in || 36000, // 默认 10 小时
+        sameSite: "lax",
+      });
 
-    cookieStore.set("refresh_token", data.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: "lax",
-    });
+      cookieStore.set("refresh_token", data.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        sameSite: "lax",
+      });
+      console.log("✅ [Server] 成功更新 Token Cookies");
+    } catch (_) {
+      // 在 Server Components 渲染阶段 (Render Phase) 无法设置 Cookie
+      // 我们捕获这个错误，允许本次请求继续透传使用新 Token
+      console.warn("⚠️ [Server] 无法在当前上下文更新 Cookies (渲染阶段)，但这不影响本次请求使用新 Token");
+      console.error("❌ [Server] 无法在当前上下文更新 Cookies (渲染阶段)", _);
+    }
 
     console.log("✅ [Server] 成功刷新 access_token");
     return data.access_token;
