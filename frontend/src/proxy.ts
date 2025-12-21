@@ -7,7 +7,7 @@ const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
  * 中间件：用于在请求到达渲染层之前主动刷新 Token
  * 解决 Server Components 渲染阶段无法修改 Cookie 的问题
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. 排除不需要 Auth 的路径
