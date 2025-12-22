@@ -9,12 +9,7 @@ class MonitorService:
     @staticmethod
     def get_market_sentiment(db: Session, community_id: int) -> Dict:
         """Calculate market sentiment (floor stats and inventory months)"""
-        # 1. Floor Stats
-        # Define floor level logic if not stored. 
-        # Assuming floor_level is stored in PropertyCurrent as 'high', 'mid', 'low' or mapped.
-        # Based on PropertyCurrent model, floor_level is present.
-        
-        # Current listings (Status: FOR_SALE)
+        # 1. Floor Stats - 查询当前挂牌房源
         current_query = db.query(
             PropertyCurrent.floor_level,
             func.count(PropertyCurrent.id).label("count"),
@@ -25,16 +20,9 @@ class MonitorService:
             PropertyCurrent.floor_level.isnot(None)
         ).group_by(PropertyCurrent.floor_level).all()
         
-        current_map = {row.floor_level: row for row in current_query}
+        print(f"[MonitorService] community_id={community_id}, current_query results: {current_query}")
         
-        # Deals (Status: SOLD) - Recent deals? Or all time? 
-        # Requirement doesn't specify time window for deals count in stats, but implies current market.
-        # Let's assume recent 6 months for stats validity or similar time window? 
-        # The example shows "deals_count: 5", which likely refers to recent transactions. 
-        # Requirement says "inventory_months: 8.5 (current inventory / last 12 months monthly avg deals)"
-        # So deals_count in `floor_stats` might be total or recent. 
-        # Let's assume last 12 months for consistency with inventory calculation.
-        
+        # 2. 查询过去12个月成交房源
         one_year_ago = datetime.now() - timedelta(days=365)
         
         deals_query = db.query(
@@ -45,53 +33,38 @@ class MonitorService:
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.SOLD,
             PropertyCurrent.sold_date >= one_year_ago,
-             PropertyCurrent.floor_level.isnot(None)
+            PropertyCurrent.floor_level.isnot(None)
         ).group_by(PropertyCurrent.floor_level).all()
         
-        deals_map = {row.floor_level: row for row in deals_query}
+        print(f"[MonitorService] deals_query results: {deals_query}")
+        
+        # 3. 楼层级别映射: DB存储 '高楼层/中楼层/低楼层', API返回 'high/mid/low'
+        db_level_map = {'high': '高楼层', 'mid': '中楼层', 'low': '低楼层'}
         
         stats = []
         for level in ['high', 'mid', 'low']:
-            # Adjust level keys if stored differently (e.g., '高楼层' vs 'high')
-            # Assuming DB stores '高', '中', '低' or similar? 
-            # The API example uses "high", "mid", "low".
-            # If DB stores Chinese, we need mapping.
-            # Let's try to query distinct floor_level first to be safe or use what's likely.
-            # Model comment says: floor_level: "楼层级别(低/中/高)"
-            
-            db_level_map = {'high': '高', 'mid': '中', 'low': '低'}
             db_level = db_level_map.get(level, level)
             
             c_data = next((x for x in current_query if x.floor_level == db_level), None)
             d_data = next((x for x in deals_query if x.floor_level == db_level), None)
             
-            # Using 10000 conversion if price is in Wan? 
-            # API example: deal_avg_price: 45000. Data in DB: avg_price_wan (Float, e.g. 450.0).
-            # So multiply by 10000 / build_area? 
-            # Wait, price in Wan is total price usually. 
-            # API example: 45000 (元/㎡). 
-            # Creating Price per sq meter calculation requires build_area.
-            # Let's adjust query to calculate avg(price/area).
+            # 使用实际查询到的价格数据
+            deal_price = float(d_data.avg_price) if d_data and d_data.avg_price else 0
+            current_price = float(c_data.avg_price) if c_data and c_data.avg_price else 0
             
             stats.append(FloorStats(
                 type=level,
                 deals_count=d_data.count if d_data else 0,
-                deal_avg_price=0, # Placeholder, need complex query or post-process
+                deal_avg_price=deal_price,
                 current_count=c_data.count if c_data else 0,
-                current_avg_price=0 # Placeholder
+                current_avg_price=current_price
             ))
-            
-        # Re-query for Unit Price (Price/Area)
-        # SQLAlchemy func.avg(Property.price / Property.area)
         
-        # Simplified for now: calculate unit price based on aggregates if individual record calc is too complex for this quick pass
-        # But accurately: avg(price/area) != avg(price)/avg(area)
-        # Let's select raw data or use SQL avg usage.
+        print(f"[MonitorService] floor_stats: {stats}")
         
-        # 2. Inventory Months
+        # 4. Inventory Months 计算
         total_inventory = sum(s.current_count for s in stats)
         total_deals_last_year = sum(s.deals_count for s in stats)
-        # inventory_months = current / (total_deals_12m / 12)
         monthly_avg_deals = total_deals_last_year / 12.0 if total_deals_last_year > 0 else 0
         inventory_months = total_inventory / monthly_avg_deals if monthly_avg_deals > 0 else 99.9
         
@@ -99,6 +72,7 @@ class MonitorService:
             "floor_stats": stats,
             "inventory_months": round(inventory_months, 1)
         }
+
 
     @staticmethod
     def get_trends(db: Session, community_id: int, months: int) -> List[TrendData]:
