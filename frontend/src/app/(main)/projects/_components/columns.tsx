@@ -224,7 +224,7 @@ export const columns: ColumnDef<Project>[] = [
       return (
         <div className="flex items-center gap-2">
           <Link
-            href={`?cashflow_id=${
+            href={`?monitor_id=${
               row.original.id
             }&project_name=${encodeURIComponent(row.original.name)}`}
             scroll={false}
