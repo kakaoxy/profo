@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from db import engine
-from models import Base, Community, CommunityAlias, PropertyCurrent, PropertyHistory, PropertyMedia, FailedRecord
+from models import Base, Community, CommunityAlias, CommunityCompetitor, PropertyCurrent, PropertyHistory, PropertyMedia, FailedRecord
 
 
 def init_database():

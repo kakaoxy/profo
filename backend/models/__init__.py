@@ -7,7 +7,7 @@ from .base import (
     Base, PropertyStatus, ChangeType, MediaType,
     ProjectStatus, RenovationStage, CashFlowType, CashFlowCategory, RecordType
 )
-from .community import Community, CommunityAlias
+from .community import Community, CommunityAlias, CommunityCompetitor
 from .property import PropertyCurrent, PropertyHistory
 from .media import PropertyMedia
 from .error import FailedRecord
@@ -26,6 +26,7 @@ __all__ = [
     'RecordType',
     'Community',
     'CommunityAlias',
+    'CommunityCompetitor',
     'PropertyCurrent',
     'PropertyHistory',
     'PropertyMedia',
