@@ -1,5 +1,5 @@
 "use client";
-
+// 数据监控 - 基础信息展示 - 时间监控
 import { useEffect, useState } from "react";
 import { MapPin, Info, Clock } from "lucide-react";
 import { getProjectDetailAction } from "@/app/(main)/projects/actions";
