@@ -1,138 +1,174 @@
 "use client";
+// 数据监控 - 宏观风向标 (本小区行情)
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { SectionHeader } from "./section-header";
+import { getMarketSentimentAction, type FloorStats } from "@/app/(main)/projects/actions";
 
 interface MarketSentimentProps {
   projectId: string;
 }
 
-export function MarketSentiment({ projectId }: MarketSentimentProps) {
-  // Use projectId to satisfy linter
-  console.log(`Sentiment data for: ${projectId}`);
-  // Mock data for Module 1
-  const floorStats = [
-    { type: "高楼层", deals: 5, deal_avg: 212, deal_unit: 38545, current: 2, current_avg: 225, current_unit: 40909 },
-    { type: "中楼层", deals: 8, deal_avg: 202, deal_unit: 36727, current: 4, current_avg: 215, current_unit: 39090 },
-    { type: "低楼层", deals: 3, deal_avg: 195, deal_unit: 35454, current: 2, current_avg: 205, current_unit: 37272 },
-  ];
+// 楼层类型映射
+const FLOOR_TYPE_MAP: Record<string, string> = {
+  high: "高楼层",
+  mid: "中楼层",
+  low: "低楼层",
+};
 
-  const pressure = {
-    months: 9.2,
-    label: "滞销 (买方市场)",
-    status: "selling" // Using status for color mapping
-  };
+export function MarketSentiment({ projectId }: MarketSentimentProps) {
+  const [floorStats, setFloorStats] = useState<FloorStats[]>([]);
+  const [inventoryMonths, setInventoryMonths] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await getMarketSentimentAction(projectId);
+
+        console.log("[MarketSentiment] API result:", result);
+
+        if (!result.success) {
+          setError(result.message || "获取市场情绪失败");
+          return;
+        }
+
+        if (result.data) {
+          console.log("[MarketSentiment] floor_stats:", result.data.floor_stats);
+          console.log("[MarketSentiment] inventory_months:", result.data.inventory_months);
+          setFloorStats(result.data.floor_stats || []);
+          setInventoryMonths(result.data.inventory_months || 0);
+        }
+      } catch (e) {
+        console.error("获取市场情绪异常:", e);
+        setError("网络错误，请稍后重试");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (projectId) {
+      fetchData();
+    }
+  }, [projectId]);
+
+  // 计算去化压力标签
+  const pressureLabel = inventoryMonths > 6 ? "滞销 (买方市场)" : inventoryMonths > 3 ? "正常" : "热销 (卖方市场)";
+  const pressureColor = inventoryMonths > 6 ? "text-rose-600" : inventoryMonths > 3 ? "text-amber-600" : "text-emerald-600";
+  const pressureIcon = inventoryMonths > 6 ? "🔴" : inventoryMonths > 3 ? "🟡" : "🟢";
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <section className="mt-8 pb-10">
+        <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
+        <div className="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 h-48 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="mt-8 pb-10">
+        <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
+        <div className="px-6 text-center py-8">
+          <p className="text-sm text-rose-500">{error}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8 pb-10">
-      <SectionHeader 
-        index="1" 
-        title="宏观风向标 (本小区行情)" 
-        subtitle="Market Sentiment" 
-      />
+      <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
       
       <div className="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Deal Stats Card */}
-        <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">同户型成交统计</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">过去12个月</p>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600">
-               <TrendingDown size={12} />
-               1.2%
-            </div>
-          </div>
-          
-          <div className="space-y-3 flex-grow">
-            {floorStats.map((item, idx) => (
-              <React.Fragment key={`deal-${item.type}`}>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-1 h-8 rounded-full ${idx === 0 ? 'bg-indigo-500' : idx === 1 ? 'bg-blue-400' : 'bg-slate-300'}`} />
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
-                        {item.type} <span className="text-slate-300">|</span> <span className="text-indigo-600 font-bold">{item.deals} 套</span>
-                      </p>
-                      <p className="text-base font-black text-slate-800">{item.deal_avg} 万</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-400 font-medium">平均单价</p>
-                    <p className="text-xs font-bold text-slate-600">¥{item.deal_unit.toLocaleString()}/㎡</p>
-                  </div>
-                </div>
-                {idx < floorStats.length - 1 && <div className="h-px bg-slate-200/50" />}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+        {/* 成交统计 */}
+        <StatsCard title="同户型成交统计" subtitle="过去12个月" stats={floorStats} dataKey="deal" />
 
-        {/* Current Stats Card */}
-        <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">同户型挂牌统计</p>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">当前在售</p>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600">
-               <TrendingUp size={12} />
-               0.5%
-            </div>
-          </div>
+        {/* 挂牌统计 */}
+        <StatsCard title="同户型挂牌统计" subtitle="当前在售" stats={floorStats} dataKey="current" />
 
-          <div className="space-y-3 flex-grow">
-            {floorStats.map((item, idx) => (
-              <React.Fragment key={`curr-${item.type}`}>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-1 h-8 rounded-full ${idx === 0 ? 'bg-indigo-500' : idx === 1 ? 'bg-blue-400' : 'bg-slate-300'}`} />
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
-                        {item.type} <span className="text-slate-300">|</span> <span className="text-indigo-600 font-bold">{item.current} 套</span>
-                      </p>
-                      <p className="text-base font-black text-slate-800">{item.current_avg} 万</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-400 font-medium">平均单价</p>
-                    <p className="text-xs font-bold text-slate-600">¥{item.current_unit.toLocaleString()}/㎡</p>
-                  </div>
-                </div>
-                {idx < floorStats.length - 1 && <div className="h-px bg-slate-200/50" />}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Pressure Gauge Card */}
+        {/* 去化压力 */}
         <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">去化压力 (库存/月销)</p>
-            </div>
-          </div>
-          
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">去化压力 (库存/月销)</p>
           <div className="mt-2 flex flex-col justify-center flex-grow pb-6">
-            <p className="text-3xl font-black text-slate-900">{pressure.months} 个月</p>
-            <p className="text-sm font-bold text-rose-600 mt-2">🔴 {pressure.label}</p>
-          </div>
-
-          <div className="mt-auto w-full pt-6 border-t border-slate-200/50 flex items-center justify-center gap-4">
-             <div className="flex flex-col items-center">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">成交周期</span>
-                <span className="text-xs font-bold text-slate-700">45天</span>
-             </div>
-             <div className="w-px h-6 bg-slate-200" />
-             <div className="flex flex-col items-center">
-                <span className="text-[10px] text-slate-400 uppercase font-bold">带看热度</span>
-                <span className="text-xs font-bold text-emerald-600">极高</span>
-             </div>
+            <p className="text-3xl font-black text-slate-900">{inventoryMonths.toFixed(1)} 个月</p>
+            <p className={`text-sm font-bold ${pressureColor} mt-2`}>{pressureIcon} {pressureLabel}</p>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+// 统计卡片子组件
+function StatsCard({
+  title,
+  subtitle,
+  stats,
+  dataKey,
+}: {
+  title: string;
+  subtitle: string;
+  stats: FloorStats[];
+  dataKey: "deal" | "current";
+}) {
+  const isDeal = dataKey === "deal";
+  const TrendIcon = isDeal ? TrendingDown : TrendingUp;
+  const trendColor = isDeal ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600";
+
+  return (
+    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</p>
+          <p className="text-[10px] text-slate-400 font-medium mt-0.5">{subtitle}</p>
+        </div>
+        <div className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${trendColor}`}>
+          <TrendIcon size={12} />
+          —
+        </div>
+      </div>
+      
+      <div className="space-y-3 flex-grow">
+        {stats.map((item, idx) => {
+          const count = isDeal ? item.deals_count : item.current_count;
+          const avgPrice = isDeal ? item.deal_avg_price : item.current_avg_price;
+          const colorClass = idx === 0 ? "bg-indigo-500" : idx === 1 ? "bg-blue-400" : "bg-slate-300";
+          
+          return (
+            <React.Fragment key={`${dataKey}-${item.type}`}>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className={`w-1 h-8 rounded-full ${colorClass}`} />
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                      {FLOOR_TYPE_MAP[item.type] || item.type}
+                      <span className="text-slate-300">|</span>
+                      <span className="text-indigo-600 font-bold">{count} 套</span>
+                    </p>
+                    <p className="text-base font-black text-slate-800">{avgPrice.toFixed(0)} 万</p>
+                  </div>
+                </div>
+              </div>
+              {idx < stats.length - 1 && <div className="h-px bg-slate-200/50" />}
+            </React.Fragment>
+          );
+        })}
+        {stats.length === 0 && (
+          <p className="text-sm text-slate-400 text-center py-4">暂无数据</p>
+        )}
+      </div>
+    </div>
   );
 }
