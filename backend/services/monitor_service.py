@@ -8,35 +8,56 @@ from schemas.monitor import FloorStats, TrendData, CompetitorResponse, RiskPoint
 class MonitorService:
     @staticmethod
     def get_market_sentiment(db: Session, community_id: int) -> Dict:
-        """Calculate market sentiment (floor stats and inventory months)"""
-        # 1. Floor Stats - 查询当前挂牌房源
-        current_query = db.query(
+        """Calculate market sentiment (floor stats and inventory months)
+        
+        去重逻辑: 相同 build_area + floor_level + price 的房源视为同一套房
+        """
+        # 1. 查询当前挂牌房源 - 使用子查询去重
+        # 去重条件: build_area, floor_level, listed_price_wan 相同则为重复
+        from sqlalchemy import distinct, tuple_
+        
+        # 获取去重后的挂牌房源统计
+        current_subquery = db.query(
             PropertyCurrent.floor_level,
-            func.count(PropertyCurrent.id).label("count"),
-            func.avg(PropertyCurrent.listed_price_wan).label("avg_price")
+            PropertyCurrent.build_area,
+            PropertyCurrent.listed_price_wan
         ).filter(
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.FOR_SALE,
-            PropertyCurrent.floor_level.isnot(None)
-        ).group_by(PropertyCurrent.floor_level).all()
+            PropertyCurrent.floor_level.isnot(None),
+            PropertyCurrent.build_area.isnot(None)
+        ).distinct().subquery()
         
-        print(f"[MonitorService] community_id={community_id}, current_query results: {current_query}")
+        current_query = db.query(
+            current_subquery.c.floor_level,
+            func.count().label("count"),
+            func.avg(current_subquery.c.listed_price_wan).label("avg_price")
+        ).group_by(current_subquery.c.floor_level).all()
         
-        # 2. 查询过去12个月成交房源
+        # print(f"[MonitorService] community_id={community_id}, current_query (deduplicated): {current_query}")
+        
+        # 2. 查询过去12个月成交房源 - 同样去重
         one_year_ago = datetime.now() - timedelta(days=365)
         
-        deals_query = db.query(
+        deals_subquery = db.query(
             PropertyCurrent.floor_level,
-            func.count(PropertyCurrent.id).label("count"),
-            func.avg(PropertyCurrent.sold_price_wan).label("avg_price")
+            PropertyCurrent.build_area,
+            PropertyCurrent.sold_price_wan
         ).filter(
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.SOLD,
             PropertyCurrent.sold_date >= one_year_ago,
-            PropertyCurrent.floor_level.isnot(None)
-        ).group_by(PropertyCurrent.floor_level).all()
+            PropertyCurrent.floor_level.isnot(None),
+            PropertyCurrent.build_area.isnot(None)
+        ).distinct().subquery()
         
-        print(f"[MonitorService] deals_query results: {deals_query}")
+        deals_query = db.query(
+            deals_subquery.c.floor_level,
+            func.count().label("count"),
+            func.avg(deals_subquery.c.sold_price_wan).label("avg_price")
+        ).group_by(deals_subquery.c.floor_level).all()
+        
+        # print(f"[MonitorService] deals_query (deduplicated): {deals_query}")
         
         # 3. 楼层级别映射: DB存储 '高楼层/中楼层/低楼层', API返回 'high/mid/low'
         db_level_map = {'high': '高楼层', 'mid': '中楼层', 'low': '低楼层'}
@@ -60,7 +81,6 @@ class MonitorService:
                 current_avg_price=current_price
             ))
         
-        print(f"[MonitorService] floor_stats: {stats}")
         
         # 4. Inventory Months 计算
         total_inventory = sum(s.current_count for s in stats)
@@ -72,6 +92,7 @@ class MonitorService:
             "floor_stats": stats,
             "inventory_months": round(inventory_months, 1)
         }
+
 
 
     @staticmethod

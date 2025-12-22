@@ -39,7 +39,7 @@ export async function getMarketSentimentAction(projectId: string) {
     }
 
     const communityName = projectResult.data.community_name;
-    console.log("[Monitor] Project community_name:", communityName);
+    // console.log("[Monitor] Project community_name:", communityName);
     if (!communityName) {
       return { success: false, message: "项目未关联小区" };
     }
@@ -65,7 +65,7 @@ export async function getMarketSentimentAction(projectId: string) {
     }
 
     const communityId = communities[0].id;
-    console.log("[Monitor] Found community_id:", communityId);
+    // console.log("[Monitor] Found community_id:", communityId);
 
     // 3. 调用情绪 API
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -80,7 +80,7 @@ export async function getMarketSentimentAction(projectId: string) {
     }
 
     const sentimentData = (await response.json()) as MarketSentimentData;
-    console.log("[Monitor] Sentiment data received:", JSON.stringify(sentimentData, null, 2));
+    // console.log("[Monitor] Sentiment data received:", JSON.stringify(sentimentData, null, 2));
     return { success: true, data: sentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);

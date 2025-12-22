@@ -30,7 +30,7 @@ export function MarketSentiment({ projectId }: MarketSentimentProps) {
         setError(null);
         const result = await getMarketSentimentAction(projectId);
 
-        console.log("[MarketSentiment] API result:", result);
+        // console.log("[MarketSentiment] API result:", result);
 
         if (!result.success) {
           setError(result.message || "获取市场情绪失败");
@@ -38,8 +38,8 @@ export function MarketSentiment({ projectId }: MarketSentimentProps) {
         }
 
         if (result.data) {
-          console.log("[MarketSentiment] floor_stats:", result.data.floor_stats);
-          console.log("[MarketSentiment] inventory_months:", result.data.inventory_months);
+          // console.log("[MarketSentiment] floor_stats:", result.data.floor_stats);
+          // console.log("[MarketSentiment] inventory_months:", result.data.inventory_months);
           setFloorStats(result.data.floor_stats || []);
           setInventoryMonths(result.data.inventory_months || 0);
         }
