@@ -9,7 +9,8 @@ from schemas.monitor import (
     CompetitorResponse,
     AddCompetitorRequest,
     AIStrategyRequest,
-    AIStrategyResponse
+    AIStrategyResponse,
+    NeighborhoodRadarResponse
 )
 from services.monitor_service import MonitorService
 
@@ -31,6 +32,12 @@ def get_trends(
 @router.post("/ai-strategy", response_model=AIStrategyResponse)
 def generate_strategy(request: AIStrategyRequest, db: Session = Depends(get_db)):
     return MonitorService.generate_ai_strategy(db, request.project_id, request.user_context)
+
+
+@router.get("/communities/{community_id}/radar", response_model=NeighborhoodRadarResponse)
+def get_neighborhood_radar(community_id: int, db: Session = Depends(get_db)):
+    """获取周边竞品雷达数据，包含分渠道统计"""
+    return MonitorService.get_neighborhood_radar(db, community_id)
 
 # --- Community Competitor Endpoints ---
 
