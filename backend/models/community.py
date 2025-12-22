@@ -61,3 +61,21 @@ class CommunityAlias(Base):
     
     def __repr__(self):
         return f"<CommunityAlias(alias='{self.alias_name}', community_id={self.community_id})>"
+
+
+class CommunityCompetitor(Base):
+    """小区竞品关联表"""
+    __tablename__ = "community_competitors"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    community_id = Column(Integer, ForeignKey("communities.id"), nullable=False, comment="主小区ID")
+    competitor_community_id = Column(Integer, ForeignKey("communities.id"), nullable=False, comment="竞品小区ID")
+    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
+    
+    # 唯一约束: 避免重复添加
+    __table_args__ = (
+        UniqueConstraint("community_id", "competitor_community_id", name="uq_community_competitor"),
+    )
+    
+    def __repr__(self):
+        return f"<CommunityCompetitor(community_id={self.community_id}, competitor={self.competitor_community_id})>"
