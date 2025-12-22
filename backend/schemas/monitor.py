@@ -51,3 +51,31 @@ class AIStrategyResponse(BaseModel):
     report_markdown: str
     risk_points: RiskPoints
     action_plan: List[str]
+
+
+# --- Neighborhood Radar ---
+
+class NeighborhoodRadarItem(BaseModel):
+    """周边竞品雷达单项数据"""
+    community_id: int
+    community_name: str
+    is_subject: bool  # 是否是本案小区
+    # 挂牌数据
+    listing_count: int
+    listing_beike: int
+    listing_iaij: int
+    listing_avg_price: float  # 元/㎡
+    # 成交数据
+    deal_count: int
+    deal_beike: int
+    deal_iaij: int
+    deal_avg_price: float  # 元/㎡
+    # 价差
+    spread_percent: float  # 相对本案的价差百分比
+    spread_label: str  # 显示文本
+
+
+class NeighborhoodRadarResponse(BaseModel):
+    """周边竞品雷达响应"""
+    items: List[NeighborhoodRadarItem]
+

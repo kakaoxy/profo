@@ -3,7 +3,10 @@ from sqlalchemy import func, case, and_, desc, extract
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from models import PropertyCurrent, PropertyHistory, Community, CommunityCompetitor, PropertyStatus, Project
-from schemas.monitor import FloorStats, TrendData, CompetitorResponse, RiskPoints, AIStrategyResponse
+from schemas.monitor import (
+    FloorStats, TrendData, CompetitorResponse, RiskPoints, AIStrategyResponse,
+    NeighborhoodRadarItem, NeighborhoodRadarResponse
+)
 
 class MonitorService:
     @staticmethod
@@ -190,3 +193,150 @@ class MonitorService:
             risk_points=RiskPoints(profit_critical_price=2000000, daily_cost=500),
             action_plan=["Suggested listing price: 210W", "refresh photos"]
         )
+
+    @staticmethod
+    def get_neighborhood_radar(db: Session, community_id: int) -> NeighborhoodRadarResponse:
+        """获取周边竞品雷达数据
+        
+        包含本案小区和所有竞品小区的挂牌/成交统计，按数据来源分渠道
+        """
+        one_year_ago = datetime.now() - timedelta(days=365)
+        
+        # 1. 获取本案小区
+        subject = db.query(Community).filter(Community.id == community_id).first()
+        if not subject:
+            return NeighborhoodRadarResponse(items=[])
+        
+        # 2. 获取所有竞品小区ID
+        competitor_ids = [
+            c.competitor_community_id 
+            for c in db.query(CommunityCompetitor).filter(
+                CommunityCompetitor.community_id == community_id
+            ).all()
+        ]
+        
+        # 3. 合并所有需要统计的小区 (本案 + 竞品)
+        all_community_ids = [community_id] + competitor_ids
+        communities = db.query(Community).filter(Community.id.in_(all_community_ids)).all()
+        community_map = {c.id: c for c in communities}
+        
+        # 4. 统计每个小区的数据
+        def get_stats(cid: int):
+            """获取单个小区的统计数据"""
+            # 挂牌统计 - 按 data_source 分组
+            listing_query = db.query(
+                PropertyCurrent.data_source,
+                func.count().label("count"),
+                func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
+            ).filter(
+                PropertyCurrent.community_id == cid,
+                PropertyCurrent.status == PropertyStatus.FOR_SALE,
+                PropertyCurrent.build_area > 0
+            ).group_by(PropertyCurrent.data_source).all()
+            
+            # 成交统计 - 按 data_source 分组 (过去12个月)
+            deal_query = db.query(
+                PropertyCurrent.data_source,
+                func.count().label("count"),
+                func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
+            ).filter(
+                PropertyCurrent.community_id == cid,
+                PropertyCurrent.status == PropertyStatus.SOLD,
+                PropertyCurrent.sold_date >= one_year_ago,
+                PropertyCurrent.build_area > 0
+            ).group_by(PropertyCurrent.data_source).all()
+            
+            # 解析结果 - 贝壳/我爱我家渠道
+            listing_beike = 0
+            listing_iaij = 0
+            listing_total_price = 0.0
+            listing_total_count = 0
+            
+            for row in listing_query:
+                src = (row.data_source or "").lower()
+                if "beike" in src or "贝壳" in src or "链家" in src:
+                    listing_beike += row.count
+                elif "5i5j" in src or "我爱" in src or "iaij" in src:
+                    listing_iaij += row.count
+                listing_total_count += row.count
+                if row.avg_price:
+                    listing_total_price += row.avg_price * row.count
+            
+            deal_beike = 0
+            deal_iaij = 0
+            deal_total_price = 0.0
+            deal_total_count = 0
+            
+            for row in deal_query:
+                src = (row.data_source or "").lower()
+                if "beike" in src or "贝壳" in src or "链家" in src:
+                    deal_beike += row.count
+                elif "5i5j" in src or "我爱" in src or "iaij" in src:
+                    deal_iaij += row.count
+                deal_total_count += row.count
+                if row.avg_price:
+                    deal_total_price += row.avg_price * row.count
+            
+            listing_avg = listing_total_price / listing_total_count if listing_total_count > 0 else 0
+            deal_avg = deal_total_price / deal_total_count if deal_total_count > 0 else 0
+            
+            return {
+                "listing_count": listing_total_count,
+                "listing_beike": listing_beike,
+                "listing_iaij": listing_iaij,
+                "listing_avg_price": round(listing_avg, 0),
+                "deal_count": deal_total_count,
+                "deal_beike": deal_beike,
+                "deal_iaij": deal_iaij,
+                "deal_avg_price": round(deal_avg, 0),
+            }
+        
+        # 5. 计算所有小区数据
+        all_stats = {cid: get_stats(cid) for cid in all_community_ids}
+        
+        # 6. 获取本案成交均价作为基准
+        subject_deal_avg = all_stats[community_id]["deal_avg_price"]
+        
+        # 7. 构建响应
+        items = []
+        for cid in all_community_ids:
+            c = community_map.get(cid)
+            if not c:
+                continue
+            stats = all_stats[cid]
+            is_subject = (cid == community_id)
+            
+            # 计算价差
+            if is_subject:
+                spread_percent = 0.0
+                spread_label = "[ 📍 当前位置 ]"
+            elif subject_deal_avg > 0 and stats["deal_avg_price"] > 0:
+                spread_percent = ((stats["deal_avg_price"] - subject_deal_avg) / subject_deal_avg) * 100
+                if spread_percent > 0:
+                    spread_label = f"高于本案 {abs(spread_percent):.1f}%"
+                else:
+                    spread_label = f"低于本案 {abs(spread_percent):.1f}%"
+            else:
+                spread_percent = 0.0
+                spread_label = "数据不足"
+            
+            items.append(NeighborhoodRadarItem(
+                community_id=cid,
+                community_name=c.name + (" (本案)" if is_subject else ""),
+                is_subject=is_subject,
+                listing_count=stats["listing_count"],
+                listing_beike=stats["listing_beike"],
+                listing_iaij=stats["listing_iaij"],
+                listing_avg_price=stats["listing_avg_price"],
+                deal_count=stats["deal_count"],
+                deal_beike=stats["deal_beike"],
+                deal_iaij=stats["deal_iaij"],
+                deal_avg_price=stats["deal_avg_price"],
+                spread_percent=round(spread_percent, 1),
+                spread_label=spread_label,
+            ))
+        
+        # 本案排在最后
+        items.sort(key=lambda x: (x.is_subject, x.community_name))
+        
+        return NeighborhoodRadarResponse(items=items)

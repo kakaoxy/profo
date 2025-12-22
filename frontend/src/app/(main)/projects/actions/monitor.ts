@@ -87,3 +87,220 @@ export async function getMarketSentimentAction(projectId: string) {
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
+
+// ========== 周边竞品雷达 ==========
+
+export interface NeighborhoodRadarItem {
+  community_id: number;
+  community_name: string;
+  is_subject: boolean;
+  listing_count: number;
+  listing_beike: number;
+  listing_iaij: number;
+  listing_avg_price: number;
+  deal_count: number;
+  deal_beike: number;
+  deal_iaij: number;
+  deal_avg_price: number;
+  spread_percent: number;
+  spread_label: string;
+}
+
+export interface NeighborhoodRadarData {
+  items: NeighborhoodRadarItem[];
+}
+
+/**
+ * 获取周边竞品雷达数据
+ * 流程: projectId → community_name → community_id → radar API
+ */
+export async function getNeighborhoodRadarAction(projectId: string) {
+  try {
+    // 1. 获取项目详情，提取 community_name
+    const projectResult = await getProjectDetailAction(projectId, false);
+    if (!projectResult.success || !projectResult.data) {
+      return { success: false, message: "获取项目信息失败" };
+    }
+
+    const communityName = projectResult.data.community_name;
+    if (!communityName) {
+      return { success: false, message: "项目未关联小区" };
+    }
+
+    // 2. 通过小区名称搜索获取 community_id
+    const client = await fetchClient();
+    const { data: communitiesData, error: communitiesError } = await client.GET(
+      "/api/admin/communities",
+      {
+        params: { query: { search: communityName, page_size: 1 } },
+      }
+    );
+
+    if (communitiesError || !communitiesData) {
+      console.error("搜索小区失败:", communitiesError);
+      return { success: false, message: "搜索小区信息失败" };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const communities = (communitiesData as any).items as CommunityItem[];
+    if (!communities || communities.length === 0) {
+      return { success: false, message: `未找到小区: ${communityName}` };
+    }
+
+    const communityId = communities[0].id;
+
+    // 3. 调用雷达 API
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/monitor/communities/${communityId}/radar`,
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      console.error("获取雷达数据失败:", response.status);
+      return { success: false, message: "获取周边竞品数据失败" };
+    }
+
+    const radarData = (await response.json()) as NeighborhoodRadarData;
+    return { success: true, data: radarData };
+  } catch (e) {
+    console.error("获取周边竞品异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+// ========== 竞品管理 ==========
+
+export interface CompetitorItem {
+  community_id: number;
+  community_name: string;
+  avg_price: number;
+  on_sale_count: number;
+}
+
+/**
+ * 获取当前小区的竞品列表
+ */
+export async function getCompetitorsAction(projectId: string) {
+  try {
+    const communityId = await getCommunityIdFromProject(projectId);
+    if (!communityId) {
+      return { success: false, message: "获取小区信息失败" };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/communities/${communityId}/competitors`,
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      return { success: false, message: "获取竞品列表失败" };
+    }
+
+    const data = (await response.json()) as CompetitorItem[];
+    return { success: true, data, communityId };
+  } catch (e) {
+    console.error("获取竞品列表异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 搜索小区
+ */
+export async function searchCommunitiesAction(keyword: string) {
+  try {
+    if (!keyword || keyword.trim().length < 2) {
+      return { success: true, data: [] };
+    }
+
+    const client = await fetchClient();
+    const { data: communitiesData, error } = await client.GET(
+      "/api/admin/communities",
+      { params: { query: { search: keyword.trim(), page_size: 10 } } }
+    );
+
+    if (error || !communitiesData) {
+      return { success: false, message: "搜索失败" };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (communitiesData as any).items as CommunityItem[];
+    return { success: true, data: items || [] };
+  } catch (e) {
+    console.error("搜索小区异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+/**
+ * 添加竞品小区
+ */
+export async function addCompetitorAction(communityId: number, competitorId: number) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/communities/${communityId}/competitors`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitor_community_id: competitorId }),
+      }
+    );
+
+    if (!response.ok) {
+      return { success: false, message: "添加竞品失败" };
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("添加竞品异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+/**
+ * 删除竞品小区
+ */
+export async function removeCompetitorAction(communityId: number, competitorId: number) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/communities/${communityId}/competitors/${competitorId}`,
+      { method: "DELETE" }
+    );
+
+    if (!response.ok) {
+      return { success: false, message: "删除竞品失败" };
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("删除竞品异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+/**
+ * 辅助函数: 从项目获取 community_id
+ */
+async function getCommunityIdFromProject(projectId: string): Promise<number | null> {
+  const projectResult = await getProjectDetailAction(projectId, false);
+  if (!projectResult.success || !projectResult.data) return null;
+
+  const communityName = projectResult.data.community_name;
+  if (!communityName) return null;
+
+  const client = await fetchClient();
+  const { data: communitiesData, error } = await client.GET(
+    "/api/admin/communities",
+    { params: { query: { search: communityName, page_size: 1 } } }
+  );
+
+  if (error || !communitiesData) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const communities = (communitiesData as any).items as CommunityItem[];
+  return communities?.[0]?.id || null;
+}
