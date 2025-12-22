@@ -6,6 +6,7 @@ import { Project } from "./types";
 // [新增] 引入资金账本抽屉组件
 // 注意：路径根据之前的文件夹结构，指向 [projectId]/cashflow/_components/cashflow-sheet
 import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet";
+import { MonitorSheet } from "./_components/monitor/monitor-sheet";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +109,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
         {/* 使用 Suspense 包裹，因为 CashFlowSheet 内部使用了 useSearchParams */}
         <Suspense fallback={null}>
           <CashFlowSheet />
+          <MonitorSheet />
         </Suspense>
       </div>
     </div>
