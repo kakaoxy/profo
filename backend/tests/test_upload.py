@@ -16,8 +16,9 @@ from sqlalchemy.orm import sessionmaker
 
 from models import Base, FailedRecord
 from schemas import PropertyIngestionModel, UploadResult
-from routers.upload import CSVBatchImporter
+from services.csv_batch_importer import CSVBatchImporter
 from exceptions import FileProcessingException, ResourceNotFoundException
+from dependencies.auth import get_current_operator_user, get_current_normal_user
 
 
 @pytest.fixture
@@ -54,7 +55,15 @@ def client():
     """Create FastAPI test client"""
     from fastapi.testclient import TestClient
     from main import app
-    return TestClient(app)
+    
+    # Override auth dependencies
+    app.dependency_overrides[get_current_operator_user] = lambda: {"id": 1, "username": "test_op", "role": "operator"}
+    app.dependency_overrides[get_current_normal_user] = lambda: {"id": 1, "username": "test_user", "role": "user"}
+    
+    yield TestClient(app)
+    
+    # Clean up overrides
+    app.dependency_overrides = {}
 
 
 # Test data helpers
@@ -511,10 +520,6 @@ class TestUploadAPI:
         
         def test_upload_valid_csv_file(self, client, tmp_path):
             """Test uploading valid CSV file"""
-            from fastapi.testclient import TestClient
-            from main import app
-            
-            client = TestClient(app)
             
             # Create test CSV file
             csv_content = create_valid_csv_content([
@@ -541,10 +546,6 @@ class TestUploadAPI:
         
         def test_upload_non_csv_file(self, client):
             """Test uploading non-CSV file returns error"""
-            from fastapi.testclient import TestClient
-            from main import app
-            
-            client = TestClient(app)
             
             response = client.post(
                 "/api/upload/csv",
@@ -556,10 +557,6 @@ class TestUploadAPI:
         
         def test_upload_empty_csv_file(self, client):
             """Test uploading empty CSV file returns error"""
-            from fastapi.testclient import TestClient
-            from main import app
-            
-            client = TestClient(app)
             
             response = client.post(
                 "/api/upload/csv",
@@ -571,10 +568,6 @@ class TestUploadAPI:
         
         def test_upload_csv_with_validation_errors(self, client, tmp_path):
             """Test uploading CSV with validation errors"""
-            from fastapi.testclient import TestClient
-            from main import app
-            
-            client = TestClient(app)
             
             # Create CSV with invalid data
             csv_content = create_valid_csv_content([
@@ -604,10 +597,6 @@ class TestUploadAPI:
         
         def test_download_existing_failed_records(self, client, tmp_path, monkeypatch):
             """Test downloading existing failed records file - simplified version"""
-            from fastapi.testclient import TestClient
-            from main import app
-            
-            client = TestClient(app)
             
             # Create temp directory and file
             temp_dir = tmp_path / "temp"
@@ -619,10 +608,11 @@ class TestUploadAPI:
                 f.write("行号,错误原因,数据源,房源ID\n1,测试错误,链家,TEST020\n")
             
             # Mock os.path.join to return the correct path
+            original_join = os.path.join
             def mock_join(*args):
                 if len(args) >= 2 and args[1] == 'temp':
-                    return str(tmp_path / "temp" / args[-1])
-                return os.path.join(*args)
+                    return str(tmp_path / "temp")
+                return original_join(*args)
             
             monkeypatch.setattr(os.path, 'join', mock_join)
             
@@ -636,10 +626,6 @@ class TestUploadAPI:
         
         def test_download_nonexistent_file(self, client):
             """Test downloading non-existent file returns 404"""
-            from fastapi.testclient import TestClient
-            from main import app
-            
-            client = TestClient(app)
             
             response = client.get("/api/upload/download/nonexistent_file.csv")
             

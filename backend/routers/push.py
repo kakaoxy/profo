@@ -143,7 +143,7 @@ class JSONBatchImporter:
 
 
 @router.post("", response_model=PushResult)
-async def push_properties(
+def push_properties(
     properties: List[dict],
     db: Session = Depends(get_db)
 ):
