@@ -17,7 +17,8 @@ from schemas import PropertyIngestionModel, UploadResult
 from services.importer import PropertyImporter
 from models import FailedRecord
 from exceptions import FileProcessingException
-from error_handlers import ErrorHandler
+from utils.error_formatters import format_validation_error
+from services.error_service import save_failed_record
 
 logger = logging.getLogger(__name__)
 
@@ -237,11 +238,11 @@ class CSVBatchImporter:
             )
 
     def _format_validation_error(self, error: ValidationError) -> str:
-        return ErrorHandler.format_validation_error(error)
+        return format_validation_error(error)
 
     def _save_failed_record(self, row: dict, error: str, db: Session):
         # 注意：此处仍使用独立 session 避免事务冲突
-        ErrorHandler.save_failed_record(
+        save_failed_record(
             data=row,
             error_message=error,
             failure_type='csv_validation_error',
