@@ -51,6 +51,7 @@ class RoleCreate(BaseRole):
 class RoleUpdate(BaseModel):
     """角色更新模型"""
     name: Optional[str] = Field(None, min_length=2, max_length=100, description="角色名称")
+    code: Optional[str] = Field(None, min_length=2, max_length=50, description="角色代码")
     description: Optional[str] = Field(None, description="角色描述")
     permissions: Optional[List[str]] = Field(None, description="权限列表")
     is_active: Optional[bool] = Field(None, description="是否激活")
