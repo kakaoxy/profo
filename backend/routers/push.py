@@ -15,7 +15,8 @@ from schemas import PropertyIngestionModel, PushResult
 from services.importer import PropertyImporter
 from models import FailedRecord
 from exceptions import ValidationException, BusinessLogicException
-from error_handlers import ErrorHandler
+from utils.error_formatters import format_validation_error
+from services.error_service import save_failed_record
 
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ class JSONBatchImporter:
         Returns:
             str: 格式化的错误信息
         """
-        return ErrorHandler.format_validation_error(error)
+        return format_validation_error(error)
     
     def _save_failed_record_raw(self, raw_data: dict, error: str, db: Session):
         """
@@ -134,7 +135,7 @@ class JSONBatchImporter:
             db: 数据库会话
         """
         # 使用统一的错误处理器保存失败记录
-        ErrorHandler.save_failed_record(
+        save_failed_record(
             data=raw_data,
             error_message=error,
             failure_type='json_validation_error',

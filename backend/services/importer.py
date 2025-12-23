@@ -10,7 +10,8 @@ from models import (
 )
 from schemas import PropertyIngestionModel, ImportResult, UploadResult, PushResult, BatchImportResult, FloorInfo
 from services.parser import FloorParser
-from error_handlers import ErrorHandler
+from utils.error_formatters import format_database_error
+from services.error_service import save_failed_record
 
 logger = logging.getLogger(__name__)
 
@@ -225,14 +226,14 @@ class PropertyImporter:
         """统一的异常处理逻辑"""
         db.rollback()
         
-        error_msg = ErrorHandler.format_database_error(e) if isinstance(e, SQLAlchemyError) else str(e)
+        error_msg = format_database_error(e) if isinstance(e, SQLAlchemyError) else str(e)
         failure_type = "database_error" if isinstance(e, SQLAlchemyError) else "import_error"
         if isinstance(e, IntegrityError):
             failure_type = "database_integrity_error"
             
         logger.error(f"导入失败 - {data.source_property_id}: {error_msg}")
         
-        ErrorHandler.save_failed_record(
+        save_failed_record(
             data=data.model_dump(by_alias=True),
             error_message=error_msg,
             failure_type=failure_type,
