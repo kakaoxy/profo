@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     wechat_secret: str = "your-wechat-secret"  # 微信AppSecret
     wechat_redirect_uri: str = "http://localhost:8000/api/auth/wechat/callback"  # 微信回调地址
     
+    # 微信 API URL
+    wechat_auth_url_base: str = "https://open.weixin.qq.com/connect/oauth2/authorize"
+    wechat_token_url: str = "https://api.weixin.qq.com/sns/oauth2/access_token"
+    wechat_userinfo_url: str = "https://api.weixin.qq.com/sns/userinfo"
+    wechat_jscode2session_url: str = "https://api.weixin.qq.com/sns/jscode2session"
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
