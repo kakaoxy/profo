@@ -36,7 +36,7 @@ export function HandoverDialog({ project, onSuccess }: HandoverDialogProps) {
 
     // 2. 更新交房日期
     const dateRes = await updateProjectAction(project.id, {
-      planned_handover_date: date.toISOString(),
+      planned_handover_date: format(date, "yyyy-MM-dd"),
     });
     if (!dateRes.success) throw new Error(dateRes.message);
 

@@ -57,7 +57,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
       // 2. 调用 Server Action
       const res = await completeProjectAction(project.id, {
         soldPrice: Number(price),
-        soldDate: date.toISOString(),
+        soldDate: format(date, "yyyy-MM-dd"),
       });
 
       if (res.success) {

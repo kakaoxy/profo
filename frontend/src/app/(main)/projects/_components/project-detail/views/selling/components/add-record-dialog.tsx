@@ -83,7 +83,7 @@ export function AddRecordDialog({
           | "offer"
           | "negotiation", // 使用映射后的类型
         customerName: person,
-        recordDate: date.toISOString(),
+        recordDate: format(date, "yyyy-MM-dd"),
         price: defaultTab === "offer" ? Number(price) : undefined,
         notes: defaultTab === "negotiation" ? content : undefined,
       });
