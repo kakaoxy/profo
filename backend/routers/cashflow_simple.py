@@ -22,7 +22,7 @@ def get_cashflow_service(db: Session = Depends(get_db)):
 # ========== 现金流管理 ==========
 
 @router.post("/projects/{project_id}/cashflow")
-async def create_cashflow_record(
+def create_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: CashFlowRecordCreate = ...,
     service: CashFlowService = Depends(get_cashflow_service)
@@ -33,7 +33,7 @@ async def create_cashflow_record(
 
 
 @router.get("/projects/{project_id}/cashflow")
-async def get_project_cashflow(
+def get_project_cashflow(
     project_id: str = Path(..., description="项目ID"),
     service: CashFlowService = Depends(get_cashflow_service)
 ):
@@ -49,7 +49,7 @@ async def get_project_cashflow(
 
 
 @router.delete("/projects/{project_id}/cashflow/{record_id}")
-async def delete_cashflow_record(
+def delete_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
     service: CashFlowService = Depends(get_cashflow_service)
