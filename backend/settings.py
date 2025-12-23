@@ -2,7 +2,8 @@
 应用配置文件
 """
 import os
-from typing import Optional
+from typing import Optional, Any
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from pathlib import Path
 
@@ -22,6 +23,13 @@ class Settings(BaseSettings):
     # API 配置
     api_prefix: str = "/api"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> Any:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        return v
     
     # 文件上传配置
     upload_dir: str = "static/uploads"
@@ -52,8 +60,8 @@ class Settings(BaseSettings):
     jwt_key_rotation_enabled: bool = False  # 是否启用密钥轮换
     
     # 微信配置
-    wechat_appid: str = "your-wechat-appid"  # 微信AppID
-    wechat_secret: str = "your-wechat-secret"  # 微信AppSecret
+    wechat_appid: str  # 微信AppID (Required from env)
+    wechat_secret: str  # 微信AppSecret (Required from env)
     wechat_redirect_uri: str = "http://localhost:8000/api/auth/wechat/callback"  # 微信回调地址
     
     # 微信 API URL
