@@ -82,7 +82,7 @@ export function AddRecordDialog({
         type,
         category,
         amount,
-        date: date.toISOString(),
+        date: format(date, "yyyy-MM-dd"),
         notes,
       });
 
