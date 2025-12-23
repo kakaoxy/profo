@@ -24,8 +24,15 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     
     # 文件上传配置
+    upload_dir: str = "static/uploads"
     max_upload_size: int = 100 * 1024 * 1024  # 100MB
-    allowed_extensions: list[str] = [".csv"]
+    allowed_extensions: set[str] = {'.jpg', '.jpeg', '.png', '.pdf', '.xlsx'}  # Store as set for O(1) lookup
+    allowed_mime_types: set[str] = {
+        'image/jpeg', 
+        'image/png', 
+        'application/pdf', 
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
     
     # 分页配置
     default_page_size: int = 50
