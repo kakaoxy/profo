@@ -86,6 +86,28 @@ class BusinessLogicException(ProfoException):
         )
 
 
+class AuthenticationException(ProfoException):
+    """认证异常（未登录或Token无效）"""
+    
+    def __init__(self, message: str = "认证失败", details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="AUTHENTICATION_ERROR",
+            details=details
+        )
+
+
+class PermissionDeniedException(ProfoException):
+    """权限不足异常"""
+    
+    def __init__(self, message: str = "权限不足", details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            code="PERMISSION_DENIED",
+            details=details
+        )
+
+
 class DateProcessingException(ProfoException):
     """日期处理异常"""
 

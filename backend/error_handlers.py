@@ -36,6 +36,8 @@ async def profo_exception_handler(request: Request, exc: ProfoException) -> JSON
         "FILE_PROCESSING_ERROR": status.HTTP_400_BAD_REQUEST,
         "BUSINESS_LOGIC_ERROR": status.HTTP_422_UNPROCESSABLE_ENTITY,
         "DATABASE_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
+        "AUTHENTICATION_ERROR": status.HTTP_401_UNAUTHORIZED,
+        "PERMISSION_DENIED": status.HTTP_403_FORBIDDEN,
     }
     
     status_code = status_code_map.get(exc.code, status.HTTP_500_INTERNAL_SERVER_ERROR)
