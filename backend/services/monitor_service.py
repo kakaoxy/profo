@@ -220,82 +220,84 @@ class MonitorService:
         communities = db.query(Community).filter(Community.id.in_(all_community_ids)).all()
         community_map = {c.id: c for c in communities}
         
-        # 4. 统计每个小区的数据
-        def get_stats(cid: int):
-            """获取单个小区的统计数据"""
-            # 挂牌统计 - 按 data_source 分组
-            listing_query = db.query(
-                PropertyCurrent.data_source,
-                func.count().label("count"),
-                func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
-            ).filter(
-                PropertyCurrent.community_id == cid,
-                PropertyCurrent.status == PropertyStatus.FOR_SALE,
-                PropertyCurrent.build_area > 0
-            ).group_by(PropertyCurrent.data_source).all()
+        # 4. 批量查询所有小区的统计数据
+        # 4.1 挂牌统计 (Bulk Fetch)
+        listing_query = db.query(
+            PropertyCurrent.community_id,
+            PropertyCurrent.data_source,
+            func.count().label("count"),
+            func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
+        ).filter(
+            PropertyCurrent.community_id.in_(all_community_ids),
+            PropertyCurrent.status == PropertyStatus.FOR_SALE,
+            PropertyCurrent.build_area > 0
+        ).group_by(PropertyCurrent.community_id, PropertyCurrent.data_source).all()
+
+        # 4.2 成交统计 (Bulk Fetch)
+        deal_query = db.query(
+            PropertyCurrent.community_id,
+            PropertyCurrent.data_source,
+            func.count().label("count"),
+            func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
+        ).filter(
+            PropertyCurrent.community_id.in_(all_community_ids),
+            PropertyCurrent.status == PropertyStatus.SOLD,
+            PropertyCurrent.sold_date >= one_year_ago,
+            PropertyCurrent.build_area > 0
+        ).group_by(PropertyCurrent.community_id, PropertyCurrent.data_source).all()
+
+        # 5. 在内存中聚合数据
+        # 初始化 stats 结构
+        all_stats = {cid: {
+            "listing_count": 0, "listing_beike": 0, "listing_iaij": 0, "listing_total_price": 0.0,
+            "deal_count": 0, "deal_beike": 0, "deal_iaij": 0, "deal_total_price": 0.0
+        } for cid in all_community_ids}
+
+        # 处理挂牌数据
+        for row in listing_query:
+            cid = row.community_id
+            if cid not in all_stats: continue # Should not happen
+            src = (row.data_source or "").lower()
+            count = row.count
+            avg = row.avg_price or 0
             
-            # 成交统计 - 按 data_source 分组 (过去12个月)
-            deal_query = db.query(
-                PropertyCurrent.data_source,
-                func.count().label("count"),
-                func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
-            ).filter(
-                PropertyCurrent.community_id == cid,
-                PropertyCurrent.status == PropertyStatus.SOLD,
-                PropertyCurrent.sold_date >= one_year_ago,
-                PropertyCurrent.build_area > 0
-            ).group_by(PropertyCurrent.data_source).all()
+            all_stats[cid]["listing_count"] += count
+            all_stats[cid]["listing_total_price"] += avg * count
             
-            # 解析结果 - 贝壳/我爱我家渠道
-            listing_beike = 0
-            listing_iaij = 0
-            listing_total_price = 0.0
-            listing_total_count = 0
+            if "beike" in src or "贝壳" in src or "链家" in src:
+                all_stats[cid]["listing_beike"] += count
+            elif "5i5j" in src or "我爱" in src or "iaij" in src:
+                all_stats[cid]["listing_iaij"] += count
+
+        # 处理成交数据
+        for row in deal_query:
+            cid = row.community_id
+            if cid not in all_stats: continue
+            src = (row.data_source or "").lower()
+            count = row.count
+            avg = row.avg_price or 0
             
-            for row in listing_query:
-                src = (row.data_source or "").lower()
-                if "beike" in src or "贝壳" in src or "链家" in src:
-                    listing_beike += row.count
-                elif "5i5j" in src or "我爱" in src or "iaij" in src:
-                    listing_iaij += row.count
-                listing_total_count += row.count
-                if row.avg_price:
-                    listing_total_price += row.avg_price * row.count
+            all_stats[cid]["deal_count"] += count
+            all_stats[cid]["deal_total_price"] += avg * count
             
-            deal_beike = 0
-            deal_iaij = 0
-            deal_total_price = 0.0
-            deal_total_count = 0
-            
-            for row in deal_query:
-                src = (row.data_source or "").lower()
-                if "beike" in src or "贝壳" in src or "链家" in src:
-                    deal_beike += row.count
-                elif "5i5j" in src or "我爱" in src or "iaij" in src:
-                    deal_iaij += row.count
-                deal_total_count += row.count
-                if row.avg_price:
-                    deal_total_price += row.avg_price * row.count
-            
-            listing_avg = listing_total_price / listing_total_count if listing_total_count > 0 else 0
-            deal_avg = deal_total_price / deal_total_count if deal_total_count > 0 else 0
-            
-            return {
-                "listing_count": listing_total_count,
-                "listing_beike": listing_beike,
-                "listing_iaij": listing_iaij,
-                "listing_avg_price": round(listing_avg, 0),
-                "deal_count": deal_total_count,
-                "deal_beike": deal_beike,
-                "deal_iaij": deal_iaij,
-                "deal_avg_price": round(deal_avg, 0),
+            if "beike" in src or "贝壳" in src or "链家" in src:
+                all_stats[cid]["deal_beike"] += count
+            elif "5i5j" in src or "我爱" in src or "iaij" in src:
+                all_stats[cid]["deal_iaij"] += count
+
+        # 6. 获取本案成交均价作为基准 (计算 ultimate averages)
+        # 先处理所有 final averages
+        final_stats = {}
+        for cid, data in all_stats.items():
+            l_count = data["listing_count"]
+            d_count = data["deal_count"]
+            final_stats[cid] = {
+                **data,
+                "listing_avg_price": round(data["listing_total_price"] / l_count, 0) if l_count > 0 else 0,
+                "deal_avg_price": round(data["deal_total_price"] / d_count, 0) if d_count > 0 else 0
             }
-        
-        # 5. 计算所有小区数据
-        all_stats = {cid: get_stats(cid) for cid in all_community_ids}
-        
-        # 6. 获取本案成交均价作为基准
-        subject_deal_avg = all_stats[community_id]["deal_avg_price"]
+
+        subject_deal_avg = final_stats[community_id]["deal_avg_price"]
         
         # 7. 构建响应
         items = []
@@ -303,7 +305,7 @@ class MonitorService:
             c = community_map.get(cid)
             if not c:
                 continue
-            stats = all_stats[cid]
+            stats = final_stats[cid]
             is_subject = (cid == community_id)
             
             # 计算价差
