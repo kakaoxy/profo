@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Filter, Loader2, AlertCircle } from "lucide-react";
+import { Search, Filter, Loader2, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,17 @@ interface CompetitorsBrawlProps {
   projectId: string;
 }
 
+type SortConfig = {
+  key: 'total' | 'unit' | null;
+  direction: 'asc' | 'desc' | null;
+};
+
 export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
   const [statusFilters, setStatusFilters] = useState<('on_sale' | 'sold')[]>(['on_sale']);
   const [layoutFilters, setLayoutFilters] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: null });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [allItems, setAllItems] = useState<BrawlItem[]>([]);
@@ -52,7 +60,7 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
   };
 
   // 前端过滤
-  const filteredItems = allItems.filter(item => {
+  let filteredItems = allItems.filter(item => {
     // 1. 状态筛选
     let matchStatus = false;
     if (statusFilters.includes('on_sale') && item.status === 'on_sale') matchStatus = true;
@@ -73,8 +81,31 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
       if (!matchLayout) return false;
     }
 
+    // 3. 搜索筛选 (目前仅支持小区名模糊搜索)
+    if (searchQuery) {
+      if (!item.community.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+    }
+
     return true;
   });
+
+  // 排序逻辑
+  if (sortConfig.key && sortConfig.direction) {
+    filteredItems.sort((a, b) => {
+      // 始终优先显示 is_current
+      if (a.is_current && !b.is_current) return -1;
+      if (!a.is_current && b.is_current) return 1;
+
+      const valA = a[sortConfig.key!];
+      const valB = b[sortConfig.key!];
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
 
   const toggleFilter = (status: 'on_sale' | 'sold') => {
     setStatusFilters(prev => {
@@ -96,6 +127,23 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
         return [...prev, layout];
       }
     });
+  };
+
+  const handleSort = (key: 'total' | 'unit') => {
+    setSortConfig(current => {
+      if (current.key === key) {
+        if (current.direction === 'asc') return { key, direction: 'desc' };
+        if (current.direction === 'desc') return { key: null, direction: null }; 
+        return { key, direction: 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const SortIcon = ({ column }: { column: 'total' | 'unit' }) => {
+    if (sortConfig.key !== column) return <ArrowUpDown className="ml-1 h-3 w-3 text-slate-300" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-1 h-3 w-3 text-indigo-600" />;
+    return <ArrowDown className="ml-1 h-3 w-3 text-indigo-600" />;
   };
 
   return (
@@ -156,7 +204,9 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input 
               type="text" 
-              placeholder="搜索 ID、商圈或小区名称..."
+              placeholder="搜索小区名称..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 border-none rounded-lg text-xs font-medium focus:ring-2 ring-indigo-500/10 outline-none transition-all"
             />
           </div>
@@ -185,8 +235,18 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">小区 / 状态</TableHead>
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">户型 / 朝向</TableHead>
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">面积 (㎡)</TableHead>
-                  <TableHead className="py-4 px-4 text-[10px] font-bold text-rose-500 uppercase tracking-wider">总价 (万)</TableHead>
-                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">单价 (元/㎡)</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-rose-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors" onClick={() => handleSort('total')}>
+                    <div className="flex items-center">
+                      总价 (万)
+                      <SortIcon column="total" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors" onClick={() => handleSort('unit')}>
+                    <div className="flex items-center">
+                      单价 (元/㎡)
+                      <SortIcon column="unit" />
+                    </div>
+                  </TableHead>
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     挂牌/成交日期
                   </TableHead>
