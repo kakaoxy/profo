@@ -60,7 +60,7 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
   };
 
   // 前端过滤
-  let filteredItems = allItems.filter(item => {
+  const filteredItems = allItems.filter(item => {
     // 1. 状态筛选
     let matchStatus = false;
     if (statusFilters.includes('on_sale') && item.status === 'on_sale') matchStatus = true;
