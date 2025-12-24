@@ -19,7 +19,8 @@ export interface CommunityItem {
 export interface BrawlItem {
   id: string;
   community: string;
-  status: string;
+  status: string; // 'on_sale' | 'sold'
+  display_status?: string; // 原本的中文状态 '在售' | '成交' | '挂牌'
   layout: string;
   floor: string;
   area: number;
