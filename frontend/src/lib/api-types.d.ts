@@ -53,7 +53,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload Csv */
+        /**
+         * Upload Csv
+         * @description 上传并处理 CSV 文件
+         *     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
+         */
         post: operations["upload_csv_api_upload_csv_post"];
         delete?: never;
         options?: never;
@@ -68,7 +72,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download Failed Records */
+        /**
+         * Download Failed Records
+         * @description 下载失败记录文件
+         *     注意：使用 def 避免文件操作阻塞
+         */
         get: operations["download_failed_records_api_upload_download__filename__get"];
         put?: never;
         post?: never;
@@ -122,42 +130,8 @@ export interface paths {
          * @description 查询房源列表
          *
          *     支持多维度筛选、排序和分页
-         *
-         *     Args:
-         *         status: 房源状态筛选
-         *         community_name: 小区名称模糊搜索
-         *         min_price: 最低价格
-         *         max_price: 最高价格
-         *         min_area: 最小面积
-         *         max_area: 最大面积
-         *         rooms: 室数量列表（逗号分隔）
-         *         sort_by: 排序字段
-         *         sort_order: 排序方向
-         *         page: 页码
-         *         page_size: 每页数量
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         PaginatedPropertyResponse: 分页查询结果
          */
         get: operations["get_properties_api_properties_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/properties/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Property Detail */
-        get: operations["get_property_detail_api_properties__id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -178,23 +152,28 @@ export interface paths {
          * @description 导出房源数据为 CSV 文件
          *
          *     使用与查询接口相同的筛选和排序参数，但移除分页限制，导出所有匹配的记录
-         *
-         *     Args:
-         *         status: 房源状态筛选
-         *         community_name: 小区名称模糊搜索
-         *         min_price: 最低价格
-         *         max_price: 最高价格
-         *         min_area: 最小面积
-         *         max_area: 最大面积
-         *         rooms: 室数量列表（逗号分隔）
-         *         sort_by: 排序字段
-         *         sort_order: 排序方向
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         StreamingResponse: CSV 文件流
          */
         get: operations["export_properties_api_properties_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/properties/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Property Detail
+         * @description 获取房源详情
+         */
+        get: operations["get_property_detail_api_properties__id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -213,18 +192,6 @@ export interface paths {
         /**
          * Get Communities
          * @description 查询小区列表
-         *
-         *     支持按名称搜索和分页
-         *
-         *     Args:
-         *         search: 小区名称搜索关键词
-         *         page: 页码
-         *         page_size: 每页数量
-         *         db: 数据库会话
-         *         current_user: 当前用户
-         *
-         *     Returns:
-         *         CommunityListResponse: 小区列表响应
          */
         get: operations["get_communities_api_admin_communities_get"];
         put?: never;
@@ -244,7 +211,7 @@ export interface paths {
         };
         /**
          * Get Dictionaries
-         * @description 返回行政区或商圈的去重列表，支持模糊搜索
+         * @description 返回行政区或商圈的去重列表
          */
         get: operations["get_dictionaries_api_admin_dictionaries_get"];
         put?: never;
@@ -266,134 +233,9 @@ export interface paths {
         put?: never;
         /**
          * Merge Communities
-         * @description 合并小区
-         *
-         *     将多个小区合并到一个主小区，包括：
-         *     1. 创建别名映射
-         *     2. 更新所有关联房源
-         *     3. 软删除被合并的小区
-         *
-         *     Args:
-         *         request: 合并请求（包含主小区ID和要合并的小区ID列表）
-         *         db: 数据库会话
-         *         current_user: 当前用户
-         *
-         *     Returns:
-         *         CommunityMergeResponse: 合并结果
+         * @description 合并小区操作
          */
         post: operations["merge_communities_api_admin_communities_merge_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Projects
-         * @description 获取项目列表
-         */
-        get: operations["get_projects_api_v1_projects_get"];
-        put?: never;
-        /**
-         * Create Project
-         * @description 创建项目
-         */
-        post: operations["create_project_api_v1_projects_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/stats": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Project Stats
-         * @description 获取项目统计
-         */
-        get: operations["get_project_stats_api_v1_projects_stats_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Project
-         * @description 获取项目详情
-         */
-        get: operations["get_project_api_v1_projects__project_id__get"];
-        /**
-         * Update Project
-         * @description 更新项目信息（仅签约阶段可修改）
-         */
-        put: operations["update_project_api_v1_projects__project_id__put"];
-        post?: never;
-        /**
-         * Delete Project
-         * @description 删除项目（软删除）
-         */
-        delete: operations["delete_project_api_v1_projects__project_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update Project Status
-         * @description 更新项目状态
-         */
-        put: operations["update_project_status_api_v1_projects__project_id__status_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/complete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Complete Project
-         * @description 完成项目（标记为已售）
-         */
-        post: operations["complete_project_api_v1_projects__project_id__complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -410,7 +252,7 @@ export interface paths {
         get?: never;
         /**
          * Update Renovation Stage
-         * @description 更新改造阶段
+         * @description 更新改造阶段 (Sync)
          */
         put: operations["update_renovation_stage_api_v1_projects__project_id__renovation_put"];
         post?: never;
@@ -429,13 +271,13 @@ export interface paths {
         };
         /**
          * Get Renovation Photos
-         * @description 获取改造阶段照片
+         * @description 获取改造阶段照片 (Sync)
          */
         get: operations["get_renovation_photos_api_v1_projects__project_id__renovation_photos_get"];
         put?: never;
         /**
          * Upload Renovation Photo
-         * @description 上传改造阶段照片
+         * @description 上传改造阶段照片 (Sync)
          */
         post: operations["upload_renovation_photo_api_v1_projects__project_id__renovation_photos_post"];
         delete?: never;
@@ -456,7 +298,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Renovation Photo
-         * @description 删除改造阶段照片
+         * @description 删除改造阶段照片 (Sync)
          */
         delete: operations["delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete"];
         options?: never;
@@ -474,7 +316,7 @@ export interface paths {
         get?: never;
         /**
          * Update Sales Roles
-         * @description 更新销售角色
+         * @description 更新销售角色 (Sync)
          */
         put: operations["update_sales_roles_api_v1_projects__project_id__selling_roles_put"];
         post?: never;
@@ -495,7 +337,7 @@ export interface paths {
         put?: never;
         /**
          * Create Viewing Record
-         * @description 创建带看记录
+         * @description 创建带看记录 (Sync)
          */
         post: operations["create_viewing_record_api_v1_projects__project_id__selling_viewings_post"];
         delete?: never;
@@ -515,7 +357,7 @@ export interface paths {
         put?: never;
         /**
          * Create Offer Record
-         * @description 创建出价记录
+         * @description 创建出价记录 (Sync)
          */
         post: operations["create_offer_record_api_v1_projects__project_id__selling_offers_post"];
         delete?: never;
@@ -535,7 +377,7 @@ export interface paths {
         put?: never;
         /**
          * Create Negotiation Record
-         * @description 创建面谈记录
+         * @description 创建面谈记录 (Sync)
          */
         post: operations["create_negotiation_record_api_v1_projects__project_id__selling_negotiations_post"];
         delete?: never;
@@ -553,7 +395,7 @@ export interface paths {
         };
         /**
          * Get Sales Records
-         * @description 获取销售记录
+         * @description 获取销售记录 (Sync)
          */
         get: operations["get_sales_records_api_v1_projects__project_id__selling_records_get"];
         put?: never;
@@ -576,9 +418,121 @@ export interface paths {
         post?: never;
         /**
          * Delete Sales Record
-         * @description 删除销售记录
+         * @description 删除销售记录 (Sync)
          */
         delete: operations["delete_sales_record_api_v1_projects__project_id__selling_records__record_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Projects
+         * @description 获取项目列表 (Sync)
+         */
+        get: operations["get_projects_api_v1_projects_get"];
+        put?: never;
+        /**
+         * Create Project
+         * @description 创建项目 (Sync)
+         */
+        post: operations["create_project_api_v1_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Stats
+         * @description 获取项目统计 (Sync)
+         */
+        get: operations["get_project_stats_api_v1_projects_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project
+         * @description 获取项目详情 (Sync)
+         */
+        get: operations["get_project_api_v1_projects__project_id__get"];
+        /**
+         * Update Project
+         * @description 更新项目信息 (Sync)
+         */
+        put: operations["update_project_api_v1_projects__project_id__put"];
+        post?: never;
+        /**
+         * Delete Project
+         * @description 删除项目 (Sync)
+         */
+        delete: operations["delete_project_api_v1_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Project Status
+         * @description 更新项目状态 (Sync)
+         */
+        put: operations["update_project_status_api_v1_projects__project_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Project
+         * @description 完成项目 (Sync)
+         */
+        post: operations["complete_project_api_v1_projects__project_id__complete_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -593,7 +547,7 @@ export interface paths {
         };
         /**
          * Get Project Report
-         * @description 获取项目报告
+         * @description 获取项目报告 (Sync)
          */
         get: operations["get_project_report_api_v1_projects__project_id__report_get"];
         put?: never;
@@ -613,7 +567,7 @@ export interface paths {
         };
         /**
          * Export Projects
-         * @description 导出项目数据到Excel
+         * @description 导出项目数据 (Sync)
          */
         get: operations["export_projects_api_v1_projects_export_get"];
         put?: never;
@@ -677,7 +631,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 上传文件 */
+        /**
+         * 上传文件
+         * @description Handle file upload (Sync - Run in threadpool by FastAPI)
+         *     Optimized to read only first 2KB for MIME check.
+         */
         post: operations["upload_file_api_v1_files_upload_post"];
         delete?: never;
         options?: never;
@@ -694,7 +652,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login For Access Token */
+        /**
+         * Login For Access Token
+         * @description OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
+         */
         post: operations["login_for_access_token_api_auth_token_post"];
         delete?: never;
         options?: never;
@@ -713,17 +674,7 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description 用户名密码登录，获取访问令牌
-         *
-         *     Args:
-         *         login_data: 登录请求数据
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         TokenResponse: 包含访问令牌、刷新令牌和用户信息的响应
-         *
-         *     Raises:
-         *         HTTPException: 401 Unauthorized - 用户名或密码错误
+         * @description 用户名密码登录 (Sync - Run in threadpool by FastAPI)
          */
         post: operations["login_api_auth_login_post"];
         delete?: never;
@@ -743,17 +694,7 @@ export interface paths {
         put?: never;
         /**
          * Refresh Access Token
-         * @description 使用刷新令牌获取新的访问令牌
-         *
-         *     Args:
-         *         refresh_data: 刷新令牌请求数据
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         TokenResponse: 包含新的访问令牌、刷新令牌和用户信息的响应
-         *
-         *     Raises:
-         *         HTTPException: 401 Unauthorized - 刷新令牌无效
+         * @description 刷新令牌 (Sync - Run in threadpool by FastAPI)
          */
         post: operations["refresh_access_token_api_auth_refresh_post"];
         delete?: never;
@@ -772,12 +713,6 @@ export interface paths {
         /**
          * Wechat Authorize
          * @description 生成微信登录授权URL
-         *
-         *     Args:
-         *         redirect_uri: 自定义重定向URI，可选
-         *
-         *     Returns:
-         *         dict: 包含微信授权URL的响应
          */
         get: operations["wechat_authorize_api_auth_wechat_authorize_get"];
         put?: never;
@@ -797,15 +732,7 @@ export interface paths {
         };
         /**
          * Wechat Callback
-         * @description 微信授权回调处理
-         *
-         *     Args:
-         *         code: 微信授权码
-         *         state: 状态参数
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         dict: 包含登录结果的响应
+         * @description 微信授权回调 (Async for HTTP, run_in_threadpool for DB)
          */
         get: operations["wechat_callback_api_auth_wechat_callback_get"];
         put?: never;
@@ -827,17 +754,7 @@ export interface paths {
         put?: never;
         /**
          * Wechat App Login
-         * @description 微信小程序登录
-         *
-         *     Args:
-         *         login_data: 微信登录请求数据
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         TokenResponse: 包含访问令牌、刷新令牌和用户信息的响应
-         *
-         *     Raises:
-         *         HTTPException: 400 Bad Request - 微信登录失败
+         * @description 微信小程序登录 (Async for HTTP, run_in_threadpool for DB)
          */
         post: operations["wechat_app_login_api_auth_wechat_login_post"];
         delete?: never;
@@ -856,16 +773,6 @@ export interface paths {
         /**
          * Get Current User Info
          * @description 获取当前用户信息
-         *
-         *     Args:
-         *         current_user: 当前认证用户，通过依赖注入自动获取
-         *
-         *     Returns:
-         *         UserResponse: 当前用户信息
-         *
-         *     Raises:
-         *         HTTPException: 401 Unauthorized - 用户未认证
-         *         HTTPException: 400 Bad Request - 用户未激活
          */
         get: operations["get_current_user_info_api_auth_me_get"];
         put?: never;
@@ -886,36 +793,12 @@ export interface paths {
         /**
          * Get Users
          * @description 获取用户列表，支持搜索和筛选
-         *
-         *     Args:
-         *         username: 用户名搜索（模糊匹配）
-         *         nickname: 昵称搜索（模糊匹配）
-         *         role_id: 角色ID筛选
-         *         status: 用户状态筛选
-         *         page: 页码
-         *         page_size: 每页数量
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         UserListResponse: 用户列表响应
          */
         get: operations["get_users_api_users_users_get"];
         put?: never;
         /**
          * Create User
          * @description 创建新用户
-         *
-         *     Args:
-         *         user_data: 用户创建数据
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         UserResponse: 新创建的用户信息
-         *
-         *     Raises:
-         *         HTTPException: 400 Bad Request - 用户名已存在
          */
         post: operations["create_user_api_users_users_post"];
         delete?: never;
@@ -934,13 +817,6 @@ export interface paths {
         /**
          * Get Current User
          * @description 获取当前登录用户信息
-         *
-         *     Args:
-         *         current_user: 当前活跃用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         UserResponse: 当前用户信息
          */
         get: operations["get_current_user_api_users_me_get"];
         put?: never;
@@ -961,53 +837,17 @@ export interface paths {
         /**
          * Get User
          * @description 获取指定用户信息
-         *
-         *     Args:
-         *         user_id: 用户ID
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         UserResponse: 用户信息
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 用户不存在
          */
         get: operations["get_user_api_users_users__user_id__get"];
         /**
          * Update User
          * @description 更新用户信息
-         *
-         *     Args:
-         *         user_id: 用户ID
-         *         user_data: 用户更新数据
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         UserResponse: 更新后的用户信息
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 用户不存在
-         *         HTTPException: 400 Bad Request - 手机号已被使用
          */
         put: operations["update_user_api_users_users__user_id__put"];
         post?: never;
         /**
          * Delete User
          * @description 删除用户
-         *
-         *     Args:
-         *         user_id: 用户ID
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         dict: 删除结果
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 用户不存在
-         *         HTTPException: 400 Bad Request - 不能删除自己
          */
         delete: operations["delete_user_api_users_users__user_id__delete"];
         options?: never;
@@ -1026,19 +866,6 @@ export interface paths {
         /**
          * Reset User Password
          * @description 重置用户密码
-         *
-         *     Args:
-         *         user_id: 用户ID
-         *         password_data: 密码重置请求数据
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         dict: 重置结果
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 用户不存在
-         *         HTTPException: 400 Bad Request - 密码不符合强度要求
          */
         put: operations["reset_user_password_api_users_users__user_id__reset_password_put"];
         post?: never;
@@ -1060,19 +887,29 @@ export interface paths {
         /**
          * Change Password
          * @description 修改当前用户密码
-         *
-         *     Args:
-         *         password_data: 密码修改数据
-         *         current_user: 当前活跃用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         dict: 修改结果
-         *
-         *     Raises:
-         *         HTTPException: 400 Bad Request - 当前密码错误
          */
         post: operations["change_password_api_users_users_change_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/init-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Init System Data
+         * @description 初始化系统数据，包括默认角色和管理员用户
+         *     注意：使用 def 避免 sync DB 阻塞
+         */
+        post: operations["init_system_data_api_users_init_data_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1089,35 +926,12 @@ export interface paths {
         /**
          * Get Roles
          * @description 获取角色列表，支持搜索和筛选
-         *
-         *     Args:
-         *         name: 角色名称搜索（模糊匹配）
-         *         code: 角色代码搜索（模糊匹配）
-         *         is_active: 是否激活筛选
-         *         page: 页码
-         *         page_size: 每页数量
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         RoleListResponse: 角色列表响应
          */
         get: operations["get_roles_api_users_roles_get"];
         put?: never;
         /**
          * Create Role
          * @description 创建新角色
-         *
-         *     Args:
-         *         role_data: 角色创建数据
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         RoleResponse: 新创建的角色信息
-         *
-         *     Raises:
-         *         HTTPException: 400 Bad Request - 角色名称或代码已存在
          */
         post: operations["create_role_api_users_roles_post"];
         delete?: never;
@@ -1136,53 +950,17 @@ export interface paths {
         /**
          * Get Role
          * @description 获取指定角色信息
-         *
-         *     Args:
-         *         role_id: 角色ID
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         RoleResponse: 角色信息
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 角色不存在
          */
         get: operations["get_role_api_users_roles__role_id__get"];
         /**
          * Update Role
          * @description 更新角色信息
-         *
-         *     Args:
-         *         role_id: 角色ID
-         *         role_data: 角色更新数据
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         RoleResponse: 更新后的角色信息
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 角色不存在
-         *         HTTPException: 400 Bad Request - 角色名称或代码已存在
          */
         put: operations["update_role_api_users_roles__role_id__put"];
         post?: never;
         /**
          * Delete Role
          * @description 删除角色
-         *
-         *     Args:
-         *         role_id: 角色ID
-         *         current_user: 当前管理员用户
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         dict: 删除结果
-         *
-         *     Raises:
-         *         HTTPException: 404 Not Found - 角色不存在
-         *         HTTPException: 400 Bad Request - 角色下存在用户，无法删除
          */
         delete: operations["delete_role_api_users_roles__role_id__delete"];
         options?: never;
@@ -1190,7 +968,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/init-data": {
+    "/api/monitor/communities/{community_id}/sentiment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sentiment */
+        get: operations["get_sentiment_api_monitor_communities__community_id__sentiment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitor/communities/{community_id}/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Trends */
+        get: operations["get_trends_api_monitor_communities__community_id__trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitor/ai-strategy": {
         parameters: {
             query?: never;
             header?: never;
@@ -1199,26 +1011,64 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Init System Data
-         * @description 初始化系统数据，包括默认角色和管理员用户
-         *
-         *     首次部署时调用此接口创建初始数据。
-         *     系统会创建默认角色和一个临时管理员账户。
-         *
-         *     Args:
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         dict: 初始化结果，包含临时管理员密码
-         *
-         *     Security:
-         *         - 此接口仅在系统未初始化时可调用
-         *         - 临时密码仅显示一次，请妥善保存
-         *         - 首次登录必须修改密码
-         */
-        post: operations["init_system_data_api_users_init_data_post"];
+        /** Generate Strategy */
+        post: operations["generate_strategy_api_monitor_ai_strategy_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/monitor/communities/{community_id}/radar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Neighborhood Radar
+         * @description 获取周边竞品雷达数据，包含分渠道统计
+         */
+        get: operations["get_neighborhood_radar_api_monitor_communities__community_id__radar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{community_id}/competitors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Competitors */
+        get: operations["get_competitors_api_communities__community_id__competitors_get"];
+        put?: never;
+        /** Add Competitor */
+        post: operations["add_competitor_api_communities__community_id__competitors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{community_id}/competitors/{competitor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Competitor */
+        delete: operations["remove_competitor_api_communities__community_id__competitors__competitor_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1228,6 +1078,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AIStrategyRequest */
+        AIStrategyRequest: {
+            /** Project Id */
+            project_id: string;
+            /** User Context */
+            user_context: string;
+        };
+        /** AIStrategyResponse */
+        AIStrategyResponse: {
+            /** Report Markdown */
+            report_markdown: string;
+            risk_points: components["schemas"]["RiskPoints"];
+            /** Action Plan */
+            action_plan: string[];
+        };
+        /** AddCompetitorRequest */
+        AddCompetitorRequest: {
+            /** Competitor Community Id */
+            competitor_community_id: number;
+        };
         /** Body_login_for_access_token_api_auth_token_post */
         Body_login_for_access_token_api_auth_token_post: {
             /** Grant Type */
@@ -1363,6 +1233,30 @@ export interface components {
              */
             created_at: string;
         };
+        /** CompetitorResponse */
+        CompetitorResponse: {
+            /** Community Id */
+            community_id: number;
+            /** Community Name */
+            community_name: string;
+            /** Avg Price */
+            avg_price: number;
+            /** On Sale Count */
+            on_sale_count: number;
+        };
+        /** FloorStats */
+        FloorStats: {
+            /** Type */
+            type: string;
+            /** Deals Count */
+            deals_count: number;
+            /** Deal Avg Price */
+            deal_avg_price: number;
+            /** Current Count */
+            current_count: number;
+            /** Current Avg Price */
+            current_avg_price: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1383,6 +1277,53 @@ export interface components {
              * @description 密码
              */
             password: string;
+        };
+        /** MarketSentimentResponse */
+        MarketSentimentResponse: {
+            /** Floor Stats */
+            floor_stats: components["schemas"]["FloorStats"][];
+            /** Inventory Months */
+            inventory_months: number;
+        };
+        /**
+         * NeighborhoodRadarItem
+         * @description 周边竞品雷达单项数据
+         */
+        NeighborhoodRadarItem: {
+            /** Community Id */
+            community_id: number;
+            /** Community Name */
+            community_name: string;
+            /** Is Subject */
+            is_subject: boolean;
+            /** Listing Count */
+            listing_count: number;
+            /** Listing Beike */
+            listing_beike: number;
+            /** Listing Iaij */
+            listing_iaij: number;
+            /** Listing Avg Price */
+            listing_avg_price: number;
+            /** Deal Count */
+            deal_count: number;
+            /** Deal Beike */
+            deal_beike: number;
+            /** Deal Iaij */
+            deal_iaij: number;
+            /** Deal Avg Price */
+            deal_avg_price: number;
+            /** Spread Percent */
+            spread_percent: number;
+            /** Spread Label */
+            spread_label: string;
+        };
+        /**
+         * NeighborhoodRadarResponse
+         * @description 周边竞品雷达响应
+         */
+        NeighborhoodRadarResponse: {
+            /** Items */
+            items: components["schemas"]["NeighborhoodRadarItem"][];
         };
         /**
          * PaginatedPropertyResponse
@@ -1878,6 +1819,13 @@ export interface components {
              */
             stage_completed_at?: string | null;
         };
+        /** RiskPoints */
+        RiskPoints: {
+            /** Profit Critical Price */
+            profit_critical_price: number;
+            /** Daily Cost */
+            daily_cost: number;
+        };
         /**
          * RoleCreate
          * @description 角色创建模型
@@ -1978,6 +1926,11 @@ export interface components {
              * @description 角色名称
              */
             name?: string | null;
+            /**
+             * Code
+             * @description 角色代码
+             */
+            code?: string | null;
             /**
              * Description
              * @description 角色描述
@@ -2080,6 +2033,17 @@ export interface components {
             expires_in: number;
             /** @description 用户信息 */
             user: components["schemas"]["UserResponse"];
+        };
+        /** TrendData */
+        TrendData: {
+            /** Month */
+            month: string;
+            /** Listing Price */
+            listing_price: number;
+            /** Deal Price */
+            deal_price: number;
+            /** Volume */
+            volume: number;
         };
         /**
          * UploadResult
@@ -2480,37 +2444,6 @@ export interface operations {
             };
         };
     };
-    get_property_detail_api_properties__id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PropertyDetailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     export_properties_api_properties_export_get: {
         parameters: {
             query?: {
@@ -2556,6 +2489,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_property_detail_api_properties__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertyDetailResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2661,272 +2625,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityMergeResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_projects_api_v1_projects_get: {
-        parameters: {
-            query?: {
-                /** @description 项目状态筛选 */
-                status?: string | null;
-                /** @description 小区名称筛选 */
-                community_name?: string | null;
-                /** @description 页码 */
-                page?: number;
-                /** @description 每页数量 */
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_project_api_v1_projects_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProjectCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_project_stats_api_v1_projects_stats_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_project_api_v1_projects__project_id__get: {
-        parameters: {
-            query?: {
-                /** @description 是否获取完整详情(包含大字段) */
-                full?: boolean;
-            };
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_project_api_v1_projects__project_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProjectUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_project_api_v1_projects__project_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_project_status_api_v1_projects__project_id__status_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StatusUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    complete_project_api_v1_projects__project_id__complete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProjectCompleteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -3278,6 +2976,272 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_projects_api_v1_projects_get: {
+        parameters: {
+            query?: {
+                /** @description 项目状态筛选 */
+                status?: string | null;
+                /** @description 小区名称筛选 */
+                community_name?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_api_v1_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_stats_api_v1_projects_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_project_api_v1_projects__project_id__get: {
+        parameters: {
+            query?: {
+                /** @description 是否获取完整详情(包含大字段) */
+                full?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_api_v1_projects__project_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_api_v1_projects__project_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_status_api_v1_projects__project_id__status_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_project_api_v1_projects__project_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCompleteRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3975,6 +3939,26 @@ export interface operations {
             };
         };
     };
+    init_system_data_api_users_init_data_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_roles_api_users_roles_get: {
         parameters: {
             query?: {
@@ -4145,11 +4129,208 @@ export interface operations {
             };
         };
     };
-    init_system_data_api_users_init_data_post: {
+    get_sentiment_api_monitor_communities__community_id__sentiment_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketSentimentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trends_api_monitor_communities__community_id__trends_get: {
+        parameters: {
+            query?: {
+                months?: number;
+            };
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendData"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_strategy_api_monitor_ai_strategy_post: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIStrategyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIStrategyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_neighborhood_radar_api_monitor_communities__community_id__radar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeighborhoodRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_competitors_api_communities__community_id__competitors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitorResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_competitor_api_communities__community_id__competitors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCompetitorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_competitor_api_communities__community_id__competitors__competitor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+                competitor_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -4161,6 +4342,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

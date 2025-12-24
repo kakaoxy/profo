@@ -1,28 +1,91 @@
+
 "use client";
 
-import { Info } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Info, Loader2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Label } from "recharts";
+import { getTrendPositioningAction, type TrendData } from "../../actions/monitor";
 
 interface TrendPositioningProps {
   projectId: string;
 }
 
 export function TrendPositioning({ projectId }: TrendPositioningProps) {
-  // Use projectId to satisfy linter
-  console.log(`Trend data for: ${projectId}`);
-  // Mock data for Recharts
-  const data = [
-    { month: 'M-5', listing: 40000, deal: 37000, volume: 8 },
-    { month: 'M-4', listing: 41500, deal: 38500, volume: 12 },
-    { month: 'M-3', listing: 40500, deal: 38000, volume: 15 },
-    { month: 'M-2', listing: 39500, deal: 37500, volume: 10 },
-    { month: 'M-1', listing: 38800, deal: 36800, volume: 6 },
-    { month: 'Now', listing: 38500, deal: 36500, volume: 4 },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<TrendData[]>([]);
+  const [myPricing, setMyPricing] = useState<number>(0);
 
-  const myPricing = 38181;
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const res = await getTrendPositioningAction(projectId);
+        if (res.success && res.data) {
+          setData(res.data);
+          setMyPricing(res.myPrice || 0);
+        } else {
+          setError(res.message || "获取走势数据失败");
+        }
+      } catch (e) {
+        console.error(e);
+        setError("加载失败");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [projectId]);
+
+  // 计算Y轴范围
+  const allPrices = [
+    ...data.map(d => d.listing_price),
+    ...data.map(d => d.deal_price),
+    myPricing > 0 ? myPricing : 0
+  ].filter(p => p > 0);
+  
+  const minPrice = allPrices.length > 0 ? Math.floor(Math.min(...allPrices) * 0.9 / 1000) * 1000 : 30000;
+  const maxPrice = allPrices.length > 0 ? Math.ceil(Math.max(...allPrices) * 1.1 / 1000) * 1000 : 45000;
+
+  // 简单的风险偏离计算
+  const latestDealPrice = data.length > 0 ? data[data.length - 1].deal_price : 0;
+  const riskPercent = latestDealPrice > 0 && myPricing > 0 
+    ? ((myPricing - latestDealPrice) / latestDealPrice * 100).toFixed(1) 
+    : "0.0";
+
+  if (loading) {
+    return (
+      <section className="mt-8 pb-10">
+        <SectionHeader index="3" title="趋势研判 (价格与成交量预测)" subtitle="Trend & Positioning" />
+        <div className="px-6 flex justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="mt-8 pb-10">
+        <SectionHeader index="3" title="趋势研判 (价格与成交量预测)" subtitle="Trend & Positioning" />
+        <div className="px-6">
+          <AlertCircle className="h-5 w-5 text-red-500 mb-2" />
+          <p className="text-sm text-red-500">{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <section className="mt-8 pb-10">
+        <SectionHeader index="3" title="趋势研判 (价格与成交量预测)" subtitle="Trend & Positioning" />
+        <div className="px-6 text-center py-10 text-slate-500 text-sm">暂无走势数据</div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8 pb-10">
@@ -50,7 +113,7 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: '#94a3b8', fontSize: 12 }} 
-                  domain={[30000, 45000]}
+                  domain={[minPrice, maxPrice]}
                   label={{ value: '单价 (元/㎡)', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 12 } }}
                 />
                 <YAxis 
@@ -59,7 +122,7 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: '#94a3b8', fontSize: 12 }}
-                  domain={[0, 25]}
+                  domain={[0, 'auto']}
                   label={{ value: '成交量 (套)', angle: 90, position: 'insideRight', style: { fill: '#94a3b8', fontSize: 12 } }}
                 />
                 <Tooltip 
@@ -79,8 +142,8 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
                 <Line 
                   yAxisId="left" 
                   type="monotone" 
-                  dataKey="listing" 
-                  name="小区挂牌均均价" 
+                  dataKey="listing_price" 
+                  name="小区挂牌均价" 
                   stroke="#6366f1" 
                   strokeWidth={3} 
                   dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} 
@@ -88,7 +151,7 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
                 <Line 
                   yAxisId="left" 
                   type="monotone" 
-                  dataKey="deal" 
+                  dataKey="deal_price" 
                   name="小区成交均价" 
                   stroke="#10b981" 
                   strokeWidth={3} 
@@ -96,34 +159,27 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
                 />
                 
                 {/* Current Target Price Reference */}
-                <ReferenceLine 
-                  yAxisId="left" 
-                  y={myPricing} 
-                  stroke="#ef4444" 
-                  strokeDasharray="5 5" 
-                  strokeWidth={2}
-                >
-                  <Label 
-                    value={`我的定价: ${Math.round(myPricing / 1000)}k`} 
-                    position="right" 
-                    fill="#ef4444" 
-                    fontSize={12} 
-                    fontWeight="bold" 
-                    offset={10}
-                  />
-                </ReferenceLine>
+                {myPricing > 0 && (
+                  <ReferenceLine 
+                    yAxisId="left" 
+                    y={myPricing} 
+                    stroke="#ef4444" 
+                    strokeDasharray="5 5" 
+                    strokeWidth={2}
+                  >
+                    <Label 
+                      value={`我的定价: ${Math.round(myPricing / 1000)}k`} 
+                      position="right" 
+                      fill="#ef4444" 
+                      fontSize={12} 
+                      fontWeight="bold" 
+                      offset={10}
+                    />
+                  </ReferenceLine>
+                )}
 
                 {/* Annotation for Scissors Gap */}
-                <ReferenceLine yAxisId="left" y={38181} stroke="transparent">
-                  <Label 
-                    value="📉 剪刀差扩大" 
-                    position="center" 
-                    offset={-50} 
-                    fill="#f59e0b" 
-                    fontSize={14} 
-                    fontWeight="bold" 
-                  />
-                </ReferenceLine>
+                {/* 暂时移除静态标注，后续可根据数据动态添加 */}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -153,7 +209,7 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
                  </div>
                  <div>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">风险偏离</p>
-                    <p className="text-sm font-bold text-slate-700">您的定价高于最新成交均价 2.8%</p>
+                    <p className="text-sm font-bold text-slate-700">您的定价 {Number(riskPercent) > 0 ? "高于" : "低于"}最新成交均价 {Math.abs(Number(riskPercent))}%</p>
                  </div>
               </div>
           </div>
