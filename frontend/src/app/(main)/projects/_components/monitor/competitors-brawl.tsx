@@ -14,10 +14,11 @@ interface CompetitorsBrawlProps {
 }
 
 export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
-  const [activeTab, setActiveTab] = useState<'on_sale' | 'sold'>('on_sale');
+  const [statusFilters, setStatusFilters] = useState<('on_sale' | 'sold')[]>(['on_sale']);
+  const [layoutFilters, setLayoutFilters] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState<BrawlItem[]>([]);
+  const [allItems, setAllItems] = useState<BrawlItem[]>([]);
   const [counts, setCounts] = useState({ on_sale: 0, sold: 0 });
 
   useEffect(() => {
@@ -25,11 +26,10 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
       try {
         setLoading(true);
         setError(null);
-        // 调用 Server Action 根据 tab 获取数据
-        const res = await getCompetitorsBrawlAction(projectId, activeTab);
+        // 调用 Server Action 获取所有数据 (Server Action 已更新为一次性返回所有)
+        const res = await getCompetitorsBrawlAction(projectId);
         if (res.success && res.data) {
-          setItems(res.data.items);
-          // 更新 counts
+          setAllItems(res.data.items);
           setCounts(res.data.counts);
         } else {
           setError(res.message || "获取竞品列表失败");
@@ -42,7 +42,61 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
       }
     }
     loadData();
-  }, [projectId, activeTab]);
+  }, [projectId]);
+
+  // 辅助函数：解析户型中的室数
+  const getRoomCount = (layoutStr: string): number => {
+    // 假设格式为 "2室1厅", 取第一个数字
+    const match = layoutStr.match(/^(\d+)室/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // 前端过滤
+  const filteredItems = allItems.filter(item => {
+    // 1. 状态筛选
+    let matchStatus = false;
+    if (statusFilters.includes('on_sale') && item.status === 'on_sale') matchStatus = true;
+    if (statusFilters.includes('sold') && item.status === 'sold') matchStatus = true;
+    if (!matchStatus) return false;
+
+    // 2. 户型筛选 (如果未选择任何户型，则不过滤)
+    if (layoutFilters.length > 0) {
+      const roomCount = getRoomCount(item.layout);
+      const matchLayout = layoutFilters.some(filter => {
+        if (filter === "4室+") {
+          return roomCount >= 4;
+        }
+        // 提取 "1室" -> 1
+        const filterCount = parseInt(filter, 10);
+        return roomCount === filterCount;
+      });
+      if (!matchLayout) return false;
+    }
+
+    return true;
+  });
+
+  const toggleFilter = (status: 'on_sale' | 'sold') => {
+    setStatusFilters(prev => {
+      if (prev.includes(status)) {
+        // 如果只剩这一个，就不允许取消 (至少保留一个)
+        if (prev.length === 1) return prev;
+        return prev.filter(s => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  };
+
+  const toggleLayoutFilter = (layout: string) => {
+    setLayoutFilters(prev => {
+      if (prev.includes(layout)) {
+        return prev.filter(l => l !== layout);
+      } else {
+        return [...prev, layout];
+      }
+    });
+  };
 
   return (
     <section className="mt-8 pb-10">
@@ -64,16 +118,16 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
              <Button 
                variant="outline" 
                size="sm" 
-               onClick={() => setActiveTab('on_sale')}
-               className={`${activeTab === 'on_sale' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
+               onClick={() => toggleFilter('on_sale')}
+               className={`${statusFilters.includes('on_sale') ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
              >
                在售 ({counts.on_sale})
              </Button>
              <Button 
                variant="outline" 
                size="sm" 
-               onClick={() => setActiveTab('sold')}
-               className={`${activeTab === 'sold' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
+               onClick={() => toggleFilter('sold')}
+               className={`${statusFilters.includes('sold') ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
              >
                已售 ({counts.sold})
              </Button>
@@ -81,10 +135,18 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
 
           <div className="h-4 w-px bg-slate-200 mx-2" />
 
-          {/* 这里的房间筛选目前是装饰性的，实际功能可根据需求添加 */}
+          {/* 户型筛选 */}
           <div className="flex gap-1.5">
-             {["1室", "2室", "3室", "4室+"].map((r, i) => (
-                <button key={r} className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all ${i === 1 ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
+             {["1室", "2室", "3室", "4室+"].map((r) => (
+                <button 
+                  key={r} 
+                  onClick={() => toggleLayoutFilter(r)}
+                  className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all ${
+                    layoutFilters.includes(r) 
+                      ? 'bg-slate-800 text-white' 
+                      : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                  }`}
+                >
                    {r}
                 </button>
              ))}
@@ -111,9 +173,9 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
                <AlertCircle className="h-6 w-6 mb-2" />
                <span className="text-sm">{error}</span>
             </div>
-          ) : items.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
              <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
-                暂无{activeTab === 'on_sale' ? '在售' : '成交'}数据
+                暂无数据
              </div>
           ) : (
             <Table className="min-w-[1000px]">
@@ -126,13 +188,13 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-rose-500 uppercase tracking-wider">总价 (万)</TableHead>
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">单价 (元/㎡)</TableHead>
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {activeTab === 'on_sale' ? '挂牌日期' : '成交日期'}
+                    挂牌/成交日期
                   </TableHead>
                   <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-slate-50">
-                {items.map((item) => (
+                {filteredItems.map((item) => (
                   <TableRow key={item.id} className={`${item.is_current ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}>
                     <TableCell className="py-4 px-4 font-mono text-xs text-slate-400 font-bold">
                        {item.id.length > 10 ? `#${item.id.slice(0, 6)}...` : `#${item.id}`}
@@ -140,8 +202,8 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
                     <TableCell className="py-4 px-4 text-xs">
                       <div className="flex flex-col">
                         <span className="font-bold text-slate-800">{item.community}</span>
-                        <span className={`text-[10px] font-bold ${item.status === '在售' || item.status === '挂牌' ? 'text-amber-500' : 'text-emerald-500'}`}>
-                          {item.status === '在售' || item.status === '挂牌' ? '● 正在挂牌' : '● 已成交'}
+                        <span className={`text-[10px] font-bold ${item.status === 'on_sale' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                          ● {item.display_status || (item.status === 'on_sale' ? '在售' : '已成交')}
                         </span>
                       </div>
                     </TableCell>
