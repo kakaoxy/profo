@@ -1,28 +1,48 @@
+
 "use client";
 
-import { Search, Filter } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, Filter, Loader2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getCompetitorsBrawlAction, type BrawlItem } from "../../actions/monitor";
 
 interface CompetitorsBrawlProps {
   projectId: string;
 }
 
 export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
-  // Use projectId to satisfy linter
-  console.log(`Brawl data for: ${projectId}`);
+  const [activeTab, setActiveTab] = useState<'on_sale' | 'sold'>('on_sale');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<BrawlItem[]>([]);
+  const [counts, setCounts] = useState({ on_sale: 0, sold: 0 });
 
-
-  
-  const competitors = [
-    { id: "13-402", community: "康平小区", status: "挂牌", layout: "2室1厅", floor: "高楼层", area: 55, total: 198, unit: 36000, date: "2025-02-15", source: "贝壳" },
-    { id: "9-201", community: "康平小区", status: "挂牌", layout: "2室1厅", floor: "中楼层", area: 54, total: 205, unit: 37962, date: "2025-02-20", source: "我爱我家" },
-    { id: "13-101", community: "康平小区", status: "挂牌", layout: "2室1厅", floor: "低楼层", area: 55, total: 210, unit: 38181, date: "2025-01-10", source: "内部", is_current: true },
-    { id: "WY-08", community: "远洋万和城", status: "成交", layout: "3室2厅", floor: "高楼层", area: 89, total: 516, unit: 58000, date: "2025-02-01", source: "贝壳" },
-    { id: "YS-15", community: "阳光水岸", status: "成交", layout: "2室1厅", floor: "低楼层", area: 52, total: 265, unit: 50961, date: "2025-02-10", source: "我爱我家" },
-  ];
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        setError(null);
+        // 调用 Server Action 根据 tab 获取数据
+        const res = await getCompetitorsBrawlAction(projectId, activeTab);
+        if (res.success && res.data) {
+          setItems(res.data.items);
+          // 更新 counts
+          setCounts(res.data.counts);
+        } else {
+          setError(res.message || "获取竞品列表失败");
+        }
+      } catch (e) {
+        console.error(e);
+        setError("加载失败");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [projectId, activeTab]);
 
   return (
     <section className="mt-8 pb-10">
@@ -41,12 +61,27 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
           </div>
 
           <div className="flex gap-2">
-             <Button variant="outline" size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700 border-none rounded-lg font-bold text-[11px] h-8">在售 (36)</Button>
-             <Button variant="outline" size="sm" className="bg-slate-50 text-slate-500 hover:bg-slate-100 border-none rounded-lg font-bold text-[11px] h-8">已售 (124)</Button>
+             <Button 
+               variant="outline" 
+               size="sm" 
+               onClick={() => setActiveTab('on_sale')}
+               className={`${activeTab === 'on_sale' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
+             >
+               在售 ({counts.on_sale})
+             </Button>
+             <Button 
+               variant="outline" 
+               size="sm" 
+               onClick={() => setActiveTab('sold')}
+               className={`${activeTab === 'sold' ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
+             >
+               已售 ({counts.sold})
+             </Button>
           </div>
 
           <div className="h-4 w-px bg-slate-200 mx-2" />
 
+          {/* 这里的房间筛选目前是装饰性的，实际功能可根据需求添加 */}
           <div className="flex gap-1.5">
              {["1室", "2室", "3室", "4室+"].map((r, i) => (
                 <button key={r} className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all ${i === 1 ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
@@ -66,50 +101,69 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
         </div>
 
         {/* Comparison Table */}
-        <Card className="border-slate-100 shadow-sm overflow-hidden bg-white">
-          <Table className="min-w-[1000px]">
-            <TableHeader className="bg-slate-50/50">
-              <TableRow className="hover:bg-transparent border-b border-slate-100">
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">房源 ID</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">小区 / 状态</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">户型 / 朝向</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">面积 (㎡)</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-rose-500 uppercase tracking-wider">总价 (万)</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">单价 (元/㎡)</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">更新时间</TableHead>
-                <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-slate-50">
-              {competitors.map((item) => (
-                <TableRow key={item.id} className={`${item.is_current ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}>
-                  <TableCell className="py-4 px-4 font-mono text-xs text-slate-400 font-bold">{item.id}</TableCell>
-                  <TableCell className="py-4 px-4 text-xs">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-800">{item.community}</span>
-                      <span className={`text-[10px] font-bold ${item.status === '挂牌' ? 'text-amber-500' : 'text-emerald-500'}`}>
-                        {item.status === '挂牌' ? '● 正在挂牌' : '● 成交'}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 px-4 text-xs font-bold text-slate-600">
-                    {item.layout} · {item.floor}
-                  </TableCell>
-                  <TableCell className="py-4 px-4 text-xs font-black text-slate-800">{item.area}</TableCell>
-                  <TableCell className="py-4 px-4 text-sm font-black text-rose-600">¥ {item.total}</TableCell>
-                  <TableCell className="py-4 px-4 text-xs font-bold text-slate-500">¥ {item.unit.toLocaleString()}</TableCell>
-                  <TableCell className="py-4 px-4 text-[10px] text-slate-400 font-medium font-mono">
-                    {item.date}
-                  </TableCell>
-                  <TableCell className="py-4 px-4 text-right">
-                    <Button variant="ghost" size="sm" className="h-8 rounded-lg hover:bg-slate-100 text-[10px] font-bold text-indigo-600">
-                      查看详情
-                    </Button>
-                  </TableCell>
+        <Card className="border-slate-100 shadow-sm overflow-hidden bg-white min-h-[300px]">
+          {loading ? (
+            <div className="flex items-center justify-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-40 text-red-500">
+               <AlertCircle className="h-6 w-6 mb-2" />
+               <span className="text-sm">{error}</span>
+            </div>
+          ) : items.length === 0 ? (
+             <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
+                暂无{activeTab === 'on_sale' ? '在售' : '成交'}数据
+             </div>
+          ) : (
+            <Table className="min-w-[1000px]">
+              <TableHeader className="bg-slate-50/50">
+                <TableRow className="hover:bg-transparent border-b border-slate-100">
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">房源 ID</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">小区 / 状态</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">户型 / 朝向</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">面积 (㎡)</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-rose-500 uppercase tracking-wider">总价 (万)</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">单价 (元/㎡)</TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    {activeTab === 'on_sale' ? '挂牌日期' : '成交日期'}
+                  </TableHead>
+                  <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">操作</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-50">
+                {items.map((item) => (
+                  <TableRow key={item.id} className={`${item.is_current ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}>
+                    <TableCell className="py-4 px-4 font-mono text-xs text-slate-400 font-bold">
+                       {item.id.length > 10 ? `#${item.id.slice(0, 6)}...` : `#${item.id}`}
+                    </TableCell>
+                    <TableCell className="py-4 px-4 text-xs">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800">{item.community}</span>
+                        <span className={`text-[10px] font-bold ${item.status === '在售' || item.status === '挂牌' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                          {item.status === '在售' || item.status === '挂牌' ? '● 正在挂牌' : '● 已成交'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 px-4 text-xs font-bold text-slate-600">
+                      {item.layout} · {item.floor}
+                    </TableCell>
+                    <TableCell className="py-4 px-4 text-xs font-black text-slate-800">{item.area}</TableCell>
+                    <TableCell className="py-4 px-4 text-sm font-black text-rose-600">¥ {item.total}</TableCell>
+                    <TableCell className="py-4 px-4 text-xs font-bold text-slate-500">¥ {item.unit.toLocaleString()}</TableCell>
+                    <TableCell className="py-4 px-4 text-[10px] text-slate-400 font-medium font-mono">
+                      {item.date}
+                    </TableCell>
+                    <TableCell className="py-4 px-4 text-right">
+                      <Button variant="ghost" size="sm" className="h-8 rounded-lg hover:bg-slate-100 text-[10px] font-bold text-indigo-600">
+                        查看详情
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       </div>
     </section>
