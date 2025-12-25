@@ -16,6 +16,7 @@ dependencies = [
     "passlib[bcrypt]>=1.7.4",
     "bcrypt>=3.2.0,<4.0.0",
     "filetype>=1.2.0",
+    "alembic>=1.17.2",
 ]
 
 [build-system]

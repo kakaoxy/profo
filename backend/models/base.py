@@ -86,6 +86,22 @@ class RecordType(str, enum.Enum):
     NEGOTIATION = "negotiation"  # 面谈记录
 
 
+class LeadStatus(str, enum.Enum):
+    """线索状态枚举"""
+    PENDING_ASSESSMENT = "pending_assessment"  # 待评估
+    PENDING_VISIT = "pending_visit"            # 待看房
+    REJECTED = "rejected"                      # 已驳回
+    VISITED = "visited"                        # 已看房
+    SIGNED = "signed"                          # 已签约
+
+class FollowUpMethod(str, enum.Enum):
+    """跟进方式枚举"""
+    PHONE = "phone"    # 电话
+    WECHAT = "wechat"  # 微信
+    FACE = "face"      # 面谈
+    VISIT = "visit"    # 实地带看
+
+
 class BaseModel(Base):
     """基础模型，包含公共字段"""
     __abstract__ = True
