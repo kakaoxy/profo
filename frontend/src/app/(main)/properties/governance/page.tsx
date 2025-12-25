@@ -4,16 +4,27 @@ import { GovernanceView } from "./governance-view";
 // 强制动态渲染，确保每次进来数据都是新的
 export const dynamic = "force-dynamic";
 
-export default async function GovernancePage() {
+interface GovernancePageProps {
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+  }>;
+}
+
+export default async function GovernancePage(props: GovernancePageProps) {
+  const searchParams = await props.searchParams;
+  const page = Number(searchParams.page) || 1;
+  const search = searchParams.search || "";
+  const pageSize = 20;
+
   const client = await fetchClient();
   
-  // 获取所有小区数据（为了方便治理，我们可能希望一次性拉取较多数据，或者分页）
-  // 这里假设我们先拉取前 500 条用于治理，或者你可以实现完整的服务端分页
   const { data, error } = await client.GET("/api/admin/communities", {
     params: {
       query: {
-        page: 1,
-        page_size: 200, // 拉取足够多的数据供治理
+        page: page,
+        page_size: pageSize,
+        search: search || undefined,
       },
     },
   });
@@ -27,7 +38,7 @@ export default async function GovernancePage() {
   }
 
   return (
-    <div className="container h-full flex flex-col gap-6 py-6">
+    <div className="container h-full flex flex-col gap-6 p-8 m-x-8">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">数据治理</h1>
         <p className="text-muted-foreground">
@@ -36,7 +47,12 @@ export default async function GovernancePage() {
       </div>
 
       {/* 核心治理视图 */}
-      <GovernanceView data={data.items || []} total={data.total} />
+      <GovernanceView 
+        data={data.items || []} 
+        total={data.total} 
+        page={page}
+        pageSize={pageSize}
+      />
     </div>
   );
 }
