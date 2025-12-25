@@ -1074,6 +1074,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Leads */
+        get: operations["get_leads_api_v1_leads__get"];
+        put?: never;
+        /** Create Lead */
+        post: operations["create_lead_api_v1_leads__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lead */
+        get: operations["get_lead_api_v1_leads__lead_id__get"];
+        /** Update Lead */
+        put: operations["update_lead_api_v1_leads__lead_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}/follow-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Follow Up */
+        post: operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Price History */
+        get: operations["get_price_history_api_v1_leads__lead_id__prices_get"];
+        put?: never;
+        /**
+         * Add Price Record
+         * @description Explicitly add a price record (e.g. secondary authorization)
+         *     This also updates the main lead's total_price
+         */
+        post: operations["add_price_record_api_v1_leads__lead_id__prices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1257,10 +1332,182 @@ export interface components {
             /** Current Avg Price */
             current_avg_price: number;
         };
+        /** FollowUpCreate */
+        FollowUpCreate: {
+            method: components["schemas"]["FollowUpMethod"];
+            /** Content */
+            content: string;
+        };
+        /**
+         * FollowUpMethod
+         * @description 跟进方式枚举
+         * @enum {string}
+         */
+        FollowUpMethod: "phone" | "wechat" | "face" | "visit";
+        /** FollowUpResponse */
+        FollowUpResponse: {
+            method: components["schemas"]["FollowUpMethod"];
+            /** Content */
+            content: string;
+            /** Id */
+            id: string;
+            /** Lead Id */
+            lead_id: string;
+            /**
+             * Followed At
+             * Format: date-time
+             */
+            followed_at: string;
+            /** Created By Id */
+            created_by_id: string;
+            /** Created By Name */
+            created_by_name?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** LeadCreate */
+        LeadCreate: {
+            /** Community Name */
+            community_name: string;
+            /**
+             * Is Hot
+             * @default 0
+             */
+            is_hot: number;
+            /** Layout */
+            layout?: string | null;
+            /** Orientation */
+            orientation?: string | null;
+            /** Floor Info */
+            floor_info?: string | null;
+            /** Area */
+            area?: number | null;
+            /** Total Price */
+            total_price?: number | null;
+            /** Unit Price */
+            unit_price?: number | null;
+            /** Eval Price */
+            eval_price?: number | null;
+            /** District */
+            district?: string | null;
+            /** Business Area */
+            business_area?: string | null;
+            /** Remarks */
+            remarks?: string | null;
+            /** Source Property Id */
+            source_property_id?: number | null;
+            /** @default pending_assessment */
+            status: components["schemas"]["LeadStatus"] | null;
+            /**
+             * Images
+             * @default []
+             */
+            images: string[];
+        };
+        /** LeadResponse */
+        LeadResponse: {
+            /** Community Name */
+            community_name: string;
+            /**
+             * Is Hot
+             * @default 0
+             */
+            is_hot: number;
+            /** Layout */
+            layout?: string | null;
+            /** Orientation */
+            orientation?: string | null;
+            /** Floor Info */
+            floor_info?: string | null;
+            /** Area */
+            area?: number | null;
+            /** Total Price */
+            total_price?: number | null;
+            /** Unit Price */
+            unit_price?: number | null;
+            /** Eval Price */
+            eval_price?: number | null;
+            /** District */
+            district?: string | null;
+            /** Business Area */
+            business_area?: string | null;
+            /** Remarks */
+            remarks?: string | null;
+            /** Source Property Id */
+            source_property_id?: number | null;
+            /** Id */
+            id: string;
+            status: components["schemas"]["LeadStatus"];
+            /** Audit Reason */
+            audit_reason?: string | null;
+            /** Auditor Id */
+            auditor_id?: string | null;
+            /** Audit Time */
+            audit_time?: string | null;
+            /**
+             * Images
+             * @default []
+             */
+            images: string[];
+            /** Creator Id */
+            creator_id?: string | null;
+            /** Creator Name */
+            creator_name?: string | null;
+            /** Last Follow Up At */
+            last_follow_up_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * LeadStatus
+         * @description 线索状态枚举
+         * @enum {string}
+         */
+        LeadStatus: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+        /** LeadUpdate */
+        LeadUpdate: {
+            /** Community Name */
+            community_name?: string | null;
+            /** Is Hot */
+            is_hot?: number | null;
+            /** Layout */
+            layout?: string | null;
+            /** Orientation */
+            orientation?: string | null;
+            /** Floor Info */
+            floor_info?: string | null;
+            /** Area */
+            area?: number | null;
+            /** Total Price */
+            total_price?: number | null;
+            /** Unit Price */
+            unit_price?: number | null;
+            /** Eval Price */
+            eval_price?: number | null;
+            status?: components["schemas"]["LeadStatus"] | null;
+            /** Audit Reason */
+            audit_reason?: string | null;
+            /** Images */
+            images?: string[] | null;
+            /** District */
+            district?: string | null;
+            /** Business Area */
+            business_area?: string | null;
+            /** Remarks */
+            remarks?: string | null;
+            /** Last Follow Up At */
+            last_follow_up_at?: string | null;
         };
         /**
          * LoginRequest
@@ -1325,6 +1572,17 @@ export interface components {
             /** Items */
             items: components["schemas"]["NeighborhoodRadarItem"][];
         };
+        /** PaginatedLeadResponse */
+        PaginatedLeadResponse: {
+            /** Items */
+            items: components["schemas"]["LeadResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /**
          * PaginatedPropertyResponse
          * @description 分页房源列表响应
@@ -1365,6 +1623,33 @@ export interface components {
              * @description 新密码
              */
             password: string;
+        };
+        /** PriceHistoryCreate */
+        PriceHistoryCreate: {
+            /** Price */
+            price: number;
+            /** Remark */
+            remark?: string | null;
+        };
+        /** PriceHistoryResponse */
+        PriceHistoryResponse: {
+            /** Price */
+            price: number;
+            /** Remark */
+            remark?: string | null;
+            /** Id */
+            id: string;
+            /** Lead Id */
+            lead_id: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Created By Id */
+            created_by_id: string;
+            /** Created By Name */
+            created_by_name?: string | null;
         };
         /**
          * ProjectCompleteRequest
@@ -4348,6 +4633,293 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leads_api_v1_leads__get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                search?: string | null;
+                statuses?: components["schemas"]["LeadStatus"][] | null;
+                district?: string | null;
+                creator_id?: number | null;
+                layout?: string | null;
+                floor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_lead_api_v1_leads__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_api_v1_leads__lead_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_api_v1_leads__lead_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_follow_up_api_v1_leads__lead_id__follow_ups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_price_history_api_v1_leads__lead_id__prices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceHistoryResponse"][];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_price_record_api_v1_leads__lead_id__prices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceHistoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceHistoryResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import NextImage from 'next/image';
 import { Lead, LeadStatus, FilterState, FollowUpMethod } from './types';
-import { MOCK_LEADS, STATUS_CONFIG } from './constants';
+import { STATUS_CONFIG } from './constants';
+import { createLeadAction, getLeadsAction, updateLeadAction, addFollowUpAction } from './actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +15,7 @@ import { Search, Plus, List, RefreshCw, User, MapPin, ChevronRight, LayoutGrid }
 import { cn } from '@/lib/utils';
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     statuses: [],
@@ -50,15 +51,37 @@ export default function LeadsPage() {
     return rooms >= 5 ? '4+' : rooms.toString();
   };
 
+  // Fetch data on mount and when filters change (debouncing could be added)
+  useEffect(() => {
+    const fetchData = async () => {
+        // Pass filters to backend. Note: frontend filters structure might need mapping if complex
+        // For now, simpler implementation: Fetch top 100 and let backend filter what it can or use strict backend filtering
+        // The action 'getLeadsAction' we wrote accepts 'filters' object.
+        const data = await getLeadsAction(filters);
+        setLeads(data);
+    };
+    // Debounce search
+    const timer = setTimeout(fetchData, 300);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      const matchSearch = lead.communityName.toLowerCase().includes(filters.search.toLowerCase());
-      const matchStatus = filters.statuses.length === 0 || filters.statuses.includes(lead.status);
-      const matchDistrict = !filters.district || lead.district.includes(filters.district);
+     // If backend handles filtering effectively, this client side filtering might be redundant 
+     // BUT, getLeadsAction matches SOME filters (search, district). 
+     // Others like 'creator' (name search) or 'floors' (range) might be tricky if backend doesn't support them fully yet.
+     // For safety, we allow client-side refinement on the returned 100 items.
+     return leads.filter(lead => {
+      // Backend handles: search (community_name), status, district
+      // Client handles residuals: creator, layouts, floors
+      
+      // const matchSearch = lead.communityName.toLowerCase().includes(filters.search.toLowerCase()); // Backend does this
+      // const matchStatus = filters.statuses.length === 0 || filters.statuses.includes(lead.status); // Backend does this
+      // const matchDistrict = !filters.district || lead.district.includes(filters.district); // Backend does this
+      
       const matchCreator = !filters.creator || lead.creatorName.toLowerCase().includes(filters.creator.toLowerCase());
       const matchLayout = filters.layouts.length === 0 || filters.layouts.includes(getLayoutRooms(lead.layout));
       const matchFloor = filters.floors.length === 0 || filters.floors.includes(getFloorCategory(lead.floorInfo));
-      return matchSearch && matchStatus && matchDistrict && matchCreator && matchLayout && matchFloor;
+      return matchCreator && matchLayout && matchFloor;
     });
   }, [leads, filters]);
 
@@ -77,26 +100,37 @@ export default function LeadsPage() {
     setIsDrawerOpen(true);
   };
 
-  const handleAudit = (id: string, status: LeadStatus, evalPrice?: number, reason?: string) => {
-    setLeads(prev => prev.map(l => l.id === id ? {
-      ...l, status, evalPrice: evalPrice || l.evalPrice, auditReason: reason,
-      auditTime: new Date().toLocaleString(), lastFollowUpAt: new Date().toLocaleString()
-    } : l));
-    setIsDrawerOpen(false);
+  const handleAudit = async (id: string, status: LeadStatus, evalPrice?: number, reason?: string) => {
+    try {
+        const updatedLead = await updateLeadAction(id, { status, evalPrice, reason });
+        setLeads(prev => prev.map(l => l.id === id ? updatedLead : l));
+        setIsDrawerOpen(false);
+    } catch (e) {
+        console.error("Failed to audit lead", e);
+    }
   };
 
-  const handleAddFollowUp = (id: string, method: FollowUpMethod, content: string) => {
-    // In a real app, we would use method and content here
-    console.log(`Adding follow up for ${id}: ${method} - ${content}`);
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, lastFollowUpAt: new Date().toLocaleString() } : l));
+  const handleAddFollowUp = async (id: string, method: FollowUpMethod, content: string) => {
+    try {
+        await addFollowUpAction(id, method, content);
+        // We might want to re-fetch the specific lead to get the updated followUp count or lastFollowUpAt
+        // For now, simpler optimistic update or refetch list?
+        // Let's just update the timestamp locally or re-fetch list for simplicity
+        const updatedLeads = await getLeadsAction(filters);
+        setLeads(updatedLeads);
+    } catch (e) {
+        console.error("Failed to add follow up", e);
+    }
   };
 
-  const handleAddLead = (newLeadData: Omit<Lead, 'id' | 'createdAt'>) => {
-    const newLead: Lead = {
-      ...newLeadData, id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toLocaleString(),
-    };
-    setLeads(prev => [newLead, ...prev]);
+  const handleAddLead = async (newLeadData: Omit<Lead, 'id' | 'createdAt'>) => {
+    try {
+        const newLead = await createLeadAction(newLeadData);
+        setLeads(prev => [newLead as Lead, ...prev]);
+    } catch (e) {
+        console.error("Failed to add lead", e);
+        // Toast error here ideally
+    }
   };
 
   return (

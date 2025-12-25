@@ -6,6 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+import uuid
 
 from db import get_db
 from dependencies.auth import get_current_user as get_current_user_dep
@@ -71,10 +72,7 @@ def create_lead(
     # Determine creator name helper logic if needed, but for now just ID
     db_lead = Lead(
         **lead_in.model_dump(),
-        id=None, # let default UUID work? No, check model. 
-        # Model `Lead` uses `String(36)` PK. `BaseModel` has default lambda for UUID.
-        # So we just pass dict, but exclude id/created_at etc if they are not in schema.
-        # Schema LeadCreate inherits LeadBase which doesn't have id.
+        id=str(uuid.uuid4()), 
         creator_id=current_user.id
     )
     # Manually ensure unique ID generation if SQLAlchemy generic default doesn't kick in immediately 
@@ -91,6 +89,7 @@ def create_lead(
     if lead_in.total_price:
        # Auto-record initial price history
        price_rec = LeadPriceHistory(
+           id=str(uuid.uuid4()),
            lead_id=db_lead.id,
            price=lead_in.total_price,
            remark="Initial Creation",
@@ -130,6 +129,7 @@ def update_lead(
     if new_price is not None and new_price != float(lead.total_price or 0):
         # Create history record
         price_rec = LeadPriceHistory(
+            id=str(uuid.uuid4()),
             lead_id=lead.id,
             price=new_price,
             remark=update_data.get("remarks") or "Update Price", # Ideally separate field
@@ -171,6 +171,7 @@ def add_follow_up(
         
     db_follow = LeadFollowUp(
         **follow_up_in.model_dump(),
+        id=str(uuid.uuid4()),
         lead_id=lead_id,
         created_by_id=current_user.id
     )
@@ -213,6 +214,7 @@ def add_price_record(
     
     # Create record
     rec = LeadPriceHistory(
+        id=str(uuid.uuid4()),
         lead_id=lead_id,
         price=price_in.price,
         remark=price_in.remark,

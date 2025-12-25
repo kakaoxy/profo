@@ -1,0 +1,143 @@
+'use server'
+
+import { fetchClient } from '@/lib/api-server';
+import { Lead, FilterState, LeadStatus, FollowUpMethod } from './types';
+import { revalidatePath } from 'next/cache';
+import { components, operations } from '@/lib/api-types';
+
+type BackendLead = components['schemas']['LeadResponse'];
+type LeadsQuery = operations['get_leads_api_v1_leads__get']['parameters']['query'];
+
+
+
+export async function createLeadAction(data: Omit<Lead, 'id' | 'createdAt'>) {
+  const client = await fetchClient();
+  
+  const payload = {
+    community_name: data.communityName,
+    is_hot: 0,
+    layout: data.layout,
+    orientation: data.orientation,
+    floor_info: data.floorInfo,
+    area: data.area,
+    total_price: data.totalPrice,
+    unit_price: data.unitPrice,
+    eval_price: data.evalPrice,
+    district: data.district,
+    business_area: data.businessArea,
+    remarks: data.remarks,
+    images: data.images || [],
+    status: data.status, // Pass initial status if set
+  };
+
+  const { data: responseData, error } = await client.POST('/api/v1/leads/', {
+    body: payload,
+  });
+
+  if (error || !responseData) {
+    console.error("Create lead error:", error);
+    const errorMessage = typeof error === 'object' ? JSON.stringify(error) : error || 'Failed to create lead';
+    throw new Error(errorMessage);
+  }
+
+  revalidatePath('/leads');
+  return mapBackendToFrontend(responseData);
+}
+
+export async function getLeadsAction(filters: FilterState) {
+    const client = await fetchClient();
+    // Construct query params
+    const query: LeadsQuery = {
+        page: 1,
+        page_size: 100, 
+    };
+    if (filters.search) query.search = filters.search;
+
+    if (filters.statuses && filters.statuses.length > 0) {
+        query.statuses = filters.statuses as components["schemas"]["LeadStatus"][];
+    }
+
+
+    const { data, error } = await client.GET('/api/v1/leads/', {
+        params: { query }
+    });
+
+    if (error || !data) {
+        console.error("Get leads error:", error);
+        return [];
+    }
+    
+    return (data.items || []).map(mapBackendToFrontend);
+}
+
+export async function updateLeadAction(leadId: string, data: { status?: LeadStatus, evalPrice?: number, reason?: string }) {
+    const client = await fetchClient();
+    
+    const payload = {
+        status: data.status,
+        eval_price: data.evalPrice,
+        audit_reason: data.reason,
+    };
+
+    const { data: responseData, error } = await client.PUT('/api/v1/leads/{lead_id}', {
+        params: { path: { lead_id: leadId } },
+        body: payload
+    });
+
+    if (error || !responseData) {
+        console.error("Update lead error:", error);
+         const errorMessage = typeof error === 'object' ? JSON.stringify(error) : error || 'Failed to update lead';
+        throw new Error(errorMessage);
+    }
+
+    revalidatePath('/leads');
+    return mapBackendToFrontend(responseData);
+}
+
+export async function addFollowUpAction(leadId: string, method: FollowUpMethod, content: string) {
+    const client = await fetchClient();
+    
+    const payload = {
+        method,
+        content
+    };
+
+    const { error } = await client.POST('/api/v1/leads/{lead_id}/follow-ups', {
+        params: { path: { lead_id: leadId } },
+        body: payload
+    });
+
+    if (error) {
+        console.error("Add follow-up error:", error);
+        const errorMessage = typeof error === 'object' ? JSON.stringify(error) : error || 'Failed to add follow-up';
+        throw new Error(errorMessage);
+    }
+
+    revalidatePath('/leads');
+    return { success: true };
+}
+
+function mapBackendToFrontend(backendLead: BackendLead): Lead {
+    return {
+        id: backendLead.id,
+        communityName: backendLead.community_name,
+        layout: backendLead.layout ?? '',
+        orientation: backendLead.orientation ?? '',
+        floorInfo: backendLead.floor_info ?? '',
+        area: backendLead.area ?? 0,
+        totalPrice: backendLead.total_price ?? 0,
+        unitPrice: backendLead.unit_price ?? 0,
+        status: backendLead.status as LeadStatus,
+        evalPrice: backendLead.eval_price ?? undefined,
+        auditReason: backendLead.audit_reason ?? undefined,
+        auditorId: backendLead.auditor_id?.toString() ?? undefined,
+        auditTime: backendLead.audit_time ?? undefined,
+        images: backendLead.images || [],
+        district: backendLead.district ?? '',
+        businessArea: backendLead.business_area ?? '',
+        remarks: backendLead.remarks ?? '',
+        creatorName: backendLead.creator_name ?? '未知',
+        lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
+        createdAt: new Date(backendLead.created_at).toLocaleString(),
+    };
+}
