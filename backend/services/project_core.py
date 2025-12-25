@@ -225,6 +225,10 @@ class ProjectCoreService:
         if status_update.listing_date:
             project.listing_date = status_update.listing_date
 
+        # 处理挂牌价
+        if status_update.list_price is not None:
+            project.list_price = status_update.list_price
+
         # 如果进入装修阶段且当前没有子阶段，初始化为第一个阶段
         if new_status == ProjectStatus.RENOVATING.value and not project.renovation_stage:
             project.renovation_stage = "拆除"

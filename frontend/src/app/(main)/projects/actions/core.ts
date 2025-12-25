@@ -83,7 +83,8 @@ export async function deleteProjectAction(id: string) {
 export async function updateProjectStatusAction(
   projectId: string,
   status: string,
-  listingDate?: string
+  listingDate?: string,
+  listPrice?: number
 ) {
   try {
     const client = await fetchClient();
@@ -92,7 +93,8 @@ export async function updateProjectStatusAction(
       params: { path: { project_id: projectId } },
       body: { 
         status: status as components["schemas"]["ProjectStatus"],
-        listing_date: listingDate
+        listing_date: listingDate,
+        list_price: listPrice
       },
     });
 
