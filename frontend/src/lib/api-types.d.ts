@@ -2005,6 +2005,11 @@ export interface components {
              * @description 上架日期
              */
             listing_date?: string | null;
+            /**
+             * List Price
+             * @description 挂牌价(万元)
+             */
+            list_price?: number | string | null;
         };
         /**
          * TokenResponse
