@@ -54,9 +54,13 @@ class Lead(Base):
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id])
     auditor = relationship("User", foreign_keys=[auditor_id])
-    property = relationship("PropertyCurrent")
+    source_property = relationship("PropertyCurrent")
     follow_ups = relationship("LeadFollowUp", back_populates="lead", cascade="all, delete-orphan")
     price_history = relationship("LeadPriceHistory", back_populates="lead", cascade="all, delete-orphan")
+
+    @property
+    def creator_name(self):
+        return self.creator.nickname if self.creator else None
 
     __table_args__ = (
         Index("idx_lead_status", "status"),
@@ -81,6 +85,10 @@ class LeadFollowUp(Base):
     lead = relationship("Lead", back_populates="follow_ups")
     created_by = relationship("User")
 
+    @property
+    def created_by_name(self):
+        return self.created_by.nickname if self.created_by else None
+
 class LeadPriceHistory(Base):
     """线索价格历史记录"""
     __tablename__ = "lead_price_history"
@@ -97,3 +105,7 @@ class LeadPriceHistory(Base):
     # Relationships
     lead = relationship("Lead", back_populates="price_history")
     created_by = relationship("User")
+
+    @property
+    def created_by_name(self):
+        return self.created_by.nickname if self.created_by else None
