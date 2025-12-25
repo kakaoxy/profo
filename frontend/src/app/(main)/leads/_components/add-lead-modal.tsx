@@ -65,7 +65,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
       totalPrice: Number(formData.totalPrice),
       unitPrice: Number(calculatedUnitPrice),
       status: LeadStatus.PENDING_ASSESSMENT,
-      images: images.length > 0 ? images : [`https://picsum.photos/seed/${Date.now()}/400/300`],
+      images: images.length > 0 ? images : [],
       creatorName: '运营专家 A',
     });
     setFormData({ communityName: '', layout: '2室1厅', orientation: '南', floorInfo: '', area: '', totalPrice: '', district: DISTRICTS[0], businessArea: '', remarks: '' });
