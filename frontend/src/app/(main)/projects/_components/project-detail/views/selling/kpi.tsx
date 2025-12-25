@@ -8,6 +8,8 @@ import {
   MessageSquare,
   TrendingUp,
   TrendingDown,
+  Tag,
+  Calendar
 } from "lucide-react";
 import {
   startOfWeek,
@@ -135,11 +137,11 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
 
   return (
     <div className="grid grid-cols-3 gap-3 mb-6">
-      {/* 1. 带看卡片 */}
-      <Card className="shadow-sm border-emerald-100 bg-emerald-50/30">
+      {/* 1. 带看卡片 (蓝色主题 - 活跃) */}
+      <Card className="shadow-sm border-blue-100 bg-blue-50/40">
         <CardContent className="p-4 relative">
-          <Eye className="absolute top-4 right-4 h-4 w-4 text-emerald-600 opacity-50" />
-          <div className="text-xs text-muted-foreground font-medium">
+          <Eye className="absolute top-4 right-4 h-4 w-4 text-blue-500 opacity-50" />
+          <div className="text-xs text-blue-600 font-medium">
             本周带看
           </div>
           <div className="mt-2 flex items-baseline gap-2">
@@ -151,9 +153,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
           <div
             className={cn(
               "mt-1 flex items-center text-[10px] font-medium",
-              stats.viewings.isInfinite
-                ? "text-emerald-600"
-                : stats.viewings.isPositive
+              stats.viewings.isInfinite || stats.viewings.isPositive
                 ? "text-emerald-600"
                 : "text-red-600"
             )}
@@ -177,11 +177,11 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
         </CardContent>
       </Card>
 
-      {/* 2. 出价卡片 */}
-      <Card className="shadow-sm">
+      {/* 2. 出价卡片 (浅灰主题 - 中性) */}
+      <Card className="shadow-sm border-slate-200 bg-slate-50/50">
         <CardContent className="p-4 relative">
-          <Gavel className="absolute top-4 right-4 h-4 w-4 text-slate-400 opacity-50" />
-          <div className="text-xs text-muted-foreground font-medium">
+          <Tag className="absolute top-4 right-4 h-4 w-4 text-slate-400 opacity-50" />
+          <div className="text-xs text-slate-600 font-medium">
             本周出价
           </div>
           <div className="mt-2 flex items-baseline gap-2">
@@ -190,7 +190,8 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
             </span>
             <span className="text-xs text-muted-foreground">笔</span>
           </div>
-          <div className="mt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
+            <Gavel className="h-3 w-3" />
             最高:{" "}
             <span className="font-bold text-slate-700">
               ¥{stats.bids.max}万
@@ -199,11 +200,11 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
         </CardContent>
       </Card>
 
-      {/* 3. 面谈卡片 */}
-      <Card className="shadow-sm">
+      {/* 3. 面谈卡片 (浅黄主题 - 机会) */}
+      <Card className="shadow-sm border-orange-100 bg-orange-50/30">
         <CardContent className="p-4 relative">
-          <MessageSquare className="absolute top-4 right-4 h-4 w-4 text-slate-400 opacity-50" />
-          <div className="text-xs text-muted-foreground font-medium">
+          <Calendar className="absolute top-4 right-4 h-4 w-4 text-orange-400 opacity-50" />
+          <div className="text-xs text-orange-600 font-medium">
             本周面谈
           </div>
           <div className="mt-2 flex items-baseline gap-2">
@@ -212,8 +213,9 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
             </span>
             <span className="text-xs text-muted-foreground">场</span>
           </div>
-          <div className="mt-1 text-[10px] text-muted-foreground">
-            最新: {stats.talks.latest}
+          <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
+             <MessageSquare className="h-3 w-3" />
+            最新: {stats.talks.latest === "暂无" ? <span className="text-slate-400">暂无</span> : stats.talks.latest}
           </div>
         </CardContent>
       </Card>
