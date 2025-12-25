@@ -3,7 +3,7 @@ import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { cookies } from "next/headers";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 /**
  * 尝试使用 refresh_token 刷新 access_token
