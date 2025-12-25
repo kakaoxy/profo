@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 /**
  * 中间件：用于在请求到达渲染层之前主动刷新 Token
@@ -52,7 +52,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // 4. 执行刷新逻辑
-  if (shouldRefresh && refreshToken) {
+  // 限制仅在请求 HTML 页面时刷新，避免并发请求（如 RSC payload）触发多次刷新
+  const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
+
+  if (shouldRefresh && refreshToken && isHtmlRequest) {
     try {
       const response = await fetch(`${baseUrl}/api/auth/refresh`, {
         method: "POST",
