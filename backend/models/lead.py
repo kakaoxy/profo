@@ -33,7 +33,7 @@ class Lead(Base):
     # Status & Workflow
     status = Column(SQLEnum(LeadStatus), default=LeadStatus.PENDING_ASSESSMENT, nullable=False, comment="状态")
     audit_reason = Column(Text, comment="审核/驳回理由")
-    auditor_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核人ID")
+    auditor_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="审核人ID")
     audit_time = Column(DateTime, nullable=True, comment="审核时间")
     
     # Metadata
@@ -43,7 +43,7 @@ class Lead(Base):
     remarks = Column(Text, comment="备注")
     
     # Linkage
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="创建人ID")
+    creator_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="创建人ID")
     source_property_id = Column(Integer, ForeignKey("property_current.id"), nullable=True, comment="关联房源ID(如有)")
     
     # Timestamps
@@ -75,7 +75,7 @@ class LeadFollowUp(Base):
     content = Column(Text, nullable=False, comment="跟进内容")
     followed_at = Column(DateTime, default=datetime.now, comment="跟进时间")
     
-    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="跟进人ID")
+    created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, comment="跟进人ID")
     
     # Relationships
     lead = relationship("Lead", back_populates="follow_ups")
@@ -92,7 +92,7 @@ class LeadPriceHistory(Base):
     remark = Column(Text, comment="调整备注/原因")
     recorded_at = Column(DateTime, default=datetime.now, comment="记录时间")
     
-    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="记录人ID")
+    created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, comment="记录人ID")
     
     # Relationships
     lead = relationship("Lead", back_populates="price_history")

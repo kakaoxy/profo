@@ -21,7 +21,7 @@ class FollowUpResponse(FollowUpBase):
     id: str
     lead_id: str
     followed_at: datetime
-    created_by_id: int
+    created_by_id: str
     created_by_name: Optional[str] = None # Helper field, might need extra logic to populate
 
     class Config:
@@ -41,7 +41,7 @@ class PriceHistoryResponse(PriceHistoryBase):
     id: str
     lead_id: str
     recorded_at: datetime
-    created_by_id: int
+    created_by_id: str
     created_by_name: Optional[str] = None
 
     class Config:
@@ -98,12 +98,12 @@ class LeadResponse(LeadBase):
     id: str
     status: LeadStatus
     audit_reason: Optional[str] = None
-    auditor_id: Optional[int] = None
+    auditor_id: Optional[str] = None
     audit_time: Optional[datetime] = None
     
     images: List[str] = []
     
-    creator_id: Optional[int] = None
+    creator_id: Optional[str] = None
     creator_name: Optional[str] = None # Helper to avoid extra fetching
     
     last_follow_up_at: Optional[datetime] = None
