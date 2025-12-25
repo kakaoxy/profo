@@ -2,6 +2,7 @@
 
 import { Project } from "../../../../types";
 import { ListingKPIs } from "./kpi";
+import { SellingBasicInfo } from "./basic-info";
 import { SalesTeamPanel } from "./team-panel";
 import { ActivityTabs } from "./activity-tabs";
 import { DealDialog } from "./deal-dialog";
@@ -15,6 +16,9 @@ interface SellingViewProps {
 export function SellingView({ project, onRefresh }: SellingViewProps) {
   return (
     <div className="relative pb-24 animate-in fade-in slide-in-from-right-4 duration-300">
+      {/* 0. 基础信息概览 */}
+      <SellingBasicInfo project={project} />
+
       {/* 1. 顶部 KPI 看板 */}
       <ListingKPIs project={project} />
 
