@@ -155,3 +155,4 @@ class ProjectStatsResponse(BaseModel):
 class StatusUpdate(BaseModel):
     status: ProjectStatus
     listing_date: Optional[datetime] = Field(None, description="上架日期")
+    list_price: Optional[Decimal] = Field(None, description="挂牌价(万元)")

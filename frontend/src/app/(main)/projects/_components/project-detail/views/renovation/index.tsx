@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface RenovationViewProps {
@@ -29,6 +30,7 @@ interface RenovationViewProps {
 export function RenovationView({ project, onRefresh }: RenovationViewProps) {
   const router = useRouter();
   const [listingDate, setListingDate] = useState<Date | undefined>(new Date());
+  const [listPrice, setListPrice] = useState<string>("");
 
   // 定义完工逻辑
   const handleCompletion = async () => {
@@ -37,7 +39,8 @@ export function RenovationView({ project, onRefresh }: RenovationViewProps) {
       const res = await updateProjectStatusAction(
         project.id, 
         "selling", 
-        listingDate?.toISOString()
+        listingDate?.toISOString(),
+        listPrice ? parseFloat(listPrice) : undefined
       );
       if (!res.success) throw new Error(res.message);
 
@@ -101,8 +104,20 @@ export function RenovationView({ project, onRefresh }: RenovationViewProps) {
                   />
                 </PopoverContent>
               </Popover>
-              <p className="text-[12px] text-muted-foreground">
+                <p className="text-[12px] text-muted-foreground">
                 请选择该项目实际在平台上架销售的日期
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">上架价格 (万元)</label>
+              <Input 
+                type="number"
+                placeholder="请输入上架价格"
+                value={listPrice}
+                onChange={(e) => setListPrice(e.target.value)}
+              />
+              <p className="text-[12px] text-muted-foreground">
+                请输入挂牌价格，单位：万元
               </p>
             </div>
           </div>
