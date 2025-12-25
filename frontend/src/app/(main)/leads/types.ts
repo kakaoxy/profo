@@ -18,6 +18,15 @@ export interface FollowUp {
   createdBy: string;
 }
 
+export interface PriceHistory {
+  id: string;
+  leadId: string;
+  price: number;
+  remark?: string;
+  recordedAt: string;
+  createdByName?: string;
+}
+
 export interface Lead {
   id: string;
   communityName: string;

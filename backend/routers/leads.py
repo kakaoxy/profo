@@ -185,6 +185,18 @@ def add_follow_up(
     db.refresh(db_follow)
     return db_follow
 
+@router.get("/{lead_id}/follow-ups", response_model=List[FollowUpResponse])
+def get_follow_ups(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_dep)
+):
+    follow_ups = db.query(LeadFollowUp)\
+        .filter(LeadFollowUp.lead_id == lead_id)\
+        .order_by(desc(LeadFollowUp.followed_at))\
+        .all()
+    return follow_ups
+
 @router.get("/{lead_id}/prices", response_model=List[PriceHistoryResponse])
 def get_price_history(
     lead_id: str,
