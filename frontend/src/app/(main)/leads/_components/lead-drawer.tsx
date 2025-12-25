@@ -1,10 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Lead, LeadStatus, FollowUpMethod } from '../types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { STATUS_CONFIG } from '../constants';
+import { getLeadFollowUpsAction, getLeadPriceHistoryAction } from '../actions';
+import { FollowUp, PriceHistory } from '../types';
 import { 
   X, Plus, MapPin, Ruler, Home, User, Calendar, 
   Image as ImageIcon, History, ChevronRight, FileCheck,
@@ -28,14 +31,32 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
   const [evalPrice, setEvalPrice] = useState<number | ''>('');
   const [followUpMethod, setFollowUpMethod] = useState<FollowUpMethod>('phone');
   const [followUpContent, setFollowUpContent] = useState('');
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
+  const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
 
+  // Fetch details when lead changes
   useEffect(() => {
-    if (!isOpen) {
-      setAuditReason('');
-      setEvalPrice('');
-      setActiveTab('info');
+    if (lead && isOpen) {
+       getLeadFollowUpsAction(lead.id).then(setFollowUps);
+       getLeadPriceHistoryAction(lead.id).then(setPriceHistory);
     }
-  }, [isOpen]);
+  }, [lead, isOpen]);
+
+  const handleAddFollowUpSubmit = async () => {
+    if (!lead || !followUpContent) return;
+    await onAddFollowUp(lead.id, followUpMethod, followUpContent);
+    // Refresh local list
+    const updated = await getLeadFollowUpsAction(lead.id);
+    setFollowUps(updated);
+    setFollowUpContent('');
+  };
+
+  const handleClose = () => {
+    setAuditReason('');
+    setEvalPrice('');
+    setActiveTab('info');
+    onClose();
+  };
 
   if (!lead) return null;
 
@@ -45,7 +66,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
     <>
       <div 
         className={cn("fixed inset-0 bg-black/40 z-40 transition-opacity duration-300", isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}
-        onClick={onClose}
+        onClick={handleClose}
       />
       
       <div className={cn(
@@ -72,7 +93,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
               <LineChart className="h-3.5 w-3.5" />
               <span className="hidden sm:inline text-xs font-medium">监控</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -88,7 +109,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'info' | 'images' | 'followup')}
                 className={cn(
                   "flex items-center gap-2 px-4 text-xs font-bold uppercase tracking-widest transition-all relative",
                   activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-slate-900"
@@ -109,9 +130,22 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
               <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                 <InfoItem label="当前状态" value={<Badge variant="secondary" className="font-bold">{statusLabel}</Badge>} />
                 <InfoItem label="报价详情" value={
-                  <div className="flex flex-col">
-                    <span className="text-xl font-black text-primary">¥ {lead.totalPrice} 万</span>
-                    <span className="text-[10px] text-muted-foreground font-bold">{lead.unitPrice?.toFixed(2)} 万/㎡</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col">
+                      <span className="text-xl font-black text-primary">¥ {lead.totalPrice} 万</span>
+                      <span className="text-[10px] text-muted-foreground font-bold">{lead.unitPrice?.toFixed(2)} 万/㎡</span>
+                    </div>
+                    {priceHistory.length > 0 && (
+                      <div className="mt-2 space-y-1 bg-slate-100 p-2 rounded-lg">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">历史调价</span>
+                        {priceHistory.slice(0, 3).map(ph => (
+                          <div key={ph.id} className="flex justify-between text-[10px] text-slate-500">
+                             <span>{ph.recordedAt.split(' ')[0]}</span>
+                             <span className="font-bold">¥{ph.price}万</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 } />
                 <InfoItem icon={<Ruler className="h-3.5 w-3.5" />} label="房源规格" value={`${lead.layout} · ${lead.area} ㎡`} />
@@ -121,7 +155,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
               <Card className="bg-slate-50/50 border-none">
                 <CardContent className="p-4 space-y-2">
                   <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">专家备注</span>
-                  <p className="text-sm italic text-slate-600 leading-relaxed">"{lead.remarks || '暂无详细备注说明'}"</p>
+                  <p className="text-sm italic text-slate-600 leading-relaxed">&quot;{lead.remarks || '暂无详细备注说明'}&quot;</p>
                 </CardContent>
               </Card>
 
@@ -236,7 +270,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
             <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
               {lead.images.map((img, idx) => (
                 <div key={idx} className="aspect-video relative rounded-2xl overflow-hidden border shadow-sm group">
-                  <img src={img} className="h-full w-full object-cover transition-transform group-hover:scale-110" alt="prop" />
+                  <Image src={img} className="object-cover transition-transform group-hover:scale-110" alt="prop" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                 </div>
               ))}
               <div className="aspect-video rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-primary/40 hover:text-primary transition-all cursor-pointer bg-slate-50/50">
@@ -268,7 +302,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
                       value={followUpContent}
                       onChange={(e) => setFollowUpContent(e.target.value)}
                     />
-                    <Button size="sm" onClick={() => { if(followUpContent) { onAddFollowUp(lead.id, followUpMethod, followUpContent); setFollowUpContent(''); } }}>
+                    <Button size="sm" onClick={handleAddFollowUpSubmit}>
                       提交
                     </Button>
                   </div>
@@ -276,10 +310,18 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
               </Card>
 
               <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-                <TimelineItem title="线索已归档录入" desc={`由专家 ${lead.creatorName} 发起初始评估`} time={lead.createdAt} icon={User} isNewest />
-                {lead.lastFollowUpAt && (
-                  <TimelineItem title="流程状态变更" desc={`由审核结论: ${lead.auditReason || '符合收房标准'}`} time={lead.lastFollowUpAt} icon={ChevronRight} />
-                )}
+                {followUps.map((fu, idx) => (
+                    <TimelineItem 
+                        key={fu.id} 
+                        title={`${METHOD_LABELS[fu.method] || fu.method} 跟进`} 
+                        desc={fu.content} 
+                        time={fu.followUpTime} 
+                        icon={fu.method === 'visit' ? MapPin : User} 
+                        isNewest={idx === 0} 
+                        user={fu.createdBy}
+                    />
+                ))}
+                <TimelineItem title="线索已归档录入" desc={`由专家 ${lead.creatorName} 发起初始评估`} time={lead.createdAt} icon={User} isNewest={followUps.length === 0} />
               </div>
             </div>
           )}
@@ -298,13 +340,20 @@ const InfoItem = ({ label, value, icon }: { label: string, value: React.ReactNod
   </div>
 );
 
-const TimelineItem = ({ title, desc, time, icon: Icon, isNewest }: { title: string, desc: string, time: string, icon: any, isNewest?: boolean }) => (
+const METHOD_LABELS: Record<string, string> = {
+    phone: '电话', wechat: '微信', face: '面谈', visit: '实勘'
+};
+
+const TimelineItem = ({ title, desc, time, icon: Icon, isNewest, user }: { title: string, desc: string, time: string, icon: React.ElementType, isNewest?: boolean, user?: string }) => (
   <div className="relative">
     <div className={cn("absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center shadow-sm", isNewest ? "bg-primary" : "bg-slate-200")}>
       <Icon className={cn("h-3 w-3", isNewest ? "text-white" : "text-slate-500")} />
     </div>
     <div className="flex flex-col">
-      <span className="text-sm font-black text-slate-900">{title}</span>
+      <div className="flex items-center gap-2">
+         <span className="text-sm font-black text-slate-900">{title}</span>
+         {user && <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 font-bold">{user}</span>}
+      </div>
       <p className="text-xs text-slate-500 mt-1">{desc}</p>
       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{time}</span>
     </div>

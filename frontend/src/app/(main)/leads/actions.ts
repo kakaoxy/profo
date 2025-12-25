@@ -117,6 +117,48 @@ export async function addFollowUpAction(leadId: string, method: FollowUpMethod, 
     return { success: true };
 }
 
+export async function getLeadFollowUpsAction(leadId: string): Promise<import('./types').FollowUp[]> {
+    const client = await fetchClient();
+    const { data, error } = await client.GET('/api/v1/leads/{lead_id}/follow-ups', {
+        params: { path: { lead_id: leadId } }
+    });
+    
+    if (error || !data) {
+        console.error("Get follow-ups error:", error);
+        return [];
+    }
+
+    return data.map(f => ({
+        id: f.id,
+        leadId: f.lead_id,
+        method: f.method,
+        content: f.content,
+        followUpTime: new Date(f.followed_at).toLocaleString(),
+        createdBy: f.created_by_name || 'Unknown' // Use name if available
+    }));
+}
+
+export async function getLeadPriceHistoryAction(leadId: string): Promise<import('./types').PriceHistory[]> {
+    const client = await fetchClient();
+     const { data, error } = await client.GET('/api/v1/leads/{lead_id}/prices', {
+        params: { path: { lead_id: leadId } }
+    });
+
+    if (error || !data) {
+        console.error("Get price history error:", error);
+        return [];
+    }
+
+    return data.map(p => ({
+        id: p.id,
+        leadId: p.lead_id,
+        price: p.price,
+        remark: p.remark ?? undefined,
+        recordedAt: new Date(p.recorded_at).toLocaleString(),
+        createdByName: p.created_by_name ?? undefined
+    }));
+}
+
 function mapBackendToFrontend(backendLead: BackendLead): Lead {
     return {
         id: backendLead.id,
