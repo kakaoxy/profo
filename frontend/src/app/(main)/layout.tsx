@@ -23,7 +23,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
-  const defaultOpen = cookieStore.get("sidebar:state")?.value === "true";
+  // 默认展开，只有明确设置为 false 时才折叠
+  const defaultOpen = cookieStore.get("sidebar:state")?.value !== "false";
   const user = await getUser();
 
   if (!user) {

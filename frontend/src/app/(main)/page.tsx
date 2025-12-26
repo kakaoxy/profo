@@ -15,17 +15,19 @@ async function getDashboardData() {
   const client = await fetchClient();
   
   // 并行获取所有数据
-  const [propertiesRes, projectsStatsRes, leadsRes] = await Promise.all([
+  const [propertiesRes, projectsStatsRes, pendingLeadsRes, signedLeadsRes] = await Promise.all([
     client.GET("/api/v1/properties", { params: { query: { page: 1, page_size: 1 } } }),
     client.GET("/api/v1/projects/stats", {}),
     client.GET("/api/v1/leads/", { params: { query: { page: 1, page_size: 5, statuses: ["pending_assessment"] } } }),
+    client.GET("/api/v1/leads/", { params: { query: { page: 1, page_size: 1, statuses: ["signed"] } } }),
   ]);
 
   return {
     propertiesTotal: propertiesRes.data?.total || 0,
-    projectStats: projectsStatsRes.data || { total: 0, by_status: {} },
-    leads: leadsRes.data?.items || [],
-    leadsTotal: leadsRes.data?.total || 0,
+    projectStats: projectsStatsRes.data || {},
+    leads: pendingLeadsRes.data?.items || [],
+    pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
+    signedLeadsTotal: signedLeadsRes.data?.total || 0,
   };
 }
 
@@ -46,7 +48,7 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 export default async function DashboardPage() {
-  const { propertiesTotal, projectStats, leads, leadsTotal } = await getDashboardData();
+  const { propertiesTotal, projectStats, leads, pendingLeadsTotal, signedLeadsTotal } = await getDashboardData();
 
   // 解析项目统计 - 后端返回格式: {code, msg, data: {signing, renovating, selling, sold}}
   const statsData = (projectStats as { data?: Record<string, number> })?.data || projectStats;
@@ -72,7 +74,7 @@ export default async function DashboardPage() {
         />
         <StatCard 
           title="新增线索" 
-          value={`${leadsTotal}`} 
+          value={`${pendingLeadsTotal}`} 
           sub="待评估" 
           icon={PhoneCall}
           iconColor="text-blue-500"
@@ -99,18 +101,18 @@ export default async function DashboardPage() {
           <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-4">线索评估概览</h3>
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-3xl font-bold text-slate-900 dark:text-white mr-2">{leadsTotal}</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white mr-2">{pendingLeadsTotal}</span>
               <span className="text-sm text-slate-500 dark:text-slate-400">待评估</span>
             </div>
             <div>
-              <span className="text-3xl font-bold text-slate-900 dark:text-white mr-2">{soldCount}</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white mr-2">{signedLeadsTotal}</span>
               <span className="text-sm text-slate-500 dark:text-slate-400">已签约</span>
             </div>
           </div>
           <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full mt-4 overflow-hidden flex">
             <div 
               className="h-full bg-slate-800 dark:bg-white" 
-              style={{ width: `${leadsTotal > 0 ? Math.min((soldCount / (leadsTotal + soldCount)) * 100, 100) : 0}%` }}
+              style={{ width: `${(pendingLeadsTotal + signedLeadsTotal) > 0 ? Math.min((signedLeadsTotal / (pendingLeadsTotal + signedLeadsTotal)) * 100, 100) : 0}%` }}
             />
           </div>
         </div>
