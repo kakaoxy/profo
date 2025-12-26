@@ -121,3 +121,46 @@ class PaginatedLeadResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+# ----------------------
+# 列表展示专用 Schema (性能优化)
+# ----------------------
+class LeadListItem(BaseModel):
+    """
+    列表展示专用 Schema
+    不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题
+    """
+    id: str
+    community_name: str
+    is_hot: int = 0
+    layout: Optional[str] = None
+    orientation: Optional[str] = None
+    floor_info: Optional[str] = None
+    area: Optional[float] = None
+    total_price: Optional[float] = None
+    unit_price: Optional[float] = None
+    eval_price: Optional[float] = None
+    status: LeadStatus
+    audit_reason: Optional[str] = None
+    auditor_id: Optional[str] = None
+    audit_time: Optional[datetime] = None
+    images: List[str] = []
+    district: Optional[str] = None
+    business_area: Optional[str] = None
+    remarks: Optional[str] = None
+    creator_id: Optional[str] = None
+    creator_name: Optional[str] = None
+    source_property_id: Optional[int] = None
+    last_follow_up_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PaginatedLeadListResponse(BaseModel):
+    """列表分页响应 - 使用 LeadListItem 避免性能问题"""
+    items: List[LeadListItem]
+    total: int
+    page: int
+    page_size: int
+
