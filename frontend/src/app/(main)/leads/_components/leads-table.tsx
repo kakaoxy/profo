@@ -1,5 +1,5 @@
 import React from 'react';
-import NextImage from 'next/image';
+// Note: Using native img instead of next/image to avoid private IP restriction in dev
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +49,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onE
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-16 overflow-hidden rounded-md bg-slate-100 border relative flex items-center justify-center">
                       {lead.images && lead.images.length > 0 ? (
-                         <NextImage src={lead.images[0]} className="object-cover transition-transform group-hover:scale-105" alt="prop" fill />
+                         /* eslint-disable-next-line @next/next/no-img-element */
+                         <img src={lead.images[0]} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" alt="prop" />
                       ) : (
                          <Home className="h-5 w-5 text-slate-300" />
                       )}

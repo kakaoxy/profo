@@ -17,6 +17,20 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        // 本地开发环境图片服务器
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/static/**',
+      },
+      {
+        // 本地开发环境 localhost
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/static/**',
+      },
     ],
   },
 };

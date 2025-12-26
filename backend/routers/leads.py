@@ -4,7 +4,7 @@ Leads API Router
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session, joinedload, noload, defer
+from sqlalchemy.orm import Session, joinedload, noload
 from sqlalchemy import desc
 import uuid
 
@@ -13,6 +13,7 @@ from dependencies.auth import get_current_user as get_current_user_dep
 from models import User, Lead, LeadFollowUp, LeadPriceHistory, LeadStatus, FollowUpMethod
 from schemas.lead import (
     LeadCreate, LeadUpdate, LeadResponse, PaginatedLeadResponse,
+    LeadListItem, PaginatedLeadListResponse,
     FollowUpCreate, FollowUpResponse,
     PriceHistoryCreate, PriceHistoryResponse
 )
@@ -23,7 +24,48 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/", response_model=PaginatedLeadResponse)
+def _serialize_lead_for_list(lead: Lead) -> dict:
+    """
+    手动序列化 Lead 对象用于列表展示
+    避免 Pydantic 的 from_attributes 自动遍历关系导致的性能问题
+    """
+    # 过滤错误存储的大型数据（如 base64 图片），只保留正常的 URL（通常 < 500 字符）
+    safe_images = []
+    if lead.images:
+        for img in lead.images:
+            if isinstance(img, str) and len(img) < 500:
+                safe_images.append(img)
+    
+    return {
+        "id": lead.id,
+        "community_name": lead.community_name,
+        "is_hot": lead.is_hot or 0,
+        "layout": lead.layout,
+        "orientation": lead.orientation,
+        "floor_info": lead.floor_info,
+        "area": float(lead.area) if lead.area else None,
+        "total_price": float(lead.total_price) if lead.total_price else None,
+        "unit_price": float(lead.unit_price) if lead.unit_price else None,
+        "eval_price": float(lead.eval_price) if lead.eval_price else None,
+        "status": lead.status,
+        "audit_reason": lead.audit_reason,
+        "auditor_id": lead.auditor_id,
+        "audit_time": lead.audit_time,
+        "images": safe_images,
+        "district": lead.district,
+        "business_area": lead.business_area,
+        "remarks": lead.remarks,
+        "creator_id": lead.creator_id,
+        # 只提取 nickname，避免序列化整个 User 对象
+        "creator_name": lead.creator.nickname if lead.creator else None,
+        "source_property_id": lead.source_property_id,
+        "last_follow_up_at": lead.last_follow_up_at,
+        "created_at": lead.created_at,
+        "updated_at": lead.updated_at,
+    }
+
+
+@router.get("/", response_model=PaginatedLeadListResponse)
 def get_leads(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -31,15 +73,16 @@ def get_leads(
     statuses: Optional[List[LeadStatus]] = Query(None),
     district: Optional[str] = None,
     creator_id: Optional[int] = None,
-    layout: Optional[str] = None, # Simple text match for now
-    floor: Optional[str] = None, # Simple text match
+    layout: Optional[str] = None,
+    floor: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_dep)
 ):
-    import time
-    start = time.time()
-    
-    # [性能优化] 使用 defer/noload 减少不必要的数据加载
+    """
+    获取线索列表
+    使用手动序列化避免 ORM 关系遍历导致的性能问题
+    """
+    # 构建查询，优化关系加载
     query = db.query(Lead).options(
         # 只加载 creator 关系用于获取 creator_name
         joinedload(Lead.creator),
@@ -48,11 +91,9 @@ def get_leads(
         noload(Lead.source_property),
         noload(Lead.follow_ups),
         noload(Lead.price_history),
-        # 延迟加载大文本字段
-        defer(Lead.audit_reason),
-        defer(Lead.remarks),
     )
     
+    # 应用过滤条件
     if search:
         query = query.filter(Lead.community_name.contains(search))
     if statuses:
@@ -62,27 +103,19 @@ def get_leads(
     if creator_id:
         query = query.filter(Lead.creator_id == creator_id)
     if layout:
-        # e.g. "2" matches "2室..."
         query = query.filter(Lead.layout.contains(layout))
     if floor:
-        # e.g. "低"
         query = query.filter(Lead.floor_info.contains(floor))
     
-    query_build_time = time.time() - start
-    
-    count_start = time.time()
+    # 计算总数和获取分页数据
     total = query.count()
-    count_time = time.time() - count_start
-    
-    fetch_start = time.time()
     items = query.order_by(desc(Lead.created_at)).offset((page - 1) * page_size).limit(page_size).all()
-    fetch_time = time.time() - fetch_start
     
-    total_time = time.time() - start
-    print(f"[LEADS API] query_build: {query_build_time*1000:.1f}ms, count: {count_time*1000:.1f}ms, fetch: {fetch_time*1000:.1f}ms, total: {total_time*1000:.1f}ms, items: {len(items)}")
+    # 手动序列化，避免 Pydantic 遍历 ORM 关系
+    serialized_items = [_serialize_lead_for_list(lead) for lead in items]
     
     return {
-        "items": items,
+        "items": serialized_items,
         "total": total,
         "page": page,
         "page_size": page_size

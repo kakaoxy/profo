@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useTransition } from 'react';
 import dynamic from 'next/dynamic';
 import { Lead, LeadStatus, FilterState, FollowUpMethod } from '../types';
-import { getLeadsAction, updateLeadAction, addFollowUpAction, deleteLeadAction } from '../actions';
+import { getLeadsAction, updateLeadAction, addFollowUpAction, deleteLeadAction, createLeadAction } from '../actions';
 import { Button } from '@/components/ui/button';
 import { LeadsFilter } from './leads-filter';
 import { LeadsTable } from './leads-table';
@@ -139,7 +139,9 @@ export function LeadsView({ initialLeads }: LeadsViewProps) {
         const updatedLead = await updateLeadAction(editingLead.id, newLeadData);
         setLeads(prev => prev.map(l => l.id === editingLead.id ? updatedLead : l));
       } else {
-        // Create Mode - refetch to get proper data
+        // Create Mode - actually create the lead
+        await createLeadAction(newLeadData);
+        // Refetch to get the latest list
         const updatedLeads = await getLeadsAction(filters);
         setLeads(updatedLeads);
       }
