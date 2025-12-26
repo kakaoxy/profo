@@ -108,7 +108,7 @@ class CommunityQueryService:
 service = CommunityQueryService()
 
 @router.get("/communities", response_model=CommunityListResponse)
-async def get_communities(
+def get_communities(
     search: Optional[str] = Query(None, description="小区名称搜索（模糊匹配）"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=200, description="每页数量"),
@@ -127,7 +127,7 @@ async def get_communities(
 
 
 @router.get("/dictionaries")
-async def get_dictionaries(
+def get_dictionaries(
     type: str = Query(..., description="字典类型: district | business_circle"),
     search: Optional[str] = Query(None, description="模糊搜索关键词"),
     limit: int = Query(50, ge=1, le=500, description="返回数量上限"),
@@ -169,7 +169,7 @@ async def get_dictionaries(
 
 
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
-async def merge_communities(
+def merge_communities(
     request: CommunityMergeRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
