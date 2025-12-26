@@ -58,3 +58,15 @@ export interface MonitorData {
   radar: NeighborhoodRadarData;
   trend: TrendPoint[];
 }
+
+export interface ProjectData {
+  address: string | null;
+  community_name: string | null;
+  area: number | null;
+  signing_price: number | null;
+  list_price: number | null;
+  signing_date: string | null;
+  signing_period: number | null; // 免租期（天数）
+  extensionPeriod: number | null; // 顺延期（月）
+  extensionRent: number | null; // 顺延期租金（元/月）
+}

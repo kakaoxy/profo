@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 
 interface AIStrategyProps {
-  projectId: string;
+  projectId?: string;
+  communityName?: string;
 }
 
-export function AIStrategy({ projectId }: AIStrategyProps) {
+export function AIStrategy({ projectId, communityName }: AIStrategyProps) {
   // Use projectId to satisfy linter
-  console.log(`AI Strategy for: ${projectId}`);
+  if (projectId) console.log(`AI Strategy for project: ${projectId}`);
+  if (communityName) console.log(`AI Strategy for community: ${communityName}`);
 
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);

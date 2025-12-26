@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCompetitorsBrawlAction, type BrawlItem } from "../../actions/monitor";
+import { getCompetitorsBrawlAction, getCompetitorsBrawlByCommunityAction, type BrawlItem } from "../../actions/monitor";
 
 interface CompetitorsBrawlProps {
-  projectId: string;
+  projectId?: string;
+  communityName?: string;
 }
 
 type SortConfig = {
@@ -18,7 +19,7 @@ type SortConfig = {
   direction: 'asc' | 'desc' | null;
 };
 
-export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
+export function CompetitorsBrawl({ projectId, communityName }: CompetitorsBrawlProps) {
   const [statusFilters, setStatusFilters] = useState<('on_sale' | 'sold')[]>(['on_sale']);
   const [layoutFilters, setLayoutFilters] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,8 +35,19 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
       try {
         setLoading(true);
         setError(null);
-        // 调用 Server Action 获取所有数据 (Server Action 已更新为一次性返回所有)
-        const res = await getCompetitorsBrawlAction(projectId);
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let res: any;
+
+        if (projectId) {
+          res = await getCompetitorsBrawlAction(projectId);
+        } else if (communityName) {
+           res = await getCompetitorsBrawlByCommunityAction(communityName);
+        } else {
+           setLoading(false);
+           return;
+        }
+
         if (res.success && res.data) {
           setAllItems(res.data.items);
           setCounts(res.data.counts);
@@ -50,7 +62,7 @@ export function CompetitorsBrawl({ projectId }: CompetitorsBrawlProps) {
       }
     }
     loadData();
-  }, [projectId]);
+  }, [projectId, communityName]);
 
   // 辅助函数：解析户型中的室数
   const getRoomCount = (layoutStr: string): number => {

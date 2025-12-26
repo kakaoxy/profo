@@ -6,26 +6,51 @@ import { Info, Loader2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, Label } from "recharts";
-import { getTrendPositioningAction, type TrendData } from "../../actions/monitor";
+import { 
+  getTrendPositioningAction,
+  getTrendPositioningByCommunityAction, 
+  type TrendData 
+} from "../../actions/monitor";
 
 interface TrendPositioningProps {
-  projectId: string;
+  projectId?: string;
+  communityName?: string;
+  myOverridePrice?: number;
 }
 
-export function TrendPositioning({ projectId }: TrendPositioningProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function TrendPositioning({ projectId, communityName, myOverridePrice }: TrendPositioningProps) {
   const [data, setData] = useState<TrendData[]>([]);
   const [myPricing, setMyPricing] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const res = await getTrendPositioningAction(projectId);
+        setError(null);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let res: any;
+
+        if (projectId) {
+          res = await getTrendPositioningAction(projectId);
+        } else if (communityName) {
+           const price = myOverridePrice || 0;
+           res = await getTrendPositioningByCommunityAction(communityName, price);
+        } else {
+           setLoading(false);
+           return;
+        }
+
         if (res.success && res.data) {
           setData(res.data);
-          setMyPricing(res.myPrice || 0);
+          // If overridden price is provided, prefer it for myPricing state (or trust API if it returns it)
+          if (res.myPrice !== undefined) {
+             setMyPricing(res.myPrice);
+          } else if (myOverridePrice !== undefined) {
+             setMyPricing(myOverridePrice);
+          }
         } else {
           setError(res.message || "获取走势数据失败");
         }
@@ -37,7 +62,7 @@ export function TrendPositioning({ projectId }: TrendPositioningProps) {
       }
     }
     loadData();
-  }, [projectId]);
+  }, [projectId, communityName, myOverridePrice]);
 
   // 计算Y轴范围
   const allPrices = [

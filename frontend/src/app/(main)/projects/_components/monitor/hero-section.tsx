@@ -3,23 +3,15 @@
 import { useEffect, useState } from "react";
 import { MapPin, Info, Clock } from "lucide-react";
 import { getProjectDetailAction } from "@/app/(main)/projects/actions";
+import { ProjectData } from "./types";
 
 interface HeroSectionProps {
-  projectId: string;
-  projectName: string;
+  projectId?: string;
+  projectName?: string;
+  overrideData?: ProjectData;
 }
 
-interface ProjectData {
-  address: string | null;
-  community_name: string | null;
-  area: number | null;
-  signing_price: number | null;
-  list_price: number | null;
-  signing_date: string | null;
-  signing_period: number | null; // 免租期（天数）
-  extensionPeriod: number | null; // 顺延期（月）
-  extensionRent: number | null; // 顺延期租金（元/月）
-}
+
 
 interface TimeMonitor {
   progress: number;
@@ -65,13 +57,21 @@ function calculateTimeMonitor(
   };
 }
 
-export function HeroSection({ projectId, projectName }: HeroSectionProps) {
+export function HeroSection({ projectId, projectName, overrideData }: HeroSectionProps) {
   const [data, setData] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
+      if (overrideData) {
+        setData(overrideData);
+        setLoading(false);
+        return;
+      }
+
+      if (!projectId) return;
+
       try {
         setLoading(true);
         setError(null);
@@ -92,12 +92,10 @@ export function HeroSection({ projectId, projectName }: HeroSectionProps) {
       }
     }
 
-    if (projectId) {
-      fetchData();
-    }
+    fetchData();
   // 只依赖 projectId，避免 dependency array 大小变化错误
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, overrideData]);
 
   // Loading state
   if (loading) {

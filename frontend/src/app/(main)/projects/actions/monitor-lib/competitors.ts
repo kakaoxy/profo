@@ -33,6 +33,36 @@ export async function getCompetitorsAction(projectId: string) {
 }
 
 /**
+ * 获取当前小区的竞品列表 (By Community Name)
+ */
+export async function getCompetitorsByCommunityAction(communityName: string) {
+  try {
+    const { getCommunityIdByName } = await import("./utils");
+    const communityId = await getCommunityIdByName(communityName);
+    
+    if (!communityId) {
+      return { success: false, message: "未找到该小区信息" };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/communities/${communityId}/competitors`,
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      return { success: false, message: "获取竞品列表失败" };
+    }
+
+    const data = (await response.json()) as CompetitorItem[];
+    return { success: true, data, communityId };
+  } catch (e) {
+    console.error("获取竞品列表异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
  * 搜索小区
  */
 export async function searchCommunitiesAction(keyword: string) {
