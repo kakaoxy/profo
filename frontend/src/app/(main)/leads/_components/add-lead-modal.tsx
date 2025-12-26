@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Lead, LeadStatus } from '../types';
-import { DISTRICTS } from '../constants';
 import { Button } from '@/components/ui/button';
 import { X, Ruler, MapPin } from 'lucide-react';
 import { CommunitySelect } from './add-lead-parts/community-select';
@@ -28,9 +27,11 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
     layout: '2室1厅1卫',
     orientation: '南',
     floorInfo: '',
+    currentFloor: '',
+    totalFloor: '',
     area: '',
     totalPrice: '',
-    district: DISTRICTS[0],
+    district: '',
     businessArea: '',
     remarks: '',
   });
@@ -46,8 +47,15 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
     e.preventDefault();
     if (!formData.communityName || !formData.area || !formData.totalPrice) return;
 
+    const floorText = (formData.currentFloor && formData.totalFloor) 
+        ? `${formData.currentFloor}/${formData.totalFloor}层` 
+        : formData.currentFloor 
+            ? `${formData.currentFloor}层`
+            : formData.floorInfo; // Fallback or empty
+
     onAdd({
       ...formData,
+      floorInfo: floorText,
       area: Number(formData.area),
       totalPrice: Number(formData.totalPrice),
       unitPrice: Number(calculatedUnitPrice),
@@ -56,7 +64,19 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
       creatorName: '运营专家 A',
     });
     // Reset
-    setFormData({ communityName: '', layout: '2室1厅1卫', orientation: '南', floorInfo: '', area: '', totalPrice: '', district: DISTRICTS[0], businessArea: '', remarks: '' });
+    setFormData({ 
+        communityName: '', 
+        layout: '2室1厅1卫', 
+        orientation: '南', 
+        floorInfo: '', 
+        currentFloor: '', 
+        totalFloor: '', 
+        area: '', 
+        totalPrice: '', 
+        district: '', 
+        businessArea: '', 
+        remarks: '' 
+    });
     setImages([]);
     onClose();
   };
@@ -95,19 +115,18 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">所在区域</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <select 
+                  <input 
+                    placeholder="例如: 静安区"
                     className="w-full h-12 pl-10 pr-4 border rounded-xl bg-background outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
                     value={formData.district}
                     onChange={e => setFormData({...formData, district: e.target.value})}
-                  >
-                    {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">核心商圈</label>
                 <input 
-                  placeholder="例如: 望京"
+                  placeholder="例如: 彭浦"
                   className="w-full h-12 px-4 border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
                   value={formData.businessArea}
                   onChange={e => setFormData({...formData, businessArea: e.target.value})}
@@ -135,7 +154,27 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
                   </select>
                 </FormItem>
                 <FormItem label="楼层/总高">
-                  <input placeholder="6/12层" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-medium" value={formData.floorInfo} onChange={e => setFormData({...formData, floorInfo: e.target.value})} />
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                        <input 
+                            placeholder="1" 
+                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center" 
+                            value={formData.currentFloor} 
+                            onChange={e => setFormData({...formData, currentFloor: e.target.value})} 
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">层</span>
+                    </div>
+                    <span className="text-slate-300">/</span>
+                    <div className="relative flex-1">
+                        <input 
+                            placeholder="6" 
+                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center" 
+                            value={formData.totalFloor} 
+                            onChange={e => setFormData({...formData, totalFloor: e.target.value})} 
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">总</span>
+                    </div>
+                  </div>
                 </FormItem>
                 <FormItem label="用户报价 (万) *">
                   <input type="number" className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} />
@@ -149,7 +188,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
           <ImageUpload images={images} onChange={setImages} />
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">专家补充备注</label>
+            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">补充信息</label>
             <textarea 
               rows={3} placeholder="输入房源核心优势、业主动机等..."
               className="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm transition-all"
