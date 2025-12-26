@@ -3,17 +3,27 @@ import NextImage from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, Home } from 'lucide-react';
+import { Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Lead, LeadStatus } from '../types';
 import { STATUS_CONFIG } from '../constants';
 
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 interface LeadsTableProps {
   leads: Lead[];
   onOpenDetail: (id: string) => void;
+  onEdit: (lead: Lead) => void;
+  onDelete: (id: string) => void;
 }
 
-export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail }) => {
+export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onEdit, onDelete }) => {
   return (
     <Card className="border-none shadow-sm overflow-hidden bg-white/80">
       <div className="w-full overflow-x-auto">
@@ -30,7 +40,11 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail }) =
           </thead>
           <tbody className="divide-y text-sm">
             {leads.map(lead => (
-              <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
+              <tr 
+                  key={lead.id} 
+                  className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                  onClick={() => onOpenDetail(lead.id)}
+              >
                 <td className="p-4 pl-8">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-16 overflow-hidden rounded-md bg-slate-100 border relative flex items-center justify-center">
@@ -84,9 +98,23 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail }) =
                   </div>
                 </td>
                 <td className="p-4 pr-8 text-right">
-                  <Button variant="ghost" size="sm" onClick={() => onOpenDetail(lead.id)} className="h-8 w-8 p-0">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(lead)}>
+                          <Pencil className="mr-2 h-4 w-4" /> 编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDelete(lead.id)} className="text-destructive focus:text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" /> 删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </td>
               </tr>
             ))}

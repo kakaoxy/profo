@@ -2,17 +2,26 @@ import React from 'react';
 import NextImage from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, ImageOff } from 'lucide-react';
+import { MapPin, ImageOff, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Lead, LeadStatus } from '../types';
 import { STATUS_CONFIG } from '../constants';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface LeadsGridProps {
   leads: Lead[];
   onOpenDetail: (id: string) => void;
+  onEdit: (lead: Lead) => void;
+  onDelete: (id: string) => void;
 }
 
-export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail }) => {
+export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdit, onDelete }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {leads.map(lead => (
@@ -39,6 +48,23 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail }) => 
               >
                 {STATUS_CONFIG[lead.status]?.label}
               </Badge>
+            </div>
+            <div className="absolute top-3 right-3" onClick={(e) => e.stopPropagation()}>
+               <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/50 backdrop-blur-md hover:bg-white/80 rounded-full shadow-sm text-slate-700">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(lead)}>
+                      <Pencil className="mr-2 h-4 w-4" /> 编辑
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete(lead.id)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" /> 删除
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+               </DropdownMenu>
             </div>
           </div>
           <CardHeader className="p-4 pb-2">

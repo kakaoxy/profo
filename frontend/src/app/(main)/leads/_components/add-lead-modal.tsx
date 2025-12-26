@@ -10,6 +10,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
+  lead?: Lead | null;
 }
 
 const ORIENTATION_OPTIONS = ['南', '北', '东', '西', '南北', '东西'];
@@ -21,7 +22,7 @@ export const FormItem = ({ label, children }: { label: string, children?: React.
   </div>
 );
 
-export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
+export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) => {
   const [formData, setFormData] = useState({
     communityName: '',
     layout: '2室1厅1卫',
@@ -36,6 +37,55 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
     remarks: '',
   });
   const [images, setImages] = useState<string[]>([]);
+
+  // Initialize form when lead changes
+  React.useEffect(() => {
+    if (isOpen && lead) {
+        // Parse floor info "X/Y层"
+        let current = '';
+        let total = '';
+        const match = lead.floorInfo?.match(/(\d+)\/(\d+)层/);
+        if (match) {
+            current = match[1];
+            total = match[2];
+        } else {
+            // Try to handle simple "X层"
+            const matchSimple = lead.floorInfo?.match(/(\d+)层/);
+            if (matchSimple) current = matchSimple[1];
+        }
+
+        setFormData({
+            communityName: lead.communityName,
+            layout: lead.layout || '2室1厅1卫',
+            orientation: lead.orientation || '南',
+            floorInfo: lead.floorInfo || '',
+            currentFloor: current,
+            totalFloor: total,
+            area: lead.area ? String(lead.area) : '',
+            totalPrice: lead.totalPrice ? String(lead.totalPrice) : '',
+            district: lead.district || '',
+            businessArea: lead.businessArea || '',
+            remarks: lead.remarks || '',
+        });
+        setImages(lead.images || []);
+    } else if (isOpen && !lead) {
+        // Reset for add mode
+        setFormData({ 
+            communityName: '', 
+            layout: '2室1厅1卫', 
+            orientation: '南', 
+            floorInfo: '', 
+            currentFloor: '', 
+            totalFloor: '', 
+            area: '', 
+            totalPrice: '', 
+            district: '', 
+            businessArea: '', 
+            remarks: '' 
+        });
+        setImages([]);
+    }
+  }, [isOpen, lead]);
 
   const calculatedUnitPrice = useMemo(() => {
     const area = parseFloat(formData.area);
@@ -59,29 +109,18 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
       area: Number(formData.area),
       totalPrice: Number(formData.totalPrice),
       unitPrice: Number(calculatedUnitPrice),
-      status: LeadStatus.PENDING_ASSESSMENT,
+      status: lead?.status || LeadStatus.PENDING_ASSESSMENT, // Keep existing status if editing
       images: images.length > 0 ? images : [],
-      creatorName: '运营专家 A',
+      creatorName: lead?.creatorName || '运营专家 A',
     });
-    // Reset
-    setFormData({ 
-        communityName: '', 
-        layout: '2室1厅1卫', 
-        orientation: '南', 
-        floorInfo: '', 
-        currentFloor: '', 
-        totalFloor: '', 
-        area: '', 
-        totalPrice: '', 
-        district: '', 
-        businessArea: '', 
-        remarks: '' 
-    });
-    setImages([]);
+    
+    // Close modal (state reset happens in useEffect when re-opened or lead changes)
     onClose();
   };
 
   if (!isOpen) return null;
+
+  const isEdit = !!lead;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -90,8 +129,8 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
       <div className="relative bg-background w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-xl font-black font-sans tracking-tight">录入新线索</h2>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">FlipMaster Lead Creation</p>
+            <h2 className="text-xl font-black font-sans tracking-tight">{isEdit ? '编辑线索' : '录入新线索'}</h2>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">FlipMaster Lead {isEdit ? 'Edit' : 'Creation'}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
             <X className="h-5 w-5" />
@@ -200,7 +239,9 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
 
         <div className="border-t p-6 flex flex-col sm:flex-row gap-3">
           <Button variant="ghost" onClick={onClose} className="order-2 sm:order-1 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-xs">取消</Button>
-          <Button onClick={handleSubmit} className="order-1 sm:order-2 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20">确认录入线索</Button>
+          <Button onClick={handleSubmit} className="order-1 sm:order-2 flex-1 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20">
+            {isEdit ? '保存修改' : '确认录入线索'}
+          </Button>
         </div>
       </div>
     </div>

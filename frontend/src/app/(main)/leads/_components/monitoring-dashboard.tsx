@@ -1,19 +1,53 @@
 "use client";
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { Lead } from '../types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Activity, Share2 } from 'lucide-react';
-
-// Import from existing monitor components
-import { HeroSection } from "../../projects/_components/monitor/hero-section";
-import { MarketSentiment } from "../../projects/_components/monitor/market-sentiment";
-import { NeighborhoodRadar } from "../../projects/_components/monitor/neighborhood-radar";
-import { TrendPositioning } from "../../projects/_components/monitor/trend-positioning";
-import { CompetitorsBrawl } from "../../projects/_components/monitor/competitors-brawl";
-import { AIStrategy } from "../../projects/_components/monitor/ai-strategy";
+import { ArrowLeft, Activity, Share2, Loader2 } from 'lucide-react';
 import { ProjectData } from "../../projects/_components/monitor/types";
+
+// [性能优化] 使用动态导入延迟加载重型 Monitor 组件
+// 这些组件只有在用户打开 Dashboard 时才会加载
+const HeroSection = dynamic(
+  () => import("../../projects/_components/monitor/hero-section").then(mod => mod.HeroSection),
+  { loading: () => <ComponentSkeleton height="200px" /> }
+);
+
+const MarketSentiment = dynamic(
+  () => import("../../projects/_components/monitor/market-sentiment").then(mod => mod.MarketSentiment),
+  { loading: () => <ComponentSkeleton height="300px" /> }
+);
+
+const NeighborhoodRadar = dynamic(
+  () => import("../../projects/_components/monitor/neighborhood-radar").then(mod => mod.NeighborhoodRadar),
+  { loading: () => <ComponentSkeleton height="350px" /> }
+);
+
+const TrendPositioning = dynamic(
+  () => import("../../projects/_components/monitor/trend-positioning").then(mod => mod.TrendPositioning),
+  { loading: () => <ComponentSkeleton height="400px" /> }
+);
+
+const CompetitorsBrawl = dynamic(
+  () => import("../../projects/_components/monitor/competitors-brawl").then(mod => mod.CompetitorsBrawl),
+  { loading: () => <ComponentSkeleton height="500px" /> }
+);
+
+const AIStrategy = dynamic(
+  () => import("../../projects/_components/monitor/ai-strategy").then(mod => mod.AIStrategy),
+  { loading: () => <ComponentSkeleton height="300px" /> }
+);
+
+// Loading skeleton for dynamic components
+function ComponentSkeleton({ height }: { height: string }) {
+  return (
+    <div className="flex items-center justify-center bg-slate-50" style={{ minHeight: height }}>
+      <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+    </div>
+  );
+}
 
 interface Props {
   lead: Lead;
