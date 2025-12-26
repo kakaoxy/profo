@@ -70,14 +70,29 @@ export async function getLeadsAction(filters: FilterState) {
     return (data.items || []).map(mapBackendToFrontend);
 }
 
-export async function updateLeadAction(leadId: string, data: { status?: LeadStatus, evalPrice?: number, reason?: string }) {
+export async function updateLeadAction(leadId: string, data: Partial<Lead>) {
     const client = await fetchClient();
     
-    const payload = {
-        status: data.status,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = {
+        community_name: data.communityName,
+        layout: data.layout,
+        orientation: data.orientation,
+        floor_info: data.floorInfo,
+        area: data.area,
+        total_price: data.totalPrice,
+        unit_price: data.unitPrice,
         eval_price: data.evalPrice,
-        audit_reason: data.reason,
+        district: data.district,
+        business_area: data.businessArea,
+        remarks: data.remarks,
+        images: data.images,
+        status: data.status,
+        audit_reason: data.auditReason,
     };
+    
+    // Clean up undefined values
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
     const { data: responseData, error } = await client.PUT('/api/v1/leads/{lead_id}', {
         params: { path: { lead_id: leadId } },
@@ -91,7 +106,26 @@ export async function updateLeadAction(leadId: string, data: { status?: LeadStat
     }
 
     revalidatePath('/leads');
+    revalidatePath('/leads');
     return mapBackendToFrontend(responseData);
+}
+
+export async function deleteLeadAction(leadId: string) {
+    const client = await fetchClient();
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await client.DELETE('/api/v1/leads/{lead_id}' as any, {
+        params: { path: { lead_id: leadId } }
+    });
+
+    if (error) {
+        console.error("Delete lead error:", error);
+        const errorMessage = typeof error === 'object' ? JSON.stringify(error) : error || 'Failed to delete lead';
+        throw new Error(errorMessage);
+    }
+
+    revalidatePath('/leads');
+    return { success: true };
 }
 
 export async function addFollowUpAction(leadId: string, method: FollowUpMethod, content: string) {

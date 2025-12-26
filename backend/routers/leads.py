@@ -4,7 +4,7 @@ Leads API Router
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, noload, defer
 from sqlalchemy import desc
 import uuid
 
@@ -36,7 +36,19 @@ def get_leads(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_dep)
 ):
-    query = db.query(Lead)
+    # [性能优化] 使用 defer/noload 减少不必要的数据加载
+    query = db.query(Lead).options(
+        # 只加载 creator 关系用于获取 creator_name
+        joinedload(Lead.creator),
+        # 列表页不需要以下关联，完全禁止加载
+        noload(Lead.auditor),
+        noload(Lead.source_property),
+        noload(Lead.follow_ups),
+        noload(Lead.price_history),
+        # 延迟加载大文本字段
+        defer(Lead.audit_reason),
+        defer(Lead.remarks),
+    )
     
     if search:
         query = query.filter(Lead.community_name.contains(search))
@@ -63,6 +75,7 @@ def get_leads(
         "page_size": page_size
     }
 
+
 @router.post("/", response_model=LeadResponse)
 def create_lead(
     lead_in: LeadCreate,
@@ -78,13 +91,7 @@ def create_lead(
     # Manually ensure unique ID generation if SQLAlchemy generic default doesn't kick in immediately 
     # (It does if defined in model `default=`)
     
-    # Handle initial price history? 
-    # If total_price is provided, we should probably record it in history too?
-    # User requirement: record EVERY authorization.
-    
     db.add(db_lead)
-    db.commit()
-    db.refresh(db_lead)
     
     if lead_in.total_price:
        # Auto-record initial price history
@@ -96,8 +103,12 @@ def create_lead(
            created_by_id=current_user.id
        )
        db.add(price_rec)
-       db.commit()
     
+    db.commit()
+    db.refresh(db_lead)
+    
+    # Avoid query for creator
+    db_lead.creator = current_user
     return db_lead
 
 @router.get("/{lead_id}", response_model=LeadResponse)
@@ -106,7 +117,7 @@ def get_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_dep)
 ):
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    lead = db.query(Lead).options(joinedload(Lead.creator)).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
@@ -118,7 +129,7 @@ def update_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_dep)
 ):
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    lead = db.query(Lead).options(joinedload(Lead.creator)).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
@@ -157,6 +168,20 @@ def update_lead(
     db.commit()
     db.refresh(lead)
     return lead
+
+@router.delete("/{lead_id}", status_code=204)
+def delete_lead(
+    lead_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_dep)
+):
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+        
+    db.delete(lead)
+    db.commit()
+    return None
 
 @router.post("/{lead_id}/follow-ups", response_model=FollowUpResponse)
 def add_follow_up(
