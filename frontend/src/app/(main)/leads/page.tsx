@@ -293,7 +293,7 @@ export default function LeadsPage() {
                       <td className="p-4 pl-8">
                         <div className="flex items-center gap-4">
                           <div className="h-12 w-16 overflow-hidden rounded-md bg-slate-100 border relative">
-                            <NextImage src={lead.images[0]} className="object-cover transition-transform group-hover:scale-105" alt="prop" fill />
+                            <NextImage src={lead.images && lead.images.length > 0 ? lead.images[0] : '/placeholder.png'} className="object-cover transition-transform group-hover:scale-105" alt="prop" fill />
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-slate-900 group-hover:text-primary">{lead.communityName}</span>
@@ -355,7 +355,7 @@ export default function LeadsPage() {
             {filteredLeads.map(lead => (
               <Card key={lead.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all cursor-pointer group" onClick={() => handleOpenDetail(lead.id)}>
                 <div className="relative aspect-video">
-                  <NextImage src={lead.images[0]} className="object-cover transition-transform group-hover:scale-105" alt="lead" fill />
+                  <NextImage src={lead.images && lead.images.length > 0 ? lead.images[0] : '/placeholder.png'} className="object-cover transition-transform group-hover:scale-105" alt="lead" fill />
                   <div className="absolute top-3 left-3">
                     <Badge 
                       className={cn(

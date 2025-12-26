@@ -159,6 +159,20 @@ export async function getLeadPriceHistoryAction(leadId: string): Promise<import(
     }));
 }
 
+export async function searchCommunitiesAction(query: string) {
+    const client = await fetchClient();
+    const { data, error } = await client.GET('/api/properties/communities/search', {
+        params: { query: { q: query } }
+    });
+    
+    if (error || !data) {
+        console.error("Search communities error:", error);
+        return [];
+    }
+    
+    return data as { id: number; name: string; district: string; business_circle: string }[];
+}
+
 function mapBackendToFrontend(backendLead: BackendLead): Lead {
     return {
         id: backendLead.id,

@@ -1,10 +1,11 @@
-
-import React, { useState, useRef, useMemo } from 'react';
-import Image from 'next/image';
+import React, { useState, useMemo } from 'react';
 import { Lead, LeadStatus } from '../types';
 import { DISTRICTS } from '../constants';
 import { Button } from '@/components/ui/button';
-import { X, Plus, Ruler, Building2, MapPin } from 'lucide-react';
+import { X, Ruler, MapPin } from 'lucide-react';
+import { CommunitySelect } from './add-lead-parts/community-select';
+import { LayoutInputs } from './add-lead-parts/layout-inputs';
+import { ImageUpload } from './add-lead-parts/image-upload';
 
 interface Props {
   isOpen: boolean;
@@ -12,11 +13,9 @@ interface Props {
   onAdd: (lead: Omit<Lead, 'id' | 'createdAt'>) => void;
 }
 
-const LAYOUT_OPTIONS = ['1室0厅', '1室1厅', '2室1厅', '2室2厅', '3室1厅', '3室2厅', '4室2厅', '其他'];
 const ORIENTATION_OPTIONS = ['南', '北', '东', '西', '南北', '东西'];
 
-// Added optional children type to satisfy strict JSX property checking when content is passed between tags
-const FormItem = ({ label, children }: { label: string, children?: React.ReactNode }) => (
+export const FormItem = ({ label, children }: { label: string, children?: React.ReactNode }) => (
   <div className="space-y-1.5">
     <label className="text-[10px] font-bold text-slate-500 ml-1">{label}</label>
     {children}
@@ -24,10 +23,9 @@ const FormItem = ({ label, children }: { label: string, children?: React.ReactNo
 );
 
 export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     communityName: '',
-    layout: '2室1厅',
+    layout: '2室1厅1卫',
     orientation: '南',
     floorInfo: '',
     area: '',
@@ -44,17 +42,6 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
     return (area > 0 && total > 0) ? (total / area).toFixed(2) : '0.00';
   }, [formData.area, formData.totalPrice]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onloadend = () => setImages(prev => [...prev, reader.result as string]);
-      reader.readAsDataURL(file);
-    });
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.communityName || !formData.area || !formData.totalPrice) return;
@@ -68,7 +55,8 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
       images: images.length > 0 ? images : [],
       creatorName: '运营专家 A',
     });
-    setFormData({ communityName: '', layout: '2室1厅', orientation: '南', floorInfo: '', area: '', totalPrice: '', district: DISTRICTS[0], businessArea: '', remarks: '' });
+    // Reset
+    setFormData({ communityName: '', layout: '2室1厅1卫', orientation: '南', floorInfo: '', area: '', totalPrice: '', district: DISTRICTS[0], businessArea: '', remarks: '' });
     setImages([]);
     onClose();
   };
@@ -92,18 +80,15 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
           <div className="space-y-6">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">房源名称 <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input 
-                  required placeholder="输入小区详细名称..."
-                  className="w-full h-12 pl-10 pr-4 border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium"
-                  value={formData.communityName}
-                  onChange={e => setFormData({...formData, communityName: e.target.value})}
-                />
-              </div>
-            </div>
+            <CommunitySelect 
+                value={formData.communityName} 
+                onChange={(name, dist, biz) => setFormData(prev => ({
+                    ...prev, 
+                    communityName: name,
+                    district: dist || prev.district,
+                    businessArea: biz || prev.businessArea
+                }))} 
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -137,11 +122,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">物理指标与价格</span>
              </div>
              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <FormItem label="房源户型">
-                  <select className="w-full h-11 border rounded-lg bg-background text-sm font-medium" value={formData.layout} onChange={e => setFormData({...formData, layout: e.target.value})}>
-                    {LAYOUT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </FormItem>
+                <div className="col-span-2 sm:col-span-3">
+                    <LayoutInputs value={formData.layout} onChange={l => setFormData(prev => ({...prev, layout: l}))} />
+                </div>
+                
                 <FormItem label="面积 (㎡) *">
                   <input type="number" step="0.1" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-bold" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                 </FormItem>
@@ -150,39 +134,19 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
                     {ORIENTATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </FormItem>
+                <FormItem label="楼层/总高">
+                  <input placeholder="6/12层" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-medium" value={formData.floorInfo} onChange={e => setFormData({...formData, floorInfo: e.target.value})} />
+                </FormItem>
                 <FormItem label="用户报价 (万) *">
                   <input type="number" className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} />
                 </FormItem>
                 <FormItem label="计算单价">
                   <div className="h-11 flex items-center px-4 bg-slate-100/50 rounded-lg text-xs font-black text-slate-400">{calculatedUnitPrice} 万/㎡</div>
                 </FormItem>
-                <FormItem label="楼层/总高">
-                  <input placeholder="6/12层" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-medium" value={formData.floorInfo} onChange={e => setFormData({...formData, floorInfo: e.target.value})} />
-                </FormItem>
              </div>
           </div>
 
-          <div className="space-y-4">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">房源实拍</span>
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-              {images.map((img, idx) => (
-                <div key={idx} className="aspect-square relative rounded-xl overflow-hidden border">
-                  <Image src={img} alt="upload" fill className="object-cover" />
-                  <button type="button" onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 h-5 w-5 bg-destructive text-white rounded-md flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-              <button 
-                type="button" onClick={() => fileInputRef.current?.click()}
-                className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-slate-300 hover:text-primary hover:border-primary/40 transition-all bg-slate-50/50"
-              >
-                <Plus className="h-6 w-6 mb-1" />
-                <span className="text-[8px] font-black uppercase tracking-widest">ADD PIC</span>
-              </button>
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-          </div>
+          <ImageUpload images={images} onChange={setImages} />
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">专家补充备注</label>

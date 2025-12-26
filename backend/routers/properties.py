@@ -26,6 +26,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/communities/search")
+def search_communities(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    """Search communities by name"""
+    results = db.query(Community).filter(Community.name.contains(q)).limit(20).all()
+    return [
+        {
+            "id": c.id, 
+            "name": c.name, 
+            "district": c.district, 
+            "business_circle": c.business_circle
+        } 
+        for c in results
+    ]
+
+
 @router.get("", response_model=PaginatedPropertyResponse)
 def get_properties(
     status: Optional[str] = Query(None, description="房源状态: 在售 | 成交"),
