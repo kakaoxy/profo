@@ -42,7 +42,7 @@ export const LayoutInputs: React.FC<Props> = ({ value, onChange }) => {
                 className="w-full h-11 px-3 border rounded-lg bg-background text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20"
                 value={room}
                 onChange={(e) => handleChange('room', e.target.value)}
-                placeholder="2"
+                placeholder="n"
              />
              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">室</span>
            </div>
@@ -52,7 +52,7 @@ export const LayoutInputs: React.FC<Props> = ({ value, onChange }) => {
                 className="w-full h-11 px-3 border rounded-lg bg-background text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20"
                 value={hall}
                 onChange={(e) => handleChange('hall', e.target.value)}
-                placeholder="1"
+                placeholder="n"
              />
              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">厅</span>
            </div>
@@ -62,7 +62,7 @@ export const LayoutInputs: React.FC<Props> = ({ value, onChange }) => {
                 className="w-full h-11 px-3 border rounded-lg bg-background text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20"
                 value={toilet}
                 onChange={(e) => handleChange('toilet', e.target.value)}
-                placeholder="1"
+                placeholder="n"
              />
              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">卫</span>
            </div>
