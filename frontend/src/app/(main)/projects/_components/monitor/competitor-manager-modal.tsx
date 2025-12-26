@@ -5,6 +5,7 @@ import { X, Loader2, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getCompetitorsAction,
+  getCompetitorsByCommunityAction,
   searchCommunitiesAction,
   addCompetitorAction,
   removeCompetitorAction,
@@ -17,7 +18,8 @@ interface CommunitySearchItem {
 }
 
 interface CompetitorManagerModalProps {
-  projectId: string;
+  projectId?: string;
+  communityName?: string;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
@@ -25,6 +27,7 @@ interface CompetitorManagerModalProps {
 
 export function CompetitorManagerModal({
   projectId,
+  communityName,
   isOpen,
   onClose,
   onUpdate,
@@ -54,7 +57,19 @@ export function CompetitorManagerModal({
     let isMounted = true;
     const loadData = async () => {
       setIsLoading(true);
-      const result = await getCompetitorsAction(projectId);
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let result: any;
+
+      if (projectId) {
+        result = await getCompetitorsAction(projectId);
+      } else if (communityName) {
+        result = await getCompetitorsByCommunityAction(communityName);
+      } else {
+        setIsLoading(false);
+        return;
+      }
+      
       if (isMounted && result.success && result.data) {
         setCompetitors(result.data);
         setCommunityId(result.communityId ?? null);
@@ -65,7 +80,7 @@ export function CompetitorManagerModal({
     loadData();
     
     return () => { isMounted = false; };
-  }, [isOpen, projectId, refreshKey]);
+  }, [isOpen, projectId, communityName, refreshKey]);
 
   // 搜索小区
   useEffect(() => {

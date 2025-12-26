@@ -177,3 +177,124 @@ export async function getCompetitorsBrawlAction(projectId: string) {
   }
 }
 
+
+export async function getCompetitorsBrawlByCommunityAction(communityName: string) {
+    // Basic implementation for viewing by community. 
+    // Does NOT include competitors since we don't know who they are without a project definition.
+    // Does NOT include "My Project" injection.
+    
+  try {
+    const client = await fetchClient();
+    const uniqueCommunities = [communityName];
+    
+    // 初始化结果容器
+    let allItems: BrawlItem[] = [];
+    let countOnSale = 0;
+    let countSold = 0;
+
+    // 并行执行所有请求
+    const promises = uniqueCommunities.map(async (name) => {
+      // 请求1: 获取在售列表
+      const onSalePromise = client.GET("/api/properties", {
+        params: {
+          query: {
+            community_name: name,
+            status: "在售",
+            page_size: 10,
+            sort_by: 'listed_date',
+            sort_order: 'desc'
+          }
+        }
+      });
+
+      // 请求2: 获取成交列表
+      const soldPromise = client.GET("/api/properties", {
+        params: {
+          query: {
+            community_name: name,
+            status: "成交",
+            page_size: 10,
+            sort_by: 'sold_date',
+            sort_order: 'desc'
+          }
+        }
+      });
+
+      const [onSaleRes, soldRes] = await Promise.all([onSalePromise, soldPromise]);
+
+      return {
+        communityName: name,
+        onSaleData: onSaleRes.data,
+        soldData: soldRes.data
+      };
+    });
+
+    const results = await Promise.all(promises);
+
+    // 处理结果
+    for (const res of results) {
+      if (res.onSaleData) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = res.onSaleData as any;
+        countOnSale += (data.total || 0);
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = (data.items || []).map((p: any) => ({
+          id: String(p.id),
+          community: p.community_name,
+          status: 'on_sale',
+          display_status: p.status,
+          layout: p.layout_display || `${p.rooms}室${p.halls}厅`,
+          floor: p.floor_display || p.floor_level || "-",
+          area: p.build_area,
+          total: p.total_price || Math.round(p.unit_price * p.build_area / 10000),
+          unit: p.unit_price,
+          date: p.listed_date?.split("T")[0] || p.updated_at?.split("T")[0] || "-",
+          source: p.data_source || "未知"
+        }));
+        allItems = [...allItems, ...items];
+      }
+
+      if (res.soldData) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = res.soldData as any;
+        countSold += (data.total || 0);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = (data.items || []).map((p: any) => ({
+          id: String(p.id),
+          community: p.community_name,
+          status: 'sold',
+          display_status: p.status,
+          layout: p.layout_display || `${p.rooms}室${p.halls}厅`,
+          floor: p.floor_display || p.floor_level || "-",
+          area: p.build_area,
+          total: p.total_price || Math.round(p.unit_price * p.build_area / 10000),
+          unit: p.unit_price,
+          date: p.sold_date?.split("T")[0] || p.updated_at?.split("T")[0] || "-",
+          source: p.data_source || "未知"
+        }));
+        allItems = [...allItems, ...items];
+      }
+    }
+
+    // 统一排序 (时间倒序)
+    allItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return {
+      success: true,
+      data: {
+        items: allItems,
+        counts: {
+          on_sale: countOnSale,
+          sold: countSold
+        }
+      }
+    };
+
+  } catch (e) {
+    console.error("获取竞品肉搏战异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+

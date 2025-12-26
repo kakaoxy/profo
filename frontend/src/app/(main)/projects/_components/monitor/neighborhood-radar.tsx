@@ -6,14 +6,19 @@ import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getNeighborhoodRadarAction, NeighborhoodRadarItem } from "../../actions/monitor";
+import { 
+  getNeighborhoodRadarAction, 
+  getNeighborhoodRadarByCommunityAction,
+  NeighborhoodRadarItem 
+} from "../../actions/monitor";
 import { CompetitorManagerModal } from "./competitor-manager-modal";
 
 interface NeighborhoodRadarProps {
-  projectId: string;
+  projectId?: string;
+  communityName?: string;
 }
 
-export function NeighborhoodRadar({ projectId }: NeighborhoodRadarProps) {
+export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRadarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +31,22 @@ export function NeighborhoodRadar({ projectId }: NeighborhoodRadarProps) {
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
-      const result = await getNeighborhoodRadarAction(projectId);
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let result: any;
+
+      if (projectId) {
+        result = await getNeighborhoodRadarAction(projectId);
+      } else if (communityName) {
+        result = await getNeighborhoodRadarByCommunityAction(communityName);
+      } else {
+        setIsLoading(false);
+        return;
+      }
+
       if (isMounted) {
         if (result.success && result.data) {
-          setCompetitors(result.data.items);
+          setCompetitors(result.data.items || result.data.competitors); // handle different return shapes if any
         } else {
           setError(result.message || "加载失败");
         }
@@ -39,7 +56,7 @@ export function NeighborhoodRadar({ projectId }: NeighborhoodRadarProps) {
     
     loadData();
     return () => { isMounted = false; };
-  }, [projectId, refreshKey]);
+  }, [projectId, communityName, refreshKey]);
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
 
@@ -64,15 +81,17 @@ export function NeighborhoodRadar({ projectId }: NeighborhoodRadarProps) {
         title="周边竞品雷达" 
         subtitle="Neighborhood Radar" 
         action={
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-white text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 shadow-sm"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            管理竞品小区
-          </Button>
+          (projectId || communityName) ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-white text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              管理竞品小区
+            </Button>
+          ) : undefined
         }
       />
       
@@ -135,9 +154,10 @@ export function NeighborhoodRadar({ projectId }: NeighborhoodRadarProps) {
         </Card>
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && (projectId || communityName) && (
         <CompetitorManagerModal
           projectId={projectId}
+          communityName={communityName}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onUpdate={handleRefresh}

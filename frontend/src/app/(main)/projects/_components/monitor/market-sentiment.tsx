@@ -4,10 +4,11 @@
 import React, { useEffect, useState } from "react";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { SectionHeader } from "./section-header";
-import { getMarketSentimentAction, type FloorStats } from "@/app/(main)/projects/actions";
+import { getMarketSentimentAction, getMarketSentimentByCommunityAction, type FloorStats } from "@/app/(main)/projects/actions";
 
 interface MarketSentimentProps {
-  projectId: string;
+  projectId?: string;
+  communityName?: string;
 }
 
 // 楼层类型映射
@@ -17,7 +18,7 @@ const FLOOR_TYPE_MAP: Record<string, string> = {
   low: "低楼层",
 };
 
-export function MarketSentiment({ projectId }: MarketSentimentProps) {
+export function MarketSentiment({ projectId, communityName }: MarketSentimentProps) {
   const [floorStats, setFloorStats] = useState<FloorStats[]>([]);
   const [inventoryMonths, setInventoryMonths] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -28,7 +29,18 @@ export function MarketSentiment({ projectId }: MarketSentimentProps) {
       try {
         setLoading(true);
         setError(null);
-        const result = await getMarketSentimentAction(projectId);
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let result: any;
+
+        if (projectId) {
+          result = await getMarketSentimentAction(projectId);
+        } else if (communityName) {
+          result = await getMarketSentimentByCommunityAction(communityName);
+        } else {
+          setLoading(false);
+          return;
+        }
 
         // console.log("[MarketSentiment] API result:", result);
 
@@ -51,10 +63,10 @@ export function MarketSentiment({ projectId }: MarketSentimentProps) {
       }
     }
 
-    if (projectId) {
+    if (projectId || communityName) {
       fetchData();
     }
-  }, [projectId]);
+  }, [projectId, communityName]);
 
   // 计算去化压力标签
   const pressureLabel = inventoryMonths > 6 ? "滞销 (买方市场)" : inventoryMonths > 3 ? "正常" : "热销 (卖方市场)";

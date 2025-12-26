@@ -62,3 +62,30 @@ export async function getNeighborhoodRadarAction(projectId: string) {
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
+
+import { getCommunityIdByName } from "./utils";
+
+export async function getNeighborhoodRadarByCommunityAction(communityName: string) {
+  try {
+    const communityId = await getCommunityIdByName(communityName);
+    if (!communityId) {
+      return { success: false, message: `未找到小区: ${communityName}` };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/monitor/communities/${communityId}/radar`,
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      return { success: false, message: "获取周边竞品数据失败" };
+    }
+
+    const radarData = (await response.json()) as NeighborhoodRadarData;
+    return { success: true, data: radarData };
+  } catch (e) {
+    console.error("获取周边竞品异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}

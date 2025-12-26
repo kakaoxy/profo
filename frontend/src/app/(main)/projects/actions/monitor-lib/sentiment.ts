@@ -65,3 +65,30 @@ export async function getMarketSentimentAction(projectId: string) {
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
+
+import { getCommunityIdByName } from "./utils";
+
+export async function getMarketSentimentByCommunityAction(communityName: string) {
+  try {
+    const communityId = await getCommunityIdByName(communityName);
+    if (!communityId) {
+      return { success: false, message: `未找到小区: ${communityName}` };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const response = await fetch(
+      `${baseUrl}/api/monitor/communities/${communityId}/sentiment`,
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      return { success: false, message: "获取市场情绪数据失败" };
+    }
+
+    const sentimentData = (await response.json()) as MarketSentimentData;
+    return { success: true, data: sentimentData };
+  } catch (e) {
+    console.error("获取市场情绪异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
