@@ -111,7 +111,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
       unitPrice: Number(calculatedUnitPrice),
       status: lead?.status || LeadStatus.PENDING_ASSESSMENT, // Keep existing status if editing
       images: images.length > 0 ? images : [],
-      creatorName: lead?.creatorName || '运营专家 A',
+      creatorName: lead?.creatorName || '运营',
     });
     
     // Close modal (state reset happens in useEffect when re-opened or lead changes)
@@ -185,7 +185,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                 </div>
                 
                 <FormItem label="面积 (㎡) *">
-                  <input type="number" step="0.1" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-bold" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
+                  <input type="number" step="0.1" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-bold bg-background" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                 </FormItem>
                 <FormItem label="朝向">
                   <select className="w-full h-11 border rounded-lg bg-background text-sm font-medium" value={formData.orientation} onChange={e => setFormData({...formData, orientation: e.target.value})}>
@@ -197,11 +197,11 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                     <div className="relative flex-1">
                         <input 
                             placeholder="1" 
-                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center" 
+                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center bg-background" 
                             value={formData.currentFloor} 
                             onChange={e => setFormData({...formData, currentFloor: e.target.value})} 
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">层</span>
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-background">层</span>
                     </div>
                     <span className="text-slate-300">/</span>
                     <div className="relative flex-1">
@@ -211,12 +211,12 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                             value={formData.totalFloor} 
                             onChange={e => setFormData({...formData, totalFloor: e.target.value})} 
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">总</span>
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-background">总</span>
                     </div>
                   </div>
                 </FormItem>
                 <FormItem label="用户报价 (万) *">
-                  <input type="number" className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} />
+                  <input type="number" className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary bg-background" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} />
                 </FormItem>
                 <FormItem label="计算单价">
                   <div className="h-11 flex items-center px-4 bg-slate-100/50 rounded-lg text-xs font-black text-slate-400">{calculatedUnitPrice} 万/㎡</div>
