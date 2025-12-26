@@ -36,6 +36,9 @@ def get_leads(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_dep)
 ):
+    import time
+    start = time.time()
+    
     # [性能优化] 使用 defer/noload 减少不必要的数据加载
     query = db.query(Lead).options(
         # 只加载 creator 关系用于获取 creator_name
@@ -64,9 +67,19 @@ def get_leads(
     if floor:
         # e.g. "低"
         query = query.filter(Lead.floor_info.contains(floor))
-        
+    
+    query_build_time = time.time() - start
+    
+    count_start = time.time()
     total = query.count()
+    count_time = time.time() - count_start
+    
+    fetch_start = time.time()
     items = query.order_by(desc(Lead.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+    fetch_time = time.time() - fetch_start
+    
+    total_time = time.time() - start
+    print(f"[LEADS API] query_build: {query_build_time*1000:.1f}ms, count: {count_time*1000:.1f}ms, fetch: {fetch_time*1000:.1f}ms, total: {total_time*1000:.1f}ms, items: {len(items)}")
     
     return {
         "items": items,
