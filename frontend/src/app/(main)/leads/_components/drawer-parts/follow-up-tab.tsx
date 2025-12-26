@@ -76,7 +76,7 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
         ))}
         <TimelineItem 
           title="线索初始录入" 
-          desc={`由专员 ${lead.creatorName} 首次采集并建档`} 
+          desc={`由 ${lead.creatorName} 首次采集并建档`} 
           time={lead.createdAt} 
           icon={Plus} 
         />
