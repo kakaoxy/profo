@@ -12,7 +12,7 @@ from schemas.project import (
     CashFlowResponse, CashFlowSummary
 )
 
-router = APIRouter(prefix="/api/v1", tags=["cashflow"])
+router = APIRouter(tags=["cashflow"])
 
 
 def get_cashflow_service(db: Session = Depends(get_db)):

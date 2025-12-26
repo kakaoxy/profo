@@ -33,7 +33,7 @@ export async function getTrendPositioningAction(projectId: string) {
     // 2. 获取 community_id
     const client = await fetchClient();
     const { data: communitiesData, error: communitiesError } = await client.GET(
-      "/api/admin/communities",
+      "/api/v1/admin/communities",
       {
         params: { query: { search: community_name, page_size: 1 } },
       }
@@ -49,20 +49,20 @@ export async function getTrendPositioningAction(projectId: string) {
     }
     const communityId = communities[0].id;
 
-    // 3. 调用 Trend API
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/monitor/communities/${communityId}/trends`,
-      { cache: "no-store" } // 确保获取最新数据
+    // 3. 调用 Trend API (使用 openapi-fetch client)
+    const { data: trendData, error: trendError } = await client.GET(
+      "/api/v1/monitor/communities/{community_id}/trends",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
-      console.error("获取走势数据失败:", response.status);
+    if (trendError || !trendData) {
+      console.error("获取走势数据失败:", trendError);
       return { success: false, message: "获取走势数据失败" };
     }
 
-    const trendData = (await response.json()) as TrendData[];
-    return { success: true, data: trendData, myPrice };
+    return { success: true, data: trendData as TrendData[], myPrice };
   } catch (e) {
     console.error("获取价格走势异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -78,18 +78,19 @@ export async function getTrendPositioningByCommunityAction(communityName: string
       return { success: false, message: `未找到小区: ${communityName}` };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/monitor/communities/${communityId}/trends`,
-      { cache: "no-store" }
+    const client = await fetchClient();
+    const { data: trendData, error: trendError } = await client.GET(
+      "/api/v1/monitor/communities/{community_id}/trends",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
+    if (trendError || !trendData) {
       return { success: false, message: "获取走势数据失败" };
     }
 
-    const trendData = (await response.json()) as TrendData[];
-    return { success: true, data: trendData, myPrice };
+    return { success: true, data: trendData as TrendData[], myPrice };
   } catch (e) {
     console.error("获取价格走势异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

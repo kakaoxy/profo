@@ -1,18 +1,37 @@
 import React from 'react';
 import { Lead } from '../../types';
+import { MarketSentiment } from '../../actions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Activity, TrendingUp, ChevronRight,
-  BarChart3, PieChart, Timer
+  BarChart3, PieChart, Timer, Loader2, AlertCircle
 } from 'lucide-react';
 
 interface Props {
   lead: Lead;
+  sentiment: MarketSentiment | null;
+  loading?: boolean;
   onViewMonitor: (lead: Lead) => void;
 }
 
-export const MonitorCard: React.FC<Props> = ({ lead, onViewMonitor }) => {
+export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewMonitor }) => {
+  // 获取市场活跃度标签
+  const getActivityLabel = () => {
+    if (!sentiment) return { label: '数据加载中', color: 'text-slate-400' };
+    const inventoryMonths = sentiment.inventory_months;
+    if (inventoryMonths < 12) return { label: '市场活跃', color: 'text-emerald-600' };
+    if (inventoryMonths < 24) return { label: '商圈活跃', color: 'text-blue-600' };
+    return { label: '市场平稳', color: 'text-amber-600' };
+  };
+
+  const activity = getActivityLabel();
+
+  // 格式化去化压力数字
+  const formatInventoryMonths = (months: number) => {
+    return months.toFixed(1);
+  };
+
   return (
     <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 p-5 overflow-hidden relative group">
       <div className="flex items-center justify-between mb-4">
@@ -22,9 +41,19 @@ export const MonitorCard: React.FC<Props> = ({ lead, onViewMonitor }) => {
           </div>
           <span className="font-sans font-black text-blue-900 tracking-tight uppercase text-xs">实时市场动态</span>
         </div>
-        <Badge variant="outline" className="bg-white/50 text-blue-700 border-blue-200">
-          <TrendingUp className="h-3 w-3 mr-1" /> 商圈活跃
-        </Badge>
+        {loading ? (
+          <Badge variant="outline" className="bg-white/50 text-slate-400 border-slate-200">
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 加载中
+          </Badge>
+        ) : sentiment ? (
+          <Badge variant="outline" className={`bg-white/50 ${activity.color} border-blue-200`}>
+            <TrendingUp className="h-3 w-3 mr-1" /> {activity.label}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="bg-white/50 text-slate-400 border-slate-200">
+            <AlertCircle className="h-3 w-3 mr-1" /> 暂无数据
+          </Badge>
+        )}
       </div>
       
       <div className="grid grid-cols-3 gap-3">
@@ -33,21 +62,48 @@ export const MonitorCard: React.FC<Props> = ({ lead, onViewMonitor }) => {
             <PieChart className="h-3 w-3" />
             <span className="text-[9px] font-bold uppercase tracking-wider">挂牌量</span>
           </div>
-          <div className="text-lg font-black text-slate-900">156 <span className="text-[10px] font-normal text-slate-400">套</span></div>
+          {loading ? (
+            <div className="h-6 flex items-center">
+              <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+            </div>
+          ) : (
+            <div className="text-lg font-black text-slate-900">
+              {sentiment?.totalListingCount ?? '--'} <span className="text-[10px] font-normal text-slate-400">套</span>
+            </div>
+          )}
         </div>
         <div className="bg-white/60 p-3 rounded-xl border border-white/80">
           <div className="flex items-center gap-1.5 text-slate-400 mb-1">
             <BarChart3 className="h-3 w-3" />
             <span className="text-[9px] font-bold uppercase tracking-wider">成交(12M)</span>
           </div>
-          <div className="text-lg font-black text-slate-900">84 <span className="text-[10px] font-normal text-slate-400">套</span></div>
+          {loading ? (
+            <div className="h-6 flex items-center">
+              <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+            </div>
+          ) : (
+            <div className="text-lg font-black text-slate-900">
+              {sentiment?.totalDealsCount ?? '--'} <span className="text-[10px] font-normal text-slate-400">套</span>
+            </div>
+          )}
         </div>
         <div className="bg-white/60 p-3 rounded-xl border border-white/80">
           <div className="flex items-center gap-1.5 text-slate-400 mb-1">
             <Timer className="h-3 w-3" />
             <span className="text-[9px] font-bold uppercase tracking-wider">去化压力</span>
           </div>
-          <div className="text-lg font-black text-amber-600">22.3 <span className="text-[10px] font-normal text-slate-400">月</span></div>
+          {loading ? (
+            <div className="h-6 flex items-center">
+              <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+            </div>
+          ) : (
+            <div className={`text-lg font-black ${
+              sentiment && sentiment.inventory_months > 18 ? 'text-amber-600' : 'text-slate-900'
+            }`}>
+              {sentiment ? formatInventoryMonths(sentiment.inventory_months) : '--'} 
+              <span className="text-[10px] font-normal text-slate-400">月</span>
+            </div>
+          )}
         </div>
       </div>
       

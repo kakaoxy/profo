@@ -13,7 +13,7 @@ export async function proxy(request: NextRequest) {
   // 1. 排除不需要 Auth 的路径
   if (
     pathname.startsWith("/login") ||
-    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/v1/auth") ||
     pathname.includes("_next") ||
     pathname.includes("favicon.ico")
   ) {
@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
 
   if (shouldRefresh && refreshToken && isHtmlRequest) {
     try {
-      const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+      const response = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),

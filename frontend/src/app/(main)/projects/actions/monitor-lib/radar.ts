@@ -24,7 +24,7 @@ export async function getNeighborhoodRadarAction(projectId: string) {
     // 2. 通过小区名称搜索获取 community_id
     const client = await fetchClient();
     const { data: communitiesData, error: communitiesError } = await client.GET(
-      "/api/admin/communities",
+      "/api/v1/admin/communities",
       {
         params: { query: { search: communityName, page_size: 1 } },
       }
@@ -42,20 +42,20 @@ export async function getNeighborhoodRadarAction(projectId: string) {
 
     const communityId = communities[0].id;
 
-    // 3. 调用雷达 API
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/monitor/communities/${communityId}/radar`,
-      { cache: "no-store" }
+    // 3. 调用雷达 API (使用 openapi-fetch client)
+    const { data: radarData, error: radarError } = await client.GET(
+      "/api/v1/monitor/communities/{community_id}/radar",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
-      console.error("获取雷达数据失败:", response.status);
+    if (radarError || !radarData) {
+      console.error("获取雷达数据失败:", radarError);
       return { success: false, message: "获取周边竞品数据失败" };
     }
 
-    const radarData = (await response.json()) as NeighborhoodRadarData;
-    return { success: true, data: radarData };
+    return { success: true, data: radarData as NeighborhoodRadarData };
   } catch (e) {
     console.error("获取周边竞品异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -71,18 +71,19 @@ export async function getNeighborhoodRadarByCommunityAction(communityName: strin
       return { success: false, message: `未找到小区: ${communityName}` };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/monitor/communities/${communityId}/radar`,
-      { cache: "no-store" }
+    const client = await fetchClient();
+    const { data: radarData, error: radarError } = await client.GET(
+      "/api/v1/monitor/communities/{community_id}/radar",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
+    if (radarError || !radarData) {
       return { success: false, message: "获取周边竞品数据失败" };
     }
 
-    const radarData = (await response.json()) as NeighborhoodRadarData;
-    return { success: true, data: radarData };
+    return { success: true, data: radarData as NeighborhoodRadarData };
   } catch (e) {
     console.error("获取周边竞品异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

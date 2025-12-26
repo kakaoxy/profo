@@ -62,7 +62,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   const client = await fetchClient();
 
   const [statsRes, listRes] = await Promise.all([
-    client.GET("/api/v1/projects/stats"),
+    client.GET("/api/v1/projects/stats", {}),
     client.GET("/api/v1/projects", {
       params: { query: queryParams },
     }),

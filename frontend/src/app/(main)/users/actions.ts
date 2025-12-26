@@ -33,7 +33,7 @@ export async function getUsersAction(params: {
 }) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/users/users", {
+    const { data, error } = await client.GET("/api/v1/users/users", {
       params: {
         query: params,
       },
@@ -57,7 +57,7 @@ export async function getUsersAction(params: {
 export async function createUserAction(data: UserCreate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.POST("/api/users/users", {
+    const { error } = await client.POST("/api/v1/users/users", {
       body: data,
     });
 
@@ -80,7 +80,7 @@ export async function createUserAction(data: UserCreate) {
 export async function updateUserAction(userId: string, data: UserUpdate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.PUT("/api/users/users/{user_id}", {
+    const { error } = await client.PUT("/api/v1/users/users/{user_id}", {
       params: { path: { user_id: userId } },
       body: data,
     });
@@ -104,7 +104,7 @@ export async function updateUserAction(userId: string, data: UserUpdate) {
 export async function deleteUserAction(userId: string) {
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE("/api/users/users/{user_id}", {
+    const { error } = await client.DELETE("/api/v1/users/users/{user_id}", {
       params: { path: { user_id: userId } },
     });
 
@@ -127,7 +127,7 @@ export async function deleteUserAction(userId: string) {
 export async function resetUserPasswordAction(userId: string, data: PasswordResetRequest) {
   try {
     const client = await fetchClient();
-    const { error } = await client.PUT("/api/users/users/{user_id}/reset-password", {
+    const { error } = await client.PUT("/api/v1/users/users/{user_id}/reset-password", {
       params: { path: { user_id: userId } },
       body: data,
     });
@@ -158,7 +158,7 @@ export async function getRolesAction(params: {
 }) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/users/roles", {
+    const { data, error } = await client.GET("/api/v1/roles", {
       params: {
         query: params,
       },
@@ -182,7 +182,7 @@ export async function getRolesAction(params: {
 export async function createRoleAction(data: RoleCreate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.POST("/api/users/roles", {
+    const { error } = await client.POST("/api/v1/roles", {
       body: data,
     });
 
@@ -205,7 +205,7 @@ export async function createRoleAction(data: RoleCreate) {
 export async function updateRoleAction(roleId: string, data: RoleUpdate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.PUT("/api/users/roles/{role_id}", {
+    const { error } = await client.PUT("/api/v1/roles/{role_id}", {
       params: { path: { role_id: roleId } },
       body: data,
     });
@@ -229,7 +229,7 @@ export async function updateRoleAction(roleId: string, data: RoleUpdate) {
 export async function deleteRoleAction(roleId: string) {
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE("/api/users/roles/{role_id}", {
+    const { error } = await client.DELETE("/api/v1/roles/{role_id}", {
       params: { path: { role_id: roleId } },
     });
 

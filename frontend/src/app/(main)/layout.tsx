@@ -7,7 +7,7 @@ import { fetchClient } from "@/lib/api-server";
 async function getUser() {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/auth/me");
+    const { data, error } = await client.GET("/api/v1/auth/me");
     if (error) return null;
     return data;
   } catch (e) {
