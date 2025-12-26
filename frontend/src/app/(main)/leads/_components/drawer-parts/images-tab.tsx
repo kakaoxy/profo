@@ -1,5 +1,5 @@
 import React from 'react';
-// Note: Using native img instead of next/image to avoid private IP restriction in dev
+import Image from 'next/image';
 import { Eye, Plus } from 'lucide-react';
 
 interface Props {
@@ -11,8 +11,14 @@ export const ImagesTab: React.FC<Props> = ({ images }) => {
     <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {images.map((img, idx) => (
         <div key={idx} className="aspect-[4/3] relative rounded-2xl overflow-hidden border shadow-sm group">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110" alt="prop" />
+          <Image 
+            src={img} 
+            alt="prop" 
+            fill
+            className="object-cover transition-transform group-hover:scale-110" 
+            sizes="(max-width: 768px) 50vw, 25vw"
+            unoptimized={img?.includes('127.0.0.1') || img?.includes('localhost')}
+          />
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <Eye className="text-white h-6 w-6" />
           </div>
