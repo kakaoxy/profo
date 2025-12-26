@@ -83,12 +83,10 @@ export async function getCompetitorsBrawlAction(projectId: string) {
     for (const res of results) {
       // 处理在售数据
       if (res.onSaleData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = res.onSaleData as any;
+        const data = res.onSaleData;
         countOnSale += (data.total || 0);
         
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items = (data.items || []).map((p: any) => ({
+        const items = (data.items || []).map((p) => ({
           id: String(p.id),
           community: p.community_name,
           status: 'on_sale', // 统一标识为 on_sale，前端显示时再映射为中文
@@ -106,12 +104,10 @@ export async function getCompetitorsBrawlAction(projectId: string) {
 
       // 处理成交数据
       if (res.soldData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = res.soldData as any;
+        const data = res.soldData;
         countSold += (data.total || 0);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items = (data.items || []).map((p: any) => ({
+        const items = (data.items || []).map((p) => ({
           id: String(p.id),
           community: p.community_name,
           status: 'sold', // 统一标识为 sold
@@ -234,12 +230,10 @@ export async function getCompetitorsBrawlByCommunityAction(communityName: string
     // 处理结果
     for (const res of results) {
       if (res.onSaleData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = res.onSaleData as any;
+        const data = res.onSaleData;
         countOnSale += (data.total || 0);
         
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items = (data.items || []).map((p: any) => ({
+        const items = (data.items || []).map((p) => ({
           id: String(p.id),
           community: p.community_name,
           status: 'on_sale',
@@ -256,12 +250,10 @@ export async function getCompetitorsBrawlByCommunityAction(communityName: string
       }
 
       if (res.soldData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = res.soldData as any;
+        const data = res.soldData;
         countSold += (data.total || 0);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items = (data.items || []).map((p: any) => ({
+        const items = (data.items || []).map((p) => ({
           id: String(p.id),
           community: p.community_name,
           status: 'sold',

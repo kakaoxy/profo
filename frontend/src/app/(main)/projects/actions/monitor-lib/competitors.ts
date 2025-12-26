@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
-import { CompetitorItem, CommunityItem } from "./types";
+import { CompetitorItem } from "./types";
 import { getCommunityIdFromProject } from "./utils";
 
 /**
@@ -81,8 +81,7 @@ export async function searchCommunitiesAction(keyword: string) {
       return { success: false, message: "搜索失败" };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const items = (communitiesData as any).items as CommunityItem[];
+    const items = communitiesData.items;
     return { success: true, data: items || [] };
   } catch (e) {
     console.error("搜索小区异常:", e);

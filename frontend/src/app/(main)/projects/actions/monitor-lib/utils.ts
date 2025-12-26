@@ -1,6 +1,6 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
-import { CommunityItem } from "./types";
+
 
 /**
  * 辅助函数: 从项目获取 community_id
@@ -20,8 +20,7 @@ export async function getCommunityIdFromProject(projectId: string): Promise<numb
 
   if (error || !communitiesData) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const communities = (communitiesData as any).items as CommunityItem[];
+  const communities = communitiesData.items;
   return communities?.[0]?.id || null;
 }
 
@@ -37,7 +36,6 @@ export async function getCommunityIdByName(communityName: string): Promise<numbe
 
   if (error || !communitiesData) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const communities = (communitiesData as any).items as CommunityItem[];
+  const communities = communitiesData.items;
   return communities?.[0]?.id || null;
 }

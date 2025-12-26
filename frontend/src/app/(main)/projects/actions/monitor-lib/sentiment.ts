@@ -2,7 +2,7 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
-import { MarketSentimentData, CommunityItem } from "./types";
+import { MarketSentimentData } from "./types";
 
 /**
  * 获取市场情绪数据
@@ -36,8 +36,7 @@ export async function getMarketSentimentAction(projectId: string) {
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const communities = (communitiesData as any).items as CommunityItem[];
+    const communities = communitiesData.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${communityName}` };
     }

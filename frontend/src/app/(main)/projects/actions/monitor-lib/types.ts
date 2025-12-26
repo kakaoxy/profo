@@ -1,21 +1,15 @@
-export interface FloorStats {
-  type: string; // high, mid, low
-  deals_count: number;
-  deal_avg_price: number;
-  current_count: number;
-  current_avg_price: number;
-}
+import { components } from "@/lib/api-types";
 
-export interface MarketSentimentData {
-  floor_stats: FloorStats[];
-  inventory_months: number;
-}
+export type FloorStats = components["schemas"]["FloorStats"];
+export type MarketSentimentData = components["schemas"]["MarketSentimentResponse"];
+export type CommunityItem = components["schemas"]["CommunityResponse"];
+export type TrendData = components["schemas"]["TrendData"];
+export type NeighborhoodRadarItem = components["schemas"]["NeighborhoodRadarItem"];
+export type NeighborhoodRadarData = components["schemas"]["NeighborhoodRadarResponse"];
+export type CompetitorItem = components["schemas"]["CompetitorResponse"];
+export type PropertyItem = components["schemas"]["PropertyResponse"];
 
-export interface CommunityItem {
-  id: number;
-  name: string;
-}
-
+// Frontend View Models (not directly from API)
 export interface BrawlItem {
   id: string;
   community: string;
@@ -37,38 +31,4 @@ export interface BrawlData {
     on_sale: number;
     sold: number;
   };
-}
-
-export interface TrendData {
-  month: string;
-  listing_price: number;
-  deal_price: number;
-  volume: number;
-}
-
-export interface NeighborhoodRadarItem {
-  community_id: number;
-  community_name: string;
-  is_subject: boolean;
-  listing_count: number;
-  listing_beike: number;
-  listing_iaij: number;
-  listing_avg_price: number;
-  deal_count: number;
-  deal_beike: number;
-  deal_iaij: number;
-  deal_avg_price: number;
-  spread_percent: number;
-  spread_label: string;
-}
-
-export interface NeighborhoodRadarData {
-  items: NeighborhoodRadarItem[];
-}
-
-export interface CompetitorItem {
-  community_id: number;
-  community_name: string;
-  avg_price: number;
-  on_sale_count: number;
 }

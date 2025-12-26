@@ -2,7 +2,7 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
-import { TrendData, CommunityItem } from "./types";
+import { TrendData } from "./types";
 
 /**
  * 获取价格走势数据
@@ -43,8 +43,7 @@ export async function getTrendPositioningAction(projectId: string) {
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const communities = (communitiesData as any).items as CommunityItem[];
+    const communities = communitiesData.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${community_name}` };
     }
