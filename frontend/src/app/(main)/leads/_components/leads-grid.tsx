@@ -1,5 +1,5 @@
 import React from 'react';
-// Note: Using native img instead of next/image to avoid private IP restriction in dev
+import Image from 'next/image';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, ImageOff, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
@@ -28,8 +28,14 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
         <Card key={lead.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all cursor-pointer group" onClick={() => onOpenDetail(lead.id)}>
           <div className="relative aspect-video flex items-center justify-center bg-slate-100 dark:bg-slate-800">
             {lead.images && lead.images.length > 0 ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={lead.images[0]} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" alt="lead" />
+                <Image 
+                  src={lead.images[0]} 
+                  alt="lead" 
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105" 
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  unoptimized={lead.images[0]?.includes('127.0.0.1') || lead.images[0]?.includes('localhost')}
+                />
             ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-300">
                     <ImageOff className="h-8 w-8 text-slate-300" />
