@@ -44,7 +44,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/upload/csv": {
+    "/api/v1/upload/csv": {
         parameters: {
             query?: never;
             header?: never;
@@ -58,14 +58,14 @@ export interface paths {
          * @description 上传并处理 CSV 文件
          *     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
          */
-        post: operations["upload_csv_api_upload_csv_post"];
+        post: operations["upload_csv_api_v1_upload_csv_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/upload/download/{filename}": {
+    "/api/v1/upload/download/{filename}": {
         parameters: {
             query?: never;
             header?: never;
@@ -77,7 +77,7 @@ export interface paths {
          * @description 下载失败记录文件
          *     注意：使用 def 避免文件操作阻塞
          */
-        get: operations["download_failed_records_api_upload_download__filename__get"];
+        get: operations["download_failed_records_api_v1_upload_download__filename__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -86,7 +86,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/push": {
+    "/api/v1/push": {
         parameters: {
             query?: never;
             header?: never;
@@ -111,14 +111,14 @@ export interface paths {
          *     Raises:
          *         HTTPException: 数据验证失败或处理失败
          */
-        post: operations["push_properties_api_push_post"];
+        post: operations["push_properties_api_v1_push_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/properties/communities/search": {
+    "/api/v1/properties/communities/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -129,7 +129,7 @@ export interface paths {
          * Search Communities
          * @description Search communities by name
          */
-        get: operations["search_communities_api_properties_communities_search_get"];
+        get: operations["search_communities_api_v1_properties_communities_search_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -138,7 +138,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/properties": {
+    "/api/v1/properties": {
         parameters: {
             query?: never;
             header?: never;
@@ -151,7 +151,7 @@ export interface paths {
          *
          *     支持多维度筛选、排序和分页
          */
-        get: operations["get_properties_api_properties_get"];
+        get: operations["get_properties_api_v1_properties_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -160,7 +160,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/properties/export": {
+    "/api/v1/properties/export": {
         parameters: {
             query?: never;
             header?: never;
@@ -173,7 +173,7 @@ export interface paths {
          *
          *     使用与查询接口相同的筛选和排序参数，但移除分页限制，导出所有匹配的记录
          */
-        get: operations["export_properties_api_properties_export_get"];
+        get: operations["export_properties_api_v1_properties_export_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -182,7 +182,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/properties/{id}": {
+    "/api/v1/properties/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -193,7 +193,7 @@ export interface paths {
          * Get Property Detail
          * @description 获取房源详情
          */
-        get: operations["get_property_detail_api_properties__id__get"];
+        get: operations["get_property_detail_api_v1_properties__id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -202,7 +202,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/communities": {
+    "/api/v1/admin/communities": {
         parameters: {
             query?: never;
             header?: never;
@@ -213,7 +213,7 @@ export interface paths {
          * Get Communities
          * @description 查询小区列表
          */
-        get: operations["get_communities_api_admin_communities_get"];
+        get: operations["get_communities_api_v1_admin_communities_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -222,7 +222,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/dictionaries": {
+    "/api/v1/admin/dictionaries": {
         parameters: {
             query?: never;
             header?: never;
@@ -233,7 +233,7 @@ export interface paths {
          * Get Dictionaries
          * @description 返回行政区或商圈的去重列表
          */
-        get: operations["get_dictionaries_api_admin_dictionaries_get"];
+        get: operations["get_dictionaries_api_v1_admin_dictionaries_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -242,7 +242,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/communities/merge": {
+    "/api/v1/admin/communities/merge": {
         parameters: {
             query?: never;
             header?: never;
@@ -255,7 +255,7 @@ export interface paths {
          * Merge Communities
          * @description 合并小区操作
          */
-        post: operations["merge_communities_api_admin_communities_merge_post"];
+        post: operations["merge_communities_api_v1_admin_communities_merge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -663,7 +663,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/token": {
+    "/api/v1/auth/token": {
         parameters: {
             query?: never;
             header?: never;
@@ -676,14 +676,14 @@ export interface paths {
          * Login For Access Token
          * @description OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
          */
-        post: operations["login_for_access_token_api_auth_token_post"];
+        post: operations["login_for_access_token_api_v1_auth_token_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/login": {
+    "/api/v1/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -696,14 +696,14 @@ export interface paths {
          * Login
          * @description 用户名密码登录 (Sync - Run in threadpool by FastAPI)
          */
-        post: operations["login_api_auth_login_post"];
+        post: operations["login_api_v1_auth_login_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/refresh": {
+    "/api/v1/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -716,14 +716,14 @@ export interface paths {
          * Refresh Access Token
          * @description 刷新令牌 (Sync - Run in threadpool by FastAPI)
          */
-        post: operations["refresh_access_token_api_auth_refresh_post"];
+        post: operations["refresh_access_token_api_v1_auth_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/wechat/authorize": {
+    "/api/v1/auth/wechat/authorize": {
         parameters: {
             query?: never;
             header?: never;
@@ -734,7 +734,7 @@ export interface paths {
          * Wechat Authorize
          * @description 生成微信登录授权URL
          */
-        get: operations["wechat_authorize_api_auth_wechat_authorize_get"];
+        get: operations["wechat_authorize_api_v1_auth_wechat_authorize_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -743,7 +743,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/wechat/callback": {
+    "/api/v1/auth/wechat/callback": {
         parameters: {
             query?: never;
             header?: never;
@@ -754,7 +754,7 @@ export interface paths {
          * Wechat Callback
          * @description 微信授权回调 (Async for HTTP, run_in_threadpool for DB)
          */
-        get: operations["wechat_callback_api_auth_wechat_callback_get"];
+        get: operations["wechat_callback_api_v1_auth_wechat_callback_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -763,7 +763,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/wechat/login": {
+    "/api/v1/auth/wechat/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -776,14 +776,14 @@ export interface paths {
          * Wechat App Login
          * @description 微信小程序登录 (Async for HTTP, run_in_threadpool for DB)
          */
-        post: operations["wechat_app_login_api_auth_wechat_login_post"];
+        post: operations["wechat_app_login_api_v1_auth_wechat_login_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/me": {
+    "/api/v1/auth/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -794,7 +794,7 @@ export interface paths {
          * Get Current User Info
          * @description 获取当前用户信息
          */
-        get: operations["get_current_user_info_api_auth_me_get"];
+        get: operations["get_current_user_info_api_v1_auth_me_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -803,7 +803,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/users": {
+    "/api/v1/users/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -814,20 +814,20 @@ export interface paths {
          * Get Users
          * @description 获取用户列表，支持搜索和筛选
          */
-        get: operations["get_users_api_users_users_get"];
+        get: operations["get_users_api_v1_users_users_get"];
         put?: never;
         /**
          * Create User
          * @description 创建新用户
          */
-        post: operations["create_user_api_users_users_post"];
+        post: operations["create_user_api_v1_users_users_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/me": {
+    "/api/v1/users/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -838,7 +838,7 @@ export interface paths {
          * Get Current User
          * @description 获取当前登录用户信息
          */
-        get: operations["get_current_user_api_users_me_get"];
+        get: operations["get_current_user_api_v1_users_me_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -847,7 +847,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/users/{user_id}": {
+    "/api/v1/users/users/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -858,24 +858,24 @@ export interface paths {
          * Get User
          * @description 获取指定用户信息
          */
-        get: operations["get_user_api_users_users__user_id__get"];
+        get: operations["get_user_api_v1_users_users__user_id__get"];
         /**
          * Update User
          * @description 更新用户信息
          */
-        put: operations["update_user_api_users_users__user_id__put"];
+        put: operations["update_user_api_v1_users_users__user_id__put"];
         post?: never;
         /**
          * Delete User
          * @description 删除用户
          */
-        delete: operations["delete_user_api_users_users__user_id__delete"];
+        delete: operations["delete_user_api_v1_users_users__user_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/users/{user_id}/reset-password": {
+    "/api/v1/users/users/{user_id}/reset-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -887,7 +887,7 @@ export interface paths {
          * Reset User Password
          * @description 重置用户密码
          */
-        put: operations["reset_user_password_api_users_users__user_id__reset_password_put"];
+        put: operations["reset_user_password_api_v1_users_users__user_id__reset_password_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -895,7 +895,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/users/change-password": {
+    "/api/v1/users/users/change-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -908,14 +908,14 @@ export interface paths {
          * Change Password
          * @description 修改当前用户密码
          */
-        post: operations["change_password_api_users_users_change_password_post"];
+        post: operations["change_password_api_v1_users_users_change_password_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/init-data": {
+    "/api/v1/users/init-data": {
         parameters: {
             query?: never;
             header?: never;
@@ -929,14 +929,14 @@ export interface paths {
          * @description 初始化系统数据，包括默认角色和管理员用户
          *     注意：使用 def 避免 sync DB 阻塞
          */
-        post: operations["init_system_data_api_users_init_data_post"];
+        post: operations["init_system_data_api_v1_users_init_data_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/roles": {
+    "/api/v1/roles": {
         parameters: {
             query?: never;
             header?: never;
@@ -947,20 +947,20 @@ export interface paths {
          * Get Roles
          * @description 获取角色列表，支持搜索和筛选
          */
-        get: operations["get_roles_api_users_roles_get"];
+        get: operations["get_roles_api_v1_roles_get"];
         put?: never;
         /**
          * Create Role
          * @description 创建新角色
          */
-        post: operations["create_role_api_users_roles_post"];
+        post: operations["create_role_api_v1_roles_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/roles/{role_id}": {
+    "/api/v1/roles/{role_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -971,24 +971,24 @@ export interface paths {
          * Get Role
          * @description 获取指定角色信息
          */
-        get: operations["get_role_api_users_roles__role_id__get"];
+        get: operations["get_role_api_v1_roles__role_id__get"];
         /**
          * Update Role
          * @description 更新角色信息
          */
-        put: operations["update_role_api_users_roles__role_id__put"];
+        put: operations["update_role_api_v1_roles__role_id__put"];
         post?: never;
         /**
          * Delete Role
          * @description 删除角色
          */
-        delete: operations["delete_role_api_users_roles__role_id__delete"];
+        delete: operations["delete_role_api_v1_roles__role_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/monitor/communities/{community_id}/sentiment": {
+    "/api/v1/monitor/communities/{community_id}/sentiment": {
         parameters: {
             query?: never;
             header?: never;
@@ -996,7 +996,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Sentiment */
-        get: operations["get_sentiment_api_monitor_communities__community_id__sentiment_get"];
+        get: operations["get_sentiment_api_v1_monitor_communities__community_id__sentiment_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1005,7 +1005,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/monitor/communities/{community_id}/trends": {
+    "/api/v1/monitor/communities/{community_id}/trends": {
         parameters: {
             query?: never;
             header?: never;
@@ -1013,7 +1013,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Trends */
-        get: operations["get_trends_api_monitor_communities__community_id__trends_get"];
+        get: operations["get_trends_api_v1_monitor_communities__community_id__trends_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1022,7 +1022,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/monitor/ai-strategy": {
+    "/api/v1/monitor/ai-strategy": {
         parameters: {
             query?: never;
             header?: never;
@@ -1032,14 +1032,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Generate Strategy */
-        post: operations["generate_strategy_api_monitor_ai_strategy_post"];
+        post: operations["generate_strategy_api_v1_monitor_ai_strategy_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/monitor/communities/{community_id}/radar": {
+    "/api/v1/monitor/communities/{community_id}/radar": {
         parameters: {
             query?: never;
             header?: never;
@@ -1050,7 +1050,7 @@ export interface paths {
          * Get Neighborhood Radar
          * @description 获取周边竞品雷达数据，包含分渠道统计
          */
-        get: operations["get_neighborhood_radar_api_monitor_communities__community_id__radar_get"];
+        get: operations["get_neighborhood_radar_api_v1_monitor_communities__community_id__radar_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1059,7 +1059,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/communities/{community_id}/competitors": {
+    "/api/v1/communities/{community_id}/competitors": {
         parameters: {
             query?: never;
             header?: never;
@@ -1067,17 +1067,17 @@ export interface paths {
             cookie?: never;
         };
         /** Get Competitors */
-        get: operations["get_competitors_api_communities__community_id__competitors_get"];
+        get: operations["get_competitors_api_v1_communities__community_id__competitors_get"];
         put?: never;
         /** Add Competitor */
-        post: operations["add_competitor_api_communities__community_id__competitors_post"];
+        post: operations["add_competitor_api_v1_communities__community_id__competitors_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/communities/{community_id}/competitors/{competitor_id}": {
+    "/api/v1/communities/{community_id}/competitors/{competitor_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1088,7 +1088,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Remove Competitor */
-        delete: operations["remove_competitor_api_communities__community_id__competitors__competitor_id__delete"];
+        delete: operations["remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1101,7 +1101,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Leads */
+        /**
+         * Get Leads
+         * @description 获取线索列表
+         *     使用手动序列化避免 ORM 关系遍历导致的性能问题
+         */
         get: operations["get_leads_api_v1_leads__get"];
         put?: never;
         /** Create Lead */
@@ -1124,7 +1128,8 @@ export interface paths {
         /** Update Lead */
         put: operations["update_lead_api_v1_leads__lead_id__put"];
         post?: never;
-        delete?: never;
+        /** Delete Lead */
+        delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1194,8 +1199,8 @@ export interface components {
             /** Competitor Community Id */
             competitor_community_id: number;
         };
-        /** Body_login_for_access_token_api_auth_token_post */
-        Body_login_for_access_token_api_auth_token_post: {
+        /** Body_login_for_access_token_api_v1_auth_token_post */
+        Body_login_for_access_token_api_v1_auth_token_post: {
             /** Grant Type */
             grant_type?: string | null;
             /** Username */
@@ -1218,8 +1223,8 @@ export interface components {
              */
             client_secret?: string | null;
         };
-        /** Body_upload_csv_api_upload_csv_post */
-        Body_upload_csv_api_upload_csv_post: {
+        /** Body_upload_csv_api_v1_upload_csv_post */
+        Body_upload_csv_api_v1_upload_csv_post: {
             /**
              * File
              * Format: binary
@@ -1428,6 +1433,72 @@ export interface components {
              */
             images: string[];
         };
+        /**
+         * LeadListItem
+         * @description 列表展示专用 Schema
+         *     不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题
+         */
+        LeadListItem: {
+            /** Id */
+            id: string;
+            /** Community Name */
+            community_name: string;
+            /**
+             * Is Hot
+             * @default 0
+             */
+            is_hot: number;
+            /** Layout */
+            layout?: string | null;
+            /** Orientation */
+            orientation?: string | null;
+            /** Floor Info */
+            floor_info?: string | null;
+            /** Area */
+            area?: number | null;
+            /** Total Price */
+            total_price?: number | null;
+            /** Unit Price */
+            unit_price?: number | null;
+            /** Eval Price */
+            eval_price?: number | null;
+            status: components["schemas"]["LeadStatus"];
+            /** Audit Reason */
+            audit_reason?: string | null;
+            /** Auditor Id */
+            auditor_id?: string | null;
+            /** Audit Time */
+            audit_time?: string | null;
+            /**
+             * Images
+             * @default []
+             */
+            images: string[];
+            /** District */
+            district?: string | null;
+            /** Business Area */
+            business_area?: string | null;
+            /** Remarks */
+            remarks?: string | null;
+            /** Creator Id */
+            creator_id?: string | null;
+            /** Creator Name */
+            creator_name?: string | null;
+            /** Source Property Id */
+            source_property_id?: number | null;
+            /** Last Follow Up At */
+            last_follow_up_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** LeadResponse */
         LeadResponse: {
             /** Community Name */
@@ -1593,10 +1664,13 @@ export interface components {
             /** Items */
             items: components["schemas"]["NeighborhoodRadarItem"][];
         };
-        /** PaginatedLeadResponse */
-        PaginatedLeadResponse: {
+        /**
+         * PaginatedLeadListResponse
+         * @description 列表分页响应 - 使用 LeadListItem 避免性能问题
+         */
+        PaginatedLeadListResponse: {
             /** Items */
-            items: components["schemas"]["LeadResponse"][];
+            items: components["schemas"]["LeadListItem"][];
             /** Total */
             total: number;
             /** Page */
@@ -2594,7 +2668,7 @@ export interface operations {
             };
         };
     };
-    upload_csv_api_upload_csv_post: {
+    upload_csv_api_v1_upload_csv_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2603,7 +2677,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_csv_api_upload_csv_post"];
+                "multipart/form-data": components["schemas"]["Body_upload_csv_api_v1_upload_csv_post"];
             };
         };
         responses: {
@@ -2627,7 +2701,7 @@ export interface operations {
             };
         };
     };
-    download_failed_records_api_upload_download__filename__get: {
+    download_failed_records_api_v1_upload_download__filename__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2658,7 +2732,7 @@ export interface operations {
             };
         };
     };
-    push_properties_api_push_post: {
+    push_properties_api_v1_push_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2693,7 +2767,7 @@ export interface operations {
             };
         };
     };
-    search_communities_api_properties_communities_search_get: {
+    search_communities_api_v1_properties_communities_search_get: {
         parameters: {
             query: {
                 q: string;
@@ -2724,7 +2798,7 @@ export interface operations {
             };
         };
     };
-    get_properties_api_properties_get: {
+    get_properties_api_v1_properties_get: {
         parameters: {
             query?: {
                 /** @description 房源状态: 在售 | 成交 */
@@ -2786,7 +2860,7 @@ export interface operations {
             };
         };
     };
-    export_properties_api_properties_export_get: {
+    export_properties_api_v1_properties_export_get: {
         parameters: {
             query?: {
                 /** @description 房源状态: 在售 | 成交 */
@@ -2844,7 +2918,7 @@ export interface operations {
             };
         };
     };
-    get_property_detail_api_properties__id__get: {
+    get_property_detail_api_v1_properties__id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2875,7 +2949,7 @@ export interface operations {
             };
         };
     };
-    get_communities_api_admin_communities_get: {
+    get_communities_api_v1_admin_communities_get: {
         parameters: {
             query?: {
                 /** @description 小区名称搜索（模糊匹配） */
@@ -2911,7 +2985,7 @@ export interface operations {
             };
         };
     };
-    get_dictionaries_api_admin_dictionaries_get: {
+    get_dictionaries_api_v1_admin_dictionaries_get: {
         parameters: {
             query: {
                 /** @description 字典类型: district | business_circle */
@@ -2947,7 +3021,7 @@ export interface operations {
             };
         };
     };
-    merge_communities_api_admin_communities_merge_post: {
+    merge_communities_api_v1_admin_communities_merge_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3806,7 +3880,7 @@ export interface operations {
             };
         };
     };
-    login_for_access_token_api_auth_token_post: {
+    login_for_access_token_api_v1_auth_token_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3815,7 +3889,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_login_for_access_token_api_auth_token_post"];
+                "application/x-www-form-urlencoded": components["schemas"]["Body_login_for_access_token_api_v1_auth_token_post"];
             };
         };
         responses: {
@@ -3839,7 +3913,7 @@ export interface operations {
             };
         };
     };
-    login_api_auth_login_post: {
+    login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3872,7 +3946,7 @@ export interface operations {
             };
         };
     };
-    refresh_access_token_api_auth_refresh_post: {
+    refresh_access_token_api_v1_auth_refresh_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3905,7 +3979,7 @@ export interface operations {
             };
         };
     };
-    wechat_authorize_api_auth_wechat_authorize_get: {
+    wechat_authorize_api_v1_auth_wechat_authorize_get: {
         parameters: {
             query?: {
                 redirect_uri?: string | null;
@@ -3936,7 +4010,7 @@ export interface operations {
             };
         };
     };
-    wechat_callback_api_auth_wechat_callback_get: {
+    wechat_callback_api_v1_auth_wechat_callback_get: {
         parameters: {
             query: {
                 code: string;
@@ -3968,7 +4042,7 @@ export interface operations {
             };
         };
     };
-    wechat_app_login_api_auth_wechat_login_post: {
+    wechat_app_login_api_v1_auth_wechat_login_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4001,7 +4075,7 @@ export interface operations {
             };
         };
     };
-    get_current_user_info_api_auth_me_get: {
+    get_current_user_info_api_v1_auth_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4021,7 +4095,7 @@ export interface operations {
             };
         };
     };
-    get_users_api_users_users_get: {
+    get_users_api_v1_users_users_get: {
         parameters: {
             query?: {
                 /** @description 用户名搜索 */
@@ -4063,7 +4137,7 @@ export interface operations {
             };
         };
     };
-    create_user_api_users_users_post: {
+    create_user_api_v1_users_users_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4096,7 +4170,7 @@ export interface operations {
             };
         };
     };
-    get_current_user_api_users_me_get: {
+    get_current_user_api_v1_users_me_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4116,7 +4190,7 @@ export interface operations {
             };
         };
     };
-    get_user_api_users_users__user_id__get: {
+    get_user_api_v1_users_users__user_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4147,7 +4221,7 @@ export interface operations {
             };
         };
     };
-    update_user_api_users_users__user_id__put: {
+    update_user_api_v1_users_users__user_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -4182,7 +4256,7 @@ export interface operations {
             };
         };
     };
-    delete_user_api_users_users__user_id__delete: {
+    delete_user_api_v1_users_users__user_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4213,7 +4287,7 @@ export interface operations {
             };
         };
     };
-    reset_user_password_api_users_users__user_id__reset_password_put: {
+    reset_user_password_api_v1_users_users__user_id__reset_password_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -4248,7 +4322,7 @@ export interface operations {
             };
         };
     };
-    change_password_api_users_users_change_password_post: {
+    change_password_api_v1_users_users_change_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4281,7 +4355,7 @@ export interface operations {
             };
         };
     };
-    init_system_data_api_users_init_data_post: {
+    init_system_data_api_v1_users_init_data_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4301,7 +4375,7 @@ export interface operations {
             };
         };
     };
-    get_roles_api_users_roles_get: {
+    get_roles_api_v1_roles_get: {
         parameters: {
             query?: {
                 /** @description 角色名称搜索 */
@@ -4341,7 +4415,7 @@ export interface operations {
             };
         };
     };
-    create_role_api_users_roles_post: {
+    create_role_api_v1_roles_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4374,7 +4448,7 @@ export interface operations {
             };
         };
     };
-    get_role_api_users_roles__role_id__get: {
+    get_role_api_v1_roles__role_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4405,7 +4479,7 @@ export interface operations {
             };
         };
     };
-    update_role_api_users_roles__role_id__put: {
+    update_role_api_v1_roles__role_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -4440,7 +4514,7 @@ export interface operations {
             };
         };
     };
-    delete_role_api_users_roles__role_id__delete: {
+    delete_role_api_v1_roles__role_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4471,7 +4545,7 @@ export interface operations {
             };
         };
     };
-    get_sentiment_api_monitor_communities__community_id__sentiment_get: {
+    get_sentiment_api_v1_monitor_communities__community_id__sentiment_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4502,7 +4576,7 @@ export interface operations {
             };
         };
     };
-    get_trends_api_monitor_communities__community_id__trends_get: {
+    get_trends_api_v1_monitor_communities__community_id__trends_get: {
         parameters: {
             query?: {
                 months?: number;
@@ -4535,7 +4609,7 @@ export interface operations {
             };
         };
     };
-    generate_strategy_api_monitor_ai_strategy_post: {
+    generate_strategy_api_v1_monitor_ai_strategy_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4568,7 +4642,7 @@ export interface operations {
             };
         };
     };
-    get_neighborhood_radar_api_monitor_communities__community_id__radar_get: {
+    get_neighborhood_radar_api_v1_monitor_communities__community_id__radar_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4599,7 +4673,7 @@ export interface operations {
             };
         };
     };
-    get_competitors_api_communities__community_id__competitors_get: {
+    get_competitors_api_v1_communities__community_id__competitors_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4630,7 +4704,7 @@ export interface operations {
             };
         };
     };
-    add_competitor_api_communities__community_id__competitors_post: {
+    add_competitor_api_v1_communities__community_id__competitors_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -4665,7 +4739,7 @@ export interface operations {
             };
         };
     };
-    remove_competitor_api_communities__community_id__competitors__competitor_id__delete: {
+    remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -4721,7 +4795,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedLeadResponse"];
+                    "application/json": components["schemas"]["PaginatedLeadListResponse"];
                 };
             };
             /** @description Not found */
@@ -4843,6 +4917,42 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LeadResponse"];
                 };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_lead_api_v1_leads__lead_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not found */
             404: {

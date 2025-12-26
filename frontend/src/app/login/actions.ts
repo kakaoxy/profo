@@ -29,7 +29,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-  const apiUrl = `${baseUrl}/api/auth/token`; 
+  const apiUrl = `${baseUrl}/api/v1/auth/token`; 
 
   try {
     const response = await fetch(apiUrl, {
@@ -135,7 +135,7 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   // 注意：这里调用的是修改密码接口
-  const apiUrl = `${baseUrl}/api/users/users/change-password`; 
+  const apiUrl = `${baseUrl}/api/v1/users/users/change-password`; 
 
   try {
     // 这里有个策略问题：如果没有 Token，我们如何调用这个接口？

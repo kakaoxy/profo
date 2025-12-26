@@ -43,7 +43,7 @@ export async function getCompetitorsBrawlAction(projectId: string) {
     // 并行执行所有请求
     const promises = communitiesToFetch.map(async (communityName) => {
       // 请求1: 获取在售列表
-      const onSalePromise = client.GET("/api/properties", {
+      const onSalePromise = client.GET("/api/v1/properties", {
         params: {
           query: {
             community_name: communityName,
@@ -56,7 +56,7 @@ export async function getCompetitorsBrawlAction(projectId: string) {
       });
 
       // 请求2: 获取成交列表
-      const soldPromise = client.GET("/api/properties", {
+      const soldPromise = client.GET("/api/v1/properties", {
         params: {
           query: {
             community_name: communityName,
@@ -191,7 +191,7 @@ export async function getCompetitorsBrawlByCommunityAction(communityName: string
     // 并行执行所有请求
     const promises = uniqueCommunities.map(async (name) => {
       // 请求1: 获取在售列表
-      const onSalePromise = client.GET("/api/properties", {
+      const onSalePromise = client.GET("/api/v1/properties", {
         params: {
           query: {
             community_name: name,
@@ -204,7 +204,7 @@ export async function getCompetitorsBrawlByCommunityAction(communityName: string
       });
 
       // 请求2: 获取成交列表
-      const soldPromise = client.GET("/api/properties", {
+      const soldPromise = client.GET("/api/v1/properties", {
         params: {
           query: {
             community_name: name,

@@ -11,7 +11,7 @@ from schemas.project import (
 from .projects_renovation import router as renovation_router
 from .projects_sales import router as sales_router
 
-router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
+router = APIRouter(prefix="/projects", tags=["projects"])
 
 # Include Sub-Routers
 router.include_router(renovation_router, tags=["renovation"])

@@ -20,7 +20,7 @@ async function tryRefreshToken(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+    const response = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),

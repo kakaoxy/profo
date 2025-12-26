@@ -23,7 +23,7 @@ async function tryRefreshTokenClient(): Promise<boolean> {
       // 调用后端 API 进行刷新 (需要 refresh_token 在 cookie 中)
       // 由于 refresh_token 是 httpOnly，客户端无法直接读取
       // 我们需要通过后端 API 路由来处理
-      const response = await fetch("/api/auth/refresh", {
+      const response = await fetch("/api/v1/auth/refresh", {
         method: "POST",
         credentials: "include", // 重要：携带 cookies
       });
@@ -77,7 +77,7 @@ const authMiddleware: Middleware = {
       }
 
       // 豁免 /auth/me 接口的偶发 401
-      if (url.includes("/auth/me") || url.includes("/api/auth/me")) {
+      if (url.includes("/auth/me") || url.includes("/api/v1/auth/me")) {
         console.warn("⚠️ 检测到 /auth/me 返回 401，尝试刷新 Token...");
       }
 

@@ -95,19 +95,22 @@ async def health_check():
 # ==================== 路由注册 ====================
 from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads
 
-app.include_router(upload.router, prefix=f"{settings.api_prefix}/upload", tags=["upload"])
-app.include_router(push.router, prefix=f"{settings.api_prefix}/push", tags=["push"])
-app.include_router(properties.router, prefix=f"{settings.api_prefix}/properties", tags=["properties"])
-app.include_router(admin.router, prefix=f"{settings.api_prefix}/admin", tags=["admin"])
-app.include_router(projects_router, tags=["projects"])
-app.include_router(cashflow_router, tags=["cashflow"])
-app.include_router(files_router, prefix=f"{settings.api_prefix}/v1/files", tags=["files"])
-app.include_router(auth.router, prefix=f"{settings.api_prefix}/auth", tags=["auth"])
-app.include_router(users.router, prefix=f"{settings.api_prefix}/users", tags=["users"])
-app.include_router(roles.router, prefix=f"{settings.api_prefix}/users", tags=["roles"])
-app.include_router(monitor.router, prefix=f"{settings.api_prefix}", tags=["monitor"])
-app.include_router(monitor.community_router, prefix=f"{settings.api_prefix}", tags=["communities"])
-app.include_router(leads.router, prefix=f"{settings.api_prefix}/v1", tags=["leads"])
+# 统一使用 /api/v1 前缀，确保 OpenAPI 类型生成一致
+API_V1_PREFIX = f"{settings.api_prefix}/v1"
+
+app.include_router(upload.router, prefix=f"{API_V1_PREFIX}/upload", tags=["upload"])
+app.include_router(push.router, prefix=f"{API_V1_PREFIX}/push", tags=["push"])
+app.include_router(properties.router, prefix=f"{API_V1_PREFIX}/properties", tags=["properties"])
+app.include_router(admin.router, prefix=f"{API_V1_PREFIX}/admin", tags=["admin"])
+app.include_router(projects_router, prefix=f"{API_V1_PREFIX}", tags=["projects"])
+app.include_router(cashflow_router, prefix=f"{API_V1_PREFIX}", tags=["cashflow"])
+app.include_router(files_router, prefix=f"{API_V1_PREFIX}/files", tags=["files"])
+app.include_router(auth.router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
+app.include_router(users.router, prefix=f"{API_V1_PREFIX}/users", tags=["users"])
+app.include_router(roles.router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
+app.include_router(monitor.router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
+app.include_router(monitor.community_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
+app.include_router(leads.router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
 
 
 # ==================== 全局异常处理 ====================

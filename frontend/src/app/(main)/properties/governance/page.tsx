@@ -19,7 +19,7 @@ export default async function GovernancePage(props: GovernancePageProps) {
 
   const client = await fetchClient();
   
-  const { data, error } = await client.GET("/api/admin/communities", {
+  const { data, error } = await client.GET("/api/v1/admin/communities", {
     params: {
       query: {
         page: page,

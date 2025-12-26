@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lead, LeadStatus } from '../../types';
+import { getMarketSentimentAction, MarketSentiment } from '../../actions';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -17,6 +18,39 @@ interface Props {
 export const InfoTab: React.FC<Props> = ({ lead, onAudit, onViewMonitor }) => {
   const [auditReason, setAuditReason] = useState('');
   const [evalPrice, setEvalPrice] = useState<number | ''>('');
+  
+  // 市场情绪数据
+  const [sentiment, setSentiment] = useState<MarketSentiment | null>(null);
+  const [sentimentLoading, setSentimentLoading] = useState(false);
+  
+  // 获取市场情绪数据
+  useEffect(() => {
+    let isMounted = true;
+    
+    console.log('[DEBUG InfoTab] useEffect triggered, communityName:', lead.communityName);
+    
+    const fetchSentiment = async () => {
+      setSentimentLoading(true);
+      try {
+        const data = await getMarketSentimentAction(lead.communityName);
+        if (isMounted) {
+          setSentiment(data);
+        }
+      } catch (error) {
+        console.error("[DEBUG InfoTab] Failed to fetch market sentiment:", error);
+      } finally {
+        if (isMounted) {
+          setSentimentLoading(false);
+        }
+      }
+    };
+    
+    fetchSentiment();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [lead.communityName]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -57,7 +91,12 @@ export const InfoTab: React.FC<Props> = ({ lead, onAudit, onViewMonitor }) => {
       </div>
 
       {/* Real-time Market Monitoring */}
-      <MonitorCard lead={lead} onViewMonitor={onViewMonitor} />
+      <MonitorCard 
+        lead={lead} 
+        sentiment={sentiment} 
+        loading={sentimentLoading}
+        onViewMonitor={onViewMonitor} 
+      />
 
       {/* Action Panels per Status */}
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
@@ -149,7 +188,7 @@ export const InfoTab: React.FC<Props> = ({ lead, onAudit, onViewMonitor }) => {
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <h4 className="font-black text-slate-900">恭喜！已完成资产收储</h4>
-              <p className="text-xs text-slate-500 mt-1">该房源已进入“工程翻新”阶段</p>
+              <p className="text-xs text-slate-500 mt-1">该房源已进入&quot;工程翻新&quot;阶段</p>
             </div>
           )}
 

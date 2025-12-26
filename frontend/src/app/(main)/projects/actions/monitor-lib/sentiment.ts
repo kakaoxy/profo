@@ -17,7 +17,6 @@ export async function getMarketSentimentAction(projectId: string) {
     }
 
     const communityName = projectResult.data.community_name;
-    // console.log("[Monitor] Project community_name:", communityName);
     if (!communityName) {
       return { success: false, message: "项目未关联小区" };
     }
@@ -25,7 +24,7 @@ export async function getMarketSentimentAction(projectId: string) {
     // 2. 通过小区名称搜索获取 community_id
     const client = await fetchClient();
     const { data: communitiesData, error: communitiesError } = await client.GET(
-      "/api/admin/communities",
+      "/api/v1/admin/communities",
       {
         params: { query: { search: communityName, page_size: 1 } },
       }
@@ -42,23 +41,21 @@ export async function getMarketSentimentAction(projectId: string) {
     }
 
     const communityId = communities[0].id;
-    // console.log("[Monitor] Found community_id:", communityId);
 
-    // 3. 调用情绪 API
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/monitor/communities/${communityId}/sentiment`,
-      { cache: "no-store" }
+    // 3. 调用情绪 API (使用 openapi-fetch client)
+    const { data: sentimentData, error: sentimentError } = await client.GET(
+      "/api/v1/monitor/communities/{community_id}/sentiment",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
-      console.error("获取情绪数据失败:", response.status);
+    if (sentimentError || !sentimentData) {
+      console.error("获取情绪数据失败:", sentimentError);
       return { success: false, message: "获取市场情绪数据失败" };
     }
 
-    const sentimentData = (await response.json()) as MarketSentimentData;
-    // console.log("[Monitor] Sentiment data received:", JSON.stringify(sentimentData, null, 2));
-    return { success: true, data: sentimentData };
+    return { success: true, data: sentimentData as MarketSentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -74,18 +71,19 @@ export async function getMarketSentimentByCommunityAction(communityName: string)
       return { success: false, message: `未找到小区: ${communityName}` };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/monitor/communities/${communityId}/sentiment`,
-      { cache: "no-store" }
+    const client = await fetchClient();
+    const { data: sentimentData, error: sentimentError } = await client.GET(
+      "/api/v1/monitor/communities/{community_id}/sentiment",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
+    if (sentimentError || !sentimentData) {
       return { success: false, message: "获取市场情绪数据失败" };
     }
 
-    const sentimentData = (await response.json()) as MarketSentimentData;
-    return { success: true, data: sentimentData };
+    return { success: true, data: sentimentData as MarketSentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

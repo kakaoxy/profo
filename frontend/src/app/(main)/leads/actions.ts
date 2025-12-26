@@ -195,7 +195,7 @@ export async function getLeadPriceHistoryAction(leadId: string): Promise<import(
 
 export async function searchCommunitiesAction(query: string) {
     const client = await fetchClient();
-    const { data, error } = await client.GET('/api/properties/communities/search', {
+    const { data, error } = await client.GET('/api/v1/properties/communities/search', {
         params: { query: { q: query } }
     });
     
@@ -205,6 +205,84 @@ export async function searchCommunitiesAction(query: string) {
     }
     
     return data as { id: number; name: string; district: string; business_circle: string }[];
+}
+
+// --- Market Sentiment Types ---
+export interface FloorStats {
+    type: string;
+    deals_count: number;
+    deal_avg_price: number;
+    current_count: number;
+    current_avg_price: number;
+}
+
+export interface MarketSentiment {
+    floor_stats: FloorStats[];
+    inventory_months: number;
+    // 计算后的汇总数据
+    totalListingCount: number;
+    totalDealsCount: number;
+}
+
+/**
+ * 获取市场情绪数据
+ * 根据小区名称查找 community_id，然后调用 monitor API
+ */
+export async function getMarketSentimentAction(communityName: string): Promise<MarketSentiment | null> {
+    console.log('[DEBUG Action] getMarketSentimentAction called with:', communityName);
+    
+    // Step 1: 查找社区 ID
+    const communities = await searchCommunitiesAction(communityName);
+    console.log('[DEBUG Action] searchCommunitiesAction returned:', communities.length, 'communities');
+    
+    if (communities.length === 0) {
+        console.warn(`[DEBUG Action] Community not found: ${communityName}`);
+        return null;
+    }
+    
+    // 使用精确匹配或第一个结果
+    const community = communities.find(c => c.name === communityName) || communities[0];
+    console.log('[DEBUG Action] Using community:', community.id, community.name);
+    
+    // Step 2: 调用 monitor API
+    // 注意：所有 API 统一使用 /api/v1 前缀
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const apiUrl = `${baseUrl}/api/v1/monitor/communities/${community.id}/sentiment`;
+    console.log('[DEBUG Action] Calling API:', apiUrl);
+    
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            credentials: 'include',
+        });
+        
+        console.log('[DEBUG Action] API response status:', response.status);
+        
+        if (!response.ok) {
+            console.error("[DEBUG Action] Get market sentiment error:", response.status, await response.text());
+            return null;
+        }
+        
+        const data = await response.json();
+        console.log('[DEBUG Action] API response data:', data);
+        
+        // Step 3: 计算汇总数据
+        const floorStats = data.floor_stats || [];
+        const totalListingCount = floorStats.reduce((sum: number, s: FloorStats) => sum + (s.current_count || 0), 0);
+        const totalDealsCount = floorStats.reduce((sum: number, s: FloorStats) => sum + (s.deals_count || 0), 0);
+        
+        const result = {
+            floor_stats: floorStats,
+            inventory_months: data.inventory_months || 0,
+            totalListingCount,
+            totalDealsCount,
+        };
+        console.log('[DEBUG Action] Returning result:', result);
+        return result;
+    } catch (error) {
+        console.error("[DEBUG Action] Get market sentiment error:", error);
+        return null;
+    }
 }
 
 function mapBackendToFrontend(backendLead: BackendLead): Lead {

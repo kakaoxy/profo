@@ -10,7 +10,7 @@ interface RefreshResponse {
 }
 
 /**
- * POST /api/auth/refresh
+ * POST /api/v1/auth/refresh
  * 
  * 客户端调用此路由来刷新 Token。
  * 由于 refresh_token 存储在 httpOnly cookie 中，客户端无法直接读取，
@@ -28,7 +28,7 @@ export async function POST() {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+    const response = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),

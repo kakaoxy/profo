@@ -14,7 +14,7 @@ export async function getCommunityIdFromProject(projectId: string): Promise<numb
 
   const client = await fetchClient();
   const { data: communitiesData, error } = await client.GET(
-    "/api/admin/communities",
+    "/api/v1/admin/communities",
     { params: { query: { search: communityName, page_size: 1 } } }
   );
 
@@ -30,7 +30,7 @@ export async function getCommunityIdFromProject(projectId: string): Promise<numb
 export async function getCommunityIdByName(communityName: string): Promise<number | null> {
   const client = await fetchClient();
   const { data: communitiesData, error } = await client.GET(
-    "/api/admin/communities",
+    "/api/v1/admin/communities",
     { params: { query: { search: communityName, page_size: 1 } } }
   );
 

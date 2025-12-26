@@ -25,7 +25,7 @@ export default async function PropertiesPage(props: PageProps) {
   const client = await fetchClient();
   
   // 4. 发起请求
-  const { data, error } = await client.GET("/api/properties", {
+  const { data, error } = await client.GET("/api/v1/properties", {
     params: {
       query: {
         page: query.page,

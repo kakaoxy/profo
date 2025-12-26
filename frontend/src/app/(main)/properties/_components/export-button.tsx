@@ -12,7 +12,7 @@ export function ExportButton() {
     // 这里我们直接拼接当前页面的参数去请求导出接口
     // 注意：实际项目中通常是用 window.open 或者生成 Blob 下载
     const query = searchParams.toString();
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/properties/export?${query}`;
+    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/properties/export?${query}`;
     
     // 打开新窗口触发下载
     window.open(url, '_blank');

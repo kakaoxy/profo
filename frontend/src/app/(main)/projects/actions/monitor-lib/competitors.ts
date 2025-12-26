@@ -14,18 +14,19 @@ export async function getCompetitorsAction(projectId: string) {
       return { success: false, message: "获取小区信息失败" };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/communities/${communityId}/competitors`,
-      { cache: "no-store" }
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/communities/{community_id}/competitors",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
+    if (error || !data) {
       return { success: false, message: "获取竞品列表失败" };
     }
 
-    const data = (await response.json()) as CompetitorItem[];
-    return { success: true, data, communityId };
+    return { success: true, data: data as CompetitorItem[], communityId };
   } catch (e) {
     console.error("获取竞品列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -44,18 +45,19 @@ export async function getCompetitorsByCommunityAction(communityName: string) {
       return { success: false, message: "未找到该小区信息" };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/communities/${communityId}/competitors`,
-      { cache: "no-store" }
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/communities/{community_id}/competitors",
+      {
+        params: { path: { community_id: communityId } },
+      }
     );
 
-    if (!response.ok) {
+    if (error || !data) {
       return { success: false, message: "获取竞品列表失败" };
     }
 
-    const data = (await response.json()) as CompetitorItem[];
-    return { success: true, data, communityId };
+    return { success: true, data: data as CompetitorItem[], communityId };
   } catch (e) {
     console.error("获取竞品列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -73,7 +75,7 @@ export async function searchCommunitiesAction(keyword: string) {
 
     const client = await fetchClient();
     const { data: communitiesData, error } = await client.GET(
-      "/api/admin/communities",
+      "/api/v1/admin/communities",
       { params: { query: { search: keyword.trim(), page_size: 10 } } }
     );
 
@@ -94,17 +96,16 @@ export async function searchCommunitiesAction(keyword: string) {
  */
 export async function addCompetitorAction(communityId: number, competitorId: number) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/communities/${communityId}/competitors`,
+    const client = await fetchClient();
+    const { error } = await client.POST(
+      "/api/v1/communities/{community_id}/competitors",
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitor_community_id: competitorId }),
+        params: { path: { community_id: communityId } },
+        body: { competitor_community_id: competitorId },
       }
     );
 
-    if (!response.ok) {
+    if (error) {
       return { success: false, message: "添加竞品失败" };
     }
 
@@ -120,13 +121,15 @@ export async function addCompetitorAction(communityId: number, competitorId: num
  */
 export async function removeCompetitorAction(communityId: number, competitorId: number) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const response = await fetch(
-      `${baseUrl}/api/communities/${communityId}/competitors/${competitorId}`,
-      { method: "DELETE" }
+    const client = await fetchClient();
+    const { error } = await client.DELETE(
+      "/api/v1/communities/{community_id}/competitors/{competitor_id}",
+      {
+        params: { path: { community_id: communityId, competitor_id: competitorId } },
+      }
     );
 
-    if (!response.ok) {
+    if (error) {
       return { success: false, message: "删除竞品失败" };
     }
 
