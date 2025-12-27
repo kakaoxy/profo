@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  turbopack: {
+    root: import.meta.dirname, // 明确指定项目根目录，避免 lockfile 警告
+  },
   experimental: {
     serverActions: {
       // [新增] 将 Server Actions 的请求体限制增加到 10MB (或是你需要的大小)
