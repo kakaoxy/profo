@@ -47,6 +47,7 @@ export default async function PropertiesPage(props: PageProps) {
   });
 
   if (error) {
+    console.error("连接后端失败:", error);
     return <div className="p-8 text-red-500">连接后端失败</div>;
   }
 

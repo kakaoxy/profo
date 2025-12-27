@@ -25,10 +25,12 @@ export default async function UsersPage(props: {
   ]);
 
   if (!usersResult.success || !usersResult.data) {
+    console.error("获取用户数据失败:", usersResult.message);
     return <div className="p-4 text-red-500">获取用户数据失败: {usersResult.message}</div>;
   }
 
   if (!rolesResult.success || !rolesResult.data) {
+    console.error("获取角色数据失败:", rolesResult.message);
     return <div className="p-4 text-red-500">获取角色数据失败: {rolesResult.message}</div>;
   }
 
