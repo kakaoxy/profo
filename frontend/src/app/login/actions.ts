@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { API_BASE_URL } from "@/lib/config";
 
 // 定义登录接口返回的结构
 interface LoginResponse {
@@ -28,8 +29,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
     return { error: "请输入账号和密码" };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-  const apiUrl = `${baseUrl}/api/v1/auth/token`; 
+  const apiUrl = `${API_BASE_URL}/api/v1/auth/token`; 
 
   try {
     const response = await fetch(apiUrl, {
@@ -133,9 +133,8 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
     return { error: "新密码长度至少需要 8 位", mustChangePassword: true, username };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
   // 注意：这里调用的是修改密码接口
-  const apiUrl = `${baseUrl}/api/v1/users/users/change-password`; 
+  const apiUrl = `${API_BASE_URL}/api/v1/users/users/change-password`; 
 
   try {
     // 这里有个策略问题：如果没有 Token，我们如何调用这个接口？

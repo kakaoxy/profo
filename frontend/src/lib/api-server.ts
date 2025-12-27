@@ -2,8 +2,7 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { cookies } from "next/headers";
-
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "./config";
 
 /**
  * 尝试使用 refresh_token 刷新 access_token
@@ -20,7 +19,7 @@ async function tryRefreshToken(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -92,7 +91,7 @@ export async function fetchClient() {
   };
 
   return createClient<paths>({
-    baseUrl,
+    baseUrl: API_BASE_URL,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     // 使用我们的自定义 fetch
     fetch: fetchWithAutoRefresh,

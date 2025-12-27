@@ -1,8 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "@/lib/config";
 
 interface RefreshResponse {
   access_token: string;
@@ -26,7 +25,7 @@ export async function refreshTokenAction(): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
