@@ -61,7 +61,7 @@ echo [INFO] 文件上传完成
 
 REM ==================== 远程安装依赖并重启 ====================
 echo [INFO] 远程安装依赖并重启服务...
-ssh %SERVER_USER%@%SERVER_HOST% "cd %REMOTE_PATH%/backend && uv sync && cd %REMOTE_PATH%/frontend && pnpm install --prod && systemctl restart profo-backend && systemctl restart profo-frontend"
+ssh %SERVER_USER%@%SERVER_HOST% "cd %REMOTE_PATH%/backend && uv sync && cd %REMOTE_PATH%/frontend && pnpm install --prod && pm2 restart profo-backend profo-frontend || pm2 start %REMOTE_PATH%/deploy/ecosystem.config.js"
 
 echo [INFO] ==========================================
 echo [INFO] 部署完成!
