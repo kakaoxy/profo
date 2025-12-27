@@ -107,27 +107,19 @@ else
     log_warn "Nginx 配置文件不存在: $DEPLOY_DIR/profo-nginx.conf"
 fi
 
-# ==================== 配置 systemd 服务 ====================
-log_info "配置 systemd 服务..."
+# ==================== 配置 PM2 (已安装) ====================
+log_info "配置 PM2..."
 
-if [ -f "$DEPLOY_DIR/profo-backend.service" ]; then
-    cp "$DEPLOY_DIR/profo-backend.service" /etc/systemd/system/
-    log_info "后端服务配置完成"
+# 创建日志目录
+mkdir -p /root/profo/logs
+
+# 复制 PM2 配置
+if [ -f "$DEPLOY_DIR/ecosystem.config.js" ]; then
+    log_info "PM2 ecosystem 配置已就绪"
+    log_info "启动服务请执行: pm2 start $DEPLOY_DIR/ecosystem.config.js"
+else
+    log_warn "PM2 配置文件不存在: $DEPLOY_DIR/ecosystem.config.js"
 fi
-
-if [ -f "$DEPLOY_DIR/profo-frontend.service" ]; then
-    cp "$DEPLOY_DIR/profo-frontend.service" /etc/systemd/system/
-    log_info "前端服务配置完成"
-fi
-
-# 重新加载 systemd
-systemctl daemon-reload
-
-# 启用开机自启
-systemctl enable profo-backend
-systemctl enable profo-frontend
-
-log_info "systemd 服务配置完成"
 
 # ==================== 完成 ====================
 echo ""
@@ -139,9 +131,10 @@ log_info "后续步骤:"
 echo "  1. 配置后端环境变量: /root/profo/backend/.env"
 echo "  2. 配置前端环境变量: /root/profo/frontend/.env.local"
 echo "  3. 启动服务:"
-echo "     systemctl start profo-backend"
-echo "     systemctl start profo-frontend"
+echo "     cd /root/profo/deploy"
+echo "     pm2 start ecosystem.config.js"
+echo "     pm2 save"
 echo "  4. 查看日志:"
-echo "     journalctl -u profo-backend -f"
-echo "     journalctl -u profo-frontend -f"
+echo "     pm2 logs profo-backend"
+echo "     pm2 logs profo-frontend"
 echo ""

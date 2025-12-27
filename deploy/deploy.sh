@@ -121,11 +121,9 @@ else
     echo "警告: pnpm 未安装，请手动安装依赖"
 fi
 
-# 重启服务
-echo "重启服务..."
-systemctl daemon-reload
-systemctl restart profo-backend || echo "后端服务重启失败，请检查配置"
-systemctl restart profo-frontend || echo "前端服务重启失败，请检查配置"
+# 重启服务 (使用 PM2)
+echo "重启 PM2 服务..."
+pm2 restart profo-backend profo-frontend || pm2 start /root/profo/deploy/ecosystem.config.js
 
 # 清理
 rm -f "$ARCHIVE_FILE"
