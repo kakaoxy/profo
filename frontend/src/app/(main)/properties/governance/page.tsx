@@ -30,6 +30,7 @@ export default async function GovernancePage(props: GovernancePageProps) {
   });
 
   if (error || !data) {
+    console.error("连接后端失败:", error);
     return (
       <div className="p-8 text-center text-red-500">
         加载数据失败，请检查网络或权限。
