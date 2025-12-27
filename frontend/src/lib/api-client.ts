@@ -1,8 +1,6 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./api-types";
-
-// 获取环境变量中的后端地址
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE_URL } from "./config";
 
 // 防止并发刷新
 let isRefreshing = false;
@@ -117,7 +115,7 @@ const authMiddleware: Middleware = {
  * 场景 A: 客户端组件 (Client Components) 使用
  */
 export const client = createClient<paths>({
-  baseUrl,
+  baseUrl: API_BASE_URL,
   // 注意：这里不要再传 middleware 数组，因为类型不支持
 });
 
