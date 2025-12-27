@@ -21,6 +21,13 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
+        // 生产环境图片服务器
+        protocol: 'https',
+        hostname: 'fangmengchina.com',
+        port: '',
+        pathname: '/static/**',
+      },
+      {
         // 本地开发环境图片服务器
         protocol: 'http',
         hostname: '127.0.0.1',

@@ -1,0 +1,26 @@
+[Unit]
+Description=Profo Backend - FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/profo/backend
+
+# 使用 uv 运行 Python
+ExecStart=/root/.local/bin/uv run python main.py
+
+# 环境变量
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+# 重启策略
+Restart=always
+RestartSec=5
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=profo-backend
+
+[Install]
+WantedBy=multi-user.target
