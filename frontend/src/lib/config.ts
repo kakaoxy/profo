@@ -7,10 +7,10 @@
 
 /**
  * API 基础 URL
- * - 开发环境默认: http://127.0.0.1:8000
- * - 生产环境: 通过 NEXT_PUBLIC_API_URL 环境变量配置
+ * - 生产环境默认: https://fangmengchina.com
+ * - 开发环境: 通过 .env.local 设置 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
  */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://fangmengchina.com";
 
 /**
  * 构建完整的 API URL
