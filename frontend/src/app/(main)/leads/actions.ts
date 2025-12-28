@@ -246,8 +246,7 @@ export async function getMarketSentimentAction(communityName: string): Promise<M
     
     // Step 2: 调用 monitor API
     // 注意：所有 API 统一使用 /api/v1 前缀
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-    const apiUrl = `${baseUrl}/api/v1/monitor/communities/${community.id}/sentiment`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'https://fangmengchina.com'}/api/v1/monitor/communities/${community.id}/sentiment`;
     console.log('[DEBUG Action] Calling API:', apiUrl);
     
     try {

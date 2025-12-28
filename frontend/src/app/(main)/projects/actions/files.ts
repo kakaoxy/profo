@@ -1,13 +1,13 @@
 "use server";
 
+import { API_BASE_URL } from "@/lib/config";
+
 /**
  * 通用文件上传 Action
  */
 export async function uploadFileAction(formData: FormData) {
   try {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    const defaultUrl = "http://127.0.0.1:8000";
-    const apiBase = (envUrl || defaultUrl).replace(/\/api\/v1\/?$/, "");
+    const apiBase = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
     const uploadUrl = `${apiBase}/api/v1/files/upload`;
 
     const res = await fetch(uploadUrl, {

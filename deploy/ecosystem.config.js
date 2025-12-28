@@ -24,7 +24,10 @@ module.exports = {
       cwd: '/root/profo/frontend',
       script: 'node_modules/.bin/next',
       args: 'start',
+      interpreter: 'none',         // ← 关键！不使用 Node.js 解释器
+      shell: true,                 // ← 关键！通过 shell 执行
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '800M',

@@ -4,6 +4,7 @@ import React, { useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { X, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/config';
 
 interface Props {
   images: string[];
@@ -12,7 +13,7 @@ interface Props {
   maxFileSize?: number; // in MB
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+// API_BASE_URL is imported from @/lib/config
 
 /**
  * 检查是否为本地开发环境的 URL（私有 IP）

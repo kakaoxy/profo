@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/config";
 import {
   ATTACHMENT_CATEGORIES,
   ALLOWED_EXTENSIONS,
@@ -71,8 +72,7 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
         formData.append("file", file);
 
         const xhr = new XMLHttpRequest();
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        xhr.open("POST", `${baseUrl}/api/v1/files/upload`);
+        xhr.open("POST", `${API_BASE_URL}/api/v1/files/upload`);
         xhr.withCredentials = true;
 
         // 进度监听
@@ -107,7 +107,7 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
                 url: (() => {
                   const relativeUrl = result.data?.url || result.url || result.file_url || result.path;
                   if (relativeUrl?.startsWith("/")) {
-                    return `${baseUrl}${relativeUrl}`;
+                    return `${API_BASE_URL}${relativeUrl}`;
                   }
                   return relativeUrl;
                 })(),
