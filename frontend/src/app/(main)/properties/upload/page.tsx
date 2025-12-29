@@ -16,11 +16,11 @@ export default async function UploadPage() {
       
 
   return (
-    <div className="container max-w-3xl mx-auto py-10 space-y-8">
+    <div className="container max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6 sm:space-y-8">
       {/* 标题区 */}
 
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">批量导入房源</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">批量导入房源</h1>
         <p className="text-muted-foreground">
           通过上传 CSV 文件批量创建或更新房源数据。请先下载模板，按照格式要求填写后上传。
         </p>

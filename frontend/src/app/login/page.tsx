@@ -47,8 +47,8 @@ export default function LoginPage() {
   const tempToken = loginState?.tempToken || "";
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-100">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 px-4 py-8 sm:px-6">
+      <Card className="w-full max-w-sm shadow-lg">
         {/* --- 模式 A: 修改密码 --- */}
         {isChangePasswordMode ? (
           <>
