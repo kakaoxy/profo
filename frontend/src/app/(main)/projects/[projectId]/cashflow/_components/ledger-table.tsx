@@ -106,7 +106,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
       </div>
 
       {/* 表格内容 */}
-      <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
+      <div className="rounded-md border border-slate-200 bg-white overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">

@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LineChart, Trash2 } from "lucide-react";
+import { LineChart, Trash2, Wallet } from "lucide-react";
 import Link from "next/link";
 import { Project } from "../types";
 import { deleteProjectAction } from "../actions/core";
@@ -222,7 +222,7 @@ export const columns: ColumnDef<Project>[] = [
       };
 
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Link
             href={`?monitor_id=${
               row.original.id
@@ -233,13 +233,31 @@ export const columns: ColumnDef<Project>[] = [
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 px-3 flex items-center gap-1.5 transition-all rounded-full"
+              className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
             >
               <LineChart className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline text-xs font-medium">监控</span>
+              <span className="hidden lg:inline text-xs font-medium">监控</span>
             </Button>
           </Link>
 
+          <Link
+            href={`?cashflow_id=${
+              row.original.id
+            }&project_name=${encodeURIComponent(row.original.name)}`}
+            scroll={false}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+            >
+              <Wallet className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline text-xs font-medium">账本</span>
+            </Button>
+          </Link>
+
+          <div className="hidden sm:block">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -273,6 +291,7 @@ export const columns: ColumnDef<Project>[] = [
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          </div>
         </div>
       );
     },
