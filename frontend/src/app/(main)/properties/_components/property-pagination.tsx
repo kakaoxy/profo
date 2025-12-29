@@ -44,22 +44,22 @@ export function PropertyPagination({ total }: PropertyPaginationProps) {
   };
 
   return (
-    <div className="flex items-center justify-between px-2 py-4">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-2 py-2 sm:py-4">
       {/* 左侧：总数显示 */}
-      <div className="flex-1 text-sm text-muted-foreground">
-        共 {total} 条数据
+      <div className="text-xs sm:text-sm text-muted-foreground">
+        共 {total} 条
       </div>
 
       {/* 右侧：分页控制区 */}
-      <div className="flex items-center space-x-6 lg:space-x-8">
+      <div className="flex items-center gap-2 sm:gap-4 lg:gap-8">
         {/* 2. 当前页码状态 */}
-        <div className="flex min-w-40 items-center justify-center text-sm font-medium">
-          第 {page} 页 / 共 {totalPages} 页
+        <div className="text-xs sm:text-sm font-medium whitespace-nowrap">
+          {page} / {totalPages}
         </div>
 
-        {/* 1. 每页行数选择器 */}
-        <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium">每页行数</p>
+        {/* 1. 每页行数选择器 - 仅在 sm 及以上显示 */}
+        <div className="hidden sm:flex items-center gap-2">
+          <p className="text-sm font-medium">每页</p>
           <Select
             value={`${pageSize}`}
             onValueChange={handlePageSizeChange}
@@ -80,7 +80,7 @@ export function PropertyPagination({ total }: PropertyPaginationProps) {
        
 
         {/* 3. 翻页按钮组 */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* 首页 */}
           <Button
             variant="outline"
