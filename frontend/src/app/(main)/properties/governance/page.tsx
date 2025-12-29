@@ -39,10 +39,10 @@ export default async function GovernancePage(props: GovernancePageProps) {
   }
 
   return (
-    <div className="container h-full flex flex-col gap-6 p-8 m-x-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">数据治理</h1>
-        <p className="text-muted-foreground">
+    <div className="container h-full flex flex-col gap-4 sm:gap-6 p-4 sm:p-8 m-x-8">
+      <div className="flex flex-col gap-1 sm:gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">数据治理</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           合并重复的小区名称，清洗脏数据。合并操作将迁移关联的房源数据，操作不可撤销。
         </p>
       </div>

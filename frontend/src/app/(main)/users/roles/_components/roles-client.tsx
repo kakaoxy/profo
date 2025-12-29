@@ -50,19 +50,19 @@ export function RolesClient({ initialData }: RolesClientProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <Input
             placeholder="搜索角色名称..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className="w-[200px] lg:w-[300px]"
+            className="w-full sm:w-[200px] lg:w-[300px]"
           />
-          <Button type="submit" variant="secondary">搜索</Button>
+          <Button type="submit" variant="secondary" size="sm">搜索</Button>
         </form>
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          新建角色
+        <Button onClick={handleCreate} size="sm">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">新建角色</span>
         </Button>
       </div>
 

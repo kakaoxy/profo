@@ -78,17 +78,17 @@ export function UserTable({ data, onEdit, onResetPassword }: UserTableProps) {
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto scrollbar-hide">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>用户</TableHead>
               <TableHead>角色</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead>手机号</TableHead>
-              <TableHead>创建时间</TableHead>
-              <TableHead>最后登录</TableHead>
-              <TableHead className="w-[70px]"></TableHead>
+              <TableHead className="hidden md:table-cell">手机号</TableHead>
+              <TableHead className="hidden lg:table-cell">创建时间</TableHead>
+              <TableHead className="hidden lg:table-cell">最后登录</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,13 +112,13 @@ export function UserTable({ data, onEdit, onResetPassword }: UserTableProps) {
                 <TableCell>
                   {getStatusBadge(user.status)}
                 </TableCell>
-                <TableCell>{user.phone || "-"}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="hidden md:table-cell">{user.phone || "-"}</TableCell>
+                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                   {format(new Date(user.created_at), "yyyy-MM-dd")}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                   {user.last_login_at 
-                    ? format(new Date(user.last_login_at), "yyyy-MM-dd HH:mm") 
+                    ? format(new Date(user.last_login_at), "MM-dd HH:mm") 
                     : "-"}
                 </TableCell>
                 <TableCell>

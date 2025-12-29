@@ -97,18 +97,18 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
             <form onSubmit={handleSearch} className="flex items-center gap-2">
             <Input
                 placeholder="搜索用户名..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-[200px]"
+                className="w-full sm:w-[200px]"
             />
             </form>
             <Select value={roleFilter} onValueChange={handleRoleChange}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[120px] sm:w-[150px]">
                     <SelectValue placeholder="所有角色" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,12 +118,12 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
                     ))}
                 </SelectContent>
             </Select>
-            <Button variant="secondary" onClick={handleSearch}>搜索</Button>
+            <Button variant="secondary" size="sm" onClick={handleSearch}>搜索</Button>
         </div>
         
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          新建用户
+        <Button onClick={handleCreate} size="sm">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">新建用户</span>
         </Button>
       </div>
 
