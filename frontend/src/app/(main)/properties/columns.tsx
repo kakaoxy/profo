@@ -114,17 +114,17 @@ const ActionCell = ({ id }: { id: number }) => {
 };
 
 export const columns: ColumnDef<Property>[] = [
-  // 1. 房源ID
+  // 1. 房源ID - 移动端隐藏
   {
     accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <span className="text-xs text-muted-foreground">#{row.getValue("id")}</span>,
+    header: () => <span className="hidden sm:inline">ID</span>,
+    cell: ({ row }) => <span className="hidden sm:inline text-xs text-muted-foreground">#{row.getValue("id")}</span>,
     size: 60,
   },
   // 2. 户型图 (应用新逻辑)
   {
     id: "image",
-    header: "户型图",
+    header: () => <span className="text-xs"><span className="hidden sm:inline">户型图</span><span className="sm:hidden">图</span></span>,
     cell: ({ row }) => {
       // 调用辅助函数获取图片URL
       const cover = getFloorPlan(row.original.data_source, row.original.picture_links);
@@ -132,8 +132,8 @@ export const columns: ColumnDef<Property>[] = [
       // 如果没图，显示占位符 (保持不变)
       if (!cover) {
         return (
-          <div className="w-12 h-9 bg-slate-100 rounded border flex items-center justify-center text-slate-400">
-            <ImageIcon className="h-4 w-4" />
+          <div className="w-10 h-8 sm:w-12 sm:h-9 bg-slate-100 rounded border flex items-center justify-center text-slate-400">
+            <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" />
           </div>
         );
       }
@@ -144,7 +144,7 @@ export const columns: ColumnDef<Property>[] = [
         <HoverCard openDelay={200} closeDelay={100}>
           {/* 触发区：原来的小图 */}
           <HoverCardTrigger asChild>
-            <div className="relative w-12 h-9 rounded overflow-hidden border bg-slate-100 cursor-zoom-in group">
+            <div className="relative w-10 h-8 sm:w-12 sm:h-9 rounded overflow-hidden border bg-slate-100 cursor-zoom-in group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={cover}
@@ -186,133 +186,165 @@ export const columns: ColumnDef<Property>[] = [
         </HoverCard>
       );
     },
-    size: 70,
+    size: 50,
   },
-  // 3. 小区
+  // 3. 小区 - 移动端堆叠显示小区+户型+楼层，可点击打开详情
   {
     accessorKey: "community_name",
-    header: "小区",
-    cell: ({ row }) => {
+    header: () => <span className="text-xs">小区</span>,
+    cell: function CommunityCell({ row }) {
       const name = row.getValue("community_name") as string;
+      const { rooms, baths } = row.original;
+      const floor = row.original.floor_display;
+      const [, setPropertyId] = useQueryState("propertyId", { shallow: true });
+      
       return (
-        <TooltipProvider>
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              {/* max-w-[5em]: 限制最大宽度大约为5个字符宽
-                 truncate: 超出部分显示省略号 (...)
-                 cursor-help: 鼠标放上去显示问号/帮助手势
-              */}
-              <div className="font-medium truncate max-w-[7em] cursor-help">
-                {name}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{name}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="min-w-0">
+          {/* 桌面端只显示小区名 */}
+          <div className="hidden sm:block">
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <div className="font-medium truncate max-w-[7em] cursor-help">
+                    {name}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          {/* 移动端堆叠显示，可点击 */}
+          <div 
+            className="sm:hidden flex flex-col gap-0.5 cursor-pointer active:opacity-70"
+            onClick={() => setPropertyId(String(row.original.id))}
+          >
+            <span className="font-medium text-xs truncate max-w-[6em] text-primary underline-offset-2 hover:underline">{name}</span>
+            <span className="text-[10px] text-muted-foreground">{rooms}室{baths}卫 · {floor}</span>
+          </div>
+        </div>
       );
     },
   },
-  // 4. 状态
+  // 4. 状态 - 移动端隐藏
   {
     accessorKey: "status",
-    header: "状态",
+    header: () => <span className="hidden sm:inline">状态</span>,
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <Badge variant={status === "在售" ? "default" : status === "成交" ? "secondary" : "outline"}>
-          {status}
-        </Badge>
+        <div className="hidden sm:block">
+          <Badge variant={status === "在售" ? "default" : status === "成交" ? "secondary" : "outline"}>
+            {status}
+          </Badge>
+        </div>
       );
     },
   },
-  // 5. 商圈
+  // 5. 商圈 - 仅在 lg 及以上显示
   {
     accessorKey: "business_circle",
-    header: "商圈",
+    header: () => <span className="hidden lg:inline">商圈</span>,
     cell: ({ row }) => {
       const val = row.getValue("business_circle") as string;
-      return <span className="text-sm text-muted-foreground">{val || "-"}</span>;
+      return <span className="hidden lg:inline text-sm text-muted-foreground">{val || "-"}</span>;
     },
   },
-  // 6. 户型
+  // 6. 户型 - 移动端隐藏（已合并到小区列）
   {
     id: "layout_custom",
-    header: "户型",
+    header: () => <span className="hidden sm:inline text-xs">户型</span>,
     cell: ({ row }) => {
       const { rooms, baths } = row.original;
-      return <span className="whitespace-nowrap">{rooms}室{baths}卫</span>;
+      return <span className="hidden sm:inline whitespace-nowrap text-xs">{rooms}室{baths}卫</span>;
     },
   },
-  // 7. 朝向
+  // 7. 朝向 - 仅在 md 及以上显示
   {
     accessorKey: "orientation",
-    header: "朝向",
+    header: () => <span className="hidden md:inline text-xs">朝向</span>,
+    cell: ({ row }) => <span className="hidden md:inline text-xs">{row.getValue("orientation")}</span>,
   },
-  // 8. 楼层
+  // 8. 楼层 - 移动端隐藏（已合并到小区列）
   {
     accessorKey: "floor_display",
-    header: "楼层",
-    cell: ({ row }) => <span className="whitespace-nowrap">{row.getValue("floor_display")}</span>,
+    header: () => <span className="hidden sm:inline text-xs">楼层</span>,
+    cell: ({ row }) => <span className="hidden sm:inline whitespace-nowrap text-xs">{row.getValue("floor_display")}</span>,
   },
-  // 9. 面积
+  // 9. 面积 - 移动端隐藏（合并到价格列）
   {
     accessorKey: "build_area",
-    header: () => <SortableHeader title="面积(㎡)" value="build_area" />,
-    cell: ({ row }) => <div>{row.getValue("build_area")}</div>,
+    header: () => <span className="hidden sm:inline text-xs">面积</span>,
+    cell: ({ row }) => <div className="hidden sm:block text-xs">{row.getValue("build_area")}㎡</div>,
   },
-  // 10. 总价
+  // 10. 总价 - 移动端堆叠显示价格+面积
   {
     accessorKey: "total_price",
-    header: () => <SortableHeader title="总价(万)" value="total_price" />,
-    cell: ({ row }) => <div className="text-red-600 font-bold">{row.getValue("total_price")}</div>,
+    header: () => <span className="text-xs">价格</span>,
+    cell: ({ row }) => {
+      const price = row.getValue("total_price") as number;
+      const area = row.original.build_area;
+      return (
+        <div className="min-w-0">
+          {/* 桌面端只显示价格 */}
+          <div className="hidden sm:block text-red-600 font-bold text-sm">{price}万</div>
+          {/* 移动端堆叠显示 */}
+          <div className="sm:hidden flex flex-col">
+            <span className="text-red-600 font-bold text-xs">{price}万</span>
+            <span className="text-[10px] text-muted-foreground">{area}㎡</span>
+          </div>
+        </div>
+      );
+    },
   },
-  // 11. 单价
+  // 11. 单价 - 仅在 lg 及以上显示
   {
     accessorKey: "unit_price",
-    header: () => <SortableHeader title="单价(元/㎡)" value="unit_price" />,
-    cell: ({ row }) => <div className="text-xs text-muted-foreground">{row.getValue("unit_price")}</div>,
+    header: () => <div className="hidden lg:block"><SortableHeader title="单价(元/㎡)" value="unit_price" /></div>,
+    cell: ({ row }) => <div className="hidden lg:block text-xs text-muted-foreground">{row.getValue("unit_price")}</div>,
   },
   // 12. 时间
   {
     id: "time_display",
     accessorKey: "listed_date",
-    header: () => <SortableHeader title="挂牌/成交时间" value="listed_date" />,
+    header: () => <span className="text-xs"><span className="hidden sm:inline">时间</span><span className="sm:hidden">日期</span></span>,
     cell: ({ row }) => {
       const status = row.original.status;
       let dateStr: string | null | undefined;
-      let label = "";
 
       if (status === "成交") {
         dateStr = row.original.sold_date;
-        label = "成交";
       } else {
         dateStr = row.original.listed_date;
-        label = "挂牌";
       }
 
       if (!dateStr) return <span className="text-muted-foreground">-</span>;
       
+      const date = new Date(dateStr);
+      // 移动端显示 MM/DD，桌面端显示完整日期
       return (
-        <div className="flex flex-col">
-          <span className="text-xs font-medium">{new Date(dateStr).toLocaleDateString()}</span>
-          <span className="text-[10px] text-muted-foreground scale-90 origin-left">({label})</span>
-        </div>
+        <span className="text-xs whitespace-nowrap">
+          <span className="hidden sm:inline">{date.toLocaleDateString()}</span>
+          <span className="sm:hidden">{(date.getMonth()+1)}/{date.getDate()}</span>
+        </span>
       );
     },
   },
-  // 13. 数据源
+  // 13. 数据源 - 移动端隐藏
   {
     accessorKey: "data_source",
-    header: () => <SortableHeader title="数据源" value="data_source" />,
-    cell: ({ row }) => <Badge variant="outline" className="text-[10px]">{row.getValue("data_source")}</Badge>,
+    header: () => <span className="hidden sm:inline text-xs">来源</span>,
+    cell: ({ row }) => <Badge variant="outline" className="hidden sm:inline-flex text-[10px]">{row.getValue("data_source")}</Badge>,
   },
-  // 14. 操作
-  // 14. 操作
+  // 14. 操作 - 移动端隐藏（通过点击小区列打开详情）
   {
     id: "actions",
-    header: "操作",
-    cell: ({ row }) => <ActionCell id={row.original.id} />,
+    header: () => <span className="hidden sm:inline">操作</span>,
+    cell: ({ row }) => (
+      <div className="hidden sm:block">
+        <ActionCell id={row.original.id} />
+      </div>
+    ),
   },
 ];

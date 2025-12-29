@@ -2,6 +2,7 @@ import { fetchClient } from "@/lib/api-server";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 import { PropertyFilters } from "./_components/property-filters";
+import { PropertyFilterSheet } from "./_components/property-filter-sheet";
 import { ExportButton } from "./_components/export-button";
 import { searchParamsCache } from "./search-params";
 import { PropertyPagination } from "./_components/property-pagination"; // 引入分页组件
@@ -53,23 +54,27 @@ export default async function PropertiesPage(props: PageProps) {
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background">
-        <h1 className="text-xl font-bold tracking-tight">房源列表</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b bg-background gap-2">
+        <h1 className="text-lg sm:text-xl font-bold tracking-tight">房源列表</h1>
         <div className="flex items-center gap-2">
-           <span className="text-sm text-muted-foreground">共 {data?.total || 0} 条数据</span>
+           {/* 移动端筛选按钮 */}
+           <div className="md:hidden">
+             <PropertyFilterSheet />
+           </div>
+           <span className="text-xs sm:text-sm text-muted-foreground">共 {data?.total || 0} 条</span>
            <ExportButton />
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* 左侧筛选面板 */}
-        <div className="w-64 border-r bg-slate-50/50 p-4 overflow-y-auto shrink-0">
+        {/* 左侧筛选面板 - 仅在 md 及以上显示 */}
+        <div className="hidden md:flex w-64 border-r bg-slate-50/50 p-4 overflow-y-auto shrink-0">
           <PropertyFilters />
         </div>
 
         {/* 右侧表格区域 */}
-        <div className="flex-1 overflow-hidden p-4 flex flex-col min-w-0">
-           <div className="flex-1 overflow-auto border rounded-md bg-white shadow-sm">
+        <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col min-w-0">
+           <div className="flex-1 overflow-y-auto overflow-x-hidden sm:overflow-x-auto scrollbar-hide border rounded-md bg-white shadow-sm">
               <DataTable columns={columns} data={data?.items || []} />
            </div>
            <div className="mt-2 relative z-50 bg-white">
