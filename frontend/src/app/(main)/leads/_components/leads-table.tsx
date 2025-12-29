@@ -30,12 +30,12 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onE
         <table className="w-full border-collapse">
           <thead className="bg-slate-50/50 border-b">
             <tr className="text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">
-              <th className="p-4 pl-8">小区基本面</th>
-              <th className="p-4">面积/户型</th>
-              <th className="p-4">价格详情</th>
-              <th className="p-4 text-center">状态</th>
-              <th className="p-4">最后跟进</th>
-              <th className="p-4 pr-8 text-right">操作</th>
+              <th className="p-3 sm:p-4 pl-4 sm:pl-8">小区基本面</th>
+              <th className="p-3 sm:p-4 hidden sm:table-cell">面积/户型</th>
+              <th className="p-3 sm:p-4">价格</th>
+              <th className="p-3 sm:p-4 text-center">状态</th>
+              <th className="p-3 sm:p-4 hidden lg:table-cell">最后跟进</th>
+              <th className="p-3 sm:p-4 pr-4 sm:pr-8 text-right">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y text-sm">
@@ -45,7 +45,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onE
                   className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
                   onClick={() => onOpenDetail(lead.id)}
               >
-                <td className="p-4 pl-8">
+                <td className="p-3 sm:p-4 pl-4 sm:pl-8">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-16 overflow-hidden rounded-md bg-slate-100 border relative flex items-center justify-center">
                       {lead.images && lead.images.length > 0 ? (
@@ -67,19 +67,19 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onE
                     </div>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4 hidden sm:table-cell">
                   <div className="flex flex-col">
                     <span className="font-medium">{lead.layout}</span>
                     <span className="text-xs text-muted-foreground">{lead.area}㎡ · {lead.floorInfo}</span>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4">
                   <div className="flex flex-col">
                     <span className="font-bold text-blue-600">¥{lead.totalPrice}万</span>
                     <span className="text-[10px] text-muted-foreground">{lead.unitPrice?.toFixed(2)}万/㎡</span>
                   </div>
                 </td>
-                <td className="p-4 text-center">
+                <td className="p-3 sm:p-4 text-center">
                   <Badge 
                     variant={
                       lead.status === LeadStatus.SIGNED ? "secondary" :
@@ -98,13 +98,13 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onE
                     {STATUS_CONFIG[lead.status]?.label}
                   </Badge>
                 </td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4 hidden lg:table-cell">
                   <div className="flex flex-col">
                     <span className="font-medium text-xs">{lead.creatorName}</span>
                     <span className="text-[10px] text-muted-foreground">{lead.lastFollowUpAt || lead.createdAt}</span>
                   </div>
                 </td>
-                <td className="p-4 pr-8 text-right">
+                <td className="p-3 sm:p-4 pr-4 sm:pr-8 text-right">
                   <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
