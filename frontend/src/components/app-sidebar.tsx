@@ -127,9 +127,9 @@ export function AppSidebar({ user }: { user: User | null }) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="px-2 py-3">
         <SidebarGroup>
-          <SidebarMenu className="gap-0.5">
+          <SidebarMenu className="gap-1">
             {data.navMain.map((item) => {
               const hasSubmenu = item.items && item.items.length > 0;
               const isActive =
@@ -150,7 +150,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                     }
                     isActive={isActive}
                     className={`
-                      rounded-lg px-3 py-2 transition-all duration-200
+                      rounded-lg px-3 py-2.5 transition-all duration-200
                       ${isActive 
                         ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium shadow-sm" 
                         : "text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
@@ -160,11 +160,11 @@ export function AppSidebar({ user }: { user: User | null }) {
                   >
                     {item.icon && (
                       <item.icon 
-                        className={`h-[18px] w-[18px] ${isActive ? "text-slate-800 dark:text-white" : "text-slate-500 dark:text-slate-400"}`} 
+                        className={`h-5 w-5 ${isActive ? "text-slate-800 dark:text-white" : "text-slate-500 dark:text-slate-400"}`} 
                         strokeWidth={isActive ? 2 : 1.5}
                       />
                     )}
-                    <span className="text-[13px] tracking-tight">{item.title}</span>
+                    <span className="text-sm tracking-tight">{item.title}</span>
                     {state === "expanded" && hasSubmenu && (
                       <ChevronRight className="ml-auto h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     )}
@@ -200,13 +200,13 @@ export function AppSidebar({ user }: { user: User | null }) {
                           <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                             {item.title}
                           </div>
-                          <div className="flex flex-col gap-0.5 mt-1">
+                          <div className="flex flex-col gap-1 mt-1">
                             {item.items!.map((sub) => (
                               <Link
                                 key={sub.title}
                                 href={sub.url}
                                 className={`
-                                  block px-2.5 py-2 text-[13px] rounded-lg transition-all duration-150
+                                  block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
                                   ${pathname === sub.url
                                     ? "bg-slate-100 dark:bg-slate-800 font-medium text-slate-900 dark:text-white"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
@@ -243,14 +243,14 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <MenuButton />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="ml-5 mt-0.5 border-l border-slate-200/60 dark:border-slate-700/60 pl-2.5 space-y-0.5">
+                        <SidebarMenuSub className="ml-5 mt-1 border-l border-slate-200/60 dark:border-slate-700/60 pl-3 space-y-1">
                           {item.items!.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={pathname === subItem.url}
                                 className={`
-                                  rounded-md px-2.5 py-1.5 text-[13px] transition-all duration-150
+                                  rounded-md px-3 py-2 text-sm transition-all duration-150
                                   ${pathname === subItem.url
                                     ? "bg-slate-100/80 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium"
                                     : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white"

@@ -95,7 +95,7 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
         }
       />
       
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <Card className="border-slate-100 shadow-sm overflow-hidden bg-white">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -107,49 +107,83 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
           ) : competitors.length === 0 ? (
             <div className="text-center py-12 text-sm text-slate-500">暂无竞品数据，请先添加竞品小区</div>
           ) : (
-            <Table className="min-w-[800px]">
-              <TableHeader className="bg-slate-50/50">
-                <TableRow className="hover:bg-transparent border-b border-slate-100">
-                  <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">小区名称</TableHead>
-                  <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">挂牌套数 (渠道)</TableHead>
-                  <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">挂牌均价</TableHead>
-                  <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">成交套数 (渠道)</TableHead>
-                  <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">成交均价</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-slate-50">
+            <>
+              {/* Mobile Card Layout */}
+              <div className="sm:hidden divide-y divide-slate-100">
                 {competitors.map((item) => (
-                  <TableRow key={item.community_id} className={`${item.is_subject ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}>
-                    <TableCell className="py-4 px-4">
+                  <div 
+                    key={item.community_id} 
+                    className={`p-4 ${item.is_subject ? "bg-indigo-50/40" : ""}`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
                       <span className="text-sm font-bold text-slate-800">{item.community_name}</span>
-                    </TableCell>
-                    <TableCell className="py-4 px-4">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{item.listing_count} 套</span>
-                        <span className="text-[10px] text-slate-400 font-medium">贝壳:{item.listing_beike} | 我爱:{item.listing_iaij}</span>
+                      <span className={`text-xs font-bold ${getSpreadStyle(item)}`}>
+                        {getSpreadIcon(item)}{item.spread_label}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <p className="text-slate-400 mb-0.5">挂牌</p>
+                        <p className="font-bold text-slate-900">{item.listing_count} 套</p>
+                        <p className="text-indigo-600 font-bold">¥{item.listing_avg_price.toLocaleString()}/㎡</p>
                       </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-4">
-                      <span className="text-sm font-bold text-indigo-600">¥ {item.listing_avg_price.toLocaleString()} /㎡</span>
-                    </TableCell>
-                    <TableCell className="py-4 px-4">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{item.deal_count} 套</span>
-                        <span className="text-[10px] text-slate-400 font-medium">贝壳:{item.deal_beike} | 我爱:{item.deal_iaij}</span>
+                      <div>
+                        <p className="text-slate-400 mb-0.5">成交</p>
+                        <p className="font-bold text-slate-900">{item.deal_count} 套</p>
+                        <p className="text-emerald-600 font-bold">¥{item.deal_avg_price.toLocaleString()}/㎡</p>
                       </div>
-                    </TableCell>
-                    <TableCell className="py-4 px-4 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm font-bold text-emerald-600">¥ {item.deal_avg_price.toLocaleString()} /㎡</span>
-                        <span className={`text-[10px] font-bold mt-0.5 ${getSpreadStyle(item)}`}>
-                          {getSpreadIcon(item)}{item.spread_label}
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden sm:block overflow-x-auto scrollbar-hide">
+                <Table className="min-w-[800px]">
+                  <TableHeader className="bg-slate-50/50">
+                    <TableRow className="hover:bg-transparent border-b border-slate-100">
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">小区名称</TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">挂牌套数 (渠道)</TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">挂牌均价</TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">成交套数 (渠道)</TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">成交均价</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-50">
+                    {competitors.map((item) => (
+                      <TableRow key={item.community_id} className={`${item.is_subject ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}>
+                        <TableCell className="py-4 px-4">
+                          <span className="text-sm font-bold text-slate-800">{item.community_name}</span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-900">{item.listing_count} 套</span>
+                            <span className="text-[10px] text-slate-400 font-medium">贝壳:{item.listing_beike} | 我爱:{item.listing_iaij}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="text-sm font-bold text-indigo-600">¥ {item.listing_avg_price.toLocaleString()} /㎡</span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-900">{item.deal_count} 套</span>
+                            <span className="text-[10px] text-slate-400 font-medium">贝壳:{item.deal_beike} | 我爱:{item.deal_iaij}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-bold text-emerald-600">¥ {item.deal_avg_price.toLocaleString()} /㎡</span>
+                            <span className={`text-[10px] font-bold mt-0.5 ${getSpreadStyle(item)}`}>
+                              {getSpreadIcon(item)}{item.spread_label}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </Card>
       </div>

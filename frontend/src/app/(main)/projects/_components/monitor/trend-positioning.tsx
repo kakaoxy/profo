@@ -120,7 +120,7 @@ export function TrendPositioning({ projectId, communityName, myOverridePrice }: 
         subtitle="Trend & Positioning" 
       />
       
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <Card className="p-6 border-slate-100 shadow-sm bg-white">
           <div className="h-[400px] w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
