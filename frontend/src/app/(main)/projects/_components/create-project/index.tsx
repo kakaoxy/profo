@@ -110,7 +110,7 @@ export function CreateProjectDialog({
               >
                 {/* Tabs 导航 */}
                 <div className="px-6 pt-4 flex-shrink-0">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1">
                     <TabsTrigger value="basic">基础信息</TabsTrigger>
                     <TabsTrigger value="transaction">交易数据</TabsTrigger>
                     <TabsTrigger value="owner">业主信息</TabsTrigger>

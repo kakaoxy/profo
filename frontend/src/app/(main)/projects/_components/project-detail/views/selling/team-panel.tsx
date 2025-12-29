@@ -69,7 +69,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
           (自动保存)
         </span>
       </h3>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* 1. 渠道 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-500">渠道</Label>

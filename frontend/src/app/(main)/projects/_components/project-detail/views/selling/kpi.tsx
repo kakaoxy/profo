@@ -136,7 +136,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
   }, [project.sales_records]);
 
   return (
-    <div className="grid grid-cols-3 gap-3 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
       {/* 1. 带看卡片 (蓝色主题 - 活跃) */}
       <Card className="shadow-sm border-blue-100 bg-blue-50/40">
         <CardContent className="p-4 relative">

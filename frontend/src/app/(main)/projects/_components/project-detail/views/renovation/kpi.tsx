@@ -75,7 +75,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   }, [project.id]);
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
       {/* 卡片 1: 交付倒计时 */}
       <Card className="shadow-sm">
         <CardContent className="p-4 flex flex-col justify-between h-full">
