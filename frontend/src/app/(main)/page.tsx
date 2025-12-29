@@ -158,14 +158,14 @@ export default async function DashboardPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500 dark:text-slate-400">
-                <th className="px-6 py-4 font-semibold tracking-wider">小区</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">户型</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">面积(m²)</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">朝向</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">楼层</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">总价(万)</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">时间</th>
-                <th className="px-6 py-4 font-semibold tracking-wider text-right">操作</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider">小区</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider hidden sm:table-cell">户型</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider">面积</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider hidden lg:table-cell">朝向</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider hidden lg:table-cell">楼层</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider">总价</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider hidden md:table-cell">时间</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold tracking-wider text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -179,18 +179,18 @@ export default async function DashboardPage() {
               ) : (
                 leads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{lead.community_name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{lead.layout || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{lead.area || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{lead.orientation || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{lead.floor_info || '-'}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-red-600 dark:text-red-400">
-                      {lead.total_price ? `¥ ${lead.total_price}` : '-'}
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium text-slate-900 dark:text-white">{lead.community_name}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-600 dark:text-slate-300 hidden sm:table-cell">{lead.layout || '-'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-600 dark:text-slate-300">{lead.area || '-'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-600 dark:text-slate-300 hidden lg:table-cell">{lead.orientation || '-'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-600 dark:text-slate-300 hidden lg:table-cell">{lead.floor_info || '-'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm font-bold text-red-600 dark:text-red-400">
+                      {lead.total_price ? `¥${lead.total_price}` : '-'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-slate-500 dark:text-slate-400 hidden md:table-cell">
                       {formatRelativeTime(lead.created_at)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-right">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm text-right">
                       <Link 
                         href="/leads"
                         className="text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 font-medium transition-colors"
