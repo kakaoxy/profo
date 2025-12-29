@@ -53,7 +53,7 @@ export function AIStrategy({ projectId, communityName }: AIStrategyProps) {
         subtitle="AI Strategy" 
       />
       
-      <div className="px-6 space-y-6">
+      <div className="px-4 sm:px-6 space-y-4 sm:space-y-6">
         {/* Input & Action Header */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all focus-within:ring-2 ring-indigo-500/10">
           <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">

@@ -78,7 +78,7 @@ export function MarketSentiment({ projectId, communityName }: MarketSentimentPro
     return (
       <section className="mt-8 pb-10">
         <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
-        <div className="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 h-48 animate-pulse" />
           ))}
@@ -103,7 +103,7 @@ export function MarketSentiment({ projectId, communityName }: MarketSentimentPro
     <section className="mt-8 pb-10">
       <SectionHeader index="1" title="宏观风向标 (本小区行情)" subtitle="Market Sentiment" />
       
-      <div className="px-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* 成交统计 */}
         <StatsCard title="同户型成交统计" subtitle="过去12个月" stats={floorStats} dataKey="deal" />
 
