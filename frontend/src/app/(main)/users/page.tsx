@@ -37,7 +37,7 @@ export default async function UsersPage(props: {
   return (
     <div className="flex flex-col gap-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">用户管理</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">用户管理</h2>
         <div className="flex items-center space-x-2">
         </div>
       </div>

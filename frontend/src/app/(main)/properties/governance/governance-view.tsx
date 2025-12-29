@@ -81,7 +81,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <form onSubmit={handleSearch} className="relative flex items-center gap-2">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -89,7 +89,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
               placeholder="搜索小区名称..."
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
-              className="pl-8 w-[300px]"
+              className="pl-8 w-full sm:w-[300px]"
             />
             <Button type="submit" variant="secondary" size="sm">搜索</Button>
           </form>
@@ -102,7 +102,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
         />
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-white overflow-x-auto scrollbar-hide">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -143,9 +143,9 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
       </div>
       
       {/* 分页控制栏 */}
-      <div className="flex items-center justify-between px-2">
-        <div className="text-sm text-muted-foreground">
-          共 {total} 条数据，当前第 {page} / {totalPages} 页
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-2">
+        <div className="text-xs sm:text-sm text-muted-foreground">
+          共 {total} 条，第 {page}/{totalPages} 页
         </div>
         <div className="flex items-center space-x-2">
           <Button

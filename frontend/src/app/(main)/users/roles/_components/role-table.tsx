@@ -71,25 +71,25 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto scrollbar-hide">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>角色名称</TableHead>
-              <TableHead>代码</TableHead>
-              <TableHead>描述</TableHead>
+              <TableHead className="hidden sm:table-cell">代码</TableHead>
+              <TableHead className="hidden lg:table-cell">描述</TableHead>
               <TableHead>权限</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead>更新时间</TableHead>
-              <TableHead className="w-[70px]"></TableHead>
+              <TableHead className="hidden md:table-cell">更新时间</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.map((role) => (
               <TableRow key={role.id}>
                 <TableCell className="font-medium">{role.name}</TableCell>
-                <TableCell>{role.code}</TableCell>
-                <TableCell className="max-w-[200px] truncate" title={role.description || ""}>
+                <TableCell className="hidden sm:table-cell">{role.code}</TableCell>
+                <TableCell className="hidden lg:table-cell max-w-[200px] truncate" title={role.description || ""}>
                   {role.description || "-"}
                 </TableCell>
                 <TableCell>
@@ -106,8 +106,8 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                     {role.is_active ? "启用" : "禁用"}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {format(new Date(role.updated_at), "yyyy-MM-dd HH:mm")}
+                <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                  {format(new Date(role.updated_at), "MM-dd HH:mm")}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

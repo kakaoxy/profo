@@ -31,7 +31,8 @@ export const columns: ColumnDef<Community>[] = [
   },
   {
     accessorKey: "id",
-    header: "ID",
+    header: () => <span className="hidden sm:inline">ID</span>,
+    cell: ({ row }) => <span className="hidden sm:inline">{row.getValue("id")}</span>,
     size: 60,
   },
   {
@@ -50,18 +51,20 @@ export const columns: ColumnDef<Community>[] = [
   },
   {
     accessorKey: "district",
-    header: "行政区",
+    header: () => <span className="hidden lg:inline">行政区</span>,
+    cell: ({ row }) => <span className="hidden lg:inline">{row.getValue("district")}</span>,
   },
   {
     accessorKey: "business_circle",
-    header: "商圈",
+    header: () => <span className="hidden lg:inline">商圈</span>,
+    cell: ({ row }) => <span className="hidden lg:inline">{row.getValue("business_circle")}</span>,
   },
   {
     accessorKey: "created_at",
-    header: "创建时间",
+    header: () => <span className="hidden sm:inline text-xs">创建时间</span>,
     cell: ({ row }) => {
       const date = new Date(row.getValue("created_at"));
-      return date.toLocaleDateString("zh-CN");
+      return <span className="hidden sm:inline text-xs">{date.toLocaleDateString("zh-CN")}</span>;
     },
   },
 ];
