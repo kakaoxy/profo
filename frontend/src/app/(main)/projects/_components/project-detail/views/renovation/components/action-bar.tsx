@@ -28,7 +28,7 @@ export function ActionBar({
   // 当前阶段显示完整操作栏
   if (isCurrent) {
     return (
-      <div className="flex items-center justify-between p-3 rounded-md mt-4 border bg-orange-50/30 border-orange-100">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-md mt-4 border bg-orange-50/30 border-orange-100">
         <div className="text-xs text-muted-foreground flex items-center gap-2">
           <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-[10px] font-bold">
             提示

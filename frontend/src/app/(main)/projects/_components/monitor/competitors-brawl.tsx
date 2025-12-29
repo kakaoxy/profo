@@ -225,7 +225,7 @@ export function CompetitorsBrawl({ projectId, communityName }: CompetitorsBrawlP
         </div>
 
         {/* Comparison Table */}
-        <Card className="border-slate-100 shadow-sm overflow-hidden bg-white min-h-[300px]">
+        <Card className="border-slate-100 shadow-sm overflow-x-auto bg-white min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-slate-300" />

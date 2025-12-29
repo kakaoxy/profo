@@ -92,7 +92,7 @@ export function PhotoGrid({
   );
 
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
       {/* 1. Server Photos (Existing Logic) */}
       {photos.map((photo) => (
         <Dialog key={photo.id}>

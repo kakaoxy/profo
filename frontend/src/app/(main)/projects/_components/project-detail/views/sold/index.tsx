@@ -33,7 +33,7 @@ export function SoldView({
 
       {/* 2. 内容区域 (使用原生滚动确保稳定性) */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="max-w-5xl mx-auto px-6 py-6 space-y-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8">
           <HeroMetrics project={project} />
 
           <FinancialLifecycle project={project} />
