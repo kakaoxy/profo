@@ -11,6 +11,7 @@ interface PageProps {
     search?: string;
     statuses?: string;
     district?: string;
+    leadId?: string; // 用于从其他页面跳转时自动打开详情抽屉
   }>;
 }
 
@@ -111,7 +112,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   return (
     <div className="flex min-h-screen w-full flex-col bg-slate-50/50">
       <Suspense fallback={<LeadsLoadingSkeleton />}>
-        <LeadsView initialLeads={leads} />
+        <LeadsView initialLeads={leads} initialSelectedLeadId={params.leadId} />
       </Suspense>
     </div>
   );

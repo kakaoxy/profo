@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useTransition } from 'react';
+import React, { useState, useMemo, useTransition, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Lead, LeadStatus, FilterState, FollowUpMethod } from '../types';
 import { getLeadsAction, updateLeadAction, addFollowUpAction, deleteLeadAction, createLeadAction } from '../actions';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,11 @@ const MonitoringDashboard = dynamic(
 
 interface LeadsViewProps {
   initialLeads: Lead[];
+  initialSelectedLeadId?: string; // 用于从其他页面跳转时自动打开详情抽屉
 }
 
-export function LeadsView({ initialLeads }: LeadsViewProps) {
+export function LeadsView({ initialLeads, initialSelectedLeadId }: LeadsViewProps) {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -41,13 +44,28 @@ export function LeadsView({ initialLeads }: LeadsViewProps) {
     layouts: [],
     floors: []
   });
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  
+  // 初始化时检查是否需要打开抽屉
+  const shouldOpenDrawerInitially = Boolean(
+    initialSelectedLeadId && initialLeads.some(l => l.id === initialSelectedLeadId)
+  );
+  
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(
+    shouldOpenDrawerInitially ? initialSelectedLeadId! : null
+  );
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(shouldOpenDrawerInitially);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [monitoringLead, setMonitoringLead] = useState<Lead | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // 清除 URL 中的 leadId 参数，保持 URL 整洁
+  useEffect(() => {
+    if (initialSelectedLeadId) {
+      router.replace('/leads', { scroll: false });
+    }
+  }, [initialSelectedLeadId, router]);
 
   // Helpers
   const getFloorCategory = (floorInfo: string): string => {
