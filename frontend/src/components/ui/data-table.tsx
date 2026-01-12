@@ -5,7 +5,6 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  // getPaginationRowModel, // 1. 删除这一行引用
 } from "@tanstack/react-table"
 
 import {
@@ -33,10 +32,8 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(), // 2. 删除这一行配置
-    // 3. 显式告诉表格：别管分页，我有多少条你就显示多少条
+    // 显式告诉表格：别管分页，我有多少条你就显示多少条
     manualPagination: true, 
-    // 虽然删掉 getPaginationRowModel 通常就够了，但加 manualPagination 是双保险
   })
 
   return (

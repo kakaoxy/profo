@@ -1175,6 +1175,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/mini/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取项目列表 */
+        get: operations["list_projects_api_v1_admin_mini_projects_get"];
+        put?: never;
+        /** 创建独立项目 */
+        post: operations["create_project_api_v1_admin_mini_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/projects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取项目详情 */
+        get: operations["get_project_api_v1_admin_mini_projects__id__get"];
+        /** 更新项目信息 */
+        put: operations["update_project_api_v1_admin_mini_projects__id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/projects/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 同步新项目 */
+        post: operations["sync_projects_api_v1_admin_mini_projects_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/projects/{id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 刷新硬字段 */
+        put: operations["refresh_project_api_v1_admin_mini_projects__id__refresh_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/projects/{id}/source-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取主项目素材库 */
+        get: operations["get_source_photos_api_v1_admin_mini_projects__id__source_photos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/projects/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取小程序项目照片 */
+        get: operations["get_mini_photos_api_v1_admin_mini_projects__id__photos_get"];
+        put?: never;
+        /** 添加照片记录 */
+        post: operations["add_mini_photo_api_v1_admin_mini_projects__id__photos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/photos/{photo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 删除照片记录 */
+        delete: operations["delete_mini_photo_api_v1_admin_mini_photos__photo_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/consultants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取顾问列表 */
+        get: operations["list_consultants_api_v1_admin_mini_consultants_get"];
+        put?: never;
+        /** 创建顾问 */
+        post: operations["create_consultant_api_v1_admin_mini_consultants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/mini/consultants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 更新顾问 */
+        put: operations["update_consultant_api_v1_admin_mini_consultants__id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1344,6 +1501,126 @@ export interface components {
             avg_price: number;
             /** On Sale Count */
             on_sale_count: number;
+        };
+        /**
+         * ConsultantCreate
+         * @description 创建顾问
+         */
+        ConsultantCreate: {
+            /**
+             * Name
+             * @description 姓名
+             */
+            name: string;
+            /**
+             * Avatar Url
+             * @description 头像URL
+             */
+            avatar_url?: string | null;
+            /**
+             * Role
+             * @description 职位
+             */
+            role?: string | null;
+            /**
+             * Phone
+             * @description 联系电话
+             */
+            phone?: string | null;
+            /**
+             * Wx Qr Code
+             * @description 微信二维码
+             */
+            wx_qr_code?: string | null;
+            /**
+             * Intro
+             * @description 个人简介
+             */
+            intro?: string | null;
+        };
+        /**
+         * ConsultantListResponse
+         * @description 顾问列表响应
+         */
+        ConsultantListResponse: {
+            /** Items */
+            items: components["schemas"]["ConsultantResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ConsultantResponse
+         * @description 顾问响应
+         */
+        ConsultantResponse: {
+            /**
+             * Name
+             * @description 姓名
+             */
+            name: string;
+            /**
+             * Avatar Url
+             * @description 头像URL
+             */
+            avatar_url?: string | null;
+            /**
+             * Role
+             * @description 职位
+             */
+            role?: string | null;
+            /**
+             * Phone
+             * @description 联系电话
+             */
+            phone?: string | null;
+            /**
+             * Wx Qr Code
+             * @description 微信二维码
+             */
+            wx_qr_code?: string | null;
+            /**
+             * Intro
+             * @description 个人简介
+             */
+            intro?: string | null;
+            /** Id */
+            id: string;
+            /** Rating */
+            rating: number;
+            /** Completed Projects */
+            completed_projects: number;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ConsultantUpdate
+         * @description 更新顾问
+         */
+        ConsultantUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Avatar Url */
+            avatar_url?: string | null;
+            /** Role */
+            role?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Wx Qr Code */
+            wx_qr_code?: string | null;
+            /** Intro */
+            intro?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** FloorStats */
         FloorStats: {
@@ -1623,6 +1900,196 @@ export interface components {
             floor_stats: components["schemas"]["FloorStats"][];
             /** Inventory Months */
             inventory_months: number;
+        };
+        /**
+         * MiniProjectCreate
+         * @description 创建小程序项目 (独立)
+         */
+        MiniProjectCreate: {
+            /**
+             * Title
+             * @description 营销标题
+             */
+            title: string;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Style */
+            style?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Marketing Tags */
+            marketing_tags?: string[] | null;
+            /** Share Title */
+            share_title?: string | null;
+            /** Share Image */
+            share_image?: string | null;
+            /** Consultant Id */
+            consultant_id?: string | null;
+        };
+        /**
+         * MiniProjectListResponse
+         * @description 项目列表响应
+         */
+        MiniProjectListResponse: {
+            /** Items */
+            items: components["schemas"]["MiniProjectResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * MiniProjectPhotoCreate
+         * @description 创建照片
+         */
+        MiniProjectPhotoCreate: {
+            /**
+             * Renovation Stage
+             * @description 改造阶段
+             */
+            renovation_stage?: string | null;
+            /**
+             * Description
+             * @description 描述
+             */
+            description?: string | null;
+            /**
+             * Sort Order
+             * @description 排序
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Origin Photo Id
+             * @description 原项目照片ID
+             */
+            origin_photo_id?: string | null;
+            /**
+             * Image Url
+             * @description 直接上传的URL
+             */
+            image_url?: string | null;
+        };
+        /**
+         * MiniProjectPhotoResponse
+         * @description 照片响应
+         */
+        MiniProjectPhotoResponse: {
+            /**
+             * Renovation Stage
+             * @description 改造阶段
+             */
+            renovation_stage?: string | null;
+            /**
+             * Description
+             * @description 描述
+             */
+            description?: string | null;
+            /**
+             * Sort Order
+             * @description 排序
+             * @default 0
+             */
+            sort_order: number;
+            /** Id */
+            id: string;
+            /** Mini Project Id */
+            mini_project_id: string;
+            /** Origin Photo Id */
+            origin_photo_id: string | null;
+            /** Image Url */
+            image_url: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Final Url */
+            final_url?: string | null;
+        };
+        /**
+         * MiniProjectResponse
+         * @description 小程序项目响应
+         */
+        MiniProjectResponse: {
+            /**
+             * Title
+             * @description 营销标题
+             */
+            title: string;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Style */
+            style?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Marketing Tags */
+            marketing_tags?: string[] | null;
+            /** Share Title */
+            share_title?: string | null;
+            /** Share Image */
+            share_image?: string | null;
+            /** Consultant Id */
+            consultant_id?: string | null;
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string | null;
+            /** Address */
+            address: string | null;
+            /** Area */
+            area: number | null;
+            /** Price */
+            price: number | null;
+            /** Layout */
+            layout: string | null;
+            /** Orientation */
+            orientation: string | null;
+            /** Floor Info */
+            floor_info: string | null;
+            /** View Count */
+            view_count: number;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Published */
+            is_published: boolean;
+            /** Published At */
+            published_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            consultant?: components["schemas"]["ConsultantResponse"] | null;
+        };
+        /**
+         * MiniProjectUpdate
+         * @description 更新小程序项目
+         */
+        MiniProjectUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Cover Image */
+            cover_image?: string | null;
+            /** Style */
+            style?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Marketing Tags */
+            marketing_tags?: string[] | null;
+            /** Share Title */
+            share_title?: string | null;
+            /** Share Image */
+            share_image?: string | null;
+            /** Consultant Id */
+            consultant_id?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Is Published */
+            is_published?: boolean | null;
         };
         /**
          * NeighborhoodRadarItem
@@ -2179,6 +2646,29 @@ export interface components {
              * @description 刷新令牌
              */
             refresh_token: string;
+        };
+        /**
+         * RenovationPhotoResponse
+         * @description 照片响应
+         */
+        RenovationPhotoResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Stage */
+            stage: string;
+            /** Url */
+            url: string;
+            /** Filename */
+            filename?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * RenovationStage
@@ -5120,6 +5610,417 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_api_v1_admin_mini_projects_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                is_published?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiniProjectListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_api_v1_admin_mini_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiniProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiniProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_api_v1_admin_mini_projects__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiniProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_api_v1_admin_mini_projects__id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiniProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiniProjectResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_projects_api_v1_admin_mini_projects_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    refresh_project_api_v1_admin_mini_projects__id__refresh_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_source_photos_api_v1_admin_mini_projects__id__source_photos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RenovationPhotoResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mini_photos_api_v1_admin_mini_projects__id__photos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiniProjectPhotoResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_mini_photo_api_v1_admin_mini_projects__id__photos_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiniProjectPhotoCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiniProjectPhotoResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_mini_photo_api_v1_admin_mini_photos__photo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_consultants_api_v1_admin_mini_consultants_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultantListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_consultant_api_v1_admin_mini_consultants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsultantCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultantResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_consultant_api_v1_admin_mini_consultants__id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsultantUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultantResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
