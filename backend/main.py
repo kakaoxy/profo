@@ -11,6 +11,8 @@ from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
 from settings import settings
 from db import init_db
+# ==================== 路由注册 ====================
+from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads, mini_admin
 
 
 @asynccontextmanager
@@ -92,8 +94,6 @@ async def health_check():
     }
 
 
-# ==================== 路由注册 ====================
-from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads
 
 # 统一使用 /api/v1 前缀，确保 OpenAPI 类型生成一致
 API_V1_PREFIX = f"{settings.api_prefix}/v1"
@@ -111,6 +111,7 @@ app.include_router(roles.router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
 app.include_router(monitor.router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
 app.include_router(monitor.community_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
 app.include_router(leads.router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
+app.include_router(mini_admin.router, prefix=f"{API_V1_PREFIX}", tags=["mini-admin"])
 
 
 # ==================== 全局异常处理 ====================

@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronRight,
   MoreHorizontal,
+  Smartphone,
 } from "lucide-react";
 import {
   Collapsible,
@@ -94,6 +95,11 @@ const data = {
         { title: "用户列表", url: "/users" },
         { title: "权限管理", url: "/users/roles" },
       ],
+    },
+    {
+      title: "小程序",
+      url: "/minipro/projects",
+      icon: Smartphone,
     },
   ],
 };

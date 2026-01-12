@@ -15,6 +15,7 @@ from .error import FailedRecord
 from .project import Project, CashFlowRecord, RenovationPhoto, SalesRecord
 from .user import User, Role
 from .lead import Lead, LeadFollowUp, LeadPriceHistory
+from .mini import Consultant, MiniProject, MiniProjectPhoto
 
 __all__ = [
     'Base',
@@ -44,4 +45,7 @@ __all__ = [
     'Lead',
     'LeadFollowUp',
     'LeadPriceHistory',
+    'Consultant',
+    'MiniProject',
+    'MiniProjectPhoto',
 ]
