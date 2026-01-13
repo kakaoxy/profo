@@ -1,6 +1,7 @@
-import { fetchClient } from "@/lib/api-server";
-import { MiniProjectEditForm } from "./edit-form";
-import type { MiniProject, Consultant, MiniProjectPhoto } from "../types";
+import React from 'react';
+import { fetchClient } from '@/lib/api-server';
+import type { MiniProject, Consultant, MiniProjectPhoto } from '../types';
+import { MiniProjectEditForm } from './edit-form';
 
 export const dynamic = "force-dynamic";
 

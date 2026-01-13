@@ -22,7 +22,7 @@ export function ShareConfigSection() {
           name="share_title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block text-xs font-bold text-[#6b7280] mb-1.5 uppercase">分享标题 (share_title)</FormLabel>
+              <FormLabel className='block text-xs font-bold text-[#6b7280] mb-1.5 uppercase'>分享标题 (share_title)</FormLabel>
               <FormControl>
                 <Input
                   className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white focus:ring-1 focus:ring-[#137fec] focus:border-[#137fec] outline-none"
@@ -39,7 +39,7 @@ export function ShareConfigSection() {
           name="share_image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block text-xs font-bold text-[#6b7280] mb-1.5 uppercase">分享图 (share_image)</FormLabel>
+              <FormLabel className='block text-xs font-bold text-[#6b7280] mb-1.5 uppercase'>分享图 (share_image)</FormLabel>
               <div className="flex items-center gap-3">
                 <div
                   className="w-12 h-12 rounded bg-gray-100 border border-[#e5e7eb] bg-cover bg-center flex-shrink-0"
