@@ -34,25 +34,12 @@ export default async function EditProjectPage({
   const photos: MiniProjectPhoto[] = photosRes.data as MiniProjectPhoto[] || [];
 
   return (
-    <div className="h-full flex-1 flex-col space-y-8 p-8 md:flex overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">编辑项目</h2>
-          <p className="text-muted-foreground">
-             {/* @ts-expect-error: project_name missing in generated type */}
-             {project?.project_name || "未知项目"}
-          </p>
-        </div>
-      </div>
-{/* ... */}
-      
-      <div className="max-w-4xl">
-         <MiniProjectEditForm 
-            project={project} 
-            consultants={consultants} 
-            initialPhotos={photos}
-          />
-      </div>
+    <div className="h-full flex-1 flex-col space-y-8 p-0 md:flex overflow-y-auto">
+      <MiniProjectEditForm 
+        project={project} 
+        consultants={consultants} 
+        initialPhotos={photos}
+      />
     </div>
   );
 }
