@@ -43,14 +43,14 @@ export function FilterBar({
         </Button>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
         {STAGE_OPTIONS.map((option) => (
           <Button
             key={option.value}
             variant={activeStage === option.value ? 'default' : 'outline'}
             size="sm"
             className={cn(
-              'gap-1 whitespace-nowrap',
+              'gap-1 whitespace-nowrap flex-shrink-0',
               activeStage === option.value && 'bg-primary'
             )}
             onClick={() => onStageChange(option.value)}

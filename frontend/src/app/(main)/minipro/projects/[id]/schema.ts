@@ -1,7 +1,7 @@
-import * as z from "zod";
+import * as z from 'zod';
 
 export const formSchema = z.object({
-  title: z.string().min(1, "标题必填"),
+  title: z.string().min(1, '标题必填'),
   cover_image: z.string().nullable(),
   style: z.string().nullable(),
   description: z.string().nullable(),

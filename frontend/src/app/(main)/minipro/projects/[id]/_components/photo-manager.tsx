@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MiniProjectPhoto } from '../../types';
 import { PhotoItem } from './photo-item';
 import { PhotoLibraryPicker } from './photo-library-picker';
@@ -55,18 +55,24 @@ export function PhotoManager({ projectId, photos, onPhotosChange }: PhotoManager
     toast.success('排序已重置');
   };
 
-  const handlePhotosAdded = (addedPhotos: MiniProjectPhoto[]) => {
-    const newPhotos = addedPhotos.map((photo) => ({
-      id: `${photo.id}-${Date.now()}`,
-      mini_project_id: projectId,
-      origin_photo_id: photo.id,
-      image_url: photo.image_url || photo.final_url || '',
-      renovation_stage: photo.renovation_stage || 'other',
-      description: photo.description || null,
-      sort_order: photos.length,
-      created_at: new Date().toISOString(),
-      final_url: null,
-    }));
+  const handlePhotosAdded = (addedPhotos: MiniProjectPhoto[], originToNewId: Record<string, string>) => {
+    const existingIds = new Set(photos.map(p => p.origin_photo_id).filter(Boolean));
+    const newPhotos = addedPhotos
+      .filter(p => !existingIds.has(p.origin_photo_id || p.id))
+      .map((photo) => {
+        const originId = photo.origin_photo_id || photo.id;
+        return {
+          id: originToNewId[originId] || photo.id,
+          mini_project_id: projectId,
+          origin_photo_id: originId,
+          image_url: photo.image_url || photo.final_url || '',
+          renovation_stage: photo.renovation_stage || 'other',
+          description: photo.description || null,
+          sort_order: photos.length,
+          created_at: photo.created_at || new Date().toISOString(),
+          final_url: photo.final_url || null,
+        };
+      });
     onPhotosChange([...photos, ...newPhotos]);
   };
 
@@ -76,7 +82,7 @@ export function PhotoManager({ projectId, photos, onPhotosChange }: PhotoManager
       const result = await getSourcePhotosAction(projectId);
       if (result.success && result.data) {
         setSourcePhotos(result.data as RenovationPhoto[]);
-      } else {
+      } else if (result.error) {
         toast.error(result.error || '加载照片失败');
       }
     } catch {
@@ -85,6 +91,14 @@ export function PhotoManager({ projectId, photos, onPhotosChange }: PhotoManager
       setSourcePhotosLoading(false);
     }
   };
+
+  const loadSourcePhotosRef = useRef(loadSourcePhotos);
+  
+  useEffect(() => {
+    if (pickerOpen && sourcePhotos.length === 0) {
+      loadSourcePhotosRef.current();
+    }
+  }, [pickerOpen, sourcePhotos.length]);
 
   return (
     <>
@@ -130,10 +144,10 @@ export function PhotoManager({ projectId, photos, onPhotosChange }: PhotoManager
             <span className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">
               项目库资源 ({syncedPhotos.length})
             </span>
-            <button
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/5 text-primary rounded text-xs font-bold border border-primary/20 hover:bg-primary/10 transition-colors outline-none"
-              onClick={() => setPickerOpen(true)}
-            >
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/5 text-primary rounded text-xs font-bold border border-primary/20 hover:bg-primary/10 transition-colors outline-none"
+                onClick={() => setPickerOpen(true)}
+              >
               从项目库选择
             </button>
           </div>

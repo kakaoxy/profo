@@ -11,7 +11,7 @@ import {
 import { FilterBar } from './filter-bar';
 import { PhotoGrid } from './photo-grid';
 import { PickerFooter } from './picker-footer';
-import { batchAddPhotosAction } from '../../actions';
+import { addMiniPhotoAction } from '../../actions';
 import { toast } from 'sonner';
 import type { RenovationPhoto } from './types';
 import type { StageOption } from './types';
@@ -21,7 +21,7 @@ interface PhotoLibraryPickerProps {
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPhotosAdded: (photos: MiniProjectPhoto[]) => void;
+  onPhotosAdded: (photos: MiniProjectPhoto[], originToNewId: Record<string, string>) => void;
   existingPhotoIds: Set<string>;
   photos: RenovationPhoto[];
   loading: boolean;
@@ -82,18 +82,6 @@ export function PhotoLibraryPicker({
     }
   };
 
-  const convertToMiniProjectPhoto = (photo: RenovationPhoto): MiniProjectPhoto => ({
-    id: `${photo.id}-${Date.now()}`,
-    mini_project_id: projectId,
-    origin_photo_id: photo.id,
-    image_url: photo.url,
-    renovation_stage: photo.stage,
-    description: photo.description || null,
-    sort_order: 0,
-    created_at: photo.created_at,
-    final_url: null,
-  });
-
   const handleSubmit = async () => {
     if (selectedIds.size === 0) {
       toast.error('请至少选择一张照片');
@@ -102,18 +90,37 @@ export function PhotoLibraryPicker({
 
     setSubmitting(true);
     try {
-      const result = await batchAddPhotosAction(projectId, Array.from(selectedIds));
-      if (result.success) {
-        const addedPhotos = filteredPhotos
-          .filter((p) => selectedIds.has(p.id))
-          .map(convertToMiniProjectPhoto);
-        toast.success(`成功添加 ${addedPhotos.length} 张照片`);
-        onPhotosAdded(addedPhotos);
+      const results: MiniProjectPhoto[] = [];
+      const errors: string[] = [];
+      const originToNewId: Record<string, string> = {};
+
+      for (const photoId of selectedIds) {
+        const photo = photos.find(p => p.id === photoId);
+        if (!photo) continue;
+
+        const result = await addMiniPhotoAction(projectId, photo.url, photo.stage, photoId);
+        if (result.success && result.data) {
+          const newPhoto = result.data as MiniProjectPhoto;
+          results.push(newPhoto);
+          originToNewId[photoId] = newPhoto.id;
+        } else {
+          errors.push(`ID: ${photoId}`);
+        }
+      }
+
+      if (results.length > 0) {
+        toast.success(`成功添加 ${results.length} 张照片`);
+        onPhotosAdded(results, originToNewId);
         onOpenChange(false);
       } else {
-        toast.error(result.error || '添加照片失败');
+        toast.error('添加照片失败');
       }
-    } catch {
+
+      if (errors.length > 0) {
+        console.error('Failed to add photos:', errors);
+      }
+    } catch (error) {
+      console.error('Exception adding photos:', error);
       toast.error('添加照片失败');
     } finally {
       setSubmitting(false);
@@ -122,7 +129,7 @@ export function PhotoLibraryPicker({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[1000px] h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-[1200px] h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-6 pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>

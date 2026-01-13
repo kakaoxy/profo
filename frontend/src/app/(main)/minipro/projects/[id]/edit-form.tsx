@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { MiniProject, Consultant, MiniProjectPhoto } from '../types';
 import { updateMiniProjectAction, refreshMiniProjectAction } from '../actions';
 import { Form } from '@/components/ui/form';
-import { toast } from 'sonner';
 import { PhotoManager } from './_components/photo-manager';
 import { MarketingInfoSection } from './_components/marketing-info-section';
 import { PropertyHardInfoSection } from './_components/property-hard-info-section';
@@ -110,11 +110,6 @@ export function MiniProjectEditForm({ project, consultants, initialPhotos }: Min
 
   return (
     <div className="flex-1 flex flex-col bg-[#f0f2f5] font-sans">
-      <style jsx global>{`
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-      `}</style>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
           <FormHeader project={project} onSaveDraft={handleSaveDraft} onGoBack={() => router.back()} />

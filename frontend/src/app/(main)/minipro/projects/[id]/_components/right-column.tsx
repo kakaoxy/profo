@@ -23,7 +23,7 @@ export function RightColumn({ consultants }: RightColumnProps) {
           name="cover_image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block text-xs font-bold text-[#6b7280] mb-3 uppercase">项目封面图 (cover_image)</FormLabel>
+              <FormLabel className='block text-xs font-bold text-[#6b7280] mb-3 uppercase'>项目封面图 (cover_image)</FormLabel>
               <div className="relative group rounded-xl aspect-[3/2] border border-[#e5e7eb] overflow-hidden bg-gray-50">
                 {field.value ? (
                   <div
@@ -62,23 +62,23 @@ export function RightColumn({ consultants }: RightColumnProps) {
             name="consultant_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="block text-xs font-bold text-[#6b7280] mb-3 uppercase">关联顾问 (consultant_id)</FormLabel>
-                <div className="relative">
+                <FormLabel className='block text-xs font-bold text-[#6b7280] mb-3 uppercase'>关联顾问 (consultant_id)</FormLabel>
+                <div className='relative'>
                   <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                     <FormControl>
-                      <SelectTrigger className="w-full px-10 py-2.5 border border-[#e5e7eb] rounded-lg text-sm bg-white h-11 focus:ring-1 focus:ring-[#137fec] focus:border-[#137fec] outline-none text-[#111827]">
-                        <SelectValue placeholder="选择顾问" />
+                      <SelectTrigger className='w-full px-10 py-2.5 border border-[#e5e7eb] rounded-lg text-sm bg-white h-11 focus:ring-1 focus:ring-[#137fec] focus:border-[#137fec] outline-none text-[#111827]'>
+                        <SelectValue placeholder='选择顾问' />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">无顾问</SelectItem>
+                      <SelectItem value='none'>无顾问</SelectItem>
                       {consultants.map((c) => (
                         <SelectItem key={c.id} value={c.id}>{c.name} - {c.role || '顾问'}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-[#137fec] text-xl">account_circle</span>
+                  <div className='absolute left-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none'>
+                    <span className='material-symbols-outlined text-[#137fec] text-xl'>account_circle</span>
                   </div>
                 </div>
                 <FormMessage />

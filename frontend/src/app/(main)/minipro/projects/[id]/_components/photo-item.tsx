@@ -1,3 +1,5 @@
+'use client';
+
 import { MiniProjectPhoto } from '../../types';
 import { getFileUrl } from '@/lib/config';
 import { cn } from '@/lib/utils';
@@ -9,19 +11,24 @@ interface PhotoItemProps {
   isSynced?: boolean;
 }
 
-export function PhotoItem({ photo, index, onDelete, isSynced = true }: PhotoItemProps) {
+export function PhotoItem({
+  photo,
+  index,
+  onDelete,
+  isSynced = true,
+}: PhotoItemProps) {
   const stageLabels: Record<string, string> = {
-    signing: '签约阶段',
-    renovating: '硬装阶段',
-    木工: '木工阶段',
-    瓦工: '瓦工阶段',
-    竣工: '竣工阶段',
-    selling: '在售阶段',
-    sold: '已售阶段',
-    other: '其他',
+    设计: "设计阶段",
+    拆除: "拆除阶段",
+    水电: "水电阶段",
+    木瓦: "木瓦阶段",
+    油漆: "油漆阶段",
+    安装: "安装阶段",
+    交付: "交付阶段",
+    已完成: "已完成阶段",
   };
-  
-  const stage = photo.renovation_stage || 'other';
+
+  const stage = photo.renovation_stage || "other";
 
   return (
     <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-lg border border-border-gray hover:bg-white hover:shadow-sm transition-all group">
@@ -31,11 +38,11 @@ export function PhotoItem({ photo, index, onDelete, isSynced = true }: PhotoItem
       >
         <div
           className={cn(
-            'absolute -top-1.5 -right-1.5 text-[9px] font-bold text-white px-1.5 py-0.5 rounded shadow-sm',
-            isSynced ? 'bg-primary' : 'bg-green-500'
+            "absolute -top-1.5 -right-1.5 text-[9px] font-bold text-white px-1.5 py-0.5 rounded shadow-sm",
+            isSynced ? "bg-primary" : "bg-green-500"
           )}
         >
-          {isSynced ? '同步' : '上传'}
+          {isSynced ? "同步" : "上传"}
         </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -43,7 +50,7 @@ export function PhotoItem({ photo, index, onDelete, isSynced = true }: PhotoItem
           {photo.id.slice(0, 8)}
         </p>
         <p className="text-[10px] text-text-secondary">
-          阶段: {stageLabels[stage] || '未设置'}
+          阶段: {stageLabels[stage] || "未设置"}
         </p>
       </div>
       <div className="flex items-center gap-3">
