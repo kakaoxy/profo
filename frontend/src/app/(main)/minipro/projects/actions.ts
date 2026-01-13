@@ -2,11 +2,12 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
-import type { 
-  MiniProjectUpdate, 
-  MiniProjectCreate, 
-  ConsultantCreate, 
-  ConsultantUpdate
+import type {
+  MiniProjectUpdate,
+  MiniProjectCreate,
+  ConsultantCreate,
+  ConsultantUpdate,
+  MiniProjectPhoto
 } from "./types";
 
 // --- Projects ---
@@ -135,20 +136,26 @@ export async function getMiniPhotosAction(id: string) {
   return { success: true, data };
 }
 
-export async function addMiniPhotoAction(projectId: string, imageUrl: string, renovationStage = "other") {
+export async function addMiniPhotoAction(
+  projectId: string,
+  imageUrl: string,
+  renovationStage = 'other',
+  originPhotoId?: string
+) {
   const client = await fetchClient();
-  const { data, error } = await client.POST("/api/v1/admin/mini/projects/{id}/photos", {
+  const { data, error } = await client.POST('/api/v1/admin/mini/projects/{id}/photos', {
     params: { path: { id: projectId } },
     body: {
-      image_url: imageUrl,
+      image_url: imageUrl || null,
       renovation_stage: renovationStage,
       sort_order: 0,
+      origin_photo_id: originPhotoId || null,
     },
   });
 
   if (error) {
-    console.error("Failed to add photo:", error);
-    return { success: false, error: "添加照片失败" };
+    console.error('Failed to add photo:', error);
+    return { success: false, error: '添加照片失败' };
   }
 
   return { success: true, data };
@@ -166,6 +173,26 @@ export async function deleteMiniPhotoAction(photoId: string) {
   }
 
   return { success: true, data };
+}
+
+export async function batchAddPhotosAction(projectId: string, photoIds: string[]) {
+  const results: MiniProjectPhoto[] = [];
+  const errors: string[] = [];
+
+  for (const photoId of photoIds) {
+    const result = await addMiniPhotoAction(projectId, '', 'other', photoId);
+    if (result.success && result.data) {
+      results.push(result.data as MiniProjectPhoto);
+    } else {
+      errors.push(`ID: ${photoId}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: results.length > 0, data: results, error: `部分照片添加失败: ${errors.join(', ')}` };
+  }
+
+  return { success: true, data: results };
 }
 
 // --- Consultants ---
