@@ -11,6 +11,9 @@ from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
 from settings import settings
 from db import init_db
+from common import limiter
+
+
 # ==================== 路由注册 ====================
 from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads, mini_admin
 
@@ -23,6 +26,10 @@ async def lifespan(app: FastAPI):
     """
     # 启动时执行
     print("Starting Profo Real Estate Data Center...")
+    
+    # 初始化速率限制器
+    app.state.limiter = limiter
+    print("速率限制器已初始化")
     
     # 验证JWT配置
     try:
@@ -125,6 +132,7 @@ from error_handlers import (
     http_exception_handler,
     general_exception_handler
 )
+from slowapi.errors import RateLimitExceeded
 
 # 注册异常处理器
 app.add_exception_handler(ProfoException, profo_exception_handler)
@@ -132,6 +140,26 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
+
+
+# ==================== 速率限制响应 ====================
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """处理速率限制异常"""
+    return JSONResponse(
+        status_code=429,
+        content={
+            "success": False,
+            "error": {
+                "code": "RATE_LIMIT_EXCEEDED",
+                "message": "请求过于频繁，请稍后重试",
+                "details": {
+                    "retry_after": exc.retry_after
+                }
+            }
+        },
+        headers={"Retry-After": str(exc.retry_after)}
+    )
 
 
 # ==================== 启动命令 ====================

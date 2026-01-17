@@ -1,9 +1,11 @@
 """
 认证相关路由
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.concurrency import run_in_threadpool
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -18,18 +20,28 @@ from schemas.user import (
 )
 from dependencies.auth import get_current_active_user
 from services.auth_service import AuthService
+from common import limiter
 
 
 router = APIRouter()
 
 
+# ==================== 速率限制依赖 ====================
+def get_rate_key(request: Request, username: str = ""):
+    """获取速率限制的 key，基于 IP + 用户名"""
+    return f"{get_remote_address(request)}:{username}"
+
+
 @router.post("/token", response_model=TokenResponse)
+@limiter.limit("5/minute")  # 登录限制：5次/分钟
 def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     """
     OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
+    速率限制：5次/分钟
     """
     user = AuthService.authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -58,12 +70,15 @@ def login_for_access_token(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")  # 登录限制：5次/分钟
 def login(
+    request: Request,
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
     """
     用户名密码登录 (Sync - Run in threadpool by FastAPI)
+    速率限制：5次/分钟
     """
     user = AuthService.authenticate_user(db, login_data.username, login_data.password)
     if not user:
@@ -141,12 +156,15 @@ async def wechat_callback(
 
 
 @router.post("/wechat/login", response_model=TokenResponse)
+@limiter.limit("5/minute")  # 微信登录限制：5次/分钟
 async def wechat_app_login(
+    request: Request,
     login_data: WechatLoginRequest,
     db: Session = Depends(get_db)
 ):
     """
     微信小程序登录 (Async for HTTP, run_in_threadpool for DB)
+    速率限制：5次/分钟
     """
     # 1. Async: 获取 Session
     auth_data = await AuthService.fetch_wechat_miniapp_session(login_data.code)
