@@ -1,10 +1,14 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
+from sqlalchemy.orm import Session
 import os
 import shutil
 import uuid
 import filetype
 from datetime import datetime
 from settings import settings
+from db import get_db
+from models.user import User
+from dependencies.auth import get_current_operator_user
 
 router = APIRouter()
 
@@ -13,7 +17,11 @@ if not os.path.exists(settings.upload_dir):
     os.makedirs(settings.upload_dir)
 
 @router.post("/upload", summary="上传文件")
-def upload_file(file: UploadFile = File(...)):
+def upload_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_operator_user)
+):
     """
     Handle file upload (Sync - Run in threadpool by FastAPI)
     Optimized to read only first 2KB for MIME check.
