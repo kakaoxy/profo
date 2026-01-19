@@ -31,29 +31,31 @@ ProFo/
 
 ## Where to Look
 
-| Task | Location |
-|------|----------|
-| Add API endpoint | `backend/routers/` + `backend/services/` |
-| Business logic | `backend/services/` (facade: `project_service.py`) |
+| Task              | Location                                                 |
+| ----------------- | -------------------------------------------------------- |
+| Add API endpoint  | `backend/routers/` + `backend/services/`                 |
+| Business logic    | `backend/services/` (facade: `project_service.py`)       |
 | Frontend API call | `frontend/src/lib/` (api-server, api-client, api-upload) |
-| Add page | `frontend/src/app/(main)/` or `frontend/src/app/login/` |
-| shadcn component | `frontend/src/components/ui/` + extend |
-| Tests | `backend/tests/` (pytest, in-memory SQLite) |
-| Config | `backend/settings.py`, `frontend/src/lib/config.ts` |
+| Add page          | `frontend/src/app/(main)/` or `frontend/src/app/login/`  |
+| shadcn component  | `frontend/src/components/ui/` + extend                   |
+| Tests             | `backend/tests/` (pytest, in-memory SQLite)              |
+| Config            | `backend/settings.py`, `frontend/src/lib/config.ts`      |
 
 ## Conventions (Deviations Only)
 
 ### Python (backend/)
+
 - **Import order**: stdlib → third-party → local (relative paths first)
 - **Quotes**: `"` double quotes only
 - **Naming**: snake_case vars/funcs, PascalCase classes, UPPER_SNAKE_CASE constants
 - **Routes**: kebab-case (`/api/v1/user-projects`)
-- **File size**: ≤200 lines, split at 150
+- **File size**: ≤250 lines, split at 200
 - **Type hints**: Mandatory params/returns, `Optional[T]` not `Union[T, None]`
 - **Exceptions**: `ProfoException` (business), `HTTPException` (HTTP)
 
 ### TypeScript (frontend/)
-- **Import order**: React → third-party → shadcn → @/* → relative
+
+- **Import order**: React → third-party → shadcn → @/\* → relative
 - **Quotes**: `'` single quotes only
 - **Semicolons**: Required
 - **Naming**: PascalCase components, camelCase vars/funcs
@@ -64,12 +66,13 @@ ProFo/
 ## Anti-Patterns (THIS PROJECT)
 
 **NEVER:**
+
 - TODO/FIXME/HACK comments in code
 - `any`, `@ts-ignore`, `@ts-expect-error`
 - Empty catch blocks `catch(e) {}`
 - Single quotes in Python, double quotes in TypeScript
 - Missing type annotations on functions
-- Files exceeding limits (200/150 lines)
+- Files exceeding limits (250/200 lines)
 
 ## Commands
 
