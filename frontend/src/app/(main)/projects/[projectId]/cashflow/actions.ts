@@ -2,6 +2,7 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
+import { extractApiData } from "@/lib/api-helpers";
 
 // ==========================================
 // 1. 手动定义类型 (与后端 Pydantic Schema 保持一致)
@@ -55,7 +56,7 @@ export async function getProjectCashFlowAction(projectId: string) {
     "/api/v1/projects/{project_id}/cashflow",
     {
       params: { path: { project_id: projectId } },
-    }
+    },
   );
 
   if (error) {
@@ -63,13 +64,8 @@ export async function getProjectCashFlowAction(projectId: string) {
     return null;
   }
 
-  // 安全断言：将返回数据断言为我们在上面定义的新结构
-  const safeData = data as unknown as { data: CashFlowData } | CashFlowData;
-
-  if ("data" in safeData && "records" in safeData.data) {
-    return safeData.data;
-  }
-  return safeData as CashFlowData;
+  const cashFlowData = extractApiData<CashFlowData>(data);
+  return cashFlowData ?? null;
 }
 
 // ==========================================
@@ -78,7 +74,7 @@ export async function getProjectCashFlowAction(projectId: string) {
 
 export async function createCashFlowRecordAction(
   projectId: string,
-  payload: CashFlowCreatePayload
+  payload: CashFlowCreatePayload,
 ) {
   const client = await fetchClient();
 
@@ -97,7 +93,7 @@ export async function createCashFlowRecordAction(
       params: { path: { project_id: projectId } },
       // @ts-expect-error generated types mismatch due to manual schema update
       body: requestBody,
-    }
+    },
   );
 
   if (error) {
@@ -115,7 +111,7 @@ export async function createCashFlowRecordAction(
 
 export async function deleteCashFlowRecordAction(
   projectId: string,
-  recordId: string
+  recordId: string,
 ) {
   const client = await fetchClient();
   const { error } = await client.DELETE(
@@ -124,7 +120,7 @@ export async function deleteCashFlowRecordAction(
       params: {
         path: { project_id: projectId, record_id: recordId },
       },
-    }
+    },
   );
 
   if (error) {

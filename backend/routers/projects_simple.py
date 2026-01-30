@@ -1,13 +1,16 @@
 """
-项目相关API路由（简化版本，暂时移除response_model）
+项目相关API路由（简化版本）
+使用统一的 ApiResponse 响应包装器
 """
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
 from services import ProjectService
 from dependencies.projects import get_project_service
 from schemas.project import (
-    ProjectCreate, ProjectUpdate, StatusUpdate, ProjectCompleteRequest
+    ProjectCreate, ProjectUpdate, StatusUpdate, ProjectCompleteRequest,
+    ProjectResponse, ProjectListResponse, ProjectStatsResponse, ProjectReportResponse
 )
+from schemas.response import ApiResponse
 from .projects_renovation import router as renovation_router
 from .projects_sales import router as sales_router
 
@@ -20,17 +23,17 @@ router.include_router(sales_router, tags=["sales"])
 
 # ========== 项目基础操作 ==========
 
-@router.post("")
+@router.post("", response_model=ApiResponse[ProjectResponse])
 def create_project(
     project_data: ProjectCreate,
     service: ProjectService = Depends(get_project_service)
 ):
     """创建项目 (Sync)"""
     project = service.create_project(project_data)
-    return {"code": 200, "msg": "success", "data": project}
+    return ApiResponse.success(data=project)
 
 
-@router.get("")
+@router.get("", response_model=ApiResponse[Dict[str, Any]])
 def get_projects(
     status: Optional[str] = Query(None, description="项目状态筛选"),
     community_name: Optional[str] = Query(None, description="小区名称筛选"),
@@ -45,19 +48,19 @@ def get_projects(
         page=page,
         page_size=page_size
     )
-    return {"code": 200, "msg": "success", "data": result}
+    return ApiResponse.success(data=result)
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=ApiResponse[ProjectStatsResponse])
 def get_project_stats(
     service: ProjectService = Depends(get_project_service)
 ):
     """获取项目统计 (Sync)"""
     stats = service.get_project_stats()
-    return {"code": 200, "msg": "success", "data": stats}
+    return ApiResponse.success(data=stats)
 
 
-@router.get("/{project_id}")
+@router.get("/{project_id}", response_model=ApiResponse[ProjectResponse])
 def get_project(
     project_id: str = Path(..., description="项目ID"),
     full: bool = Query(False, description="是否获取完整详情(包含大字段)"),
@@ -65,10 +68,10 @@ def get_project(
 ):
     """获取项目详情 (Sync)"""
     project = service.get_project(project_id, include_all=full)
-    return {"code": 200, "msg": "success", "data": project}
+    return ApiResponse.success(data=project)
 
 
-@router.put("/{project_id}")
+@router.put("/{project_id}", response_model=ApiResponse[ProjectResponse])
 def update_project(
     project_id: str = Path(..., description="项目ID"),
     update_data: ProjectUpdate = ...,
@@ -76,22 +79,22 @@ def update_project(
 ):
     """更新项目信息 (Sync)"""
     project = service.update_project(project_id, update_data)
-    return {"code": 200, "msg": "success", "data": project}
+    return ApiResponse.success(data=project)
 
 
-@router.delete("/{project_id}")
+@router.delete("/{project_id}", response_model=ApiResponse[None])
 def delete_project(
     project_id: str = Path(..., description="项目ID"),
     service: ProjectService = Depends(get_project_service)
 ):
     """删除项目 (Sync)"""
     service.delete_project(project_id)
-    return {"code": 200, "msg": "success", "data": None}
+    return ApiResponse.success(data=None)
 
 
 # ========== 项目状态流转 ==========
 
-@router.put("/{project_id}/status")
+@router.put("/{project_id}/status", response_model=ApiResponse[ProjectResponse])
 def update_project_status(
     project_id: str = Path(..., description="项目ID"),
     status_update: StatusUpdate = ...,
@@ -99,10 +102,10 @@ def update_project_status(
 ):
     """更新项目状态 (Sync)"""
     project = service.update_status(project_id, status_update)
-    return {"code": 200, "msg": "success", "data": project}
+    return ApiResponse.success(data=project)
 
 
-@router.post("/{project_id}/complete")
+@router.post("/{project_id}/complete", response_model=ApiResponse[ProjectResponse])
 def complete_project(
     project_id: str = Path(..., description="项目ID"),
     complete_data: ProjectCompleteRequest = ...,
@@ -110,24 +113,24 @@ def complete_project(
 ):
     """完成项目 (Sync)"""
     project = service.complete_project(project_id, complete_data)
-    return {"code": 200, "msg": "success", "data": project}
+    return ApiResponse.success(data=project)
 
 
 # ========== 项目报告 ==========
 
-@router.get("/{project_id}/report")
+@router.get("/{project_id}/report", response_model=ApiResponse[ProjectReportResponse])
 def get_project_report(
     project_id: str = Path(..., description="项目ID"),
     service: ProjectService = Depends(get_project_service)
 ):
     """获取项目报告 (Sync)"""
     report = service.get_project_report(project_id)
-    return {"code": 200, "msg": "success", "data": report}
+    return ApiResponse.success(data=report)
 
 
 # ========== 数据导出 ==========
 
-@router.get("/export")
+@router.get("/export", response_model=ApiResponse[Dict[str, Any]])
 def export_projects(
     status: Optional[str] = Query(None, description="项目状态筛选"),
     community_name: Optional[str] = Query(None, description="小区名称筛选"),
@@ -141,11 +144,7 @@ def export_projects(
         page_size=10000
     )
 
-    return {
-        "code": 200,
-        "msg": "Excel导出功能待实现",
-        "data": {
-            "total": result["total"],
-            "message": "请实现Excel导出功能"
-        }
-    }
+    return ApiResponse.success(data={
+        "total": result["total"],
+        "message": "请实现Excel导出功能"
+    })

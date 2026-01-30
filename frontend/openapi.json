@@ -16,9 +16,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           }
@@ -35,9 +33,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           }
@@ -46,9 +42,7 @@
     },
     "/api/v1/upload/csv": {
       "post": {
-        "tags": [
-          "upload"
-        ],
+        "tags": ["upload"],
         "summary": "Upload Csv",
         "description": "上传并处理 CSV 文件\n注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环",
         "operationId": "upload_csv_api_v1_upload_csv_post",
@@ -93,9 +87,7 @@
     },
     "/api/v1/upload/download/{filename}": {
       "get": {
-        "tags": [
-          "upload"
-        ],
+        "tags": ["upload"],
         "summary": "Download Failed Records",
         "description": "下载失败记录文件\n注意：使用 def 避免文件操作阻塞",
         "operationId": "download_failed_records_api_v1_upload_download__filename__get",
@@ -120,9 +112,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -141,9 +131,7 @@
     },
     "/api/v1/push": {
       "post": {
-        "tags": [
-          "push"
-        ],
+        "tags": ["push"],
         "summary": "Push Properties",
         "description": "JSON 数据推送接口\n\n接收 JSON 数组，批量导入房源数据\n\nArgs:\n    properties: 房源数据列表（原始字典）\n    db: 数据库会话\n\nReturns:\n    PushResult: 推送结果统计\n\nRaises:\n    HTTPException: 数据验证失败或处理失败",
         "operationId": "push_properties_api_v1_push_post",
@@ -188,9 +176,7 @@
     },
     "/api/v1/properties/communities/search": {
       "get": {
-        "tags": [
-          "properties"
-        ],
+        "tags": ["properties"],
         "summary": "Search Communities",
         "description": "Search communities by name",
         "operationId": "search_communities_api_v1_properties_communities_search_get",
@@ -211,9 +197,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -232,9 +216,7 @@
     },
     "/api/v1/properties": {
       "get": {
-        "tags": [
-          "properties"
-        ],
+        "tags": ["properties"],
         "summary": "Get Properties",
         "description": "查询房源列表\n\n支持多维度筛选、排序和分页",
         "operationId": "get_properties_api_v1_properties_get",
@@ -543,9 +525,7 @@
     },
     "/api/v1/properties/export": {
       "get": {
-        "tags": [
-          "properties"
-        ],
+        "tags": ["properties"],
         "summary": "Export Properties",
         "description": "导出房源数据为 CSV 文件\n\n使用与查询接口相同的筛选和排序参数，但移除分页限制，导出所有匹配的记录",
         "operationId": "export_properties_api_v1_properties_export_get",
@@ -806,9 +786,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -827,9 +805,7 @@
     },
     "/api/v1/properties/{id}": {
       "get": {
-        "tags": [
-          "properties"
-        ],
+        "tags": ["properties"],
         "summary": "Get Property Detail",
         "description": "获取房源详情",
         "operationId": "get_property_detail_api_v1_properties__id__get",
@@ -875,9 +851,7 @@
     },
     "/api/v1/admin/communities": {
       "get": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Get Communities",
         "description": "查询小区列表",
         "operationId": "get_communities_api_v1_admin_communities_get",
@@ -939,7 +913,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommunityListResponse"
+                  "$ref": "#/components/schemas/ApiResponse_CommunityListResponse_"
                 }
               }
             }
@@ -959,9 +933,7 @@
     },
     "/api/v1/admin/dictionaries": {
       "get": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Get Dictionaries",
         "description": "返回行政区或商圈的去重列表",
         "operationId": "get_dictionaries_api_v1_admin_dictionaries_get",
@@ -1020,9 +992,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -1041,9 +1011,7 @@
     },
     "/api/v1/admin/communities/merge": {
       "post": {
-        "tags": [
-          "admin"
-        ],
+        "tags": ["admin"],
         "summary": "Merge Communities",
         "description": "合并小区操作",
         "operationId": "merge_communities_api_v1_admin_communities_merge_post",
@@ -1063,7 +1031,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommunityMergeResponse"
+                  "$ref": "#/components/schemas/ApiResponse_CommunityMergeResponse_"
                 }
               }
             }
@@ -1088,11 +1056,7 @@
     },
     "/api/v1/projects/{project_id}/renovation": {
       "put": {
-        "tags": [
-          "projects",
-          "projects",
-          "renovation"
-        ],
+        "tags": ["projects", "projects", "renovation"],
         "summary": "Update Renovation Stage",
         "description": "更新改造阶段 (Sync)",
         "operationId": "update_renovation_stage_api_v1_projects__project_id__renovation_put",
@@ -1125,7 +1089,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -1145,11 +1109,7 @@
     },
     "/api/v1/projects/{project_id}/renovation/photos": {
       "post": {
-        "tags": [
-          "projects",
-          "projects",
-          "renovation"
-        ],
+        "tags": ["projects", "projects", "renovation"],
         "summary": "Upload Renovation Photo",
         "description": "上传改造阶段照片 (Sync)",
         "operationId": "upload_renovation_photo_api_v1_projects__project_id__renovation_photos_post",
@@ -1230,7 +1190,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_RenovationPhotoResponse_"
                 }
               }
             }
@@ -1248,11 +1208,7 @@
         }
       },
       "get": {
-        "tags": [
-          "projects",
-          "projects",
-          "renovation"
-        ],
+        "tags": ["projects", "projects", "renovation"],
         "summary": "Get Renovation Photos",
         "description": "获取改造阶段照片 (Sync)",
         "operationId": "get_renovation_photos_api_v1_projects__project_id__renovation_photos_get",
@@ -1293,7 +1249,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_List_Dict_str__Any___"
                 }
               }
             }
@@ -1313,11 +1269,7 @@
     },
     "/api/v1/projects/{project_id}/renovation/photos/{photo_id}": {
       "delete": {
-        "tags": [
-          "projects",
-          "projects",
-          "renovation"
-        ],
+        "tags": ["projects", "projects", "renovation"],
         "summary": "Delete Renovation Photo",
         "description": "删除改造阶段照片 (Sync)",
         "operationId": "delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete",
@@ -1351,7 +1303,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_NoneType_"
                 }
               }
             }
@@ -1371,11 +1323,7 @@
     },
     "/api/v1/projects/{project_id}/selling/roles": {
       "put": {
-        "tags": [
-          "projects",
-          "projects",
-          "sales"
-        ],
+        "tags": ["projects", "projects", "sales"],
         "summary": "Update Sales Roles",
         "description": "更新销售角色 (Sync)",
         "operationId": "update_sales_roles_api_v1_projects__project_id__selling_roles_put",
@@ -1408,7 +1356,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -1428,11 +1376,7 @@
     },
     "/api/v1/projects/{project_id}/selling/viewings": {
       "post": {
-        "tags": [
-          "projects",
-          "projects",
-          "sales"
-        ],
+        "tags": ["projects", "projects", "sales"],
         "summary": "Create Viewing Record",
         "description": "创建带看记录 (Sync)",
         "operationId": "create_viewing_record_api_v1_projects__project_id__selling_viewings_post",
@@ -1465,7 +1409,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_SalesRecordResponse_"
                 }
               }
             }
@@ -1485,11 +1429,7 @@
     },
     "/api/v1/projects/{project_id}/selling/offers": {
       "post": {
-        "tags": [
-          "projects",
-          "projects",
-          "sales"
-        ],
+        "tags": ["projects", "projects", "sales"],
         "summary": "Create Offer Record",
         "description": "创建出价记录 (Sync)",
         "operationId": "create_offer_record_api_v1_projects__project_id__selling_offers_post",
@@ -1522,7 +1462,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_SalesRecordResponse_"
                 }
               }
             }
@@ -1542,11 +1482,7 @@
     },
     "/api/v1/projects/{project_id}/selling/negotiations": {
       "post": {
-        "tags": [
-          "projects",
-          "projects",
-          "sales"
-        ],
+        "tags": ["projects", "projects", "sales"],
         "summary": "Create Negotiation Record",
         "description": "创建面谈记录 (Sync)",
         "operationId": "create_negotiation_record_api_v1_projects__project_id__selling_negotiations_post",
@@ -1579,7 +1515,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_SalesRecordResponse_"
                 }
               }
             }
@@ -1599,11 +1535,7 @@
     },
     "/api/v1/projects/{project_id}/selling/records": {
       "get": {
-        "tags": [
-          "projects",
-          "projects",
-          "sales"
-        ],
+        "tags": ["projects", "projects", "sales"],
         "summary": "Get Sales Records",
         "description": "获取销售记录 (Sync)",
         "operationId": "get_sales_records_api_v1_projects__project_id__selling_records_get",
@@ -1644,7 +1576,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_List_Dict_str__Any___"
                 }
               }
             }
@@ -1664,11 +1596,7 @@
     },
     "/api/v1/projects/{project_id}/selling/records/{record_id}": {
       "delete": {
-        "tags": [
-          "projects",
-          "projects",
-          "sales"
-        ],
+        "tags": ["projects", "projects", "sales"],
         "summary": "Delete Sales Record",
         "description": "删除销售记录 (Sync)",
         "operationId": "delete_sales_record_api_v1_projects__project_id__selling_records__record_id__delete",
@@ -1702,7 +1630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_NoneType_"
                 }
               }
             }
@@ -1722,10 +1650,7 @@
     },
     "/api/v1/projects": {
       "post": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Create Project",
         "description": "创建项目 (Sync)",
         "operationId": "create_project_api_v1_projects_post",
@@ -1745,7 +1670,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -1763,10 +1688,7 @@
         }
       },
       "get": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Get Projects",
         "description": "获取项目列表 (Sync)",
         "operationId": "get_projects_api_v1_projects_get",
@@ -1841,7 +1763,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -1861,10 +1783,7 @@
     },
     "/api/v1/projects/stats": {
       "get": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Get Project Stats",
         "description": "获取项目统计 (Sync)",
         "operationId": "get_project_stats_api_v1_projects_stats_get",
@@ -1874,7 +1793,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectStatsResponse_"
                 }
               }
             }
@@ -1884,10 +1803,7 @@
     },
     "/api/v1/projects/{project_id}": {
       "get": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Get Project",
         "description": "获取项目详情 (Sync)",
         "operationId": "get_project_api_v1_projects__project_id__get",
@@ -1922,7 +1838,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -1940,10 +1856,7 @@
         }
       },
       "put": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Update Project",
         "description": "更新项目信息 (Sync)",
         "operationId": "update_project_api_v1_projects__project_id__put",
@@ -1976,7 +1889,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -1994,10 +1907,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Delete Project",
         "description": "删除项目 (Sync)",
         "operationId": "delete_project_api_v1_projects__project_id__delete",
@@ -2020,7 +1930,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_NoneType_"
                 }
               }
             }
@@ -2040,10 +1950,7 @@
     },
     "/api/v1/projects/{project_id}/status": {
       "put": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Update Project Status",
         "description": "更新项目状态 (Sync)",
         "operationId": "update_project_status_api_v1_projects__project_id__status_put",
@@ -2076,7 +1983,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -2096,10 +2003,7 @@
     },
     "/api/v1/projects/{project_id}/complete": {
       "post": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Complete Project",
         "description": "完成项目 (Sync)",
         "operationId": "complete_project_api_v1_projects__project_id__complete_post",
@@ -2132,7 +2036,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectResponse_"
                 }
               }
             }
@@ -2152,10 +2056,7 @@
     },
     "/api/v1/projects/{project_id}/report": {
       "get": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Get Project Report",
         "description": "获取项目报告 (Sync)",
         "operationId": "get_project_report_api_v1_projects__project_id__report_get",
@@ -2178,7 +2079,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_ProjectReportResponse_"
                 }
               }
             }
@@ -2198,10 +2099,7 @@
     },
     "/api/v1/projects/export": {
       "get": {
-        "tags": [
-          "projects",
-          "projects"
-        ],
+        "tags": ["projects", "projects"],
         "summary": "Export Projects",
         "description": "导出项目数据 (Sync)",
         "operationId": "export_projects_api_v1_projects_export_get",
@@ -2249,7 +2147,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -2269,10 +2167,7 @@
     },
     "/api/v1/projects/{project_id}/cashflow": {
       "post": {
-        "tags": [
-          "cashflow",
-          "cashflow"
-        ],
+        "tags": ["cashflow", "cashflow"],
         "summary": "Create Cashflow Record",
         "description": "创建现金流记录",
         "operationId": "create_cashflow_record_api_v1_projects__project_id__cashflow_post",
@@ -2305,7 +2200,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_CashFlowRecordResponse_"
                 }
               }
             }
@@ -2323,10 +2218,7 @@
         }
       },
       "get": {
-        "tags": [
-          "cashflow",
-          "cashflow"
-        ],
+        "tags": ["cashflow", "cashflow"],
         "summary": "Get Project Cashflow",
         "description": "获取项目现金流明细和汇总",
         "operationId": "get_project_cashflow_api_v1_projects__project_id__cashflow_get",
@@ -2349,7 +2241,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_CashFlowResponse_"
                 }
               }
             }
@@ -2369,10 +2261,7 @@
     },
     "/api/v1/projects/{project_id}/cashflow/{record_id}": {
       "delete": {
-        "tags": [
-          "cashflow",
-          "cashflow"
-        ],
+        "tags": ["cashflow", "cashflow"],
         "summary": "Delete Cashflow Record",
         "description": "删除现金流记录",
         "operationId": "delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete",
@@ -2406,7 +2295,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_NoneType_"
                 }
               }
             }
@@ -2426,9 +2315,7 @@
     },
     "/api/v1/files/upload": {
       "post": {
-        "tags": [
-          "files"
-        ],
+        "tags": ["files"],
         "summary": "上传文件",
         "description": "Handle file upload (Sync - Run in threadpool by FastAPI)\nOptimized to read only first 2KB for MIME check.",
         "operationId": "upload_file_api_v1_files_upload_post",
@@ -2448,7 +2335,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -2463,16 +2350,19 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/auth/token": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login For Access Token",
-        "description": "OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)",
+        "description": "OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)\n速率限制：5次/分钟",
         "operationId": "login_for_access_token_api_v1_auth_token_post",
         "requestBody": {
           "content": {
@@ -2510,11 +2400,9 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login",
-        "description": "用户名密码登录 (Sync - Run in threadpool by FastAPI)",
+        "description": "用户名密码登录 (Sync - Run in threadpool by FastAPI)\n速率限制：5次/分钟",
         "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
@@ -2552,9 +2440,7 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Refresh Access Token",
         "description": "刷新令牌 (Sync - Run in threadpool by FastAPI)",
         "operationId": "refresh_access_token_api_v1_auth_refresh_post",
@@ -2594,9 +2480,7 @@
     },
     "/api/v1/auth/wechat/authorize": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Wechat Authorize",
         "description": "生成微信登录授权URL",
         "operationId": "wechat_authorize_api_v1_auth_wechat_authorize_get",
@@ -2624,7 +2508,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -2644,9 +2528,7 @@
     },
     "/api/v1/auth/wechat/callback": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Wechat Callback",
         "description": "微信授权回调 (Async for HTTP, run_in_threadpool for DB)",
         "operationId": "wechat_callback_api_v1_auth_wechat_callback_get",
@@ -2675,9 +2557,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -2696,11 +2576,9 @@
     },
     "/api/v1/auth/wechat/login": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Wechat App Login",
-        "description": "微信小程序登录 (Async for HTTP, run_in_threadpool for DB)",
+        "description": "微信小程序登录 (Async for HTTP, run_in_threadpool for DB)\n速率限制：5次/分钟",
         "operationId": "wechat_app_login_api_v1_auth_wechat_login_post",
         "requestBody": {
           "content": {
@@ -2738,9 +2616,7 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Get Current User Info",
         "description": "获取当前用户信息",
         "operationId": "get_current_user_info_api_v1_auth_me_get",
@@ -2765,9 +2641,7 @@
     },
     "/api/v1/users/users": {
       "get": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Get Users",
         "description": "获取用户列表，支持搜索和筛选",
         "operationId": "get_users_api_v1_users_users_get",
@@ -2901,9 +2775,7 @@
         }
       },
       "post": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Create User",
         "description": "创建新用户",
         "operationId": "create_user_api_v1_users_users_post",
@@ -2948,9 +2820,7 @@
     },
     "/api/v1/users/me": {
       "get": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Get Current User",
         "description": "获取当前登录用户信息",
         "operationId": "get_current_user_api_v1_users_me_get",
@@ -2975,9 +2845,7 @@
     },
     "/api/v1/users/users/{user_id}": {
       "get": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Get User",
         "description": "获取指定用户信息",
         "operationId": "get_user_api_v1_users_users__user_id__get",
@@ -3021,9 +2889,7 @@
         }
       },
       "put": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Update User",
         "description": "更新用户信息",
         "operationId": "update_user_api_v1_users_users__user_id__put",
@@ -3077,9 +2943,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Delete User",
         "description": "删除用户",
         "operationId": "delete_user_api_v1_users_users__user_id__delete",
@@ -3105,7 +2969,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -3125,9 +2989,7 @@
     },
     "/api/v1/users/users/{user_id}/reset-password": {
       "put": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Reset User Password",
         "description": "重置用户密码",
         "operationId": "reset_user_password_api_v1_users_users__user_id__reset_password_put",
@@ -3163,7 +3025,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -3183,9 +3045,7 @@
     },
     "/api/v1/users/users/change-password": {
       "post": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Change Password",
         "description": "修改当前用户密码",
         "operationId": "change_password_api_v1_users_users_change_password_post",
@@ -3205,7 +3065,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -3230,9 +3090,7 @@
     },
     "/api/v1/users/init-data": {
       "post": {
-        "tags": [
-          "users"
-        ],
+        "tags": ["users"],
         "summary": "Init System Data",
         "description": "初始化系统数据，包括默认角色和管理员用户\n注意：使用 def 避免 sync DB 阻塞",
         "operationId": "init_system_data_api_v1_users_init_data_post",
@@ -3242,7 +3100,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse_Dict_str__Any__"
                 }
               }
             }
@@ -3252,9 +3110,7 @@
     },
     "/api/v1/roles": {
       "get": {
-        "tags": [
-          "roles"
-        ],
+        "tags": ["roles"],
         "summary": "Get Roles",
         "description": "获取角色列表，支持搜索和筛选",
         "operationId": "get_roles_api_v1_roles_get",
@@ -3370,9 +3226,7 @@
         }
       },
       "post": {
-        "tags": [
-          "roles"
-        ],
+        "tags": ["roles"],
         "summary": "Create Role",
         "description": "创建新角色",
         "operationId": "create_role_api_v1_roles_post",
@@ -3417,9 +3271,7 @@
     },
     "/api/v1/roles/{role_id}": {
       "get": {
-        "tags": [
-          "roles"
-        ],
+        "tags": ["roles"],
         "summary": "Get Role",
         "description": "获取指定角色信息",
         "operationId": "get_role_api_v1_roles__role_id__get",
@@ -3463,9 +3315,7 @@
         }
       },
       "put": {
-        "tags": [
-          "roles"
-        ],
+        "tags": ["roles"],
         "summary": "Update Role",
         "description": "更新角色信息",
         "operationId": "update_role_api_v1_roles__role_id__put",
@@ -3519,9 +3369,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "roles"
-        ],
+        "tags": ["roles"],
         "summary": "Delete Role",
         "description": "删除角色",
         "operationId": "delete_role_api_v1_roles__role_id__delete",
@@ -3546,9 +3394,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -3567,11 +3413,14 @@
     },
     "/api/v1/monitor/communities/{community_id}/sentiment": {
       "get": {
-        "tags": [
-          "monitor"
-        ],
+        "tags": ["monitor"],
         "summary": "Get Sentiment",
         "operationId": "get_sentiment_api_v1_monitor_communities__community_id__sentiment_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "community_id",
@@ -3589,7 +3438,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MarketSentimentResponse"
+                  "$ref": "#/components/schemas/ApiResponse_MarketSentimentResponse_"
                 }
               }
             }
@@ -3609,11 +3458,14 @@
     },
     "/api/v1/monitor/communities/{community_id}/trends": {
       "get": {
-        "tags": [
-          "monitor"
-        ],
+        "tags": ["monitor"],
         "summary": "Get Trends",
         "operationId": "get_trends_api_v1_monitor_communities__community_id__trends_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "community_id",
@@ -3643,11 +3495,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TrendData"
-                  },
-                  "title": "Response Get Trends Api V1 Monitor Communities  Community Id  Trends Get"
+                  "$ref": "#/components/schemas/ApiResponse_List_TrendData__"
                 }
               }
             }
@@ -3667,9 +3515,7 @@
     },
     "/api/v1/monitor/ai-strategy": {
       "post": {
-        "tags": [
-          "monitor"
-        ],
+        "tags": ["monitor"],
         "summary": "Generate Strategy",
         "operationId": "generate_strategy_api_v1_monitor_ai_strategy_post",
         "requestBody": {
@@ -3703,17 +3549,25 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/monitor/communities/{community_id}/radar": {
       "get": {
-        "tags": [
-          "monitor"
-        ],
+        "tags": ["monitor"],
         "summary": "Get Neighborhood Radar",
         "description": "获取周边竞品雷达数据，包含分渠道统计",
         "operationId": "get_neighborhood_radar_api_v1_monitor_communities__community_id__radar_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "community_id",
@@ -3731,7 +3585,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NeighborhoodRadarResponse"
+                  "$ref": "#/components/schemas/ApiResponse_NeighborhoodRadarResponse_"
                 }
               }
             }
@@ -3751,11 +3605,14 @@
     },
     "/api/v1/communities/{community_id}/competitors": {
       "get": {
-        "tags": [
-          "communities"
-        ],
+        "tags": ["communities"],
         "summary": "Get Competitors",
         "operationId": "get_competitors_api_v1_communities__community_id__competitors_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "community_id",
@@ -3773,11 +3630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CompetitorResponse"
-                  },
-                  "title": "Response Get Competitors Api V1 Communities  Community Id  Competitors Get"
+                  "$ref": "#/components/schemas/ApiResponse_List_CompetitorResponse__"
                 }
               }
             }
@@ -3795,11 +3648,14 @@
         }
       },
       "post": {
-        "tags": [
-          "communities"
-        ],
+        "tags": ["communities"],
         "summary": "Add Competitor",
         "operationId": "add_competitor_api_v1_communities__community_id__competitors_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "community_id",
@@ -3827,7 +3683,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -3847,11 +3703,14 @@
     },
     "/api/v1/communities/{community_id}/competitors/{competitor_id}": {
       "delete": {
-        "tags": [
-          "communities"
-        ],
+        "tags": ["communities"],
         "summary": "Remove Competitor",
         "operationId": "remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "community_id",
@@ -3878,7 +3737,7 @@
             "content": {
               "application/json": {
                 "schema": {
-
+                  "$ref": "#/components/schemas/ApiResponse"
                 }
               }
             }
@@ -3898,10 +3757,7 @@
     },
     "/api/v1/leads/": {
       "get": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Get Leads",
         "description": "获取线索列表\n使用手动序列化避免 ORM 关系遍历导致的性能问题",
         "operationId": "get_leads_api_v1_leads__get",
@@ -4061,10 +3917,7 @@
         }
       },
       "post": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Create Lead",
         "operationId": "create_lead_api_v1_leads__post",
         "security": [
@@ -4111,10 +3964,7 @@
     },
     "/api/v1/leads/{lead_id}": {
       "get": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Get Lead",
         "operationId": "get_lead_api_v1_leads__lead_id__get",
         "security": [
@@ -4160,10 +4010,7 @@
         }
       },
       "put": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Update Lead",
         "operationId": "update_lead_api_v1_leads__lead_id__put",
         "security": [
@@ -4219,10 +4066,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Delete Lead",
         "operationId": "delete_lead_api_v1_leads__lead_id__delete",
         "security": [
@@ -4263,10 +4107,7 @@
     },
     "/api/v1/leads/{lead_id}/follow-ups": {
       "post": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Add Follow Up",
         "operationId": "add_follow_up_api_v1_leads__lead_id__follow_ups_post",
         "security": [
@@ -4322,10 +4163,7 @@
         }
       },
       "get": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Get Follow Ups",
         "operationId": "get_follow_ups_api_v1_leads__lead_id__follow_ups_get",
         "security": [
@@ -4377,10 +4215,7 @@
     },
     "/api/v1/leads/{lead_id}/prices": {
       "get": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Get Price History",
         "operationId": "get_price_history_api_v1_leads__lead_id__prices_get",
         "security": [
@@ -4430,10 +4265,7 @@
         }
       },
       "post": {
-        "tags": [
-          "leads",
-          "Leads Management"
-        ],
+        "tags": ["leads", "Leads Management"],
         "summary": "Add Price Record",
         "description": "Explicitly add a price record (e.g. secondary authorization)\nThis also updates the main lead's total_price",
         "operationId": "add_price_record_api_v1_leads__lead_id__prices_post",
@@ -4492,10 +4324,7 @@
     },
     "/api/v1/admin/mini/projects": {
       "get": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "获取项目列表",
         "operationId": "list_projects_api_v1_admin_mini_projects_get",
         "security": [
@@ -4558,10 +4387,7 @@
         }
       },
       "post": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "创建独立项目",
         "operationId": "create_project_api_v1_admin_mini_projects_post",
         "security": [
@@ -4605,10 +4431,7 @@
     },
     "/api/v1/admin/mini/projects/{id}": {
       "get": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "获取项目详情",
         "operationId": "get_project_api_v1_admin_mini_projects__id__get",
         "security": [
@@ -4651,10 +4474,7 @@
         }
       },
       "put": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "更新项目信息",
         "operationId": "update_project_api_v1_admin_mini_projects__id__put",
         "security": [
@@ -4709,10 +4529,7 @@
     },
     "/api/v1/admin/mini/projects/sync": {
       "post": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "同步新项目",
         "operationId": "sync_projects_api_v1_admin_mini_projects_sync_post",
         "responses": {
@@ -4720,9 +4537,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           }
@@ -4736,10 +4551,7 @@
     },
     "/api/v1/admin/mini/projects/{id}/refresh": {
       "put": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "刷新硬字段",
         "operationId": "refresh_project_api_v1_admin_mini_projects__id__refresh_put",
         "security": [
@@ -4763,9 +4575,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -4784,10 +4594,7 @@
     },
     "/api/v1/admin/mini/projects/{id}/source-photos": {
       "get": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "获取主项目素材库",
         "operationId": "get_source_photos_api_v1_admin_mini_projects__id__source_photos_get",
         "security": [
@@ -4836,10 +4643,7 @@
     },
     "/api/v1/admin/mini/projects/{id}/photos": {
       "get": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "获取小程序项目照片",
         "operationId": "get_mini_photos_api_v1_admin_mini_projects__id__photos_get",
         "security": [
@@ -4886,10 +4690,7 @@
         }
       },
       "post": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "添加照片记录",
         "operationId": "add_mini_photo_api_v1_admin_mini_projects__id__photos_post",
         "security": [
@@ -4944,10 +4745,7 @@
     },
     "/api/v1/admin/mini/photos/{photo_id}": {
       "delete": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "删除照片记录",
         "operationId": "delete_mini_photo_api_v1_admin_mini_photos__photo_id__delete",
         "security": [
@@ -4971,9 +4769,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-
-                }
+                "schema": {}
               }
             }
           },
@@ -4992,10 +4788,7 @@
     },
     "/api/v1/admin/mini/consultants": {
       "get": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "获取顾问列表",
         "operationId": "list_consultants_api_v1_admin_mini_consultants_get",
         "security": [
@@ -5049,10 +4842,7 @@
         }
       },
       "post": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "创建顾问",
         "operationId": "create_consultant_api_v1_admin_mini_consultants_post",
         "security": [
@@ -5096,10 +4886,7 @@
     },
     "/api/v1/admin/mini/consultants/{id}": {
       "put": {
-        "tags": [
-          "mini-admin",
-          "Admin-MiniProgram"
-        ],
+        "tags": ["mini-admin", "Admin-MiniProgram"],
         "summary": "更新顾问",
         "operationId": "update_consultant_api_v1_admin_mini_consultants__id__put",
         "security": [
@@ -5167,10 +4954,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "project_id",
-          "user_context"
-        ],
+        "required": ["project_id", "user_context"],
         "title": "AIStrategyRequest"
       },
       "AIStrategyResponse": {
@@ -5191,11 +4975,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "report_markdown",
-          "risk_points",
-          "action_plan"
-        ],
+        "required": ["report_markdown", "risk_points", "action_plan"],
         "title": "AIStrategyResponse"
       },
       "AddCompetitorRequest": {
@@ -5206,10 +4986,884 @@
           }
         },
         "type": "object",
-        "required": [
-          "competitor_community_id"
-        ],
+        "required": ["competitor_community_id"],
         "title": "AddCompetitorRequest"
+      },
+      "ApiResponse": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse",
+        "description": "统一 API 响应包装器\n\n标准响应格式:\n{\n    \"code\": 200,\n    \"msg\": \"success\",\n    \"data\": { ... }\n}\n\n错误响应格式 (通过全局异常处理器):\n{\n    \"success\": false,\n    \"error\": {\n        \"code\": \"VALIDATION_ERROR\",\n        \"message\": \"请求参数验证失败\",\n        \"details\": { ... }\n    }\n}",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_CashFlowRecordResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CashFlowRecordResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[CashFlowRecordResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_CashFlowResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CashFlowResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[CashFlowResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_CommunityListResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommunityListResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[CommunityListResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_CommunityMergeResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommunityMergeResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[CommunityMergeResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_Dict_str__Any__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[Dict[str, Any]]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_List_CompetitorResponse__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CompetitorResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[List[CompetitorResponse]]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_List_Dict_str__Any___": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[List[Dict[str, Any]]]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_List_TrendData__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TrendData"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[List[TrendData]]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_MarketSentimentResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MarketSentimentResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[MarketSentimentResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_NeighborhoodRadarResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NeighborhoodRadarResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[NeighborhoodRadarResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_NoneType_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "type": "null",
+            "title": "Data",
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[NoneType]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_ProjectReportResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectReportResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[ProjectReportResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_ProjectResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[ProjectResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_ProjectStatsResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatsResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[ProjectStatsResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_RenovationPhotoResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RenovationPhotoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[RenovationPhotoResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
+      },
+      "ApiResponse_SalesRecordResponse_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码，200 表示成功",
+            "default": 200
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "状态消息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SalesRecordResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "状态消息（兼容字段）"
+          }
+        },
+        "type": "object",
+        "title": "ApiResponse[SalesRecordResponse]",
+        "examples": [
+          {
+            "code": 200,
+            "data": {
+              "id": "123",
+              "name": "test"
+            },
+            "msg": "success"
+          }
+        ]
       },
       "Body_login_for_access_token_api_v1_auth_token_post": {
         "properties": {
@@ -5264,10 +5918,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "username",
-          "password"
-        ],
+        "required": ["username", "password"],
         "title": "Body_login_for_access_token_api_v1_auth_token_post"
       },
       "Body_upload_csv_api_v1_upload_csv_post": {
@@ -5280,9 +5931,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_upload_csv_api_v1_upload_csv_post"
       },
       "Body_upload_file_api_v1_files_upload_post": {
@@ -5294,9 +5943,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_upload_file_api_v1_files_upload_post"
       },
       "CashFlowCategory": {
@@ -5367,21 +6014,136 @@
           }
         },
         "type": "object",
-        "required": [
-          "type",
-          "category",
-          "amount",
-          "date"
-        ],
+        "required": ["type", "category", "amount", "date"],
         "title": "CashFlowRecordCreate",
         "description": "创建现金流"
       },
+      "CashFlowRecordResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Date"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "related_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Stage"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "type",
+          "category",
+          "amount",
+          "date",
+          "description",
+          "related_stage",
+          "created_at"
+        ],
+        "title": "CashFlowRecordResponse"
+      },
+      "CashFlowResponse": {
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/CashFlowRecordResponse"
+            },
+            "type": "array",
+            "title": "Records"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CashFlowSummary"
+          }
+        },
+        "type": "object",
+        "required": ["records", "summary"],
+        "title": "CashFlowResponse"
+      },
+      "CashFlowSummary": {
+        "properties": {
+          "total_income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Income"
+          },
+          "total_expense": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Expense"
+          },
+          "net_cash_flow": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net Cash Flow"
+          },
+          "roi": {
+            "type": "number",
+            "title": "Roi"
+          },
+          "annualized_return": {
+            "type": "number",
+            "title": "Annualized Return",
+            "default": 0
+          },
+          "holding_days": {
+            "type": "integer",
+            "title": "Holding Days",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": ["total_income", "total_expense", "net_cash_flow", "roi"],
+        "title": "CashFlowSummary"
+      },
       "CashFlowType": {
         "type": "string",
-        "enum": [
-          "income",
-          "expense"
-        ],
+        "enum": ["income", "expense"],
         "title": "CashFlowType",
         "description": "现金流类型枚举"
       },
@@ -5400,10 +6162,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "items"
-        ],
+        "required": ["total", "items"],
         "title": "CommunityListResponse",
         "description": "小区列表响应"
       },
@@ -5425,10 +6184,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "primary_id",
-          "merge_ids"
-        ],
+        "required": ["primary_id", "merge_ids"],
         "title": "CommunityMergeRequest",
         "description": "小区合并请求"
       },
@@ -5448,11 +6204,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "success",
-          "affected_properties",
-          "message"
-        ],
+        "required": ["success", "affected_properties", "message"],
         "title": "CommunityMergeResponse",
         "description": "小区合并响应"
       },
@@ -5521,12 +6273,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "total_properties",
-          "created_at"
-        ],
+        "required": ["id", "name", "total_properties", "created_at"],
         "title": "CommunityResponse",
         "description": "小区响应模型"
       },
@@ -5627,9 +6374,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ConsultantCreate",
         "description": "创建顾问"
       },
@@ -5648,10 +6393,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total"
-        ],
+        "required": ["items", "total"],
         "title": "ConsultantListResponse",
         "description": "顾问列表响应"
       },
@@ -5890,20 +6632,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "method",
-          "content"
-        ],
+        "required": ["method", "content"],
         "title": "FollowUpCreate"
       },
       "FollowUpMethod": {
         "type": "string",
-        "enum": [
-          "phone",
-          "wechat",
-          "face",
-          "visit"
-        ],
+        "enum": ["phone", "wechat", "face", "visit"],
         "title": "FollowUpMethod",
         "description": "跟进方式枚举"
       },
@@ -6122,9 +6856,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "community_name"
-        ],
+        "required": ["community_name"],
         "title": "LeadCreate"
       },
       "LeadListItem": {
@@ -6811,10 +7543,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "username",
-          "password"
-        ],
+        "required": ["username", "password"],
         "title": "LoginRequest",
         "description": "登录请求模型"
       },
@@ -6833,10 +7562,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "floor_stats",
-          "inventory_months"
-        ],
+        "required": ["floor_stats", "inventory_months"],
         "title": "MarketSentimentResponse"
       },
       "MiniProjectCreate": {
@@ -6928,9 +7654,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "title"
-        ],
+        "required": ["title"],
         "title": "MiniProjectCreate",
         "description": "创建小程序项目 (独立)"
       },
@@ -6949,10 +7673,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total"
-        ],
+        "required": ["items", "total"],
         "title": "MiniProjectListResponse",
         "description": "项目列表响应"
       },
@@ -7546,9 +8267,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "title": "NeighborhoodRadarResponse",
         "description": "周边竞品雷达响应"
       },
@@ -7575,12 +8294,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "page_size"
-        ],
+        "required": ["items", "total", "page", "page_size"],
         "title": "PaginatedLeadListResponse",
         "description": "列表分页响应 - 使用 LeadListItem 避免性能问题"
       },
@@ -7607,12 +8321,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "page",
-          "page_size",
-          "items"
-        ],
+        "required": ["total", "page", "page_size", "items"],
         "title": "PaginatedPropertyResponse",
         "description": "分页房源列表响应"
       },
@@ -7632,10 +8341,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "current_password",
-          "new_password"
-        ],
+        "required": ["current_password", "new_password"],
         "title": "PasswordChange",
         "description": "密码修改模型"
       },
@@ -7650,9 +8356,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "password"
-        ],
+        "required": ["password"],
         "title": "PasswordResetRequest",
         "description": "密码重置请求模型"
       },
@@ -7675,9 +8379,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "price"
-        ],
+        "required": ["price"],
         "title": "PriceHistoryCreate"
       },
       "PriceHistoryResponse": {
@@ -7727,13 +8429,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "price",
-          "id",
-          "lead_id",
-          "recorded_at",
-          "created_by_id"
-        ],
+        "required": ["price", "id", "lead_id", "recorded_at", "created_by_id"],
         "title": "PriceHistoryResponse"
       },
       "ProjectCompleteRequest": {
@@ -7757,10 +8453,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "soldPrice",
-          "soldDate"
-        ],
+        "required": ["soldPrice", "soldDate"],
         "title": "ProjectCompleteRequest",
         "description": "确认成交请求"
       },
@@ -8085,21 +8778,766 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ProjectCreate",
         "description": "创建项目请求模型"
       },
+      "ProjectReportResponse": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "signing_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signing Date"
+          },
+          "renovation_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renovation Start Date"
+          },
+          "renovation_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renovation End Date"
+          },
+          "listing_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listing Date"
+          },
+          "sold_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sold Date"
+          },
+          "total_investment": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Investment"
+          },
+          "total_income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Income"
+          },
+          "net_profit": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net Profit"
+          },
+          "roi": {
+            "type": "number",
+            "title": "Roi"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "sale_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Price"
+          },
+          "list_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id",
+          "project_name",
+          "status",
+          "signing_date",
+          "renovation_start_date",
+          "renovation_end_date",
+          "listing_date",
+          "sold_date",
+          "total_investment",
+          "total_income",
+          "net_profit",
+          "roi",
+          "address",
+          "sale_price",
+          "list_price"
+        ],
+        "title": "ProjectReportResponse",
+        "description": "财务报表"
+      },
+      "ProjectResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "description": "项目名称"
+          },
+          "community_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Community Name",
+            "description": "小区名称"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address",
+            "description": "物业地址"
+          },
+          "manager": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager",
+            "description": "负责人"
+          },
+          "signing_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signing Price",
+            "description": "签约价格"
+          },
+          "signing_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signing Date",
+            "description": "签约日期"
+          },
+          "signing_period": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signing Period",
+            "description": "签约周期"
+          },
+          "planned_handover_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Handover Date",
+            "description": "计划交房时间"
+          },
+          "signing_materials": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signing Materials",
+            "description": "签约材料"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name",
+            "description": "业主姓名"
+          },
+          "owner_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Phone",
+            "description": "业主电话"
+          },
+          "owner_id_card": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 18
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id Card",
+            "description": "业主身份证号"
+          },
+          "owner_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Info",
+            "description": "业主其他信息"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "备注"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags",
+            "description": "标签"
+          },
+          "area": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area",
+            "description": "产证面积(m²)"
+          },
+          "extensionPeriod": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extensionperiod",
+            "description": "顺延期(月)"
+          },
+          "extensionRent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extensionrent",
+            "description": "顺延期租金(元/月)"
+          },
+          "costAssumption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Costassumption",
+            "description": "税费及佣金承担"
+          },
+          "otherAgreements": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otheragreements",
+            "description": "其他约定"
+          },
+          "remarks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remarks",
+            "description": "备注"
+          },
+          "total_income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Income",
+            "default": "0"
+          },
+          "total_expense": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Expense",
+            "default": "0"
+          },
+          "net_cash_flow": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Cash Flow",
+            "description": "净现金流",
+            "default": "0"
+          },
+          "roi": {
+            "type": "number",
+            "title": "Roi",
+            "default": 0
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "项目ID"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "项目状态"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "renovation_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renovation Stage"
+          },
+          "status_changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Changed At"
+          },
+          "stage_completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Completed At"
+          },
+          "listing_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listing Date"
+          },
+          "sold_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sold At"
+          },
+          "sale_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Price"
+          },
+          "list_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price"
+          },
+          "soldPrice": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soldprice"
+          },
+          "soldDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Solddate"
+          },
+          "property_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Agent"
+          },
+          "client_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Agent"
+          },
+          "first_viewer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Viewer"
+          },
+          "channelManager": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channelmanager"
+          },
+          "presenter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presenter"
+          },
+          "negotiator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negotiator"
+          },
+          "sales_records": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SalesRecordResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sales Records",
+            "description": "销售记录",
+            "default": []
+          },
+          "viewingRecords": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewingrecords"
+          },
+          "offerRecords": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offerrecords"
+          },
+          "negotiationRecords": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negotiationrecords"
+          },
+          "renovation_photos": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RenovationPhotoResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renovation Photos",
+            "description": "装修照片",
+            "default": []
+          },
+          "renovationStageDates": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renovationstagedates"
+          }
+        },
+        "type": "object",
+        "required": ["name", "id", "status", "created_at", "updated_at"],
+        "title": "ProjectResponse",
+        "description": "项目完整响应模型\n继承自 ProjectBase，所以包含了 total_income, roi 等字段"
+      },
+      "ProjectStatsResponse": {
+        "properties": {
+          "signing": {
+            "type": "integer",
+            "title": "Signing"
+          },
+          "renovating": {
+            "type": "integer",
+            "title": "Renovating"
+          },
+          "selling": {
+            "type": "integer",
+            "title": "Selling"
+          },
+          "sold": {
+            "type": "integer",
+            "title": "Sold"
+          }
+        },
+        "type": "object",
+        "required": ["signing", "renovating", "selling", "sold"],
+        "title": "ProjectStatsResponse"
+      },
       "ProjectStatus": {
         "type": "string",
-        "enum": [
-          "signing",
-          "renovating",
-          "selling",
-          "sold",
-          "deleted"
-        ],
+        "enum": ["signing", "renovating", "selling", "sold", "deleted"],
         "title": "ProjectStatus",
         "description": "项目主状态枚举"
       },
@@ -9095,21 +10533,13 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "success",
-          "failed"
-        ],
+        "required": ["total", "success", "failed"],
         "title": "PushResult",
         "description": "JSON推送结果"
       },
       "RecordType": {
         "type": "string",
-        "enum": [
-          "viewing",
-          "offer",
-          "negotiation"
-        ],
+        "enum": ["viewing", "offer", "negotiation"],
         "title": "RecordType",
         "description": "销售记录类型枚举"
       },
@@ -9122,9 +10552,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "refresh_token"
-        ],
+        "required": ["refresh_token"],
         "title": "RefreshTokenRequest",
         "description": "刷新令牌请求模型"
       },
@@ -9175,13 +10603,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "project_id",
-          "stage",
-          "url",
-          "created_at"
-        ],
+        "required": ["id", "project_id", "stage", "url", "created_at"],
         "title": "RenovationPhotoResponse",
         "description": "照片响应"
       },
@@ -9221,9 +10643,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "renovation_stage"
-        ],
+        "required": ["renovation_stage"],
         "title": "RenovationUpdate",
         "description": "更新改造阶段请求模型"
       },
@@ -9239,10 +10659,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "profit_critical_price",
-          "daily_cost"
-        ],
+        "required": ["profit_critical_price", "daily_cost"],
         "title": "RiskPoints"
       },
       "RoleCreate": {
@@ -9290,10 +10707,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "code"
-        ],
+        "required": ["name", "code"],
         "title": "RoleCreate",
         "description": "角色创建模型"
       },
@@ -9314,10 +10728,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "items"
-        ],
+        "required": ["total", "items"],
         "title": "RoleListResponse",
         "description": "角色列表响应模型"
       },
@@ -9591,12 +11002,155 @@
           }
         },
         "type": "object",
-        "required": [
-          "record_type",
-          "record_date"
-        ],
+        "required": ["record_type", "record_date"],
         "title": "SalesRecordCreate",
         "description": "创建销售记录"
+      },
+      "SalesRecordResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "record_type": {
+            "type": "string",
+            "title": "Record Type"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "customer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Phone"
+          },
+          "customer_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Info"
+          },
+          "record_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Record Date"
+          },
+          "record_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Time"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "related_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Agent"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "record_type",
+          "customer_name",
+          "customer_phone",
+          "customer_info",
+          "record_date",
+          "record_time",
+          "price",
+          "notes",
+          "feedback",
+          "result",
+          "related_agent",
+          "created_at"
+        ],
+        "title": "SalesRecordResponse",
+        "description": "销售记录响应"
       },
       "SalesRolesUpdate": {
         "properties": {
@@ -9710,9 +11264,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "StatusUpdate"
       },
       "TokenResponse": {
@@ -9773,12 +11325,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "month",
-          "listing_price",
-          "deal_price",
-          "volume"
-        ],
+        "required": ["month", "listing_price", "deal_price", "volume"],
         "title": "TrendData"
       },
       "UploadResult": {
@@ -9812,11 +11359,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "success",
-          "failed"
-        ],
+        "required": ["total", "success", "failed"],
         "title": "UploadResult",
         "description": "CSV上传结果"
       },
@@ -9882,11 +11425,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "username",
-          "password",
-          "role_id"
-        ],
+        "required": ["username", "password", "role_id"],
         "title": "UserCreate",
         "description": "用户创建模型"
       },
@@ -9907,10 +11446,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "items"
-        ],
+        "required": ["total", "items"],
         "title": "UserListResponse",
         "description": "用户列表响应模型"
       },
@@ -10116,11 +11652,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
       "WechatLoginRequest": {
@@ -10132,9 +11664,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "code"
-        ],
+        "required": ["code"],
         "title": "WechatLoginRequest",
         "description": "微信登录请求模型"
       }
@@ -10144,9 +11674,7 @@
         "type": "oauth2",
         "flows": {
           "password": {
-            "scopes": {
-
-            },
+            "scopes": {},
             "tokenUrl": "/api/auth/token"
           }
         }

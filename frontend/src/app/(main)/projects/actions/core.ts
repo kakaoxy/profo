@@ -3,9 +3,17 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
+import { extractApiData } from "@/lib/api-helpers";
 
 type ProjectCreate = components["schemas"]["ProjectCreate"];
 type ProjectUpdate = components["schemas"]["ProjectUpdate"];
+type ProjectResponse = components["schemas"]["ProjectResponse"];
+
+export type ProjectDetailResult = {
+  success: boolean;
+  message?: string;
+  data?: ProjectResponse;
+};
 
 /**
  * 创建项目
@@ -84,17 +92,17 @@ export async function updateProjectStatusAction(
   projectId: string,
   status: string,
   listingDate?: string,
-  listPrice?: number
+  listPrice?: number,
 ) {
   try {
     const client = await fetchClient();
 
     const { error } = await client.PUT("/api/v1/projects/{project_id}/status", {
       params: { path: { project_id: projectId } },
-      body: { 
+      body: {
         status: status as components["schemas"]["ProjectStatus"],
         listing_date: listingDate,
-        list_price: listPrice
+        list_price: listPrice,
       },
     });
 
@@ -116,8 +124,8 @@ export async function updateProjectStatusAction(
  */
 export async function getProjectDetailAction(
   projectId: string,
-  isFull: boolean = false
-) {
+  isFull: boolean = false,
+): Promise<ProjectDetailResult> {
   try {
     const client = await fetchClient();
 
@@ -135,8 +143,8 @@ export async function getProjectDetailAction(
       return { success: false, message: "获取详情失败" };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return { success: true, data: (data as any).data };
+    const projectData = extractApiData<ProjectResponse>(data);
+    return { success: true, data: projectData };
   } catch (e) {
     console.error("获取详情异常:", e);
     return { success: false, message: "网络错误" };

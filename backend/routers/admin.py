@@ -18,6 +18,7 @@ from schemas.community import (
     CommunityMergeRequest,
     CommunityMergeResponse
 )
+from schemas.response import ApiResponse
 from services.merger import CommunityMerger
 from dependencies.auth import get_current_operator_user, get_current_admin_user
 from models.user import User
@@ -107,7 +108,7 @@ class CommunityQueryService:
 # 将 Service 实例化移出路由，或使用 Dependency 模式（这里保持静态调用即可）
 service = CommunityQueryService()
 
-@router.get("/communities", response_model=CommunityListResponse)
+@router.get("/communities", response_model=ApiResponse[CommunityListResponse])
 def get_communities(
     search: Optional[str] = Query(None, description="小区名称搜索（模糊匹配）"),
     page: int = Query(1, ge=1, description="页码"),
@@ -118,12 +119,13 @@ def get_communities(
     """
     查询小区列表
     """
-    return service.query_communities(
+    result = service.query_communities(
         db=db,
         search=search,
         page=page,
         page_size=page_size
     )
+    return ApiResponse.success(data=result.model_dump())
 
 
 @router.get("/dictionaries")
@@ -168,7 +170,7 @@ def get_dictionaries(
     return {"type": type, "items": values}
 
 
-@router.post("/communities/merge", response_model=CommunityMergeResponse)
+@router.post("/communities/merge", response_model=ApiResponse[CommunityMergeResponse])
 def merge_communities(
     request: CommunityMergeRequest,
     db: Session = Depends(get_db),
@@ -178,11 +180,11 @@ def merge_communities(
     合并小区操作
     """
     logger.info(f"收到小区合并请求: primary_id={request.primary_id}, merge_ids={request.merge_ids}")
-    
+
     # 建议：CommunityMerger 也可以通过 Depends 注入，方便管理 DB session 生命周期
     # 但如果 Merger 内部逻辑简单，直接传递 db 也可以
     merger = CommunityMerger()
-    
+
     try:
         # 假设 merger 内部处理了事务回滚，如果没有，建议在这里处理
         result = merger.merge_communities(
@@ -190,17 +192,18 @@ def merge_communities(
             merge_ids=request.merge_ids,
             db=db
         )
-        
+
         if not result.success:
             raise ValueError(result.message)
-            
+
         logger.info(f"小区合并成功: {result.message}")
-        return CommunityMergeResponse(
+        response_data = CommunityMergeResponse(
             success=True,
             affected_properties=result.affected_properties,
             message=result.message
         )
-        
+        return ApiResponse.success(data=response_data.model_dump())
+
     except ValueError as e:
         logger.warning(f"小区合并业务验证失败: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))

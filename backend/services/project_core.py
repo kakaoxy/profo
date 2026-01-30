@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 
 from models import Project
 from models.base import ProjectStatus
-from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate
+from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectListResponse, ProjectResponse
 from sqlalchemy.orm import Session, selectinload, defer, noload
 
 class ProjectCoreService:
@@ -69,7 +69,7 @@ class ProjectCoreService:
 
         return project
 
-    def create_project(self, project_data: ProjectCreate) -> Project:
+    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """创建项目"""
         project = Project(
             name=project_data.name,
@@ -108,11 +108,12 @@ class ProjectCoreService:
         self.db.add(project)
         self.db.commit()
         self.db.refresh(project)
-        return project
+        return ProjectResponse.model_validate(project)
 
-    def get_project(self, project_id: str, include_all: bool = False) -> Optional[Project]:
+    def get_project(self, project_id: str, include_all: bool = False) -> Optional[ProjectResponse]:
         """获取项目详情"""
-        return self._get_project(project_id, include_all)
+        project = self._get_project(project_id, include_all)
+        return ProjectResponse.model_validate(project)
 
     def get_projects(self, status_filter: Optional[str] = None,
                     community_name: Optional[str] = None,
@@ -155,13 +156,13 @@ class ProjectCoreService:
         ).order_by(Project.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
         return {
-            "items": projects,
+            "items": [ProjectResponse.model_validate(p) for p in projects],
             "total": total,
             "page": page,
             "page_size": page_size
         }
 
-    def update_project(self, project_id: str, update_data: ProjectUpdate) -> Project:
+    def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目信息"""
         project = self.db.query(Project).filter(Project.id == project_id).first()
 
@@ -193,7 +194,7 @@ class ProjectCoreService:
 
         self.db.commit()
         self.db.refresh(project)
-        return project
+        return ProjectResponse.model_validate(project)
 
     def delete_project(self, project_id: str) -> None:
         """删除项目 (软删除)"""
@@ -202,7 +203,7 @@ class ProjectCoreService:
         project.status_changed_at = datetime.utcnow()
         self.db.commit()
 
-    def update_status(self, project_id: str, status_update: StatusUpdate) -> Project:
+    def update_status(self, project_id: str, status_update: StatusUpdate) -> ProjectResponse:
         """更新项目状态"""
         project = self.db.query(Project).filter(Project.id == project_id).first()
 
@@ -239,7 +240,7 @@ class ProjectCoreService:
 
         self.db.commit()
         self.db.refresh(project)
-        return project
+        return ProjectResponse.model_validate(project)
 
     def get_project_stats(self) -> Dict[str, int]:
         """获取项目统计"""

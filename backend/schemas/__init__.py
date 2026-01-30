@@ -5,10 +5,13 @@
 
 from .enums import IngestionStatus, MediaTypeEnum
 
-# 1. 优先导入 Common (包含 BaseResponse)
+# 1. 统一响应包装器
+from .response import ApiResponse, PaginatedApiResponse
+
+# 2. Common
 from .common import (
-    BaseResponse,          # <--- 现在从 common 导入
-    GenericBaseResponse,   # <--- 现在从 common 导入
+    BaseResponse,          # 保留兼容，但标记为弃用
+    GenericBaseResponse,   # 保留兼容，但标记为弃用
     FailedRecordResponse,
     PropertyHistoryResponse,
     FloorInfo
@@ -76,9 +79,13 @@ __all__ = [
     'IngestionStatus',
     'MediaTypeEnum',
 
+    # Response Wrappers (统一响应包装器)
+    'ApiResponse',
+    'PaginatedApiResponse',
+
     # Common
-    'BaseResponse',
-    'GenericBaseResponse',
+    'BaseResponse',        # 兼容保留，建议使用 ApiResponse
+    'GenericBaseResponse', # 兼容保留，建议使用 ApiResponse
     'FailedRecordResponse',
     'PropertyHistoryResponse',
     'FloorInfo',

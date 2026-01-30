@@ -3,6 +3,9 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { NeighborhoodRadarData } from "./types";
+import { components } from "@/lib/api-types";
+
+type ApiResponse_Radar = components["schemas"]["ApiResponse_NeighborhoodRadarResponse_"];
 
 /**
  * 获取周边竞品雷达数据
@@ -27,15 +30,17 @@ export async function getNeighborhoodRadarAction(projectId: string) {
       "/api/v1/admin/communities",
       {
         params: { query: { search: communityName, page_size: 1 } },
-      }
+      },
     );
 
     if (communitiesError || !communitiesData) {
-      console.error("搜索小区失败:", communitiesError);
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    const communities = communitiesData.items;
+    const communitiesWrapper = communitiesData as {
+      data?: { items?: Array<{ id: number }> };
+    };
+    const communities = communitiesWrapper.data?.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${communityName}` };
     }
@@ -47,15 +52,17 @@ export async function getNeighborhoodRadarAction(projectId: string) {
       "/api/v1/monitor/communities/{community_id}/radar",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
     if (radarError || !radarData) {
-      console.error("获取雷达数据失败:", radarError);
       return { success: false, message: "获取周边竞品数据失败" };
     }
 
-    return { success: true, data: radarData as NeighborhoodRadarData };
+    return {
+      success: true,
+      data: (radarData as ApiResponse_Radar)?.data as NeighborhoodRadarData,
+    };
   } catch (e) {
     console.error("获取周边竞品异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -64,7 +71,9 @@ export async function getNeighborhoodRadarAction(projectId: string) {
 
 import { getCommunityIdByName } from "./utils";
 
-export async function getNeighborhoodRadarByCommunityAction(communityName: string) {
+export async function getNeighborhoodRadarByCommunityAction(
+  communityName: string,
+) {
   try {
     const communityId = await getCommunityIdByName(communityName);
     if (!communityId) {
@@ -76,14 +85,17 @@ export async function getNeighborhoodRadarByCommunityAction(communityName: strin
       "/api/v1/monitor/communities/{community_id}/radar",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
     if (radarError || !radarData) {
       return { success: false, message: "获取周边竞品数据失败" };
     }
 
-    return { success: true, data: radarData as NeighborhoodRadarData };
+    return {
+      success: true,
+      data: (radarData as ApiResponse_Radar)?.data as NeighborhoodRadarData,
+    };
   } catch (e) {
     console.error("获取周边竞品异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
