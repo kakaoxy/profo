@@ -1,4 +1,8 @@
-import { cn } from '@/lib/utils';
+"use client";
+
+import { useId, useRef } from "react";
+
+import { cn } from "@/lib/utils";
 
 interface UploadZoneProps {
   onUpload: (files: FileList) => void;
@@ -6,6 +10,9 @@ interface UploadZoneProps {
 }
 
 export function UploadZone({ onUpload, className }: UploadZoneProps) {
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const files = e.dataTransfer.files;
@@ -24,23 +31,26 @@ export function UploadZone({ onUpload, className }: UploadZoneProps) {
   return (
     <div
       className={cn(
-        'border-2 border-dashed border-gray-200 rounded-lg p-5 flex flex-col items-center justify-center text-text-secondary hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-pointer',
-        className
+        "border-2 border-dashed border-border rounded-lg p-5 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors cursor-pointer",
+        className,
       )}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
-      onClick={() => document.getElementById('photo-upload')?.click()}
+      onClick={() => inputRef.current?.click()}
     >
       <input
         type="file"
-        id="photo-upload"
+        id={inputId}
+        ref={inputRef}
         className="hidden"
         accept="image/*"
         multiple
         onChange={handleChange}
       />
       <span className="text-[11px] font-bold">点击或拖拽图片上传</span>
-      <span className="text-[9px] opacity-60 mt-1">支持 JPG, PNG (Max 5MB)</span>
+      <span className="text-[9px] opacity-60 mt-1">
+        支持 JPG, PNG (Max 5MB)
+      </span>
     </div>
   );
 }

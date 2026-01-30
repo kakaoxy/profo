@@ -1,19 +1,31 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { Loader2, Search } from "lucide-react";
 
-export function ProjectFilters({ 
-  initialQuery = "", 
-  initialStatus = "all" 
-}: { 
-  initialQuery?: string, 
-  initialStatus?: string 
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export function ProjectFilters({
+  initialQuery = "",
+  initialStatus = "all",
+}: {
+  initialQuery?: string;
+  initialStatus?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [queryValue, setQueryValue] = useState(initialQuery);
+  const [statusValue, setStatusValue] = useState(initialStatus);
 
   const handleSearch = useDebouncedCallback((term: string) => {
     const params = new URLSearchParams(searchParams);
@@ -23,7 +35,7 @@ export function ProjectFilters({
       params.delete("query");
     }
     params.set("page", "1"); // Reset to page 1 on search
-    
+
     startTransition(() => {
       router.push(`/minipro/projects?${params.toString()}`);
     });
@@ -37,7 +49,7 @@ export function ProjectFilters({
       params.delete("status");
     }
     params.set("page", "1"); // Reset to page 1 on filter
-    
+
     startTransition(() => {
       router.push(`/minipro/projects?${params.toString()}`);
     });
@@ -46,29 +58,42 @@ export function ProjectFilters({
   return (
     <div className="flex items-center gap-3 flex-1 max-w-2xl">
       <div className="relative flex-1">
-        <input 
-          className="w-full pl-10 pr-4 py-2.5 bg-white border-none rounded-xl shadow-[0_2px_12px_0_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-[#137fec] text-sm" 
-          placeholder="搜索项目名称或 ID..." 
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <Input
+          className="pl-9 pr-9"
+          placeholder="搜索项目名称或 ID..."
           type="text"
-          defaultValue={initialQuery}
-          onChange={(e) => handleSearch(e.target.value)}
+          value={queryValue}
+          onChange={(e) => {
+            const nextValue = e.target.value;
+            setQueryValue(nextValue);
+            handleSearch(nextValue);
+          }}
+          aria-label="搜索项目"
         />
         {isPending && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#137fec]"></div>
+            <Loader2 className="size-4 animate-spin text-muted-foreground" />
           </div>
         )}
       </div>
-      <div className="relative w-48">
-        <select 
-          className="w-full pl-4 pr-10 py-2.5 bg-white border-none rounded-xl shadow-[0_2px_12px_0_rgba(0,0,0,0.05)] appearance-none focus:ring-2 focus:ring-[#137fec] text-sm"
-          defaultValue={initialStatus}
-          onChange={(e) => handleStatusChange(e.target.value)}
+      <div className="w-[180px]">
+        <Select
+          value={statusValue}
+          onValueChange={(nextValue) => {
+            setStatusValue(nextValue);
+            handleStatusChange(nextValue);
+          }}
         >
-          <option value="all">所有状态</option>
-          <option value="published">已发布</option>
-          <option value="draft">未发布</option>
-        </select>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="筛选状态" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">所有状态</SelectItem>
+            <SelectItem value="published">已发布</SelectItem>
+            <SelectItem value="draft">未发布</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

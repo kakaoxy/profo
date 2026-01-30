@@ -2,6 +2,7 @@ import React from "react";
 import { fetchClient } from "@/lib/api-server";
 import type { MiniProject, Consultant, MiniProjectPhoto } from "../types";
 import { MiniProjectEditForm } from "./edit-form";
+import { MiniproShell } from "../../_components/minipro-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +55,12 @@ export default async function EditProjectPage({
   const photos: MiniProjectPhoto[] = photosRes.data || [];
 
   return (
-    <div className="h-full flex-1 flex-col space-y-8 p-0 md:flex overflow-y-auto">
+    <MiniproShell containerClassName="max-w-none px-0 py-0">
       <MiniProjectEditForm
         project={project}
         consultants={consultants}
         initialPhotos={photos}
       />
-    </div>
+    </MiniproShell>
   );
 }
