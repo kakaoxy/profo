@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { StageOption, STAGE_OPTIONS } from './types';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { StageOption, STAGE_OPTIONS } from "./types";
 
 interface FilterBarProps {
   searchQuery: string;
@@ -26,7 +26,7 @@ export function FilterBar({
   onToggleAll,
 }: FilterBarProps) {
   return (
-    <div className="px-6 py-4 space-y-4 border-b border-gray-100">
+    <div className="px-6 py-4 space-y-4 border-b border-border">
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -39,7 +39,7 @@ export function FilterBar({
         </div>
         <Button variant="outline" onClick={onToggleAll} className="gap-2">
           <Check className="w-4 h-4" />
-          {selectedCount === totalCount && totalCount > 0 ? '取消全选' : '全选'}
+          {selectedCount === totalCount && totalCount > 0 ? "取消全选" : "全选"}
         </Button>
       </div>
 
@@ -47,11 +47,11 @@ export function FilterBar({
         {STAGE_OPTIONS.map((option) => (
           <Button
             key={option.value}
-            variant={activeStage === option.value ? 'default' : 'outline'}
+            variant={activeStage === option.value ? "default" : "outline"}
             size="sm"
             className={cn(
-              'gap-1 whitespace-nowrap flex-shrink-0',
-              activeStage === option.value && 'bg-primary'
+              "gap-1 whitespace-nowrap shrink-0",
+              activeStage === option.value && "bg-primary",
             )}
             onClick={() => onStageChange(option.value)}
           >

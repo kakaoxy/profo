@@ -1,11 +1,14 @@
 import { fetchClient } from "@/lib/api-server";
 import { DataTable } from "@/components/ui/data-table";
+import { Button } from "@/components/ui/button";
 import { columns } from "./columns";
 import { SyncButton } from "./sync-button";
 import { ProjectFilters } from "./project-filters";
 import type { MiniProject } from "./types";
 import Link from "next/link";
 import type { operations } from "@/lib/api-types";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { MiniproPageHeader, MiniproShell } from "../_components/minipro-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -73,76 +76,81 @@ export default async function ProjectsPage({
 
   const items: MiniProject[] = data.items || [];
   const total = data.total || 0;
+  const hasNextPage = total > page * pageSize;
+
+  const buildHref = (nextPage: number) => {
+    const nextParams = new URLSearchParams();
+    nextParams.set("page", String(nextPage));
+    nextParams.set("page_size", String(pageSize));
+    if (query) nextParams.set("query", query);
+    if (status && status !== "all") nextParams.set("status", status);
+    return `/minipro/projects?${nextParams.toString()}`;
+  };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-[#f8f9fa]">
-      <header className="px-8 py-6 bg-white border-b border-gray-100">
-        <div className="flex items-center gap-4 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">小程序内容管理</h1>
-        </div>
-        <p className="text-sm text-gray-500 ml-0">这是所有小程序项目列表</p>
-      </header>
-
-      <main className="p-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <ProjectFilters initialQuery={query} initialStatus={status} />
-
-          <div className="flex items-center gap-3">
+    <MiniproShell>
+      <MiniproPageHeader
+        title="小程序内容管理"
+        description="管理小程序端的项目内容、发布状态与排序。"
+        actions={
+          <>
             <SyncButton />
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-[#137fec] text-white font-semibold text-sm rounded-xl shadow-[0_2px_12px_0_rgba(0,0,0,0.05)] hover:bg-blue-600 transition-colors">
-              <span className="material-symbols-outlined text-lg">add</span>
+            <Button type="button" disabled>
+              <Plus />
               新建独立项目
-            </button>
+            </Button>
+          </>
+        }
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <ProjectFilters initialQuery={query} initialStatus={status} />
+      </div>
+
+      <div className="rounded-md border bg-background">
+        <div className="px-4 py-3 border-b flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-sm font-semibold tracking-tight text-foreground">
+              项目列表
+            </h2>
+            <p className="text-xs text-muted-foreground">共 {total} 项</p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            显示第 {(page - 1) * pageSize + 1} 至{" "}
+            {Math.min(page * pageSize, total)} 项
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-[0_2px_12px_0_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 bg-red-500 rounded-full"></div>
-              <h2 className="text-base font-bold text-gray-900">项目列表</h2>
-            </div>
-            <Link
-              href="#"
-              className="text-sm text-gray-400 flex items-center gap-1 hover:text-[#137fec] transition-colors"
-            >
-              查看全部
-            </Link>
-          </div>
+        <DataTable columns={columns} data={items} container={false} />
 
-          <div className="overflow-x-auto">
-            <DataTable columns={columns} data={items} />
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between">
-            <p className="text-xs text-gray-400">
-              显示第 {(page - 1) * pageSize + 1} 至{" "}
-              {Math.min(page * pageSize, total)} 项，共 {total} 项
-            </p>
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/minipro/projects?page=${Math.max(1, page - 1)}`}
-                className={`p-1.5 rounded-lg border border-gray-100 text-gray-400 hover:bg-gray-50 transition-colors ${page <= 1 ? "pointer-events-none opacity-50" : ""}`}
-              ></Link>
-              <button className="px-3 py-1 bg-[#137fec] text-white text-xs font-bold rounded-lg">
-                {page}
-              </button>
-              {total > page * pageSize && (
-                <Link
-                  href={`/minipro/projects?page=${page + 1}`}
-                  className="px-3 py-1 text-gray-500 text-xs font-bold hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  {page + 1}
-                </Link>
-              )}
-              <Link
-                href={`/minipro/projects?page=${page + 1}`}
-                className={`p-1.5 rounded-lg border border-gray-100 text-gray-400 hover:bg-gray-50 transition-colors ${total <= page * pageSize ? "pointer-events-none opacity-50" : ""}`}
-              ></Link>
-            </div>
-          </div>
+        <div className="px-4 py-3 border-t flex items-center justify-end gap-2">
+          {page <= 1 ? (
+            <Button variant="outline" size="icon-sm" disabled>
+              <ChevronLeft />
+            </Button>
+          ) : (
+            <Button variant="outline" size="icon-sm" asChild>
+              <Link href={buildHref(page - 1)} aria-label="上一页">
+                <ChevronLeft />
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" size="sm" disabled>
+            {page}
+          </Button>
+          {hasNextPage ? (
+            <Button variant="outline" size="icon-sm" asChild>
+              <Link href={buildHref(page + 1)} aria-label="下一页">
+                <ChevronRight />
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="icon-sm" disabled>
+              <ChevronRight />
+            </Button>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </MiniproShell>
   );
 }
