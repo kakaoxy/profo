@@ -10,8 +10,8 @@ import {
   searchCommunitiesAction,
   addCompetitorAction,
   removeCompetitorAction,
-  CompetitorItem,
-} from "../../actions/monitor";
+} from "../../actions/monitor-lib/competitors";
+import type { CompetitorItem } from "../../actions/monitor-lib/types";
 
 interface CommunitySearchItem {
   id: number;
@@ -59,17 +59,14 @@ export function CompetitorManagerModal({
     const loadData = async () => {
       setIsLoading(true);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let result: any;
-
-      if (projectId) {
-        result = await getCompetitorsAction(projectId);
-      } else if (communityName) {
-        result = await getCompetitorsByCommunityAction(communityName);
-      } else {
-        setIsLoading(false);
-        return;
-      }
+      const result:
+        | Awaited<ReturnType<typeof getCompetitorsAction>>
+        | Awaited<ReturnType<typeof getCompetitorsByCommunityAction>> =
+        projectId
+          ? await getCompetitorsAction(projectId)
+          : communityName
+            ? await getCompetitorsByCommunityAction(communityName)
+            : { success: false, message: "缺少参数" };
 
       if (isMounted && result.success && result.data) {
         setCompetitors(result.data);
@@ -98,8 +95,7 @@ export function CompetitorManagerModal({
       if (isMounted && result.success && result.data) {
         const existing = new Set(competitors.map((c) => c.community_id));
         existing.add(communityId ?? -1);
-        const data = result.data as CommunitySearchItem[];
-        setSearchResults(data.filter((c) => !existing.has(c.id)));
+        setSearchResults(result.data.filter((c) => !existing.has(c.id)));
       }
       if (isMounted) setIsSearching(false);
     }, 300);
@@ -111,12 +107,13 @@ export function CompetitorManagerModal({
   }, [searchQuery, competitors, communityId]);
 
   // 添加竞品
-  const handleAdd = useCallback(async (competitorId: number) => {
-    if (!communityId) {
-      toast.error("未获取到当前小区信息，无法添加");
-      return;
-    }
-    setIsAdding(true);
+  const handleAdd = useCallback(
+    async (competitorId: number) => {
+      if (!communityId) {
+        toast.error("未获取到当前小区信息，无法添加");
+        return;
+      }
+      setIsAdding(true);
       const result = await addCompetitorAction(communityId, competitorId);
       if (result.success) {
         setSearchQuery("");

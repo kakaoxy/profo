@@ -1,14 +1,39 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { HeroSection } from "./hero-section";
-import { MarketSentiment } from "./market-sentiment";
-import { NeighborhoodRadar } from "./neighborhood-radar";
-import { TrendPositioning } from "./trend-positioning";
-import { CompetitorsBrawl } from "./competitors-brawl";
-import { AIStrategy } from "./ai-strategy";
+
+const HeroSection = dynamic(
+  () => import("./hero-section").then((m) => m.HeroSection),
+  { ssr: false, loading: () => <div className="p-6 h-[220px] bg-white" /> },
+);
+
+const MarketSentiment = dynamic(
+  () => import("./market-sentiment").then((m) => m.MarketSentiment),
+  { ssr: false, loading: () => <div className="p-6 h-[280px] bg-white" /> },
+);
+
+const NeighborhoodRadar = dynamic(
+  () => import("./neighborhood-radar").then((m) => m.NeighborhoodRadar),
+  { ssr: false, loading: () => <div className="p-6 h-[320px] bg-white" /> },
+);
+
+const TrendPositioning = dynamic(
+  () => import("./trend-positioning").then((m) => m.TrendPositioning),
+  { ssr: false, loading: () => <div className="p-6 h-[520px] bg-white" /> },
+);
+
+const CompetitorsBrawl = dynamic(
+  () => import("./competitors-brawl").then((m) => m.CompetitorsBrawl),
+  { ssr: false, loading: () => <div className="p-6 h-[420px] bg-white" /> },
+);
+
+const AIStrategy = dynamic(
+  () => import("./ai-strategy").then((m) => m.AIStrategy),
+  { ssr: false, loading: () => <div className="p-6 h-[320px] bg-white" /> },
+);
 
 // 新增：一个简单的包装组件，专门解决“糊在一起”的问题
 // 它负责提供白色背景、边框和阴影，不改变内部布局
@@ -54,9 +79,13 @@ export function MonitorSheet() {
                 项目房价监控
               </SheetTitle>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-medium text-slate-500">{projectName}</span>
+                <span className="text-sm font-medium text-slate-500">
+                  {projectName}
+                </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Live Monitoring</span>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+                  Live Monitoring
+                </span>
               </div>
             </div>
           </div>

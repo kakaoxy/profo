@@ -5,12 +5,19 @@ import { Plus, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "./section-header";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  getNeighborhoodRadarAction, 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  getNeighborhoodRadarAction,
   getNeighborhoodRadarByCommunityAction,
-  NeighborhoodRadarItem 
-} from "../../actions/monitor";
+} from "../../actions/monitor-lib/radar";
+import type { NeighborhoodRadarItem } from "../../actions/monitor-lib/types";
 import { CompetitorManagerModal } from "./competitor-manager-modal";
 
 interface NeighborhoodRadarProps {
@@ -18,7 +25,10 @@ interface NeighborhoodRadarProps {
   communityName?: string;
 }
 
-export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRadarProps) {
+export function NeighborhoodRadar({
+  projectId,
+  communityName,
+}: NeighborhoodRadarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,35 +37,34 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
-      
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let result: any;
 
-      if (projectId) {
-        result = await getNeighborhoodRadarAction(projectId);
-      } else if (communityName) {
-        result = await getNeighborhoodRadarByCommunityAction(communityName);
-      } else {
-        setIsLoading(false);
-        return;
-      }
+      const result:
+        | Awaited<ReturnType<typeof getNeighborhoodRadarAction>>
+        | Awaited<ReturnType<typeof getNeighborhoodRadarByCommunityAction>> =
+        projectId
+          ? await getNeighborhoodRadarAction(projectId)
+          : communityName
+            ? await getNeighborhoodRadarByCommunityAction(communityName)
+            : { success: false, message: "缺少参数" };
 
       if (isMounted) {
         if (result.success && result.data) {
-          setCompetitors(result.data.items || result.data.competitors); // handle different return shapes if any
+          setCompetitors(result.data.items || []);
         } else {
           setError(result.message || "加载失败");
         }
         setIsLoading(false);
       }
     };
-    
+
     loadData();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [projectId, communityName, refreshKey]);
 
   const handleRefresh = () => setRefreshKey((k) => k + 1);
@@ -76,15 +85,15 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
 
   return (
     <section className="mt-8 pb-10 relative">
-      <SectionHeader 
-        index="2" 
-        title="周边竞品雷达" 
-        subtitle="Neighborhood Radar" 
+      <SectionHeader
+        index="2"
+        title="周边竞品雷达"
+        subtitle="Neighborhood Radar"
         action={
-          (projectId || communityName) ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
+          projectId || communityName ? (
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setIsModalOpen(true)}
               className="bg-white text-blue-600 border-blue-200 hover:bg-blue-50 gap-1.5 shadow-sm"
             >
@@ -94,7 +103,7 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
           ) : undefined
         }
       />
-      
+
       <div className="px-4 sm:px-6">
         <Card className="border-slate-100 shadow-sm overflow-hidden bg-white">
           {isLoading ? (
@@ -103,34 +112,51 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
               <span className="ml-2 text-sm text-slate-500">加载中...</span>
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-sm text-slate-500">{error}</div>
+            <div className="text-center py-12 text-sm text-slate-500">
+              {error}
+            </div>
           ) : competitors.length === 0 ? (
-            <div className="text-center py-12 text-sm text-slate-500">暂无竞品数据，请先添加竞品小区</div>
+            <div className="text-center py-12 text-sm text-slate-500">
+              暂无竞品数据，请先添加竞品小区
+            </div>
           ) : (
             <>
               {/* Mobile Card Layout */}
               <div className="sm:hidden divide-y divide-slate-100">
                 {competitors.map((item) => (
-                  <div 
-                    key={item.community_id} 
+                  <div
+                    key={item.community_id}
                     className={`p-4 ${item.is_subject ? "bg-indigo-50/40" : ""}`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-bold text-slate-800">{item.community_name}</span>
-                      <span className={`text-xs font-bold ${getSpreadStyle(item)}`}>
-                        {getSpreadIcon(item)}{item.spread_label}
+                      <span className="text-sm font-bold text-slate-800">
+                        {item.community_name}
+                      </span>
+                      <span
+                        className={`text-xs font-bold ${getSpreadStyle(item)}`}
+                      >
+                        {getSpreadIcon(item)}
+                        {item.spread_label}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
                         <p className="text-slate-400 mb-0.5">挂牌</p>
-                        <p className="font-bold text-slate-900">{item.listing_count} 套</p>
-                        <p className="text-indigo-600 font-bold">¥{item.listing_avg_price.toLocaleString()}/㎡</p>
+                        <p className="font-bold text-slate-900">
+                          {item.listing_count} 套
+                        </p>
+                        <p className="text-indigo-600 font-bold">
+                          ¥{item.listing_avg_price.toLocaleString()}/㎡
+                        </p>
                       </div>
                       <div>
                         <p className="text-slate-400 mb-0.5">成交</p>
-                        <p className="font-bold text-slate-900">{item.deal_count} 套</p>
-                        <p className="text-emerald-600 font-bold">¥{item.deal_avg_price.toLocaleString()}/㎡</p>
+                        <p className="font-bold text-slate-900">
+                          {item.deal_count} 套
+                        </p>
+                        <p className="text-emerald-600 font-bold">
+                          ¥{item.deal_avg_price.toLocaleString()}/㎡
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -142,39 +168,70 @@ export function NeighborhoodRadar({ projectId, communityName }: NeighborhoodRada
                 <Table className="min-w-[800px]">
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="hover:bg-transparent border-b border-slate-100">
-                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">小区名称</TableHead>
-                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">挂牌套数 (渠道)</TableHead>
-                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">挂牌均价</TableHead>
-                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">成交套数 (渠道)</TableHead>
-                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">成交均价</TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        小区名称
+                      </TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        挂牌套数 (渠道)
+                      </TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        挂牌均价
+                      </TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        成交套数 (渠道)
+                      </TableHead>
+                      <TableHead className="py-3 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">
+                        成交均价
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-slate-50">
                     {competitors.map((item) => (
-                      <TableRow key={item.community_id} className={`${item.is_subject ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}>
+                      <TableRow
+                        key={item.community_id}
+                        className={`${item.is_subject ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}
+                      >
                         <TableCell className="py-4 px-4">
-                          <span className="text-sm font-bold text-slate-800">{item.community_name}</span>
+                          <span className="text-sm font-bold text-slate-800">
+                            {item.community_name}
+                          </span>
                         </TableCell>
                         <TableCell className="py-4 px-4">
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-slate-900">{item.listing_count} 套</span>
-                            <span className="text-[10px] text-slate-400 font-medium">贝壳:{item.listing_beike} | 我爱:{item.listing_iaij}</span>
+                            <span className="text-sm font-bold text-slate-900">
+                              {item.listing_count} 套
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              贝壳:{item.listing_beike} | 我爱:
+                              {item.listing_iaij}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="py-4 px-4">
-                          <span className="text-sm font-bold text-indigo-600">¥ {item.listing_avg_price.toLocaleString()} /㎡</span>
+                          <span className="text-sm font-bold text-indigo-600">
+                            ¥ {item.listing_avg_price.toLocaleString()} /㎡
+                          </span>
                         </TableCell>
                         <TableCell className="py-4 px-4">
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-slate-900">{item.deal_count} 套</span>
-                            <span className="text-[10px] text-slate-400 font-medium">贝壳:{item.deal_beike} | 我爱:{item.deal_iaij}</span>
+                            <span className="text-sm font-bold text-slate-900">
+                              {item.deal_count} 套
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              贝壳:{item.deal_beike} | 我爱:{item.deal_iaij}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="py-4 px-4 text-right">
                           <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold text-emerald-600">¥ {item.deal_avg_price.toLocaleString()} /㎡</span>
-                            <span className={`text-[10px] font-bold mt-0.5 ${getSpreadStyle(item)}`}>
-                              {getSpreadIcon(item)}{item.spread_label}
+                            <span className="text-sm font-bold text-emerald-600">
+                              ¥ {item.deal_avg_price.toLocaleString()} /㎡
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold mt-0.5 ${getSpreadStyle(item)}`}
+                            >
+                              {getSpreadIcon(item)}
+                              {item.spread_label}
                             </span>
                           </div>
                         </TableCell>

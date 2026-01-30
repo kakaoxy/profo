@@ -1,8 +1,7 @@
-import { Suspense } from 'react';
-import { fetchClient } from '@/lib/api-server';
-import { LeadsView } from './_components/leads-view';
-import type { Lead, LeadStatus } from './types';
-import { Loader2 } from 'lucide-react';
+import { fetchClient } from "@/lib/api-server";
+import { LeadsView } from "./_components/leads-view";
+import type { Lead, LeadStatus } from "./types";
+import type { operations } from "@/lib/api-types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +15,9 @@ interface PageProps {
 }
 
 // Map backend response to frontend Lead type
+type LeadsQuery =
+  operations["get_leads_api_v1_leads__get"]["parameters"]["query"];
+
 function mapBackendToFrontend(backendLead: {
   id: string;
   community_name: string;
@@ -41,9 +43,9 @@ function mapBackendToFrontend(backendLead: {
   return {
     id: backendLead.id,
     communityName: backendLead.community_name,
-    layout: backendLead.layout ?? '',
-    orientation: backendLead.orientation ?? '',
-    floorInfo: backendLead.floor_info ?? '',
+    layout: backendLead.layout ?? "",
+    orientation: backendLead.orientation ?? "",
+    floorInfo: backendLead.floor_info ?? "",
     area: backendLead.area ?? 0,
     totalPrice: backendLead.total_price ?? 0,
     unitPrice: backendLead.unit_price ?? 0,
@@ -53,24 +55,13 @@ function mapBackendToFrontend(backendLead: {
     auditorId: backendLead.auditor_id?.toString() ?? undefined,
     auditTime: backendLead.audit_time ?? undefined,
     images: backendLead.images || [],
-    district: backendLead.district ?? '',
-    businessArea: backendLead.business_area ?? '',
-    remarks: backendLead.remarks ?? '',
-    creatorName: backendLead.creator_name ?? '未知',
+    district: backendLead.district ?? "",
+    businessArea: backendLead.business_area ?? "",
+    remarks: backendLead.remarks ?? "",
+    creatorName: backendLead.creator_name ?? "未知",
     lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
     createdAt: new Date(backendLead.created_at).toLocaleString(),
   };
-}
-
-function LeadsLoadingSkeleton() {
-  return (
-    <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6 container max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-3 text-muted-foreground">加载线索数据...</span>
-      </div>
-    </div>
-  );
 }
 
 export default async function LeadsPage({ searchParams }: PageProps) {
@@ -78,8 +69,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const client = await fetchClient();
 
   // Build query parameters
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const queryParams: any = {
+  const queryParams: LeadsQuery = {
     page: 1,
     page_size: 100,
   };
@@ -89,7 +79,9 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   }
 
   if (params.statuses) {
-    queryParams.statuses = params.statuses.split(',');
+    queryParams.statuses = params.statuses.split(
+      ",",
+    ) as NonNullable<LeadsQuery>["statuses"];
   }
 
   if (params.district) {
@@ -97,23 +89,19 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   }
 
   // Fetch leads data on the server
-  const { data, error } = await client.GET('/api/v1/leads/', {
-    params: { query: queryParams }
+  const { data, error } = await client.GET("/api/v1/leads/", {
+    params: { query: queryParams },
   });
 
   if (error) {
     console.error("Failed to fetch leads:", error);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items = (data as any)?.items || [];
-  const leads: Lead[] = items.map(mapBackendToFrontend);
+  const leads: Lead[] = (data?.items || []).map(mapBackendToFrontend);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-slate-50/50">
-      <Suspense fallback={<LeadsLoadingSkeleton />}>
-        <LeadsView initialLeads={leads} initialSelectedLeadId={params.leadId} />
-      </Suspense>
+      <LeadsView initialLeads={leads} initialSelectedLeadId={params.leadId} />
     </div>
   );
 }

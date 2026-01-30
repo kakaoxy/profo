@@ -4,7 +4,7 @@ import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { BrawlItem, PropertyItem } from "./types";
 import { getCompetitorsAction } from "./competitors";
-import { extractApiData, extractPaginatedData } from "@/lib/api-helpers";
+import { extractPaginatedData } from "@/lib/api-helpers";
 
 /**
  * 获取竞品肉搏战数据

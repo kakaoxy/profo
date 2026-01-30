@@ -3,11 +3,14 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
+import type { operations } from "@/lib/api-types";
 import { extractApiData } from "@/lib/api-helpers";
 
 type ProjectCreate = components["schemas"]["ProjectCreate"];
 type ProjectUpdate = components["schemas"]["ProjectUpdate"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
+type GetProjectQuery =
+  operations["get_project_api_v1_projects__project_id__get"]["parameters"]["query"];
 
 export type ProjectDetailResult = {
   success: boolean;
@@ -132,8 +135,7 @@ export async function getProjectDetailAction(
     const { data, error } = await client.GET("/api/v1/projects/{project_id}", {
       params: {
         path: { project_id: projectId },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        query: { full: isFull } as any,
+        query: { full: isFull } satisfies GetProjectQuery,
       },
       cache: "no-store",
       next: { revalidate: 0 },
