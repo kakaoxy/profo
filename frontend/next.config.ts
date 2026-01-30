@@ -15,31 +15,55 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "picsum.photos",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "**.5i5j.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.5i5j.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "**.ljcdn.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**.ljcdn.com",
+        port: "",
+        pathname: "/**",
       },
       {
         // 生产环境图片服务器
-        protocol: 'https',
-        hostname: 'fangmengchina.com',
-        port: '',
-        pathname: '/static/**',
+        protocol: "https",
+        hostname: "fangmengchina.com",
+        port: "",
+        pathname: "/static/**",
       },
       {
         // 本地开发环境图片服务器
-        protocol: 'http',
-        hostname: '127.0.0.1',
-        port: '8000',
-        pathname: '/static/**',
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+        pathname: "/static/**",
       },
       {
         // 本地开发环境 localhost
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/static/**',
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+        pathname: "/static/**",
       },
     ],
   },
