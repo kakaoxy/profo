@@ -3,6 +3,7 @@
 import { fetchClient } from "@/lib/api-server";
 import { CompetitorItem } from "./types";
 import { getCommunityIdFromProject } from "./utils";
+import { extractApiData, extractPaginatedData } from "@/lib/api-helpers";
 
 /**
  * 获取当前小区的竞品列表
@@ -19,14 +20,15 @@ export async function getCompetitorsAction(projectId: string) {
       "/api/v1/communities/{community_id}/competitors",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
-    if (error || !data) {
+    if (error) {
       return { success: false, message: "获取竞品列表失败" };
     }
 
-    return { success: true, data: data as CompetitorItem[], communityId };
+    const items = extractApiData<CompetitorItem[]>(data);
+    return { success: true, data: items || [], communityId };
   } catch (e) {
     console.error("获取竞品列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -40,7 +42,7 @@ export async function getCompetitorsByCommunityAction(communityName: string) {
   try {
     const { getCommunityIdByName } = await import("./utils");
     const communityId = await getCommunityIdByName(communityName);
-    
+
     if (!communityId) {
       return { success: false, message: "未找到该小区信息" };
     }
@@ -50,14 +52,15 @@ export async function getCompetitorsByCommunityAction(communityName: string) {
       "/api/v1/communities/{community_id}/competitors",
       {
         params: { path: { community_id: communityId } },
-      }
+      },
     );
 
-    if (error || !data) {
+    if (error) {
       return { success: false, message: "获取竞品列表失败" };
     }
 
-    return { success: true, data: data as CompetitorItem[], communityId };
+    const items = extractApiData<CompetitorItem[]>(data);
+    return { success: true, data: items || [], communityId };
   } catch (e) {
     console.error("获取竞品列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -76,14 +79,14 @@ export async function searchCommunitiesAction(keyword: string) {
     const client = await fetchClient();
     const { data: communitiesData, error } = await client.GET(
       "/api/v1/admin/communities",
-      { params: { query: { search: keyword.trim(), page_size: 10 } } }
+      { params: { query: { search: keyword.trim(), page_size: 10 } } },
     );
 
-    if (error || !communitiesData) {
+    if (error) {
       return { success: false, message: "搜索失败" };
     }
 
-    const items = communitiesData.items;
+    const { items } = extractPaginatedData<{ id: number; name: string }>(communitiesData);
     return { success: true, data: items || [] };
   } catch (e) {
     console.error("搜索小区异常:", e);
@@ -94,7 +97,10 @@ export async function searchCommunitiesAction(keyword: string) {
 /**
  * 添加竞品小区
  */
-export async function addCompetitorAction(communityId: number, competitorId: number) {
+export async function addCompetitorAction(
+  communityId: number,
+  competitorId: number,
+) {
   try {
     const client = await fetchClient();
     const { error } = await client.POST(
@@ -102,7 +108,7 @@ export async function addCompetitorAction(communityId: number, competitorId: num
       {
         params: { path: { community_id: communityId } },
         body: { competitor_community_id: competitorId },
-      }
+      },
     );
 
     if (error) {
@@ -119,14 +125,19 @@ export async function addCompetitorAction(communityId: number, competitorId: num
 /**
  * 删除竞品小区
  */
-export async function removeCompetitorAction(communityId: number, competitorId: number) {
+export async function removeCompetitorAction(
+  communityId: number,
+  competitorId: number,
+) {
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
       "/api/v1/communities/{community_id}/competitors/{competitor_id}",
       {
-        params: { path: { community_id: communityId, competitor_id: competitorId } },
-      }
+        params: {
+          path: { community_id: communityId, competitor_id: competitorId },
+        },
+      },
     );
 
     if (error) {

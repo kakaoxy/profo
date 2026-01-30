@@ -2,6 +2,7 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
+import { extractApiData } from "@/lib/api-helpers";
 
 /**
  * 创建销售记录 (带看/出价/面谈)
@@ -141,7 +142,8 @@ export async function completeProjectAction(
     }
 
     revalidatePath("/projects");
-    return { success: true, message: "恭喜！项目已成交", data };
+    const resultData = extractApiData<unknown>(data);
+    return { success: true, message: "恭喜！项目已成交", data: resultData };
   } catch (e) {
     console.error("成交操作异常:", e);
     return { success: false, message: "网络错误" };

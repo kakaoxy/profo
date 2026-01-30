@@ -3,6 +3,9 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { MarketSentimentData } from "./types";
+import { components } from "@/lib/api-types";
+
+type ApiResponse_Sentiment = components["schemas"]["ApiResponse_MarketSentimentResponse_"];
 
 /**
  * 获取市场情绪数据
@@ -20,7 +23,7 @@ export async function getMarketSentimentAction(projectId: string) {
     if (!communityName) {
       return { success: false, message: "项目未关联小区" };
     }
-
+ 
     // 2. 通过小区名称搜索获取 community_id
     const client = await fetchClient();
     const { data: communitiesData, error: communitiesError } = await client.GET(
@@ -31,17 +34,17 @@ export async function getMarketSentimentAction(projectId: string) {
     );
 
     if (communitiesError || !communitiesData) {
-      console.error("搜索小区失败:", communitiesError);
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    const communities = communitiesData.items;
+    const communitiesWrapper = communitiesData as { data?: { items?: Array<{ id: number }> } };
+    const communities = communitiesWrapper.data?.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${communityName}` };
     }
 
     const communityId = communities[0].id;
-
+ 
     // 3. 调用情绪 API (使用 openapi-fetch client)
     const { data: sentimentData, error: sentimentError } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/sentiment",
@@ -51,11 +54,10 @@ export async function getMarketSentimentAction(projectId: string) {
     );
 
     if (sentimentError || !sentimentData) {
-      console.error("获取情绪数据失败:", sentimentError);
       return { success: false, message: "获取市场情绪数据失败" };
     }
 
-    return { success: true, data: sentimentData as MarketSentimentData };
+    return { success: true, data: (sentimentData as ApiResponse_Sentiment)?.data as MarketSentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -83,7 +85,7 @@ export async function getMarketSentimentByCommunityAction(communityName: string)
       return { success: false, message: "获取市场情绪数据失败" };
     }
 
-    return { success: true, data: sentimentData as MarketSentimentData };
+    return { success: true, data: (sentimentData as ApiResponse_Sentiment)?.data as MarketSentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

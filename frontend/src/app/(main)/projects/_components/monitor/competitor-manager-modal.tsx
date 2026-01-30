@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Loader2, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   getCompetitorsAction,
   getCompetitorsByCommunityAction,
@@ -53,11 +54,11 @@ export function CompetitorManagerModal({
   // 加载竞品列表
   useEffect(() => {
     if (!isOpen) return;
-    
+
     let isMounted = true;
     const loadData = async () => {
       setIsLoading(true);
-      
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let result: any;
 
@@ -69,17 +70,19 @@ export function CompetitorManagerModal({
         setIsLoading(false);
         return;
       }
-      
+
       if (isMounted && result.success && result.data) {
         setCompetitors(result.data);
         setCommunityId(result.communityId ?? null);
       }
       if (isMounted) setIsLoading(false);
     };
-    
+
     loadData();
-    
-    return () => { isMounted = false; };
+
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen, projectId, communityName, refreshKey]);
 
   // 搜索小区
@@ -87,7 +90,7 @@ export function CompetitorManagerModal({
     if (searchQuery.length < 2) {
       return;
     }
-    
+
     let isMounted = true;
     const timer = setTimeout(async () => {
       setIsSearching(true);
@@ -95,49 +98,64 @@ export function CompetitorManagerModal({
       if (isMounted && result.success && result.data) {
         const existing = new Set(competitors.map((c) => c.community_id));
         existing.add(communityId ?? -1);
-        setSearchResults(result.data.filter((c) => !existing.has(c.id)));
+        const data = result.data as CommunitySearchItem[];
+        setSearchResults(data.filter((c) => !existing.has(c.id)));
       }
       if (isMounted) setIsSearching(false);
     }, 300);
-    
-    return () => { isMounted = false; clearTimeout(timer); };
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [searchQuery, competitors, communityId]);
 
   // 添加竞品
   const handleAdd = useCallback(async (competitorId: number) => {
-    if (!communityId) return;
-    setIsAdding(true);
-    const result = await addCompetitorAction(communityId, competitorId);
-    if (result.success) {
-      setSearchQuery("");
-      setSearchResults([]);
-      setRefreshKey((k) => k + 1);
-      onUpdate();
+    if (!communityId) {
+      toast.error("未获取到当前小区信息，无法添加");
+      return;
     }
-    setIsAdding(false);
-  }, [communityId, onUpdate]);
+    setIsAdding(true);
+      const result = await addCompetitorAction(communityId, competitorId);
+      if (result.success) {
+        setSearchQuery("");
+        setSearchResults([]);
+        setRefreshKey((k) => k + 1);
+        onUpdate();
+      }
+      setIsAdding(false);
+    },
+    [communityId, onUpdate],
+  );
 
   // 删除竞品
-  const handleRemove = useCallback(async (competitorId: number) => {
-    if (!communityId) return;
-    setDeletingId(competitorId);
-    const result = await removeCompetitorAction(communityId, competitorId);
-    if (result.success) {
-      setRefreshKey((k) => k + 1);
-      onUpdate();
-    }
-    setDeletingId(null);
-  }, [communityId, onUpdate]);
+  const handleRemove = useCallback(
+    async (competitorId: number) => {
+      if (!communityId) return;
+      setDeletingId(competitorId);
+      const result = await removeCompetitorAction(communityId, competitorId);
+      if (result.success) {
+        setRefreshKey((k) => k + 1);
+        onUpdate();
+      }
+      setDeletingId(null);
+    },
+    [communityId, onUpdate],
+  );
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <h3 className="font-bold text-slate-800">管理竞品小区</h3>
-          <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-slate-200 rounded-full transition-colors"
+          >
             <X size={18} className="text-slate-500" />
           </button>
         </div>
@@ -146,7 +164,9 @@ export function CompetitorManagerModal({
         <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
           {/* 搜索区域 */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1.5">添加竞品小区</label>
+            <label className="block text-xs font-bold text-slate-500 mb-1.5">
+              添加竞品小区
+            </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
@@ -172,7 +192,9 @@ export function CompetitorManagerModal({
                     className="w-full px-3 py-2.5 text-left text-sm hover:bg-indigo-50 transition-colors flex justify-between items-center disabled:opacity-50"
                   >
                     <span className="text-slate-700">{item.name}</span>
-                    <span className="text-xs text-indigo-600 font-medium">+ 添加</span>
+                    <span className="text-xs text-indigo-600 font-medium">
+                      + 添加
+                    </span>
                   </button>
                 ))}
               </div>
@@ -195,11 +217,17 @@ export function CompetitorManagerModal({
             ) : (
               <div className="border border-slate-200 rounded-lg divide-y divide-slate-100">
                 {competitors.map((item) => (
-                  <div key={item.community_id} className="px-4 py-3 flex items-center justify-between">
+                  <div
+                    key={item.community_id}
+                    className="px-4 py-3 flex items-center justify-between"
+                  >
                     <div>
-                      <div className="font-medium text-sm text-slate-800">{item.community_name}</div>
+                      <div className="font-medium text-sm text-slate-800">
+                        {item.community_name}
+                      </div>
                       <div className="text-xs text-slate-400 mt-0.5">
-                        在售 {item.on_sale_count} 套 · 均价 ¥{item.avg_price?.toLocaleString() || "-"}/㎡
+                        在售 {item.on_sale_count} 套 · 均价 ¥
+                        {item.avg_price?.toLocaleString() || "-"}/㎡
                       </div>
                     </div>
                     <Button

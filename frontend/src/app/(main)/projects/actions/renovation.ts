@@ -2,19 +2,14 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
-
-interface ApiResponse<T> {
-  code: number;
-  msg: string;
-  data: T;
-}
+import { extractApiData } from "@/lib/api-helpers";
 
 /**
  * 删除装修照片
  */
 export async function deleteRenovationPhotoAction(
   projectId: string,
-  photoId: string
+  photoId: string,
 ) {
   try {
     const client = await fetchClient();
@@ -27,7 +22,7 @@ export async function deleteRenovationPhotoAction(
             photo_id: photoId,
           },
         },
-      }
+      },
     );
 
     if (error) {
@@ -55,7 +50,7 @@ export async function getRenovationPhotosAction(projectId: string) {
         params: {
           path: { project_id: projectId },
         },
-      }
+      },
     );
 
     if (error) {
@@ -63,9 +58,8 @@ export async function getRenovationPhotosAction(projectId: string) {
       return { success: false, message: errorMsg };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const responseData = data as unknown as ApiResponse<any[]>;
-    return { success: true, data: responseData.data };
+    const photos = extractApiData<unknown[]>(data);
+    return { success: true, data: photos ?? [] };
   } catch (e) {
     console.error("获取装修照片异常:", e);
     return { success: false, message: "网络错误" };
@@ -94,7 +88,7 @@ export async function addRenovationPhotoAction(payload: {
             filename: payload.filename,
           },
         },
-      }
+      },
     );
 
     if (error) {
@@ -130,7 +124,7 @@ export async function updateRenovationStageAction(payload: {
           renovation_stage: payload.renovation_stage as any,
           stage_completed_at: payload.stage_completed_at,
         },
-      }
+      },
     );
 
     if (error) {

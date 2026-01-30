@@ -1,11 +1,13 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
-
+import { extractPaginatedData } from "@/lib/api-helpers";
 
 /**
  * 辅助函数: 从项目获取 community_id
  */
-export async function getCommunityIdFromProject(projectId: string): Promise<number | null> {
+export async function getCommunityIdFromProject(
+  projectId: string,
+): Promise<number | null> {
   const projectResult = await getProjectDetailAction(projectId, false);
   if (!projectResult.success || !projectResult.data) return null;
 
@@ -15,27 +17,29 @@ export async function getCommunityIdFromProject(projectId: string): Promise<numb
   const client = await fetchClient();
   const { data: communitiesData, error } = await client.GET(
     "/api/v1/admin/communities",
-    { params: { query: { search: communityName, page_size: 1 } } }
+    { params: { query: { search: communityName, page_size: 1 } } },
   );
 
-  if (error || !communitiesData) return null;
+  if (error) return null;
 
-  const communities = communitiesData.items;
-  return communities?.[0]?.id || null;
+  const { items } = extractPaginatedData<{ id: number }>(communitiesData);
+  return items?.[0]?.id || null;
 }
 
 /**
  * 辅助函数: 通过名称直接获取 community_id
  */
-export async function getCommunityIdByName(communityName: string): Promise<number | null> {
+export async function getCommunityIdByName(
+  communityName: string,
+): Promise<number | null> {
   const client = await fetchClient();
   const { data: communitiesData, error } = await client.GET(
     "/api/v1/admin/communities",
-    { params: { query: { search: communityName, page_size: 1 } } }
+    { params: { query: { search: communityName, page_size: 1 } } },
   );
 
-  if (error || !communitiesData) return null;
+  if (error) return null;
 
-  const communities = communitiesData.items;
-  return communities?.[0]?.id || null;
+  const { items } = extractPaginatedData<{ id: number }>(communitiesData);
+  return items?.[0]?.id || null;
 }

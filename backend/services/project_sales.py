@@ -10,6 +10,7 @@ from fastapi import HTTPException, status
 from models import Project, SalesRecord
 from models.base import ProjectStatus
 from schemas.project_sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
+from schemas.project import ProjectResponse
 
 class ProjectSalesService:
     def __init__(self, db: Session):
@@ -27,7 +28,7 @@ class ProjectSalesService:
 
     # ========== 销售团队管理 ==========
 
-    def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> Project:
+    def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判)"""
         project = self._get_project(project_id)
 
@@ -43,7 +44,7 @@ class ProjectSalesService:
 
         self.db.commit()
         self.db.refresh(project)
-        return project
+        return ProjectResponse.model_validate(project)
 
     # ========== 销售记录管理 (带看/出价/面谈) ==========
 
@@ -102,7 +103,7 @@ class ProjectSalesService:
 
     # ========== 成交逻辑 ==========
 
-    def complete_project(self, project_id: str, complete_data: ProjectCompleteRequest) -> Project:
+    def complete_project(self, project_id: str, complete_data: ProjectCompleteRequest) -> ProjectResponse:
         """确认成交 (标记为已售)"""
         project = self._get_project(project_id)
 
@@ -122,4 +123,4 @@ class ProjectSalesService:
 
         self.db.commit()
         self.db.refresh(project)
-        return project
+        return ProjectResponse.model_validate(project)

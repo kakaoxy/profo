@@ -1,13 +1,14 @@
 """
 认证相关路由
+使用统一的 ApiResponse 响应包装器
 """
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.concurrency import run_in_threadpool
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from db import get_db
 from models.user import User
@@ -18,6 +19,7 @@ from schemas.user import (
     UserResponse,
     WechatLoginRequest,
 )
+from schemas.response import ApiResponse
 from dependencies.auth import get_current_active_user
 from services.auth_service import AuthService
 from common import limiter
@@ -105,7 +107,7 @@ def refresh_access_token(
     return AuthService.refresh_user_token(db, refresh_data.refresh_token)
 
 
-@router.get("/wechat/authorize")
+@router.get("/wechat/authorize", response_model=ApiResponse[Dict[str, Any]])
 def wechat_authorize(
     redirect_uri: Optional[str] = None
 ):
@@ -114,7 +116,7 @@ def wechat_authorize(
     """
     # 纯逻辑计算，无阻塞，sync 即可
     auth_url = AuthService.generate_wechat_auth_url(redirect_uri)
-    return {"auth_url": auth_url}
+    return ApiResponse.success(data={"auth_url": auth_url})
 
 
 @router.get("/wechat/callback")

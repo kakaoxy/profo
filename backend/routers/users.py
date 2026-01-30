@@ -1,9 +1,10 @@
 """
 用户管理相关路由
+使用统一的 ApiResponse 响应包装器
 """
-from fastapi import APIRouter, Depends, Query
+from typing import Optional, Dict, Any
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from db import get_db
 from models.user import User, Role
@@ -15,6 +16,7 @@ from schemas.user import (
     PasswordChange,
     PasswordResetRequest,
 )
+from schemas.response import ApiResponse
 from utils.auth import get_password_hash
 from dependencies.auth import get_current_admin_user, get_current_active_user
 from services.user_service import user_service
@@ -101,7 +103,7 @@ def update_user(
     return user_service.update_user(db, user_id, user_data)
 
 
-@router.put("/users/{user_id}/reset-password")
+@router.put("/users/{user_id}/reset-password", response_model=ApiResponse[Dict[str, Any]])
 def reset_user_password(
     user_id: str,
     password_data: PasswordResetRequest,
@@ -111,10 +113,11 @@ def reset_user_password(
     """
     重置用户密码
     """
-    return user_service.reset_password(db, user_id, password_data)
+    result = user_service.reset_password(db, user_id, password_data)
+    return ApiResponse.success(data=result)
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}", response_model=ApiResponse[Dict[str, Any]])
 def delete_user(
     user_id: str,
     current_user: User = Depends(get_current_admin_user),
@@ -123,10 +126,11 @@ def delete_user(
     """
     删除用户
     """
-    return user_service.delete_user(db, user_id, current_user.id)
+    result = user_service.delete_user(db, user_id, current_user.id)
+    return ApiResponse.success(data=result)
 
 
-@router.post("/users/change-password")
+@router.post("/users/change-password", response_model=ApiResponse[Dict[str, Any]])
 def change_password(
     password_data: PasswordChange,
     current_user: User = Depends(get_current_active_user),
@@ -135,12 +139,13 @@ def change_password(
     """
     修改当前用户密码
     """
-    return user_service.change_password(db, current_user, password_data)
+    result = user_service.change_password(db, current_user, password_data)
+    return ApiResponse.success(data=result)
 
 
 # ==================== 初始化数据 ====================
 
-@router.post("/init-data")
+@router.post("/init-data", response_model=ApiResponse[Dict[str, Any]])
 def init_system_data(
     db: Session = Depends(get_db)
 ):
@@ -151,8 +156,8 @@ def init_system_data(
     # 检查是否已初始化
     existing_roles = db.query(Role).count()
     if existing_roles > 0:
-        return {"message": "系统数据已初始化"}
-    
+        return ApiResponse.success(data={"message": "系统数据已初始化"})
+
     # 创建默认角色
     roles_data = [
         {
@@ -174,27 +179,27 @@ def init_system_data(
             "permissions": ["view_data"]
         }
     ]
-    
+
     roles = []
     for role_data in roles_data:
         role = Role(**role_data)
         db.add(role)
         roles.append(role)
-    
+
     db.commit()
-    
+
     # 获取管理员角色
     admin_role = next(r for r in roles if r.code == "admin")
-    
+
     # 生成临时密码（符合强密码策略）
     import secrets
     import string
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
-    
+
     # 确保密码符合策略
     temp_password = "Temp" + temp_password + "9!"
-    
+
     # 创建临时管理员用户
     admin_user = User(
         username="admin",
@@ -204,11 +209,11 @@ def init_system_data(
         status="active",
         must_change_password=True  # 标记必须修改密码
     )
-    
+
     db.add(admin_user)
     db.commit()
-    
-    return {
+
+    return ApiResponse.success(data={
         "message": "系统数据初始化成功",
         "warning": "请立即使用临时密码登录并修改密码",
         "temp_admin": {
@@ -216,4 +221,4 @@ def init_system_data(
             "temp_password": temp_password,
             "note": "此密码仅显示一次，请妥善保存。首次登录必须修改密码。"
         }
-    }
+    })
