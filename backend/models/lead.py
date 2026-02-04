@@ -23,7 +23,7 @@ class Lead(Base):
     layout = Column(String(50), comment="户型(e.g. 2室1厅)")
     orientation = Column(String(50), comment="朝向")
     floor_info = Column(String(50), comment="楼层信息")
-    area = Column(Float, comment="面积(㎡)")
+    area = Column(Numeric(10, 2), comment="面积(㎡)")
     
     # Price Info
     total_price = Column(Numeric(15, 2), comment="当前授权总价(万)")
@@ -44,7 +44,7 @@ class Lead(Base):
     
     # Linkage
     creator_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="创建人ID")
-    source_property_id = Column(Integer, ForeignKey("property_current.id"), nullable=True, comment="关联房源ID(如有)")
+    source_property_id = Column(Integer, nullable=True, comment="关联房源ID(软引用)")
     
     # Timestamps
     last_follow_up_at = Column(DateTime, nullable=True, comment="最后跟进时间")
@@ -54,7 +54,6 @@ class Lead(Base):
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id])
     auditor = relationship("User", foreign_keys=[auditor_id])
-    source_property = relationship("PropertyCurrent")
     follow_ups = relationship("LeadFollowUp", back_populates="lead", cascade="all, delete-orphan")
     price_history = relationship("LeadPriceHistory", back_populates="lead", cascade="all, delete-orphan")
 

@@ -24,10 +24,10 @@ class ProjectCoreService:
             noload(Project.cashflow_records),
             defer(Project.signing_materials), 
             defer(Project.owner_info),
-            defer(Project.viewingRecords),
-            defer(Project.offerRecords),
-            defer(Project.negotiationRecords),
-            defer(Project.otherAgreements),
+            defer(Project.viewing_records),
+            defer(Project.offer_records),
+            defer(Project.negotiation_records),
+            defer(Project.other_agreements),
             defer(Project.notes)
         ]
 
@@ -49,7 +49,7 @@ class ProjectCoreService:
         if include_all:
             _ = project.signing_materials
             _ = project.owner_info
-            _ = project.otherAgreements
+            _ = project.other_agreements
             _ = project.notes
             # 显式触发装修照片加载，确保序列化时数据存在
             _ = project.renovation_photos
@@ -58,19 +58,28 @@ class ProjectCoreService:
         elif project.status == ProjectStatus.SIGNING.value:
             _ = project.signing_materials
             _ = project.owner_info
-            _ = project.otherAgreements
+            _ = project.other_agreements
             _ = project.notes
         
         # 情况C：项目处于已售状态 (且没有要求完整数据 -> 保持极速模式)
         elif project.status == ProjectStatus.SOLD.value:
             project.signing_materials = None
             project.owner_info = None
-            project.otherAgreements = None
+            project.other_agreements = None
 
         return project
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """创建项目"""
+        layout = project_data.layout
+        if layout is None and project_data.rooms is not None:
+            parts = [f"{project_data.rooms}室"]
+            if project_data.halls is not None:
+                parts.append(f"{project_data.halls}厅")
+            if project_data.baths is not None:
+                parts.append(f"{project_data.baths}卫")
+            layout = "".join(parts)
+
         project = Project(
             name=project_data.name,
             community_name=project_data.community_name,
@@ -88,10 +97,15 @@ class ProjectCoreService:
             
             # Extended fields
             area=project_data.area,
-            extensionPeriod=project_data.extensionPeriod,
-            extensionRent=project_data.extensionRent,
-            costAssumption=project_data.costAssumption,
-            otherAgreements=project_data.otherAgreements,
+            rooms=project_data.rooms,
+            halls=project_data.halls,
+            baths=project_data.baths,
+            orientation=project_data.orientation,
+            layout=layout,
+            extension_period=project_data.extension_period,
+            extension_rent=project_data.extension_rent,
+            cost_assumption=project_data.cost_assumption,
+            other_agreements=project_data.other_agreements,
             remarks=project_data.remarks,
             
             notes=project_data.notes,
@@ -140,11 +154,11 @@ class ProjectCoreService:
             # 文本大字段优化
             defer(Project.signing_materials),
             defer(Project.owner_info),
-            defer(Project.otherAgreements),
+            defer(Project.other_agreements),
             defer(Project.notes),
-            defer(Project.viewingRecords),
-            defer(Project.offerRecords),
-            defer(Project.negotiationRecords),
+            defer(Project.viewing_records),
+            defer(Project.offer_records),
+            defer(Project.negotiation_records),
 
             
             # [关键] 关系字段优化：彻底切断查询
@@ -173,10 +187,11 @@ class ProjectCoreService:
         if project.status == ProjectStatus.SOLD.value:
             # 已售状态，只允许修改特定字段
             allowed_fields = {
-                'channelManager', 'presenter', 'negotiator',
-                'viewingRecords', 'offerRecords', 'negotiationRecords',
+                'channel_manager', 'presenter', 'negotiator',
+                'viewing_records', 'offer_records', 'negotiation_records',
                 'property_agent', 'client_agent', 'first_viewer',
-                'list_price','signing_materials', 'owner_info', 'otherAgreements', 'notes'
+                'list_price','signing_materials', 'owner_info', 'other_agreements', 'notes',
+                'rooms', 'halls', 'baths', 'orientation', 'layout'
             }
             
             # 过滤掉不允许修改的字段
@@ -191,6 +206,22 @@ class ProjectCoreService:
         for field, value in update_dict.items():
             if hasattr(project, field):
                 setattr(project, field, value)
+
+        if (
+            update_dict.get("layout") is None
+            and (
+                "rooms" in update_dict
+                or "halls" in update_dict
+                or "baths" in update_dict
+            )
+            and project.rooms is not None
+        ):
+            parts = [f"{project.rooms}室"]
+            if project.halls is not None:
+                parts.append(f"{project.halls}厅")
+            if project.baths is not None:
+                parts.append(f"{project.baths}卫")
+            project.layout = "".join(parts)
 
         self.db.commit()
         self.db.refresh(project)

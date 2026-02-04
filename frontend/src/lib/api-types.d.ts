@@ -1568,9 +1568,7 @@ export interface components {
              * Data
              * @description 响应数据
              */
-            data?: {
-                [key: string]: unknown;
-            } | null;
+            data?: Record<string, never> | null;
             /**
              * Message
              * @description 状态消息（兼容字段）
@@ -1640,9 +1638,7 @@ export interface components {
              * Data
              * @description 响应数据
              */
-            data?: {
-                [key: string]: unknown;
-            }[] | null;
+            data?: Record<string, never>[] | null;
             /**
              * Message
              * @description 状态消息（兼容字段）
@@ -1949,10 +1945,7 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /**
-             * Password
-             * Format: password
-             */
+            /** Password */
             password: string;
             /**
              * Scope
@@ -1961,10 +1954,7 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /**
-             * Client Secret
-             * Format: password
-             */
+            /** Client Secret */
             client_secret?: string | null;
         };
         /** Body_upload_csv_api_v1_upload_csv_post */
@@ -2859,13 +2849,13 @@ export interface components {
          * @description 确认成交请求
          */
         ProjectCompleteRequest: {
-            /** Soldprice */
-            soldPrice: number | string;
+            /** Sold Price */
+            sold_price: number | string;
             /**
-             * Solddate
+             * Sold Date
              * Format: date-time
              */
-            soldDate: string;
+            sold_date: string;
         };
         /**
          * ProjectCreate
@@ -2916,9 +2906,7 @@ export interface components {
              * Signing Materials
              * @description 签约材料
              */
-            signing_materials?: {
-                [key: string]: unknown;
-            } | null;
+            signing_materials?: Record<string, never> | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -2938,9 +2926,7 @@ export interface components {
              * Owner Info
              * @description 业主其他信息
              */
-            owner_info?: {
-                [key: string]: unknown;
-            } | null;
+            owner_info?: Record<string, never> | null;
             /**
              * Notes
              * @description 备注
@@ -2957,25 +2943,50 @@ export interface components {
              */
             area?: number | string | null;
             /**
-             * Extensionperiod
+             * Rooms
+             * @description 室
+             */
+            rooms?: number | null;
+            /**
+             * Halls
+             * @description 厅
+             */
+            halls?: number | null;
+            /**
+             * Baths
+             * @description 卫
+             */
+            baths?: number | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Layout
+             * @description 户型(展示用)
+             */
+            layout?: string | null;
+            /**
+             * Extension Period
              * @description 顺延期(月)
              */
-            extensionPeriod?: number | null;
+            extension_period?: number | null;
             /**
-             * Extensionrent
+             * Extension Rent
              * @description 顺延期租金(元/月)
              */
-            extensionRent?: number | string | null;
+            extension_rent?: number | string | null;
             /**
-             * Costassumption
+             * Cost Assumption
              * @description 税费及佣金承担
              */
-            costAssumption?: string | null;
+            cost_assumption?: string | null;
             /**
-             * Otheragreements
+             * Other Agreements
              * @description 其他约定
              */
-            otherAgreements?: string | null;
+            other_agreements?: string | null;
             /**
              * Remarks
              * @description 备注
@@ -3088,9 +3099,7 @@ export interface components {
              * Signing Materials
              * @description 签约材料
              */
-            signing_materials?: {
-                [key: string]: unknown;
-            } | null;
+            signing_materials?: Record<string, never> | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -3110,9 +3119,7 @@ export interface components {
              * Owner Info
              * @description 业主其他信息
              */
-            owner_info?: {
-                [key: string]: unknown;
-            } | null;
+            owner_info?: Record<string, never> | null;
             /**
              * Notes
              * @description 备注
@@ -3129,25 +3136,50 @@ export interface components {
              */
             area?: string | null;
             /**
-             * Extensionperiod
+             * Rooms
+             * @description 室
+             */
+            rooms?: number | null;
+            /**
+             * Halls
+             * @description 厅
+             */
+            halls?: number | null;
+            /**
+             * Baths
+             * @description 卫
+             */
+            baths?: number | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Layout
+             * @description 户型(展示用)
+             */
+            layout?: string | null;
+            /**
+             * Extension Period
              * @description 顺延期(月)
              */
-            extensionPeriod?: number | null;
+            extension_period?: number | null;
             /**
-             * Extensionrent
+             * Extension Rent
              * @description 顺延期租金(元/月)
              */
-            extensionRent?: string | null;
+            extension_rent?: string | null;
             /**
-             * Costassumption
+             * Cost Assumption
              * @description 税费及佣金承担
              */
-            costAssumption?: string | null;
+            cost_assumption?: string | null;
             /**
-             * Otheragreements
+             * Other Agreements
              * @description 其他约定
              */
-            otherAgreements?: string | null;
+            other_agreements?: string | null;
             /**
              * Remarks
              * @description 备注
@@ -3208,18 +3240,18 @@ export interface components {
             sale_price?: string | null;
             /** List Price */
             list_price?: string | null;
-            /** Soldprice */
-            soldPrice?: string | null;
-            /** Solddate */
-            soldDate?: string | null;
+            /** Sold Price */
+            sold_price?: string | null;
+            /** Sold Date */
+            sold_date?: string | null;
             /** Property Agent */
             property_agent?: string | null;
             /** Client Agent */
             client_agent?: string | null;
             /** First Viewer */
             first_viewer?: string | null;
-            /** Channelmanager */
-            channelManager?: string | null;
+            /** Channel Manager */
+            channel_manager?: string | null;
             /** Presenter */
             presenter?: string | null;
             /** Negotiator */
@@ -3230,26 +3262,20 @@ export interface components {
              * @default []
              */
             sales_records: components["schemas"]["SalesRecordResponse"][] | null;
-            /** Viewingrecords */
-            viewingRecords?: {
-                [key: string]: unknown;
-            }[] | null;
-            /** Offerrecords */
-            offerRecords?: {
-                [key: string]: unknown;
-            }[] | null;
-            /** Negotiationrecords */
-            negotiationRecords?: {
-                [key: string]: unknown;
-            }[] | null;
+            /** Viewing Records */
+            viewing_records?: Record<string, never>[] | null;
+            /** Offer Records */
+            offer_records?: Record<string, never>[] | null;
+            /** Negotiation Records */
+            negotiation_records?: Record<string, never>[] | null;
             /**
              * Renovation Photos
              * @description 装修照片
              * @default []
              */
             renovation_photos: components["schemas"]["RenovationPhotoResponse"][] | null;
-            /** Renovationstagedates */
-            renovationStageDates?: {
+            /** Renovation Stage Dates */
+            renovation_stage_dates?: {
                 [key: string]: string;
             } | null;
         };
@@ -3292,9 +3318,7 @@ export interface components {
             /** Planned Handover Date */
             planned_handover_date?: string | null;
             /** Signing Materials */
-            signing_materials?: {
-                [key: string]: unknown;
-            } | null;
+            signing_materials?: Record<string, never> | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
@@ -3302,27 +3326,35 @@ export interface components {
             /** Owner Id Card */
             owner_id_card?: string | null;
             /** Owner Info */
-            owner_info?: {
-                [key: string]: unknown;
-            } | null;
+            owner_info?: Record<string, never> | null;
             /** Notes */
             notes?: string | null;
             /** Tags */
             tags?: string[] | null;
             /** Area */
             area?: number | string | null;
-            /** Extensionperiod */
-            extensionPeriod?: number | null;
-            /** Extensionrent */
-            extensionRent?: number | string | null;
-            /** Costassumption */
-            costAssumption?: string | null;
-            /** Otheragreements */
-            otherAgreements?: string | null;
+            /** Rooms */
+            rooms?: number | null;
+            /** Halls */
+            halls?: number | null;
+            /** Baths */
+            baths?: number | null;
+            /** Orientation */
+            orientation?: string | null;
+            /** Layout */
+            layout?: string | null;
+            /** Extension Period */
+            extension_period?: number | null;
+            /** Extension Rent */
+            extension_rent?: number | string | null;
+            /** Cost Assumption */
+            cost_assumption?: string | null;
+            /** Other Agreements */
+            other_agreements?: string | null;
             /** Remarks */
             remarks?: string | null;
-            /** Channelmanager */
-            channelManager?: string | null;
+            /** Channel Manager */
+            channel_manager?: string | null;
             /** Presenter */
             presenter?: string | null;
             /** Negotiator */
@@ -3529,9 +3561,7 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: {
-                [key: string]: unknown;
-            }[];
+            errors?: Record<string, never>[];
         };
         /**
          * RecordType
@@ -3731,9 +3761,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -3768,9 +3796,7 @@ export interface components {
             /** Customer Phone */
             customer_phone: string | null;
             /** Customer Info */
-            customer_info: {
-                [key: string]: unknown;
-            } | null;
+            customer_info: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -3799,8 +3825,8 @@ export interface components {
          * @description 更新销售角色
          */
         SalesRolesUpdate: {
-            /** Channelmanager */
-            channelManager?: string | null;
+            /** Channel Manager */
+            channel_manager?: string | null;
             /** Presenter */
             presenter?: string | null;
             /** Negotiator */
@@ -4176,9 +4202,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
+                "application/json": Record<string, never>[];
             };
         };
         responses: {
