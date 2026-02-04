@@ -64,6 +64,22 @@ def init_db():
     """
     from models import Base
     Base.metadata.create_all(bind=engine)
+    from migrations.runtime import (
+        ensure_project_snake_case_columns,
+        ensure_project_physical_fields,
+        ensure_projects_roi_numeric,
+        ensure_leads_area_numeric,
+        ensure_property_current_numeric_fields,
+        ensure_leads_source_property_soft_ref,
+        ensure_mini_projects_project_soft_ref,
+    )
+    ensure_project_snake_case_columns(engine)
+    ensure_project_physical_fields(engine)
+    ensure_projects_roi_numeric(engine)
+    ensure_leads_area_numeric(engine)
+    ensure_property_current_numeric_fields(engine)
+    ensure_leads_source_property_soft_ref(engine)
+    ensure_mini_projects_project_soft_ref(engine)
     print("Database tables created successfully")
 
 

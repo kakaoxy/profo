@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from models.base import ProjectStatus
 from .project_sales import SalesRecordResponse
 from .project_renovation import RenovationPhotoResponse
@@ -32,12 +32,34 @@ class ProjectBase(BaseModel):
     notes: Optional[str] = Field(None, description="备注")
     tags: Optional[List[str]] = Field(None, description="标签")
     area: Optional[Decimal] = Field(None, description="产证面积(m²)")
+    rooms: Optional[int] = Field(None, description="室")
+    halls: Optional[int] = Field(None, description="厅")
+    baths: Optional[int] = Field(None, description="卫")
+    orientation: Optional[str] = Field(None, description="朝向")
+    layout: Optional[str] = Field(None, description="户型(展示用)")
     
     # 扩展字段
-    extensionPeriod: Optional[int] = Field(None, description="顺延期(月)")
-    extensionRent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
-    costAssumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
-    otherAgreements: Optional[str] = Field(None, description="其他约定")
+    extension_period: Optional[int] = Field(
+        None,
+        validation_alias=AliasChoices("extension_period", "extensionPeriod"),
+        description="顺延期(月)",
+    )
+    extension_rent: Optional[Decimal] = Field(
+        None,
+        validation_alias=AliasChoices("extension_rent", "extensionRent"),
+        description="顺延期租金(元/月)",
+    )
+    cost_assumption: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("cost_assumption", "costAssumption"),
+        max_length=50,
+        description="税费及佣金承担",
+    )
+    other_agreements: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("other_agreements", "otherAgreements"),
+        description="其他约定",
+    )
     remarks: Optional[str] = Field(None, description="备注")
 
     # [关键] 财务缓存字段 (继承给 Response 用)
@@ -70,14 +92,36 @@ class ProjectUpdate(BaseModel):
     notes: Optional[str] = Field(None)
     tags: Optional[List[str]] = Field(None)
     area: Optional[Decimal] = Field(None)
-    extensionPeriod: Optional[int] = Field(None)
-    extensionRent: Optional[Decimal] = Field(None)
-    costAssumption: Optional[str] = Field(None, max_length=50)
-    otherAgreements: Optional[str] = Field(None)
+    rooms: Optional[int] = Field(None)
+    halls: Optional[int] = Field(None)
+    baths: Optional[int] = Field(None)
+    orientation: Optional[str] = Field(None, max_length=50)
+    layout: Optional[str] = Field(None, max_length=50)
+    extension_period: Optional[int] = Field(
+        None,
+        validation_alias=AliasChoices("extension_period", "extensionPeriod"),
+    )
+    extension_rent: Optional[Decimal] = Field(
+        None,
+        validation_alias=AliasChoices("extension_rent", "extensionRent"),
+    )
+    cost_assumption: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("cost_assumption", "costAssumption"),
+        max_length=50,
+    )
+    other_agreements: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("other_agreements", "otherAgreements"),
+    )
     remarks: Optional[str] = Field(None)
     
     # 销售角色
-    channelManager: Optional[str] = Field(None, max_length=100)
+    channel_manager: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("channel_manager", "channelManager"),
+        max_length=100,
+    )
     presenter: Optional[str] = Field(None, max_length=100)
     negotiator: Optional[str] = Field(None, max_length=100)
     
@@ -114,29 +158,50 @@ class ProjectResponse(ProjectBase):
     list_price: Optional[Decimal] = None # 挂牌价
     
     # [关键修复] 显式定义成交价字段，对应数据库模型的 soldPrice
-    soldPrice: Optional[Decimal] = None 
+    sold_price: Optional[Decimal] = Field(
+        default=None,
+        validation_alias=AliasChoices("sold_price", "soldPrice"),
+    )
     # [关键修复] 显式定义成交日期，对应数据库模型的 soldDate
-    soldDate: Optional[datetime] = None 
+    sold_date: Optional[datetime] = Field(
+        default=None,
+        validation_alias=AliasChoices("sold_date", "soldDate"),
+    )
 
     # 销售角色
     property_agent: Optional[str] = None
     client_agent: Optional[str] = None
     first_viewer: Optional[str] = None
-    channelManager: Optional[str] = None
+    channel_manager: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("channel_manager", "channelManager"),
+    )
     presenter: Optional[str] = None
     negotiator: Optional[str] = None
     
     sales_records: Optional[List[SalesRecordResponse]] = Field(default=[], description="销售记录")
 
-    viewingRecords: Optional[List[Dict[str, Any]]] = None 
-    offerRecords: Optional[List[Dict[str, Any]]] = None
-    negotiationRecords: Optional[List[Dict[str, Any]]] = None
+    viewing_records: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        validation_alias=AliasChoices("viewing_records", "viewingRecords"),
+    )
+    offer_records: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        validation_alias=AliasChoices("offer_records", "offerRecords"),
+    )
+    negotiation_records: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        validation_alias=AliasChoices("negotiation_records", "negotiationRecords"),
+    )
     
     # 装修照片
     renovation_photos: Optional[List[RenovationPhotoResponse]] = Field(default=[], description="装修照片")
     
     # 改造阶段完成时间
-    renovationStageDates: Optional[Dict[str, str]] = None
+    renovation_stage_dates: Optional[Dict[str, str]] = Field(
+        default=None,
+        validation_alias=AliasChoices("renovation_stage_dates", "renovationStageDates"),
+    )
 
 class ProjectListResponse(BaseModel):
     items: List[ProjectResponse]

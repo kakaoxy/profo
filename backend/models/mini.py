@@ -32,7 +32,7 @@ class MiniProject(BaseModel):
     """小程序项目表"""
     __tablename__ = "mini_projects"
 
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=True, comment="关联主项目ID")
+    project_id = Column(String(36), nullable=True, comment="关联主项目ID(软引用)")
     consultant_id = Column(String(36), ForeignKey("consultants.id"), comment="关联顾问ID")
 
     # 营销信息 (运营维护，同步不覆盖)
@@ -62,7 +62,6 @@ class MiniProject(BaseModel):
 
     # 关联关系
     # 注意：这里是单向关联，Project模型不需要感知MiniProject的存在
-    project = relationship("Project")
     consultant = relationship("Consultant", back_populates="mini_projects")
     photos = relationship("MiniProjectPhoto", back_populates="mini_project", cascade="all, delete-orphan")
 

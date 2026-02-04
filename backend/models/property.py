@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, Boolean, Text,
-    ForeignKey, Index, UniqueConstraint, Enum as SQLEnum
+    ForeignKey, Index, UniqueConstraint, Enum as SQLEnum, Numeric
 )
 from sqlalchemy.orm import relationship
 from .base import Base, PropertyStatus, ChangeType
@@ -43,15 +43,15 @@ class PropertyCurrent(Base):
     floor_level = Column(String(20), nullable=True, comment="楼层级别(低/中/高)")
     
     # 面积信息
-    build_area = Column(Float, nullable=False, comment="建筑面积(㎡)")
-    inner_area = Column(Float, nullable=True, comment="套内面积(㎡)")
+    build_area = Column(Numeric(10, 2), nullable=False, comment="建筑面积(㎡)")
+    inner_area = Column(Numeric(10, 2), nullable=True, comment="套内面积(㎡)")
     
     # 价格信息 - 在售
-    listed_price_wan = Column(Float, nullable=True, comment="挂牌价(万)")
+    listed_price_wan = Column(Numeric(15, 2), nullable=True, comment="挂牌价(万)")
     listed_date = Column(DateTime, nullable=True, comment="上架时间")
     
     # 价格信息 - 成交
-    sold_price_wan = Column(Float, nullable=True, comment="成交价(万)")
+    sold_price_wan = Column(Numeric(15, 2), nullable=True, comment="成交价(万)")
     sold_date = Column(DateTime, nullable=True, comment="成交时间")
     
     # 建筑信息

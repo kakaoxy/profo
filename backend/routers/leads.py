@@ -88,7 +88,6 @@ def get_leads(
         joinedload(Lead.creator),
         # 列表页不需要以下关联，完全禁止加载
         noload(Lead.auditor),
-        noload(Lead.source_property),
         noload(Lead.follow_ups),
         noload(Lead.price_history),
     )

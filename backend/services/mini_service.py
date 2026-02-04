@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, and_
 
 from models import (
-    MiniProject, Project, PropertyCurrent, Consultant, Community, 
+    MiniProject, Project, Consultant, 
     MiniProjectPhoto, RenovationPhoto, ProjectStatus
 )
 from schemas.mini import MiniProjectCreate, MiniProjectUpdate, ConsultantCreate, ConsultantUpdate
@@ -69,21 +69,23 @@ class MiniProjectService:
         
         created_count = 0
         for p in new_projects:
-            # 尝试查找关联小区的房源信息 (取第一个匹配的)
-            prop = None
-            if p.community_name:
-                prop = self.db.query(PropertyCurrent).join(Community).filter(
-                    Community.name == p.community_name
-                ).first()
-            
+            layout = p.layout
+            if layout is None and p.rooms is not None:
+                parts = [f"{p.rooms}室"]
+                if p.halls is not None:
+                    parts.append(f"{p.halls}厅")
+                if p.baths is not None:
+                    parts.append(f"{p.baths}卫")
+                layout = "".join(parts)
+
             mini = MiniProject(
                 project_id=p.id,
                 title=p.name,
                 address=f"{p.community_name} {p.address}" if p.community_name else p.address,
                 area=p.area,
                 price=p.signing_price,
-                layout=f"{prop.rooms}室{prop.halls}厅{prop.baths}卫" if prop else None,
-                orientation=prop.orientation if prop else None,
+                layout=layout,
+                orientation=p.orientation,
                 is_published=False
             )
             self.db.add(mini)
@@ -104,14 +106,18 @@ class MiniProjectService:
         mini.address = f"{project.community_name} {project.address}" if project.community_name else project.address
         mini.area = project.area
         mini.price = project.signing_price
-        
-        if project.community_name:
-            prop = self.db.query(PropertyCurrent).join(Community).filter(
-                Community.name == project.community_name
-            ).first()
-            if prop:
-                mini.layout = f"{prop.rooms}室{prop.halls}厅{prop.baths}卫"
-                mini.orientation = prop.orientation
+
+        layout = project.layout
+        if layout is None and project.rooms is not None:
+            parts = [f"{project.rooms}室"]
+            if project.halls is not None:
+                parts.append(f"{project.halls}厅")
+            if project.baths is not None:
+                parts.append(f"{project.baths}卫")
+            layout = "".join(parts)
+
+        mini.layout = layout
+        mini.orientation = project.orientation
             
         self.db.commit()
         self.db.refresh(mini)

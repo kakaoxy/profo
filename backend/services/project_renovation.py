@@ -40,17 +40,17 @@ class ProjectRenovationService:
         # 记录当前阶段的完成时间
         current_stage = project.renovation_stage
         if current_stage and renovation_data.stage_completed_at:
-            if not project.renovationStageDates:
-                project.renovationStageDates = {}
+            if not project.renovation_stage_dates:
+                project.renovation_stage_dates = {}
             
             # 更新 JSON 字段（注意：SQLAlchemy 可能需要显式 re-assign 或 flag_modified）
-            dates = dict(project.renovationStageDates)
+            dates = dict(project.renovation_stage_dates)
             # 使用 YYYY-MM-DD 格式存储
             dates[current_stage] = renovation_data.stage_completed_at.strftime("%Y-%m-%d")
-            project.renovationStageDates = dates
+            project.renovation_stage_dates = dates
             
             from sqlalchemy.orm.attributes import flag_modified
-            flag_modified(project, "renovationStageDates")
+            flag_modified(project, "renovation_stage_dates")
 
         # 更新到下一个阶段
         project.renovation_stage = renovation_data.renovation_stage.value

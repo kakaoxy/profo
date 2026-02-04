@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, Field, model_validator, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 from models.base import CashFlowType, CashFlowCategory
 
 class CashFlowRecordCreate(BaseModel):
@@ -15,31 +15,6 @@ class CashFlowRecordCreate(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
-    @model_validator(mode='after')
-    def validate_category_match(self) -> 'CashFlowRecordCreate':
-        expense_categories = {
-            CashFlowCategory.PERFORMANCE_BOND,
-            CashFlowCategory.AGENCY_COMMISSION,
-            CashFlowCategory.RENOVATION_FEE,
-            CashFlowCategory.MARKETING_FEE,
-            CashFlowCategory.OTHER_EXPENSE,
-            CashFlowCategory.TAX_FEE,
-            CashFlowCategory.OPERATION_FEE,
-        }
-        income_categories = {
-            CashFlowCategory.BOND_RETURN,
-            CashFlowCategory.PREMIUM,
-            CashFlowCategory.SERVICE_FEE,
-            CashFlowCategory.OTHER_INCOME,
-            CashFlowCategory.SALE_PRICE,
-        }
-        
-        if self.type == CashFlowType.EXPENSE and self.category not in expense_categories:
-            raise ValueError(f"支出类型不能使用分类: {self.category}")
-        if self.type == CashFlowType.INCOME and self.category not in income_categories:
-            raise ValueError(f"收入类型不能使用分类: {self.category}")
-        return self
-
 class CashFlowRecordResponse(BaseModel):
     id: str
     project_id: str
@@ -50,7 +25,7 @@ class CashFlowRecordResponse(BaseModel):
     description: Optional[str]
     related_stage: Optional[str]
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
 
 class CashFlowSummary(BaseModel):
     total_income: Decimal
@@ -59,7 +34,7 @@ class CashFlowSummary(BaseModel):
     roi: float
     annualized_return: float = 0.0
     holding_days: int = 0
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
 
 class CashFlowResponse(BaseModel):
     records: List[CashFlowRecordResponse]
@@ -87,4 +62,4 @@ class ProjectReportResponse(BaseModel):
     sale_price: Optional[Decimal]
     list_price: Optional[Decimal]
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})

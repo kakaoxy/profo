@@ -1,12 +1,16 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from models.base import RecordType
 
 class SalesRolesUpdate(BaseModel):
     """更新销售角色"""
-    channelManager: Optional[str] = Field(None, max_length=100)
+    channel_manager: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("channel_manager", "channelManager"),
+        max_length=100,
+    )
     presenter: Optional[str] = Field(None, max_length=100)
     negotiator: Optional[str] = Field(None, max_length=100)
     
@@ -51,8 +55,14 @@ class SalesRecordResponse(BaseModel):
 
 class ProjectCompleteRequest(BaseModel):
     """确认成交请求"""
-    sold_price: Decimal = Field(..., alias="soldPrice")
-    sold_date: datetime = Field(..., alias="soldDate")
+    sold_price: Decimal = Field(
+        ...,
+        validation_alias=AliasChoices("sold_price", "soldPrice"),
+    )
+    sold_date: datetime = Field(
+        ...,
+        validation_alias=AliasChoices("sold_date", "soldDate"),
+    )
 
     model_config = ConfigDict(
         populate_by_name=True, # 允许 Python 代码里用 sold_price 赋值

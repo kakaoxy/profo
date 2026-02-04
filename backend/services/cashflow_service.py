@@ -163,8 +163,8 @@ class CashFlowService:
                 # 统一转为 date 对象计算天数，忽略时分秒
                 end_date = datetime.now()
                 # 只有状态为已售且有成交日期时才取成交日期
-                if project.status == "sold" and project.soldDate:
-                    end_date = project.soldDate
+                if project.status == "sold" and project.sold_date:
+                    end_date = project.sold_date
                 
                 delta = end_date.date() - start_date.date()
                 holding_days = max(delta.days, 0)

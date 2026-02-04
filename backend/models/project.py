@@ -25,7 +25,7 @@ class Project(BaseModel):
     signing_period = Column(Integer, nullable=True, comment="签约周期(天)")
     planned_handover_date = Column(DateTime, nullable=True, comment="计划交房时间")
     signing_materials = Column(JSON, nullable=True, comment="签约材料(照片等)")
-    otherAgreements = Column(Text, nullable=True, comment="其他约定")
+    other_agreements = Column(Text, nullable=True, comment="其他约定")
     remarks = Column(Text, nullable=True, comment="备注")
 
     # 业主信息
@@ -35,12 +35,17 @@ class Project(BaseModel):
     owner_info = Column(JSON, comment="业主其他信息")
     
     # 延期信息
-    extensionPeriod = Column(Integer, nullable=True, comment="顺延期(月)")
-    extensionRent = Column(Numeric(15, 2), nullable=True, comment="顺延期租金(元/月)")
-    costAssumption = Column(String(50), nullable=True, comment="税费及佣金承担")
+    extension_period = Column(Integer, nullable=True, comment="顺延期(月)")
+    extension_rent = Column(Numeric(15, 2), nullable=True, comment="顺延期租金(元/月)")
+    cost_assumption = Column(String(50), nullable=True, comment="税费及佣金承担")
     
     # 物业信息
     area = Column(Numeric(10, 2), nullable=True, comment="产证面积(m²)")
+    rooms = Column(Integer, nullable=True, comment="室")
+    halls = Column(Integer, nullable=True, comment="厅")
+    baths = Column(Integer, nullable=True, comment="卫")
+    orientation = Column(String(50), nullable=True, comment="朝向")
+    layout = Column(String(50), nullable=True, comment="户型(展示用)")
 
     # 项目状态
     status = Column(String(20), nullable=False, default=ProjectStatus.SIGNING.value, comment="项目状态")
@@ -62,30 +67,30 @@ class Project(BaseModel):
     first_viewer = Column(String(100), comment="首看人")
     
     # 新增销售角色字段（前端使用）
-    channelManager = Column(String(100), comment="渠道负责人")
+    channel_manager = Column(String(100), comment="渠道负责人")
     presenter = Column(String(100), comment="讲房师")
     negotiator = Column(String(100), comment="联卖谈判")
 
     # 销售记录（前端使用，JSON格式存储）
-    viewingRecords = Column(JSON, nullable=True, comment="带看记录")
-    offerRecords = Column(JSON, nullable=True, comment="出价记录")
-    negotiationRecords = Column(JSON, nullable=True, comment="面谈记录")
+    viewing_records = Column(JSON, nullable=True, comment="带看记录")
+    offer_records = Column(JSON, nullable=True, comment="出价记录")
+    negotiation_records = Column(JSON, nullable=True, comment="面谈记录")
 
     # 已售相关字段（前端使用）
-    soldPrice = Column(Numeric(15, 2), comment="成交价格")
-    soldDate = Column(DateTime, comment="成交日期")
+    sold_price = Column(Numeric(15, 2), comment="成交价格")
+    sold_date = Column(DateTime, comment="成交日期")
 
     # 其他信息
     notes = Column(Text, comment="备注")
     tags = Column(JSON, comment="标签")
     
     # 改造阶段完成时间（前端使用，JSON格式存储，key为改造阶段名称，value为完成日期）
-    renovationStageDates = Column(JSON, nullable=True, comment="改造阶段完成时间")
+    renovation_stage_dates = Column(JSON, nullable=True, comment="改造阶段完成时间")
     
     total_income = Column(Numeric(15, 2), default=0, nullable=False, server_default="0", comment="累计收入(缓存)")
     total_expense = Column(Numeric(15, 2), default=0, nullable=False, server_default="0", comment="累计支出(缓存)")
     net_cash_flow = Column(Numeric(15, 2), default=0, nullable=False, server_default="0", comment="净现金流(缓存)")
-    roi = Column(Float, default=0.0, nullable=False, server_default="0", comment="投资回报率(缓存)")
+    roi = Column(Numeric(10, 2), default=0, nullable=False, server_default="0", comment="投资回报率(缓存)")
     
     # 关联关系
     cashflow_records = relationship("CashFlowRecord", back_populates="project", cascade="all, delete-orphan")
