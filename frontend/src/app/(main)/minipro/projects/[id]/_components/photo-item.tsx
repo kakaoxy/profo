@@ -21,6 +21,11 @@ export function PhotoItem({
   isSynced = true,
 }: PhotoItemProps) {
   const stageLabels: Record<string, string> = {
+    signing: "签约阶段",
+    renovating: "改造阶段",
+    selling: "销售阶段",
+    sold: "已售阶段",
+    other: "其他",
     设计: "设计阶段",
     拆除: "拆除阶段",
     水电: "水电阶段",
@@ -32,12 +37,13 @@ export function PhotoItem({
   };
 
   const stage = photo.renovation_stage || "other";
+  const displayUrl = photo.final_url || photo.image_url;
 
   return (
     <div className="flex items-center gap-4 rounded-lg border bg-muted/20 p-3 hover:bg-background transition-colors">
       <div
         className="w-12 h-12 rounded-md bg-cover bg-center border shrink-0 relative"
-        style={{ backgroundImage: `url(${getFileUrl(photo.image_url)})` }}
+        style={{ backgroundImage: `url(${getFileUrl(displayUrl)})` }}
       >
         <Badge
           className={cn(
@@ -53,7 +59,7 @@ export function PhotoItem({
           {photo.id.slice(0, 8)}
         </p>
         <p className="text-xs text-muted-foreground">
-          阶段: {stageLabels[stage] || "未设置"}
+          阶段: {stageLabels[stage] || stageLabels.other}
         </p>
       </div>
       <div className="flex items-center gap-3">

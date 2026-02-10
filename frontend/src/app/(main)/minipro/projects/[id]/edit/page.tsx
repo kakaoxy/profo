@@ -1,12 +1,13 @@
 import React from "react";
+
 import { fetchClient } from "@/lib/api-server";
-import type { MiniProject, Consultant, MiniProjectPhoto } from "../types";
-import { MiniProjectForm } from "../_components/mini-project-form";
-import { MiniproShell } from "../../_components/minipro-shell";
+import type { Consultant, MiniProject, MiniProjectPhoto } from "../../types";
+import { MiniProjectForm } from "../../_components/mini-project-form";
+import { MiniproShell } from "../../../_components/minipro-shell";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProjectDetailPage({
+export default async function ProjectEditPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -14,7 +15,6 @@ export default async function ProjectDetailPage({
   const { id } = await params;
   const client = await fetchClient();
 
-  // Fetch data in parallel
   const [projectRes, consultantsRes, photosRes] = await Promise.all([
     client.GET("/api/v1/admin/mini/projects/{id}", {
       params: { path: { id } },
@@ -57,7 +57,7 @@ export default async function ProjectDetailPage({
   return (
     <MiniproShell containerClassName="max-w-none px-0 py-0">
       <MiniProjectForm
-        mode="view"
+        mode="edit"
         consultants={consultants}
         initialProject={project}
         initialPhotos={photos}

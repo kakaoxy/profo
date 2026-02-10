@@ -21,6 +21,7 @@ interface PhotoLibraryPickerProps {
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  nextSortOrderStart: number;
   onPhotosAdded: (
     photos: MiniProjectPhoto[],
     originToNewId: Record<string, string>,
@@ -35,6 +36,7 @@ export function PhotoLibraryPicker({
   projectId,
   open,
   onOpenChange,
+  nextSortOrderStart,
   onPhotosAdded,
   existingPhotoIds,
   photos,
@@ -98,6 +100,7 @@ export function PhotoLibraryPicker({
       const results: MiniProjectPhoto[] = [];
       const errors: string[] = [];
       const originToNewId: Record<string, string> = {};
+      let sortOrder = nextSortOrderStart;
 
       for (const photoId of selectedIds) {
         const photo = photos.find((p) => p.id === photoId);
@@ -108,11 +111,13 @@ export function PhotoLibraryPicker({
           photo.url,
           photo.stage,
           photoId,
+          sortOrder,
         );
         if (result.success && result.data) {
           const newPhoto = result.data as MiniProjectPhoto;
           results.push(newPhoto);
           originToNewId[photoId] = newPhoto.id;
+          sortOrder += 1;
         } else {
           errors.push(`ID: ${photoId}`);
         }

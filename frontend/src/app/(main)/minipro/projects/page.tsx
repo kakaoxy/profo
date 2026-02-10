@@ -95,9 +95,11 @@ export default async function ProjectsPage({
         actions={
           <>
             <SyncButton />
-            <Button type="button" disabled>
-              <Plus />
-              新建独立项目
+            <Button asChild>
+              <Link href="/minipro/projects/new">
+                <Plus />
+                新建独立项目
+              </Link>
             </Button>
           </>
         }

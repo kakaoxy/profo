@@ -42,7 +42,7 @@ export async function createSalesRecordAction(payload: {
         {
           params: { path: { project_id: payload.projectId } },
           body: requestBody,
-        }
+        },
       );
     } else if (payload.recordType === "offer") {
       result = await client.POST(
@@ -50,7 +50,7 @@ export async function createSalesRecordAction(payload: {
         {
           params: { path: { project_id: payload.projectId } },
           body: requestBody,
-        }
+        },
       );
     } else if (payload.recordType === "negotiation") {
       result = await client.POST(
@@ -58,7 +58,7 @@ export async function createSalesRecordAction(payload: {
         {
           params: { path: { project_id: payload.projectId } },
           body: requestBody,
-        }
+        },
       );
     } else {
       return { success: false, message: "未知的记录类型" };
@@ -84,7 +84,7 @@ export async function createSalesRecordAction(payload: {
  */
 export async function deleteSalesRecordAction(
   projectId: string,
-  recordId: string
+  recordId: string,
 ) {
   try {
     const client = await fetchClient();
@@ -97,7 +97,7 @@ export async function deleteSalesRecordAction(
             record_id: recordId,
           },
         },
-      }
+      },
     );
 
     if (error) {
@@ -118,7 +118,7 @@ export async function deleteSalesRecordAction(
  */
 export async function completeProjectAction(
   projectId: string,
-  payload: { soldPrice: number; soldDate: string }
+  payload: { soldPrice: number; soldDate: string },
 ) {
   try {
     const client = await fetchClient();
@@ -129,11 +129,10 @@ export async function completeProjectAction(
           path: { project_id: projectId },
         },
         body: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          soldPrice: payload.soldPrice as any,
-          soldDate: payload.soldDate,
+          sold_price: payload.soldPrice,
+          sold_date: payload.soldDate,
         },
-      }
+      },
     );
 
     if (error) {
