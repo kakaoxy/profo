@@ -160,7 +160,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
   const timeMonitor = calculateTimeMonitor(
     data?.signing_date ?? null,
     data?.signing_period ?? null,
-    data?.extensionRent ? Number(data.extensionRent) : null,
+    data?.extension_rent ? Number(data.extension_rent) : null,
   );
 
   return (

@@ -4,13 +4,25 @@ import { useState, useEffect, useRef } from "react";
 import { MiniProjectPhoto } from "../../types";
 import { PhotoItem } from "./photo-item";
 import { PhotoLibraryPicker } from "./photo-library-picker";
-import { deleteMiniPhotoAction, getSourcePhotosAction } from "../../actions";
+import {
+  addMiniPhotoAction,
+  deleteMiniPhotoAction,
+  getSourcePhotosAction,
+} from "../../actions";
 import { toast } from "sonner";
 import type { RenovationPhoto } from "./types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpDown, FolderOpen } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PhotoManagerProps {
   projectId: string;
@@ -29,6 +41,10 @@ export function PhotoManager({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sourcePhotos, setSourcePhotos] = useState<RenovationPhoto[]>([]);
   const [sourcePhotosLoading, setSourcePhotosLoading] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState("");
+  const [uploadStage, setUploadStage] = useState("other");
+  const [uploadSortOrder, setUploadSortOrder] = useState(photos.length);
+  const [uploading, setUploading] = useState(false);
 
   const syncedPhotos = photos.filter((p) => !!p.origin_photo_id);
   const uploadedPhotos = photos.filter((p) => !p.origin_photo_id);
@@ -80,7 +96,7 @@ export function PhotoManager({
           image_url: photo.image_url || photo.final_url || "",
           renovation_stage: photo.renovation_stage || "other",
           description: photo.description || null,
-          sort_order: photos.length,
+          sort_order: photo.sort_order ?? photos.length,
           created_at: photo.created_at || new Date().toISOString(),
           final_url: photo.final_url || null,
         };
@@ -111,6 +127,40 @@ export function PhotoManager({
       loadSourcePhotosRef.current();
     }
   }, [pickerOpen, sourcePhotos.length]);
+
+  useEffect(() => {
+    setUploadSortOrder(photos.length);
+  }, [photos.length]);
+
+  const handleAddUploadedPhoto = async () => {
+    const trimmed = uploadUrl.trim();
+    if (!trimmed) {
+      toast.error("请输入图片 URL");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await addMiniPhotoAction(
+        projectId,
+        trimmed,
+        uploadStage,
+        undefined,
+        uploadSortOrder,
+      );
+      if (result.success && result.data) {
+        onPhotosChange([...photos, result.data as MiniProjectPhoto]);
+        toast.success("照片已添加");
+        setUploadUrl("");
+      } else {
+        toast.error(result.error || "添加照片失败");
+      }
+    } catch {
+      toast.error("添加照片失败");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <>
@@ -171,6 +221,58 @@ export function PhotoManager({
               <div className="text-xs font-medium text-muted-foreground">
                 手动上传资源（{uploadedPhotos.length}）
               </div>
+              <div className="grid grid-cols-12 gap-3 rounded-md border bg-muted/20 p-3">
+                <div className="col-span-12 lg:col-span-6">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">
+                    图片 URL
+                  </div>
+                  <Input
+                    value={uploadUrl}
+                    onChange={(e) => setUploadUrl(e.target.value)}
+                    placeholder="http(s):// 或 /path"
+                  />
+                </div>
+                <div className="col-span-6 lg:col-span-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">
+                    阶段
+                  </div>
+                  <Select value={uploadStage} onValueChange={setUploadStage}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择阶段" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="signing">签约</SelectItem>
+                      <SelectItem value="renovating">改造</SelectItem>
+                      <SelectItem value="selling">销售</SelectItem>
+                      <SelectItem value="sold">已售</SelectItem>
+                      <SelectItem value="other">其他</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-6 lg:col-span-2">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">
+                    排序
+                  </div>
+                  <Input
+                    type="number"
+                    value={uploadSortOrder}
+                    onChange={(e) =>
+                      setUploadSortOrder(Number(e.target.value || 0))
+                    }
+                    min={0}
+                  />
+                </div>
+                <div className="col-span-12 lg:col-span-1 flex items-end">
+                  <Button
+                    type="button"
+                    className="w-full"
+                    disabled={uploading}
+                    onClick={handleAddUploadedPhoto}
+                  >
+                    添加
+                  </Button>
+                </div>
+              </div>
               <div className="space-y-3">
                 {uploadedPhotos.map((photo, index) => (
                   <PhotoItem
@@ -191,6 +293,7 @@ export function PhotoManager({
         projectId={projectId}
         open={pickerOpen}
         onOpenChange={setPickerOpen}
+        nextSortOrderStart={photos.length}
         onPhotosAdded={handlePhotosAdded}
         existingPhotoIds={existingPhotoIds}
         photos={sourcePhotos}

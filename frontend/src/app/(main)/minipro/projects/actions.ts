@@ -7,12 +7,16 @@ import type {
   MiniProjectCreate,
   ConsultantCreate,
   ConsultantUpdate,
-  MiniProjectPhoto
+  MiniProjectPhoto,
 } from "./types";
 
 // --- Projects ---
 
-export async function getMiniProjectsAction(page = 1, pageSize = 20, isPublished?: boolean) {
+export async function getMiniProjectsAction(
+  page = 1,
+  pageSize = 20,
+  isPublished?: boolean,
+) {
   const client = await fetchClient();
   const { data, error } = await client.GET("/api/v1/admin/mini/projects", {
     params: {
@@ -61,7 +65,10 @@ export async function getMiniProjectAction(id: string) {
   return { success: true, data };
 }
 
-export async function updateMiniProjectAction(id: string, body: MiniProjectUpdate) {
+export async function updateMiniProjectAction(
+  id: string,
+  body: MiniProjectUpdate,
+) {
   const client = await fetchClient();
   const { data, error } = await client.PUT("/api/v1/admin/mini/projects/{id}", {
     params: { path: { id } },
@@ -93,9 +100,12 @@ export async function syncMiniProjectsAction() {
 
 export async function refreshMiniProjectAction(id: string) {
   const client = await fetchClient();
-  const { data, error } = await client.PUT("/api/v1/admin/mini/projects/{id}/refresh", {
-    params: { path: { id } },
-  });
+  const { data, error } = await client.PUT(
+    "/api/v1/admin/mini/projects/{id}/refresh",
+    {
+      params: { path: { id } },
+    },
+  );
 
   if (error) {
     console.error("Failed to refresh mini project:", error);
@@ -110,9 +120,12 @@ export async function refreshMiniProjectAction(id: string) {
 
 export async function getSourcePhotosAction(id: string) {
   const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/admin/mini/projects/{id}/source-photos", {
-    params: { path: { id } },
-  });
+  const { data, error } = await client.GET(
+    "/api/v1/admin/mini/projects/{id}/source-photos",
+    {
+      params: { path: { id } },
+    },
+  );
 
   if (error) {
     console.error("Failed to fetch source photos:", error);
@@ -124,9 +137,12 @@ export async function getSourcePhotosAction(id: string) {
 
 export async function getMiniPhotosAction(id: string) {
   const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/admin/mini/projects/{id}/photos", {
-    params: { path: { id } },
-  });
+  const { data, error } = await client.GET(
+    "/api/v1/admin/mini/projects/{id}/photos",
+    {
+      params: { path: { id } },
+    },
+  );
 
   if (error) {
     console.error("Failed to fetch mini photos:", error);
@@ -139,23 +155,27 @@ export async function getMiniPhotosAction(id: string) {
 export async function addMiniPhotoAction(
   projectId: string,
   imageUrl: string,
-  renovationStage = 'other',
-  originPhotoId?: string
+  renovationStage = "other",
+  originPhotoId?: string,
+  sortOrder = 0,
 ) {
   const client = await fetchClient();
-  const { data, error } = await client.POST('/api/v1/admin/mini/projects/{id}/photos', {
-    params: { path: { id: projectId } },
-    body: {
-      image_url: imageUrl || null,
-      renovation_stage: renovationStage,
-      sort_order: 0,
-      origin_photo_id: originPhotoId || null,
+  const { data, error } = await client.POST(
+    "/api/v1/admin/mini/projects/{id}/photos",
+    {
+      params: { path: { id: projectId } },
+      body: {
+        image_url: imageUrl || null,
+        renovation_stage: renovationStage,
+        sort_order: sortOrder,
+        origin_photo_id: originPhotoId || null,
+      },
     },
-  });
+  );
 
   if (error) {
-    console.error('Failed to add photo:', error);
-    return { success: false, error: '添加照片失败' };
+    console.error("Failed to add photo:", error);
+    return { success: false, error: "添加照片失败" };
   }
 
   return { success: true, data };
@@ -163,9 +183,12 @@ export async function addMiniPhotoAction(
 
 export async function deleteMiniPhotoAction(photoId: string) {
   const client = await fetchClient();
-  const { data, error } = await client.DELETE("/api/v1/admin/mini/photos/{photo_id}", {
-    params: { path: { photo_id: photoId } },
-  });
+  const { data, error } = await client.DELETE(
+    "/api/v1/admin/mini/photos/{photo_id}",
+    {
+      params: { path: { photo_id: photoId } },
+    },
+  );
 
   if (error) {
     console.error("Failed to delete photo:", error);
@@ -175,21 +198,36 @@ export async function deleteMiniPhotoAction(photoId: string) {
   return { success: true, data };
 }
 
-export async function batchAddPhotosAction(projectId: string, photoIds: string[]) {
+export async function batchAddPhotosAction(
+  projectId: string,
+  photoIds: string[],
+) {
   const results: MiniProjectPhoto[] = [];
   const errors: string[] = [];
 
+  let sortOrder = 0;
   for (const photoId of photoIds) {
-    const result = await addMiniPhotoAction(projectId, '', 'other', photoId);
+    const result = await addMiniPhotoAction(
+      projectId,
+      "",
+      "other",
+      photoId,
+      sortOrder,
+    );
     if (result.success && result.data) {
       results.push(result.data as MiniProjectPhoto);
+      sortOrder += 1;
     } else {
       errors.push(`ID: ${photoId}`);
     }
   }
 
   if (errors.length > 0) {
-    return { success: results.length > 0, data: results, error: `部分照片添加失败: ${errors.join(', ')}` };
+    return {
+      success: results.length > 0,
+      data: results,
+      error: `部分照片添加失败: ${errors.join(", ")}`,
+    };
   }
 
   return { success: true, data: results };
@@ -230,12 +268,18 @@ export async function createConsultantAction(body: ConsultantCreate) {
   return { success: true, data };
 }
 
-export async function updateConsultantAction(id: string, body: ConsultantUpdate) {
+export async function updateConsultantAction(
+  id: string,
+  body: ConsultantUpdate,
+) {
   const client = await fetchClient();
-  const { data, error } = await client.PUT("/api/v1/admin/mini/consultants/{id}", {
-    params: { path: { id } },
-    body,
-  });
+  const { data, error } = await client.PUT(
+    "/api/v1/admin/mini/consultants/{id}",
+    {
+      params: { path: { id } },
+      body,
+    },
+  );
 
   if (error) {
     console.error("Failed to update consultant:", error);
@@ -244,4 +288,3 @@ export async function updateConsultantAction(id: string, body: ConsultantUpdate)
 
   return { success: true, data };
 }
-
