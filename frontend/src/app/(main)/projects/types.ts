@@ -24,6 +24,7 @@ export interface AttachmentHandlers {
 export interface RenovationPhoto {
   id: string;
   project_id: string;
+  renovation_id?: string; // 新增：关联装修记录ID
   stage: string; // 对应后端 RenovationStage 枚举
   url: string;
   filename?: string;
@@ -56,6 +57,156 @@ export interface CashFlowSummary {
   total_expense: number;
   net_cash_flow: number;
   roi: number;
+}
+
+// ========== 新增规范化表类型定义 ==========
+
+// 合同信息
+export interface ProjectContract {
+  id: string;
+  project_id: string;
+  contract_no?: string;
+  signing_price?: number;
+  signing_date?: string;
+  signing_period?: number;
+  extension_period?: number;
+  extension_rent?: number;
+  cost_assumption?: string;
+  planned_handover_date?: string;
+  other_agreements?: string;
+  signing_materials?: string[];
+  contract_status: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// 业主信息
+export interface ProjectOwner {
+  id: string;
+  project_id: string;
+  owner_name?: string;
+  owner_phone?: string;
+  owner_id_card?: string;
+  relation_type: string;
+  owner_info?: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// 销售交易信息
+export interface ProjectSale {
+  id: string;
+  project_id: string;
+  listing_date?: string;
+  list_price?: number;
+  sold_date?: string;
+  sold_price?: number;
+  channel_manager_id?: string;
+  property_agent_id?: string;
+  negotiator_id?: string;
+  transaction_status: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// 项目跟进记录
+export interface ProjectFollowUp {
+  id: string;
+  project_id: string;
+  follow_up_type: string;
+  content?: string;
+  follow_up_at: string;
+  follower_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 项目评估记录
+export interface ProjectEvaluation {
+  id: string;
+  project_id: string;
+  evaluation_type: string;
+  evaluation_price: number;
+  remark?: string;
+  evaluator_id?: string;
+  evaluation_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 互动过程记录
+export interface ProjectInteraction {
+  id: string;
+  project_id: string;
+  record_type: string;
+  interaction_target?: string;
+  content?: string;
+  interaction_at: string;
+  operator_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 财务流水记录
+export interface FinanceRecord {
+  id: string;
+  project_id: string;
+  type: "income" | "expense";
+  category: string;
+  amount: number;
+  record_date: string;
+  operator_id?: string;
+  remark?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 项目状态流转日志
+export interface ProjectStatusLog {
+  id: string;
+  project_id: string;
+  old_status: string;
+  new_status: string;
+  trigger_event?: string;
+  operator_id?: string;
+  operate_at: string;
+  remark?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 装修信息
+export interface ProjectRenovation {
+  id: string;
+  project_id: string;
+  renovation_company?: string;
+  contract_start_date?: string;
+  contract_end_date?: string;
+  actual_start_date?: string;
+  actual_end_date?: string;
+  hard_contract_amount?: number;
+  payment_node_1?: string;
+  payment_ratio_1?: number;
+  payment_node_2?: string;
+  payment_ratio_2?: number;
+  payment_node_3?: string;
+  payment_ratio_3?: number;
+  payment_node_4?: string;
+  payment_ratio_4?: number;
+  soft_budget?: number;
+  soft_actual_cost?: number;
+  soft_detail_attachment?: string;
+  design_fee?: number;
+  demolition_fee?: number;
+  garbage_fee?: number;
+  other_extra_fee?: number;
+  other_fee_reason?: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Project {

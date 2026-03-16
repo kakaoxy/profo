@@ -1,16 +1,20 @@
 """
 项目销售业务服务
 负责：销售团队管理、带看/出价/面谈记录、成交确认
+
+注意：已适配新的规范化表结构，销售记录使用 ProjectInteraction 表
 """
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+import uuid
 
-from models import Project, SalesRecord
+from models import Project, ProjectSale, ProjectInteraction
 from models.base import ProjectStatus
 from schemas.project_sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
 from schemas.project import ProjectResponse
+
 
 class ProjectSalesService:
     def __init__(self, db: Session):
@@ -32,24 +36,38 @@ class ProjectSalesService:
         """更新销售角色 (渠道、讲房、谈判)"""
         project = self._get_project(project_id)
 
-        # 验证当前状态：只有在售阶段才建议修改，但业务上允许随时调整，这里可保留或注释
-        if project.status != ProjectStatus.SELLING.value:
-             # 也可以选择放宽限制，允许管理员随时改
-             pass
+        # 获取或创建销售记录
+        sale = self.db.query(ProjectSale).filter(
+            ProjectSale.project_id == project_id
+        ).first()
 
+        if not sale:
+            sale = ProjectSale(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                transaction_status="在售",
+                is_deleted=False,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            self.db.add(sale)
+
+        # 更新销售角色
         update_dict = roles_data.model_dump(exclude_unset=True)
         for field, value in update_dict.items():
-            if hasattr(project, field):
-                setattr(project, field, value)
+            if hasattr(sale, field):
+                setattr(sale, field, value)
 
+        sale.updated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(project)
+
         return ProjectResponse.model_validate(project)
 
     # ========== 销售记录管理 (带看/出价/面谈) ==========
 
-    def create_sales_record(self, project_id: str, record_data: SalesRecordCreate) -> SalesRecord:
-        """创建销售记录"""
+    def create_sales_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
+        """创建销售记录（现在是互动记录）"""
         project = self._get_project(project_id)
 
         # 严格校验：非在售阶段通常不应该添加带看记录
@@ -59,37 +77,37 @@ class ProjectSalesService:
                 detail="只有在售阶段才能添加销售记录"
             )
 
-        record = SalesRecord(
+        # 创建互动记录（替换原来的 SalesRecord）
+        record = ProjectInteraction(
+            id=str(uuid.uuid4()),
             project_id=project_id,
             record_type=record_data.record_type.value,
-            customer_name=record_data.customer_name,
-            customer_phone=record_data.customer_phone,
-            customer_info=record_data.customer_info,
-            record_date=record_data.record_date,
-            record_time=record_data.record_time,
-            price=record_data.price,
-            notes=record_data.notes,
-            feedback=record_data.feedback,
-            result=record_data.result,
-            related_agent=record_data.related_agent
+            interaction_target=record_data.customer_name,
+            content=record_data.notes or "",
+            interaction_at=record_data.record_date or datetime.utcnow(),
+            operator_id=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
         )
         self.db.add(record)
         self.db.commit()
         self.db.refresh(record)
         return record
 
-    def get_sales_records(self, project_id: str, record_type: Optional[str] = None) -> List[SalesRecord]:
-        """获取销售记录列表"""
-        query = self.db.query(SalesRecord).filter(SalesRecord.project_id == project_id)
+    def get_sales_records(self, project_id: str, record_type: Optional[str] = None) -> List[ProjectInteraction]:
+        """获取销售记录列表（现在是互动记录）"""
+        query = self.db.query(ProjectInteraction).filter(
+            ProjectInteraction.project_id == project_id
+        )
         if record_type:
-            query = query.filter(SalesRecord.record_type == record_type)
-        return query.order_by(SalesRecord.record_date.desc(), SalesRecord.created_at.desc()).all()
+            query = query.filter(ProjectInteraction.record_type == record_type)
+        return query.order_by(ProjectInteraction.interaction_at.desc(), ProjectInteraction.created_at.desc()).all()
 
     def delete_sales_record(self, project_id: str, record_id: str) -> None:
-        """删除销售记录"""
-        record = self.db.query(SalesRecord).filter(
-            SalesRecord.id == record_id,
-            SalesRecord.project_id == project_id
+        """删除销售记录（现在是互动记录）"""
+        record = self.db.query(ProjectInteraction).filter(
+            ProjectInteraction.id == record_id,
+            ProjectInteraction.project_id == project_id
         ).first()
 
         if not record:
@@ -114,12 +132,33 @@ class ProjectSalesService:
                 detail="只有在售或已售阶段的项目才能标记为已售"
             )
 
-        # 更新状态和核心成交数据
+        # 更新状态
         project.status = ProjectStatus.SOLD.value
-        project.sold_price = complete_data.sold_price 
-        project.sold_date = complete_data.sold_date
-        project.sold_at = complete_data.sold_date
-        project.status_changed_at = datetime.utcnow()
+        project.updated_at = datetime.utcnow()
+
+        # 更新销售记录
+        sale = self.db.query(ProjectSale).filter(
+            ProjectSale.project_id == project_id
+        ).first()
+
+        if sale:
+            sale.sold_price = complete_data.sold_price
+            sale.sold_date = complete_data.sold_date
+            sale.transaction_status = "已售"
+            sale.updated_at = datetime.utcnow()
+        else:
+            # 创建新的销售记录
+            sale = ProjectSale(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                sold_price=complete_data.sold_price,
+                sold_date=complete_data.sold_date,
+                transaction_status="已售",
+                is_deleted=False,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            self.db.add(sale)
 
         self.db.commit()
         self.db.refresh(project)

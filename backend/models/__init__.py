@@ -12,7 +12,19 @@ from .community import Community, CommunityAlias, CommunityCompetitor
 from .property import PropertyCurrent, PropertyHistory
 from .media import PropertyMedia
 from .error import FailedRecord
-from .project import Project, CashFlowRecord, RenovationPhoto, SalesRecord
+from .project import (
+    Project,
+    ProjectContract,
+    ProjectOwner,
+    ProjectSale,
+    ProjectFollowUp,
+    ProjectEvaluation,
+    ProjectInteraction,
+    FinanceRecord,
+    ProjectStatusLog,
+    ProjectRenovation,
+    RenovationPhoto,
+)
 from .user import User, Role
 from .lead import Lead, LeadFollowUp, LeadPriceHistory
 from .mini import Consultant, MiniProject, MiniProjectPhoto
@@ -37,9 +49,16 @@ __all__ = [
     'PropertyMedia',
     'FailedRecord',
     'Project',
-    'CashFlowRecord',
+    'ProjectContract',
+    'ProjectOwner',
+    'ProjectSale',
+    'ProjectFollowUp',
+    'ProjectEvaluation',
+    'ProjectInteraction',
+    'FinanceRecord',
+    'ProjectStatusLog',
+    'ProjectRenovation',
     'RenovationPhoto',
-    'SalesRecord',
     'User',
     'Role',
     'Lead',

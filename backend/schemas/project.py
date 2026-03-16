@@ -40,3 +40,59 @@ from .project_finance import (
     CashFlowResponse,
     ProjectReportResponse
 )
+
+# 6. 导入新的规范化表 Schema
+from .contract import (
+    ContractCreate,
+    ContractUpdate,
+    ContractResponse,
+    ContractListResponse
+)
+from .owner import (
+    OwnerCreate,
+    OwnerUpdate,
+    OwnerResponse,
+    OwnerListResponse
+)
+from .sale import (
+    SaleCreate,
+    SaleUpdate,
+    SaleResponse,
+    SaleListResponse
+)
+from .followup import (
+    FollowUpCreate,
+    FollowUpUpdate,
+    FollowUpResponse,
+    FollowUpListResponse
+)
+from .evaluation import (
+    EvaluationCreate,
+    EvaluationUpdate,
+    EvaluationResponse,
+    EvaluationListResponse
+)
+from .interaction import (
+    InteractionCreate,
+    InteractionUpdate,
+    InteractionResponse,
+    InteractionListResponse
+)
+from .finance import (
+    FinanceCreate,
+    FinanceUpdate,
+    FinanceResponse,
+    FinanceListResponse
+)
+from .status_log import (
+    StatusLogCreate,
+    StatusLogUpdate,
+    StatusLogResponse,
+    StatusLogListResponse
+)
+from .renovation import (
+    RenovationCreate,
+    RenovationUpdate,
+    RenovationResponse,
+    RenovationListResponse
+)
