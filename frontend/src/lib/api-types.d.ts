@@ -1568,7 +1568,9 @@ export interface components {
              * Data
              * @description 响应数据
              */
-            data?: Record<string, never> | null;
+            data?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Message
              * @description 状态消息（兼容字段）
@@ -1638,7 +1640,9 @@ export interface components {
              * Data
              * @description 响应数据
              */
-            data?: Record<string, never>[] | null;
+            data?: {
+                [key: string]: unknown;
+            }[] | null;
             /**
              * Message
              * @description 状态消息（兼容字段）
@@ -1945,7 +1949,10 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /** Password */
+            /**
+             * Password
+             * Format: password
+             */
             password: string;
             /**
              * Scope
@@ -1954,7 +1961,10 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * Format: password
+             */
             client_secret?: string | null;
         };
         /** Body_upload_csv_api_v1_upload_csv_post */
@@ -1999,7 +2009,10 @@ export interface components {
             /** Related Stage */
             related_stage?: string | null;
         };
-        /** CashFlowRecordResponse */
+        /**
+         * CashFlowRecordResponse
+         * @description 现金流记录响应 - 适配新的FinanceRecord表
+         */
         CashFlowRecordResponse: {
             /** Id */
             id: string;
@@ -2012,19 +2025,31 @@ export interface components {
             /** Amount */
             amount: string;
             /**
-             * Date
+             * Record Date
              * Format: date-time
+             * @description 发生日期
              */
-            date: string;
-            /** Description */
-            description: string | null;
-            /** Related Stage */
-            related_stage: string | null;
+            record_date: string;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Operator Id
+             * @description 经办人ID
+             */
+            operator_id?: string | null;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** CashFlowResponse */
         CashFlowResponse: {
@@ -2859,14 +2884,9 @@ export interface components {
         };
         /**
          * ProjectCreate
-         * @description 创建项目请求模型
+         * @description 创建项目请求模型 - 包含所有可创建字段
          */
         ProjectCreate: {
-            /**
-             * Name
-             * @description 项目名称
-             */
-            name: string;
             /**
              * Community Name
              * @description 小区名称
@@ -2878,13 +2898,23 @@ export interface components {
              */
             address?: string | null;
             /**
-             * Manager
-             * @description 负责人
+             * Area
+             * @description 产证面积(m²)
              */
-            manager?: string | null;
+            area?: number | string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
             /**
              * Signing Price
-             * @description 签约价格
+             * @description 签约价格(万)
              */
             signing_price?: number | string | null;
             /**
@@ -2894,82 +2924,12 @@ export interface components {
             signing_date?: string | null;
             /**
              * Signing Period
-             * @description 签约周期
+             * @description 合同周期(天)
              */
             signing_period?: number | null;
             /**
-             * Planned Handover Date
-             * @description 计划交房时间
-             */
-            planned_handover_date?: string | null;
-            /**
-             * Signing Materials
-             * @description 签约材料
-             */
-            signing_materials?: Record<string, never> | null;
-            /**
-             * Owner Name
-             * @description 业主姓名
-             */
-            owner_name?: string | null;
-            /**
-             * Owner Phone
-             * @description 业主电话
-             */
-            owner_phone?: string | null;
-            /**
-             * Owner Id Card
-             * @description 业主身份证号
-             */
-            owner_id_card?: string | null;
-            /**
-             * Owner Info
-             * @description 业主其他信息
-             */
-            owner_info?: Record<string, never> | null;
-            /**
-             * Notes
-             * @description 备注
-             */
-            notes?: string | null;
-            /**
-             * Tags
-             * @description 标签
-             */
-            tags?: string[] | null;
-            /**
-             * Area
-             * @description 产证面积(m²)
-             */
-            area?: number | string | null;
-            /**
-             * Rooms
-             * @description 室
-             */
-            rooms?: number | null;
-            /**
-             * Halls
-             * @description 厅
-             */
-            halls?: number | null;
-            /**
-             * Baths
-             * @description 卫
-             */
-            baths?: number | null;
-            /**
-             * Orientation
-             * @description 朝向
-             */
-            orientation?: string | null;
-            /**
-             * Layout
-             * @description 户型(展示用)
-             */
-            layout?: string | null;
-            /**
              * Extension Period
-             * @description 顺延期(月)
+             * @description 顺延期(天)
              */
             extension_period?: number | null;
             /**
@@ -2983,123 +2943,20 @@ export interface components {
              */
             cost_assumption?: string | null;
             /**
-             * Other Agreements
-             * @description 其他约定
-             */
-            other_agreements?: string | null;
-            /**
-             * Remarks
-             * @description 备注
-             */
-            remarks?: string | null;
-            /**
-             * Total Income
-             * @default 0
-             */
-            total_income: number | string;
-            /**
-             * Total Expense
-             * @default 0
-             */
-            total_expense: number | string;
-            /**
-             * Net Cash Flow
-             * @default 0
-             */
-            net_cash_flow: number | string;
-            /**
-             * Roi
-             * @default 0
-             */
-            roi: number;
-        };
-        /**
-         * ProjectReportResponse
-         * @description 财务报表
-         */
-        ProjectReportResponse: {
-            /** Project Id */
-            project_id: string;
-            /** Project Name */
-            project_name: string;
-            /** Status */
-            status: string;
-            /** Signing Date */
-            signing_date: string | null;
-            /** Renovation Start Date */
-            renovation_start_date: string | null;
-            /** Renovation End Date */
-            renovation_end_date: string | null;
-            /** Listing Date */
-            listing_date: string | null;
-            /** Sold Date */
-            sold_date: string | null;
-            /** Total Investment */
-            total_investment: string;
-            /** Total Income */
-            total_income: string;
-            /** Net Profit */
-            net_profit: string;
-            /** Roi */
-            roi: number;
-            /** Address */
-            address: string;
-            /** Sale Price */
-            sale_price: string | null;
-            /** List Price */
-            list_price: string | null;
-        };
-        /**
-         * ProjectResponse
-         * @description 项目完整响应模型
-         *     继承自 ProjectBase，所以包含了 total_income, roi 等字段
-         */
-        ProjectResponse: {
-            /**
-             * Name
-             * @description 项目名称
-             */
-            name: string;
-            /**
-             * Community Name
-             * @description 小区名称
-             */
-            community_name?: string | null;
-            /**
-             * Address
-             * @description 物业地址
-             */
-            address?: string | null;
-            /**
-             * Manager
-             * @description 负责人
-             */
-            manager?: string | null;
-            /**
-             * Signing Price
-             * @description 签约价格
-             */
-            signing_price?: string | null;
-            /**
-             * Signing Date
-             * @description 签约日期
-             */
-            signing_date?: string | null;
-            /**
-             * Signing Period
-             * @description 签约周期
-             */
-            signing_period?: number | null;
-            /**
              * Planned Handover Date
              * @description 计划交房时间
              */
             planned_handover_date?: string | null;
             /**
-             * Signing Materials
-             * @description 签约材料
+             * Other Agreements
+             * @description 其他约定
              */
-            signing_materials?: Record<string, never> | null;
+            other_agreements?: string | null;
+            /**
+             * Signing Materials
+             * @description 签约材料URLs
+             */
+            signing_materials?: string[] | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -3117,9 +2974,19 @@ export interface components {
             owner_id_card?: string | null;
             /**
              * Owner Info
-             * @description 业主其他信息
+             * @description 业主备注
              */
-            owner_info?: Record<string, never> | null;
+            owner_info?: string | null;
+            /**
+             * List Price
+             * @description 挂牌价(万)
+             */
+            list_price?: number | string | null;
+            /**
+             * Listing Date
+             * @description 上架日期
+             */
+            listing_date?: string | null;
             /**
              * Notes
              * @description 备注
@@ -3130,87 +2997,62 @@ export interface components {
              * @description 标签
              */
             tags?: string[] | null;
-            /**
-             * Area
-             * @description 产证面积(m²)
-             */
-            area?: string | null;
-            /**
-             * Rooms
-             * @description 室
-             */
-            rooms?: number | null;
-            /**
-             * Halls
-             * @description 厅
-             */
-            halls?: number | null;
-            /**
-             * Baths
-             * @description 卫
-             */
-            baths?: number | null;
-            /**
-             * Orientation
-             * @description 朝向
-             */
-            orientation?: string | null;
-            /**
-             * Layout
-             * @description 户型(展示用)
-             */
-            layout?: string | null;
-            /**
-             * Extension Period
-             * @description 顺延期(月)
-             */
-            extension_period?: number | null;
-            /**
-             * Extension Rent
-             * @description 顺延期租金(元/月)
-             */
-            extension_rent?: string | null;
-            /**
-             * Cost Assumption
-             * @description 税费及佣金承担
-             */
-            cost_assumption?: string | null;
-            /**
-             * Other Agreements
-             * @description 其他约定
-             */
-            other_agreements?: string | null;
-            /**
-             * Remarks
-             * @description 备注
-             */
-            remarks?: string | null;
-            /**
-             * Total Income
-             * @default 0
-             */
+        };
+        /**
+         * ProjectReportResponse
+         * @description 财务报表 - 适配新的规范化表结构
+         */
+        ProjectReportResponse: {
+            /** Project Id */
+            project_id: string;
+            /** Project Name */
+            project_name?: string | null;
+            /** Community Name */
+            community_name?: string | null;
+            /** Status */
+            status: string;
+            /** Signing Date */
+            signing_date: string | null;
+            /** Renovation Start Date */
+            renovation_start_date: string | null;
+            /** Renovation End Date */
+            renovation_end_date?: string | null;
+            /** Listing Date */
+            listing_date: string | null;
+            /** Sold Date */
+            sold_date: string | null;
+            /** Total Investment */
+            total_investment: string;
+            /** Total Income */
             total_income: string;
-            /**
-             * Total Expense
-             * @default 0
-             */
-            total_expense: string;
-            /**
-             * Net Cash Flow
-             * @description 净现金流
-             * @default 0
-             */
-            net_cash_flow: string | null;
-            /**
-             * Roi
-             * @default 0
-             */
+            /** Net Profit */
+            net_profit: string;
+            /** Roi */
             roi: number;
+            /** Address */
+            address?: string | null;
+            /** Sale Price */
+            sale_price?: string | null;
+            /** List Price */
+            list_price?: string | null;
+            /** Signing Price */
+            signing_price?: string | null;
+        };
+        /**
+         * ProjectResponse
+         * @description 项目完整响应模型 - 适配新的规范化表结构
+         */
+        ProjectResponse: {
             /**
              * Id
              * @description 项目ID
              */
             id: string;
+            /**
+             * Name
+             * @description 项目名称
+             */
+            name?: string | null;
             /**
              * Status
              * @description 项目状态
@@ -3226,58 +3068,85 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Community Name */
+            community_name?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Area */
+            area?: string | null;
+            /** Layout */
+            layout?: string | null;
+            /** Orientation */
+            orientation?: string | null;
+            /**
+             * Is Deleted
+             * @default false
+             */
+            is_deleted: boolean;
             /** Renovation Stage */
             renovation_stage?: string | null;
-            /** Status Changed At */
-            status_changed_at?: string | null;
-            /** Stage Completed At */
-            stage_completed_at?: string | null;
+            /**
+             * Signing Price
+             * @description 签约价格(万)
+             */
+            signing_price?: string | null;
+            /** Signing Date */
+            signing_date?: string | null;
+            /** Signing Period */
+            signing_period?: number | null;
+            /** Extension Period */
+            extension_period?: number | null;
+            /** Extension Rent */
+            extension_rent?: string | null;
+            /** Cost Assumption */
+            cost_assumption?: string | null;
+            /** Planned Handover Date */
+            planned_handover_date?: string | null;
+            /** Other Agreements */
+            other_agreements?: string | null;
+            /** Contract Status */
+            contract_status?: string | null;
+            /** Owner Name */
+            owner_name?: string | null;
+            /** Owner Phone */
+            owner_phone?: string | null;
+            /** Owner Id Card */
+            owner_id_card?: string | null;
+            /** Owner Info */
+            owner_info?: string | null;
+            /**
+             * List Price
+             * @description 挂牌价(万)
+             */
+            list_price?: string | null;
             /** Listing Date */
             listing_date?: string | null;
-            /** Sold At */
-            sold_at?: string | null;
-            /** Sale Price */
-            sale_price?: string | null;
-            /** List Price */
-            list_price?: string | null;
             /** Sold Price */
             sold_price?: string | null;
             /** Sold Date */
             sold_date?: string | null;
-            /** Property Agent */
-            property_agent?: string | null;
-            /** Client Agent */
-            client_agent?: string | null;
-            /** First Viewer */
-            first_viewer?: string | null;
-            /** Channel Manager */
-            channel_manager?: string | null;
-            /** Presenter */
-            presenter?: string | null;
-            /** Negotiator */
-            negotiator?: string | null;
+            /** Transaction Status */
+            transaction_status?: string | null;
             /**
-             * Sales Records
-             * @description 销售记录
-             * @default []
+             * Total Income
+             * @default 0
              */
-            sales_records: components["schemas"]["SalesRecordResponse"][] | null;
-            /** Viewing Records */
-            viewing_records?: Record<string, never>[] | null;
-            /** Offer Records */
-            offer_records?: Record<string, never>[] | null;
-            /** Negotiation Records */
-            negotiation_records?: Record<string, never>[] | null;
+            total_income: string | null;
             /**
-             * Renovation Photos
-             * @description 装修照片
-             * @default []
+             * Total Expense
+             * @default 0
              */
-            renovation_photos: components["schemas"]["RenovationPhotoResponse"][] | null;
-            /** Renovation Stage Dates */
-            renovation_stage_dates?: {
-                [key: string]: string;
-            } | null;
+            total_expense: string | null;
+            /**
+             * Net Cash Flow
+             * @default 0
+             */
+            net_cash_flow: string | null;
+            /**
+             * Roi
+             * @default 0
+             */
+            roi: number | null;
         };
         /** ProjectStatsResponse */
         ProjectStatsResponse: {
@@ -3318,7 +3187,9 @@ export interface components {
             /** Planned Handover Date */
             planned_handover_date?: string | null;
             /** Signing Materials */
-            signing_materials?: Record<string, never> | null;
+            signing_materials?: {
+                [key: string]: unknown;
+            } | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
@@ -3326,7 +3197,9 @@ export interface components {
             /** Owner Id Card */
             owner_id_card?: string | null;
             /** Owner Info */
-            owner_info?: Record<string, never> | null;
+            owner_info?: {
+                [key: string]: unknown;
+            } | null;
             /** Notes */
             notes?: string | null;
             /** Tags */
@@ -3561,7 +3434,9 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: Record<string, never>[];
+            errors?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * RecordType
@@ -3604,23 +3479,54 @@ export interface components {
             created_at: string;
         };
         /**
-         * RenovationStage
-         * @description 改造子阶段枚举
-         * @enum {string}
-         */
-        RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "安装" | "交付" | "已完成";
-        /**
          * RenovationUpdate
-         * @description 更新改造阶段请求模型
+         * @description 更新装修记录请求
          */
         RenovationUpdate: {
-            /** @description 改造子阶段 */
-            renovation_stage: components["schemas"]["RenovationStage"];
-            /**
-             * Stage Completed At
-             * @description 阶段完成时间
-             */
-            stage_completed_at?: string | null;
+            /** Renovation Company */
+            renovation_company?: string | null;
+            /** Contract Start Date */
+            contract_start_date?: string | null;
+            /** Contract End Date */
+            contract_end_date?: string | null;
+            /** Actual Start Date */
+            actual_start_date?: string | null;
+            /** Actual End Date */
+            actual_end_date?: string | null;
+            /** Hard Contract Amount */
+            hard_contract_amount?: number | string | null;
+            /** Payment Node 1 */
+            payment_node_1?: string | null;
+            /** Payment Ratio 1 */
+            payment_ratio_1?: number | string | null;
+            /** Payment Node 2 */
+            payment_node_2?: string | null;
+            /** Payment Ratio 2 */
+            payment_ratio_2?: number | string | null;
+            /** Payment Node 3 */
+            payment_node_3?: string | null;
+            /** Payment Ratio 3 */
+            payment_ratio_3?: number | string | null;
+            /** Payment Node 4 */
+            payment_node_4?: string | null;
+            /** Payment Ratio 4 */
+            payment_ratio_4?: number | string | null;
+            /** Soft Budget */
+            soft_budget?: number | string | null;
+            /** Soft Actual Cost */
+            soft_actual_cost?: number | string | null;
+            /** Soft Detail Attachment */
+            soft_detail_attachment?: string | null;
+            /** Design Fee */
+            design_fee?: number | string | null;
+            /** Demolition Fee */
+            demolition_fee?: number | string | null;
+            /** Garbage Fee */
+            garbage_fee?: number | string | null;
+            /** Other Extra Fee */
+            other_extra_fee?: number | string | null;
+            /** Other Fee Reason */
+            other_fee_reason?: string | null;
         };
         /** RiskPoints */
         RiskPoints: {
@@ -3761,7 +3667,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -3796,7 +3704,9 @@ export interface components {
             /** Customer Phone */
             customer_phone: string | null;
             /** Customer Info */
-            customer_info: Record<string, never> | null;
+            customer_info: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -4202,7 +4112,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>[];
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
             };
         };
         responses: {
