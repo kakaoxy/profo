@@ -1,43 +1,52 @@
 """
 项目核心业务服务
 负责：项目创建、列表查询、基础信息更新、状态流转
+
+注意：此服务已适配新的规范化表结构。
+项目基础信息在 projects 表，签约/业主/销售等信息在关联的子表中。
 """
 from typing import Optional, Dict, Any
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, defer, noload
 from sqlalchemy import func
 from fastapi import HTTPException, status
+import uuid
 
-from models import Project
+from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.base import ProjectStatus
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectListResponse, ProjectResponse
-from sqlalchemy.orm import Session, selectinload, defer, noload
+
 
 class ProjectCoreService:
     def __init__(self, db: Session):
         self.db = db
 
     def _get_project(self, project_id: str, include_all: bool = False) -> Project:
-        # 基础加载选项
-        options = [
-            selectinload(Project.sales_records),
-            noload(Project.cashflow_records),
-            defer(Project.signing_materials), 
-            defer(Project.owner_info),
-            defer(Project.viewing_records),
-            defer(Project.offer_records),
-            defer(Project.negotiation_records),
-            defer(Project.other_agreements),
-            defer(Project.notes)
-        ]
+        """获取项目详情，同时加载关联的子表数据"""
 
-        # 如果要求完整数据，则预加载装修照片
+        # 查询项目基本信息
+        query = self.db.query(Project).filter(Project.id == project_id)
+
         if include_all:
-            options.append(selectinload(Project.renovation_photos))
+            # 完整加载：预加载所有关联关系
+            query = query.options(
+                selectinload(Project.contract),
+                selectinload(Project.owners),
+                selectinload(Project.sale),
+                selectinload(Project.renovation_photos),
+                selectinload(Project.interactions),
+                selectinload(Project.finance_records),
+                selectinload(Project.status_logs),
+            )
         else:
-            options.append(noload(Project.renovation_photos))
+            # 简化加载：只加载必要的关系
+            query = query.options(
+                selectinload(Project.contract),
+                selectinload(Project.owners),
+                selectinload(Project.sale),
+            )
 
-        project = self.db.query(Project).options(*options).filter(Project.id == project_id).first()
+        project = query.first()
 
         if not project:
             raise HTTPException(
@@ -45,101 +54,151 @@ class ProjectCoreService:
                 detail="项目不存在"
             )
 
-        # [核心修复] 动态加载逻辑 (对 defer 字段进行按需加载)
-        if include_all:
-            _ = project.signing_materials
-            _ = project.owner_info
-            _ = project.other_agreements
-            _ = project.notes
-            # 显式触发装修照片加载，确保序列化时数据存在
-            _ = project.renovation_photos
-        
-        # 情况B：项目处于签约状态 (必须显示材料)
-        elif project.status == ProjectStatus.SIGNING.value:
-            _ = project.signing_materials
-            _ = project.owner_info
-            _ = project.other_agreements
-            _ = project.notes
-        
-        # 情况C：项目处于已售状态 (且没有要求完整数据 -> 保持极速模式)
-        elif project.status == ProjectStatus.SOLD.value:
-            project.signing_materials = None
-            project.owner_info = None
-            project.other_agreements = None
-
         return project
 
-    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
-        """创建项目"""
-        layout = project_data.layout
-        if layout is None and project_data.rooms is not None:
-            parts = [f"{project_data.rooms}室"]
-            if project_data.halls is not None:
-                parts.append(f"{project_data.halls}厅")
-            if project_data.baths is not None:
-                parts.append(f"{project_data.baths}卫")
-            layout = "".join(parts)
+    def _build_project_response(self, project: Project) -> Dict[str, Any]:
+        """将项目及其关联数据组合成响应字典"""
+        response = {
+            "id": project.id,
+            "community_name": project.community_name,
+            "address": project.address,
+            "area": project.area,
+            "layout": project.layout,
+            "orientation": project.orientation,
+            "status": project.status,
+            "renovation_stage": project.renovation_stage,
+            "is_deleted": project.is_deleted,
+            "created_at": project.created_at,
+            "updated_at": project.updated_at,
+        }
 
+        # 从 ProjectContract 获取签约信息
+        if project.contract:
+            contract = project.contract
+            response.update({
+                "signing_price": float(contract.signing_price) if contract.signing_price else None,
+                "signing_date": contract.signing_date,
+                "signing_period": contract.signing_period,
+                "extension_period": contract.extension_period,
+                "extension_rent": float(contract.extension_rent) if contract.extension_rent else None,
+                "cost_assumption": contract.cost_assumption,
+                "planned_handover_date": contract.planned_handover_date,
+                "other_agreements": contract.other_agreements,
+                "signing_materials": contract.signing_materials,
+                "contract_status": contract.contract_status,
+            })
+
+        # 从 ProjectOwner 获取业主信息
+        if project.owners:
+            owner = project.owners[0]  # 取第一个业主
+            response.update({
+                "owner_name": owner.owner_name,
+                "owner_phone": owner.owner_phone,
+                "owner_id_card": owner.owner_id_card,
+                "owner_info": owner.owner_info,
+            })
+
+        # 从 ProjectSale 获取销售信息
+        if project.sale:
+            sale = project.sale
+            response.update({
+                "listing_date": sale.listing_date,
+                "list_price": float(sale.list_price) if sale.list_price else None,
+                "sold_date": sale.sold_date,
+                "sold_price": float(sale.sold_price) if sale.sold_price else None,
+                "transaction_status": sale.transaction_status,
+            })
+
+        return response
+
+    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
+        """创建项目，同时创建关联的子表记录"""
+        project_id = str(uuid.uuid4())
+        now = datetime.utcnow()
+
+        # 1. 创建项目基础记录
         project = Project(
-            name=project_data.name,
+            id=project_id,
             community_name=project_data.community_name,
             address=project_data.address,
-            manager=project_data.manager,
-            signing_price=project_data.signing_price,
-            signing_date=project_data.signing_date,
-            signing_period=project_data.signing_period,
-            planned_handover_date=project_data.planned_handover_date,
-            signing_materials=project_data.signing_materials,
-            owner_name=project_data.owner_name,
-            owner_phone=project_data.owner_phone,
-            owner_id_card=project_data.owner_id_card,
-            owner_info=project_data.owner_info,
-            
-            # Extended fields
             area=project_data.area,
-            rooms=project_data.rooms,
-            halls=project_data.halls,
-            baths=project_data.baths,
+            layout=project_data.layout,
             orientation=project_data.orientation,
-            layout=layout,
-            extension_period=project_data.extension_period,
-            extension_rent=project_data.extension_rent,
-            cost_assumption=project_data.cost_assumption,
-            other_agreements=project_data.other_agreements,
-            remarks=project_data.remarks,
-            
-            notes=project_data.notes,
-            tags=project_data.tags,
             status=ProjectStatus.SIGNING.value,
-            status_changed_at=datetime.utcnow(),
-            
-            # [新增] 初始化财务缓存字段 (虽然数据库有default 0，显式初始化是个好习惯)
-            total_income=0,
-            total_expense=0,
-            net_cash_flow=0,
-            roi=0.0
+            is_deleted=False,
+            created_at=now,
+            updated_at=now,
         )
         self.db.add(project)
+
+        # 2. 创建合同记录（如果提供了签约信息）
+        if any([
+            project_data.signing_price,
+            project_data.signing_date,
+            project_data.signing_period,
+        ]):
+            contract = ProjectContract(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                signing_price=project_data.signing_price,
+                signing_date=project_data.signing_date,
+                signing_period=project_data.signing_period,
+                extension_period=project_data.extension_period,
+                extension_rent=project_data.extension_rent,
+                cost_assumption=project_data.cost_assumption,
+                planned_handover_date=project_data.planned_handover_date,
+                other_agreements=project_data.other_agreements,
+                signing_materials=project_data.signing_materials,
+                contract_status="生效" if project_data.signing_date else "未生效",
+                is_deleted=False,
+                created_at=now,
+                updated_at=now,
+            )
+            self.db.add(contract)
+
+        # 3. 创建业主记录（如果提供了业主信息）
+        if any([
+            project_data.owner_name,
+            project_data.owner_phone,
+            project_data.owner_id_card,
+        ]):
+            owner = ProjectOwner(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                owner_name=project_data.owner_name,
+                owner_phone=project_data.owner_phone,
+                owner_id_card=project_data.owner_id_card,
+                relation_type="业主",
+                owner_info=project_data.notes,  # 旧字段notes映射到owner_info
+                is_deleted=False,
+                created_at=now,
+                updated_at=now,
+            )
+            self.db.add(owner)
+
         self.db.commit()
         self.db.refresh(project)
-        return ProjectResponse.model_validate(project)
+
+        return ProjectResponse.model_validate(self._build_project_response(project))
 
     def get_project(self, project_id: str, include_all: bool = False) -> Optional[ProjectResponse]:
         """获取项目详情"""
         project = self._get_project(project_id, include_all)
-        return ProjectResponse.model_validate(project)
+        return ProjectResponse.model_validate(self._build_project_response(project))
 
     def get_projects(self, status_filter: Optional[str] = None,
                     community_name: Optional[str] = None,
                     page: int = 1, page_size: int = 50) -> Dict[str, Any]:
+        """获取项目列表"""
 
         # 1. 基础查询构造
         query = self.db.query(Project)
 
+        # 排除已删除的项目
+        query = query.filter(Project.is_deleted == False)
+
         if status_filter:
             query = query.filter(Project.status == status_filter)
-        else:
-            query = query.filter(Project.status != ProjectStatus.DELETED.value)
 
         if community_name:
             query = query.filter(Project.community_name.contains(community_name))
@@ -147,30 +206,18 @@ class ProjectCoreService:
         # 2. 获取总数
         total = query.count()
 
-        # 3. 获取当前页的项目
-        # [核心修复] 使用 noload 强制不加载关联关系
-        # 列表页不需要展示几百条带看记录或装修照片，切断它们！
-        projects = query.options(
-            # 文本大字段优化
-            defer(Project.signing_materials),
-            defer(Project.owner_info),
-            defer(Project.other_agreements),
-            defer(Project.notes),
-            defer(Project.viewing_records),
-            defer(Project.offer_records),
-            defer(Project.negotiation_records),
+        # 3. 获取当前页的项目（简化加载）
+        projects = query.order_by(Project.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
-            
-            # [关键] 关系字段优化：彻底切断查询
-            # 如果前端列表页真的需要展示"几条带看"，请改成 selectinload
-            # 但通常列表页不需要，noload 是最快的（0次额外查询）
-            noload(Project.sales_records),
-            noload(Project.renovation_photos),
-            noload(Project.cashflow_records)
-        ).order_by(Project.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        # 4. 转换每个项目
+        items = []
+        for p in projects:
+            # 预加载关联数据
+            self.db.refresh(p, ['contract', 'owners', 'sale'])
+            items.append(ProjectResponse.model_validate(self._build_project_response(p)))
 
         return {
-            "items": [ProjectResponse.model_validate(p) for p in projects],
+            "items": items,
             "total": total,
             "page": page,
             "page_size": page_size
@@ -179,59 +226,119 @@ class ProjectCoreService:
     def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目信息"""
         project = self.db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="项目不存在")
 
-        # 更新字段
         update_dict = update_data.model_dump(exclude_unset=True)
-        
-        # 只限制已售状态不能修改某些字段，其他状态允许修改所有字段
+
+        # 只限制已售状态不能修改某些字段
         if project.status == ProjectStatus.SOLD.value:
-            # 已售状态，只允许修改特定字段
             allowed_fields = {
-                'channel_manager', 'presenter', 'negotiator',
-                'viewing_records', 'offer_records', 'negotiation_records',
-                'property_agent', 'client_agent', 'first_viewer',
-                'list_price','signing_materials', 'owner_info', 'other_agreements', 'notes',
-                'rooms', 'halls', 'baths', 'orientation', 'layout'
+                'community_name', 'address', 'area', 'orientation', 'layout',
+                'renovation_stage', 'notes', 'tags'
             }
-            
-            # 过滤掉不允许修改的字段
-            filtered_update_dict = {}
-            for field, value in update_dict.items():
-                if field in allowed_fields:
-                    filtered_update_dict[field] = value
-            
-            update_dict = filtered_update_dict
-        
-        # 更新所有允许的字段
+            update_dict = {k: v for k, v in update_dict.items() if k in allowed_fields}
+
+        # 1. 更新项目基础字段
+        project_fields = ['community_name', 'address', 'area', 'orientation', 'layout',
+                         'renovation_stage', 'status', 'tags']
+        for field in project_fields:
+            if field in update_dict:
+                setattr(project, field, update_dict.pop(field))
+
+        # 2. 处理签约相关字段 - 更新 ProjectContract
+        contract_fields = ['signing_price', 'signing_date', 'signing_period',
+                          'extension_period', 'extension_rent', 'cost_assumption',
+                          'planned_handover_date', 'other_agreements', 'signing_materials']
+
+        contract_updates = {k: update_dict.pop(k) for k in list(contract_fields) if k in update_dict}
+        if contract_updates:
+            contract = self.db.query(ProjectContract).filter(
+                ProjectContract.project_id == project_id
+            ).first()
+            if contract:
+                for field, value in contract_updates.items():
+                    setattr(contract, field, value)
+            else:
+                # 创建新的合同记录
+                contract = ProjectContract(
+                    id=str(uuid.uuid4()),
+                    project_id=project_id,
+                    is_deleted=False,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    **contract_updates
+                )
+                self.db.add(contract)
+
+        # 3. 处理业主相关字段 - 更新 ProjectOwner
+        owner_fields = ['owner_name', 'owner_phone', 'owner_id_card']
+        owner_updates = {k: update_dict.pop(k) for k in list(owner_fields) if k in update_dict}
+        if 'notes' in update_dict:
+            owner_updates['owner_info'] = update_dict.pop('notes')
+
+        if owner_updates:
+            owner = self.db.query(ProjectOwner).filter(
+                ProjectOwner.project_id == project_id
+            ).first()
+            if owner:
+                for field, value in owner_updates.items():
+                    setattr(owner, field, value)
+            else:
+                owner = ProjectOwner(
+                    id=str(uuid.uuid4()),
+                    project_id=project_id,
+                    relation_type="业主",
+                    is_deleted=False,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    **owner_updates
+                )
+                self.db.add(owner)
+
+        # 4. 处理销售相关字段 - 更新 ProjectSale
+        sale_fields = ['listing_date', 'list_price', 'sold_date', 'sold_price']
+        sale_updates = {k: update_dict.pop(k) for k in list(sale_fields) if k in update_dict}
+
+        if sale_updates:
+            sale = self.db.query(ProjectSale).filter(
+                ProjectSale.project_id == project_id
+            ).first()
+            if sale:
+                for field, value in sale_updates.items():
+                    setattr(sale, field, value)
+            else:
+                sale = ProjectSale(
+                    id=str(uuid.uuid4()),
+                    project_id=project_id,
+                    transaction_status="在售",
+                    is_deleted=False,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    **sale_updates
+                )
+                self.db.add(sale)
+
+        # 5. 更新项目主表的其他字段
         for field, value in update_dict.items():
             if hasattr(project, field):
                 setattr(project, field, value)
 
-        if (
-            update_dict.get("layout") is None
-            and (
-                "rooms" in update_dict
-                or "halls" in update_dict
-                or "baths" in update_dict
-            )
-            and project.rooms is not None
-        ):
-            parts = [f"{project.rooms}室"]
-            if project.halls is not None:
-                parts.append(f"{project.halls}厅")
-            if project.baths is not None:
-                parts.append(f"{project.baths}卫")
-            project.layout = "".join(parts)
-
+        project.updated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(project)
-        return ProjectResponse.model_validate(project)
+
+        return ProjectResponse.model_validate(self._build_project_response(project))
 
     def delete_project(self, project_id: str) -> None:
         """删除项目 (软删除)"""
-        project = self._get_project(project_id)
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="项目不存在")
+
+        project.is_deleted = True
         project.status = ProjectStatus.DELETED.value
-        project.status_changed_at = datetime.utcnow()
+        project.updated_at = datetime.utcnow()
         self.db.commit()
 
     def update_status(self, project_id: str, status_update: StatusUpdate) -> ProjectResponse:
@@ -243,6 +350,7 @@ class ProjectCoreService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="项目不存在"
             )
+
         new_status = status_update.status.value
         current_status = project.status
 
@@ -250,35 +358,60 @@ class ProjectCoreService:
         self._validate_status_transition(current_status, new_status)
 
         # 更新状态
+        old_status = project.status
         project.status = new_status
-        project.status_changed_at = datetime.utcnow()
+        project.updated_at = datetime.utcnow()
 
-        # 处理上架时间
-        if status_update.listing_date:
-            project.listing_date = status_update.listing_date
+        # 更新销售表的交易状态
+        if new_status == ProjectStatus.SELLING.value:
+            sale = self.db.query(ProjectSale).filter(
+                ProjectSale.project_id == project_id
+            ).first()
+            if sale:
+                sale.transaction_status = "在售"
+                if status_update.listing_date:
+                    sale.listing_date = status_update.listing_date
+                if status_update.list_price is not None:
+                    sale.list_price = status_update.list_price
+                sale.updated_at = datetime.utcnow()
+            else:
+                # 创建新的销售记录
+                sale = ProjectSale(
+                    id=str(uuid.uuid4()),
+                    project_id=project_id,
+                    listing_date=status_update.listing_date,
+                    list_price=status_update.list_price,
+                    transaction_status="在售",
+                    is_deleted=False,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                self.db.add(sale)
 
-        # 处理挂牌价
-        if status_update.list_price is not None:
-            project.list_price = status_update.list_price
+        elif new_status == ProjectStatus.SOLD.value:
+            sale = self.db.query(ProjectSale).filter(
+                ProjectSale.project_id == project_id
+            ).first()
+            if sale:
+                sale.transaction_status = "已售"
+                sale.sold_date = datetime.utcnow()
+                sale.updated_at = datetime.utcnow()
 
         # 如果进入装修阶段且当前没有子阶段，初始化为第一个阶段
         if new_status == ProjectStatus.RENOVATING.value and not project.renovation_stage:
             project.renovation_stage = "拆除"
 
-        # 特殊状态处理
-        if new_status == ProjectStatus.SOLD.value:
-            project.sold_at = datetime.utcnow()
-
         self.db.commit()
         self.db.refresh(project)
-        return ProjectResponse.model_validate(project)
+
+        return ProjectResponse.model_validate(self._build_project_response(project))
 
     def get_project_stats(self) -> Dict[str, int]:
         """获取项目统计"""
         stats = self.db.query(
             Project.status,
             func.count(Project.id)
-        ).group_by(Project.status).all()
+        ).filter(Project.is_deleted == False).group_by(Project.status).all()
 
         result = {
             "signing": 0,
@@ -292,7 +425,7 @@ class ProjectCoreService:
                 result[status] = count
 
         return result
-    
+
     # ========== 内部辅助方法 ==========
 
     def _validate_status_transition(self, current_status: str, new_status: str) -> None:

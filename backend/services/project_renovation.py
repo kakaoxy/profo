@@ -1,15 +1,19 @@
 """
 项目装修业务服务
 负责：装修阶段流转、照片上传与管理
+
+注意：已适配新的规范化表结构，装修信息使用 ProjectRenovation 表
 """
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+import uuid
 
-from models import Project, RenovationPhoto
+from models import Project, ProjectRenovation, RenovationPhoto
 from models.base import ProjectStatus
 from schemas.project_renovation import RenovationUpdate
+
 
 class ProjectRenovationService:
     def __init__(self, db: Session):
@@ -20,6 +24,27 @@ class ProjectRenovationService:
         if not project:
             raise HTTPException(status_code=404, detail="项目不存在")
         return project
+
+    def _get_or_create_renovation(self, project_id: str) -> ProjectRenovation:
+        """获取或创建装修记录"""
+        renovation = self.db.query(ProjectRenovation).filter(
+            ProjectRenovation.project_id == project_id,
+            ProjectRenovation.is_deleted == False
+        ).first()
+
+        if not renovation:
+            renovation = ProjectRenovation(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                is_deleted=False,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            self.db.add(renovation)
+            self.db.commit()
+            self.db.refresh(renovation)
+
+        return renovation
 
     def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
         """更新改造阶段"""
@@ -37,18 +62,20 @@ class ProjectRenovationService:
                 detail="当前状态不允许更新改造进度"
             )
 
+        # 获取或创建装修记录
+        renovation = self._get_or_create_renovation(project_id)
+
         # 记录当前阶段的完成时间
         current_stage = project.renovation_stage
         if current_stage and renovation_data.stage_completed_at:
+            # 更新项目的时间记录
             if not project.renovation_stage_dates:
                 project.renovation_stage_dates = {}
-            
-            # 更新 JSON 字段（注意：SQLAlchemy 可能需要显式 re-assign 或 flag_modified）
+
             dates = dict(project.renovation_stage_dates)
-            # 使用 YYYY-MM-DD 格式存储
             dates[current_stage] = renovation_data.stage_completed_at.strftime("%Y-%m-%d")
             project.renovation_stage_dates = dates
-            
+
             from sqlalchemy.orm.attributes import flag_modified
             flag_modified(project, "renovation_stage_dates")
 
@@ -56,9 +83,54 @@ class ProjectRenovationService:
         project.renovation_stage = renovation_data.renovation_stage.value
         project.stage_completed_at = renovation_data.stage_completed_at
 
+        # 如果有实际开始/结束日期，更新到装修记录
+        if renovation_data.renovation_stage.value == "拆除" and not renovation.actual_start_date:
+            renovation.actual_start_date = datetime.utcnow()
+
+        if renovation_data.stage_completed_at and renovation_data.renovation_stage.value == "已完成":
+            renovation.actual_end_date = renovation_data.stage_completed_at
+
+        renovation.updated_at = datetime.utcnow()
+
         self.db.commit()
         self.db.refresh(project)
         return project
+
+    def get_renovation_info(self, project_id: str) -> Optional[ProjectRenovation]:
+        """获取装修信息"""
+        return self.db.query(ProjectRenovation).filter(
+            ProjectRenovation.project_id == project_id,
+            ProjectRenovation.is_deleted == False
+        ).first()
+
+    def update_renovation_info(self, project_id: str, renovation_data: dict) -> ProjectRenovation:
+        """更新装修信息"""
+        project = self._get_project(project_id)
+
+        # 验证状态
+        allowed_statuses = [
+            ProjectStatus.RENOVATING.value,
+            ProjectStatus.SELLING.value,
+            ProjectStatus.SOLD.value
+        ]
+        if project.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前状态不允许更新装修信息"
+            )
+
+        renovation = self._get_or_create_renovation(project_id)
+
+        # 更新字段
+        for field, value in renovation_data.items():
+            if hasattr(renovation, field) and value is not None:
+                setattr(renovation, field, value)
+
+        renovation.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(renovation)
+
+        return renovation
 
     def add_renovation_photo(self, project_id: str, stage: str, url: str,
                            filename: Optional[str] = None,
@@ -78,8 +150,15 @@ class ProjectRenovationService:
                 detail="当前状态不允许上传装修照片"
             )
 
+        # 获取装修记录ID
+        renovation = self.db.query(ProjectRenovation).filter(
+            ProjectRenovation.project_id == project_id,
+            ProjectRenovation.is_deleted == False
+        ).first()
+
         photo = RenovationPhoto(
             project_id=project_id,
+            renovation_id=renovation.id if renovation else None,
             stage=stage,
             url=url,
             filename=filename,

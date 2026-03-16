@@ -9,60 +9,16 @@ from .project_renovation import RenovationPhotoResponse
 # ========== 基础项目模型 ==========
 
 class ProjectBase(BaseModel):
-    """项目基础字段"""
-    name: str = Field(..., min_length=1, max_length=200, description="项目名称")
+    """项目基础字段 - 适配新的规范化表结构"""
+    # 基础信息
+    name: Optional[str] = Field(None, min_length=1, max_length=200, description="项目名称")
     community_name: Optional[str] = Field(None, max_length=200, description="小区名称")
     address: Optional[str] = Field(None, max_length=500, description="物业地址")
-    manager: Optional[str] = Field(None, max_length=100, description="负责人")
-    
-    # 签约相关
-    signing_price: Optional[Decimal] = Field(None, description="签约价格")
-    signing_date: Optional[datetime] = Field(None, description="签约日期")
-    signing_period: Optional[int] = Field(None, description="签约周期")
-    planned_handover_date: Optional[datetime] = Field(None, description="计划交房时间")
-    signing_materials: Optional[Dict[str, Any]] = Field(None, description="签约材料")
-    
-    # 业主信息
-    owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
-    owner_phone: Optional[str] = Field(None, max_length=20, description="业主电话")
-    owner_id_card: Optional[str] = Field(None, max_length=18, description="业主身份证号")
-    owner_info: Optional[Dict[str, Any]] = Field(None, description="业主其他信息")
-    
-    # 其他信息
-    notes: Optional[str] = Field(None, description="备注")
-    tags: Optional[List[str]] = Field(None, description="标签")
     area: Optional[Decimal] = Field(None, description="产证面积(m²)")
-    rooms: Optional[int] = Field(None, description="室")
-    halls: Optional[int] = Field(None, description="厅")
-    baths: Optional[int] = Field(None, description="卫")
-    orientation: Optional[str] = Field(None, description="朝向")
-    layout: Optional[str] = Field(None, description="户型(展示用)")
-    
-    # 扩展字段
-    extension_period: Optional[int] = Field(
-        None,
-        validation_alias=AliasChoices("extension_period", "extensionPeriod"),
-        description="顺延期(月)",
-    )
-    extension_rent: Optional[Decimal] = Field(
-        None,
-        validation_alias=AliasChoices("extension_rent", "extensionRent"),
-        description="顺延期租金(元/月)",
-    )
-    cost_assumption: Optional[str] = Field(
-        None,
-        validation_alias=AliasChoices("cost_assumption", "costAssumption"),
-        max_length=50,
-        description="税费及佣金承担",
-    )
-    other_agreements: Optional[str] = Field(
-        None,
-        validation_alias=AliasChoices("other_agreements", "otherAgreements"),
-        description="其他约定",
-    )
-    remarks: Optional[str] = Field(None, description="备注")
+    layout: Optional[str] = Field(None, max_length=50, description="户型")
+    orientation: Optional[str] = Field(None, max_length=50, description="朝向")
 
-    # [关键] 财务缓存字段 (继承给 Response 用)
+    # 财务缓存字段
     total_income: Decimal = Field(default=Decimal(0))
     total_expense: Decimal = Field(default=Decimal(0))
     net_cash_flow: Decimal = Field(default=Decimal(0))
@@ -70,9 +26,42 @@ class ProjectBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProjectCreate(ProjectBase):
-    """创建项目请求模型"""
-    pass
+
+class ProjectCreate(BaseModel):
+    """创建项目请求模型 - 包含所有可创建字段"""
+    # 基础信息
+    community_name: Optional[str] = Field(None, max_length=200, description="小区名称")
+    address: Optional[str] = Field(None, max_length=500, description="物业地址")
+    area: Optional[Decimal] = Field(None, description="产证面积(m²)")
+    layout: Optional[str] = Field(None, max_length=50, description="户型")
+    orientation: Optional[str] = Field(None, max_length=50, description="朝向")
+
+    # 签约相关（会创建到 project_contracts）
+    signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
+    signing_date: Optional[datetime] = Field(None, description="签约日期")
+    signing_period: Optional[int] = Field(None, description="合同周期(天)")
+    extension_period: Optional[int] = Field(None, description="顺延期(天)")
+    extension_rent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
+    cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
+    planned_handover_date: Optional[datetime] = Field(None, description="计划交房时间")
+    other_agreements: Optional[str] = Field(None, description="其他约定")
+    signing_materials: Optional[List[str]] = Field(None, description="签约材料URLs")
+
+    # 业主相关（会创建到 project_owners）
+    owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
+    owner_phone: Optional[str] = Field(None, max_length=20, description="业主电话")
+    owner_id_card: Optional[str] = Field(None, max_length=18, description="业主身份证号")
+    owner_info: Optional[str] = Field(None, description="业主备注")
+
+    # 销售相关（会创建到 project_sales）
+    list_price: Optional[Decimal] = Field(None, description="挂牌价(万)")
+    listing_date: Optional[datetime] = Field(None, description="上架日期")
+
+    # 扩展字段
+    notes: Optional[str] = Field(None, description="备注")
+    tags: Optional[List[str]] = Field(None, description="标签")
+
+    model_config = ConfigDict(from_attributes=True)
 
 class ProjectUpdate(BaseModel):
     """更新项目请求模型 (所有字段可选)"""
@@ -133,75 +122,34 @@ class ProjectUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProjectResponse(ProjectBase):
+class ProjectResponse(BaseModel):
     """
-    项目完整响应模型
-    继承自 ProjectBase，所以包含了 total_income, roi 等字段
+    项目完整响应模型 - 适配新的规范化表结构
     """
     id: str = Field(..., description="项目ID")
+    name: Optional[str] = Field(None, description="项目名称")
     status: str = Field(..., description="项目状态")
     created_at: datetime
     updated_at: datetime
-    
+
+    # 基础信息
+    community_name: Optional[str] = None
+    address: Optional[str] = None
+    area: Optional[Decimal] = None
+    layout: Optional[str] = None
+    orientation: Optional[str] = None
+    is_deleted: bool = False
+
     # 状态相关
     renovation_stage: Optional[str] = None
-    status_changed_at: Optional[datetime] = None
-    stage_completed_at: Optional[datetime] = None
-    listing_date: Optional[datetime] = None
-    sold_at: Optional[datetime] = None
-    
-    # [冗余声明] 确保净现金流一定存在，虽然父类有，这里覆盖也没问题
-    net_cash_flow: Optional[Decimal] = Field(default=Decimal(0), description="净现金流")
-    
-    # 销售相关
-    sale_price: Optional[Decimal] = None # 在售价格
-    list_price: Optional[Decimal] = None # 挂牌价
-    
-    # [关键修复] 显式定义成交价字段，对应数据库模型的 soldPrice
-    sold_price: Optional[Decimal] = Field(
-        default=None,
-        validation_alias=AliasChoices("sold_price", "soldPrice"),
-    )
-    # [关键修复] 显式定义成交日期，对应数据库模型的 soldDate
-    sold_date: Optional[datetime] = Field(
-        default=None,
-        validation_alias=AliasChoices("sold_date", "soldDate"),
-    )
 
-    # 销售角色
-    property_agent: Optional[str] = None
-    client_agent: Optional[str] = None
-    first_viewer: Optional[str] = None
-    channel_manager: Optional[str] = Field(
-        default=None,
-        validation_alias=AliasChoices("channel_manager", "channelManager"),
-    )
-    presenter: Optional[str] = None
-    negotiator: Optional[str] = None
-    
-    sales_records: Optional[List[SalesRecordResponse]] = Field(default=[], description="销售记录")
+    # 财务缓存
+    total_income: Optional[Decimal] = Field(default=Decimal(0))
+    total_expense: Optional[Decimal] = Field(default=Decimal(0))
+    net_cash_flow: Optional[Decimal] = Field(default=Decimal(0))
+    roi: Optional[float] = Field(default=0.0)
 
-    viewing_records: Optional[List[Dict[str, Any]]] = Field(
-        default=None,
-        validation_alias=AliasChoices("viewing_records", "viewingRecords"),
-    )
-    offer_records: Optional[List[Dict[str, Any]]] = Field(
-        default=None,
-        validation_alias=AliasChoices("offer_records", "offerRecords"),
-    )
-    negotiation_records: Optional[List[Dict[str, Any]]] = Field(
-        default=None,
-        validation_alias=AliasChoices("negotiation_records", "negotiationRecords"),
-    )
-    
-    # 装修照片
-    renovation_photos: Optional[List[RenovationPhotoResponse]] = Field(default=[], description="装修照片")
-    
-    # 改造阶段完成时间
-    renovation_stage_dates: Optional[Dict[str, str]] = Field(
-        default=None,
-        validation_alias=AliasChoices("renovation_stage_dates", "renovationStageDates"),
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 class ProjectListResponse(BaseModel):
     items: List[ProjectResponse]
