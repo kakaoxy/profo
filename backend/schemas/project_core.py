@@ -143,6 +143,30 @@ class ProjectResponse(BaseModel):
     # 状态相关
     renovation_stage: Optional[str] = None
 
+    # 合同信息（来自 project_contracts 表）
+    signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
+    signing_date: Optional[datetime] = None
+    signing_period: Optional[int] = None
+    extension_period: Optional[int] = None
+    extension_rent: Optional[Decimal] = None
+    cost_assumption: Optional[str] = None
+    planned_handover_date: Optional[datetime] = None
+    other_agreements: Optional[str] = None
+    contract_status: Optional[str] = None
+
+    # 业主信息（来自 project_owners 表）
+    owner_name: Optional[str] = None
+    owner_phone: Optional[str] = None
+    owner_id_card: Optional[str] = None
+    owner_info: Optional[str] = None
+
+    # 销售信息（来自 project_sales 表）
+    list_price: Optional[Decimal] = Field(None, description="挂牌价(万)")
+    listing_date: Optional[datetime] = None
+    sold_price: Optional[Decimal] = None
+    sold_date: Optional[datetime] = None
+    transaction_status: Optional[str] = None
+
     # 财务缓存
     total_income: Optional[Decimal] = Field(default=Decimal(0))
     total_expense: Optional[Decimal] = Field(default=Decimal(0))

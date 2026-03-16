@@ -62,35 +62,44 @@ class ProjectCoreService:
             "id": project.id,
             "community_name": project.community_name,
             "address": project.address,
-            "area": project.area,
+            "area": str(project.area) if project.area else None,
             "layout": project.layout,
             "orientation": project.orientation,
             "status": project.status,
             "renovation_stage": project.renovation_stage,
             "is_deleted": project.is_deleted,
-            "created_at": project.created_at,
-            "updated_at": project.updated_at,
+            "created_at": project.created_at.isoformat() if project.created_at else None,
+            "updated_at": project.updated_at.isoformat() if project.updated_at else None,
         }
 
-        # 从 ProjectContract 获取签约信息
-        if project.contract:
-            contract = project.contract
+        # 直接从关联表查询数据（确保能获取到）
+        from models.project import ProjectContract, ProjectOwner, ProjectSale
+
+        # 查询合同信息
+        contract = self.db.query(ProjectContract).filter(
+            ProjectContract.project_id == project.id,
+            ProjectContract.is_deleted == False
+        ).first()
+        if contract:
             response.update({
                 "signing_price": float(contract.signing_price) if contract.signing_price else None,
-                "signing_date": contract.signing_date,
+                "signing_date": contract.signing_date.isoformat() if contract.signing_date else None,
                 "signing_period": contract.signing_period,
                 "extension_period": contract.extension_period,
                 "extension_rent": float(contract.extension_rent) if contract.extension_rent else None,
                 "cost_assumption": contract.cost_assumption,
-                "planned_handover_date": contract.planned_handover_date,
+                "planned_handover_date": contract.planned_handover_date.isoformat() if contract.planned_handover_date else None,
                 "other_agreements": contract.other_agreements,
                 "signing_materials": contract.signing_materials,
                 "contract_status": contract.contract_status,
             })
 
-        # 从 ProjectOwner 获取业主信息
-        if project.owners:
-            owner = project.owners[0]  # 取第一个业主
+        # 查询业主信息
+        owner = self.db.query(ProjectOwner).filter(
+            ProjectOwner.project_id == project.id,
+            ProjectOwner.is_deleted == False
+        ).first()
+        if owner:
             response.update({
                 "owner_name": owner.owner_name,
                 "owner_phone": owner.owner_phone,
@@ -98,13 +107,16 @@ class ProjectCoreService:
                 "owner_info": owner.owner_info,
             })
 
-        # 从 ProjectSale 获取销售信息
-        if project.sale:
-            sale = project.sale
+        # 查询销售信息
+        sale = self.db.query(ProjectSale).filter(
+            ProjectSale.project_id == project.id,
+            ProjectSale.is_deleted == False
+        ).first()
+        if sale:
             response.update({
-                "listing_date": sale.listing_date,
+                "listing_date": sale.listing_date.isoformat() if sale.listing_date else None,
                 "list_price": float(sale.list_price) if sale.list_price else None,
-                "sold_date": sale.sold_date,
+                "sold_date": sale.sold_date.isoformat() if sale.sold_date else None,
                 "sold_price": float(sale.sold_price) if sale.sold_price else None,
                 "transaction_status": sale.transaction_status,
             })
@@ -194,6 +206,13 @@ class ProjectCoreService:
         # 1. 基础查询构造
         query = self.db.query(Project)
 
+        # 预加载关联数据（签约、业主、销售信息）
+        query = query.options(
+            selectinload(Project.contract),
+            selectinload(Project.owners),
+            selectinload(Project.sale),
+        )
+
         # 排除已删除的项目
         query = query.filter(Project.is_deleted == False)
 
@@ -206,14 +225,12 @@ class ProjectCoreService:
         # 2. 获取总数
         total = query.count()
 
-        # 3. 获取当前页的项目（简化加载）
+        # 3. 获取当前页的项目
         projects = query.order_by(Project.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
 
         # 4. 转换每个项目
         items = []
         for p in projects:
-            # 预加载关联数据
-            self.db.refresh(p, ['contract', 'owners', 'sale'])
             items.append(ProjectResponse.model_validate(self._build_project_response(p)))
 
         return {
