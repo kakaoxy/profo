@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
 from models.base import ProjectStatus
 from .project_sales import SalesRecordResponse
 from .project_renovation import RenovationPhotoResponse
+from .contract import SigningMaterial
 
 
 def parse_date_string(value: Union[str, datetime, None]) -> Optional[datetime]:
@@ -75,7 +76,7 @@ class ProjectCreate(BaseModel):
     cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
     planned_handover_date: Optional[str] = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: Optional[str] = Field(None, description="其他约定")
-    signing_materials: Optional[List[str]] = Field(None, description="签约材料URLs")
+    signing_materials: Optional[List[SigningMaterial]] = Field(None, description="签约材料列表")
 
     # 业主相关（会创建到 project_owners 表）
     owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
@@ -134,7 +135,7 @@ class ProjectUpdate(BaseModel):
         None,
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
-    signing_materials: Optional[List[str]] = Field(None)
+    signing_materials: Optional[List[SigningMaterial]] = Field(None)
 
     # 业主相关（更新到 project_owners 表）
     owner_name: Optional[str] = Field(None, max_length=100)
@@ -209,6 +210,9 @@ class ProjectResponse(BaseModel):
     total_expense: Optional[Decimal] = Field(default=Decimal(0))
     net_cash_flow: Optional[Decimal] = Field(default=Decimal(0))
     roi: Optional[float] = Field(default=0.0)
+
+    # 签约材料附件
+    signing_materials: Optional[List[SigningMaterial]] = Field(None, description="签约材料列表")
 
     model_config = ConfigDict(from_attributes=True)
 

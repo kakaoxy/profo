@@ -1,10 +1,11 @@
 from typing import Dict, Any
-from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session
 import os
 import shutil
 import uuid
 import filetype
+import logging
 from datetime import datetime
 from settings import settings
 from db import get_db
@@ -13,6 +14,7 @@ from dependencies.auth import get_current_operator_user
 from schemas.response import ApiResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Ensure upload directory exists
 if not os.path.exists(settings.upload_dir):
@@ -20,6 +22,7 @@ if not os.path.exists(settings.upload_dir):
 
 @router.post("/upload", response_model=ApiResponse[Dict[str, Any]], summary="上传文件")
 def upload_file(
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_operator_user)

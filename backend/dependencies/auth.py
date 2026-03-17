@@ -2,7 +2,8 @@
 认证相关依赖注入函数
 """
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+import logging
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -11,12 +12,14 @@ from models.user import User
 from settings import settings
 from utils.auth import validate_token, get_user_id_from_token
 
+logger = logging.getLogger(__name__)
 
 # OAuth2密码承载器，用于从请求头中获取token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_prefix}/auth/token")
 
 
 async def get_current_user(
+    request: Request,
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
