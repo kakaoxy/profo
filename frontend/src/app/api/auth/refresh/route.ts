@@ -62,9 +62,14 @@ export async function POST() {
       sameSite: "lax",
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Token refresh error:", error);
+    // 返回新的 access_token，让客户端可以使用
+    // 注意：refresh_token 仍然是 httpOnly cookie，不会返回给客户端
+    return NextResponse.json({
+      success: true,
+      access_token: data.access_token,
+      expires_in: data.expires_in,
+    });
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

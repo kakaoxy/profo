@@ -30,16 +30,41 @@ class Settings(BaseSettings):
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         return v
-    
+
+    @field_validator("allowed_extensions", "allowed_mime_types", mode="before")
+    @classmethod
+    def parse_set_from_json(cls, v: Any) -> Any:
+        """解析 JSON 格式的列表/集合环境变量"""
+        if isinstance(v, str):
+            import json
+            try:
+                # 尝试解析 JSON 数组
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return set(parsed)
+            except json.JSONDecodeError:
+                # 如果不是 JSON，尝试按逗号分割
+                return set(i.strip() for i in v.split(","))
+        return v
+
     # 文件上传配置
     upload_dir: str = "static/uploads"
     max_upload_size: int = 100 * 1024 * 1024  # 100MB
-    allowed_extensions: set[str] = {'.jpg', '.jpeg', '.png', '.pdf', '.xlsx'}  # Store as set for O(1) lookup
+    # 支持的文件类型：图片、PDF、Excel、Word文档（合同和发票）
+    allowed_extensions: set[str] = {
+        '.jpg', '.jpeg', '.png', '.pdf', 
+        '.xlsx', '.xls', '.csv',  # Excel
+        '.doc', '.docx'  # Word文档
+    }
     allowed_mime_types: set[str] = {
-        'image/jpeg', 
-        'image/png', 
-        'application/pdf', 
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'image/jpeg',
+        'image/png',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',  # .xlsx
+        'application/vnd.ms-excel',  # .xls
+        'text/csv',  # .csv
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  # .docx
+        'application/msword',  # .doc
     }
     
     # 分页配置

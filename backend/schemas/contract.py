@@ -7,6 +7,15 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 
 
+class SigningMaterial(BaseModel):
+    """签约材料附件"""
+    filename: str = Field(..., description="文件名")
+    url: str = Field(..., description="文件URL")
+    category: str = Field(..., description="附件分类")
+    fileType: str = Field(..., description="文件类型")
+    size: int = Field(default=0, description="文件大小(字节)")
+
+
 class ContractBase(BaseModel):
     """合同基础字段"""
     contract_no: Optional[str] = Field(None, max_length=100, description="合同编号")
@@ -18,7 +27,7 @@ class ContractBase(BaseModel):
     cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担方")
     planned_handover_date: Optional[datetime] = Field(None, description="业主交房时间")
     other_agreements: Optional[str] = Field(None, description="其他约定条款")
-    signing_materials: Optional[List[str]] = Field(None, description="合同附件URLs")
+    signing_materials: Optional[List[SigningMaterial]] = Field(None, description="合同附件列表")
     contract_status: str = Field(default="生效", description="合同状态")
 
     model_config = ConfigDict(from_attributes=True)
@@ -40,7 +49,7 @@ class ContractUpdate(BaseModel):
     cost_assumption: Optional[str] = None
     planned_handover_date: Optional[datetime] = None
     other_agreements: Optional[str] = None
-    signing_materials: Optional[List[str]] = None
+    signing_materials: Optional[List[SigningMaterial]] = None
     contract_status: Optional[str] = None
 
 

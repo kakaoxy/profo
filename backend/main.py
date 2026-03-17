@@ -3,6 +3,7 @@ FastAPI 应用入口
 """
 import sys
 import os
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +13,15 @@ from contextlib import asynccontextmanager
 from settings import settings
 from db import init_db
 from common import limiter
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
 
 # ==================== 路由注册 ====================

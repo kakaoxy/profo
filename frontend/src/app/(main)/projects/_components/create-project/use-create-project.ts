@@ -75,13 +75,52 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
       cost_assumption: project?.cost_assumption || project?.costAssumption || "",
       planned_handover_date: fromDateStr(project?.planned_handover_date || project?.plannedHandoverDate),
       other_agreements: project?.other_agreements || project?.otherAgreements || "",
-      attachments: project?.signing_materials?.attachments?.map(att => ({
-        ...att,
-        id: Math.random().toString(36).substring(7),
-        uploadedAt: new Date().toISOString(),
-        category: att.category as AttachmentCategory,
-        fileType: att.fileType as AttachmentType,
-      })) || [],
+      // 处理 signing_materials：后端返回的是附件对象数组
+      attachments: (() => {
+        const materials = project?.signing_materials;
+        if (!materials) return [];
+        // 如果是数组（附件对象数组）
+        if (Array.isArray(materials)) {
+          return materials.map((item: unknown) => {
+            // 检查是字符串（旧URL格式）还是对象（新格式）
+            if (typeof item === 'string') {
+              // 旧格式：URL字符串
+              const url = item;
+              return {
+                id: Math.random().toString(36).substring(7),
+                filename: url.split('/').pop() || 'unknown',
+                url: url,
+                category: 'other' as AttachmentCategory,
+                fileType: 'pdf' as AttachmentType,
+                size: 0,
+                uploadedAt: new Date().toISOString(),
+              };
+            }
+            // 新格式：附件对象
+            const att = item as { filename: string; url: string; category: string; fileType: string; size?: number };
+            return {
+              id: Math.random().toString(36).substring(7),
+              filename: att.filename || 'unknown',
+              url: att.url,
+              category: (att.category || 'other') as AttachmentCategory,
+              fileType: (att.fileType || 'pdf') as AttachmentType,
+              size: att.size || 0,
+              uploadedAt: new Date().toISOString(),
+            };
+          });
+        }
+        // 如果是对象（旧格式，包含 attachments 数组）
+        if (typeof materials === 'object' && materials !== null && 'attachments' in materials) {
+          return (materials as { attachments?: Array<{ filename: string; url: string; category: string; fileType: string; size?: number }> }).attachments?.map((att) => ({
+            ...att,
+            id: Math.random().toString(36).substring(7),
+            uploadedAt: new Date().toISOString(),
+            category: att.category as AttachmentCategory,
+            fileType: att.fileType as AttachmentType,
+          })) || [];
+        }
+        return [];
+      })(),
     },
   });
 
@@ -137,13 +176,52 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
           cost_assumption: project.cost_assumption || project.costAssumption || "",
           planned_handover_date: fromDateStr(project.planned_handover_date || project.plannedHandoverDate),
           other_agreements: project.other_agreements || project.otherAgreements || "",
-          attachments: project.signing_materials?.attachments?.map(att => ({
-            ...att,
-            id: Math.random().toString(36).substring(7),
-            uploadedAt: new Date().toISOString(),
-            category: att.category as AttachmentCategory,
-            fileType: att.fileType as AttachmentType,
-          })) || [],
+          // 处理 signing_materials：后端返回的是附件对象数组
+          attachments: (() => {
+            const materials = project.signing_materials;
+            if (!materials) return [];
+            // 如果是数组（附件对象数组）
+            if (Array.isArray(materials)) {
+              return materials.map((item: unknown) => {
+                // 检查是字符串（旧URL格式）还是对象（新格式）
+                if (typeof item === 'string') {
+                  // 旧格式：URL字符串
+                  const url = item;
+                  return {
+                    id: Math.random().toString(36).substring(7),
+                    filename: url.split('/').pop() || 'unknown',
+                    url: url,
+                    category: 'other' as AttachmentCategory,
+                    fileType: 'pdf' as AttachmentType,
+                    size: 0,
+                    uploadedAt: new Date().toISOString(),
+                  };
+                }
+                // 新格式：附件对象
+                const att = item as { filename: string; url: string; category: string; fileType: string; size?: number };
+                return {
+                  id: Math.random().toString(36).substring(7),
+                  filename: att.filename || 'unknown',
+                  url: att.url,
+                  category: (att.category || 'other') as AttachmentCategory,
+                  fileType: (att.fileType || 'pdf') as AttachmentType,
+                  size: att.size || 0,
+                  uploadedAt: new Date().toISOString(),
+                };
+              });
+            }
+            // 如果是对象（旧格式，包含 attachments 数组）
+            if (typeof materials === 'object' && materials !== null && 'attachments' in materials) {
+              return (materials as { attachments?: Array<{ filename: string; url: string; category: string; fileType: string; size?: number }> }).attachments?.map((att) => ({
+                ...att,
+                id: Math.random().toString(36).substring(7),
+                uploadedAt: new Date().toISOString(),
+                category: att.category as AttachmentCategory,
+                fileType: att.fileType as AttachmentType,
+              })) || [];
+            }
+            return [];
+          })(),
        });
     }
   }, [open, isEditMode, project, form]);
@@ -179,6 +257,7 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
         cost_assumption: values.cost_assumption || null,
         planned_handover_date: toDateStr(values.planned_handover_date),
         other_agreements: values.other_agreements || null,
+        // signing_materials 后端期望的是附件对象数组
         signing_materials: values.attachments?.length
           ? values.attachments.map((att) => ({
               filename: att.filename,

@@ -126,7 +126,48 @@ export function ProjectDetailSheet({
   const currentProjectStageIndex =
     currentStatusIndex === -1 ? 0 : currentStatusIndex;
 
-  const attachments = project.signing_materials?.attachments || [];
+  // 处理 signing_materials：后端返回的是附件对象数组
+  const attachments: import("./types").AttachmentInfo[] = (() => {
+    const materials = project.signing_materials;
+    if (!materials) return [];
+    // 如果是数组（附件对象数组）- 新格式
+    if (Array.isArray(materials)) {
+      return materials.map((item: unknown) => {
+        // 检查是字符串（旧URL格式）还是对象（新格式）
+        if (typeof item === 'string') {
+          // 旧格式：URL字符串
+          const url = item;
+          return {
+            filename: url.split('/').pop() || 'unknown',
+            url: url,
+            category: 'other',
+            fileType: (() => {
+              const ext = url.split('.').pop()?.toLowerCase() || '';
+              if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+              if (['pdf'].includes(ext)) return 'pdf';
+              if (['xlsx', 'xls', 'csv'].includes(ext)) return 'excel';
+              if (['doc', 'docx'].includes(ext)) return 'word';
+              return 'other';
+            })(),
+          };
+        }
+        // 新格式：附件对象
+        const att = item as import("./types").AttachmentInfo;
+        return {
+          filename: att.filename || 'unknown',
+          url: att.url,
+          category: att.category || 'other',
+          fileType: att.fileType || 'other',
+          size: att.size,
+        };
+      });
+    }
+    // 如果是对象（旧格式，包含 attachments 数组）
+    if (typeof materials === 'object' && materials !== null && 'attachments' in materials) {
+      return (materials as { attachments?: import("./types").AttachmentInfo[] }).attachments || [];
+    }
+    return [];
+  })();
 
   const handlers: AttachmentHandlers = {
     onPreview: (url, fileType) => {
@@ -145,7 +186,14 @@ export function ProjectDetailSheet({
     onDelete: onUpdateAttachments
       ? (url) => {
           const newAttachments = attachments.filter((att) => att.url !== url);
-          onUpdateAttachments({ attachments: newAttachments });
+          // 转换为后端期望的格式：附件对象数组
+          onUpdateAttachments(newAttachments.map((att) => ({
+            filename: att.filename,
+            url: att.url,
+            category: att.category,
+            fileType: att.fileType,
+            size: att.size || 0,
+          })));
           toast.success("附件已删除");
         }
       : undefined,

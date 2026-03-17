@@ -284,7 +284,7 @@ export interface Project {
   other_agreements?: string;
   otherAgreements?: string;
 
-  signing_materials?: SigningMaterials | null;
+  signing_materials?: string[] | SigningMaterials | null;
 
   // --- 合同与备注 ---
   notes?: string;

@@ -7,6 +7,42 @@ import { UploadingPhoto } from "./photo-grid";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+// 尝试刷新 token
+// 注意：调用 Next.js API 路由 /api/auth/refresh，它会从 httpOnly cookie 中读取 refresh_token
+async function tryRefreshToken(): Promise<string | null> {
+  try {
+    // 调用 Next.js API 路由（不是直接调用后端）
+    // 因为 refresh_token 存储在 httpOnly cookie 中，前端无法直接读取
+    const response = await fetch("/api/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    // 返回新的 access_token
+    return data.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+// 检查 token 是否过期
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const exp = payload.exp;
+    const now = Math.floor(Date.now() / 1000);
+    return exp < now;
+  } catch {
+    return true;
+  }
+}
+
 interface UseRenovationUploadProps {
   projectId: string;
   stageValue: string;
@@ -39,6 +75,23 @@ export function useRenovationUpload({
       ""
     );
     const uploadUrl = `${apiBase}/api/v1/files/upload`;
+
+    // 获取并检查 token
+    let token = localStorage.getItem("access_token") || localStorage.getItem("token");
+
+    // 检查 token 是否存在或过期
+    const tokenExpired = token ? isTokenExpired(token) : true;
+    if (!token || tokenExpired) {
+      const newToken = await tryRefreshToken();
+      if (newToken) {
+        // 刷新成功，使用新 token
+        token = newToken;
+      } else {
+        toast.error("登录已过期，请重新登录");
+        handleUploadError(item.id);
+        return;
+      }
+    }
 
     return new Promise<void>((resolve) => {
       const xhr = new XMLHttpRequest();
@@ -87,6 +140,13 @@ export function useRenovationUpload({
       };
 
       xhr.open("POST", uploadUrl);
+      xhr.withCredentials = true;
+
+      // 添加认证头
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+
       xhr.send(formData);
     });
   };
