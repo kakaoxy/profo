@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 from models.base import CashFlowType, CashFlowCategory
 
 class CashFlowRecordCreate(BaseModel):
@@ -29,15 +29,18 @@ class CashFlowRecordResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    # 兼容旧字段（用于响应）
+    # 兼容旧字段（用于响应）- 使用 computed_field 确保序列化
+    @computed_field
     @property
     def date(self) -> datetime:
         return self.record_date
 
+    @computed_field
     @property
     def description(self) -> Optional[str]:
         return self.remark
 
+    @computed_field
     @property
     def related_stage(self) -> Optional[str]:
         return None

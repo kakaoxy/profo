@@ -27,6 +27,9 @@ export function TrendChart({ data }: TrendChartProps) {
   // 数据预处理：按日期聚合
   const chartData = useMemo(() => {
     const grouped = data.reduce((acc, curr) => {
+      // 过滤掉没有日期的记录
+      if (!curr.date) return acc;
+      
       const dateKey = format(parseISO(curr.date), "yyyy-MM-dd");
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, income: 0, expense: 0 };
