@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getFileUrl } from "@/lib/config";
 import { FormValues } from "../schema";
 import { Share2 } from "lucide-react";
 
