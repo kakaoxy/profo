@@ -120,8 +120,8 @@ export async function updateRenovationStageAction(payload: {
       {
         params: { path: { project_id: payload.projectId } },
         body: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          renovation_stage: payload.renovation_stage as any,
+          // @ts-ignore - API 类型定义与后端实际接口不完全同步
+          renovation_stage: payload.renovation_stage,
           stage_completed_at: payload.stage_completed_at,
         },
       },

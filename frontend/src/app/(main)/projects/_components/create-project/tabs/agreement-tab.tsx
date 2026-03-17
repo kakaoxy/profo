@@ -26,26 +26,20 @@ export function AgreementTab({ form }: { form: UseFormReturn<FormValues> }) {
 
       <SimpleInputField
         control={control}
-        name="costAssumption"
+        name="cost_assumption"
         label="税费及佣金承担"
         placeholder="如：各付各税"
       />
       <SimpleInputField
         control={control}
-        name="otherAgreements"
+        name="other_agreements"
         label="其他约定"
       />
       <SimpleTextareaField
         control={control}
         name="notes"
-        label="内部备注"
-        placeholder="仅内部可见..."
-      />
-      <SimpleInputField
-        control={control}
-        name="remarks"
-        label="公开备注"
-        placeholder="对外可见..."
+        label="备注"
+        placeholder="输入备注信息..."
       />
     </div>
   );

@@ -19,35 +19,27 @@ export function TransactionTab({ form }: { form: UseFormReturn<FormValues> }) {
         />
         <SimpleInputField
           control={control}
-          name="area"
-          label="产证面积 (㎡)"
+          name="signing_period"
+          label="签约周期 (天)"
           type="number"
-          step="0.01"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <SimpleInputField
           control={control}
-          name="signing_period"
-          label="签约周期 (天)"
+          name="extension_period"
+          label="顺延期 (天)"
           type="number"
         />
         <SimpleInputField
           control={control}
-          name="extensionPeriod"
-          label="顺延期 (月)"
+          name="extension_rent"
+          label="顺延期租金 (元/月)"
           type="number"
+          step="100"
         />
       </div>
-
-      <SimpleInputField
-        control={control}
-        name="extensionRent"
-        label="顺延期租金 (元/月)"
-        type="number"
-        step="100"
-      />
     </div>
   );
 }

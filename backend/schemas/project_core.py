@@ -28,15 +28,15 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(BaseModel):
-    """创建项目请求模型 - 包含所有可创建字段"""
-    # 基础信息
+    """创建项目请求模型 - 已适配规范化表结构"""
+    # 基础信息 (projects 表)
     community_name: Optional[str] = Field(None, max_length=200, description="小区名称")
     address: Optional[str] = Field(None, max_length=500, description="物业地址")
     area: Optional[Decimal] = Field(None, description="产证面积(m²)")
     layout: Optional[str] = Field(None, max_length=50, description="户型")
     orientation: Optional[str] = Field(None, max_length=50, description="朝向")
 
-    # 签约相关（会创建到 project_contracts）
+    # 签约相关（会创建到 project_contracts 表）
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
     signing_date: Optional[datetime] = Field(None, description="签约日期")
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
@@ -47,45 +47,32 @@ class ProjectCreate(BaseModel):
     other_agreements: Optional[str] = Field(None, description="其他约定")
     signing_materials: Optional[List[str]] = Field(None, description="签约材料URLs")
 
-    # 业主相关（会创建到 project_owners）
+    # 业主相关（会创建到 project_owners 表）
     owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
     owner_phone: Optional[str] = Field(None, max_length=20, description="业主电话")
     owner_id_card: Optional[str] = Field(None, max_length=18, description="业主身份证号")
     owner_info: Optional[str] = Field(None, description="业主备注")
+    notes: Optional[str] = Field(None, description="备注（映射到 owner_info）")
 
-    # 销售相关（会创建到 project_sales）
+    # 销售相关（会创建到 project_sales 表）
     list_price: Optional[Decimal] = Field(None, description="挂牌价(万)")
     listing_date: Optional[datetime] = Field(None, description="上架日期")
-
-    # 扩展字段
-    notes: Optional[str] = Field(None, description="备注")
-    tags: Optional[List[str]] = Field(None, description="标签")
 
     model_config = ConfigDict(from_attributes=True)
 
 class ProjectUpdate(BaseModel):
-    """更新项目请求模型 (所有字段可选)"""
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    """更新项目请求模型 (所有字段可选) - 已适配规范化表结构"""
+    # 基础信息
     community_name: Optional[str] = Field(None, max_length=200)
     address: Optional[str] = Field(None, max_length=500)
-    manager: Optional[str] = Field(None, max_length=100)
+    area: Optional[Decimal] = Field(None)
+    layout: Optional[str] = Field(None, max_length=50)
+    orientation: Optional[str] = Field(None, max_length=50)
+    
+    # 签约相关（更新到 project_contracts 表）
     signing_price: Optional[Decimal] = Field(None)
     signing_date: Optional[datetime] = Field(None)
     signing_period: Optional[int] = Field(None)
-    planned_handover_date: Optional[datetime] = Field(None)
-    signing_materials: Optional[Dict[str, Any]] = Field(None)
-    owner_name: Optional[str] = Field(None, max_length=100)
-    owner_phone: Optional[str] = Field(None, max_length=20)
-    owner_id_card: Optional[str] = Field(None, max_length=18)
-    owner_info: Optional[Dict[str, Any]] = Field(None)
-    notes: Optional[str] = Field(None)
-    tags: Optional[List[str]] = Field(None)
-    area: Optional[Decimal] = Field(None)
-    rooms: Optional[int] = Field(None)
-    halls: Optional[int] = Field(None)
-    baths: Optional[int] = Field(None)
-    orientation: Optional[str] = Field(None, max_length=50)
-    layout: Optional[str] = Field(None, max_length=50)
     extension_period: Optional[int] = Field(
         None,
         validation_alias=AliasChoices("extension_period", "extensionPeriod"),
@@ -99,24 +86,21 @@ class ProjectUpdate(BaseModel):
         validation_alias=AliasChoices("cost_assumption", "costAssumption"),
         max_length=50,
     )
+    planned_handover_date: Optional[datetime] = Field(None)
     other_agreements: Optional[str] = Field(
         None,
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
-    remarks: Optional[str] = Field(None)
+    signing_materials: Optional[List[str]] = Field(None)
     
-    # 销售角色
-    channel_manager: Optional[str] = Field(
-        None,
-        validation_alias=AliasChoices("channel_manager", "channelManager"),
-        max_length=100,
-    )
-    presenter: Optional[str] = Field(None, max_length=100)
-    negotiator: Optional[str] = Field(None, max_length=100)
+    # 业主相关（更新到 project_owners 表）
+    owner_name: Optional[str] = Field(None, max_length=100)
+    owner_phone: Optional[str] = Field(None, max_length=20)
+    owner_id_card: Optional[str] = Field(None, max_length=18)
+    owner_info: Optional[str] = Field(None)
+    notes: Optional[str] = Field(None)  # 映射到 owner_info
     
-    property_agent: Optional[str] = Field(None, max_length=100)
-    client_agent: Optional[str] = Field(None, max_length=100)
-    first_viewer: Optional[str] = Field(None, max_length=100)
+    # 销售相关（更新到 project_sales 表）
     list_price: Optional[Decimal] = Field(None)
     listing_date: Optional[datetime] = Field(None, description="上架日期")
 
