@@ -5,7 +5,7 @@
 注意：此服务已适配新的规范化表结构。
 项目基础信息在 projects 表，签约/业主/销售等信息在关联的子表中。
 """
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from datetime import datetime
 from sqlalchemy.orm import Session, selectinload, defer, noload
 from sqlalchemy import func
@@ -15,6 +15,35 @@ import uuid
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.base import ProjectStatus
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectListResponse, ProjectResponse
+
+
+def parse_date_string(value: Union[str, datetime, None]) -> Optional[datetime]:
+    """解析日期字符串为 datetime 对象
+    支持格式: YYYY-MM-DD, ISO 格式字符串, 或 datetime 对象
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        # 尝试解析 YYYY-MM-DD 格式
+        if len(value) == 10 and value.count('-') == 2:
+            try:
+                year, month, day = map(int, value.split('-'))
+                return datetime(year, month, day)
+            except ValueError:
+                pass
+        # 尝试解析 ISO 格式
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00').replace('+00:00', ''))
+        except ValueError:
+            pass
+        # 尝试其他格式
+        try:
+            return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+        except ValueError:
+            pass
+    return None
 
 
 class ProjectCoreService:
@@ -81,14 +110,18 @@ class ProjectCoreService:
             ProjectContract.is_deleted == False
         ).first()
         if contract:
+            # 格式化为 YYYY-MM-DD 格式，避免时区问题
+            signing_date_str = contract.signing_date.strftime('%Y-%m-%d') if contract.signing_date else None
+            planned_handover_date_str = contract.planned_handover_date.strftime('%Y-%m-%d') if contract.planned_handover_date else None
+
             response.update({
                 "signing_price": float(contract.signing_price) if contract.signing_price else None,
-                "signing_date": contract.signing_date.isoformat() if contract.signing_date else None,
+                "signing_date": signing_date_str,
                 "signing_period": contract.signing_period,
                 "extension_period": contract.extension_period,
                 "extension_rent": float(contract.extension_rent) if contract.extension_rent else None,
                 "cost_assumption": contract.cost_assumption,
-                "planned_handover_date": contract.planned_handover_date.isoformat() if contract.planned_handover_date else None,
+                "planned_handover_date": planned_handover_date_str,
                 "other_agreements": contract.other_agreements,
                 "signing_materials": contract.signing_materials,
                 "contract_status": contract.contract_status,
@@ -113,10 +146,14 @@ class ProjectCoreService:
             ProjectSale.is_deleted == False
         ).first()
         if sale:
+            # 格式化为 YYYY-MM-DD 格式，避免时区问题
+            listing_date_str = sale.listing_date.strftime('%Y-%m-%d') if sale.listing_date else None
+            sold_date_str = sale.sold_date.strftime('%Y-%m-%d') if sale.sold_date else None
+
             response.update({
-                "listing_date": sale.listing_date.isoformat() if sale.listing_date else None,
+                "listing_date": listing_date_str,
                 "list_price": float(sale.list_price) if sale.list_price else None,
-                "sold_date": sale.sold_date.isoformat() if sale.sold_date else None,
+                "sold_date": sold_date_str,
                 "sold_price": float(sale.sold_price) if sale.sold_price else None,
                 "transaction_status": sale.transaction_status,
             })
@@ -144,24 +181,27 @@ class ProjectCoreService:
         self.db.add(project)
 
         # 2. 创建合同记录（如果提供了签约信息）
+        signing_date = parse_date_string(project_data.signing_date)
+        planned_handover_date = parse_date_string(project_data.planned_handover_date)
+
         if any([
             project_data.signing_price,
-            project_data.signing_date,
+            signing_date,
             project_data.signing_period,
         ]):
             contract = ProjectContract(
                 id=str(uuid.uuid4()),
                 project_id=project_id,
                 signing_price=project_data.signing_price,
-                signing_date=project_data.signing_date,
+                signing_date=signing_date,
                 signing_period=project_data.signing_period,
                 extension_period=project_data.extension_period,
                 extension_rent=project_data.extension_rent,
                 cost_assumption=project_data.cost_assumption,
-                planned_handover_date=project_data.planned_handover_date,
+                planned_handover_date=planned_handover_date,
                 other_agreements=project_data.other_agreements,
                 signing_materials=project_data.signing_materials,
-                contract_status="生效" if project_data.signing_date else "未生效",
+                contract_status="生效" if signing_date else "未生效",
                 is_deleted=False,
                 created_at=now,
                 updated_at=now,
@@ -252,7 +292,8 @@ class ProjectCoreService:
         if project.status == ProjectStatus.SOLD.value:
             allowed_fields = {
                 'community_name', 'address', 'area', 'orientation', 'layout',
-                'renovation_stage', 'notes', 'tags'
+                'renovation_stage', 'notes', 'tags',
+                'owner_name', 'owner_phone', 'owner_id_card', 'owner_info'
             }
             update_dict = {k: v for k, v in update_dict.items() if k in allowed_fields}
 
@@ -269,6 +310,13 @@ class ProjectCoreService:
                           'planned_handover_date', 'other_agreements', 'signing_materials']
 
         contract_updates = {k: update_dict.pop(k) for k in list(contract_fields) if k in update_dict}
+
+        # 解析日期字段
+        if 'signing_date' in contract_updates:
+            contract_updates['signing_date'] = parse_date_string(contract_updates['signing_date'])
+        if 'planned_handover_date' in contract_updates:
+            contract_updates['planned_handover_date'] = parse_date_string(contract_updates['planned_handover_date'])
+
         if contract_updates:
             contract = self.db.query(ProjectContract).filter(
                 ProjectContract.project_id == project_id
@@ -316,6 +364,12 @@ class ProjectCoreService:
         # 4. 处理销售相关字段 - 更新 ProjectSale
         sale_fields = ['listing_date', 'list_price', 'sold_date', 'sold_price']
         sale_updates = {k: update_dict.pop(k) for k in list(sale_fields) if k in update_dict}
+
+        # 解析日期字段
+        if 'listing_date' in sale_updates:
+            sale_updates['listing_date'] = parse_date_string(sale_updates['listing_date'])
+        if 'sold_date' in sale_updates:
+            sale_updates['sold_date'] = parse_date_string(sale_updates['sold_date'])
 
         if sale_updates:
             sale = self.db.query(ProjectSale).filter(
@@ -384,10 +438,14 @@ class ProjectCoreService:
             sale = self.db.query(ProjectSale).filter(
                 ProjectSale.project_id == project_id
             ).first()
+
+            # 解析 listing_date
+            listing_date = parse_date_string(status_update.listing_date)
+
             if sale:
                 sale.transaction_status = "在售"
-                if status_update.listing_date:
-                    sale.listing_date = status_update.listing_date
+                if listing_date:
+                    sale.listing_date = listing_date
                 if status_update.list_price is not None:
                     sale.list_price = status_update.list_price
                 sale.updated_at = datetime.utcnow()
@@ -396,7 +454,7 @@ class ProjectCoreService:
                 sale = ProjectSale(
                     id=str(uuid.uuid4()),
                     project_id=project_id,
-                    listing_date=status_update.listing_date,
+                    listing_date=listing_date,
                     list_price=status_update.list_price,
                     transaction_status="在售",
                     is_deleted=False,
