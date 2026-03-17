@@ -24,8 +24,14 @@ export function CashFlowSheet() {
   const searchParams = useSearchParams();
 
   const projectId = searchParams.get("cashflow_id");
-  const rawProjectName = searchParams.get("project_name");
-  const projectName = rawProjectName ? decodeURIComponent(rawProjectName) : "";
+  const rawCommunityName = searchParams.get("community_name");
+  const rawAddress = searchParams.get("address");
+  const communityName = rawCommunityName ? decodeURIComponent(rawCommunityName) : "";
+  const address = rawAddress ? decodeURIComponent(rawAddress) : "";
+  // 组合显示：小区名 + 地址
+  const projectDisplayName = communityName && address 
+    ? `${communityName} · ${address}`
+    : communityName || address || "项目详情";
   const isOpen = !!projectId;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +91,8 @@ export function CashFlowSheet() {
   const handleClose = () => {
     const params = new URLSearchParams(searchParams);
     params.delete("cashflow_id");
-    params.delete("project_name");
+    params.delete("community_name");
+    params.delete("address");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
@@ -94,17 +101,17 @@ export function CashFlowSheet() {
       <SheetContent className="w-full sm:max-w-2xl md:max-w-[800px] bg-slate-50 p-0 flex flex-col h-full border-l border-slate-200 shadow-2xl">
         <div className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
           <div>
-            {/* [修改] 标题区域：显示项目名称 */}
+            {/* 标题区域：显示小区名+地址 */}
             <SheetTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
               资金账本
-              {projectName && (
+              {projectDisplayName && (
                 <>
                   <span className="text-slate-300 font-light">/</span>
                   <span
-                    className="text-base font-medium text-slate-600 truncate max-w-[200px]"
-                    title={projectName}
+                    className="text-base font-medium text-slate-600 truncate max-w-[300px]"
+                    title={projectDisplayName}
                   >
-                    {projectName}
+                    {projectDisplayName}
                   </span>
                 </>
               )}
@@ -115,8 +122,7 @@ export function CashFlowSheet() {
           </div>
         </div>
 
-        {/* [修复 3] 内容滚动区域 (flex-1 overflow-y-auto) */}
-        {/* 只有这个区域会滚动，Header 保持不动，且背景色稳固 */}
+        {/* 内容滚动区域 */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {isLoading || !data ? (
             <div className="flex h-full items-center justify-center min-h-[400px]">

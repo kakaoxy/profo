@@ -12,8 +12,8 @@ from sqlalchemy import func
 from fastapi import HTTPException, status
 import uuid
 
-from models import Project, ProjectContract, ProjectOwner, ProjectSale
-from models.base import ProjectStatus
+from models import Project, ProjectContract, ProjectOwner, ProjectSale, FinanceRecord
+from models.base import ProjectStatus, CashFlowType
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectListResponse, ProjectResponse
 
 
@@ -158,6 +158,30 @@ class ProjectCoreService:
                 "sold_price": float(sale.sold_price) if sale.sold_price else None,
                 "transaction_status": sale.transaction_status,
             })
+
+        # 查询并计算财务数据
+        from decimal import Decimal
+        finance_records = self.db.query(FinanceRecord).filter(
+            FinanceRecord.project_id == project.id
+        ).all()
+
+        total_income = Decimal(0)
+        total_expense = Decimal(0)
+        for record in finance_records:
+            if record.type == CashFlowType.INCOME.value:
+                total_income += record.amount
+            else:
+                total_expense += record.amount
+
+        net_cash_flow = total_income - total_expense
+        roi = float(net_cash_flow / total_expense * 100) if total_expense > 0 else 0.0
+
+        response.update({
+            "total_income": float(total_income),
+            "total_expense": float(total_expense),
+            "net_cash_flow": float(net_cash_flow),
+            "roi": roi,
+        })
 
         return response
 

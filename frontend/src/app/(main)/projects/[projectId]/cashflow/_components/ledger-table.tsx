@@ -135,14 +135,20 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                 >
                   <TableCell className="py-3">
                     <div className="flex flex-col">
-                      <span className="font-medium text-slate-700">
-                        {format(parseISO(record.date), "yyyy-MM-dd")}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">
-                        {format(parseISO(record.date), "EEEE", {
-                          locale: zhCN,
-                        })}
-                      </span>
+                      {record.date ? (
+                        <>
+                          <span className="font-medium text-slate-700">
+                            {format(parseISO(record.date), "yyyy-MM-dd")}
+                          </span>
+                          <span className="text-[10px] text-slate-400 mt-0.5">
+                            {format(parseISO(record.date), "EEEE", {
+                              locale: zhCN,
+                            })}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="font-medium text-slate-400">-</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
