@@ -86,24 +86,23 @@ export const formSchema = z
     // 朝向 - 单选框
     orientation: orientationEnum.default("南北"),
 
-    // 交易数据
+    // 代理协议 - 合同信息
+    contract_no: z.string().max(100).optional(),
     signing_price: optionalNumber,
+    signing_date: z.date().optional(),
     signing_period: optionalNumber,
     extension_period: optionalNumber,
     extension_rent: optionalNumber,
+    cost_assumption: z.string().max(50).optional(),
+    planned_handover_date: z.date().optional(),
+    other_agreements: z.string().optional(),
 
     // 业主信息
     owner_name: z.string().max(100).optional(),
     owner_phone: z.string().max(20).optional(),
     owner_id_card: z.string().max(18).optional(),
 
-    // 日期
-    signing_date: z.date().optional(),
-    planned_handover_date: z.date().optional(),
-
-    // 协议与备注 - 使用下划线命名与后端保持一致
-    cost_assumption: z.string().max(50).optional(),
-    other_agreements: z.string().optional(),
+    // 备注
     notes: z.string().optional(),
 
     // 附件列表

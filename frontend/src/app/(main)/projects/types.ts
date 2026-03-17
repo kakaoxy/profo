@@ -266,20 +266,27 @@ export interface Project {
   listing_date?: string | null; // 上架日期
 
   // --- 签约相关 ---
+  contract_no?: string;
+  contractNo?: string;
+
   signing_period?: number;
   signingPeriod?: number;
 
-  extensionPeriod?: number;
   extension_period?: number;
+  extensionPeriod?: number;
 
-  extensionRent?: number;
   extension_rent?: number;
+  extensionRent?: number;
+
+  cost_assumption?: string;
+  costAssumption?: string;
+
+  other_agreements?: string;
+  otherAgreements?: string;
 
   signing_materials?: SigningMaterials | null;
 
   // --- 合同与备注 ---
-  cost_assumption?: string;
-  other_agreements?: string;
   notes?: string;
   remarks?: string;
 
