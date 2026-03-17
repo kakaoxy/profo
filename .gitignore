@@ -69,3 +69,7 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+
+*.doc
+*.docx
+*.pdf
