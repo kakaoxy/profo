@@ -66,6 +66,7 @@ class ProjectCreate(BaseModel):
     orientation: Optional[str] = Field(None, max_length=50, description="朝向")
 
     # 签约相关（会创建到 project_contracts 表）
+    contract_no: Optional[str] = Field(None, max_length=100, description="合同编号")
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
     signing_date: Optional[str] = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
@@ -107,6 +108,11 @@ class ProjectUpdate(BaseModel):
     orientation: Optional[str] = Field(None, max_length=50)
 
     # 签约相关（更新到 project_contracts 表）
+    contract_no: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("contract_no", "contractNo"),
+        max_length=100,
+    )
     signing_price: Optional[Decimal] = Field(None)
     signing_date: Optional[str] = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
     signing_period: Optional[int] = Field(None)
@@ -174,6 +180,7 @@ class ProjectResponse(BaseModel):
     renovation_stage: Optional[str] = None
 
     # 合同信息（来自 project_contracts 表）
+    contract_no: Optional[str] = Field(None, description="合同编号")
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
     signing_date: Optional[str] = None  # YYYY-MM-DD 格式
     signing_period: Optional[int] = None

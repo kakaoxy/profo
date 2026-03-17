@@ -115,6 +115,7 @@ class ProjectCoreService:
             planned_handover_date_str = contract.planned_handover_date.strftime('%Y-%m-%d') if contract.planned_handover_date else None
 
             response.update({
+                "contract_no": contract.contract_no,
                 "signing_price": float(contract.signing_price) if contract.signing_price else None,
                 "signing_date": signing_date_str,
                 "signing_period": contract.signing_period,
@@ -185,6 +186,7 @@ class ProjectCoreService:
         planned_handover_date = parse_date_string(project_data.planned_handover_date)
 
         if any([
+            project_data.contract_no,
             project_data.signing_price,
             signing_date,
             project_data.signing_period,
@@ -192,6 +194,7 @@ class ProjectCoreService:
             contract = ProjectContract(
                 id=str(uuid.uuid4()),
                 project_id=project_id,
+                contract_no=project_data.contract_no,
                 signing_price=project_data.signing_price,
                 signing_date=signing_date,
                 signing_period=project_data.signing_period,
@@ -305,7 +308,7 @@ class ProjectCoreService:
                 setattr(project, field, update_dict.pop(field))
 
         # 2. 处理签约相关字段 - 更新 ProjectContract
-        contract_fields = ['signing_price', 'signing_date', 'signing_period',
+        contract_fields = ['contract_no', 'signing_price', 'signing_date', 'signing_period',
                           'extension_period', 'extension_rent', 'cost_assumption',
                           'planned_handover_date', 'other_agreements', 'signing_materials']
 

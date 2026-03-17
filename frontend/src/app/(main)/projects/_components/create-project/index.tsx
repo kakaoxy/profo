@@ -20,9 +20,8 @@ import { useCreateProject } from "./use-create-project";
 
 // 引入拆分后的 Tab 组件
 import { BasicInfoTab } from "./tabs/basic-info-tab";
-import { TransactionTab } from "./tabs/transaction-tab";
+import { AgencyAgreementTab } from "./tabs/agency-agreement-tab";
 import { OwnerTab } from "./tabs/owner-tab";
-import { AgreementTab } from "./tabs/agreement-tab";
 import { AttachmentsTab } from "./tabs/attachments-tab";
 
 import { Project } from "../../types";
@@ -110,11 +109,10 @@ export function CreateProjectDialog({
               >
                 {/* Tabs 导航 */}
                 <div className="px-6 pt-4 flex-shrink-0">
-                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1">
+                <TabsList className="grid w-full grid-cols-4 gap-1">
                     <TabsTrigger value="basic">基础信息</TabsTrigger>
-                    <TabsTrigger value="transaction">交易数据</TabsTrigger>
+                    <TabsTrigger value="agency">代理协议</TabsTrigger>
                     <TabsTrigger value="owner">业主信息</TabsTrigger>
-                    <TabsTrigger value="agreement">合同与备注</TabsTrigger>
                     <TabsTrigger value="attachments">附件上传</TabsTrigger>
                   </TabsList>
                 </div>
@@ -126,16 +124,12 @@ export function CreateProjectDialog({
                       <BasicInfoTab form={form} />
                     </TabsContent>
 
-                    <TabsContent value="transaction" className="m-0">
-                      <TransactionTab form={form} />
+                    <TabsContent value="agency" className="m-0">
+                      <AgencyAgreementTab form={form} />
                     </TabsContent>
 
                     <TabsContent value="owner" className="m-0">
                       <OwnerTab form={form} />
-                    </TabsContent>
-
-                    <TabsContent value="agreement" className="m-0">
-                      <AgreementTab form={form} />
                     </TabsContent>
 
                     <TabsContent value="attachments" className="m-0">
