@@ -84,10 +84,13 @@ export function TrendChart({ data }: TrendChartProps) {
                 border: "none",
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
-              // [修复] 修改参数类型为 number | undefined (或者使用 any 也可以)
-              // 并增加 Number() 转换以确保安全性
-              formatter={(value: number | undefined) => {
-                const val = Number(value || 0);
+              // [修复] recharts 的 ValueType 包含数组类型，使用类型断言处理
+              formatter={(value) => {
+                // ValueType 可能是 string | number | readonly (string | number)[]
+                // 我们只处理数值情况
+                const numericValue = typeof value === 'number' ? value : 
+                                    typeof value === 'string' ? parseFloat(value) : 0;
+                const val = Number.isNaN(numericValue) ? 0 : numericValue;
                 return [
                   `¥${Math.abs(val).toLocaleString()}`,
                   val > 0 ? "收入" : "支出",

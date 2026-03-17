@@ -233,6 +233,10 @@ export interface Project {
   total_investment?: number;
 
   area?: number;
+  
+  // --- 户型与朝向 ---
+  layout?: string;
+  orientation?: string;
 
   // --- 人员信息 ---
   manager?: string;
@@ -274,12 +278,8 @@ export interface Project {
   signing_materials?: SigningMaterials | null;
 
   // --- 合同与备注 ---
-  costAssumption?: string;
   cost_assumption?: string;
-
-  otherAgreements?: string;
   other_agreements?: string;
-
   notes?: string;
   remarks?: string;
 

@@ -167,17 +167,17 @@ export function InfoTab({ project }: InfoTabProps) {
       {/* --- 合同与备注 --- */}
       {/* 始终渲染此区域，哪怕字段为空 */}
       <InfoSection title="合同与备注" icon={<FileText className="h-4 w-4" />}>
-        {/* 费用承担：日志显示为 costAssumption */}
+        {/* 费用承担：后端返回 cost_assumption（下划线命名） */}
         <InfoItem
           label="费用承担"
-          value={project.costAssumption}
+          value={project.cost_assumption}
           className="sm:col-span-2"
         />
 
-        {/* 其他约定：日志显示为 otherAgreements */}
+        {/* 其他约定：后端返回 other_agreements（下划线命名） */}
         <InfoItem
           label="其他约定"
-          value={project.otherAgreements}
+          value={project.other_agreements}
           className="sm:col-span-2"
         />
 

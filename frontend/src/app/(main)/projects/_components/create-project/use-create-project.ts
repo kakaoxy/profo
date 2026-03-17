@@ -14,41 +14,75 @@ interface UseCreateProjectProps {
   onSuccess?: () => void;
 }
 
+// 解析户型字符串为数字（如 "2室1厅1卫" -> {rooms: 2, halls: 1, bathrooms: 1}）
+function parseLayout(layout: string | undefined): { rooms?: number; halls?: number; bathrooms?: number } {
+  if (!layout) return {};
+  const match = layout.match(/(\d+)室(\d+)厅(\d+)卫/);
+  if (!match) return {};
+  return {
+    rooms: parseInt(match[1], 10),
+    halls: parseInt(match[2], 10),
+    bathrooms: parseInt(match[3], 10),
+  };
+}
+
+// 组合户型数字为字符串
+function buildLayout(rooms?: number, halls?: number, bathrooms?: number): string | undefined {
+  const hasRooms = rooms !== undefined && rooms > 0;
+  const hasHalls = halls !== undefined && halls > 0;
+  const hasBathrooms = bathrooms !== undefined && bathrooms > 0;
+  
+  if (!hasRooms && !hasHalls && !hasBathrooms) return undefined;
+  
+  return `${rooms || 0}室${halls || 0}厅${bathrooms || 0}卫`;
+}
+
 export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps = {}) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
 
   const isEditMode = !!project;
+  
+  // 解析现有项目的户型数据
+  const layoutData = parseLayout(project?.layout);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as unknown as Resolver<FormValues>,
     defaultValues: {
-      name: project?.name || "",
+      // 重构后：移除 name, manager, tags, remarks 字段
       community_name: project?.community_name || project?.communityName || "",
       address: project?.address || "",
-      manager: project?.manager || "",
-      tags: project?.tags?.join(", ") || "",
+      area: project?.area,
+      
+      // 户型 - 三个独立输入框
+      rooms: layoutData.rooms,
+      halls: layoutData.halls,
+      bathrooms: layoutData.bathrooms,
+      
+      // 朝向 - 单选框，默认"南北"
+      orientation: isEditMode 
+        ? (project?.orientation as FormValues["orientation"]) || "南北"
+        : "南北",
+      
       owner_name: project?.owner_name || project?.ownerName || "",
       owner_phone: project?.owner_phone || project?.ownerPhone || "",
       owner_id_card: project?.owner_id_card || project?.ownerIdCard || "",
-      costAssumption: project?.costAssumption || project?.cost_assumption || "",
-      otherAgreements: project?.otherAgreements || project?.other_agreements || "",
+      cost_assumption: project?.cost_assumption || "",
+      other_agreements: project?.other_agreements || "",
       notes: project?.notes || "",
-      remarks: project?.remarks || "",
       
       signing_price: project?.signing_price ?? project?.signingPrice,
-      area: project?.area,
       signing_period: project?.signing_period ?? project?.signingPeriod,
-      extensionPeriod: project?.extensionPeriod ?? project?.extension_period,
-      extensionRent: project?.extensionRent ?? project?.extension_rent,
+      extension_period: project?.extension_period ?? project?.extensionPeriod,
+      extension_rent: project?.extension_rent ?? project?.extensionRent,
       
       signing_date: (project?.signing_date || project?.signingDate) ? new Date(project.signing_date || project.signingDate!) : undefined,
       planned_handover_date: (project?.planned_handover_date || project?.plannedHandoverDate) ? new Date(project.planned_handover_date || project.plannedHandoverDate!) : undefined,
       
       attachments: project?.signing_materials?.attachments?.map(att => ({
         ...att,
-        id: Math.random().toString(36).substring(7), // Generate temp ID if needed
+        id: Math.random().toString(36).substring(7),
         uploadedAt: new Date().toISOString(),
         category: att.category as AttachmentCategory,
         fileType: att.fileType as AttachmentType,
@@ -88,24 +122,31 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
   // 重置表单 - 编辑模式重置为 initialData，新建模式重置为空
   useEffect(() => {
     if (open && isEditMode && project) {
+       const editLayoutData = parseLayout(project.layout);
        form.reset({
-          name: project.name || "",
+          // 重构后：移除 name, manager, tags, remarks 字段
           community_name: project.community_name || project.communityName || "",
           address: project.address || "",
-          manager: project.manager || "",
-          tags: project.tags?.join(", ") || "",
+          area: project.area,
+          
+          // 户型 - 三个独立输入框
+          rooms: editLayoutData.rooms,
+          halls: editLayoutData.halls,
+          bathrooms: editLayoutData.bathrooms,
+          
+          // 朝向 - 单选框
+          orientation: (project.orientation as FormValues["orientation"]) || "南北",
+          
           owner_name: project.owner_name || project.ownerName || "",
           owner_phone: project.owner_phone || project.ownerPhone || "",
           owner_id_card: project.owner_id_card || project.ownerIdCard || "",
-          costAssumption: project.costAssumption || project.cost_assumption || "",
-          otherAgreements: project.otherAgreements || project.other_agreements || "",
+          cost_assumption: project.cost_assumption || "",
+          other_agreements: project.other_agreements || "",
           notes: project.notes || "",
-          remarks: project.remarks || "",
           signing_price: project.signing_price ?? project.signingPrice,
-          area: project.area,
           signing_period: project.signing_period ?? project.signingPeriod,
-          extensionPeriod: project.extensionPeriod ?? project.extension_period,
-          extensionRent: project.extensionRent ?? project.extension_rent,
+          extension_period: project.extension_period ?? project.extensionPeriod,
+          extension_rent: project.extension_rent ?? project.extensionRent,
           signing_date: (project.signing_date || project.signingDate) ? new Date(project.signing_date || project.signingDate!) : undefined,
           planned_handover_date: (project.planned_handover_date || project.plannedHandoverDate) ? new Date(project.planned_handover_date || project.plannedHandoverDate!) : undefined,
           attachments: project.signing_materials?.attachments?.map(att => ({
@@ -122,7 +163,7 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
-    form.reset({ name: "" });
+    form.reset({ community_name: "" });
     toast.success("草稿已清空");
   }, [form]);
 
@@ -130,48 +171,38 @@ export const useCreateProject = ({ project, onSuccess }: UseCreateProjectProps =
     setLoading(true);
 
     try {
-      const tagArray = values.tags
-        ? values.tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean)
-        : null;
-
-      // 构造通用 payload
+      // 组合户型数据
+      const layoutString = buildLayout(values.rooms, values.halls, values.bathrooms);
+      
+      // 构造通用 payload - 重构后：移除 name, manager, tags, remarks 字段
       const basePayload = {
-        name: values.name,
         community_name: values.community_name || null,
         address: values.address || null,
-        manager: values.manager || null,
-        tags: tagArray,
-        signing_price: values.signing_price ?? null,
         area: values.area ?? null,
+        layout: layoutString || null,
+        orientation: values.orientation || null,
+        signing_price: values.signing_price ?? null,
         signing_period: values.signing_period ?? null,
-        extensionPeriod: values.extensionPeriod ?? null,
-        extensionRent: values.extensionRent ?? null,
+        extension_period: values.extension_period ?? null,
+        extension_rent: values.extension_rent ?? null,
         owner_name: values.owner_name || null,
         owner_phone: values.owner_phone || null,
         owner_id_card: values.owner_id_card || null,
-        costAssumption: values.costAssumption || null,
-        otherAgreements: values.otherAgreements || null,
+        cost_assumption: values.cost_assumption || null,
+        other_agreements: values.other_agreements || null,
         notes: values.notes || null,
-        remarks: values.remarks || null,
         signing_date: values.signing_date?.toISOString() || null,
         planned_handover_date: values.planned_handover_date?.toISOString() || null,
         signing_materials: values.attachments?.length
-          ? {
-              attachments: values.attachments.map((att) => ({
-                filename: att.filename,
-                url: att.url,
-                category: att.category,
-                fileType: att.fileType,
-                size: att.size,
-              })),
-            }
+          ? values.attachments.map((att) => ({
+              filename: att.filename,
+              url: att.url,
+              category: att.category,
+              fileType: att.fileType,
+              size: att.size,
+            }))
           : null,
-        owner_info: null,
-        // 下面四个字段在 ProjectCreate 实体中是必填的（默认值为 0）
-        total_income: 0,
-        total_expense: 0,
-        net_cash_flow: 0,
-        roi: 0,
+        owner_info: values.notes || null,
       };
 
       let res;

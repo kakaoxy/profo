@@ -1,147 +1,60 @@
-# ProFo Project Context & Agent Guidelines
+# ProFo 系统 - 反模式与禁止项清单
 
-> **Role:** You are an expert Full-Stack Architect working on ProFo.
-> **Mission:** Maintain and evolve a local-first Real Estate Fix & Flip Management System.
-> **Core Philosophy:** Data Integrity, Strict Typing, and Domain Decoupling.
+本文档为全项目所有开发人员必须严格遵守的红线规则，严禁出现以下任何反模式与禁止行为。
 
----
+## 一、架构设计反模式禁止项
 
-## 1. Business Domain Architecture (The 4-Stage Model)
+1.  ❌ 严禁跨 L 业务领域层级使用 JOIN 查询，同层级表允许 JOIN，跨层级必须通过软引用单独查询
+2.  ❌ 严禁出现上帝对象，禁止把所有业务逻辑、路由配置都堆在 main.py 中
+3.  ❌ 严禁破坏领域解耦规则，禁止下游业务直接修改上游层级的核心数据
+4.  ❌ 严禁上游数据更新自动同步到下游复制字段，下游字段仅在创建时复制，修改必须由用户手动决定
+5.  ❌ 严禁破坏 L4 营销项目表的独立性，禁止出现 project_id 为空时业务逻辑报错的情况
+6.  ❌ 严禁引入不必要的复杂组件与第三方库，严格控制系统复杂度，优先使用原生方案
 
-**CRITICAL ARCHITECTURE RULE:** The system follows a **"Decoupled + Copy-on-Write"** strategy.
+## 二、编码规范反模式禁止项
 
-### L1: Market Intelligence (`property_current`)
+1.  ❌ 严禁在同一个文件、同一个模块中混合使用 camelCase 与 snake_case 命名风格
+2.  ❌ 严禁 Python 代码不添加类型提示，所有函数参数与返回值必须有完整类型定义
+3.  ❌ 严禁 TypeScript 代码中使用 any 类型，所有数据必须有明确的类型定义
+4.  ❌ 严禁单个代码文件行数超过 250 行，超出必须按逻辑拆分模块
+5.  ❌ 严禁在路由层编写业务逻辑，业务逻辑必须统一放在 services 服务层
+6.  ❌ 严禁在服务层进行权限校验，权限校验必须统一在路由层通过依赖注入完成
+7.  ❌ 严禁手动拼接 SQL 语句，所有数据库查询必须使用 SQLAlchemy ORM 实现，防止 SQL 注入
 
-- **Role:** The Reference (Raw Data).
-- **Logic:** Read-only reference pool. Used for sourcing and comparison.
-- **Relation:** **NO Foreign Keys** pointing to L2/L3.
+## 三、API设计反模式禁止项
 
-### L2: Decision Validation (`leads`)
+1.  ❌ 严禁给成功响应添加 `code`/`msg`/`data` 等额外包装器，单个对象必须直接返回 Pydantic 模型
+2.  ❌ 严禁自定义错误响应格式，必须使用 FastAPI 标准 HTTPException，统一返回 `{"detail": "错误信息"}` 格式
+3.  ❌ 严禁滥用 HTTP 状态码，必须严格遵守规范：GET/PUT成功返回200，POST成功返回201，DELETE成功返回204
+4.  ❌ 严禁列表接口不使用统一分页格式，所有列表接口必须返回 `items`/`total`/`page`/`size` 固定结构
+5.  ❌ 严禁接口不做权限校验直接暴露，所有业务接口必须做身份认证与权限校验
 
-- **Role:** The Filter (Funnel Neck).
-- **Logic:** Feasibility Analysis.
-- **Core Metrics:** Must track `target_entry_price` (Cost), `estimated_renovation_cost` (Reno), and `predicted_profit` (ROI).
-- **Relation:** "Soft Reference" to L1.
+## 四、数据库设计反模式禁止项
 
-### L3: Asset Production (`projects`)
+1.  ❌ 严禁使用 JSON 类型存储结构化、可搜索的数据，所有业务字段必须拆分为独立字段
+2.  ❌ 严禁使用整数存储状态字段，所有状态必须使用字符串枚举
+3.  ❌ 严禁业务代码执行物理删除，所有核心业务数据必须使用 is_deleted 字段做逻辑删除
+4.  ❌ 严禁在大表上创建过多冗余索引，严禁在低基数字段上创建无效索引
+5.  ❌ 严禁手动直接修改数据库表结构，所有表结构变更必须通过 Alembic 迁移脚本实现
+6.  ❌ 严禁表、字段不添加注释，所有表与字段必须有清晰的业务含义说明
+7.  ❌ 严禁跨层级设置强制外键约束，跨层级关联仅能使用软引用
 
-- **Role:** The Factory (Core ERP).
-- **Logic:** The "Source of Truth" for physical assets currently under management.
-- **Data Sovereignty:** Must store its own physical attributes (`rooms`, `area`, `layout`) independent of L1.
-- **Risk Control:** Manages contract lifecycles, deposits, and renovation costs.
-- **Relation:** Created via **Snapshot** from L2.
+## 五、前端开发反模式禁止项
 
-### L4: Marketing Portfolio (`mini_projects`)
+1.  ❌ 严禁引入不必要的第三方全局状态管理库，必须使用 React 原生方案管理状态
+2.  ❌ 严禁手动定义与后端不一致的 API 类型，必须通过 openapi.json 自动生成类型
+3.  ❌ 严禁异步操作不显示加载状态，所有 API 请求、表单提交必须有对应的加载反馈
+4.  ❌ 严禁前后端表单验证规则不一致，前端验证规则必须与后端 Pydantic 模型完全匹配
+5.  ❌ 严禁敏感信息明文存储在前端本地存储，令牌等敏感信息必须按最佳实践安全存储
+6.  ❌ 严禁用户输入内容不做安全过滤直接渲染，防止 XSS 攻击
 
-- **Role:** The Storefront & Portfolio (CMS).
-- **Logic:** A standalone Content Management System for external display.
-- **Data Strategy:**
-  - **Active Listings:** Sourced from L3 (Projects).
-  - **Legacy/Showcase Cases:** Standalone records for historical success cases (no active L3 record).
-- **Relation:** `project_id` is **Nullable**. If linked, it syncs status; if null, it acts as a static portfolio item.
+## 六、安全合规反模式禁止项
 
----
+1.  ❌ 严禁用户密码、敏感信息明文存储，必须使用加密算法加密存储
+2.  ❌ 严禁敏感信息接口明文返回，必须做脱敏处理，仅高权限用户可查看完整明文
+3.  ❌ 严禁媒体文件使用公共读无鉴权访问，所有文件必须使用私有读模式
+4.  ❌ 严禁生产环境开启调试模式、暴露接口文档、使用 HTTP 明文传输
+5.  ❌ 严禁敏感配置硬编码在代码中，必须通过环境变量管理，禁止提交到代码仓库
 
-## 2. Architectural Principles & Data Flow
-
-### A. The "Copy-on-Write" Rule
-
-- **Never** use JOINs across different Business Domains for critical logic.
-- **Always** copy necessary data from the source stage to the next stage.
-
-### B. Soft References & Optional Links
-
-- Use `source_id` or `ref_id` columns to store the ID of the upstream record.
-- **L4 Independence:** `mini_projects` must be able to exist without a `projects` parent. Logic must handle `project_id=None` gracefully.
-
-### C. Naming Convention (STRICT)
-
-- **Database & Python (Backend):** ALWAYS use `snake_case`.
-  - ✅ `signing_price`, `other_agreements`, `sold_date`
-  - ❌ `signingPrice`, `otherAgreements`, `soldDate`
-- **TypeScript (Frontend):** ALWAYS use `camelCase` for variables and `PascalCase` for components.
-
----
-
-## 3. Tech Stack & Engineering Standards
-
-### Backend (FastAPI / Python)
-
-- **Framework:** FastAPI (Async) + SQLAlchemy (AsyncSession).
-- **Validation:** Pydantic v2.
-- **Code Structure:**
-  - Routes (`routers/`) handle HTTP and DTOs.
-  - Services (`services/`) handle Business Logic and DB transactions.
-  - **Limit:** Files should not exceed 250 lines. Split logic if necessary.
-- **Type Hints:** Mandatory for all function arguments and returns.
-
-### Frontend (Next.js / TypeScript)
-
-- **Framework:** Next.js 16 (App Router).
-- **UI Library:** shadcn/ui + Tailwind CSS.
-- **Type Safety:** strict mode. No `any`. Use `openapi.json` generated types.
-
----
-
-## 4. Schema Design Guidelines
-
-When modifying or creating tables, adhere to these definitions:
-
-- **Money Fields:** Use `NUMERIC(15, 2)` for all monetary values.
-- **Status Fields:** Use String Enums (e.g., 'signed', 'renovating') instead of Integers.
-- **JSON Fields:** Use JSON type for flexible, non-searchable data.
-- **Physical Attributes:** `projects` table MUST contain: `rooms`, `halls`, `baths`, `orientation`, `area`.
-- **Marketing Table (`mini_projects`):**
-  - `project_id` must be **Nullable**.
-  - Must include distinct `cover_image`, `marketing_title`, `marketing_tags` fields.
-
----
-
-## 5. API Contract & Response Standards (New)
-
-To ensure smooth `openapi-json` generation and frontend type consumption:
-
-### A. Success Response (The "Direct Return" Rule)
-
-- **Single Object:** Return the Pydantic Schema directly.
-  - ✅ Return: `ProjectSchema(...)`
-  - ❌ Avoid: `{"code": 200, "data": ProjectSchema(...)}` (Wrappers mess up generated types).
-- **HTTP Codes:**
-  - `200 OK`: Successful GET/PUT.
-  - `201 Created`: Successful POST.
-  - `204 No Content`: Successful DELETE.
-
-### B. Pagination Format
-
-All list endpoints must follow this Generic structure:
-
-```json
-{
-  "items": [ ... ],
-  "total": 100,
-  "page": 1,
-  "size": 20
-}
-```
-
-### C. Error Response
-
-Use standard HTTPException.
-
-Format: {"detail": "Error message description"}.
-
-Frontend Handling: The generic API client automatically catches non-2xx codes and triggers a Toast notification using the detail field.
-
-## 6. Anti-Patterns (Refuse to Generate)
-
-God Objects: Do not put all logic in main.py.
-
-Mixed Naming: Do not mix camelCase and snake_case in the same file context.
-
-Hard Coupling: Do not write SQL queries that fail if a mini_project has no parent project.
-
-Implicit Any: Do not use any in TypeScript. Rely on generated API types.
-
-```
-
-```
+## 七、测试
+请使用 test.md 中的测试账号，对 API 通过 CURL 进行测试。API 启动在 8000端口是以开发的模式启动的;对前端通过chrome-dev-tools进行测试。前端启动在3000端口是以开发的模式启动的。你不需要重启它，它就会自动更新。因此你只需要直接测试就可以了
