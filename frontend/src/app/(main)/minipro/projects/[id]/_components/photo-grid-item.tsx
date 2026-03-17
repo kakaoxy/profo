@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { getFileUrl } from '@/lib/config';
-import { Check } from 'lucide-react';
-import type { RenovationPhoto } from './types';
+import { cn } from "@/lib/utils";
+import { getFileUrl } from "@/lib/config";
+import { Check } from "lucide-react";
+import type { RenovationPhoto } from "./types";
 
 interface PhotoGridItemProps {
   photo: RenovationPhoto;

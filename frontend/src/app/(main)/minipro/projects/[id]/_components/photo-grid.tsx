@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Loader2 } from 'lucide-react';
-import { PhotoGridItem } from './photo-grid-item';
-import type { RenovationPhoto } from './types';
+import { Loader2 } from "lucide-react";
+import { PhotoGridItem } from "./photo-grid-item";
+import type { RenovationPhoto } from "./types";
 
 interface PhotoGridProps {
   photos: RenovationPhoto[];
