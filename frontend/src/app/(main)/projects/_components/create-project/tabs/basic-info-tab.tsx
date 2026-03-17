@@ -87,21 +87,24 @@ export function BasicInfoTab({ form }: TabProps) {
           <RoomNumberField
             control={control}
             name="rooms"
-            label="室"
+            label=""
             placeholder="2"
           />
+          <span className="text-muted-foreground pt-5">室</span>
           <RoomNumberField
             control={control}
             name="halls"
-            label="厅"
+            label=""
             placeholder="1"
           />
+          <span className="text-muted-foreground pt-5">厅</span>
           <RoomNumberField
             control={control}
             name="bathrooms"
-            label="卫"
+            label=""
             placeholder="1"
           />
+          <span className="text-muted-foreground pt-5">卫</span>
         </div>
         <p className="text-xs text-muted-foreground">至少填写一项</p>
       </div>

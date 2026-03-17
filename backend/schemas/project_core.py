@@ -1,10 +1,39 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict, AliasChoices
+from typing import List, Optional, Dict, Any, Union
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
 from models.base import ProjectStatus
 from .project_sales import SalesRecordResponse
 from .project_renovation import RenovationPhotoResponse
+
+
+def parse_date_string(value: Union[str, datetime, None]) -> Optional[datetime]:
+    """解析日期字符串为 datetime 对象
+    支持格式: YYYY-MM-DD, ISO 格式字符串, 或 datetime 对象
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        # 尝试解析 YYYY-MM-DD 格式
+        if len(value) == 10 and value.count('-') == 2:
+            try:
+                year, month, day = map(int, value.split('-'))
+                return datetime(year, month, day)
+            except ValueError:
+                pass
+        # 尝试解析 ISO 格式
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            pass
+        # 尝试其他格式
+        try:
+            return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+        except ValueError:
+            pass
+    return None
 
 # ========== 基础项目模型 ==========
 
@@ -38,12 +67,12 @@ class ProjectCreate(BaseModel):
 
     # 签约相关（会创建到 project_contracts 表）
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
-    signing_date: Optional[datetime] = Field(None, description="签约日期")
+    signing_date: Optional[str] = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
     extension_period: Optional[int] = Field(None, description="顺延期(天)")
     extension_rent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
     cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
-    planned_handover_date: Optional[datetime] = Field(None, description="计划交房时间")
+    planned_handover_date: Optional[str] = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: Optional[str] = Field(None, description="其他约定")
     signing_materials: Optional[List[str]] = Field(None, description="签约材料URLs")
 
@@ -56,9 +85,17 @@ class ProjectCreate(BaseModel):
 
     # 销售相关（会创建到 project_sales 表）
     list_price: Optional[Decimal] = Field(None, description="挂牌价(万)")
-    listing_date: Optional[datetime] = Field(None, description="上架日期")
+    listing_date: Optional[str] = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('signing_date', 'planned_handover_date', 'listing_date', mode='before')
+    @classmethod
+    def validate_date_fields(cls, v):
+        if v is None:
+            return None
+        # 保持字符串格式，由服务层处理转换
+        return v
 
 class ProjectUpdate(BaseModel):
     """更新项目请求模型 (所有字段可选) - 已适配规范化表结构"""
@@ -68,10 +105,10 @@ class ProjectUpdate(BaseModel):
     area: Optional[Decimal] = Field(None)
     layout: Optional[str] = Field(None, max_length=50)
     orientation: Optional[str] = Field(None, max_length=50)
-    
+
     # 签约相关（更新到 project_contracts 表）
     signing_price: Optional[Decimal] = Field(None)
-    signing_date: Optional[datetime] = Field(None)
+    signing_date: Optional[str] = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
     signing_period: Optional[int] = Field(None)
     extension_period: Optional[int] = Field(
         None,
@@ -86,29 +123,38 @@ class ProjectUpdate(BaseModel):
         validation_alias=AliasChoices("cost_assumption", "costAssumption"),
         max_length=50,
     )
-    planned_handover_date: Optional[datetime] = Field(None)
+    planned_handover_date: Optional[str] = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: Optional[str] = Field(
         None,
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
     signing_materials: Optional[List[str]] = Field(None)
-    
+
     # 业主相关（更新到 project_owners 表）
     owner_name: Optional[str] = Field(None, max_length=100)
     owner_phone: Optional[str] = Field(None, max_length=20)
     owner_id_card: Optional[str] = Field(None, max_length=18)
     owner_info: Optional[str] = Field(None)
     notes: Optional[str] = Field(None)  # 映射到 owner_info
-    
+
     # 销售相关（更新到 project_sales 表）
     list_price: Optional[Decimal] = Field(None)
-    listing_date: Optional[datetime] = Field(None, description="上架日期")
+    listing_date: Optional[str] = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('signing_date', 'planned_handover_date', 'listing_date', mode='before')
+    @classmethod
+    def validate_date_fields(cls, v):
+        if v is None:
+            return None
+        # 保持字符串格式，由服务层处理转换
+        return v
 
 class ProjectResponse(BaseModel):
     """
     项目完整响应模型 - 适配新的规范化表结构
+    业务日期字段使用字符串类型 (YYYY-MM-DD) 避免时区问题
     """
     id: str = Field(..., description="项目ID")
     name: Optional[str] = Field(None, description="项目名称")
@@ -129,12 +175,12 @@ class ProjectResponse(BaseModel):
 
     # 合同信息（来自 project_contracts 表）
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
-    signing_date: Optional[datetime] = None
+    signing_date: Optional[str] = None  # YYYY-MM-DD 格式
     signing_period: Optional[int] = None
     extension_period: Optional[int] = None
     extension_rent: Optional[Decimal] = None
     cost_assumption: Optional[str] = None
-    planned_handover_date: Optional[datetime] = None
+    planned_handover_date: Optional[str] = None  # YYYY-MM-DD 格式
     other_agreements: Optional[str] = None
     contract_status: Optional[str] = None
 
@@ -146,9 +192,9 @@ class ProjectResponse(BaseModel):
 
     # 销售信息（来自 project_sales 表）
     list_price: Optional[Decimal] = Field(None, description="挂牌价(万)")
-    listing_date: Optional[datetime] = None
+    listing_date: Optional[str] = None  # YYYY-MM-DD 格式
     sold_price: Optional[Decimal] = None
-    sold_date: Optional[datetime] = None
+    sold_date: Optional[str] = None  # YYYY-MM-DD 格式
     transaction_status: Optional[str] = None
 
     # 财务缓存
@@ -175,5 +221,13 @@ class ProjectStatsResponse(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: ProjectStatus
-    listing_date: Optional[datetime] = Field(None, description="上架日期")
+    listing_date: Optional[str] = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
     list_price: Optional[Decimal] = Field(None, description="挂牌价(万元)")
+
+    @field_validator('listing_date', mode='before')
+    @classmethod
+    def validate_listing_date(cls, v):
+        if v is None:
+            return None
+        # 保持字符串格式，由服务层处理转换
+        return v

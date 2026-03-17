@@ -162,4 +162,4 @@ class ProjectSalesService:
 
         self.db.commit()
         self.db.refresh(project)
-        return ProjectResponse.model_validate(project)
+        return ProjectResponse.model_validate(self._build_project_response(project))
