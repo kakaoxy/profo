@@ -12,7 +12,7 @@ import uuid
 
 from models import Project, ProjectRenovation, RenovationPhoto
 from models.base import ProjectStatus
-from schemas.project_renovation import RenovationUpdate
+from schemas.project_renovation import RenovationUpdate, RenovationContractUpdate
 
 
 class ProjectRenovationService:
@@ -195,3 +195,39 @@ class ProjectRenovationService:
 
         photo.deleted_at = datetime.utcnow()
         self.db.commit()
+
+    def get_renovation_contract(self, project_id: str) -> ProjectRenovation:
+        """获取装修合同信息"""
+        project = self._get_project(project_id)
+        renovation = self._get_or_create_renovation(project_id)
+        return renovation
+
+    def update_renovation_contract(self, project_id: str, contract_data: RenovationContractUpdate) -> ProjectRenovation:
+        """更新装修合同信息"""
+        project = self._get_project(project_id)
+
+        # 验证状态：允许在装修、在售、已售阶段更新合同信息
+        allowed_statuses = [
+            ProjectStatus.RENOVATING.value,
+            ProjectStatus.SELLING.value,
+            ProjectStatus.SOLD.value
+        ]
+        if project.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前状态不允许更新装修合同信息"
+            )
+
+        renovation = self._get_or_create_renovation(project_id)
+
+        # 更新字段
+        update_data = contract_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            if hasattr(renovation, field) and value is not None:
+                setattr(renovation, field, value)
+
+        renovation.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(renovation)
+
+        return renovation
