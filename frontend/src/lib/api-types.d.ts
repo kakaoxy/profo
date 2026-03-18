@@ -326,6 +326,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/renovation/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Renovation Contract
+         * @description 获取装修合同信息 (Sync)
+         */
+        get: operations["get_renovation_contract_api_v1_projects__project_id__renovation_contract_get"];
+        /**
+         * Update Renovation Contract
+         * @description 更新装修合同信息 (Sync)
+         */
+        put: operations["update_renovation_contract_api_v1_projects__project_id__renovation_contract_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/selling/roles": {
         parameters: {
             query?: never;
@@ -455,13 +479,13 @@ export interface paths {
         };
         /**
          * Get Projects
-         * @description 获取项目列表 (Sync)
+         * @description 获取项目列表
          */
         get: operations["get_projects_api_v1_projects_get"];
         put?: never;
         /**
          * Create Project
-         * @description 创建项目 (Sync)
+         * @description 创建项目
          */
         post: operations["create_project_api_v1_projects_post"];
         delete?: never;
@@ -479,7 +503,7 @@ export interface paths {
         };
         /**
          * Get Project Stats
-         * @description 获取项目统计 (Sync)
+         * @description 获取项目统计
          */
         get: operations["get_project_stats_api_v1_projects_stats_get"];
         put?: never;
@@ -499,18 +523,18 @@ export interface paths {
         };
         /**
          * Get Project
-         * @description 获取项目详情 (Sync)
+         * @description 获取项目详情
          */
         get: operations["get_project_api_v1_projects__project_id__get"];
         /**
          * Update Project
-         * @description 更新项目信息 (Sync)
+         * @description 更新项目信息
          */
         put: operations["update_project_api_v1_projects__project_id__put"];
         post?: never;
         /**
          * Delete Project
-         * @description 删除项目 (Sync)
+         * @description 删除项目
          */
         delete: operations["delete_project_api_v1_projects__project_id__delete"];
         options?: never;
@@ -528,7 +552,7 @@ export interface paths {
         get?: never;
         /**
          * Update Project Status
-         * @description 更新项目状态 (Sync)
+         * @description 更新项目状态
          */
         put: operations["update_project_status_api_v1_projects__project_id__status_put"];
         post?: never;
@@ -549,7 +573,7 @@ export interface paths {
         put?: never;
         /**
          * Complete Project
-         * @description 完成项目 (Sync)
+         * @description 完成项目
          */
         post: operations["complete_project_api_v1_projects__project_id__complete_post"];
         delete?: never;
@@ -567,7 +591,7 @@ export interface paths {
         };
         /**
          * Get Project Report
-         * @description 获取项目报告 (Sync)
+         * @description 获取项目报告
          */
         get: operations["get_project_report_api_v1_projects__project_id__report_get"];
         put?: never;
@@ -587,7 +611,7 @@ export interface paths {
         };
         /**
          * Export Projects
-         * @description 导出项目数据 (Sync)
+         * @description 导出项目数据
          */
         get: operations["export_projects_api_v1_projects_export_get"];
         put?: never;
@@ -1784,38 +1808,6 @@ export interface components {
             message?: string | null;
         };
         /**
-         * ApiResponse[ProjectReportResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_ProjectReportResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["ProjectReportResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
          * ApiResponse[ProjectResponse]
          * @example {
          *       "code": 200,
@@ -1848,7 +1840,7 @@ export interface components {
             message?: string | null;
         };
         /**
-         * ApiResponse[ProjectStatsResponse]
+         * ApiResponse[RenovationContractResponse]
          * @example {
          *       "code": 200,
          *       "data": {
@@ -1858,7 +1850,7 @@ export interface components {
          *       "msg": "success"
          *     }
          */
-        ApiResponse_ProjectStatsResponse_: {
+        ApiResponse_RenovationContractResponse_: {
             /**
              * Code
              * @description 业务状态码，200 表示成功
@@ -1872,7 +1864,7 @@ export interface components {
              */
             msg: string;
             /** @description 响应数据 */
-            data?: components["schemas"]["ProjectStatsResponse"] | null;
+            data?: components["schemas"]["RenovationContractResponse"] | null;
             /**
              * Message
              * @description 状态消息（兼容字段）
@@ -2050,6 +2042,15 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Date
+             * Format: date-time
+             */
+            readonly date: string;
+            /** Description */
+            readonly description: string | null;
+            /** Related Stage */
+            readonly related_stage: string | null;
         };
         /** CashFlowResponse */
         CashFlowResponse: {
@@ -2815,6 +2816,29 @@ export interface components {
             /** Items */
             items: components["schemas"]["PropertyResponse"][];
         };
+        /** PaginatedResponse[ProjectResponse] */
+        PaginatedResponse_ProjectResponse_: {
+            /**
+             * Items
+             * @description 数据列表
+             */
+            items: components["schemas"]["ProjectResponse"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Size
+             * @description 每页数量
+             */
+            size: number;
+        };
         /**
          * PasswordChange
          * @description 密码修改模型
@@ -2884,7 +2908,7 @@ export interface components {
         };
         /**
          * ProjectCreate
-         * @description 创建项目请求模型 - 包含所有可创建字段
+         * @description 创建项目请求模型 - 已适配规范化表结构
          */
         ProjectCreate: {
             /**
@@ -2913,13 +2937,18 @@ export interface components {
              */
             orientation?: string | null;
             /**
+             * Contract No
+             * @description 合同编号
+             */
+            contract_no?: string | null;
+            /**
              * Signing Price
              * @description 签约价格(万)
              */
             signing_price?: number | string | null;
             /**
              * Signing Date
-             * @description 签约日期
+             * @description 签约日期 (YYYY-MM-DD 格式)
              */
             signing_date?: string | null;
             /**
@@ -2944,7 +2973,7 @@ export interface components {
             cost_assumption?: string | null;
             /**
              * Planned Handover Date
-             * @description 计划交房时间
+             * @description 计划交房时间 (YYYY-MM-DD 格式)
              */
             planned_handover_date?: string | null;
             /**
@@ -2954,9 +2983,9 @@ export interface components {
             other_agreements?: string | null;
             /**
              * Signing Materials
-             * @description 签约材料URLs
+             * @description 签约材料列表
              */
-            signing_materials?: string[] | null;
+            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -2978,25 +3007,20 @@ export interface components {
              */
             owner_info?: string | null;
             /**
+             * Notes
+             * @description 备注（映射到 owner_info）
+             */
+            notes?: string | null;
+            /**
              * List Price
              * @description 挂牌价(万)
              */
             list_price?: number | string | null;
             /**
              * Listing Date
-             * @description 上架日期
+             * @description 上架日期 (YYYY-MM-DD 格式)
              */
             listing_date?: string | null;
-            /**
-             * Notes
-             * @description 备注
-             */
-            notes?: string | null;
-            /**
-             * Tags
-             * @description 标签
-             */
-            tags?: string[] | null;
         };
         /**
          * ProjectReportResponse
@@ -3041,6 +3065,7 @@ export interface components {
         /**
          * ProjectResponse
          * @description 项目完整响应模型 - 适配新的规范化表结构
+         *     业务日期字段使用字符串类型 (YYYY-MM-DD) 避免时区问题
          */
         ProjectResponse: {
             /**
@@ -3085,6 +3110,11 @@ export interface components {
             is_deleted: boolean;
             /** Renovation Stage */
             renovation_stage?: string | null;
+            /**
+             * Contract No
+             * @description 合同编号
+             */
+            contract_no?: string | null;
             /**
              * Signing Price
              * @description 签约价格(万)
@@ -3147,6 +3177,11 @@ export interface components {
              * @default 0
              */
             roi: number | null;
+            /**
+             * Signing Materials
+             * @description 签约材料列表
+             */
+            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
         };
         /** ProjectStatsResponse */
         ProjectStatsResponse: {
@@ -3167,29 +3202,45 @@ export interface components {
         ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "deleted";
         /**
          * ProjectUpdate
-         * @description 更新项目请求模型 (所有字段可选)
+         * @description 更新项目请求模型 (所有字段可选) - 已适配规范化表结构
          */
         ProjectUpdate: {
-            /** Name */
-            name?: string | null;
             /** Community Name */
             community_name?: string | null;
             /** Address */
             address?: string | null;
-            /** Manager */
-            manager?: string | null;
+            /** Area */
+            area?: number | string | null;
+            /** Layout */
+            layout?: string | null;
+            /** Orientation */
+            orientation?: string | null;
+            /** Contract No */
+            contract_no?: string | null;
             /** Signing Price */
             signing_price?: number | string | null;
-            /** Signing Date */
+            /**
+             * Signing Date
+             * @description 签约日期 (YYYY-MM-DD 格式)
+             */
             signing_date?: string | null;
             /** Signing Period */
             signing_period?: number | null;
-            /** Planned Handover Date */
+            /** Extension Period */
+            extension_period?: number | null;
+            /** Extension Rent */
+            extension_rent?: number | string | null;
+            /** Cost Assumption */
+            cost_assumption?: string | null;
+            /**
+             * Planned Handover Date
+             * @description 计划交房时间 (YYYY-MM-DD 格式)
+             */
             planned_handover_date?: string | null;
+            /** Other Agreements */
+            other_agreements?: string | null;
             /** Signing Materials */
-            signing_materials?: {
-                [key: string]: unknown;
-            } | null;
+            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
@@ -3197,52 +3248,14 @@ export interface components {
             /** Owner Id Card */
             owner_id_card?: string | null;
             /** Owner Info */
-            owner_info?: {
-                [key: string]: unknown;
-            } | null;
+            owner_info?: string | null;
             /** Notes */
             notes?: string | null;
-            /** Tags */
-            tags?: string[] | null;
-            /** Area */
-            area?: number | string | null;
-            /** Rooms */
-            rooms?: number | null;
-            /** Halls */
-            halls?: number | null;
-            /** Baths */
-            baths?: number | null;
-            /** Orientation */
-            orientation?: string | null;
-            /** Layout */
-            layout?: string | null;
-            /** Extension Period */
-            extension_period?: number | null;
-            /** Extension Rent */
-            extension_rent?: number | string | null;
-            /** Cost Assumption */
-            cost_assumption?: string | null;
-            /** Other Agreements */
-            other_agreements?: string | null;
-            /** Remarks */
-            remarks?: string | null;
-            /** Channel Manager */
-            channel_manager?: string | null;
-            /** Presenter */
-            presenter?: string | null;
-            /** Negotiator */
-            negotiator?: string | null;
-            /** Property Agent */
-            property_agent?: string | null;
-            /** Client Agent */
-            client_agent?: string | null;
-            /** First Viewer */
-            first_viewer?: string | null;
             /** List Price */
             list_price?: number | string | null;
             /**
              * Listing Date
-             * @description 上架日期
+             * @description 上架日期 (YYYY-MM-DD 格式)
              */
             listing_date?: string | null;
         };
@@ -3454,6 +3467,186 @@ export interface components {
              * @description 刷新令牌
              */
             refresh_token: string;
+        };
+        /**
+         * RenovationContractResponse
+         * @description 装修合同信息响应模型
+         */
+        RenovationContractResponse: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Renovation Company */
+            renovation_company?: string | null;
+            /** Contract Start Date */
+            contract_start_date?: string | null;
+            /** Contract End Date */
+            contract_end_date?: string | null;
+            /** Actual Start Date */
+            actual_start_date?: string | null;
+            /** Actual End Date */
+            actual_end_date?: string | null;
+            /** Hard Contract Amount */
+            hard_contract_amount?: number | null;
+            /** Payment Node 1 */
+            payment_node_1?: string | null;
+            /** Payment Ratio 1 */
+            payment_ratio_1?: number | null;
+            /** Payment Node 2 */
+            payment_node_2?: string | null;
+            /** Payment Ratio 2 */
+            payment_ratio_2?: number | null;
+            /** Payment Node 3 */
+            payment_node_3?: string | null;
+            /** Payment Ratio 3 */
+            payment_ratio_3?: number | null;
+            /** Payment Node 4 */
+            payment_node_4?: string | null;
+            /** Payment Ratio 4 */
+            payment_ratio_4?: number | null;
+            /** Soft Budget */
+            soft_budget?: number | null;
+            /** Soft Actual Cost */
+            soft_actual_cost?: number | null;
+            /** Soft Detail Attachment */
+            soft_detail_attachment?: string | null;
+            /** Design Fee */
+            design_fee?: number | null;
+            /** Demolition Fee */
+            demolition_fee?: number | null;
+            /** Garbage Fee */
+            garbage_fee?: number | null;
+            /** Other Extra Fee */
+            other_extra_fee?: number | null;
+            /** Other Fee Reason */
+            other_fee_reason?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RenovationContractUpdate
+         * @description 更新装修合同信息请求模型
+         */
+        RenovationContractUpdate: {
+            /**
+             * Renovation Company
+             * @description 合作装修公司
+             */
+            renovation_company?: string | null;
+            /**
+             * Contract Start Date
+             * @description 合同约定进场时间
+             */
+            contract_start_date?: string | null;
+            /**
+             * Contract End Date
+             * @description 合同约定竣工交房时间
+             */
+            contract_end_date?: string | null;
+            /**
+             * Actual Start Date
+             * @description 实际开工时间
+             */
+            actual_start_date?: string | null;
+            /**
+             * Actual End Date
+             * @description 实际竣工时间
+             */
+            actual_end_date?: string | null;
+            /**
+             * Hard Contract Amount
+             * @description 硬装合同总金额
+             */
+            hard_contract_amount?: number | null;
+            /**
+             * Payment Node 1
+             * @description 第一笔款项支付节点
+             */
+            payment_node_1?: string | null;
+            /**
+             * Payment Ratio 1
+             * @description 第一笔款项支付比例
+             */
+            payment_ratio_1?: number | null;
+            /**
+             * Payment Node 2
+             * @description 第二笔款项支付节点
+             */
+            payment_node_2?: string | null;
+            /**
+             * Payment Ratio 2
+             * @description 第二笔款项支付比例
+             */
+            payment_ratio_2?: number | null;
+            /**
+             * Payment Node 3
+             * @description 第三笔款项支付节点
+             */
+            payment_node_3?: string | null;
+            /**
+             * Payment Ratio 3
+             * @description 第三笔款项支付比例
+             */
+            payment_ratio_3?: number | null;
+            /**
+             * Payment Node 4
+             * @description 第四笔款项支付节点
+             */
+            payment_node_4?: string | null;
+            /**
+             * Payment Ratio 4
+             * @description 第四笔款项支付比例
+             */
+            payment_ratio_4?: number | null;
+            /**
+             * Soft Budget
+             * @description 软装预算金额
+             */
+            soft_budget?: number | null;
+            /**
+             * Soft Actual Cost
+             * @description 软装实际发生成本
+             */
+            soft_actual_cost?: number | null;
+            /**
+             * Soft Detail Attachment
+             * @description 软装明细附件
+             */
+            soft_detail_attachment?: string | null;
+            /**
+             * Design Fee
+             * @description 设计费用
+             */
+            design_fee?: number | null;
+            /**
+             * Demolition Fee
+             * @description 拆旧费用
+             */
+            demolition_fee?: number | null;
+            /**
+             * Garbage Fee
+             * @description 垃圾清运费用
+             */
+            garbage_fee?: number | null;
+            /**
+             * Other Extra Fee
+             * @description 其他额外费用
+             */
+            other_extra_fee?: number | null;
+            /**
+             * Other Fee Reason
+             * @description 其他费用原因
+             */
+            other_fee_reason?: string | null;
         };
         /**
          * RenovationPhotoResponse
@@ -3748,12 +3941,44 @@ export interface components {
             /** First Viewer */
             first_viewer?: string | null;
         };
+        /**
+         * SigningMaterial
+         * @description 签约材料附件
+         */
+        SigningMaterial: {
+            /**
+             * Filename
+             * @description 文件名
+             */
+            filename: string;
+            /**
+             * Url
+             * @description 文件URL
+             */
+            url: string;
+            /**
+             * Category
+             * @description 附件分类
+             */
+            category: string;
+            /**
+             * Filetype
+             * @description 文件类型
+             */
+            fileType: string;
+            /**
+             * Size
+             * @description 文件大小(字节)
+             * @default 0
+             */
+            size: number;
+        };
         /** StatusUpdate */
         StatusUpdate: {
             status: components["schemas"]["ProjectStatus"];
             /**
              * Listing Date
-             * @description 上架日期
+             * @description 上架日期 (YYYY-MM-DD 格式)
              */
             listing_date?: string | null;
             /**
@@ -4571,6 +4796,74 @@ export interface operations {
             };
         };
     };
+    get_renovation_contract_api_v1_projects__project_id__renovation_contract_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_RenovationContractResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_renovation_contract_api_v1_projects__project_id__renovation_contract_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenovationContractUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiResponse_RenovationContractResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_sales_roles_api_v1_projects__project_id__selling_roles_put: {
         parameters: {
             query?: never;
@@ -4808,7 +5101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": components["schemas"]["PaginatedResponse_ProjectResponse_"];
                 };
             };
             /** @description Validation Error */
@@ -4836,12 +5129,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4870,7 +5163,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectStatsResponse_"];
+                    "application/json": components["schemas"]["ProjectStatsResponse"];
                 };
             };
         };
@@ -4896,7 +5189,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4932,7 +5225,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4959,13 +5252,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_NoneType_"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -5000,7 +5291,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5031,12 +5322,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5068,7 +5359,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectReportResponse_"];
+                    "application/json": components["schemas"]["ProjectReportResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5102,7 +5393,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

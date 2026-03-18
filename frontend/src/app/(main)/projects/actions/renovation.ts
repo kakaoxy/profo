@@ -139,3 +139,60 @@ export async function updateRenovationStageAction(payload: {
     return { success: false, message: "网络错误" };
   }
 }
+
+/**
+ * 获取装修合同信息
+ */
+export async function getRenovationContractAction(projectId: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/projects/{project_id}/renovation/contract",
+      {
+        params: { path: { project_id: projectId } },
+      },
+    );
+
+    if (error) {
+      const errorMsg = (error as { detail?: string }).detail || "获取装修合同信息失败";
+      return { success: false, message: errorMsg };
+    }
+
+    const contract = extractApiData<Record<string, unknown>>(data);
+    return { success: true, data: contract };
+  } catch (e) {
+    console.error("获取装修合同信息异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+/**
+ * 更新装修合同信息
+ */
+export async function updateRenovationContractAction(
+  projectId: string,
+  payload: Record<string, unknown>
+) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.PUT(
+      "/api/v1/projects/{project_id}/renovation/contract",
+      {
+        params: { path: { project_id: projectId } },
+        body: payload as Record<string, never>,
+      },
+    );
+
+    if (error) {
+      const errorMsg = (error as { detail?: string }).detail || "更新装修合同信息失败";
+      return { success: false, message: errorMsg };
+    }
+
+    const contract = extractApiData<Record<string, unknown>>(data);
+    revalidatePath("/projects");
+    return { success: true, data: contract, message: "装修合同信息已更新" };
+  } catch (e) {
+    console.error("更新装修合同信息异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
