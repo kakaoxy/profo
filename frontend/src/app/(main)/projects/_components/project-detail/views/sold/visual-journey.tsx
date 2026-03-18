@@ -129,8 +129,8 @@ export function SummaryReport({ project }: { project: Project }) {
   const roi = Number(project.roi) || 0;
   const totalInvestment = Number(project.total_expense) || 0;
   
-  const signingDate = (project.signing_date || project.signingDate || project.created_at);
-  const soldDateStr = (project.soldDate || project.sold_at || project.sold_date);
+  const signingDate = (project.signing_date || project.created_at);
+  const soldDateStr = (project.sold_at || project.sold_date);
   
   let occupationDays = 0;
   if (signingDate) {
@@ -154,7 +154,7 @@ export function SummaryReport({ project }: { project: Project }) {
 📍 地址：${project.address || project.community_name || "--"}
 
 💰 财务复盘
-• 成交价格：¥${Number(project.soldPrice || project.sold_price || 0).toFixed(1)} 万
+• 成交价格：¥${Number(project.sold_price || 0).toFixed(1)} 万
 • 投资总额：¥${(totalInvestment / 10000).toFixed(1)} 万
 • 净 利 润：${netProfit >= 0 ? "+" : ""}¥${(netProfit / 10000).toFixed(1)} 万 
 • 投资回报：${roi.toFixed(1)}% (ROI)

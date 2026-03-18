@@ -75,27 +75,27 @@ export function InfoTab({ project }: InfoTabProps) {
         {/* 合同编号 */}
         <InfoItem
           label="合同编号"
-          value={project.contract_no || project.contractNo}
+          value={project.contract_no}
           copyable
-          copyValue={project.contract_no || project.contractNo}
+          copyValue={project.contract_no}
         />
 
         {/* 签约日期 */}
         <InfoItem
           label="签约日期"
-          value={formatDate(project.signing_date || project.signingDate)}
+          value={formatDate(project.signing_date)}
         />
 
         {/* 交房日期 */}
         <InfoItem
           label="交房日期"
-          value={formatDate(project.planned_handover_date || project.plannedHandoverDate)}
+          value={formatDate(project.planned_handover_date)}
         />
 
         {/* 签约价格 */}
         <InfoItem
           label="签约价格"
-          value={formatPrice(project.signing_price || project.signingPrice)}
+          value={formatPrice(project.signing_price)}
           highlight
         />
 
@@ -103,8 +103,8 @@ export function InfoTab({ project }: InfoTabProps) {
         <InfoItem
           label="合同周期"
           value={
-            project.signing_period || project.signingPeriod
-              ? `${project.signing_period || project.signingPeriod} 天`
+            project.signing_period
+              ? `${project.signing_period} 天`
               : undefined
           }
         />
@@ -113,8 +113,8 @@ export function InfoTab({ project }: InfoTabProps) {
         <InfoItem
           label="顺延期"
           value={
-            project.extension_period || project.extensionPeriod
-              ? `${project.extension_period || project.extensionPeriod} 天`
+            project.extension_period
+              ? `${project.extension_period} 天`
               : undefined
           }
         />
@@ -123,8 +123,8 @@ export function InfoTab({ project }: InfoTabProps) {
         <InfoItem
           label="顺延期租金"
           value={
-            project.extension_rent || project.extensionRent
-              ? `¥ ${project.extension_rent || project.extensionRent} / 月`
+            project.extension_rent
+              ? `¥ ${project.extension_rent} / 月`
               : undefined
           }
         />
@@ -132,14 +132,14 @@ export function InfoTab({ project }: InfoTabProps) {
         {/* 税费及佣金承担方 */}
         <InfoItem
           label="税费及佣金承担方"
-          value={project.cost_assumption || project.costAssumption}
+          value={project.cost_assumption}
           className="sm:col-span-2"
         />
 
         {/* 其他约定条款 */}
         <InfoItem
           label="其他约定条款"
-          value={project.other_agreements || project.otherAgreements}
+          value={project.other_agreements}
           className="sm:col-span-2"
         />
       </InfoSection>
@@ -147,22 +147,22 @@ export function InfoTab({ project }: InfoTabProps) {
       {/* --- 业主信息 --- */}
       <InfoSection title="业主信息" icon={<User className="h-4 w-4" />}>
         {/* 业主姓名 */}
-        <InfoItem label="业主姓名" value={project.owner_name || project.ownerName} />
+        <InfoItem label="业主姓名" value={project.owner_name} />
 
         {/* 业主联系方式 - 脱敏显示，支持复制完整数据 */}
         <InfoItem
           label="业主联系方式"
-          value={maskString(project.owner_phone || project.ownerPhone)}
+          value={maskString(project.owner_phone)}
           copyable
-          copyValue={project.owner_phone || project.ownerPhone}
+          copyValue={project.owner_phone}
         />
 
         {/* 业主身份证 - 脱敏显示，支持复制完整数据 */}
         <InfoItem
           label="业主身份证"
-          value={maskString(project.owner_id_card || project.ownerIdCard)}
+          value={maskString(project.owner_id_card)}
           copyable
-          copyValue={project.owner_id_card || project.ownerIdCard}
+          copyValue={project.owner_id_card}
           className="sm:col-span-2"
         />
       </InfoSection>
@@ -171,15 +171,15 @@ export function InfoTab({ project }: InfoTabProps) {
       <InfoSection title="交易数据" icon={<TrendingUp className="h-4 w-4" />}>
         <InfoItem
           label="挂牌价"
-          value={formatPrice(project.list_price || project.listPrice)}
+          value={formatPrice(project.list_price)}
           highlight
         />
         <InfoItem
           label="成交价"
           value={
-            project.sold_price || project.soldPrice ? (
+            project.sold_price ? (
               <span className="text-green-600 font-bold font-mono">
-                {formatPrice(project.sold_price || project.soldPrice)}
+                {formatPrice(project.sold_price)}
               </span>
             ) : undefined
           }
@@ -203,7 +203,7 @@ export function InfoTab({ project }: InfoTabProps) {
         />
         <InfoItem
           label="成交日期"
-          value={formatDate(project.sold_date || project.soldDate)}
+          value={formatDate(project.sold_date)}
         />
         <InfoItem
           label="上架日期"
@@ -215,7 +215,7 @@ export function InfoTab({ project }: InfoTabProps) {
       <InfoSection title="备注" icon={<FileText className="h-4 w-4" />}>
         <InfoItem
           label="备注"
-          value={project.notes || project.remarks}
+          value={project.notes}
           className="sm:col-span-2"
         />
       </InfoSection>

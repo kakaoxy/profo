@@ -20,10 +20,9 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   const [presenter, setPresenter] = useState("");
   const [negotiator, setNegotiator] = useState("");
 
-  // 2. [核心修复] 当 project 属性变化时（比如刷新后），同步到本地状态
+  // 2. 当 project 属性变化时（比如刷新后），同步到本地状态
   useEffect(() => {
-    // 优先读取驼峰 channelManager，兼容下划线
-    setChannel(project.channelManager || project.channel_manager || "");
+    setChannel(project.channel_manager || "");
     setPresenter(project.presenter || "");
     setNegotiator(project.negotiator || "");
   }, [project]);
@@ -79,9 +78,9 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
             // 这里的 oldValue 也要取正确，防止重复提交
             onBlur={() =>
               handleBlur(
-                "channelManager",
+                "channel_manager",
                 channel,
-                project.channelManager || project.channel_manager
+                project.channel_manager
               )
             }
             className="h-8 text-sm bg-white focus-visible:ring-emerald-500"

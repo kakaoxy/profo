@@ -10,21 +10,21 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   // [优化] 直接读取缓存字段
   const totalInvestment = Number(project.total_expense) || 0;
   const totalIncome = Number(project.total_income) || 0;
-  const listPrice = Number(project.list_price || project.listing_price || 0);
-  const soldPrice = Number(project.sold_price || project.soldPrice || 0);
+  const listPrice = Number(project.list_price || 0);
+  const soldPrice = Number(project.sold_price || 0);
 
   // 计算关键日期
-  // [修复] 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
-  const rawStartDate = project.signing_date || project.signingDate || project.created_at;
+  // 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
+  const rawStartDate = project.signing_date || project.created_at;
   const signingDate = rawStartDate ? parseISO(rawStartDate) : null;
-  
-  const rawHandoverDate = project.planned_handover_date || project.plannedHandoverDate;
+
+  const rawHandoverDate = project.planned_handover_date;
   const handoverDate = rawHandoverDate ? parseISO(rawHandoverDate) : null;
-  
-  // [修复] 使用真实上架日期，不再硬编码 +65 天
+
+  // 使用真实上架日期，不再硬编码 +65 天
   const listingDate = project.listing_date ? parseISO(project.listing_date) : null;
-  
-  const rawSoldDate = project.soldDate || project.sold_at || project.sold_date;
+
+  const rawSoldDate = project.sold_at || project.sold_date;
   const soldDate = rawSoldDate ? parseISO(rawSoldDate) : null;
 
   // 计算资金占用周期
