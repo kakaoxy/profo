@@ -7,8 +7,8 @@ import { zhCN } from "date-fns/locale";
 
 // 确保这里的 types 路径是正确的，通常是 4 层 ../
 import { Project } from "../../../../types";
-// [修复 1] 修正 actions 路径，从 5 层改为 4 层
-import { updateProjectStatusAction } from "../../../../actions";
+// 从 client.ts 导入客户端可用的 Server Action
+import { updateProjectStatusAction } from "../../../../actions/client";
 import { RenovationKPIs } from "./kpi";
 import { RenovationTimeline } from "./timeline";
 import { StatusTransitionDialog } from "../../status-transition-dialog";
