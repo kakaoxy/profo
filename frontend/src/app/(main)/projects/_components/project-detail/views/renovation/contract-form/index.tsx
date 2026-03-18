@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { Building2, Loader2, Save, Edit2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,12 @@ import {
 } from "../../../../../actions/renovation";
 import {
   CompanySection,
-  ContractTimeSection,
-  ActualTimeSection,
-  HardDecorationSection,
-  PaymentNodesSection,
-  SoftDecorationSection,
+  TimeSection,
+  DecorationCostSection,
   OtherFeesSection,
 } from "./contract-sections";
+import { PaymentNodesSection } from "./payment-nodes";
+import { CostSummarySection } from "./cost-summary";
 
 interface RenovationContractFormProps {
   projectId: string;
@@ -130,10 +130,18 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
 
       const payload = {
         ...values,
-        contract_start_date: values.contract_start_date?.toISOString(),
-        contract_end_date: values.contract_end_date?.toISOString(),
-        actual_start_date: values.actual_start_date?.toISOString(),
-        actual_end_date: values.actual_end_date?.toISOString(),
+        contract_start_date: values.contract_start_date
+          ? format(values.contract_start_date, "yyyy-MM-dd")
+          : undefined,
+        contract_end_date: values.contract_end_date
+          ? format(values.contract_end_date, "yyyy-MM-dd")
+          : undefined,
+        actual_start_date: values.actual_start_date
+          ? format(values.actual_start_date, "yyyy-MM-dd")
+          : undefined,
+        actual_end_date: values.actual_end_date
+          ? format(values.actual_end_date, "yyyy-MM-dd")
+          : undefined,
       };
 
       const result = await updateRenovationContractAction(projectId, payload);
@@ -160,10 +168,10 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
   if (!isMounted || isLoading) {
     return (
       <Card className="border-slate-200">
-        <CardContent className="p-8">
+        <CardContent className="p-6">
           <div className="flex items-center justify-center text-slate-400">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            <span className="text-sm">加载中...</span>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span className="text-xs">加载中...</span>
           </div>
         </CardContent>
       </Card>
@@ -173,8 +181,8 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
   if (error) {
     return (
       <Card className="border-slate-200">
-        <CardContent className="p-8">
-          <div className="text-center text-red-500 text-sm">{error}</div>
+        <CardContent className="p-6">
+          <div className="text-center text-red-500 text-xs">{error}</div>
         </CardContent>
       </Card>
     );
@@ -185,13 +193,13 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
 
   return (
     <Card className="border-slate-200 shadow-sm">
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-3 py-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-blue-500" />
+          <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5 text-blue-500" />
             装修合同信息
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {isEditing ? (
               <>
                 <Button
@@ -199,21 +207,21 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
                   size="sm"
                   onClick={handleCancel}
                   disabled={isSaving}
-                  className="h-8 text-xs"
+                  className="h-7 text-xs px-2"
                 >
-                  <X className="mr-1 h-3.5 w-3.5" />
+                  <X className="mr-1 h-3 w-3" />
                   取消
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="h-8 text-xs"
+                  className="h-7 text-xs px-2"
                 >
                   {isSaving ? (
-                    <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                   ) : (
-                    <Save className="mr-1 h-3.5 w-3.5" />
+                    <Save className="mr-1 h-3 w-3" />
                   )}
                   保存
                 </Button>
@@ -223,9 +231,9 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditing(true)}
-                className="h-8 text-xs"
+                className="h-7 text-xs px-2"
               >
-                <Edit2 className="mr-1 h-3.5 w-3.5" />
+                <Edit2 className="mr-1 h-3 w-3" />
                 编辑
               </Button>
             )}
@@ -233,14 +241,13 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 py-3">
         <CompanySection values={values} setValue={setValue} isEditing={isEditing} />
-        <ContractTimeSection values={values} setValue={setValue} isEditing={isEditing} />
-        <ActualTimeSection values={values} setValue={setValue} isEditing={isEditing} />
-        <HardDecorationSection values={values} setValue={setValue} isEditing={isEditing} />
+        <TimeSection values={values} setValue={setValue} isEditing={isEditing} />
+        <DecorationCostSection values={values} setValue={setValue} isEditing={isEditing} />
         <PaymentNodesSection values={values} setValue={setValue} isEditing={isEditing} />
-        <SoftDecorationSection values={values} setValue={setValue} isEditing={isEditing} />
         <OtherFeesSection values={values} setValue={setValue} isEditing={isEditing} />
+        <CostSummarySection values={values} />
       </CardContent>
     </Card>
   );
