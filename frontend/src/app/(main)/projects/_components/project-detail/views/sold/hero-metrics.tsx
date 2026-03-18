@@ -12,11 +12,11 @@ export function HeroMetrics({ project }: { project: Project }) {
   const roi = Number(project.roi) || 0;
 
   // 计算资金占用天数
-  // [修复] 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
-  const rawStartDate = project.signing_date || project.signingDate || project.created_at;
+  // 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
+  const rawStartDate = project.signing_date || project.created_at;
   const signingDate = rawStartDate ? parseISO(rawStartDate) : null;
-  
-  const rawSoldDate = project.soldDate || project.sold_at || project.sold_date;
+
+  const rawSoldDate = project.sold_at || project.sold_date;
   const soldDate = rawSoldDate ? parseISO(rawSoldDate) : null;
  
   let occupationDays = 0;

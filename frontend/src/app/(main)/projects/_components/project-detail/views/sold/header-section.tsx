@@ -30,8 +30,8 @@ export function SoldHeader({
   currentProjectStageIndex,
 }: SoldHeaderProps) {
   const unitPrice =
-    project.soldPrice && project.area
-      ? (project.soldPrice * 10000) / project.area
+    project.sold_price && project.area
+      ? (project.sold_price * 10000) / project.area
       : 0;
 
   return (
@@ -121,7 +121,7 @@ export function SoldHeader({
           </Badge>
           <span className="text-xs text-slate-400 font-mono">
             成交日期:{" "}
-            {(project.soldDate || project.sold_at || project.sold_date)?.split("T")[0] || "-"}
+            {(project.sold_at || project.sold_date)?.split("T")[0] || "-"}
           </span>
         </div>
       </div>

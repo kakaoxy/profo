@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormValues } from "../schema";
 import { Share2 } from "lucide-react";
+import { getFileUrl } from "@/lib/config";
 
 export function ShareConfigSection() {
   const form = useFormContext<FormValues>();

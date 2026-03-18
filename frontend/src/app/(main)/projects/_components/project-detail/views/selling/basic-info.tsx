@@ -33,7 +33,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
     const signingPeriodDays = project.signing_period || 0;
     
     // 加上延长期 (月 -> 天，按30天/月计算)
-    const extensionMonths = project.extensionPeriod || 0;
+    const extensionMonths = project.extension_period || 0;
     const extensionDays = extensionMonths * 30;
 
     const totalDaysToAdd = signingPeriodDays + extensionDays;
@@ -46,7 +46,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
       daysLeft: diff, 
       deadlineDate: finalDeadline 
     };
-  }, [project.planned_handover_date, project.signing_period, project.extensionPeriod]);
+  }, [project.planned_handover_date, project.signing_period, project.extension_period]);
 
   // 2. 计算单价 (元/平米)
   // list_price 单位是 "万元"，area 单位是 "平米"
