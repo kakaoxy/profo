@@ -3,8 +3,6 @@ import { fetchClient } from "@/lib/api-server";
 import { ProjectStats } from "./_components/project-stats";
 import { ProjectView } from "./_components/project-view";
 import { Project } from "./types";
-// [新增] 引入资金账本抽屉组件
-// 注意：路径根据之前的文件夹结构，指向 [projectId]/cashflow/_components/cashflow-sheet
 import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet";
 import { MonitorSheet } from "./_components/monitor/monitor-sheet";
 
@@ -15,7 +13,6 @@ interface PageProps {
     status?: string;
     page?: string;
     community_name?: string;
-    // [新增] 虽然这里不需要显式处理 cashflow_id (由客户端组件处理)，但为了类型完整可以加上
     cashflow_id?: string;
   }>;
 }
@@ -27,19 +24,18 @@ interface QueryParams {
   community_name?: string;
 }
 
-// 1. 完善接口定义，包含 items 和 list (兼容不同后端结构)
-interface ApiResponseData {
-  items: Project[]; // 当前命中的字段
-  list?: Project[]; // 备用字段 (防止后端改回去)
+interface PaginatedResponse<T> {
+  items: T[];
   total: number;
   page: number;
-  page_size: number;
+  size: number;
 }
 
-interface BaseResponse {
-  code: number;
-  msg: string;
-  data: ApiResponseData;
+interface ProjectStats {
+  signing: number;
+  renovating: number;
+  selling: number;
+  sold: number;
 }
 
 export default async function ProjectsPage({ searchParams }: PageProps) {
@@ -68,20 +64,10 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     }),
   ]);
 
-  // 2. 类型安全的提取逻辑
-  const response = listRes.data as unknown as BaseResponse;
+  const projectData: Project[] = (listRes.data as unknown as PaginatedResponse<Project>)?.items || [];
+  const total = (listRes.data as unknown as PaginatedResponse<Project>)?.total || 0;
 
-  // 兼容性提取
-  const projectData: Project[] =
-    response?.data?.items || response?.data?.list || [];
-
-  const total = response?.data?.total || 0;
-
-  // 3. 统计数据提取
-  const statsResponse = statsRes.data as unknown as {
-    data: Record<string, number>;
-  };
-  const stats = statsResponse?.data || {
+  const stats = (statsRes.data as unknown as ProjectStats) || {
     signing: 0,
     renovating: 0,
     selling: 0,
@@ -91,7 +77,6 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50/50">
       <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
-        {/* 标题区 */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             项目管理
@@ -105,8 +90,6 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 
         <ProjectView data={projectData} total={total} />
 
-        {/* [新增] 挂载资金账本抽屉 */}
-        {/* 使用 Suspense 包裹，因为 CashFlowSheet 内部使用了 useSearchParams */}
         <Suspense fallback={null}>
           <CashFlowSheet />
           <MonitorSheet />

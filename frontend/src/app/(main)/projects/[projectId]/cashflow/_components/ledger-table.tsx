@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { deleteCashFlowRecordAction } from "../actions";
+import { deleteCashFlowRecordAction } from "./client-actions";
 import { toast } from "sonner";
 
 import { CashFlowRecord } from "../types";

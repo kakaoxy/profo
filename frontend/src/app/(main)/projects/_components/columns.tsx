@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LineChart, Trash2, Wallet } from "lucide-react";
 import Link from "next/link";
-import { Project } from "../types";
+import { Project } from "../types/index";
 import { deleteProjectAction } from "../actions/core";
 import {
   AlertDialog,
@@ -140,7 +140,7 @@ export const columns: ColumnDef<Project>[] = [
     ),
   },
   {
-    accessorKey: "soldPrice",
+    accessorKey: "sold_price",
     header: () => (
       <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
         成交价(万)
@@ -148,7 +148,7 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4 font-semibold text-slate-700 tabular-nums">
-        {formatWan(row.original.soldPrice)}
+        {formatWan(row.original.sold_price)}
       </div>
     ),
   },
@@ -187,7 +187,7 @@ export const columns: ColumnDef<Project>[] = [
           <Link
             href={`?cashflow_id=${
               row.original.id
-            }&community_name=${encodeURIComponent(row.original.community_name || row.original.communityName || "")}&address=${encodeURIComponent(row.original.address || "")}`}
+            }&community_name=${encodeURIComponent(row.original.community_name || "")}&address=${encodeURIComponent(row.original.address || "")}`}
             scroll={false}
             onClick={(e) => e.stopPropagation()}
             className={`font-bold cursor-pointer hover:opacity-70 hover:underline decoration-2 underline-offset-4 transition-all tabular-nums ${colorClass}`}
@@ -243,7 +243,7 @@ export const columns: ColumnDef<Project>[] = [
           <Link
             href={`?cashflow_id=${
               row.original.id
-            }&community_name=${encodeURIComponent(row.original.community_name || row.original.communityName || "")}&address=${encodeURIComponent(row.original.address || "")}`}
+            }&community_name=${encodeURIComponent(row.original.community_name || "")}&address=${encodeURIComponent(row.original.address || "")}`}
             scroll={false}
             onClick={(e) => e.stopPropagation()}
           >

@@ -15,7 +15,7 @@ import {
 import { HeaderStats } from "./header-stats";
 import { TrendChart } from "./trend-chart";
 import { LedgerTable } from "./ledger-table";
-import { getProjectCashFlowAction } from "../actions";
+import { getProjectCashFlowAction } from "./client-actions";
 import { CashFlowRecord, CashFlowStats } from "../types";
 
 export function CashFlowSheet() {

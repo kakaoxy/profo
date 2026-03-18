@@ -8,8 +8,8 @@ import { Image as ImageIcon } from "lucide-react";
 import { Project } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
 import { differenceInDays, addDays } from "date-fns";
-// [新增] 引入获取照片的 Action
-import { getRenovationPhotosAction } from "../../../../actions";
+// 从 client.ts 导入客户端可用的 Server Action
+import { getRenovationPhotosAction } from "../../../../actions/client";
 
 interface RenovationKPIsProps {
   project: Project;

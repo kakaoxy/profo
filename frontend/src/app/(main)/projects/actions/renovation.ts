@@ -120,7 +120,7 @@ export async function updateRenovationStageAction(payload: {
       {
         params: { path: { project_id: payload.projectId } },
         body: {
-          // @ts-ignore - API 类型定义与后端实际接口不完全同步
+          // @ts-expect-error - API 类型定义与后端实际接口不完全同步
           renovation_stage: payload.renovation_stage,
           stage_completed_at: payload.stage_completed_at,
         },
