@@ -3,9 +3,6 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { NeighborhoodRadarData } from "./types";
-import { components } from "@/lib/api-types";
-
-type ApiResponse_Radar = components["schemas"]["ApiResponse_NeighborhoodRadarResponse_"];
 
 /**
  * 获取周边竞品雷达数据
@@ -37,10 +34,8 @@ export async function getNeighborhoodRadarAction(projectId: string) {
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    const communitiesWrapper = communitiesData as {
-      data?: { items?: Array<{ id: number }> };
-    };
-    const communities = communitiesWrapper.data?.items;
+    // 直接返回 CommunityListResponse 结构
+    const communities = (communitiesData as { items?: Array<{ id: number }> })?.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${communityName}` };
     }
@@ -59,9 +54,10 @@ export async function getNeighborhoodRadarAction(projectId: string) {
       return { success: false, message: "获取周边竞品数据失败" };
     }
 
+    // 直接返回数据，不再提取 .data
     return {
       success: true,
-      data: (radarData as ApiResponse_Radar)?.data as NeighborhoodRadarData,
+      data: radarData as NeighborhoodRadarData,
     };
   } catch (e) {
     console.error("获取周边竞品异常:", e);
@@ -92,9 +88,10 @@ export async function getNeighborhoodRadarByCommunityAction(
       return { success: false, message: "获取周边竞品数据失败" };
     }
 
+    // 直接返回数据，不再提取 .data
     return {
       success: true,
-      data: (radarData as ApiResponse_Radar)?.data as NeighborhoodRadarData,
+      data: radarData as NeighborhoodRadarData,
     };
   } catch (e) {
     console.error("获取周边竞品异常:", e);

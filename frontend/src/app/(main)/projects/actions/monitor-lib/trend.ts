@@ -3,9 +3,6 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { TrendData } from "./types";
-import { components } from "@/lib/api-types";
-
-type ApiResponse_Trend = components["schemas"]["ApiResponse_List_TrendData__"];
 
 /**
  * 获取价格走势数据
@@ -46,8 +43,8 @@ export async function getTrendPositioningAction(projectId: string) {
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    const communitiesWrapper = communitiesData as { data?: { items?: Array<{ id: number }> } };
-    const communities = communitiesWrapper.data?.items;
+    // 直接返回 CommunityListResponse 结构
+    const communities = (communitiesData as { items?: Array<{ id: number }> })?.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${community_name}` };
     }
@@ -65,7 +62,8 @@ export async function getTrendPositioningAction(projectId: string) {
       return { success: false, message: "获取走势数据失败" };
     }
 
-    return { success: true, data: (trendData as ApiResponse_Trend)?.data as TrendData[], myPrice };
+    // 直接返回数据，trendData 已经是 TrendData[]
+    return { success: true, data: trendData as TrendData[], myPrice };
   } catch (e) {
     console.error("获取价格走势异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -93,7 +91,8 @@ export async function getTrendPositioningByCommunityAction(communityName: string
       return { success: false, message: "获取走势数据失败" };
     }
 
-    return { success: true, data: (trendData as ApiResponse_Trend)?.data as TrendData[], myPrice };
+    // 直接返回数据，trendData 已经是 TrendData[]
+    return { success: true, data: trendData as TrendData[], myPrice };
   } catch (e) {
     console.error("获取价格走势异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

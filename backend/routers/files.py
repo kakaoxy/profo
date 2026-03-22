@@ -11,7 +11,6 @@ from settings import settings
 from db import get_db
 from models.user import User
 from dependencies.auth import get_current_operator_user
-from schemas.response import ApiResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 if not os.path.exists(settings.upload_dir):
     os.makedirs(settings.upload_dir)
 
-@router.post("/upload", response_model=ApiResponse[Dict[str, Any]], summary="上传文件")
+@router.post("/upload", response_model=Dict[str, Any], summary="上传文件")
 def upload_file(
     request: Request,
     file: UploadFile = File(...),
@@ -68,7 +67,7 @@ def upload_file(
         # History suggests "/static/uploads/..."
         url = f"/{settings.upload_dir.replace(os.sep, '/')}/{filename}"
 
-        return ApiResponse.success(data={"url": url, "filename": filename})
+        return {"url": url, "filename": filename}
 
     except HTTPException:
         raise
