@@ -1,7 +1,7 @@
 """
 数据库连接和会话管理
 """
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 from typing import Generator
@@ -11,6 +11,15 @@ from settings import settings
 # 创建数据库引擎（优化版本）
 # 对于 SQLite，使用 StaticPool 以支持多线程访问
 # 添加性能优化配置
+
+
+def _enable_sqlite_fk(dbapi_conn, connection_record):
+    """启用 SQLite 外键约束"""
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 engine = create_engine(
     settings.database_url,
     echo=settings.database_echo,
@@ -28,6 +37,9 @@ engine = create_engine(
         "compiled_cache": {},  # 启用编译缓存以提高查询性能
     }
 )
+
+# 监听连接事件，启用外键约束
+event.listen(engine, "connect", _enable_sqlite_fk)
 
 # 创建会话工厂
 SessionLocal = sessionmaker(
