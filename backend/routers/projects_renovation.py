@@ -4,13 +4,12 @@ from services import ProjectService
 from dependencies.projects import get_project_service
 from schemas.project import RenovationUpdate, RenovationPhotoResponse, ProjectResponse
 from schemas.project_renovation import RenovationContractUpdate, RenovationContractResponse
-from schemas.response import ApiResponse
 
 # Note: Prefix is handled by parent router inclusion
 router = APIRouter()
 
 
-@router.put("/{project_id}/renovation", response_model=ApiResponse[ProjectResponse])
+@router.put("/{project_id}/renovation", response_model=ProjectResponse)
 def update_renovation_stage(
     project_id: str = Path(..., description="项目ID"),
     renovation_data: RenovationUpdate = ...,
@@ -18,10 +17,10 @@ def update_renovation_stage(
 ):
     """更新改造阶段 (Sync)"""
     project = service.update_renovation_stage(project_id, renovation_data)
-    return ApiResponse.success(data=project)
+    return project
 
 
-@router.post("/{project_id}/renovation/photos", response_model=ApiResponse[RenovationPhotoResponse])
+@router.post("/{project_id}/renovation/photos", response_model=RenovationPhotoResponse)
 def upload_renovation_photo(
     project_id: str = Path(..., description="项目ID"),
     stage: str = Query(..., description="改造阶段"),
@@ -32,10 +31,10 @@ def upload_renovation_photo(
 ):
     """上传改造阶段照片 (Sync)"""
     photo = service.add_renovation_photo(project_id, stage, url, filename, description)
-    return ApiResponse.success(data=photo)
+    return photo
 
 
-@router.get("/{project_id}/renovation/photos", response_model=ApiResponse[List[Dict[str, Any]]])
+@router.get("/{project_id}/renovation/photos", response_model=List[Dict[str, Any]])
 def get_renovation_photos(
     project_id: str = Path(..., description="项目ID"),
     stage: Optional[str] = Query(None, description="改造阶段筛选"),
@@ -58,10 +57,10 @@ def get_renovation_photos(
         }
         for photo in photos
     ]
-    return ApiResponse.success(data=photos_dict)
+    return photos_dict
 
 
-@router.delete("/{project_id}/renovation/photos/{photo_id}", response_model=ApiResponse[None])
+@router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
 def delete_renovation_photo(
     project_id: str = Path(..., description="项目ID"),
     photo_id: str = Path(..., description="照片ID"),
@@ -69,20 +68,20 @@ def delete_renovation_photo(
 ):
     """删除改造阶段照片 (Sync)"""
     service.delete_renovation_photo(project_id, photo_id)
-    return ApiResponse.success(data=None)
+    return None
 
 
-@router.get("/{project_id}/renovation/contract", response_model=ApiResponse[RenovationContractResponse])
+@router.get("/{project_id}/renovation/contract", response_model=RenovationContractResponse)
 def get_renovation_contract(
     project_id: str = Path(..., description="项目ID"),
     service: ProjectService = Depends(get_project_service)
 ):
     """获取装修合同信息 (Sync)"""
     contract = service.get_renovation_contract(project_id)
-    return ApiResponse.success(data=contract)
+    return contract
 
 
-@router.put("/{project_id}/renovation/contract", response_model=ApiResponse[RenovationContractResponse])
+@router.put("/{project_id}/renovation/contract", response_model=RenovationContractResponse)
 def update_renovation_contract(
     project_id: str = Path(..., description="项目ID"),
     contract_data: RenovationContractUpdate = ...,
@@ -90,4 +89,4 @@ def update_renovation_contract(
 ):
     """更新装修合同信息 (Sync)"""
     contract = service.update_renovation_contract(project_id, contract_data)
-    return ApiResponse.success(data=contract)
+    return contract

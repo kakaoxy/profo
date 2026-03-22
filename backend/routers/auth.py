@@ -1,6 +1,6 @@
 """
 认证相关路由
-使用统一的 ApiResponse 响应包装器
+直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
@@ -19,7 +19,6 @@ from schemas.user import (
     UserResponse,
     WechatLoginRequest,
 )
-from schemas.response import ApiResponse
 from dependencies.auth import get_current_active_user
 from services.auth_service import AuthService
 from common import limiter
@@ -107,7 +106,7 @@ def refresh_access_token(
     return AuthService.refresh_user_token(db, refresh_data.refresh_token)
 
 
-@router.get("/wechat/authorize", response_model=ApiResponse[Dict[str, Any]])
+@router.get("/wechat/authorize")
 def wechat_authorize(
     redirect_uri: Optional[str] = None
 ):
@@ -116,7 +115,7 @@ def wechat_authorize(
     """
     # 纯逻辑计算，无阻塞，sync 即可
     auth_url = AuthService.generate_wechat_auth_url(redirect_uri)
-    return ApiResponse.success(data={"auth_url": auth_url})
+    return {"auth_url": auth_url}
 
 
 @router.get("/wechat/callback")

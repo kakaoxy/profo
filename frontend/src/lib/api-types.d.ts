@@ -1383,558 +1383,6 @@ export interface components {
             /** Competitor Community Id */
             competitor_community_id: number;
         };
-        /**
-         * ApiResponse
-         * @description 统一 API 响应包装器
-         *
-         *     标准响应格式:
-         *     {
-         *         "code": 200,
-         *         "msg": "success",
-         *         "data": { ... }
-         *     }
-         *
-         *     错误响应格式 (通过全局异常处理器):
-         *     {
-         *         "success": false,
-         *         "error": {
-         *             "code": "VALIDATION_ERROR",
-         *             "message": "请求参数验证失败",
-         *             "details": { ... }
-         *         }
-         *     }
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /**
-             * Data
-             * @description 响应数据
-             */
-            data?: unknown | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[CashFlowRecordResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_CashFlowRecordResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["CashFlowRecordResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[CashFlowResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_CashFlowResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["CashFlowResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[CommunityListResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_CommunityListResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["CommunityListResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[CommunityMergeResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_CommunityMergeResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["CommunityMergeResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[Dict[str, Any]]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_Dict_str__Any__: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /**
-             * Data
-             * @description 响应数据
-             */
-            data?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[List[CompetitorResponse]]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_List_CompetitorResponse__: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /**
-             * Data
-             * @description 响应数据
-             */
-            data?: components["schemas"]["CompetitorResponse"][] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[List[Dict[str, Any]]]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_List_Dict_str__Any___: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /**
-             * Data
-             * @description 响应数据
-             */
-            data?: {
-                [key: string]: unknown;
-            }[] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[List[TrendData]]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_List_TrendData__: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /**
-             * Data
-             * @description 响应数据
-             */
-            data?: components["schemas"]["TrendData"][] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[MarketSentimentResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_MarketSentimentResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["MarketSentimentResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[NeighborhoodRadarResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_NeighborhoodRadarResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["NeighborhoodRadarResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[NoneType]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_NoneType_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /**
-             * Data
-             * @description 响应数据
-             */
-            data?: null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[ProjectResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_ProjectResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["ProjectResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[RenovationContractResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_RenovationContractResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["RenovationContractResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[RenovationPhotoResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_RenovationPhotoResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["RenovationPhotoResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
-        /**
-         * ApiResponse[SalesRecordResponse]
-         * @example {
-         *       "code": 200,
-         *       "data": {
-         *         "id": "123",
-         *         "name": "test"
-         *       },
-         *       "msg": "success"
-         *     }
-         */
-        ApiResponse_SalesRecordResponse_: {
-            /**
-             * Code
-             * @description 业务状态码，200 表示成功
-             * @default 200
-             */
-            code: number;
-            /**
-             * Msg
-             * @description 状态消息
-             * @default success
-             */
-            msg: string;
-            /** @description 响应数据 */
-            data?: components["schemas"]["SalesRecordResponse"] | null;
-            /**
-             * Message
-             * @description 状态消息（兼容字段）
-             */
-            message?: string | null;
-        };
         /** Body_login_for_access_token_api_v1_auth_token_post */
         Body_login_for_access_token_api_v1_auth_token_post: {
             /** Grant Type */
@@ -4567,7 +4015,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_CommunityListResponse_"];
+                    "application/json": components["schemas"]["CommunityListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4636,7 +4084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_CommunityMergeResponse_"];
+                    "application/json": components["schemas"]["CommunityMergeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4672,7 +4120,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4707,7 +4155,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_List_Dict_str__Any___"];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -4748,7 +4198,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_RenovationPhotoResponse_"];
+                    "application/json": components["schemas"]["RenovationPhotoResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4777,13 +4227,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_NoneType_"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -4814,7 +4262,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_RenovationContractResponse_"];
+                    "application/json": components["schemas"]["RenovationContractResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4850,7 +4298,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_RenovationContractResponse_"];
+                    "application/json": components["schemas"]["RenovationContractResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4886,7 +4334,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_ProjectResponse_"];
+                    "application/json": components["schemas"]["ProjectResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4917,12 +4365,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_SalesRecordResponse_"];
+                    "application/json": components["schemas"]["SalesRecordResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4953,12 +4401,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_SalesRecordResponse_"];
+                    "application/json": components["schemas"]["SalesRecordResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4989,12 +4437,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_SalesRecordResponse_"];
+                    "application/json": components["schemas"]["SalesRecordResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5029,7 +4477,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_List_Dict_str__Any___"];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -5058,13 +4508,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_NoneType_"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -5427,7 +4875,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_CashFlowResponse_"];
+                    "application/json": components["schemas"]["CashFlowResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5458,12 +4906,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_CashFlowRecordResponse_"];
+                    "application/json": components["schemas"]["CashFlowRecordResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5492,13 +4940,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_NoneType_"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -5530,7 +4976,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -5660,7 +5108,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -5815,7 +5263,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5932,13 +5380,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -5972,7 +5418,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -6005,7 +5451,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -6034,7 +5480,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_Dict_str__Any__"];
+                    "application/json": unknown;
                 };
             };
         };
@@ -6226,7 +5672,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_MarketSentimentResponse_"];
+                    "application/json": components["schemas"]["MarketSentimentResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6259,7 +5705,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_List_TrendData__"];
+                    "application/json": components["schemas"]["TrendData"][];
                 };
             };
             /** @description Validation Error */
@@ -6323,7 +5769,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_NeighborhoodRadarResponse_"];
+                    "application/json": components["schemas"]["NeighborhoodRadarResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6354,7 +5800,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse_List_CompetitorResponse__"];
+                    "application/json": components["schemas"]["CompetitorResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -6384,12 +5830,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -6416,13 +5862,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ApiResponse"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

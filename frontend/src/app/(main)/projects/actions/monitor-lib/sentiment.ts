@@ -5,7 +5,7 @@ import { getProjectDetailAction } from "../core";
 import { MarketSentimentData } from "./types";
 import { components } from "@/lib/api-types";
 
-type ApiResponse_Sentiment = components["schemas"]["ApiResponse_MarketSentimentResponse_"];
+type MarketSentimentResponse = components["schemas"]["MarketSentimentResponse"];
 
 /**
  * 获取市场情绪数据
@@ -37,8 +37,8 @@ export async function getMarketSentimentAction(projectId: string) {
       return { success: false, message: "搜索小区信息失败" };
     }
 
-    const communitiesWrapper = communitiesData as { data?: { items?: Array<{ id: number }> } };
-    const communities = communitiesWrapper.data?.items;
+    // 直接返回 CommunityListResponse 结构
+    const communities = (communitiesData as { items?: Array<{ id: number }> })?.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${communityName}` };
     }
@@ -57,7 +57,8 @@ export async function getMarketSentimentAction(projectId: string) {
       return { success: false, message: "获取市场情绪数据失败" };
     }
 
-    return { success: true, data: (sentimentData as ApiResponse_Sentiment)?.data as MarketSentimentData };
+    // 直接返回数据，不再提取 .data
+    return { success: true, data: sentimentData as MarketSentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
@@ -85,7 +86,8 @@ export async function getMarketSentimentByCommunityAction(communityName: string)
       return { success: false, message: "获取市场情绪数据失败" };
     }
 
-    return { success: true, data: (sentimentData as ApiResponse_Sentiment)?.data as MarketSentimentData };
+    // 直接返回数据，不再提取 .data
+    return { success: true, data: sentimentData as MarketSentimentData };
   } catch (e) {
     console.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

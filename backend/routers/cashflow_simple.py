@@ -1,6 +1,6 @@
 """
 现金流相关API路由（简化版本）
-使用统一的 ApiResponse 响应包装器
+直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, Path, Query, HTTPException, status
@@ -12,7 +12,6 @@ from schemas.project import (
     CashFlowRecordCreate, CashFlowRecordResponse,
     CashFlowResponse, CashFlowSummary
 )
-from schemas.response import ApiResponse
 
 router = APIRouter(tags=["cashflow"])
 
@@ -23,7 +22,7 @@ def get_cashflow_service(db: Session = Depends(get_db)):
 
 # ========== 现金流管理 ==========
 
-@router.post("/projects/{project_id}/cashflow", response_model=ApiResponse[CashFlowRecordResponse])
+@router.post("/projects/{project_id}/cashflow", response_model=CashFlowRecordResponse, status_code=201)
 def create_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: CashFlowRecordCreate = ...,
@@ -31,10 +30,10 @@ def create_cashflow_record(
 ):
     """创建现金流记录"""
     record = service.create_cashflow_record(project_id, record_data)
-    return ApiResponse.success(data=record)
+    return record
 
 
-@router.get("/projects/{project_id}/cashflow", response_model=ApiResponse[CashFlowResponse])
+@router.get("/projects/{project_id}/cashflow", response_model=CashFlowResponse)
 def get_project_cashflow(
     project_id: str = Path(..., description="项目ID"),
     service: CashFlowService = Depends(get_cashflow_service)
@@ -44,10 +43,10 @@ def get_project_cashflow(
     summary = service.get_cashflow_summary(project_id)
 
     response_data = CashFlowResponse(records=records, summary=summary)
-    return ApiResponse.success(data=response_data)
+    return response_data
 
 
-@router.delete("/projects/{project_id}/cashflow/{record_id}", response_model=ApiResponse[None])
+@router.delete("/projects/{project_id}/cashflow/{record_id}", status_code=204)
 def delete_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
@@ -55,4 +54,4 @@ def delete_cashflow_record(
 ):
     """删除现金流记录"""
     service.delete_cashflow_record(record_id, project_id)
-    return ApiResponse.success(data=None)
+    return None

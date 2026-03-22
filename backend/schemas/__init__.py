@@ -5,8 +5,8 @@
 
 from .enums import IngestionStatus, MediaTypeEnum
 
-# 1. 统一响应包装器
-from .response import ApiResponse, PaginatedApiResponse
+# 1. 分页响应模型
+from .response import PaginatedResponse
 
 # 2. Common
 from .common import (
@@ -79,13 +79,12 @@ __all__ = [
     'IngestionStatus',
     'MediaTypeEnum',
 
-    # Response Wrappers (统一响应包装器)
-    'ApiResponse',
-    'PaginatedApiResponse',
+    # Response Models
+    'PaginatedResponse',
 
     # Common
-    'BaseResponse',        # 兼容保留，建议使用 ApiResponse
-    'GenericBaseResponse', # 兼容保留，建议使用 ApiResponse
+    'BaseResponse',        # 兼容保留
+    'GenericBaseResponse', # 兼容保留
     'FailedRecordResponse',
     'PropertyHistoryResponse',
     'FloorInfo',

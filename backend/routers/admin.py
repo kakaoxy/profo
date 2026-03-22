@@ -18,7 +18,6 @@ from schemas.community import (
     CommunityMergeRequest,
     CommunityMergeResponse
 )
-from schemas.response import ApiResponse
 from services.merger import CommunityMerger
 from dependencies.auth import get_current_operator_user, get_current_admin_user
 from models.user import User
@@ -108,7 +107,7 @@ class CommunityQueryService:
 # 将 Service 实例化移出路由，或使用 Dependency 模式（这里保持静态调用即可）
 service = CommunityQueryService()
 
-@router.get("/communities", response_model=ApiResponse[CommunityListResponse])
+@router.get("/communities", response_model=CommunityListResponse)
 def get_communities(
     search: Optional[str] = Query(None, description="小区名称搜索（模糊匹配）"),
     page: int = Query(1, ge=1, description="页码"),
@@ -125,7 +124,7 @@ def get_communities(
         page=page,
         page_size=page_size
     )
-    return ApiResponse.success(data=result.model_dump())
+    return result
 
 
 @router.get("/dictionaries")
@@ -170,7 +169,7 @@ def get_dictionaries(
     return {"type": type, "items": values}
 
 
-@router.post("/communities/merge", response_model=ApiResponse[CommunityMergeResponse])
+@router.post("/communities/merge", response_model=CommunityMergeResponse)
 def merge_communities(
     request: CommunityMergeRequest,
     db: Session = Depends(get_db),
@@ -202,7 +201,7 @@ def merge_communities(
             affected_properties=result.affected_properties,
             message=result.message
         )
-        return ApiResponse.success(data=response_data.model_dump())
+        return response_data
 
     except ValueError as e:
         logger.warning(f"小区合并业务验证失败: {str(e)}")
