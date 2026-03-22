@@ -18,7 +18,7 @@ class SigningMaterial(BaseModel):
 
 class ContractBase(BaseModel):
     """合同基础字段"""
-    contract_no: Optional[str] = Field(None, max_length=100, description="合同编号")
+    contract_no: str = Field(..., max_length=100, description="合同编号")
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
     signing_date: Optional[datetime] = Field(None, description="签约日期")
     signing_period: Optional[int] = Field(None, description="合同周期(天)")

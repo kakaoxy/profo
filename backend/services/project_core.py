@@ -208,35 +208,29 @@ class ProjectCoreService:
         project.name = project.generate_name()
         self.db.add(project)
 
-        # 2. 创建合同记录（如果提供了签约信息）
+        # 2. 创建合同记录（合同编号必填）
         signing_date = parse_date_string(project_data.signing_date)
         planned_handover_date = parse_date_string(project_data.planned_handover_date)
 
-        if any([
-            project_data.contract_no,
-            project_data.signing_price,
-            signing_date,
-            project_data.signing_period,
-        ]):
-            contract = ProjectContract(
-                id=str(uuid.uuid4()),
-                project_id=project_id,
-                contract_no=project_data.contract_no,
-                signing_price=project_data.signing_price,
-                signing_date=signing_date,
-                signing_period=project_data.signing_period,
-                extension_period=project_data.extension_period,
-                extension_rent=project_data.extension_rent,
-                cost_assumption=project_data.cost_assumption,
-                planned_handover_date=planned_handover_date,
-                other_agreements=project_data.other_agreements,
-                signing_materials=project_data.signing_materials,
-                contract_status="生效" if signing_date else "未生效",
-                is_deleted=False,
-                created_at=now,
-                updated_at=now,
-            )
-            self.db.add(contract)
+        contract = ProjectContract(
+            id=str(uuid.uuid4()),
+            project_id=project_id,
+            contract_no=project_data.contract_no,
+            signing_price=project_data.signing_price,
+            signing_date=signing_date,
+            signing_period=project_data.signing_period,
+            extension_period=project_data.extension_period,
+            extension_rent=project_data.extension_rent,
+            cost_assumption=project_data.cost_assumption,
+            planned_handover_date=planned_handover_date,
+            other_agreements=project_data.other_agreements,
+            signing_materials=project_data.signing_materials,
+            contract_status="生效" if signing_date else "未生效",
+            is_deleted=False,
+            created_at=now,
+            updated_at=now,
+        )
+        self.db.add(contract)
 
         # 3. 创建业主记录（如果提供了业主信息）
         if any([
