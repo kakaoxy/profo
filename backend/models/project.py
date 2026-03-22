@@ -14,8 +14,18 @@ class Project(BaseModel):
     __tablename__ = "projects"
 
     # 基本信息
+    name = Column(String(700), nullable=True, comment="项目名称(自动生成:小区名称+地址)")
     community_name = Column(String(200), nullable=True, comment="小区名称")
     address = Column(String(500), nullable=True, comment="物业地址")
+
+    def generate_name(self) -> str:
+        """自动生成项目名称: 小区名称 + 地址"""
+        parts = []
+        if self.community_name:
+            parts.append(self.community_name)
+        if self.address:
+            parts.append(self.address)
+        return " - ".join(parts) if parts else "未命名项目"
 
     # 物业信息
     area = Column(Numeric(10, 2), nullable=True, comment="产证面积(m²)")

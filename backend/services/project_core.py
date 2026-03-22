@@ -89,6 +89,7 @@ class ProjectCoreService:
         """将项目及其关联数据组合成响应字典"""
         response = {
             "id": project.id,
+            "name": project.name or project.generate_name(),
             "community_name": project.community_name,
             "address": project.address,
             "area": str(project.area) if project.area else None,
@@ -203,6 +204,8 @@ class ProjectCoreService:
             created_at=now,
             updated_at=now,
         )
+        # 自动生成项目名称
+        project.name = project.generate_name()
         self.db.add(project)
 
         # 2. 创建合同记录（如果提供了签约信息）
@@ -330,6 +333,10 @@ class ProjectCoreService:
         for field in project_fields:
             if field in update_dict:
                 setattr(project, field, update_dict.pop(field))
+
+        # 如果小区名称或地址发生变化，重新生成项目名称
+        if 'community_name' in project_fields or 'address' in project_fields:
+            project.name = project.generate_name()
 
         # 2. 处理签约相关字段 - 更新 ProjectContract
         contract_fields = ['contract_no', 'signing_price', 'signing_date', 'signing_period',
