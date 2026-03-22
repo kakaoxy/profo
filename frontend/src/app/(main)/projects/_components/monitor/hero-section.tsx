@@ -1,9 +1,11 @@
 "use client";
 // 数据监控 - 基础信息展示 - 时间监控
-import { useEffect, useState } from "react";
 import { MapPin, Info, Clock } from "lucide-react";
+import useSWR from "swr";
 import { getProjectDetailAction } from "../../actions/core";
 import { ProjectData } from "./types";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface HeroSectionProps {
   projectId?: string;
@@ -55,46 +57,31 @@ function calculateTimeMonitor(
   };
 }
 
+// SWR fetcher for project detail
+const projectDetailFetcher = async (projectId: string): Promise<ProjectData> => {
+  const result = await getProjectDetailAction(projectId, true);
+  if (!result.success) {
+    throw new Error(result.message || "获取项目详情失败");
+  }
+  return result.data as ProjectData;
+};
+
 export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
-  const [data, setData] = useState<ProjectData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      if (overrideData) {
-        setData(overrideData);
-        setLoading(false);
-        return;
-      }
-
-      if (!projectId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await getProjectDetailAction(projectId, true);
-
-        if (!result.success) {
-          setError(result.message || "获取项目详情失败");
-          return;
-        }
-
-        const projectData = result.data as ProjectData;
-        setData(projectData);
-      } catch (e) {
-        void e;
-        setError("网络错误，请稍后重试");
-      } finally {
-        setLoading(false);
-      }
+  // 使用 SWR 进行数据获取，自动去重、缓存和重试
+  const { data, error, isLoading, mutate } = useSWR(
+    // 如果有 overrideData 或没有 projectId，则不发起请求
+    overrideData || !projectId ? null : [`project-detail`, projectId],
+    ([, id]) => projectDetailFetcher(id),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5000, // 5秒内重复请求去重
+      errorRetryCount: 3,
     }
+  );
 
-    fetchData();
-  }, [projectId, overrideData]);
+  // 优先使用 overrideData
+  const projectData = overrideData || data;
+  const loading = isLoading && !overrideData;
 
   // Loading state
   if (loading) {
@@ -134,33 +121,36 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
     return (
       <section className="p-6 bg-white border-b border-slate-100">
         <div className="text-center py-8">
-          <p className="text-sm text-rose-500">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-2 text-xs text-blue-600 hover:underline"
+          <p className="text-sm text-rose-500">{error.message}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => mutate()}
+            className="mt-2"
           >
-            点击重试
-          </button>
+            <RefreshCw className="mr-2 h-3 w-3" />
+            重试
+          </Button>
         </div>
       </section>
     );
   }
 
   // Compute display values
-  const address = data?.address || data?.community_name || "地址未设置";
-  const area = data?.area ? Number(data.area) : 0;
+  const address = projectData?.address || projectData?.community_name || "地址未设置";
+  const area = projectData?.area ? Number(projectData.area) : 0;
   const layout = area > 0 ? `${area}㎡` : "面积未设置";
-  const signingPrice = data?.signing_price ? Number(data.signing_price) : 0;
-  const listPrice = data?.list_price ? Number(data.list_price) : signingPrice;
+  const signingPrice = projectData?.signing_price ? Number(projectData.signing_price) : 0;
+  const listPrice = projectData?.list_price ? Number(projectData.list_price) : signingPrice;
   const unitPrice =
     area > 0 && signingPrice > 0
       ? Math.round((signingPrice * 10000) / area)
       : 0;
 
   const timeMonitor = calculateTimeMonitor(
-    data?.signing_date ?? null,
-    data?.signing_period ?? null,
-    data?.extension_rent ? Number(data.extension_rent) : null,
+    projectData?.signing_date ?? null,
+    projectData?.signing_period ?? null,
+    projectData?.extension_rent ? Number(projectData.extension_rent) : null,
   );
 
   return (

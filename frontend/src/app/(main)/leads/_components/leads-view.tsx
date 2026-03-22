@@ -10,6 +10,7 @@ import React, {
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
+import { toast } from "sonner";
 import { Lead, LeadStatus, FilterState, FollowUpMethod } from "../types";
 import {
   getLeadsAction,
@@ -141,20 +142,22 @@ export function LeadsView({
   };
 
   // Client-side filtering for layout, floor, creator
+  // 解构 filters 以避免整个对象作为依赖项
+  const { creator, layouts, floors } = filters;
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchCreator =
-        !filters.creator ||
-        lead.creatorName.toLowerCase().includes(filters.creator.toLowerCase());
+        !creator ||
+        lead.creatorName.toLowerCase().includes(creator.toLowerCase());
       const matchLayout =
-        filters.layouts.length === 0 ||
-        filters.layouts.includes(getLayoutRooms(lead.layout));
+        layouts.length === 0 ||
+        layouts.includes(getLayoutRooms(lead.layout));
       const matchFloor =
-        filters.floors.length === 0 ||
-        filters.floors.includes(getFloorCategory(lead.floorInfo));
+        floors.length === 0 ||
+        floors.includes(getFloorCategory(lead.floorInfo));
       return matchCreator && matchLayout && matchFloor;
     });
-  }, [leads, filters]);
+  }, [leads, creator, layouts, floors]);
 
   const selectedLead = useMemo(
     () => leads.find((l) => l.id === selectedLeadId) || null,
@@ -172,16 +175,18 @@ export function LeadsView({
     evalPrice?: number,
     reason?: string,
   ) => {
-    try {
-      const updatedLead = await updateLeadAction(id, {
-        status,
-        evalPrice,
-        auditReason: reason,
-      });
-      setLeads((prev) => prev.map((l) => (l.id === id ? updatedLead : l)));
+    const result = await updateLeadAction(id, {
+      status,
+      evalPrice,
+      auditReason: reason,
+    });
+
+    if (result.success) {
+      setLeads((prev) => prev.map((l) => (l.id === id ? result.data : l)));
       setIsDrawerOpen(false);
-    } catch (e) {
-      console.error("Failed to audit lead", e);
+      toast.success("审核完成");
+    } else {
+      toast.error(result.error || "审核失败");
     }
   };
 
@@ -200,22 +205,30 @@ export function LeadsView({
   };
 
   const handleAddLead = async (newLeadData: Omit<Lead, "id" | "createdAt">) => {
-    try {
-      if (editingLead) {
-        // Edit Mode
-        const updatedLead = await updateLeadAction(editingLead.id, newLeadData);
+    if (editingLead) {
+      // Edit Mode
+      const result = await updateLeadAction(editingLead.id, newLeadData);
+      if (result.success) {
         setLeads((prev) =>
-          prev.map((l) => (l.id === editingLead.id ? updatedLead : l)),
+          prev.map((l) => (l.id === editingLead.id ? result.data : l)),
         );
+        toast.success("线索更新成功");
+        setIsAddModalOpen(false);
       } else {
-        // Create Mode - actually create the lead
-        await createLeadAction(newLeadData);
+        toast.error(result.error || "更新失败");
+      }
+    } else {
+      // Create Mode - actually create the lead
+      const result = await createLeadAction(newLeadData);
+      if (result.success) {
         // Refetch to get the latest list
         const updatedLeads = await getLeadsAction(filters);
         setLeads(updatedLeads);
+        toast.success("线索创建成功");
+        setIsAddModalOpen(false);
+      } else {
+        toast.error(result.error || "创建失败");
       }
-    } catch (e) {
-      console.error("Failed to add/update lead", e);
     }
   };
 
@@ -226,13 +239,13 @@ export function LeadsView({
 
   const handleDeleteLead = async (id: string) => {
     if (!window.confirm("确定要删除这条线索吗？此操作无法撤销。")) return;
-    try {
-      await deleteLeadAction(id);
+    const result = await deleteLeadAction(id);
+    if (result.success) {
       const updatedLeads = await getLeadsAction(filters);
       setLeads(updatedLeads);
-    } catch (e) {
-      console.error("Failed to delete lead", e);
-      alert("删除失败，请稍后重试");
+      toast.success("线索已删除");
+    } else {
+      toast.error(result.error || "删除失败");
     }
   };
 
