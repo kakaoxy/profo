@@ -5,6 +5,7 @@ import { ProjectView } from "./_components/project-view";
 import { Project } from "./types";
 import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet";
 import { MonitorSheet } from "./_components/monitor/monitor-sheet";
+import type { paths } from "@/lib/api-types";
 
 export const dynamic = "force-dynamic";
 
@@ -17,25 +18,50 @@ interface PageProps {
   }>;
 }
 
-interface QueryParams {
-  page: number;
-  page_size: number;
-  status?: string;
-  community_name?: string;
-}
+type QueryParams = NonNullable<
+  paths["/api/v1/projects"]["get"]["parameters"]["query"]
+>;
 
-interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  size: number;
-}
+type ProjectListResponse =
+  paths["/api/v1/projects"]["get"]["responses"][200]["content"]["application/json"];
 
-interface ProjectStats {
-  signing: number;
-  renovating: number;
-  selling: number;
-  sold: number;
+type ProjectStatsResponse =
+  paths["/api/v1/projects/stats"]["get"]["responses"][200]["content"]["application/json"];
+
+/**
+ * 将 API 返回的项目数据映射为前端 Project 类型
+ */
+function mapProjectResponse(item: Record<string, unknown>): Project {
+  return {
+    id: String(item.id),
+    name: String(item.name ?? ""),
+    status: String(item.status),
+    created_at: String(item.created_at),
+    updated_at: String(item.updated_at),
+    community_name: item.community_name ? String(item.community_name) : undefined,
+    address: item.address ? String(item.address) : undefined,
+    area: item.area ? Number(item.area) : undefined,
+    layout: item.layout ? String(item.layout) : undefined,
+    orientation: item.orientation ? String(item.orientation) : undefined,
+    signing_price: item.signing_price ? Number(item.signing_price) : undefined,
+    signing_date: item.signing_date ? String(item.signing_date) : undefined,
+    signing_period: item.signing_period ? Number(item.signing_period) : undefined,
+    extension_period: item.extension_period ? Number(item.extension_period) : undefined,
+    extension_rent: item.extension_rent ? Number(item.extension_rent) : undefined,
+    cost_assumption: item.cost_assumption ? String(item.cost_assumption) : undefined,
+    planned_handover_date: item.planned_handover_date ? String(item.planned_handover_date) : undefined,
+    other_agreements: item.other_agreements ? String(item.other_agreements) : undefined,
+    renovation_stage: item.renovation_stage ? String(item.renovation_stage) : undefined,
+    contract_no: item.contract_no ? String(item.contract_no) : undefined,
+    list_price: item.list_price ? Number(item.list_price) : undefined,
+    listing_date: item.listing_date ? String(item.listing_date) : undefined,
+    sold_price: item.sold_price ? Number(item.sold_price) : undefined,
+    sold_date: item.sold_date ? String(item.sold_date) : undefined,
+    total_income: item.total_income ? Number(item.total_income) : undefined,
+    total_expense: item.total_expense ? Number(item.total_expense) : undefined,
+    net_cash_flow: item.net_cash_flow ? Number(item.net_cash_flow) : undefined,
+    roi: item.roi ? Number(item.roi) : undefined,
+  } as Project;
 }
 
 export default async function ProjectsPage({ searchParams }: PageProps) {
@@ -64,10 +90,13 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     }),
   ]);
 
-  const projectData: Project[] = (listRes.data as unknown as PaginatedResponse<Project>)?.items || [];
-  const total = (listRes.data as unknown as PaginatedResponse<Project>)?.total || 0;
+  // 使用类型安全的数据提取
+  const listData = listRes.data as ProjectListResponse | undefined;
+  const projectData: Project[] = (listData?.items ?? []).map(mapProjectResponse);
+  const total = listData?.total ?? 0;
 
-  const stats = (statsRes.data as unknown as ProjectStats) || {
+  const statsData = statsRes.data as ProjectStatsResponse | undefined;
+  const stats = statsData ?? {
     signing: 0,
     renovating: 0,
     selling: 0,

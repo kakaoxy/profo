@@ -30,5 +30,5 @@ const swrConfig = {
 
 // SWR Provider 组件 - 必须在 Client Component 中定义
 export function SWRProvider({ children }: { children: React.ReactNode }) {
-  return React.createElement(SWRConfig, { value: swrConfig }, children);
+  return <SWRConfig value={swrConfig}>{children}</SWRConfig>;
 }
