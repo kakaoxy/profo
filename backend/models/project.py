@@ -1,10 +1,10 @@
 """
 项目管理相关模型
 """
-from sqlalchemy import Column, String, Float, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean
+from sqlalchemy import Column, String, Float, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.sqlite import JSON
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .base import BaseModel, ProjectStatus, RenovationStage, RecordType
 
@@ -21,6 +21,12 @@ class Project(BaseModel):
     # 项目负责人
     project_manager_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="项目负责人ID")
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # 自动调用generate_name()，确保name字段不为空
+        if not self.name or self.name == "未命名项目":
+            self.name = self.generate_name()
+
     def generate_name(self) -> str:
         """自动生成项目名称: 小区名称 + 地址"""
         parts = []
@@ -35,16 +41,16 @@ class Project(BaseModel):
     layout = Column(String(50), nullable=True, comment="户型(展示用)")
     orientation = Column(String(50), nullable=True, comment="朝向")
 
-    # 项目状态
-    status = Column(String(20), nullable=False, default=ProjectStatus.SIGNING.value, comment="项目状态")
-    renovation_stage = Column(String(20), comment="改造子阶段")
+    # 项目状态 - 使用values_callable确保数据库存储枚举值而非名称
+    status = Column(SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x]), nullable=False, default=ProjectStatus.SIGNING, comment="项目状态")
+    renovation_stage = Column(SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段")
 
     # 逻辑删除
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     # 时间记录
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # 关联关系
     contract = relationship("ProjectContract", back_populates="project", uselist=False, cascade="all, delete-orphan")
@@ -74,11 +80,11 @@ class ProjectContract(BaseModel):
     """签约合同表"""
     __tablename__ = "project_contracts"
 
-    # 外键关联
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    # 外键关联 - 一对一关系，添加unique约束
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
 
     # 合同信息
-    contract_no = Column(String(100), nullable=False, comment="合同编号")
+    contract_no = Column(String(100), nullable=True, comment="合同编号")
     signing_price = Column(Numeric(15, 2), nullable=True, comment="签约价格(万)")
     signing_date = Column(DateTime, nullable=True, comment="签约日期")
     signing_period = Column(Integer, nullable=True, comment="合同周期(天)")
@@ -136,8 +142,8 @@ class ProjectSale(BaseModel):
     """销售交易表"""
     __tablename__ = "project_sales"
 
-    # 外键关联
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    # 外键关联 - 一对一关系，添加unique约束
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
 
     # 销售信息
     listing_date = Column(DateTime, nullable=True, comment="上架日期")
@@ -145,10 +151,10 @@ class ProjectSale(BaseModel):
     sold_date = Column(DateTime, nullable=True, comment="成交时间")
     sold_price = Column(Numeric(15, 2), nullable=True, comment="成交价(万)")
 
-    # 销售人员ID（关联人员管理表）
-    channel_manager_id = Column(String(36), nullable=True, comment="渠道负责人ID")
-    property_agent_id = Column(String(36), nullable=True, comment="房源维护人ID")
-    negotiator_id = Column(String(36), nullable=True, comment="联卖谈判人ID")
+    # 销售人员ID（软引用关联users表，跨层级不设置强制外键约束）
+    channel_manager_id = Column(String(36), nullable=True, comment="渠道负责人ID(软引用users.id)")
+    property_agent_id = Column(String(36), nullable=True, comment="房源维护人ID(软引用users.id)")
+    negotiator_id = Column(String(36), nullable=True, comment="联卖谈判人ID(软引用users.id)")
 
     # 交易状态
     transaction_status = Column(String(20), nullable=False, default="在售", comment="交易状态")
@@ -292,8 +298,8 @@ class ProjectRenovation(BaseModel):
     """装修信息表"""
     __tablename__ = "project_renovations"
 
-    # 外键关联
-    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    # 外键关联 - 一对一关系，添加unique约束
+    project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
 
     # 装修公司
     renovation_company = Column(String(200), nullable=True, comment="合作装修公司")
@@ -311,13 +317,13 @@ class ProjectRenovation(BaseModel):
 
     # 支付节点
     payment_node_1 = Column(String(100), nullable=True, comment="第一笔款项支付节点")
-    payment_ratio_1 = Column(Numeric(5, 2), nullable=True, comment="第一笔款项支付比例")
+    payment_ratio_1 = Column(Numeric(6, 4), nullable=True, comment="第一笔款项支付比例(支持小数点后4位)")
     payment_node_2 = Column(String(100), nullable=True, comment="第二笔款项支付节点")
-    payment_ratio_2 = Column(Numeric(5, 2), nullable=True, comment="第二笔款项支付比例")
+    payment_ratio_2 = Column(Numeric(6, 4), nullable=True, comment="第二笔款项支付比例(支持小数点后4位)")
     payment_node_3 = Column(String(100), nullable=True, comment="第三笔款项支付节点")
-    payment_ratio_3 = Column(Numeric(5, 2), nullable=True, comment="第三笔款项支付比例")
+    payment_ratio_3 = Column(Numeric(6, 4), nullable=True, comment="第三笔款项支付比例(支持小数点后4位)")
     payment_node_4 = Column(String(100), nullable=True, comment="第四笔款项支付节点")
-    payment_ratio_4 = Column(Numeric(5, 2), nullable=True, comment="第四笔款项支付比例")
+    payment_ratio_4 = Column(Numeric(6, 4), nullable=True, comment="第四笔款项支付比例(支持小数点后4位)")
 
     # 软装费用
     soft_budget = Column(Numeric(15, 2), nullable=True, comment="软装预算金额")
@@ -358,7 +364,8 @@ class RenovationPhoto(BaseModel):
     filename = Column(String(200), nullable=True, comment="文件名")
     description = Column(Text, nullable=True, comment="描述")
 
-    deleted_at = Column(DateTime, nullable=True, default=None, comment="软删除时间")
+    # 逻辑删除
+    is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     # 关联关系
     project = relationship("Project", back_populates="renovation_photos")
