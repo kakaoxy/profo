@@ -1,10 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Sparkles, BrainCircuit, ShieldAlert, Loader2, AlertTriangle } from "lucide-react";
 import { SectionHeader } from "./section-header";
 import { Button } from "@/components/ui/button";
-import ReactMarkdown from "react-markdown";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// 动态导入 ReactMarkdown，减少初始包大小
+const ReactMarkdown = dynamic(() => import("react-markdown"), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-[90%]" />
+      <Skeleton className="h-4 w-[80%]" />
+    </div>
+  ),
+});
 
 interface AIStrategyProps {
   projectId?: string;
