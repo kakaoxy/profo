@@ -61,7 +61,8 @@ class User(BaseModel):
     
     # 关联关系
     role = relationship("Role", back_populates="users")
-    
+    managed_projects = relationship("Project", back_populates="project_manager")
+
     # 索引
     __table_args__ = (
         # 用户状态查询索引

@@ -14,9 +14,12 @@ class Project(BaseModel):
     __tablename__ = "projects"
 
     # 基本信息
-    name = Column(String(700), nullable=True, comment="项目名称(自动生成:小区名称+地址)")
-    community_name = Column(String(200), nullable=True, comment="小区名称")
-    address = Column(String(500), nullable=True, comment="物业地址")
+    name = Column(String(700), nullable=False, comment="项目名称(自动生成:小区名称+地址)")
+    community_name = Column(String(200), nullable=False, comment="小区名称")
+    address = Column(String(500), nullable=False, comment="物业地址")
+
+    # 项目负责人
+    project_manager_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="项目负责人ID")
 
     def generate_name(self) -> str:
         """自动生成项目名称: 小区名称 + 地址"""
@@ -54,6 +57,7 @@ class Project(BaseModel):
     status_logs = relationship("ProjectStatusLog", back_populates="project", cascade="all, delete-orphan")
     renovation = relationship("ProjectRenovation", back_populates="project", uselist=False, cascade="all, delete-orphan")
     renovation_photos = relationship("RenovationPhoto", back_populates="project", cascade="all, delete-orphan")
+    project_manager = relationship("User", back_populates="managed_projects")
 
     # 索引
     __table_args__ = (
@@ -61,6 +65,8 @@ class Project(BaseModel):
         Index("idx_project_status", "status"),
         # 逻辑删除索引
         Index("idx_project_deleted", "is_deleted"),
+        # 项目负责人索引
+        Index("idx_project_manager", "project_manager_id"),
     )
 
 
@@ -72,7 +78,7 @@ class ProjectContract(BaseModel):
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
 
     # 合同信息
-    contract_no = Column(String(100), unique=True, nullable=True, comment="合同编号")
+    contract_no = Column(String(100), nullable=False, comment="合同编号")
     signing_price = Column(Numeric(15, 2), nullable=True, comment="签约价格(万)")
     signing_date = Column(DateTime, nullable=True, comment="签约日期")
     signing_period = Column(Integer, nullable=True, comment="合同周期(天)")
@@ -96,6 +102,7 @@ class ProjectContract(BaseModel):
     __table_args__ = (
         Index("idx_contract_project", "project_id"),
         Index("idx_contract_status", "contract_status"),
+        Index("idx_contract_no", "contract_no", unique=True),
     )
 
 

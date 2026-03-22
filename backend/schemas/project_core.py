@@ -60,14 +60,14 @@ class ProjectBase(BaseModel):
 class ProjectCreate(BaseModel):
     """创建项目请求模型 - 已适配规范化表结构"""
     # 基础信息 (projects 表)
-    community_name: Optional[str] = Field(None, max_length=200, description="小区名称")
-    address: Optional[str] = Field(None, max_length=500, description="物业地址")
+    community_name: str = Field(..., max_length=200, description="小区名称")
+    address: str = Field(..., max_length=500, description="物业地址")
     area: Optional[Decimal] = Field(None, description="产证面积(m²)")
     layout: Optional[str] = Field(None, max_length=50, description="户型")
     orientation: Optional[str] = Field(None, max_length=50, description="朝向")
 
     # 签约相关（会创建到 project_contracts 表）
-    contract_no: Optional[str] = Field(None, max_length=100, description="合同编号")
+    contract_no: str = Field(..., max_length=100, description="合同编号")
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
     signing_date: Optional[str] = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
