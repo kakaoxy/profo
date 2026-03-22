@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 async function getUser() {
   try {
@@ -49,7 +50,9 @@ export default async function DashboardLayout({
           </div>
         </header>
         {/* 直接渲染子页面，没有公共头了 */}
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -9,11 +9,59 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export interface ApiResponseLegacy<T> {
+  code: number;
+  msg: string;
+  data: T;
+}
+
 export interface PaginatedResponse<T> {
   total: number;
   page: number;
   page_size: number;
   items: T[];
+}
+
+/**
+ * 类型守卫：检查是否为 ApiResponse 结构
+ */
+function isApiResponse<T>(response: unknown): response is ApiResponse<T> {
+  return (
+    response !== null &&
+    typeof response === "object" &&
+    "code" in response &&
+    "message" in response &&
+    "data" in response
+  );
+}
+
+/**
+ * 类型守卫：检查是否为旧版 ApiResponse 结构
+ */
+function isApiResponseLegacy<T>(
+  response: unknown
+): response is ApiResponseLegacy<T> {
+  return (
+    response !== null &&
+    typeof response === "object" &&
+    "code" in response &&
+    "msg" in response &&
+    "data" in response
+  );
+}
+
+/**
+ * 类型守卫：检查是否为 data 包装结构
+ */
+function isDataWrapper<T>(
+  response: unknown
+): response is { data: T } {
+  return (
+    response !== null &&
+    typeof response === "object" &&
+    "data" in response &&
+    Object.keys(response).length === 1
+  );
 }
 
 /**
@@ -23,36 +71,18 @@ export interface PaginatedResponse<T> {
  */
 export function extractApiData<T>(response: { data?: T } | T | unknown): T {
   // 检查是否为 ApiResponse 结构
-  if (
-    response &&
-    typeof response === "object" &&
-    "code" in response &&
-    "message" in response &&
-    "data" in response
-  ) {
-    return (response as ApiResponse<T>).data;
+  if (isApiResponse<T>(response)) {
+    return response.data;
   }
 
   // 兼容旧的手动包装格式 {"code": 200, "msg": "success", "data": ...}
-  if (
-    response &&
-    typeof response === "object" &&
-    "code" in response &&
-    "msg" in response &&
-    "data" in response
-  ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (response as any).data;
+  if (isApiResponseLegacy<T>(response)) {
+    return response.data;
   }
 
   // 兼容 data 字段包装 (可能是 openapi-fetch 的行为或者部分旧接口)
-  if (
-    response &&
-    typeof response === "object" &&
-    "data" in response &&
-    Object.keys(response).length === 1 // 只有 data 字段
-  ) {
-    return (response as { data: T }).data;
+  if (isDataWrapper<T>(response)) {
+    return response.data;
   }
 
   // 默认假设响应本身就是数据
@@ -68,7 +98,7 @@ export function extractPaginatedData<T>(
     | { data?: { items: T[]; total: number } }
     | { items: T[]; total: number }
     | T[]
-    | unknown,
+    | unknown
 ): { items: T[]; total?: number; page?: number; page_size?: number } {
   // 1. 如果是数组，直接返回
   if (Array.isArray(response)) {
@@ -89,14 +119,12 @@ export function extractPaginatedData<T>(
     "items" in data &&
     Array.isArray(data.items)
   ) {
+    const paginatedData = data as PaginatedResponse<T>;
     return {
-      items: data.items,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      total: (data as any).total,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      page: (data as any).page,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      page_size: (data as any).page_size,
+      items: paginatedData.items,
+      total: paginatedData.total,
+      page: paginatedData.page,
+      page_size: paginatedData.page_size,
     };
   }
 

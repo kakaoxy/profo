@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Sheet,
   SheetContent,
@@ -270,13 +271,15 @@ export function ProjectDetailSheet({
           <DialogHeader>
             <DialogTitle>图片预览</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center py-4">
+          <div className="flex items-center justify-center py-4 relative w-full h-[75vh]">
             {previewImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={previewImage}
                 alt="预览"
-                className="max-h-[75vh] rounded-lg object-contain"
+                fill
+                className="object-contain rounded-lg"
+                sizes="(max-width: 896px) 100vw, 896px"
+                priority
               />
             )}
           </div>
