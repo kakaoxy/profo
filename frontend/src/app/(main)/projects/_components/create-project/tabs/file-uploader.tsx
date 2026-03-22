@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useRef, useState } from "react";
 import { UploadCloud, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -10,64 +10,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { API_BASE_URL } from "@/lib/config";
 import {
   ATTACHMENT_CATEGORIES,
   ALLOWED_EXTENSIONS,
-  MAX_FILE_SIZE,
-  isAllowedFile,
-  getFileType,
-  formatFileSize,
   type Attachment,
   type AttachmentCategory,
 } from "../attachment-types";
-
-// 尝试刷新 token
-// 注意：调用 Next.js API 路由 /api/auth/refresh，它会从 httpOnly cookie 中读取 refresh_token
-async function tryRefreshToken(): Promise<string | null> {
-  try {
-    // 调用 Next.js API 路由（不是直接调用后端）
-    // 因为 refresh_token 存储在 httpOnly cookie 中，前端无法直接读取
-    const response = await fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-
-    // 返回新的 access_token
-    return data.access_token || null;
-  } catch {
-    return null;
-  }
-}
-
-// 检查 token 是否过期
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const exp = payload.exp;
-    const now = Math.floor(Date.now() / 1000);
-    return exp < now;
-  } catch {
-    return true;
-  }
-}
+import { useFileUpload } from "../use-file-upload";
 
 interface FileUploaderProps {
   onUploadComplete: (attachment: Attachment) => void;
   disabled?: boolean;
-}
-
-interface UploadProgress {
-  filename: string;
-  progress: number;
 }
 
 /**
@@ -77,160 +31,12 @@ interface UploadProgress {
 export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<UploadProgress[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<AttachmentCategory>("signing_contract");
 
-  const isUploading = uploadingFiles.length > 0;
-
-  const uploadFile = useCallback(
-    async (file: File): Promise<boolean> => {
-      // 验证文件类型
-      if (!isAllowedFile(file)) {
-        toast.error(`${file.name}: 不支持的文件格式`);
-        return false;
-      }
-
-      // 验证文件大小
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error(`${file.name}: 文件过大`, {
-          description: `文件大小不能超过 ${formatFileSize(MAX_FILE_SIZE)}`,
-        });
-        return false;
-      }
-
-      // 添加到上传队列
-      setUploadingFiles((prev) => [...prev, { filename: file.name, progress: 0 }]);
-
-      // 获取并检查 token
-      let token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
-      // 检查 token 是否存在或过期
-      const tokenExpired = token ? isTokenExpired(token) : true;
-      if (!token || tokenExpired) {
-        const newToken = await tryRefreshToken();
-        if (newToken) {
-          // 刷新成功，使用新 token
-          token = newToken;
-        } else {
-          toast.error("登录已过期，请重新登录");
-          setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
-          return false;
-        }
-      }
-
-      return new Promise((resolve) => {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const xhr = new XMLHttpRequest();
-        const uploadUrl = `${API_BASE_URL}/api/v1/files/upload`;
-
-        xhr.open("POST", uploadUrl);
-        xhr.withCredentials = true;
-
-        // 添加认证头
-        if (token) {
-          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-        }
-
-        // 进度监听
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            setUploadingFiles((prev) =>
-              prev.map((f) =>
-                f.filename === file.name ? { ...f, progress: percent } : f
-              )
-            );
-          }
-        };
-
-        // 完成处理
-        xhr.onload = () => {
-          // 从上传队列移除
-          setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
-
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const result = JSON.parse(xhr.responseText);
-              const fileType = getFileType(file.name);
-              if (!fileType) {
-                throw new Error("无法识别文件类型");
-              }
-
-              const attachment: Attachment = {
-                id: crypto.randomUUID(),
-                filename: file.name,
-                // Backend returns nested data.url with relative path, prepend base URL
-                url: (() => {
-                  const relativeUrl = result.data?.url || result.url || result.file_url || result.path;
-                  if (relativeUrl?.startsWith("/")) {
-                    return `${API_BASE_URL}${relativeUrl}`;
-                  }
-                  return relativeUrl;
-                })(),
-                category: selectedCategory,
-                fileType,
-                size: file.size,
-                uploadedAt: new Date().toISOString(),
-              };
-
-              onUploadComplete(attachment);
-              toast.success(`${file.name}: 上传成功`);
-              resolve(true);
-            } catch {
-              toast.error(`${file.name}: 解析响应失败`);
-              resolve(false);
-            }
-          } else if (xhr.status === 401) {
-            toast.error(`${file.name}: 上传失败`, {
-              description: "登录已过期，请刷新页面后重试",
-            });
-            resolve(false);
-          } else {
-            try {
-              const error = JSON.parse(xhr.responseText);
-              toast.error(`${file.name}: 上传失败`, {
-                description: error.detail || `状态码: ${xhr.status}`,
-              });
-            } catch {
-              toast.error(`${file.name}: 上传失败`);
-            }
-            resolve(false);
-          }
-        };
-
-        xhr.onerror = () => {
-          setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
-          toast.error(`${file.name}: 网络错误`);
-          resolve(false);
-        };
-
-        xhr.send(formData);
-      });
-    },
-    [selectedCategory, onUploadComplete]
-  );
-
-  // 处理多文件上传
-  const uploadFiles = useCallback(
-    async (files: FileList) => {
-      const fileArray = Array.from(files);
-      if (fileArray.length > 1) {
-        toast.info(`开始上传 ${fileArray.length} 个文件...`);
-      }
-      
-      const results = await Promise.all(fileArray.map((file) => uploadFile(file)));
-      const successCount = results.filter(Boolean).length;
-      
-      if (fileArray.length > 1) {
-        toast.success(`上传完成`, {
-          description: `成功 ${successCount} 个，共 ${fileArray.length} 个文件`,
-        });
-      }
-    },
-    [uploadFile]
-  );
+  const { uploadingFiles, isUploading, uploadFiles, setUploadingFiles } = useFileUpload({
+    category: selectedCategory,
+    onUploadComplete,
+  });
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
