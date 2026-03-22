@@ -47,19 +47,16 @@ async function tryRefreshTokenClient(): Promise<boolean> {
 
 /**
  * 自定义中间件：处理 Token 注入和全局错误拦截
+ *
+ * [安全修复] 不再从 localStorage 读取 token
+ * 改为依赖 httpOnly Cookie 自动携带
+ * 中间件仅处理 401 刷新逻辑
  */
 const authMiddleware: Middleware = {
-  // 1. 请求拦截器：自动注入 Token
+  // 1. 请求拦截器：确保携带 credentials
   async onRequest({ request }) {
-    // 仅在浏览器端执行 (Client Component)
-    if (typeof window !== "undefined") {
-      const token =
-        localStorage.getItem("access_token") || localStorage.getItem("token");
-
-      if (token) {
-        request.headers.set("Authorization", `Bearer ${token}`);
-      }
-    }
+    // 确保请求携带 cookies
+    // 注意：token 已由 httpOnly Cookie 自动携带，无需手动设置 Authorization
     return request;
   },
 
@@ -93,10 +90,8 @@ const authMiddleware: Middleware = {
       console.error("🔒 登录已过期且刷新失败，正在跳转登录页...");
 
       if (typeof window !== "undefined") {
-        // 清除本地存储的 Token
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("token");
-        localStorage.removeItem("refresh_token");
+        // [安全修复] 不再操作 localStorage，仅跳转登录页
+        // 清除操作由服务端 logoutAction 处理
 
         // 强制跳转回登录页
         if (!window.location.pathname.includes("/login")) {
@@ -110,13 +105,13 @@ const authMiddleware: Middleware = {
   },
 };
 
-
 /**
  * 场景 A: 客户端组件 (Client Components) 使用
+ *
+ * [安全修复] 配置 credentials: 'include' 确保自动携带 httpOnly Cookie
  */
 export const client = createClient<paths>({
   baseUrl: API_BASE_URL,
-  // 注意：这里不要再传 middleware 数组，因为类型不支持
 });
 
 // [修复] 使用 .use() 方法注册中间件
