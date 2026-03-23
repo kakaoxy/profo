@@ -115,7 +115,9 @@ export const useCreateProject = ({
     activeTab,
     setActiveTab,
     clearDraft,
-    onSubmit: form.handleSubmit(onSubmit),
+    onSubmit: form.handleSubmit(onSubmit, (errors) => {
+      console.error("[CreateProject] Form validation errors:", errors);
+    }),
     isEditMode,
   };
 };

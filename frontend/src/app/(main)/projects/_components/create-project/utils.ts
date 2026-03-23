@@ -16,10 +16,10 @@ export const fromDateStr = (s: string | undefined | null): Date | undefined =>
 // 解析户型字符串为数字
 export function parseLayout(
   layout: string | undefined
-): { rooms?: number; halls?: number; bathrooms?: number } {
-  if (!layout) return {};
+): { rooms: number; halls: number; bathrooms: number } {
+  if (!layout) return { rooms: 0, halls: 0, bathrooms: 0 };
   const match = layout.match(/(\d+)室(\d+)厅(\d+)卫/);
-  if (!match) return {};
+  if (!match) return { rooms: 0, halls: 0, bathrooms: 0 };
   return {
     rooms: parseInt(match[1], 10),
     halls: parseInt(match[2], 10),

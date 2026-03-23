@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Loader2, Save, Trash2 } from "lucide-react";
+import { Plus, Loader2, Save, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // 引入逻辑 Hook
 import { useCreateProject } from "./use-create-project";
@@ -56,6 +57,11 @@ export function CreateProjectDialog({
   // 支持受控和非受控模式
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = controlledOnOpenChange || setInternalOpen;
+
+  // 处理表单提交，添加错误处理
+  const handleSubmit = (e: React.FormEvent) => {
+    onSubmit(e);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -101,7 +107,21 @@ export function CreateProjectDialog({
         {/* --- Body --- */}
         <div className="flex-1 overflow-hidden bg-slate-50/50">
           <Form {...form}>
-            <form onSubmit={onSubmit} className="h-full flex flex-col">
+            <form onSubmit={handleSubmit} className="h-full flex flex-col">
+              {/* 表单错误提示 */}
+              {Object.keys(form.formState.errors).length > 0 && (
+                <Alert variant="destructive" className="m-6 mb-0">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    表单验证失败，请检查以下字段：
+                    {Object.entries(form.formState.errors).map(([key, error]) => (
+                      <div key={key} className="text-sm mt-1">
+                        • {key}: {error?.message as string}
+                      </div>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}

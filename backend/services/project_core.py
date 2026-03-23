@@ -117,11 +117,11 @@ class ProjectCoreService:
 
             response.update({
                 "contract_no": contract.contract_no,
-                "signing_price": float(contract.signing_price) if contract.signing_price else None,
+                "signing_price": float(contract.signing_price) if contract.signing_price is not None else None,
                 "signing_date": signing_date_str,
                 "signing_period": contract.signing_period,
                 "extension_period": contract.extension_period,
-                "extension_rent": float(contract.extension_rent) if contract.extension_rent else None,
+                "extension_rent": float(contract.extension_rent) if contract.extension_rent is not None else None,
                 "cost_assumption": contract.cost_assumption,
                 "planned_handover_date": planned_handover_date_str,
                 "other_agreements": contract.other_agreements,
