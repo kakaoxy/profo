@@ -13,6 +13,61 @@ interface UserSimple {
 }
 
 /**
+ * 更新销售角色
+ */
+export async function updateSalesRolesAction(
+  projectId: string,
+  data: {
+    channel_manager_id?: string | null;
+    property_agent_id?: string | null;
+    negotiator_id?: string | null;
+  },
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("access_token")?.value;
+
+    // 字段映射：前端新字段名 -> 后端API字段名
+    const apiData: Record<string, string | null | undefined> = {};
+    if ("channel_manager_id" in data) {
+      apiData.channel_manager = data.channel_manager_id;
+    }
+    if ("property_agent_id" in data) {
+      apiData.presenter = data.property_agent_id;
+    }
+    if ("negotiator_id" in data) {
+      apiData.negotiator = data.negotiator_id;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/projects/${projectId}/selling/roles`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(apiData),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: errorData.detail || `更新销售角色失败 (${response.status})`,
+      };
+    }
+
+    revalidatePath("/projects");
+    return { success: true, message: "保存成功" };
+  } catch (e) {
+    console.error("更新销售角色异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
  * 获取简化用户列表（用于下拉选择）
  */
 export async function getUsersSimpleAction(): Promise<{

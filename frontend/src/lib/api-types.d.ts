@@ -854,6 +854,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/simple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Users Simple
+         * @description 获取简化用户列表（仅包含ID和昵称），用于下拉选择
+         */
+        get: operations["get_users_simple_api_v1_users_simple_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me": {
         parameters: {
             query?: never;
@@ -2363,12 +2383,12 @@ export interface components {
              * Community Name
              * @description 小区名称
              */
-            community_name?: string | null;
+            community_name: string;
             /**
              * Address
              * @description 物业地址
              */
-            address?: string | null;
+            address: string;
             /**
              * Area
              * @description 产证面积(m²)
@@ -2388,7 +2408,7 @@ export interface components {
              * Contract No
              * @description 合同编号
              */
-            contract_no?: string | null;
+            contract_no: string;
             /**
              * Signing Price
              * @description 签约价格(万)
@@ -2605,6 +2625,21 @@ export interface components {
             sold_date?: string | null;
             /** Transaction Status */
             transaction_status?: string | null;
+            /**
+             * Channel Manager Id
+             * @description 渠道负责人ID
+             */
+            channel_manager_id?: string | null;
+            /**
+             * Property Agent Id
+             * @description 房源维护人ID(讲房人)
+             */
+            property_agent_id?: string | null;
+            /**
+             * Negotiator Id
+             * @description 联卖谈判人ID
+             */
+            negotiator_id?: string | null;
             /**
              * Total Income
              * @default 0
@@ -3120,54 +3155,23 @@ export interface components {
             created_at: string;
         };
         /**
+         * RenovationStage
+         * @description 改造子阶段枚举
+         * @enum {string}
+         */
+        RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "安装" | "交付" | "已完成";
+        /**
          * RenovationUpdate
-         * @description 更新装修记录请求
+         * @description 更新改造阶段请求模型
          */
         RenovationUpdate: {
-            /** Renovation Company */
-            renovation_company?: string | null;
-            /** Contract Start Date */
-            contract_start_date?: string | null;
-            /** Contract End Date */
-            contract_end_date?: string | null;
-            /** Actual Start Date */
-            actual_start_date?: string | null;
-            /** Actual End Date */
-            actual_end_date?: string | null;
-            /** Hard Contract Amount */
-            hard_contract_amount?: number | string | null;
-            /** Payment Node 1 */
-            payment_node_1?: string | null;
-            /** Payment Ratio 1 */
-            payment_ratio_1?: number | string | null;
-            /** Payment Node 2 */
-            payment_node_2?: string | null;
-            /** Payment Ratio 2 */
-            payment_ratio_2?: number | string | null;
-            /** Payment Node 3 */
-            payment_node_3?: string | null;
-            /** Payment Ratio 3 */
-            payment_ratio_3?: number | string | null;
-            /** Payment Node 4 */
-            payment_node_4?: string | null;
-            /** Payment Ratio 4 */
-            payment_ratio_4?: number | string | null;
-            /** Soft Budget */
-            soft_budget?: number | string | null;
-            /** Soft Actual Cost */
-            soft_actual_cost?: number | string | null;
-            /** Soft Detail Attachment */
-            soft_detail_attachment?: string | null;
-            /** Design Fee */
-            design_fee?: number | string | null;
-            /** Demolition Fee */
-            demolition_fee?: number | string | null;
-            /** Garbage Fee */
-            garbage_fee?: number | string | null;
-            /** Other Extra Fee */
-            other_extra_fee?: number | string | null;
-            /** Other Fee Reason */
-            other_fee_reason?: string | null;
+            /** @description 改造子阶段 */
+            renovation_stage: components["schemas"]["RenovationStage"];
+            /**
+             * Stage Completed At
+             * @description 阶段完成时间
+             */
+            stage_completed_at?: string | null;
         };
         /** RiskPoints */
         RiskPoints: {
@@ -3373,21 +3377,24 @@ export interface components {
         };
         /**
          * SalesRolesUpdate
-         * @description 更新销售角色
+         * @description 更新销售角色 - 使用用户ID而非文本
          */
         SalesRolesUpdate: {
-            /** Channel Manager */
-            channel_manager?: string | null;
-            /** Presenter */
-            presenter?: string | null;
-            /** Negotiator */
-            negotiator?: string | null;
-            /** Property Agent */
-            property_agent?: string | null;
-            /** Client Agent */
-            client_agent?: string | null;
-            /** First Viewer */
-            first_viewer?: string | null;
+            /**
+             * Channel Manager Id
+             * @description 渠道负责人用户ID
+             */
+            channel_manager_id?: string | null;
+            /**
+             * Property Agent Id
+             * @description 讲房人用户ID(房源维护人)
+             */
+            property_agent_id?: string | null;
+            /**
+             * Negotiator Id
+             * @description 谈判人用户ID(联卖谈判人)
+             */
+            negotiator_id?: string | null;
         };
         /**
          * SigningMaterial
@@ -3611,6 +3618,43 @@ export interface components {
              * @description 更新时间
              */
             updated_at: string;
+        };
+        /**
+         * UserSimpleListResponse
+         * @description 简化用户列表响应模型
+         */
+        UserSimpleListResponse: {
+            /**
+             * Total
+             * @description 总数量
+             */
+            total: number;
+            /**
+             * Items
+             * @description 用户列表
+             */
+            items: components["schemas"]["UserSimpleResponse"][];
+        };
+        /**
+         * UserSimpleResponse
+         * @description 简化用户响应模型 - 用于下拉选择
+         */
+        UserSimpleResponse: {
+            /**
+             * Id
+             * @description 用户ID
+             */
+            id: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname?: string | null;
+            /**
+             * Username
+             * @description 用户名
+             */
+            username: string;
         };
         /**
          * UserUpdate
@@ -5269,6 +5313,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_users_simple_api_v1_users_simple_get: {
+        parameters: {
+            query?: {
+                /** @description 昵称搜索 */
+                nickname?: string | null;
+                /** @description 用户状态筛选 */
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSimpleListResponse"];
                 };
             };
             /** @description Validation Error */

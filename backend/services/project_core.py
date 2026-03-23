@@ -158,6 +158,9 @@ class ProjectCoreService:
                 "sold_date": sold_date_str,
                 "sold_price": float(sale.sold_price) if sale.sold_price else None,
                 "transaction_status": sale.transaction_status,
+                "channel_manager_id": sale.channel_manager_id,
+                "property_agent_id": sale.property_agent_id,
+                "negotiator_id": sale.negotiator_id,
             })
 
         # 查询并计算财务数据
