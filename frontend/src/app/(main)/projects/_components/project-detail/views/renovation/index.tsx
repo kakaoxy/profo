@@ -12,6 +12,7 @@ import { updateProjectStatusAction } from "../../../../actions/client";
 import { RenovationKPIs } from "./kpi";
 import { RenovationTimeline } from "./timeline";
 import { RenovationContractForm } from "./contract-form";
+import { RenovationTabs, TabValue } from "./renovation-tabs";
 import { StatusTransitionDialog } from "../../status-transition-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -61,8 +62,33 @@ export function RenovationView({ project, onRefresh }: RenovationViewProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 pb-10">
       <RenovationKPIs project={project} />
-      <RenovationContractForm projectId={project.id} />
-      <RenovationTimeline project={project} onRefresh={onRefresh} />
+      
+      {/* 标签页容器 */}
+      <RenovationTabs defaultTab="progress">
+        {({ activeTab, progressRef, contractRef }) => (
+          <>
+            {/* 装修进度标签内容 */}
+            {activeTab === "progress" && (
+              <div
+                ref={progressRef}
+                className="space-y-6 overflow-auto max-h-[calc(100vh-300px)] scrollbar-thin"
+              >
+                <RenovationTimeline project={project} onRefresh={onRefresh} />
+              </div>
+            )}
+
+            {/* 合同信息标签内容 */}
+            {activeTab === "contract" && (
+              <div
+                ref={contractRef}
+                className="space-y-6 overflow-auto max-h-[calc(100vh-300px)] scrollbar-thin"
+              >
+                <RenovationContractForm projectId={project.id} />
+              </div>
+            )}
+          </>
+        )}
+      </RenovationTabs>
 
       <div className="mt-8 pt-6 border-t border-dashed">
         <StatusTransitionDialog
