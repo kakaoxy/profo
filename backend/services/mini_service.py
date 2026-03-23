@@ -16,6 +16,13 @@ class MiniProjectService:
     def __init__(self, db: Session):
         self.db = db
 
+    def validate_project_reference(self, project_id: str) -> bool:
+        """验证主项目引用是否存在"""
+        if not project_id:
+            return True
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+        return project is not None
+
     def get_projects(self, skip=0, limit=20, is_published=None) -> Tuple[List[MiniProject], int]:
         query = self.db.query(MiniProject)
         if is_published is not None:
