@@ -2,12 +2,15 @@
 Leads Management Models
 """
 from datetime import datetime
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from sqlalchemy import Column, String, Float, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.sqlite import JSON
 
 from .base import Base, LeadStatus, FollowUpMethod
+
+if TYPE_CHECKING:
+    from .property import PropertyCurrent
 
 class Lead(Base):
     """线索主表"""
@@ -60,6 +63,14 @@ class Lead(Base):
     @property
     def creator_name(self):
         return self.creator.nickname if self.creator else None
+
+    @property
+    def source_property(self) -> Optional["PropertyCurrent"]:
+        """软引用关联的房源"""
+        if self.source_property_id:
+            from .property import PropertyCurrent
+            return self.db.query(PropertyCurrent).filter(PropertyCurrent.id == self.source_property_id).first()
+        return None
 
     __table_args__ = (
         Index("idx_lead_status", "status"),
