@@ -231,8 +231,9 @@ class ProjectCoreService:
 
         if renovation:
             stage_dates = {}
-            
-            # 优先从 stage_completed_dates JSON 字段读取各阶段完成日期
+
+            # 严格从 stage_completed_dates JSON 字段读取各阶段完成日期
+            # 只有真正完成并提交的阶段才会被记录为已完成
             if renovation.stage_completed_dates:
                 # stage_completed_dates 格式: {stage_name: date_string}
                 for stage_name, date_value in renovation.stage_completed_dates.items():
@@ -242,23 +243,11 @@ class ProjectCoreService:
                             stage_dates[stage_name] = date_value
                         elif isinstance(date_value, datetime):
                             stage_dates[stage_name] = date_value.strftime('%Y-%m-%d')
-            
-            # 从其他日期字段补充阶段日期
-            if renovation.actual_start_date and "拆除" not in stage_dates:
-                stage_dates["拆除"] = renovation.actual_start_date.strftime('%Y-%m-%d')
-            if renovation.contract_start_date and "设计" not in stage_dates:
-                stage_dates["设计"] = renovation.contract_start_date.strftime('%Y-%m-%d')
-            if renovation.actual_end_date and "交付" not in stage_dates:
-                stage_dates["交付"] = renovation.actual_end_date.strftime('%Y-%m-%d')
-            
-            # 从照片创建时间推断阶段日期（如果没有记录）
-            if project.renovation_photos:
-                for photo in project.renovation_photos:
-                    if photo.stage and photo.created_at:
-                        # 如果该阶段还没有日期记录，使用照片创建时间
-                        if photo.stage not in stage_dates:
-                            stage_dates[photo.stage] = photo.created_at.strftime('%Y-%m-%d')
-            
+
+            # 注意：不再从 actual_start_date、contract_start_date、actual_end_date 等字段
+            # 推断阶段完成状态，以确保阶段完成状态的原子性和一致性
+            # 只有用户明确提交完成某个阶段时，才会记录到 stage_completed_dates 中
+
             if stage_dates:
                 response["renovation_stage_dates"] = stage_dates
 
