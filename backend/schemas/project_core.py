@@ -219,6 +219,9 @@ class ProjectResponse(BaseModel):
     # 签约材料附件
     signing_materials: Optional[List[SigningMaterial]] = Field(None, description="签约材料列表")
 
+    # 销售记录（来自 project_interactions 表）
+    sales_records: Optional[List[SalesRecordResponse]] = Field(None, description="销售活动记录列表")
+
     model_config = ConfigDict(from_attributes=True)
 
 class ProjectListResponse(BaseModel):

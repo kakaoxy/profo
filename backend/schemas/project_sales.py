@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict, AliasChoices
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
 from models.base import RecordType
 
 class SalesRolesUpdate(BaseModel):
@@ -43,22 +43,22 @@ class SalesRecordCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class SalesRecordResponse(BaseModel):
-    """销售记录响应"""
+    """销售记录响应 - 兼容 ProjectInteraction 模型字段映射"""
     id: str
     project_id: str
     record_type: str
-    customer_name: Optional[str]
-    customer_phone: Optional[str]
-    customer_info: Optional[Dict[str, Any]]
-    record_date: datetime
-    record_time: Optional[str]
-    price: Optional[Decimal]
-    notes: Optional[str]
-    feedback: Optional[str]
-    result: Optional[str]
-    related_agent: Optional[str]
+    customer_name: Optional[str] = Field(None, validation_alias=AliasChoices("customer_name", "interaction_target"))
+    customer_phone: Optional[str] = None
+    customer_info: Optional[Dict[str, Any]] = None
+    record_date: datetime = Field(..., validation_alias=AliasChoices("record_date", "interaction_at"))
+    record_time: Optional[str] = None
+    price: Optional[Decimal] = None
+    notes: Optional[str] = Field(None, validation_alias=AliasChoices("notes", "content"))
+    feedback: Optional[str] = None
+    result: Optional[str] = None
+    related_agent: Optional[str] = None
     created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class ProjectCompleteRequest(BaseModel):
     """确认成交请求"""

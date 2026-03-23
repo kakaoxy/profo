@@ -2,6 +2,7 @@
 项目互动过程相关Schema（替换原sales_records）
 """
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -35,6 +36,7 @@ class InteractionResponse(InteractionBase):
     """互动记录响应"""
     id: str = Field(..., description="互动记录ID")
     project_id: str = Field(..., description="项目ID")
+    price: Optional[Decimal] = Field(None, description="出价金额(万)")
     created_at: datetime
     updated_at: datetime
 
