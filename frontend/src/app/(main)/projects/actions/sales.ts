@@ -4,7 +4,6 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { API_BASE_URL } from "@/lib/config";
-import { cookies } from "next/headers";
 
 interface UserSimple {
   id: string;
@@ -24,8 +23,7 @@ export async function updateSalesRolesAction(
   },
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("access_token")?.value;
+    const client = await fetchClient();
 
     // 字段映射：前端新字段名 -> 后端API字段名
     const apiData: Record<string, string | null | undefined> = {};
@@ -39,24 +37,17 @@ export async function updateSalesRolesAction(
       apiData.negotiator = data.negotiator_id;
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/projects/${projectId}/selling/roles`,
+    const { error, response } = await client.PUT(
+      "/api/v1/projects/{project_id}/selling/roles",
       {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(apiData),
+        params: { path: { project_id: projectId } },
+        body: apiData,
       },
     );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        message: errorData.detail || `更新销售角色失败 (${response.status})`,
-      };
+    if (error) {
+      const errorMsg = (error as { detail?: string }).detail || `更新销售角色失败 (${response.status})`;
+      return { success: false, message: errorMsg };
     }
 
     revalidatePath("/projects");
@@ -76,23 +67,14 @@ export async function getUsersSimpleAction(): Promise<{
   message?: string;
 }> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("access_token")?.value;
+    const client = await fetchClient();
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/users/simple`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      cache: "no-store",
-    });
+    const { data, error, response } = await client.GET("/api/v1/users/simple");
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        message: errorData.detail || `获取用户列表失败 (${response.status})`,
-      };
+    if (error) {
+      const errorMsg = (error as { detail?: string }).detail || `获取用户列表失败 (${response.status})`;
+      return { success: false, message: errorMsg };
     }
-
-    const data = await response.json();
 
     if (data && typeof data === "object" && "items" in data) {
       return { success: true, data: (data.items as UserSimple[]) || [] };
