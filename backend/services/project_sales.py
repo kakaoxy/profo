@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 import uuid
 
-from models import Project, ProjectSale, ProjectInteraction
+from models import Project, ProjectSale, ProjectInteraction, User
 from models.base import ProjectStatus
 from schemas.project_sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
 from schemas.project import ProjectResponse
@@ -32,8 +32,25 @@ class ProjectSalesService:
 
     # ========== 销售团队管理 ==========
 
+    def _validate_user_ids(self, update_dict: dict) -> None:
+        """验证用户ID是否有效"""
+        user_id_fields = ['channel_manager_id', 'property_agent_id', 'negotiator_id']
+
+        for field in user_id_fields:
+            if field in update_dict and update_dict[field]:
+                user_id = update_dict[field]
+                user = self.db.query(User).filter(
+                    User.id == user_id,
+                    User.is_deleted == False
+                ).first()
+                if not user:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"无效的用户ID: {user_id}"
+                    )
+
     def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
-        """更新销售角色 (渠道、讲房、谈判)"""
+        """更新销售角色 (渠道、讲房、谈判) - 使用用户ID"""
         project = self._get_project(project_id)
 
         # 获取或创建销售记录
@@ -53,7 +70,11 @@ class ProjectSalesService:
             self.db.add(sale)
 
         # 更新销售角色
-        update_dict = roles_data.model_dump(exclude_unset=True)
+        update_dict = roles_data.model_dump(exclude_unset=True, by_alias=False)
+
+        # 验证用户ID有效性
+        self._validate_user_ids(update_dict)
+
         for field, value in update_dict.items():
             if hasattr(sale, field):
                 setattr(sale, field, value)

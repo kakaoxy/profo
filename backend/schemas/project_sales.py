@@ -5,19 +5,26 @@ from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from models.base import RecordType
 
 class SalesRolesUpdate(BaseModel):
-    """更新销售角色"""
-    channel_manager: Optional[str] = Field(
+    """更新销售角色 - 使用用户ID而非文本"""
+    channel_manager_id: Optional[str] = Field(
         None,
-        validation_alias=AliasChoices("channel_manager", "channelManager"),
-        max_length=100,
+        validation_alias=AliasChoices("channel_manager_id", "channelManagerId", "channel_manager", "channelManager"),
+        max_length=36,
+        description="渠道负责人用户ID",
     )
-    presenter: Optional[str] = Field(None, max_length=100)
-    negotiator: Optional[str] = Field(None, max_length=100)
-    
-    # 兼容旧字段
-    property_agent: Optional[str] = None
-    client_agent: Optional[str] = None
-    first_viewer: Optional[str] = None
+    property_agent_id: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("property_agent_id", "propertyAgentId", "presenter"),
+        max_length=36,
+        description="讲房人用户ID(房源维护人)",
+    )
+    negotiator_id: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("negotiator_id", "negotiatorId", "negotiator"),
+        max_length=36,
+        description="谈判人用户ID(联卖谈判人)",
+    )
+
     model_config = ConfigDict(from_attributes=True)
 
 class SalesRecordCreate(BaseModel):

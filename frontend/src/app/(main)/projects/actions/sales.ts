@@ -3,6 +3,52 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
+import { API_BASE_URL } from "@/lib/config";
+import { cookies } from "next/headers";
+
+interface UserSimple {
+  id: string;
+  nickname: string | null;
+  username: string;
+}
+
+/**
+ * 获取简化用户列表（用于下拉选择）
+ */
+export async function getUsersSimpleAction(): Promise<{
+  success: boolean;
+  data?: UserSimple[];
+  message?: string;
+}> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("access_token")?.value;
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/users/simple`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: errorData.detail || `获取用户列表失败 (${response.status})`,
+      };
+    }
+
+    const data = await response.json();
+
+    if (data && typeof data === "object" && "items" in data) {
+      return { success: true, data: (data.items as UserSimple[]) || [] };
+    }
+
+    return { success: true, data: [] };
+  } catch (e) {
+    console.error("获取用户列表异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
 
 /**
  * 创建销售记录 (带看/出价/面谈)
