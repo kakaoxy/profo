@@ -68,16 +68,16 @@ class ProjectRenovationService:
         # 记录当前阶段的完成时间
         current_stage = project.renovation_stage
         if current_stage and renovation_data.stage_completed_at:
-            # 更新项目的时间记录
-            if not project.renovation_stage_dates:
-                project.renovation_stage_dates = {}
+            # 更新装修记录的时间记录
+            if not renovation.stage_completed_dates:
+                renovation.stage_completed_dates = {}
 
-            dates = dict(project.renovation_stage_dates)
+            dates = dict(renovation.stage_completed_dates)
             dates[current_stage] = renovation_data.stage_completed_at.strftime("%Y-%m-%d")
-            project.renovation_stage_dates = dates
+            renovation.stage_completed_dates = dates
 
             from sqlalchemy.orm.attributes import flag_modified
-            flag_modified(project, "renovation_stage_dates")
+            flag_modified(renovation, "stage_completed_dates")
 
         # 更新到下一个阶段
         project.renovation_stage = renovation_data.renovation_stage.value
@@ -174,7 +174,7 @@ class ProjectRenovationService:
         # 只查询未被软删除的照片
         query = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.project_id == project_id,
-            RenovationPhoto.deleted_at.is_(None)
+            RenovationPhoto.is_deleted == False
         )
         if stage:
             query = query.filter(RenovationPhoto.stage == stage)
@@ -193,7 +193,7 @@ class ProjectRenovationService:
                 detail="照片不存在"
             )
 
-        photo.deleted_at = datetime.utcnow()
+        photo.is_deleted = True
         self.db.commit()
 
     def get_renovation_contract(self, project_id: str) -> ProjectRenovation:

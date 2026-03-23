@@ -92,7 +92,7 @@ from .status_log import (
 )
 from .renovation import (
     RenovationCreate,
-    RenovationUpdate,
+    RenovationUpdate as RenovationInfoUpdate,
     RenovationResponse,
     RenovationListResponse
 )
