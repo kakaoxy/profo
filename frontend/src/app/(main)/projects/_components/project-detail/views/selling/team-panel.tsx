@@ -1,41 +1,84 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // [新增]
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Project } from "../../../../types";
 import { updateProjectAction } from "../../../../actions/core";
+import { getUsersSimpleAction } from "../../../../actions/sales";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SalesTeamPanelProps {
   project: Project;
 }
 
+interface UserOption {
+  id: string;
+  nickname: string | null;
+  username: string;
+}
+
 export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   const router = useRouter();
 
-  // 1. 初始化本地状态
-  const [channel, setChannel] = useState("");
-  const [presenter, setPresenter] = useState("");
-  const [negotiator, setNegotiator] = useState("");
+  // 1. 初始化本地状态 - 使用ID而非文本
+  const [channelManagerId, setChannelManagerId] = useState<string | null>(null);
+  const [propertyAgentId, setPropertyAgentId] = useState<string | null>(null);
+  const [negotiatorId, setNegotiatorId] = useState<string | null>(null);
 
-  // 2. 当 project 属性变化时（比如刷新后），同步到本地状态
+  // 用户列表
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+  // 2. 加载用户列表
   useEffect(() => {
-    setChannel(project.channel_manager || "");
-    setPresenter(project.presenter || "");
-    setNegotiator(project.negotiator || "");
+    let mounted = true;
+    getUsersSimpleAction().then((result) => {
+      if (mounted) {
+        if (result.success && result.data) {
+          setUsers(result.data);
+        } else {
+          console.error("获取用户列表失败:", result.message);
+        }
+        setIsLoadingUsers(false);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // 3. 当 project 属性变化时（比如刷新后），同步到本地状态
+  useEffect(() => {
+    setChannelManagerId(project.channel_manager_id || null);
+    setPropertyAgentId(project.property_agent_id || null);
+    setNegotiatorId(project.negotiator_id || null);
   }, [project]);
 
-  // 通用的失焦保存处理
-  const handleBlur = async (
-    field: string,
-    value: string,
-    oldValue?: string
-  ) => {
-    if (value === (oldValue || "")) return;
+  // 获取用户显示名称
+  const getUserDisplayName = useCallback(
+    (userId: string | null): string => {
+      if (!userId) return "";
+      const user = users.find((u) => u.id === userId);
+      return user?.nickname || user?.username || "";
+    },
+    [users],
+  );
 
-    // console.log(`[调试] 提交更新: ${field} = ${value}`);
+  // 通用的保存处理
+  const handleSave = async (
+    field: string,
+    value: string | null,
+    oldValue?: string | null,
+  ) => {
+    if (value === oldValue) return;
 
     const toastId = toast.loading("正在保存...");
     try {
@@ -45,12 +88,9 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
 
       if (res.success) {
         toast.success("保存成功");
-        // 3. [核心修复] 保存成功后刷新路由，获取最新数据
-        // 这会触发上面的 useEffect，确保数据一致性
         router.refresh();
       } else {
-        toast.error(res.message);
-        // 如果失败，建议重置回旧值 (可选)
+        toast.error(res.message || "保存失败");
       }
     } catch (error) {
       console.error(error);
@@ -72,46 +112,97 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
         {/* 1. 渠道 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-500">渠道</Label>
-          <Input
-            value={channel}
-            onChange={(e) => setChannel(e.target.value)}
-            // 这里的 oldValue 也要取正确，防止重复提交
-            onBlur={() =>
-              handleBlur(
-                "channel_manager",
-                channel,
-                project.channel_manager
-              )
-            }
-            className="h-8 text-sm bg-white focus-visible:ring-emerald-500"
-            placeholder="姓名"
-          />
+          <Select
+            value={channelManagerId || "__empty__"}
+            onValueChange={(value) => {
+              const newValue = value === "__empty__" ? null : value;
+              setChannelManagerId(newValue);
+              handleSave(
+                "channel_manager_id",
+                newValue,
+                project.channel_manager_id || null,
+              );
+            }}
+            disabled={isLoadingUsers}
+          >
+            <SelectTrigger className="h-8 text-sm bg-white focus:ring-emerald-500 w-full">
+              <SelectValue placeholder="选择渠道负责人">
+                {getUserDisplayName(channelManagerId) || "选择渠道负责人"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__empty__">未选择</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.nickname || user.username}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 2. 讲房 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-500">讲房</Label>
-          <Input
-            value={presenter}
-            onChange={(e) => setPresenter(e.target.value)}
-            onBlur={() => handleBlur("presenter", presenter, project.presenter)}
-            className="h-8 text-sm bg-white focus-visible:ring-emerald-500"
-            placeholder="姓名"
-          />
+          <Select
+            value={propertyAgentId || "__empty__"}
+            onValueChange={(value) => {
+              const newValue = value === "__empty__" ? null : value;
+              setPropertyAgentId(newValue);
+              handleSave(
+                "property_agent_id",
+                newValue,
+                project.property_agent_id || null,
+              );
+            }}
+            disabled={isLoadingUsers}
+          >
+            <SelectTrigger className="h-8 text-sm bg-white focus:ring-emerald-500 w-full">
+              <SelectValue placeholder="选择讲房人">
+                {getUserDisplayName(propertyAgentId) || "选择讲房人"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__empty__">未选择</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.nickname || user.username}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* 3. 谈判 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-slate-500">谈判</Label>
-          <Input
-            value={negotiator}
-            onChange={(e) => setNegotiator(e.target.value)}
-            onBlur={() =>
-              handleBlur("negotiator", negotiator, project.negotiator)
-            }
-            className="h-8 text-sm bg-white focus-visible:ring-emerald-500"
-            placeholder="姓名"
-          />
+          <Select
+            value={negotiatorId || "__empty__"}
+            onValueChange={(value) => {
+              const newValue = value === "__empty__" ? null : value;
+              setNegotiatorId(newValue);
+              handleSave(
+                "negotiator_id",
+                newValue,
+                project.negotiator_id || null,
+              );
+            }}
+            disabled={isLoadingUsers}
+          >
+            <SelectTrigger className="h-8 text-sm bg-white focus:ring-emerald-500 w-full">
+              <SelectValue placeholder="选择谈判人">
+                {getUserDisplayName(negotiatorId) || "选择谈判人"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__empty__">未选择</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.nickname || user.username}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>

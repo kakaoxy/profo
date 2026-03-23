@@ -13,6 +13,7 @@ from schemas.user import (
     UserUpdate,
     UserResponse,
     UserListResponse,
+    UserSimpleListResponse,
     PasswordChange,
     PasswordResetRequest,
 )
@@ -43,10 +44,48 @@ def get_users(
     total, users = user_service.get_users(
         db, username, nickname, role_id, status, page, page_size
     )
-    
+
     return UserListResponse(
         total=total,
         items=users
+    )
+
+
+@router.get("/simple", response_model=UserSimpleListResponse)
+def get_users_simple(
+    nickname: Optional[str] = Query(None, description="昵称搜索"),
+    status: Optional[str] = Query("active", description="用户状态筛选"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取简化用户列表（仅包含ID和昵称），用于下拉选择
+    """
+    from sqlalchemy import or_
+
+    query = db.query(User.id, User.nickname, User.username)
+
+    if status:
+        query = query.filter(User.status == status)
+
+    if nickname:
+        query = query.filter(
+            or_(
+                User.nickname.ilike(f"%{nickname}%"),
+                User.username.ilike(f"%{nickname}%")
+            )
+        )
+
+    users = query.all()
+
+    items = [
+        {"id": u.id, "nickname": u.nickname, "username": u.username}
+        for u in users
+    ]
+
+    return UserSimpleListResponse(
+        total=len(items),
+        items=items
     )
 
 

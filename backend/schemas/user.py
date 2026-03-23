@@ -130,6 +130,22 @@ class UserListResponse(BaseModel):
     items: List[UserResponse] = Field(..., description="用户列表")
 
 
+class UserSimpleResponse(BaseModel):
+    """简化用户响应模型 - 用于下拉选择"""
+    id: str = Field(..., description="用户ID")
+    nickname: Optional[str] = Field(None, description="昵称")
+    username: str = Field(..., description="用户名")
+
+    class Config:
+        from_attributes = True
+
+
+class UserSimpleListResponse(BaseModel):
+    """简化用户列表响应模型"""
+    total: int = Field(..., description="总数量")
+    items: List[UserSimpleResponse] = Field(..., description="用户列表")
+
+
 class RoleListResponse(BaseModel):
     """角色列表响应模型"""
     total: int = Field(..., description="总数量")
@@ -146,15 +162,17 @@ __all__ = [
     'UserUpdate',
     'UserResponse',
     'UserListResponse',
+    'UserSimpleResponse',
+    'UserSimpleListResponse',
     'PasswordChange',
     'PasswordResetRequest',
-    
+
     # 角色相关
     'RoleCreate',
     'RoleUpdate',
     'RoleResponse',
     'RoleListResponse',
-    
+
     # 认证相关
     'LoginRequest',
     'TokenResponse',

@@ -173,6 +173,12 @@ export interface Project {
   net_cash_flow?: number;
   roi?: number;
 
+  // 销售角色ID字段（新）
+  channel_manager_id?: string;
+  property_agent_id?: string;
+  negotiator_id?: string;
+
+  // 销售角色文本字段（兼容旧数据）
   channel_manager?: string;
   presenter?: string;
   negotiator?: string;
