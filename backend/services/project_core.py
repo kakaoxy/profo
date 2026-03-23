@@ -208,6 +208,60 @@ class ProjectCoreService:
                 })
             response["sales_records"] = sales_records
 
+        # 查询装修照片（蜕变影像）
+        if project.renovation_photos:
+            renovation_photos = []
+            for photo in project.renovation_photos:
+                renovation_photos.append({
+                    "id": photo.id,
+                    "project_id": photo.project_id,
+                    "stage": photo.stage,
+                    "url": photo.url,
+                    "filename": photo.filename,
+                    "description": photo.description,
+                    "created_at": photo.created_at.isoformat() if photo.created_at else None,
+                })
+            response["renovation_photos"] = renovation_photos
+
+        # 构建阶段日期映射（用于蜕变影像展示）
+        from models.project import ProjectRenovation
+        renovation = self.db.query(ProjectRenovation).filter(
+            ProjectRenovation.project_id == project.id
+        ).first()
+
+        if renovation:
+            stage_dates = {}
+            
+            # 优先从 stage_completed_dates JSON 字段读取各阶段完成日期
+            if renovation.stage_completed_dates:
+                # stage_completed_dates 格式: {stage_name: date_string}
+                for stage_name, date_value in renovation.stage_completed_dates.items():
+                    if date_value:
+                        # 统一日期格式为 YYYY-MM-DD
+                        if isinstance(date_value, str):
+                            stage_dates[stage_name] = date_value
+                        elif isinstance(date_value, datetime):
+                            stage_dates[stage_name] = date_value.strftime('%Y-%m-%d')
+            
+            # 从其他日期字段补充阶段日期
+            if renovation.actual_start_date and "拆除" not in stage_dates:
+                stage_dates["拆除"] = renovation.actual_start_date.strftime('%Y-%m-%d')
+            if renovation.contract_start_date and "设计" not in stage_dates:
+                stage_dates["设计"] = renovation.contract_start_date.strftime('%Y-%m-%d')
+            if renovation.actual_end_date and "交付" not in stage_dates:
+                stage_dates["交付"] = renovation.actual_end_date.strftime('%Y-%m-%d')
+            
+            # 从照片创建时间推断阶段日期（如果没有记录）
+            if project.renovation_photos:
+                for photo in project.renovation_photos:
+                    if photo.stage and photo.created_at:
+                        # 如果该阶段还没有日期记录，使用照片创建时间
+                        if photo.stage not in stage_dates:
+                            stage_dates[photo.stage] = photo.created_at.strftime('%Y-%m-%d')
+            
+            if stage_dates:
+                response["renovation_stage_dates"] = stage_dates
+
         return response
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:

@@ -222,6 +222,17 @@ class ProjectResponse(BaseModel):
     # 销售记录（来自 project_interactions 表）
     sales_records: Optional[List[SalesRecordResponse]] = Field(None, description="销售活动记录列表")
 
+    # 装修照片（来自 project_renovation_photos 表）
+    renovation_photos: Optional[List[RenovationPhotoResponse]] = Field(None, description="装修阶段照片列表")
+
+    # 阶段日期映射（用于蜕变影像展示）
+    renovation_stage_dates: Optional[Dict[str, str]] = Field(
+        None,
+        description="各阶段日期映射",
+        validation_alias=AliasChoices("renovation_stage_dates", "renovationStageDates"),
+        serialization_alias="renovationStageDates"
+    )
+
     model_config = ConfigDict(from_attributes=True)
 
 class ProjectListResponse(BaseModel):
