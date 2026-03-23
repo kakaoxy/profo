@@ -2665,6 +2665,23 @@ export interface components {
              * @description 签约材料列表
              */
             signing_materials?: components["schemas"]["SigningMaterial"][] | null;
+            /**
+             * Sales Records
+             * @description 销售活动记录列表
+             */
+            sales_records?: components["schemas"]["SalesRecordResponse"][] | null;
+            /**
+             * Renovation Photos
+             * @description 装修阶段照片列表
+             */
+            renovation_photos?: components["schemas"]["RenovationPhotoResponse"][] | null;
+            /**
+             * Renovationstagedates
+             * @description 各阶段日期映射
+             */
+            renovationStageDates?: {
+                [key: string]: string;
+            } | null;
         };
         /** ProjectStatsResponse */
         ProjectStatsResponse: {
@@ -3335,7 +3352,7 @@ export interface components {
         };
         /**
          * SalesRecordResponse
-         * @description 销售记录响应
+         * @description 销售记录响应 - 兼容 ProjectInteraction 模型字段映射
          */
         SalesRecordResponse: {
             /** Id */
@@ -3345,11 +3362,11 @@ export interface components {
             /** Record Type */
             record_type: string;
             /** Customer Name */
-            customer_name: string | null;
+            customer_name?: string | null;
             /** Customer Phone */
-            customer_phone: string | null;
+            customer_phone?: string | null;
             /** Customer Info */
-            customer_info: {
+            customer_info?: {
                 [key: string]: unknown;
             } | null;
             /**
@@ -3358,17 +3375,17 @@ export interface components {
              */
             record_date: string;
             /** Record Time */
-            record_time: string | null;
+            record_time?: string | null;
             /** Price */
-            price: string | null;
+            price?: string | null;
             /** Notes */
-            notes: string | null;
+            notes?: string | null;
             /** Feedback */
-            feedback: string | null;
+            feedback?: string | null;
             /** Result */
-            result: string | null;
+            result?: string | null;
             /** Related Agent */
-            related_agent: string | null;
+            related_agent?: string | null;
             /**
              * Created At
              * Format: date-time
