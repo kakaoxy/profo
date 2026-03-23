@@ -4,7 +4,7 @@
 
 注意：已适配新的规范化表结构，销售记录使用 ProjectInteraction 表
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -129,6 +129,7 @@ class ProjectSalesService:
             content=record_data.notes or "",
             interaction_at=record_data.record_date or datetime.utcnow(),
             operator_id=None,
+            price=record_data.price,  # 存储出价金额
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
@@ -137,14 +138,29 @@ class ProjectSalesService:
         self.db.refresh(record)
         return record
 
-    def get_sales_records(self, project_id: str, record_type: Optional[str] = None) -> List[ProjectInteraction]:
-        """获取销售记录列表（现在是互动记录）"""
+    def get_sales_records(self, project_id: str, record_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """获取销售记录列表（现在是互动记录）- 转换为前端兼容格式"""
         query = self.db.query(ProjectInteraction).filter(
             ProjectInteraction.project_id == project_id
         )
         if record_type:
             query = query.filter(ProjectInteraction.record_type == record_type)
-        return query.order_by(ProjectInteraction.interaction_at.desc(), ProjectInteraction.created_at.desc()).all()
+        records = query.order_by(ProjectInteraction.interaction_at.desc(), ProjectInteraction.created_at.desc()).all()
+
+        # 转换为前端兼容格式
+        result = []
+        for r in records:
+            result.append({
+                "id": r.id,
+                "project_id": r.project_id,
+                "record_type": r.record_type,
+                "customer_name": r.interaction_target,
+                "record_date": r.interaction_at,
+                "price": float(r.price) if r.price else None,
+                "notes": r.content,
+                "created_at": r.created_at,
+            })
+        return result
 
     def delete_sales_record(self, project_id: str, record_id: str) -> None:
         """删除销售记录（现在是互动记录）"""

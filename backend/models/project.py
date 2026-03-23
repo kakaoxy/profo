@@ -233,6 +233,9 @@ class ProjectInteraction(BaseModel):
     interaction_at = Column(DateTime, nullable=False, comment="互动时间")
     operator_id = Column(String(36), nullable=True, comment="操作人ID")
 
+    # 出价金额（仅出价记录使用）
+    price = Column(Numeric(15, 2), nullable=True, comment="出价金额(万)")
+
     # 关联关系
     project = relationship("Project", back_populates="interactions")
 

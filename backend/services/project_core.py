@@ -187,6 +187,27 @@ class ProjectCoreService:
             "roi": roi,
         })
 
+        # 查询互动记录（销售记录）
+        from models.project import ProjectInteraction
+        interactions = self.db.query(ProjectInteraction).filter(
+            ProjectInteraction.project_id == project.id
+        ).order_by(ProjectInteraction.interaction_at.desc()).all()
+
+        if interactions:
+            sales_records = []
+            for interaction in interactions:
+                sales_records.append({
+                    "id": interaction.id,
+                    "project_id": interaction.project_id,
+                    "record_type": interaction.record_type,
+                    "customer_name": interaction.interaction_target,
+                    "record_date": interaction.interaction_at.isoformat() if interaction.interaction_at else None,
+                    "price": float(interaction.price) if interaction.price else None,
+                    "notes": interaction.content,
+                    "created_at": interaction.created_at.isoformat() if interaction.created_at else None,
+                })
+            response["sales_records"] = sales_records
+
         return response
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
