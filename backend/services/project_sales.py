@@ -41,7 +41,7 @@ class ProjectSalesService:
                 user_id = update_dict[field]
                 user = self.db.query(User).filter(
                     User.id == user_id,
-                    User.is_deleted == False
+                    User.status == 'active'
                 ).first()
                 if not user:
                     raise HTTPException(
@@ -82,8 +82,30 @@ class ProjectSalesService:
         sale.updated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(project)
+        self.db.refresh(sale)
 
-        return ProjectResponse.model_validate(project)
+        # 手动构建响应字典，确保包含销售角色ID
+        response_data = {
+            "id": project.id,
+            "name": project.name,
+            "status": project.status,
+            "created_at": project.created_at,
+            "updated_at": project.updated_at,
+            "community_name": project.community_name,
+            "address": project.address,
+            "area": str(project.area) if project.area else None,
+            "layout": project.layout,
+            "orientation": project.orientation,
+            "is_deleted": project.is_deleted,
+            "renovation_stage": project.renovation_stage,
+            # 销售信息
+            "channel_manager_id": sale.channel_manager_id,
+            "property_agent_id": sale.property_agent_id,
+            "negotiator_id": sale.negotiator_id,
+            "transaction_status": sale.transaction_status,
+        }
+
+        return ProjectResponse.model_validate(response_data)
 
     # ========== 销售记录管理 (带看/出价/面谈) ==========
 

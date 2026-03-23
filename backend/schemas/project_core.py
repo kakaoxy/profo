@@ -205,6 +205,11 @@ class ProjectResponse(BaseModel):
     sold_date: Optional[str] = None  # YYYY-MM-DD 格式
     transaction_status: Optional[str] = None
 
+    # 销售角色ID（来自 project_sales 表）
+    channel_manager_id: Optional[str] = Field(None, description="渠道负责人ID")
+    property_agent_id: Optional[str] = Field(None, description="房源维护人ID(讲房人)")
+    negotiator_id: Optional[str] = Field(None, description="联卖谈判人ID")
+
     # 财务缓存
     total_income: Optional[Decimal] = Field(default=Decimal(0))
     total_expense: Optional[Decimal] = Field(default=Decimal(0))

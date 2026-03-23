@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Project } from "../../../../types";
-import { updateProjectAction } from "../../../../actions/core";
-import { getUsersSimpleAction } from "../../../../actions/sales";
+import { getUsersSimpleAction, updateSalesRolesAction } from "../../../../actions/sales";
 import {
   Select,
   SelectContent,
@@ -74,7 +73,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
 
   // 通用的保存处理
   const handleSave = async (
-    field: string,
+    field: "channel_manager_id" | "property_agent_id" | "negotiator_id",
     value: string | null,
     oldValue?: string | null,
   ) => {
@@ -84,7 +83,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
     try {
       const payload = { [field]: value };
 
-      const res = await updateProjectAction(project.id, payload);
+      const res = await updateSalesRolesAction(project.id, payload);
 
       if (res.success) {
         toast.success("保存成功");
