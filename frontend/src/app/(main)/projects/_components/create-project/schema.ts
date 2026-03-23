@@ -110,10 +110,10 @@ export const formSchema = z
   })
   .refine(
     (data) => {
-      // 至少有一个户型数值不为零
-      const hasRooms = data.rooms !== undefined && data.rooms > 0;
-      const hasHalls = data.halls !== undefined && data.halls > 0;
-      const hasBathrooms = data.bathrooms !== undefined && data.bathrooms > 0;
+      // 至少有一个户型数值有定义（允许为0）
+      const hasRooms = data.rooms !== undefined;
+      const hasHalls = data.halls !== undefined;
+      const hasBathrooms = data.bathrooms !== undefined;
       return hasRooms || hasHalls || hasBathrooms;
     },
     {

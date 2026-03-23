@@ -171,6 +171,29 @@ class ProjectSale(BaseModel):
         Index("idx_sale_status", "transaction_status"),
     )
 
+    def validate_user_references(self, db) -> None:
+        """验证软引用的用户ID是否存在且有效"""
+        from fastapi import HTTPException, status
+
+        user_id_fields = [
+            ("channel_manager_id", "渠道负责人ID"),
+            ("property_agent_id", "房源维护人ID"),
+            ("negotiator_id", "联卖谈判人ID"),
+        ]
+
+        for field_name, field_desc in user_id_fields:
+            user_id = getattr(self, field_name)
+            if user_id:
+                user = db.query(User).filter(
+                    User.id == user_id,
+                    User.status == "active"
+                ).first()
+                if not user:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"无效的{field_desc}: {user_id}"
+                    )
+
 
 class ProjectFollowUp(BaseModel):
     """项目跟进记录表"""
@@ -193,6 +216,21 @@ class ProjectFollowUp(BaseModel):
         Index("idx_followup_project", "project_id"),
         Index("idx_followup_date", "follow_up_at"),
     )
+
+    def validate_user_references(self, db) -> None:
+        """验证软引用的用户ID是否存在且有效"""
+        from fastapi import HTTPException, status
+
+        if self.follower_id:
+            user = db.query(User).filter(
+                User.id == self.follower_id,
+                User.status == "active"
+            ).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"无效的跟进人ID: {self.follower_id}"
+                )
 
 
 class ProjectEvaluation(BaseModel):
@@ -217,6 +255,21 @@ class ProjectEvaluation(BaseModel):
         Index("idx_evaluation_project", "project_id"),
         Index("idx_evaluation_date", "evaluation_at"),
     )
+
+    def validate_user_references(self, db) -> None:
+        """验证软引用的用户ID是否存在且有效"""
+        from fastapi import HTTPException, status
+
+        if self.evaluator_id:
+            user = db.query(User).filter(
+                User.id == self.evaluator_id,
+                User.status == "active"
+            ).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"无效的评估人ID: {self.evaluator_id}"
+                )
 
 
 class ProjectInteraction(BaseModel):
@@ -246,6 +299,21 @@ class ProjectInteraction(BaseModel):
         Index("idx_interaction_type", "record_type"),
     )
 
+    def validate_user_references(self, db) -> None:
+        """验证软引用的用户ID是否存在且有效"""
+        from fastapi import HTTPException, status
+
+        if self.operator_id:
+            user = db.query(User).filter(
+                User.id == self.operator_id,
+                User.status == "active"
+            ).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"无效的操作人ID: {self.operator_id}"
+                )
+
 
 class FinanceRecord(BaseModel):
     """财务流水明细表（替换cashflow_records）"""
@@ -271,6 +339,21 @@ class FinanceRecord(BaseModel):
         Index("idx_finance_type_category", "type", "category"),
     )
 
+    def validate_user_references(self, db) -> None:
+        """验证软引用的用户ID是否存在且有效"""
+        from fastapi import HTTPException, status
+
+        if self.operator_id:
+            user = db.query(User).filter(
+                User.id == self.operator_id,
+                User.status == "active"
+            ).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"无效的经办人ID: {self.operator_id}"
+                )
+
 
 class ProjectStatusLog(BaseModel):
     """项目状态流转日志表"""
@@ -295,6 +378,21 @@ class ProjectStatusLog(BaseModel):
         Index("idx_statuslog_project", "project_id"),
         Index("idx_statuslog_date", "operate_at"),
     )
+
+    def validate_user_references(self, db) -> None:
+        """验证软引用的用户ID是否存在且有效"""
+        from fastapi import HTTPException, status
+
+        if self.operator_id:
+            user = db.query(User).filter(
+                User.id == self.operator_id,
+                User.status == "active"
+            ).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"无效的操作人ID: {self.operator_id}"
+                )
 
 
 class ProjectRenovation(BaseModel):

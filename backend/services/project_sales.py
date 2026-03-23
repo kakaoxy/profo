@@ -32,22 +32,9 @@ class ProjectSalesService:
 
     # ========== 销售团队管理 ==========
 
-    def _validate_user_ids(self, update_dict: dict) -> None:
-        """验证用户ID是否有效"""
-        user_id_fields = ['channel_manager_id', 'property_agent_id', 'negotiator_id']
-
-        for field in user_id_fields:
-            if field in update_dict and update_dict[field]:
-                user_id = update_dict[field]
-                user = self.db.query(User).filter(
-                    User.id == user_id,
-                    User.status == 'active'
-                ).first()
-                if not user:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"无效的用户ID: {user_id}"
-                    )
+    def _validate_user_ids(self, sale: ProjectSale) -> None:
+        """验证销售记录中的用户ID是否有效"""
+        sale.validate_user_references(self.db)
 
     def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判) - 使用用户ID"""
@@ -72,12 +59,13 @@ class ProjectSalesService:
         # 更新销售角色
         update_dict = roles_data.model_dump(exclude_unset=True, by_alias=False)
 
-        # 验证用户ID有效性
-        self._validate_user_ids(update_dict)
-
+        # 先更新字段
         for field, value in update_dict.items():
             if hasattr(sale, field):
                 setattr(sale, field, value)
+
+        # 验证用户ID有效性
+        self._validate_user_ids(sale)
 
         sale.updated_at = datetime.utcnow()
         self.db.commit()
