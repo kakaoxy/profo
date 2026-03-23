@@ -109,8 +109,8 @@ export function useRenovationUpload({
         if (xhr.status === 200) {
           try {
             const json = JSON.parse(xhr.responseText);
-            if (json.code === 200 && json.data?.url) {
-              const realUrl = json.data.url;
+            if (json.url) {
+              const realUrl = json.url;
               const dbRes = await addRenovationPhotoAction({
                 projectId,
                 stage: stageValue,

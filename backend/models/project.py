@@ -337,6 +337,9 @@ class ProjectRenovation(BaseModel):
     other_extra_fee = Column(Numeric(15, 2), nullable=True, comment="其他额外费用")
     other_fee_reason = Column(Text, nullable=True, comment="其他费用原因")
 
+    # 阶段完成日期记录
+    stage_completed_dates = Column(JSON, nullable=True, comment="各阶段完成日期记录，格式: {stage: date_string}")
+
     # 逻辑删除
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
