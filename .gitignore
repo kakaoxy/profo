@@ -66,6 +66,7 @@ lerna-debug.log*
 *.csv
 *.db
 *.db-*
+*.db.*
 backend/data.db
 
 # Environment
