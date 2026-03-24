@@ -64,6 +64,9 @@ lerna-debug.log*
 *.sqlite
 *.sqlite3
 *.csv
+*.db
+*.db-*
+backend/data.db
 
 # Environment
 .env
