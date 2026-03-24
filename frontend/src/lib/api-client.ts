@@ -82,8 +82,15 @@ const authMiddleware: Middleware = {
 
       if (refreshed) {
         // 刷新成功，重试原始请求
+        // [修复] 重新构造请求，确保使用新的cookie
         console.log("🔁 [Client] Token 刷新成功，重试原始请求...");
-        return fetch(request);
+
+        // 克隆请求并确保携带 credentials
+        const newRequest = new Request(request, {
+          credentials: "include",
+        });
+
+        return fetch(newRequest);
       }
 
       // 刷新失败，执行登出逻辑
