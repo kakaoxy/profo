@@ -195,12 +195,13 @@ export function LeadsView({
     method: FollowUpMethod,
     content: string,
   ) => {
-    try {
-      await addFollowUpAction(id, method, content);
+    const result = await addFollowUpAction(id, method, content);
+    if (result.success) {
       const updatedLeads = await getLeadsAction(filters);
       setLeads(updatedLeads);
-    } catch (e) {
-      console.error("Failed to add follow up", e);
+      toast.success("跟进记录已添加");
+    } else {
+      toast.error(result.error || "添加跟进记录失败");
     }
   };
 

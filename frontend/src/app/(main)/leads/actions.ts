@@ -14,6 +14,8 @@ type LeadCreatePayload =
   operations["create_lead_api_v1_leads__post"]["requestBody"]["content"]["application/json"];
 type LeadUpdatePayload =
   operations["update_lead_api_v1_leads__lead_id__put"]["requestBody"]["content"]["application/json"];
+type FollowUpCreatePayload =
+  operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"]["requestBody"]["content"]["application/json"];
 
 export async function createLeadAction(
   data: Omit<Lead, "id" | "createdAt">
@@ -152,30 +154,30 @@ export async function addFollowUpAction(
   leadId: string,
   method: FollowUpMethod,
   content: string,
-) {
-  const client = await fetchClient();
+): Promise<ActionResult<void>> {
+  try {
+    const client = await fetchClient();
 
-  const payload = {
-    method,
-    content,
-  };
+    const payload: FollowUpCreatePayload = {
+      method,
+      content,
+    };
 
-  const { error } = await client.POST("/api/v1/leads/{lead_id}/follow-ups", {
-    params: { path: { lead_id: leadId } },
-    body: payload,
-  });
+    const { error } = await client.POST("/api/v1/leads/{lead_id}/follow-ups", {
+      params: { path: { lead_id: leadId } },
+      body: payload,
+    });
 
-  if (error) {
+    if (error) {
+      return { success: false, error: extractErrorMessage(error) };
+    }
+
+    revalidatePath("/leads");
+    return { success: true, data: undefined };
+  } catch (error) {
     console.error("Add follow-up error:", error);
-    const errorMessage =
-      typeof error === "object"
-        ? JSON.stringify(error)
-        : error || "Failed to add follow-up";
-    throw new Error(errorMessage);
+    return { success: false, error: extractErrorMessage(error) };
   }
-
-  revalidatePath("/leads");
-  return { success: true };
 }
 
 export async function getLeadFollowUpsAction(
