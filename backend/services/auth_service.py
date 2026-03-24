@@ -40,10 +40,21 @@ class AuthService:
         return user
 
     @staticmethod
-    def create_tokens_for_user(db: Session, user: User, force_temp_token: bool = False) -> Dict[str, Any]:
+    def create_tokens_for_user(
+        db: Session,
+        user: User,
+        force_temp_token: bool = False,
+        update_login_time: bool = True
+    ) -> Dict[str, Any]:
         """
         为用户生成令牌 (Sync)
         处理登录后更新时间、生成 Token 的逻辑
+
+        Args:
+            db: 数据库会话
+            user: 用户对象
+            force_temp_token: 是否强制使用临时令牌（用于密码重置）
+            update_login_time: 是否更新最后登录时间（刷新token时不应更新）
         """
         # 检查是否强制修改密码逻辑
         if force_temp_token and user.must_change_password:
@@ -60,10 +71,11 @@ class AuthService:
                 "temp_token": temp_token
             }
 
-        # 更新最后登录时间
-        user.last_login_at = datetime.utcnow()
-        db.commit()
-        db.refresh(user)
+        # 更新最后登录时间（仅在登录时更新，刷新token时不更新）
+        if update_login_time:
+            user.last_login_at = datetime.utcnow()
+            db.commit()
+            db.refresh(user)
 
         # 创建令牌
         access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
@@ -91,6 +103,8 @@ class AuthService:
     def refresh_user_token(db: Session, refresh_token: str) -> Dict[str, Any]:
         """
         刷新 Token (Sync)
+
+        注意：此方法不在刷新时更新 last_login_at，避免事务冲突
         """
         payload = validate_token(refresh_token, token_type="refresh")
         if not payload:
@@ -99,10 +113,10 @@ class AuthService:
                 detail="刷新令牌无效",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         user_id: str = payload.get("sub")
         if user_id is None:
-             raise HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="刷新令牌无效",
                 headers={"WWW-Authenticate": "Bearer"},
@@ -116,7 +130,8 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        return AuthService.create_tokens_for_user(db, user)
+        # 刷新token时不更新登录时间，避免事务冲突
+        return AuthService.create_tokens_for_user(db, user, update_login_time=False)
 
     @staticmethod
     def generate_wechat_auth_url(redirect_uri: Optional[str] = None) -> str:

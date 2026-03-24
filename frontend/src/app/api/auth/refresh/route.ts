@@ -10,16 +10,19 @@ interface RefreshResponse {
 
 /**
  * POST /api/v1/auth/refresh
- * 
+ *
  * 客户端调用此路由来刷新 Token。
  * 由于 refresh_token 存储在 httpOnly cookie 中，客户端无法直接读取，
  * 所以需要通过这个 API 路由来代理刷新请求。
+ *
+ * [修复] 改进错误处理和日志记录
  */
 export async function POST() {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get("refresh_token")?.value;
 
   if (!refreshToken) {
+    console.warn("🔁 [API Route] 无 refresh_token 可用");
     return NextResponse.json(
       { error: "No refresh token available" },
       { status: 401 }
@@ -27,6 +30,8 @@ export async function POST() {
   }
 
   try {
+    console.log("🔁 [API Route] 向后端请求刷新 token...");
+
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -34,11 +39,19 @@ export async function POST() {
     });
 
     if (!response.ok) {
-      // 刷新失败，清除 cookies
-      cookieStore.delete("access_token");
-      cookieStore.delete("refresh_token");
+      const errorText = await response.text();
+      console.error("🔁 [API Route] 后端刷新失败:", response.status, errorText);
+
+      // 只有401/403错误才清除 cookies（token确实无效）
+      // 500错误保留cookies，可能是临时问题
+      if (response.status === 401 || response.status === 403) {
+        cookieStore.delete("access_token");
+        cookieStore.delete("refresh_token");
+        console.log("🔁 [API Route] 已清除无效 cookies");
+      }
+
       return NextResponse.json(
-        { error: "Token refresh failed" },
+        { error: "Token refresh failed", details: errorText },
         { status: response.status }
       );
     }
@@ -62,6 +75,8 @@ export async function POST() {
       sameSite: "lax",
     });
 
+    console.log("✅ [API Route] Token 刷新成功");
+
     // 返回新的 access_token，让客户端可以使用
     // 注意：refresh_token 仍然是 httpOnly cookie，不会返回给客户端
     return NextResponse.json({
@@ -69,7 +84,8 @@ export async function POST() {
       access_token: data.access_token,
       expires_in: data.expires_in,
     });
-  } catch {
+  } catch (error) {
+    console.error("🔁 [API Route] 刷新时发生异常:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
