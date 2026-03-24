@@ -55,13 +55,22 @@ export async function fetchClient() {
 
   // 创建一个自定义的 fetch 函数来处理 401 自动刷新
   const fetchWithAutoRefresh: typeof fetch = async (input, init) => {
+    // 如果是 Request 对象，提取 headers
+    const requestHeaders = input instanceof Request 
+      ? Object.fromEntries(input.headers.entries())
+      : {};
+    
+    // 合并 headers：Request headers < init headers < Authorization
+    const finalHeaders = {
+      ...requestHeaders,
+      ...init?.headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
     // 第一次请求
     const response = await fetch(input, {
       ...init,
-      headers: {
-        ...init?.headers,
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
+      headers: finalHeaders,
     });
 
     // 如果不是 401，直接返回
@@ -84,6 +93,7 @@ export async function fetchClient() {
     return fetch(input, {
       ...init,
       headers: {
+        ...requestHeaders,
         ...init?.headers,
         Authorization: `Bearer ${newToken}`,
       },
@@ -92,8 +102,7 @@ export async function fetchClient() {
 
   return createClient<paths>({
     baseUrl: API_BASE_URL,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    // 使用我们的自定义 fetch
+    // 使用我们的自定义 fetch，在 fetch 中统一处理 Authorization header
     fetch: fetchWithAutoRefresh,
   });
 }
