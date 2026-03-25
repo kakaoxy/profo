@@ -1,5 +1,5 @@
-import { getConsultantsAction } from "../projects/actions";
-import type { Consultant } from "../projects/types";
+import { getL4ConsultantsAction } from "../projects/actions";
+import type { L4Consultant } from "../projects/types";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 import { ConsultantDialog } from "./consultant-dialog";
@@ -14,17 +14,17 @@ export default async function ConsultantsPage({
   const page = Number(params?.page) || 1;
   const pageSize = Number(params?.page_size) || 20;
 
-  const result = await getConsultantsAction(page, pageSize);
-  const items: Consultant[] =
+  const result = await getL4ConsultantsAction(page, pageSize);
+  const items: L4Consultant[] =
     result.success && result.data && "items" in result.data
-      ? (result.data as { items: Consultant[] }).items
+      ? (result.data as { items: L4Consultant[] }).items
       : [];
 
   return (
     <MiniproShell>
       <MiniproPageHeader
         title="置业顾问管理"
-        description="管理小程序端的置业顾问列表"
+        description="管理L4营销层的置业顾问列表"
         actions={<ConsultantDialog mode="create" />}
       />
       <div className="rounded-md border bg-background">

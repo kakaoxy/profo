@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { createConsultantAction, updateConsultantAction } from "../projects/actions";
-import type { Consultant } from "../projects/types";
+import { createL4ConsultantAction, updateL4ConsultantAction } from "../projects/actions";
+import type { L4Consultant } from "../projects/types";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -40,12 +40,12 @@ const formSchema = z.object({
   phone: z.string().min(11, "手机号至少需要11位"),
   avatar_url: z.string().optional(),
   role: z.enum(["admin", "consultant"]),
-  status: z.enum(["active", "inactive"]),
+  is_active: z.boolean(),
 });
 
 interface ConsultantDialogProps {
   mode: "create" | "edit";
-  initialData?: Consultant;
+  initialData?: L4Consultant;
   trigger?: React.ReactNode;
 }
 
@@ -60,7 +60,7 @@ export function ConsultantDialog({ mode, initialData, trigger }: ConsultantDialo
       phone: initialData?.phone || "",
       avatar_url: initialData?.avatar_url || "",
       role: (initialData?.role as "admin" | "consultant") || "consultant",
-      status: ((initialData as (Consultant & { status?: string }))?.status as "active" | "inactive") || "active",
+      is_active: initialData?.is_active ?? true,
     },
   });
 
@@ -68,11 +68,11 @@ export function ConsultantDialog({ mode, initialData, trigger }: ConsultantDialo
     try {
       let result;
       if (mode === "create") {
-        result = await createConsultantAction(values);
+        result = await createL4ConsultantAction(values);
       } else if (initialData?.id) {
-        result = await updateConsultantAction(initialData.id, values);
+        result = await updateL4ConsultantAction(initialData.id, values);
       }
-      
+
       if (result?.success) {
         toast.success(mode === "create" ? "创建成功" : "更新成功");
         setOpen(false);
@@ -152,19 +152,22 @@ export function ConsultantDialog({ mode, initialData, trigger }: ConsultantDialo
               />
               <FormField
                 control={form.control}
-                name="status"
+                name="is_active"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>状态</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "true")}
+                      defaultValue={String(field.value)}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="选择状态" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="active">正常</SelectItem>
-                        <SelectItem value="inactive">禁用</SelectItem>
+                        <SelectItem value="true">在职</SelectItem>
+                        <SelectItem value="false">离职</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

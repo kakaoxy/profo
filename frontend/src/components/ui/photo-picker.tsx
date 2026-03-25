@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { getSourcePhotosAction } from "@/app/(main)/minipro/projects/actions";
+import { getL4SourcePhotosAction } from "@/app/(main)/minipro/projects/actions";
 import { RenovationPhoto } from "@/app/(main)/minipro/projects/types";
 import { toast } from "sonner";
 import { getFileUrl } from "@/lib/config";
@@ -24,7 +24,7 @@ export function PhotoPicker({ projectId, onSelect, trigger, title = "Select Phot
   const loadPhotos = async () => {
     try {
       setLoading(true);
-      const result = await getSourcePhotosAction(projectId);
+      const result = await getL4SourcePhotosAction(projectId);
       if (result.success && result.data) {
         setPhotos(result.data as RenovationPhoto[]);
       } else {

@@ -27,6 +27,16 @@ from .project import (
 )
 from .user import User, Role
 from .lead import Lead, LeadFollowUp, LeadPriceHistory
+
+# L4 市场营销层模型 (新)
+from .l4_marketing import (
+    L4MarketingProject,
+    L4MarketingMedia,
+    L4Consultant,
+    MarketingProjectStatus,
+)
+
+# 保留旧模型以兼容现有代码 (将在迁移完成后移除)
 from .mini import Consultant, MiniProject, MiniProjectPhoto
 
 __all__ = [
@@ -64,6 +74,12 @@ __all__ = [
     'Lead',
     'LeadFollowUp',
     'LeadPriceHistory',
+    # L4 新模型
+    'L4MarketingProject',
+    'L4MarketingMedia',
+    'L4Consultant',
+    'MarketingProjectStatus',
+    # 旧模型 (兼容)
     'Consultant',
     'MiniProject',
     'MiniProjectPhoto',
