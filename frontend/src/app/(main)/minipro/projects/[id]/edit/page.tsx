@@ -63,7 +63,7 @@ export default async function ProjectEditPage({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild className="shrink-0">
-              <Link href={`/minipro/projects/${project.id}`}>
+              <Link href={`/minipro/projects?open=${project.id}`}>
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
@@ -75,9 +75,9 @@ export default async function ProjectEditPage({
             </div>
           </div>
           <Button variant="outline" asChild>
-            <Link href={`/minipro/projects/${project.id}`}>
+            <Link href={`/minipro/projects?open=${project.id}`}>
               <Eye className="mr-2 h-4 w-4" />
-              查看详情
+              返回列表
             </Link>
           </Button>
         </div>

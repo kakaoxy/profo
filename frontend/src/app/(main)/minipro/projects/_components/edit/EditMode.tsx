@@ -9,6 +9,7 @@ import { BasicConfigFields } from "./BasicConfigFields";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import type { EditModeProps } from "../form-types";
 import { PhotoManager } from "../../[id]/_components/photo-manager";
+import Link from "next/link";
 
 export function EditMode({ mode, project, photos, consultants, actions }: EditModeProps) {
   const [localPhotos, setLocalPhotos] = React.useState(photos);
@@ -64,6 +65,18 @@ export function EditMode({ mode, project, photos, consultants, actions }: EditMo
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-4">
+          {mode === "edit" && project ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting}
+              asChild
+            >
+              <Link href="/minipro/projects">
+                取消
+              </Link>
+            </Button>
+          ) : null}
           <Button
             type="submit"
             disabled={isSubmitting}
