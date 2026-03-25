@@ -21,6 +21,7 @@ import { InfoCard } from "../ui/InfoCard";
 import { ImageInputField } from "./ImageInputField";
 import type { L4Consultant } from "../../types";
 import type { CreateValues, UpdateValues } from "../form-schema";
+import { MARKETING_PROJECT_STATUS_CONFIG } from "../../types";
 
 interface BasicConfigFieldsProps {
   consultants: L4Consultant[];
@@ -32,6 +33,7 @@ export function BasicConfigFields({ consultants }: BasicConfigFieldsProps) {
   return (
     <InfoCard title="基础配置">
       <div className="space-y-5">
+        {/* 封面图 */}
         <FormField
           control={control}
           name="cover_image"
@@ -51,6 +53,7 @@ export function BasicConfigFields({ consultants }: BasicConfigFieldsProps) {
           )}
         />
 
+        {/* 顾问选择 */}
         <FormField
           control={control}
           name="consultant_id"
@@ -84,6 +87,48 @@ export function BasicConfigFields({ consultants }: BasicConfigFieldsProps) {
           )}
         />
 
+        {/* 项目状态 */}
+        <FormField
+          control={control}
+          name="project_status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-slate-700">
+                项目状态
+              </FormLabel>
+              <FormControl>
+                <Select
+                  value={field.value ?? "在途"}
+                  onValueChange={(val) =>
+                    field.onChange(val as "在途" | "在售" | "已售")
+                  }
+                >
+                  <SelectTrigger className="w-full border-slate-200 focus:ring-blue-600">
+                    <SelectValue placeholder="选择状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(MARKETING_PROJECT_STATUS_CONFIG).map(
+                      ([value, config]) => (
+                        <SelectItem key={value} value={value}>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: config.color }}
+                            />
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 发布开关 */}
         <FormField
           control={control}
           name="is_published"
