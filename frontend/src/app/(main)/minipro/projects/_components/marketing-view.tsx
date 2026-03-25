@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,9 @@ interface MarketingViewProps {
 }
 
 export function MarketingView({ data, total }: MarketingViewProps) {
+  const searchParams = useSearchParams();
+  const openProjectId = searchParams.get("open");
+
   // 1. Local State for Filtering
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,6 +30,17 @@ export function MarketingView({ data, total }: MarketingViewProps) {
   // 模态框状态
   const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // 从编辑页返回时自动打开对应项目的详情
+  useEffect(() => {
+    if (openProjectId) {
+      const projectToOpen = data.find((p) => p.id === openProjectId);
+      if (projectToOpen) {
+        setSelectedProject(projectToOpen);
+        setIsSheetOpen(true);
+      }
+    }
+  }, [openProjectId, data]);
 
   // 2. Client-side Filtering Logic
   const filteredData = useMemo(() => {
