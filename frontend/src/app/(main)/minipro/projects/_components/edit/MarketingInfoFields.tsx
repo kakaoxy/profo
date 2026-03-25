@@ -17,19 +17,20 @@ import { ImageInputField } from "./ImageInputField";
 import type { CreateValues, UpdateValues } from "../form-schema";
 
 export function MarketingInfoFields() {
-  const { control, setValue, watch } = useFormContext<CreateValues | UpdateValues>();
+  const { control, watch } = useFormContext<CreateValues | UpdateValues>();
   const marketingTags = watch("marketing_tags") ?? [];
 
   return (
     <InfoCard title="营销信息">
       <div className="space-y-5">
+        {/* 营销标题 */}
         <FormField
           control={control}
           name="title"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-slate-700">
-                营销标题
+                营销标题 <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Input
@@ -45,6 +46,7 @@ export function MarketingInfoFields() {
           )}
         />
 
+        {/* 装修风格 & 排序权重 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={control}
@@ -52,7 +54,7 @@ export function MarketingInfoFields() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-medium text-slate-700">
-                  物业风格
+                  装修风格
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -79,6 +81,8 @@ export function MarketingInfoFields() {
                 <FormControl>
                   <Input
                     type="number"
+                    min={0}
+                    placeholder="数值越大排序越靠前"
                     value={String(field.value ?? 0)}
                     onChange={(e) => {
                       const next = e.target.value === "" ? 0 : Number(e.target.value);
@@ -93,6 +97,7 @@ export function MarketingInfoFields() {
           />
         </div>
 
+        {/* 营销标签 */}
         <FormField
           control={control}
           name="marketing_tags"
@@ -100,6 +105,9 @@ export function MarketingInfoFields() {
             <FormItem>
               <FormLabel className="text-sm font-medium text-slate-700">
                 营销标签
+                <span className="text-xs text-slate-400 ml-2">
+                  ({marketingTags.length}/20)
+                </span>
               </FormLabel>
               <FormControl>
                 <TagInputField
@@ -112,6 +120,7 @@ export function MarketingInfoFields() {
           )}
         />
 
+        {/* 项目描述 */}
         <FormField
           control={control}
           name="description"
@@ -123,7 +132,7 @@ export function MarketingInfoFields() {
               <FormControl>
                 <Textarea
                   rows={4}
-                  placeholder="描述项目特色..."
+                  placeholder="描述项目特色、亮点..."
                   value={String(field.value ?? "")}
                   onChange={(e) =>
                     field.onChange(e.target.value ? e.target.value : null)
@@ -136,6 +145,7 @@ export function MarketingInfoFields() {
           )}
         />
 
+        {/* 分享配置 */}
         <div className="pt-5 border-t border-slate-100">
           <h3 className="text-sm font-semibold text-slate-800 mb-4">分享配置</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -149,6 +159,7 @@ export function MarketingInfoFields() {
                   </FormLabel>
                   <FormControl>
                     <Input
+                      placeholder="微信分享时显示的标题"
                       value={String(field.value ?? "")}
                       onChange={(e) =>
                         field.onChange(e.target.value ? e.target.value : null)
@@ -166,7 +177,7 @@ export function MarketingInfoFields() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-medium text-slate-700">
-                    分享图
+                    分享图片
                   </FormLabel>
                   <FormControl>
                     <ImageInputField

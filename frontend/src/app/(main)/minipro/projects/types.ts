@@ -59,21 +59,24 @@ export const MARKETING_PROJECT_STATUS = {
 
 export const MARKETING_PROJECT_STATUS_CONFIG: Record<
   MarketingProjectStatus,
-  { label: string; color: string; description: string }
+  { label: string; color: string; bgColor: string; description: string }
 > = {
   在途: {
     label: "在途",
-    color: "blue",
+    color: "#3b82f6", // blue-500
+    bgColor: "#dbeafe", // blue-100
     description: "项目进行中，尚未挂牌",
   },
   在售: {
     label: "在售",
-    color: "green",
+    color: "#22c55e", // green-500
+    bgColor: "#dcfce7", // green-100
     description: "已挂牌销售",
   },
   已售: {
     label: "已售",
-    color: "gray",
+    color: "#6b7280", // gray-500
+    bgColor: "#f3f4f6", // gray-100
     description: "已成交",
   },
 };
