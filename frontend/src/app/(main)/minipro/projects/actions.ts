@@ -3,219 +3,419 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import type {
-  MiniProjectUpdate,
-  MiniProjectCreate,
-  ConsultantCreate,
-  ConsultantUpdate,
-  MiniProjectPhoto,
+  L4MarketingProjectUpdate,
+  L4MarketingProjectCreate,
+  L4ConsultantCreate,
+  L4ConsultantUpdate,
+  L4MarketingMediaCreate,
+  L4MarketingMediaUpdate,
 } from "./types";
 
-// --- Projects ---
+// ============================================================================
+// L4 Marketing Projects Actions
+// ============================================================================
 
-export async function getMiniProjectsAction(
+/**
+ * 获取营销项目列表
+ */
+export async function getL4MarketingProjectsAction(
   page = 1,
-  pageSize = 20,
+  size = 20,
   isPublished?: boolean,
+  projectStatus?: string,
+  consultantId?: string,
 ) {
-  const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/admin/mini/projects", {
-    params: {
-      query: {
-        page,
-        page_size: pageSize,
-        is_published: isPublished,
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/l4-marketing/projects",
+      {
+        params: {
+          query: {
+            page,
+            size,
+            is_published: isPublished,
+            project_status: projectStatus,
+            consultant_id: consultantId,
+          },
+        },
       },
-    },
-  });
+    );
 
-  if (error) {
-    console.error("Failed to fetch mini projects:", error);
-    return { success: false, error: "获取项目列表失败" };
+    if (error) {
+      console.error("Failed to fetch L4 marketing projects:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "获取项目列表失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("获取项目列表异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
   }
-
-  return { success: true, data };
 }
 
-export async function createMiniProjectAction(body: MiniProjectCreate) {
-  const client = await fetchClient();
-  const { data, error } = await client.POST("/api/v1/admin/mini/projects", {
-    body,
-  });
+/**
+ * 创建营销项目
+ */
+export async function createL4MarketingProjectAction(
+  body: L4MarketingProjectCreate,
+) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.POST(
+      "/api/v1/admin/l4-marketing/projects",
+      {
+        body,
+      },
+    );
 
-  if (error) {
-    console.error("Failed to create mini project:", error);
-    return { success: false, error: "创建项目失败" };
+    if (error) {
+      console.error("Failed to create L4 marketing project:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "创建项目失败",
+      };
+    }
+
+    revalidatePath("/minipro/projects");
+    return { success: true, data };
+  } catch (e) {
+    console.error("创建项目异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
   }
-
-  revalidatePath("/minipro/projects");
-  return { success: true, data };
 }
 
-export async function getMiniProjectAction(id: string) {
-  const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/admin/mini/projects/{id}", {
-    params: { path: { id } },
-  });
+/**
+ * 获取营销项目详情
+ */
+export async function getL4MarketingProjectAction(id: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/l4-marketing/projects/{project_id}",
+      {
+        params: { path: { project_id: id } },
+      },
+    );
 
-  if (error) {
-    console.error("Failed to fetch mini project:", error);
-    return { success: false, error: "获取项目详情失败" };
+    if (error) {
+      console.error("Failed to fetch L4 marketing project:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "获取项目详情失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("获取项目详情异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
   }
-
-  return { success: true, data };
 }
 
-export async function updateMiniProjectAction(
+/**
+ * 更新营销项目
+ */
+export async function updateL4MarketingProjectAction(
   id: string,
-  body: MiniProjectUpdate,
+  body: L4MarketingProjectUpdate,
 ) {
-  const client = await fetchClient();
-  const { data, error } = await client.PUT("/api/v1/admin/mini/projects/{id}", {
-    params: { path: { id } },
-    body,
-  });
-
-  if (error) {
-    console.error("Failed to update mini project:", error);
-    return { success: false, error: "更新项目失败" };
-  }
-
-  revalidatePath(`/minipro/projects/${id}`);
-  revalidatePath("/minipro/projects");
-  return { success: true, data };
-}
-
-export async function syncMiniProjectsAction() {
-  const client = await fetchClient();
-  const { data, error } = await client.POST("/api/v1/admin/mini/projects/sync");
-
-  if (error) {
-    console.error("Failed to sync mini projects:", error);
-    return { success: false, error: "同步失败" };
-  }
-
-  revalidatePath("/minipro/projects");
-  return { success: true, data };
-}
-
-export async function refreshMiniProjectAction(id: string) {
-  const client = await fetchClient();
-  const { data, error } = await client.PUT(
-    "/api/v1/admin/mini/projects/{id}/refresh",
-    {
-      params: { path: { id } },
-    },
-  );
-
-  if (error) {
-    console.error("Failed to refresh mini project:", error);
-    return { success: false, error: "刷新项目失败" };
-  }
-
-  revalidatePath(`/minipro/projects/${id}`);
-  return { success: true, data };
-}
-
-// --- Photos ---
-
-export async function getSourcePhotosAction(id: string) {
-  const client = await fetchClient();
-  const { data, error } = await client.GET(
-    "/api/v1/admin/mini/projects/{id}/source-photos",
-    {
-      params: { path: { id } },
-    },
-  );
-
-  if (error) {
-    console.error("Failed to fetch source photos:", error);
-    return { success: false, error: "获取源照片失败" };
-  }
-
-  return { success: true, data };
-}
-
-export async function getMiniPhotosAction(id: string) {
-  const client = await fetchClient();
-  const { data, error } = await client.GET(
-    "/api/v1/admin/mini/projects/{id}/photos",
-    {
-      params: { path: { id } },
-    },
-  );
-
-  if (error) {
-    console.error("Failed to fetch mini photos:", error);
-    return { success: false, error: "获取项目照片失败" };
-  }
-
-  return { success: true, data };
-}
-
-export async function addMiniPhotoAction(
-  projectId: string,
-  imageUrl: string,
-  renovationStage = "other",
-  originPhotoId?: string,
-  sortOrder = 0,
-) {
-  const client = await fetchClient();
-  const { data, error } = await client.POST(
-    "/api/v1/admin/mini/projects/{id}/photos",
-    {
-      params: { path: { id: projectId } },
-      body: {
-        image_url: imageUrl || null,
-        renovation_stage: renovationStage,
-        sort_order: sortOrder,
-        origin_photo_id: originPhotoId || null,
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.PUT(
+      "/api/v1/admin/l4-marketing/projects/{project_id}",
+      {
+        params: { path: { project_id: id } },
+        body,
       },
-    },
-  );
+    );
 
-  if (error) {
-    console.error("Failed to add photo:", error);
-    return { success: false, error: "添加照片失败" };
+    if (error) {
+      console.error("Failed to update L4 marketing project:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "更新项目失败",
+      };
+    }
+
+    revalidatePath(`/minipro/projects/${id}`);
+    revalidatePath("/minipro/projects");
+    return { success: true, data };
+  } catch (e) {
+    console.error("更新项目异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
   }
-
-  return { success: true, data };
 }
 
-export async function deleteMiniPhotoAction(photoId: string) {
-  const client = await fetchClient();
-  const { data, error } = await client.DELETE(
-    "/api/v1/admin/mini/photos/{photo_id}",
-    {
-      params: { path: { photo_id: photoId } },
-    },
-  );
+/**
+ * 删除营销项目
+ */
+export async function deleteL4MarketingProjectAction(id: string) {
+  try {
+    const client = await fetchClient();
+    const { error } = await client.DELETE(
+      "/api/v1/admin/l4-marketing/projects/{project_id}",
+      {
+        params: { path: { project_id: id } },
+      },
+    );
 
-  if (error) {
-    console.error("Failed to delete photo:", error);
-    return { success: false, error: "删除照片失败" };
+    if (error) {
+      console.error("Failed to delete L4 marketing project:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "删除项目失败",
+      };
+    }
+
+    revalidatePath("/minipro/projects");
+    return { success: true };
+  } catch (e) {
+    console.error("删除项目异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
   }
-
-  return { success: true, data };
 }
 
-export async function batchAddPhotosAction(
+/**
+ * 同步 L3 项目到 L4
+ */
+export async function syncL4MarketingProjectsAction() {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.POST(
+      "/api/v1/admin/l4-marketing/projects/sync",
+    );
+
+    if (error) {
+      console.error("Failed to sync L4 marketing projects:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "同步失败",
+      };
+    }
+
+    revalidatePath("/minipro/projects");
+    return { success: true, data };
+  } catch (e) {
+    console.error("同步项目异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 刷新项目硬字段
+ */
+export async function refreshL4MarketingProjectAction(id: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.PUT(
+      "/api/v1/admin/l4-marketing/projects/{project_id}/refresh",
+      {
+        params: { path: { project_id: id } },
+      },
+    );
+
+    if (error) {
+      console.error("Failed to refresh L4 marketing project:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "刷新项目失败",
+      };
+    }
+
+    revalidatePath(`/minipro/projects/${id}`);
+    return { success: true, data };
+  } catch (e) {
+    console.error("刷新项目异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+// ============================================================================
+// L4 Marketing Media Actions
+// ============================================================================
+
+/**
+ * 获取媒体列表
+ */
+export async function getL4MarketingMediaAction(
+  projectId: string,
+  page = 1,
+  size = 100,
+) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/l4-marketing/projects/{project_id}/media",
+      {
+        params: {
+          path: { project_id: projectId },
+          query: { page, size },
+        },
+      },
+    );
+
+    if (error) {
+      console.error("Failed to fetch L4 marketing media:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "获取媒体列表失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("获取媒体列表异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 创建媒体
+ */
+export async function createL4MarketingMediaAction(
+  projectId: string,
+  body: L4MarketingMediaCreate,
+) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.POST(
+      "/api/v1/admin/l4-marketing/projects/{project_id}/media",
+      {
+        params: { path: { project_id: projectId } },
+        body,
+      },
+    );
+
+    if (error) {
+      console.error("Failed to create L4 marketing media:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "创建媒体失败",
+      };
+    }
+
+    revalidatePath(`/minipro/projects/${projectId}`);
+    return { success: true, data };
+  } catch (e) {
+    console.error("创建媒体异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 更新媒体
+ */
+export async function updateL4MarketingMediaAction(
+  mediaId: string,
+  body: L4MarketingMediaUpdate,
+) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.PUT(
+      "/api/v1/admin/l4-marketing/media/{media_id}",
+      {
+        params: { path: { media_id: mediaId } },
+        body,
+      },
+    );
+
+    if (error) {
+      console.error("Failed to update L4 marketing media:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "更新媒体失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("更新媒体异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 删除媒体
+ */
+export async function deleteL4MarketingMediaAction(mediaId: string) {
+  try {
+    const client = await fetchClient();
+    const { error } = await client.DELETE(
+      "/api/v1/admin/l4-marketing/media/{media_id}",
+      {
+        params: { path: { media_id: mediaId } },
+      },
+    );
+
+    if (error) {
+      console.error("Failed to delete L4 marketing media:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "删除媒体失败",
+      };
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("删除媒体异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 获取来源照片（从 L3 项目）
+ */
+export async function getL4SourcePhotosAction(projectId: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/l4-marketing/projects/{project_id}/source-photos",
+      {
+        params: { path: { project_id: projectId } },
+      },
+    );
+
+    if (error) {
+      console.error("Failed to fetch L4 source photos:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "获取来源照片失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("获取来源照片异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 批量添加照片
+ */
+export async function batchAddL4PhotosAction(
   projectId: string,
   photoIds: string[],
 ) {
-  const results: MiniProjectPhoto[] = [];
+  const results = [];
   const errors: string[] = [];
 
   let sortOrder = 0;
   for (const photoId of photoIds) {
-    const result = await addMiniPhotoAction(
-      projectId,
-      "",
-      "other",
-      photoId,
-      sortOrder,
-    );
+    const result = await createL4MarketingMediaAction(projectId, {
+      file_url: "",
+      media_type: "image",
+      origin_media_id: photoId,
+      renovation_stage: "other",
+      sort_order: sortOrder,
+    });
+
     if (result.success && result.data) {
-      results.push(result.data as MiniProjectPhoto);
+      results.push(result.data);
       sortOrder += 1;
     } else {
       errors.push(`ID: ${photoId}`);
@@ -233,58 +433,163 @@ export async function batchAddPhotosAction(
   return { success: true, data: results };
 }
 
-// --- Consultants ---
+// ============================================================================
+// L4 Consultants Actions
+// ============================================================================
 
-export async function getConsultantsAction(page = 1, pageSize = 20) {
-  const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/admin/mini/consultants", {
-    params: {
-      query: {
-        page,
-        page_size: pageSize,
-      },
-    },
-  });
-
-  if (error) {
-    console.error("Failed to fetch consultants:", error);
-    return { success: false, error: "获取咨询师列表失败" };
-  }
-
-  return { success: true, data };
-}
-
-export async function createConsultantAction(body: ConsultantCreate) {
-  const client = await fetchClient();
-  const { data, error } = await client.POST("/api/v1/admin/mini/consultants", {
-    body,
-  });
-
-  if (error) {
-    console.error("Failed to create consultant:", error);
-    return { success: false, error: "创建咨询师失败" };
-  }
-
-  return { success: true, data };
-}
-
-export async function updateConsultantAction(
-  id: string,
-  body: ConsultantUpdate,
+/**
+ * 获取顾问列表
+ */
+export async function getL4ConsultantsAction(
+  page = 1,
+  size = 20,
+  isActive?: boolean,
 ) {
-  const client = await fetchClient();
-  const { data, error } = await client.PUT(
-    "/api/v1/admin/mini/consultants/{id}",
-    {
-      params: { path: { id } },
-      body,
-    },
-  );
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/l4-marketing/consultants",
+      {
+        params: {
+          query: {
+            page,
+            size,
+            is_active: isActive,
+          },
+        },
+      },
+    );
 
-  if (error) {
-    console.error("Failed to update consultant:", error);
-    return { success: false, error: "更新咨询师失败" };
+    if (error) {
+      console.error("Failed to fetch L4 consultants:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "获取顾问列表失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("获取顾问列表异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
   }
+}
 
-  return { success: true, data };
+/**
+ * 获取顾问详情
+ */
+export async function getL4ConsultantAction(id: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/l4-marketing/consultants/{consultant_id}",
+      {
+        params: { path: { consultant_id: id } },
+      },
+    );
+
+    if (error) {
+      console.error("Failed to fetch L4 consultant:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "获取顾问详情失败",
+      };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("获取顾问详情异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 创建顾问
+ */
+export async function createL4ConsultantAction(body: L4ConsultantCreate) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.POST(
+      "/api/v1/admin/l4-marketing/consultants",
+      {
+        body,
+      },
+    );
+
+    if (error) {
+      console.error("Failed to create L4 consultant:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "创建顾问失败",
+      };
+    }
+
+    revalidatePath("/minipro/consultants");
+    return { success: true, data };
+  } catch (e) {
+    console.error("创建顾问异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 更新顾问
+ */
+export async function updateL4ConsultantAction(
+  id: string,
+  body: L4ConsultantUpdate,
+) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.PUT(
+      "/api/v1/admin/l4-marketing/consultants/{consultant_id}",
+      {
+        params: { path: { consultant_id: id } },
+        body,
+      },
+    );
+
+    if (error) {
+      console.error("Failed to update L4 consultant:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "更新顾问失败",
+      };
+    }
+
+    revalidatePath("/minipro/consultants");
+    return { success: true, data };
+  } catch (e) {
+    console.error("更新顾问异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 删除顾问
+ */
+export async function deleteL4ConsultantAction(id: string) {
+  try {
+    const client = await fetchClient();
+    const { error } = await client.DELETE(
+      "/api/v1/admin/l4-marketing/consultants/{consultant_id}",
+      {
+        params: { path: { consultant_id: id } },
+      },
+    );
+
+    if (error) {
+      console.error("Failed to delete L4 consultant:", error);
+      return {
+        success: false,
+        error: (error as { detail?: string }).detail || "删除顾问失败",
+      };
+    }
+
+    revalidatePath("/minipro/consultants");
+    return { success: true };
+  } catch (e) {
+    console.error("删除顾问异常:", e);
+    return { success: false, error: "网络错误，请稍后重试" };
+  }
 }

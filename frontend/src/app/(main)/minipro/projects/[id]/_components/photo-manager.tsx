@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MiniProjectPhoto } from "../../types";
+import { L4MarketingMedia } from "../../types";
 import { PhotoItem } from "./photo-item";
 import { PhotoLibraryPicker } from "./photo-library-picker";
 import {
-  addMiniPhotoAction,
-  deleteMiniPhotoAction,
-  getSourcePhotosAction,
+  createL4MarketingMediaAction,
+  deleteL4MarketingMediaAction,
+  getL4SourcePhotosAction,
 } from "../../actions";
 import { toast } from "sonner";
 import type { RenovationPhoto } from "./types";
@@ -26,8 +26,8 @@ import {
 
 interface PhotoManagerProps {
   projectId: string;
-  photos: MiniProjectPhoto[];
-  onPhotosChange: (photos: MiniProjectPhoto[]) => void;
+  photos: L4MarketingMedia[];
+  onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
 
 type UploadTab = "sync" | "upload";
@@ -46,16 +46,16 @@ export function PhotoManager({
   const [uploadSortOrder, setUploadSortOrder] = useState(photos.length);
   const [uploading, setUploading] = useState(false);
 
-  const syncedPhotos = photos.filter((p) => !!p.origin_photo_id);
-  const uploadedPhotos = photos.filter((p) => !p.origin_photo_id);
+  const syncedPhotos = photos.filter((p) => !!p.origin_media_id);
+  const uploadedPhotos = photos.filter((p) => !p.origin_media_id);
   const existingPhotoIds = new Set<string>(
-    syncedPhotos.map((p) => p.origin_photo_id).filter(Boolean) as string[],
+    syncedPhotos.map((p) => p.origin_media_id).filter(Boolean) as string[],
   );
 
   const handleDeletePhoto = async (photoId: string) => {
     if (!confirm("确定删除这张照片吗？")) return;
     try {
-      const result = await deleteMiniPhotoAction(photoId);
+      const result = await deleteL4MarketingMediaAction(photoId);
       if (result.success) {
         onPhotosChange(photos.filter((p) => p.id !== photoId));
         toast.success("照片已删除");
@@ -79,26 +79,27 @@ export function PhotoManager({
   };
 
   const handlePhotosAdded = (
-    addedPhotos: MiniProjectPhoto[],
+    addedPhotos: L4MarketingMedia[],
     originToNewId: Record<string, string>,
   ) => {
     const existingIds = new Set(
-      photos.map((p) => p.origin_photo_id).filter(Boolean),
+      photos.map((p) => p.origin_media_id).filter(Boolean),
     );
     const newPhotos = addedPhotos
-      .filter((p) => !existingIds.has(p.origin_photo_id || p.id))
+      .filter((p) => !existingIds.has(p.origin_media_id || p.id))
       .map((photo) => {
-        const originId = photo.origin_photo_id || photo.id;
+        const originId = photo.origin_media_id || photo.id;
         return {
+          ...photo,
           id: originToNewId[originId] || photo.id,
-          mini_project_id: projectId,
-          origin_photo_id: originId,
-          image_url: photo.image_url || photo.final_url || "",
+          marketing_project_id: projectId,
+          origin_media_id: originId,
+          file_url: photo.file_url || "",
           renovation_stage: photo.renovation_stage || "other",
           description: photo.description || null,
           sort_order: photo.sort_order ?? photos.length,
           created_at: photo.created_at || new Date().toISOString(),
-          final_url: photo.final_url || null,
+          updated_at: photo.updated_at || new Date().toISOString(),
         };
       });
     onPhotosChange([...photos, ...newPhotos]);
@@ -107,7 +108,7 @@ export function PhotoManager({
   const loadSourcePhotos = async () => {
     setSourcePhotosLoading(true);
     try {
-      const result = await getSourcePhotosAction(projectId);
+      const result = await getL4SourcePhotosAction(projectId);
       if (result.success && result.data) {
         setSourcePhotos(result.data as RenovationPhoto[]);
       } else if (result.error) {
@@ -141,15 +142,17 @@ export function PhotoManager({
 
     setUploading(true);
     try {
-      const result = await addMiniPhotoAction(
+      const result = await createL4MarketingMediaAction(
         projectId,
-        trimmed,
-        uploadStage,
-        undefined,
-        uploadSortOrder,
+        {
+          file_url: trimmed,
+          media_type: "image",
+          renovation_stage: uploadStage,
+          sort_order: uploadSortOrder,
+        },
       );
       if (result.success && result.data) {
-        onPhotosChange([...photos, result.data as MiniProjectPhoto]);
+        onPhotosChange([...photos, result.data as L4MarketingMedia]);
         toast.success("照片已添加");
         setUploadUrl("");
       } else {

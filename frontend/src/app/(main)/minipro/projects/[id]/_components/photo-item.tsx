@@ -1,6 +1,6 @@
 "use client";
 
-import { MiniProjectPhoto } from "../../types";
+import { L4MarketingMedia } from "../../types";
 import { getFileUrl } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
 interface PhotoItemProps {
-  photo: MiniProjectPhoto;
+  photo: L4MarketingMedia;
   index: number;
   onDelete: (photoId: string) => void;
   isSynced?: boolean;
@@ -37,7 +37,7 @@ export function PhotoItem({
   };
 
   const stage = photo.renovation_stage || "other";
-  const displayUrl = photo.final_url || photo.image_url;
+  const displayUrl = photo.file_url || photo.thumbnail_url;
 
   return (
     <div className="flex items-center gap-4 rounded-lg border bg-muted/20 p-3 hover:bg-background transition-colors">

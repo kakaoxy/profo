@@ -1,13 +1,13 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import type { Consultant } from "../projects/types";
+import type { L4Consultant } from "../projects/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ConsultantDialog } from "./consultant-dialog";
 import { getFileUrl } from "@/lib/config";
 
-export const columns: ColumnDef<Consultant>[] = [
+export const columns: ColumnDef<L4Consultant>[] = [
   {
     accessorKey: "avatar_url",
     header: "头像",
@@ -16,7 +16,7 @@ export const columns: ColumnDef<Consultant>[] = [
       const name = row.getValue("name") as string;
       return (
         <Avatar>
-          <AvatarImage src={getFileUrl(avatar)} alt={name} />
+          <AvatarImage src={avatar ? getFileUrl(avatar) : undefined} alt={name} />
           <AvatarFallback>{name?.substring(0, 2)}</AvatarFallback>
         </Avatar>
       );
@@ -43,13 +43,13 @@ export const columns: ColumnDef<Consultant>[] = [
     },
   },
   {
-    accessorKey: "status",
+    accessorKey: "is_active",
     header: "状态",
     cell: ({ row }) => {
-      const status = (row.original as Consultant & { status?: string }).status;
+      const isActive = row.getValue("is_active") as boolean;
       return (
-        <Badge variant={status === "active" ? "outline" : "destructive"}>
-          {status === "active" ? "正常" : "禁用"}
+        <Badge variant={isActive ? "outline" : "destructive"}>
+          {isActive ? "在职" : "离职"}
         </Badge>
       );
     },
@@ -59,10 +59,10 @@ export const columns: ColumnDef<Consultant>[] = [
     cell: ({ row }) => {
       const consultant = row.original;
       return (
-        <ConsultantDialog 
-           mode="edit" 
-           initialData={consultant} 
-           trigger={<span className="text-blue-600 cursor-pointer text-sm hover:underline">编辑</span>} 
+        <ConsultantDialog
+          mode="edit"
+          initialData={consultant}
+          trigger={<span className="text-blue-600 cursor-pointer text-sm hover:underline">编辑</span>}
         />
       );
     },

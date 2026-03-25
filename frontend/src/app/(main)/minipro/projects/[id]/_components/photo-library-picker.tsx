@@ -11,11 +11,11 @@ import {
 import { FilterBar } from "./filter-bar";
 import { PhotoGrid } from "./photo-grid";
 import { PickerFooter } from "./picker-footer";
-import { addMiniPhotoAction } from "../../actions";
+import { batchAddL4PhotosAction } from "../../actions";
 import { toast } from "sonner";
 import type { RenovationPhoto } from "./types";
 import type { StageOption } from "./types";
-import type { MiniProjectPhoto } from "../../types";
+import type { L4MarketingMedia } from "../../types";
 
 interface PhotoLibraryPickerProps {
   projectId: string;
@@ -23,7 +23,7 @@ interface PhotoLibraryPickerProps {
   onOpenChange: (open: boolean) => void;
   nextSortOrderStart: number;
   onPhotosAdded: (
-    photos: MiniProjectPhoto[],
+    photos: L4MarketingMedia[],
     originToNewId: Record<string, string>,
   ) => void;
   existingPhotoIds: Set<string>;
@@ -97,42 +97,21 @@ export function PhotoLibraryPicker({
 
     setSubmitting(true);
     try {
-      const results: MiniProjectPhoto[] = [];
-      const errors: string[] = [];
-      const originToNewId: Record<string, string> = {};
-      let sortOrder = nextSortOrderStart;
+      const photoIds = Array.from(selectedIds);
+      const result = await batchAddL4PhotosAction(projectId, photoIds);
 
-      for (const photoId of selectedIds) {
-        const photo = photos.find((p) => p.id === photoId);
-        if (!photo) continue;
+      if (result.success && result.data) {
+        const newPhotos = result.data as L4MarketingMedia[];
+        const originToNewId: Record<string, string> = {};
+        newPhotos.forEach((photo, index) => {
+          originToNewId[photoIds[index]] = photo.id;
+        });
 
-        const result = await addMiniPhotoAction(
-          projectId,
-          photo.url,
-          photo.stage,
-          photoId,
-          sortOrder,
-        );
-        if (result.success && result.data) {
-          const newPhoto = result.data as MiniProjectPhoto;
-          results.push(newPhoto);
-          originToNewId[photoId] = newPhoto.id;
-          sortOrder += 1;
-        } else {
-          errors.push(`ID: ${photoId}`);
-        }
-      }
-
-      if (results.length > 0) {
-        toast.success(`成功添加 ${results.length} 张照片`);
-        onPhotosAdded(results, originToNewId);
+        toast.success(`成功添加 ${newPhotos.length} 张照片`);
+        onPhotosAdded(newPhotos, originToNewId);
         onOpenChange(false);
       } else {
-        toast.error("添加照片失败");
-      }
-
-      if (errors.length > 0) {
-        console.error("Failed to add photos:", errors);
+        toast.error(result.error || "添加照片失败");
       }
     } catch (error) {
       console.error("Exception adding photos:", error);
