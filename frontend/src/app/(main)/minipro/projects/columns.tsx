@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, ExternalLink } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG } from "./types";
 import { getFileUrl } from "@/lib/config";
@@ -85,17 +85,6 @@ const ActionCell = ({ project }: { project: L4MarketingProject }) => {
 
   return (
     <div className="flex items-center gap-1">
-      <Link href={`/minipro/projects/${project.id}`}>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline text-xs font-medium">查看</span>
-        </Button>
-      </Link>
-
       <Link href={`/minipro/projects/${project.id}/edit`}>
         <Button
           variant="ghost"

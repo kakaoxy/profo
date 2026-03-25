@@ -11,6 +11,7 @@ import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
 import Link from "next/link";
 import { SyncButton } from "../sync-button";
+import { MarketingDetailSheet } from "./marketing-detail-sheet";
 
 interface MarketingViewProps {
   data: L4MarketingProject[];
@@ -21,6 +22,10 @@ export function MarketingView({ data, total }: MarketingViewProps) {
   // 1. Local State for Filtering
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // 模态框状态
+  const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // 2. Client-side Filtering Logic
   const filteredData = useMemo(() => {
@@ -47,6 +52,18 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       return statusMatch && searchMatch;
     });
   }, [data, activeTab, searchQuery]);
+
+  // 处理行点击
+  const handleRowClick = (row: L4MarketingProject) => {
+    setSelectedProject(row);
+    setIsSheetOpen(true);
+  };
+
+  // 处理模态框关闭后的刷新
+  const handleSheetRefresh = () => {
+    // 可以在这里触发列表刷新
+    window.location.reload();
+  };
 
   return (
     <div className="space-y-4">
@@ -135,7 +152,11 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       {/* --- Table Area --- */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <DataTable columns={columns} data={filteredData} />
+          <DataTable
+            columns={columns}
+            data={filteredData}
+            onRowClick={handleRowClick}
+          />
         </div>
       </div>
 
@@ -145,6 +166,15 @@ export function MarketingView({ data, total }: MarketingViewProps) {
           显示 {filteredData.length} 条记录 (共 {total} 条)
         </span>
       </div>
+
+      {/* 详情模态框 */}
+      <MarketingDetailSheet
+        key={selectedProject?.id}
+        project={selectedProject}
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        onRefresh={handleSheetRefresh}
+      />
     </div>
   );
 }
