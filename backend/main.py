@@ -25,7 +25,7 @@ logging.basicConfig(
 
 
 # ==================== 路由注册 ====================
-from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads, mini_admin, l4_marketing
+from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads, l4_marketing
 
 
 @asynccontextmanager
@@ -128,7 +128,6 @@ app.include_router(roles.router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
 app.include_router(monitor.router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
 app.include_router(monitor.community_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
 app.include_router(leads.router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
-app.include_router(mini_admin.router, prefix=f"{API_V1_PREFIX}", tags=["mini-admin"])
 app.include_router(l4_marketing.router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing"])
 
 
