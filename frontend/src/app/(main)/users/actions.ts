@@ -9,6 +9,8 @@ export type UserResponse = components["schemas"]["UserResponse"];
 export type UserCreate = components["schemas"]["UserCreate"];
 export type UserUpdate = components["schemas"]["UserUpdate"];
 export type UserListResponse = components["schemas"]["UserListResponse"];
+export type UserSimpleResponse = components["schemas"]["UserSimpleResponse"];
+export type UserSimpleListResponse = components["schemas"]["UserSimpleListResponse"];
 export type PasswordResetRequest = components["schemas"]["PasswordResetRequest"];
 export type PasswordChange = components["schemas"]["PasswordChange"];
 
@@ -47,6 +49,33 @@ export async function getUsersAction(params: {
     return { success: true, data };
   } catch (e) {
     console.error("Get users exception:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * Get Users Simple List (for dropdown selection)
+ */
+export async function getUsersSimpleAction(params?: {
+  nickname?: string;
+  status?: string;
+}) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET("/api/v1/users/simple", {
+      params: {
+        query: params,
+      },
+    });
+
+    if (error) {
+      console.error("Get users simple error", error);
+      return { success: false, message: "获取用户列表失败" };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("Get users simple exception:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
