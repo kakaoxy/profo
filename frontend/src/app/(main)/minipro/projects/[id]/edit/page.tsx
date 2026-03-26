@@ -3,8 +3,7 @@ import { fetchClient } from "@/lib/api-server";
 import type { L4MarketingProject, L4MarketingMedia } from "../../types";
 import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft, Eye, CloudDownload } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +14,12 @@ export default async function ProjectEditPage({
 }) {
   const { id } = await params;
   const projectId = Number(id);
-  
+
   if (isNaN(projectId)) {
     return (
-      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-sm font-semibold text-red-500">无效的项目ID</div>
+          <div className="text-sm font-semibold text-[#ba1a1a]">无效的项目ID</div>
         </div>
       </div>
     );
@@ -50,11 +49,11 @@ export default async function ProjectEditPage({
         ? "没有权限访问该项目（请重新登录或联系管理员开通权限）"
         : "获取项目详情失败，请稍后重试";
     return (
-      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-sm font-semibold text-red-500">{message}</div>
+          <div className="text-sm font-semibold text-[#ba1a1a]">{message}</div>
           {statusCode ? (
-            <div className="mt-2 text-xs text-slate-500">状态码: {statusCode}</div>
+            <div className="mt-2 text-xs text-[#707785]">状态码: {statusCode}</div>
           ) : null}
         </div>
       </div>
@@ -65,29 +64,37 @@ export default async function ProjectEditPage({
   const photos: L4MarketingMedia[] = photosRes.data?.items || [];
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6 py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" asChild className="shrink-0">
-              <Link href={`/minipro/projects?open=${project.id}`}>
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div>
-              <div className="text-sm text-slate-500">编辑营销项目</div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                {project.title || "未命名项目"}
-              </h1>
-            </div>
+    <div className="min-h-screen bg-[#f8f9ff]">
+      <div className="w-full max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Header Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-[#0b1c30] mb-2">
+              编辑房源信息
+            </h2>
+            <p className="text-[#707785] text-sm flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>
+              最后更新于 {project.updated_at ? new Date(project.updated_at).toLocaleString('zh-CN') : '未知时间'}
+            </p>
           </div>
-          <Button variant="outline" asChild>
-            <Link href={`/minipro/projects?open=${project.id}`}>
-              <Eye className="mr-2 h-4 w-4" />
-              返回列表
+          <div className="flex gap-3">
+            <button className="px-6 py-2.5 rounded-lg border border-[#c0c7d6]/50 text-[#0b1c30] font-medium hover:bg-[#e5eeff] transition-colors flex items-center gap-2">
+              <CloudDownload className="h-4 w-4" />
+              从项目导入
+            </button>
+            <Link
+              href="/minipro/projects"
+              className="px-6 py-2.5 rounded-lg border border-[#c0c7d6]/50 text-[#0b1c30] font-medium hover:bg-[#e5eeff] transition-colors"
+            >
+              取消
             </Link>
-          </Button>
+            <Link
+              href={`/minipro/projects/${project.id}/preview`}
+              className="px-6 py-2.5 rounded-lg bg-[#e5eeff] text-[#005daa] font-medium hover:bg-[#dce9ff] transition-colors"
+            >
+              预览
+            </Link>
+          </div>
         </div>
 
         {/* Content */}

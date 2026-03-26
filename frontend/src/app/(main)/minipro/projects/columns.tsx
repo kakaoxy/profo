@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "./types";
 import { getFileUrl } from "@/lib/config";
@@ -28,7 +28,7 @@ const formatPrice = (value: string | number | undefined | null) => {
   if (value === undefined || value === null) return "-";
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue)) return "-";
-  return `¥${(numValue * 10000).toLocaleString()}`;
+  return `¥${(numValue).toLocaleString()}万`;
 };
 
 // 单价格式化
@@ -36,7 +36,7 @@ const formatUnitPrice = (value: string | number | undefined | null) => {
   if (value === undefined || value === null) return "-";
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue)) return "-";
-  return `¥${numValue.toLocaleString()}/m²`;
+  return `¥${numValue.toLocaleString()}/㎡`;
 };
 
 // 面积格式化
@@ -69,11 +69,22 @@ const ActionCell = ({ project }: { project: L4MarketingProject }) => {
 
   return (
     <div className="flex items-center gap-1">
+      <Link href={`/minipro/projects/${project.id}/preview`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-[#707785] hover:text-[#005daa] hover:bg-[#a5c8ff]/20 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-lg"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline text-xs font-medium">预览</span>
+        </Button>
+      </Link>
+
       <Link href={`/minipro/projects/${project.id}/edit`}>
         <Button
           variant="ghost"
           size="sm"
-          className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          className="text-[#707785] hover:text-[#005daa] hover:bg-[#a5c8ff]/20 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-lg"
         >
           <Pencil className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">编辑</span>
@@ -86,27 +97,27 @@ const ActionCell = ({ project }: { project: L4MarketingProject }) => {
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+              className="text-[#707785] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/50 h-8 w-8 p-0 rounded-lg"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="bg-white border-[#c0c7d6]/20">
             <AlertDialogHeader>
-              <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className="text-[#0b1c30]">确认删除项目？</AlertDialogTitle>
+              <AlertDialogDescription className="text-[#707785]">
                 此操作将删除营销项目 &quot;{project.title}&quot;。该操作不可撤销。
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogCancel className="border-[#c0c7d6]/50 text-[#0b1c30]">取消</AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
                   e.preventDefault();
                   handleDelete();
                 }}
                 disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-[#ba1a1a] hover:bg-[#93000a]"
               >
                 {isDeleting ? "删除中..." : "确认删除"}
               </AlertDialogAction>
@@ -121,7 +132,7 @@ const ActionCell = ({ project }: { project: L4MarketingProject }) => {
 export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "title",
-    header: "项目名称 / ID",
+    header: "房源信息",
     cell: ({ row }) => {
       const project = row.original;
       // 从images字段获取第一张图片作为封面
@@ -130,41 +141,34 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       const status = project.project_status || "在途";
       const config = MARKETING_PROJECT_STATUS_CONFIG[status as keyof typeof MARKETING_PROJECT_STATUS_CONFIG] || {
         label: status,
-        color: "#6b7280",
+        color: "#707785",
         bgColor: "#f3f4f6",
       };
 
       return (
-        <div className="flex items-center gap-3 py-1 min-w-[180px]">
+        <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {coverImage ? (
             <img
               src={getFileUrl(coverImage.trim())}
               alt="封面"
-              className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+              className="w-20 h-14 rounded-lg object-cover flex-shrink-0 border border-[#c0c7d6]/20"
             />
           ) : (
-            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 flex-shrink-0">
+            <div className="w-20 h-14 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[10px] text-[#707785] flex-shrink-0 border border-[#c0c7d6]/20">
               无图
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-slate-800 text-[15px] truncate max-w-[200px] md:max-w-xs">
+            <span className="font-bold text-[#0b1c30] text-[15px] truncate max-w-[200px] md:max-w-xs">
               {project.title || "未命名项目"}
             </span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] text-slate-400 font-mono tracking-tight">
+              <span className="text-[11px] text-[#707785] font-mono tracking-tight">
                 ID: {project.id}
               </span>
-              <Badge
-                variant="secondary"
-                className="md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg"
-                style={{
-                  backgroundColor: config.bgColor,
-                  color: config.color,
-                }}
-              >
-                {config.label}
-              </Badge>
+              <span className="text-[11px] text-[#707785]">
+                {project.community_name || "未知小区"}
+              </span>
             </div>
           </div>
         </div>
@@ -175,22 +179,23 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "layout",
     header: () => (
-      <div className="hidden md:block text-slate-500 font-medium">户型</div>
+      <div className="hidden md:block text-[#707785] font-bold text-xs uppercase tracking-wider">户型</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden md:block text-sm text-slate-600">
-        {row.original.layout || "-"}
-      </span>
+      <div className="hidden md:block">
+        <div className="text-sm font-medium text-[#0b1c30]">{row.original.layout || "-"}</div>
+        <div className="text-xs text-[#707785]">{formatArea(row.original.area)}</div>
+      </div>
     ),
   },
 
   {
     accessorKey: "orientation",
     header: () => (
-      <div className="hidden md:block text-slate-500 font-medium">朝向</div>
+      <div className="hidden md:block text-[#707785] font-bold text-xs uppercase tracking-wider">朝向</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden md:block text-sm text-slate-600">
+      <span className="hidden md:block text-sm text-[#0b1c30]">
         {row.original.orientation || "-"}
       </span>
     ),
@@ -199,53 +204,30 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "floor_info",
     header: () => (
-      <div className="hidden lg:block text-slate-500 font-medium">楼层</div>
+      <div className="hidden lg:block text-[#707785] font-bold text-xs uppercase tracking-wider">楼层</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden lg:block text-sm text-slate-600">
+      <span className="hidden lg:block text-sm text-[#0b1c30]">
         {row.original.floor_info || "-"}
       </span>
     ),
   },
 
   {
-    accessorKey: "area",
-    header: () => (
-      <div className="hidden md:block text-right pr-4 text-slate-500 font-medium">
-        面积
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="hidden md:block text-right pr-4 text-sm text-slate-600 tabular-nums">
-        {formatArea(row.original.area)}
-      </div>
-    ),
-  },
-
-  {
     accessorKey: "total_price",
     header: () => (
-      <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
+      <div className="hidden sm:block text-right pr-4 text-[#707785] font-bold text-xs uppercase tracking-wider">
         总价
       </div>
     ),
     cell: ({ row }) => (
-      <div className="hidden sm:block text-right pr-4 font-semibold text-slate-700 tabular-nums">
-        {formatPrice(row.original.total_price)}
-      </div>
-    ),
-  },
-
-  {
-    accessorKey: "unit_price",
-    header: () => (
-      <div className="hidden lg:block text-right pr-4 text-slate-500 font-medium">
-        单价
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="hidden lg:block text-right pr-4 text-sm text-slate-600 tabular-nums">
-        {formatUnitPrice(row.original.unit_price)}
+      <div className="hidden sm:block text-right pr-4">
+        <div className="font-bold text-[#005daa] tabular-nums">
+          {formatPrice(row.original.total_price)}
+        </div>
+        <div className="text-xs text-[#707785] tabular-nums">
+          {formatUnitPrice(row.original.unit_price)}
+        </div>
       </div>
     ),
   },
@@ -253,7 +235,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "project_status",
     header: () => (
-      <div className="hidden md:block pl-2 text-slate-500 font-medium">
+      <div className="hidden md:block pl-2 text-[#707785] font-bold text-xs uppercase tracking-wider">
         项目状态
       </div>
     ),
@@ -261,22 +243,25 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       const status = row.original.project_status || "在途";
       const config = MARKETING_PROJECT_STATUS_CONFIG[status as keyof typeof MARKETING_PROJECT_STATUS_CONFIG] || {
         label: status,
-        color: "#6b7280",
+        color: "#707785",
         bgColor: "#f3f4f6",
       };
 
       return (
         <div className="hidden md:block">
-          <Badge
-            variant="secondary"
-            className="px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none"
+          <span
+            className="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold"
             style={{
               backgroundColor: config.bgColor,
               color: config.color,
             }}
           >
+            <span
+              className="w-1.5 h-1.5 rounded-full mr-2"
+              style={{ backgroundColor: config.color }}
+            ></span>
             {config.label}
-          </Badge>
+          </span>
         </div>
       );
     },
@@ -285,7 +270,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "publish_status",
     header: () => (
-      <div className="hidden lg:block text-slate-500 font-medium">发布状态</div>
+      <div className="hidden lg:block text-[#707785] font-bold text-xs uppercase tracking-wider">发布状态</div>
     ),
     cell: ({ row }) => {
       const publishStatus = row.original.publish_status || "草稿";
@@ -293,16 +278,15 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
       return (
         <div className="hidden lg:block">
-          <Badge
-            variant="secondary"
-            className="px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none"
+          <span
+            className="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-bold"
             style={{
               backgroundColor: config.bgColor,
               color: config.color,
             }}
           >
             {config.label}
-          </Badge>
+          </span>
         </div>
       );
     },
@@ -311,12 +295,12 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "updated_at",
     header: () => (
-      <div className="hidden xl:block text-slate-500 font-medium">更新时间</div>
+      <div className="hidden xl:block text-[#707785] font-bold text-xs uppercase tracking-wider">更新时间</div>
     ),
     cell: ({ row }) => {
       const date = row.original.updated_at;
       return (
-        <span className="hidden xl:block text-sm text-slate-500">
+        <span className="hidden xl:block text-sm text-[#707785]">
           {date ? format(new Date(date), "yyyy/MM/dd HH:mm") : "-"}
         </span>
       );
@@ -325,7 +309,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     id: "actions",
-    header: () => <div className="text-right pr-4">操作</div>,
+    header: () => <div className="text-right pr-4 text-[#707785] font-bold text-xs uppercase tracking-wider">操作</div>,
     cell: ({ row }) => <ActionCell project={row.original} />,
   },
 ];

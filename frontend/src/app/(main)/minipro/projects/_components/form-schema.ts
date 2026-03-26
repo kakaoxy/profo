@@ -12,6 +12,7 @@ export const publishStatusSchema = z.enum(["草稿", "发布"]);
 export const formSchema = z.object({
   // 小区信息
   community_id: z.number().int().min(1, "请选择小区"),
+  community_name: z.string().trim().optional(),
 
   // 户型信息
   layout: z.string().trim().min(1, "请输入户型").max(100),
@@ -21,6 +22,7 @@ export const formSchema = z.object({
   // 面积与价格
   area: z.number().positive("面积必须大于0"),
   total_price: z.number().positive("总价必须大于0"),
+  unit_price: z.number().optional(),
 
   // 营销信息
   title: z.string().trim().min(1, "请输入标题").max(255),
@@ -137,11 +139,13 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
 export function projectToFormValues(project: Record<string, unknown>): FormValues {
   return {
     community_id: (project.community_id as number) || 0,
+    community_name: (project.community_name as string) || "",
     layout: (project.layout as string) || "",
     orientation: (project.orientation as string) || "",
     floor_info: (project.floor_info as string) || "",
     area: typeof project.area === "string" ? parseFloat(project.area) : (project.area as number) || 0,
     total_price: typeof project.total_price === "string" ? parseFloat(project.total_price) : (project.total_price as number) || 0,
+    unit_price: typeof project.unit_price === "string" ? parseFloat(project.unit_price) : (project.unit_price as number) || undefined,
     title: (project.title as string) || "",
     images: (project.images as string)?.split(",").filter(Boolean) || [],
     sort_order: (project.sort_order as number) || 0,

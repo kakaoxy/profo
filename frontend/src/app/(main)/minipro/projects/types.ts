@@ -4,8 +4,14 @@ import type { components } from "@/lib/api-types";
 // L4 Marketing Project Types
 // ============================================================================
 
-export type L4MarketingProject =
-  components["schemas"]["L4MarketingProjectResponse"];
+// Extended type with community_name that may come from backend
+type L4MarketingProjectResponse = components["schemas"]["L4MarketingProjectResponse"];
+
+export type L4MarketingProject = L4MarketingProjectResponse & {
+  /** Community Name - may be populated by backend */
+  community_name?: string | null;
+};
+
 export type L4MarketingProjectCreate =
   components["schemas"]["L4MarketingProjectCreate"];
 export type L4MarketingProjectUpdate =
@@ -17,8 +23,13 @@ export type L4MarketingProjectListResponse =
 // L4 Marketing Media Types
 // ============================================================================
 
-export type L4MarketingMedia =
-  components["schemas"]["L4MarketingMediaResponse"];
+type L4MarketingMediaResponse = components["schemas"]["L4MarketingMediaResponse"];
+
+export type L4MarketingMedia = L4MarketingMediaResponse & {
+  /** File path for the media */
+  file_path?: string;
+};
+
 export type L4MarketingMediaCreate =
   components["schemas"]["L4MarketingMediaCreate"];
 export type L4MarketingMediaUpdate =
