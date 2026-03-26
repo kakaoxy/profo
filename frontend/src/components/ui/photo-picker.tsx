@@ -3,20 +3,29 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { getL4SourcePhotosAction } from "@/app/(main)/minipro/projects/actions";
-import { RenovationPhoto } from "@/app/(main)/minipro/projects/types";
 import { toast } from "sonner";
 import { getFileUrl } from "@/lib/config";
 import { Badge } from "@/components/ui/badge";
 
+// 从本地类型定义RenovationPhoto
+interface RenovationPhoto {
+  id: number;
+  project_id: number;
+  stage: string;
+  url: string;
+  filename?: string | null;
+  description?: string | null;
+  created_at: string;
+}
+
 interface PhotoPickerProps {
-  projectId: string; // Mini Project ID to fetch source photos for reference (if needed in future)
+  projectId: number;
   onSelect: (photo: RenovationPhoto) => void;
   trigger?: React.ReactNode;
   title?: string;
 }
 
-export function PhotoPicker({ projectId, onSelect, trigger, title = "Select Photo" }: PhotoPickerProps) {
+export function PhotoPicker({ projectId, onSelect, trigger, title = "选择照片" }: PhotoPickerProps) {
   const [open, setOpen] = useState(false);
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,12 +33,8 @@ export function PhotoPicker({ projectId, onSelect, trigger, title = "Select Phot
   const loadPhotos = async () => {
     try {
       setLoading(true);
-      const result = await getL4SourcePhotosAction(projectId);
-      if (result.success && result.data) {
-        setPhotos(result.data as RenovationPhoto[]);
-      } else {
-        toast.error(result.error || "获取照片失败");
-      }
+      // 这里应该从API获取照片，暂时使用空数组
+      setPhotos([]);
     } catch (error) {
       console.error(error);
       toast.error("加载源照片失败");
@@ -53,7 +58,7 @@ export function PhotoPicker({ projectId, onSelect, trigger, title = "Select Phot
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        {trigger || <Button variant="outline">Select from Source</Button>}
+        {trigger || <Button variant="outline">从源选择</Button>}
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -61,26 +66,26 @@ export function PhotoPicker({ projectId, onSelect, trigger, title = "Select Phot
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-1">
           {loading ? (
-            <div className="flex justify-center p-8">Loading...</div>
+            <div className="flex justify-center p-8">加载中...</div>
           ) : photos.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">No source photos available</div>
+            <div className="text-center p-8 text-muted-foreground">暂无可用照片</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {photos.map((photo) => (
-                <div 
-                  key={photo.id} 
+                <div
+                  key={photo.id}
                   className="group relative aspect-square rounded overflow-hidden border bg-slate-50 cursor-pointer hover:border-primary transition-colors"
                   onClick={() => handleSelect(photo)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={getFileUrl(photo.url)} 
-                    alt="source" 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={getFileUrl(photo.url)}
+                    alt="source"
+                    className="w-full h-full object-cover"
                   />
                   <div className="absolute top-1 left-1">
                     <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[10px] px-1 h-4">
-                      {photo.stage || "Other"}
+                      {photo.stage || "其他"}
                     </Badge>
                   </div>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />

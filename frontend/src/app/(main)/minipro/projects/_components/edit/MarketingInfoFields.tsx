@@ -10,27 +10,25 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { InfoCard } from "../ui/InfoCard";
 import { TagInputField } from "./TagInputField";
-import { ImageInputField } from "./ImageInputField";
-import type { CreateValues, UpdateValues } from "../form-schema";
+import type { FormValues } from "../form-schema";
 
 export function MarketingInfoFields() {
-  const { control, watch } = useFormContext<CreateValues | UpdateValues>();
-  const marketingTags = watch("marketing_tags") ?? [];
+  const { control, watch } = useFormContext<FormValues>();
+  const tags = watch("tags") ?? [];
 
   return (
     <InfoCard title="营销信息">
       <div className="space-y-5">
-        {/* 营销标题 */}
+        {/* 标题 */}
         <FormField
           control={control}
           name="title"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-slate-700">
-                营销标题 <span className="text-red-500">*</span>
+                标题 <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Input
@@ -46,23 +44,26 @@ export function MarketingInfoFields() {
           )}
         />
 
-        {/* 装修风格 & 排序权重 */}
+        {/* 小区ID & 户型 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={control}
-            name="style"
+            name="community_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-medium text-slate-700">
-                  装修风格
+                  小区ID <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="例如：现代简约"
+                    type="number"
+                    min={1}
+                    placeholder="请输入小区ID"
                     value={String(field.value ?? "")}
-                    onChange={(e) =>
-                      field.onChange(e.target.value ? e.target.value : null)
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? 0 : Number(e.target.value);
+                      field.onChange(Number.isFinite(val) && val > 0 ? val : 0);
+                    }}
                     className="border-slate-200 focus-visible:ring-blue-600"
                   />
                 </FormControl>
@@ -72,21 +73,116 @@ export function MarketingInfoFields() {
           />
           <FormField
             control={control}
-            name="sort_order"
+            name="layout"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-medium text-slate-700">
-                  排序权重
+                  户型 <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="例如：三室两厅"
+                    value={String(field.value ?? "")}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="border-slate-200 focus-visible:ring-blue-600"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* 朝向 & 楼层信息 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            control={control}
+            name="orientation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-slate-700">
+                  朝向 <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="例如：南北通透"
+                    value={String(field.value ?? "")}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="border-slate-200 focus-visible:ring-blue-600"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="floor_info"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-slate-700">
+                  楼层信息 <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="例如：15/28层"
+                    value={String(field.value ?? "")}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="border-slate-200 focus-visible:ring-blue-600"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* 面积 & 总价 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            control={control}
+            name="area"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-slate-700">
+                  面积 (m²) <span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    min={0}
-                    placeholder="数值越大排序越靠前"
-                    value={String(field.value ?? 0)}
+                    min={0.01}
+                    step={0.01}
+                    placeholder="例如：120.5"
+                    value={String(field.value ?? "")}
                     onChange={(e) => {
-                      const next = e.target.value === "" ? 0 : Number(e.target.value);
-                      field.onChange(Number.isFinite(next) ? next : 0);
+                      const val = e.target.value === "" ? 0 : Number(e.target.value);
+                      field.onChange(Number.isFinite(val) && val > 0 ? val : 0);
+                    }}
+                    className="border-slate-200 focus-visible:ring-blue-600"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="total_price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium text-slate-700">
+                  总价 (万元) <span className="text-red-500">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    placeholder="例如：500"
+                    value={String(field.value ?? "")}
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? 0 : Number(e.target.value);
+                      field.onChange(Number.isFinite(val) && val > 0 ? val : 0);
                     }}
                     className="border-slate-200 focus-visible:ring-blue-600"
                   />
@@ -100,13 +196,13 @@ export function MarketingInfoFields() {
         {/* 营销标签 */}
         <FormField
           control={control}
-          name="marketing_tags"
+          name="tags"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-slate-700">
-                营销标签
+                标签
                 <span className="text-xs text-slate-400 ml-2">
-                  ({marketingTags.length}/20)
+                  ({tags.length}/20)
                 </span>
               </FormLabel>
               <FormControl>
@@ -119,78 +215,6 @@ export function MarketingInfoFields() {
             </FormItem>
           )}
         />
-
-        {/* 项目描述 */}
-        <FormField
-          control={control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-slate-700">
-                项目描述
-              </FormLabel>
-              <FormControl>
-                <Textarea
-                  rows={4}
-                  placeholder="描述项目特色、亮点..."
-                  value={String(field.value ?? "")}
-                  onChange={(e) =>
-                    field.onChange(e.target.value ? e.target.value : null)
-                  }
-                  className="border-slate-200 focus-visible:ring-blue-600 resize-none"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 分享配置 */}
-        <div className="pt-5 border-t border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-800 mb-4">分享配置</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={control}
-              name="share_title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium text-slate-700">
-                    分享标题
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="微信分享时显示的标题"
-                      value={String(field.value ?? "")}
-                      onChange={(e) =>
-                        field.onChange(e.target.value ? e.target.value : null)
-                      }
-                      className="border-slate-200 focus-visible:ring-blue-600"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="share_image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium text-slate-700">
-                    分享图片
-                  </FormLabel>
-                  <FormControl>
-                    <ImageInputField
-                      value={field.value ?? null}
-                      onChange={(value) => field.onChange(value)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
       </div>
     </InfoCard>
   );

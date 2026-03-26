@@ -27,7 +27,7 @@ export default async function MarketingProjectsPage({
   const params = await searchParams;
   const page = Number(getSearchParam(params?.page, "1")) || 1;
   const size = Number(getSearchParam(params?.size, "20")) || 20;
-  const status = getSearchParam(params?.status, "all");
+  const publishStatus = getSearchParam(params?.publish_status, "");
   const projectStatus = getSearchParam(params?.project_status, "");
 
   const client = await fetchClient();
@@ -36,12 +36,7 @@ export default async function MarketingProjectsPage({
       query: {
         page,
         size,
-        is_published:
-          status === "published"
-            ? true
-            : status === "draft"
-              ? false
-              : undefined,
+        publish_status: publishStatus || undefined,
         project_status: projectStatus || undefined,
       } satisfies L4MarketingProjectsQuery,
     },
@@ -76,8 +71,8 @@ export default async function MarketingProjectsPage({
   // 计算统计数据
   const stats = {
     total: total,
-    published: items.filter((p) => p.is_published).length,
-    draft: items.filter((p) => !p.is_published).length,
+    published: items.filter((p) => p.publish_status === "发布").length,
+    draft: items.filter((p) => p.publish_status === "草稿").length,
     for_sale: items.filter((p) => p.project_status === "在售").length,
     sold: items.filter((p) => p.project_status === "已售").length,
     in_progress: items.filter((p) => p.project_status === "在途").length,

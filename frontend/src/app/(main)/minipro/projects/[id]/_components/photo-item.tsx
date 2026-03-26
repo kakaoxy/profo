@@ -10,7 +10,7 @@ import { Trash2 } from "lucide-react";
 interface PhotoItemProps {
   photo: L4MarketingMedia;
   index: number;
-  onDelete: (photoId: string) => void;
+  onDelete: (photoId: number) => void;
   isSynced?: boolean;
 }
 
@@ -21,19 +21,13 @@ export function PhotoItem({
   isSynced = true,
 }: PhotoItemProps) {
   const stageLabels: Record<string, string> = {
-    signing: "签约阶段",
-    renovating: "改造阶段",
-    selling: "销售阶段",
-    sold: "已售阶段",
     other: "其他",
-    设计: "设计阶段",
     拆除: "拆除阶段",
     水电: "水电阶段",
     木瓦: "木瓦阶段",
     油漆: "油漆阶段",
     安装: "安装阶段",
     交付: "交付阶段",
-    已完成: "已完成阶段",
   };
 
   const stage = photo.renovation_stage || "other";
@@ -56,7 +50,7 @@ export function PhotoItem({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground truncate">
-          {photo.id.slice(0, 8)}
+          照片 #{photo.id}
         </p>
         <p className="text-xs text-muted-foreground">
           阶段: {stageLabels[stage] || stageLabels.other}
@@ -69,11 +63,12 @@ export function PhotoItem({
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
+          className="h-8 w-8"
           onClick={() => onDelete(photo.id)}
           aria-label="删除照片"
         >
-          <Trash2 />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
     </div>

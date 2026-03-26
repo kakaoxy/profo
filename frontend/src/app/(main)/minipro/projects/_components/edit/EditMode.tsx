@@ -11,9 +11,9 @@ import type { EditModeProps } from "../form-types";
 import { PhotoManager } from "../../[id]/_components/photo-manager";
 import Link from "next/link";
 
-export function EditMode({ mode, project, photos, consultants, actions }: EditModeProps) {
+export function EditMode({ mode, project, photos, actions }: EditModeProps) {
   const [localPhotos, setLocalPhotos] = React.useState(photos);
-  const { form, handleSubmit, isSubmitting } = useMiniProjectForm({
+  const { form, onSubmit, isSubmitting } = useMiniProjectForm({
     mode,
     project,
     actions,
@@ -29,24 +29,16 @@ export function EditMode({ mode, project, photos, consultants, actions }: EditMo
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* 左侧：主要信息 */}
           <div className="lg:col-span-7 space-y-6">
             <MarketingInfoFields />
-
-            {mode === "edit" ? (
-              <InfoCard title="物理信息（只读）">
-                <div className="text-sm text-slate-500">
-                  物理信息来自主项目同步（刷新后覆盖），详情请查看只读详情页。
-                </div>
-              </InfoCard>
-            ) : null}
           </div>
 
           {/* 右侧：配置和照片 */}
           <div className="lg:col-span-5 space-y-6">
-            <BasicConfigFields consultants={consultants} />
+            <BasicConfigFields />
 
             {mode === "edit" && project ? (
               <PhotoManager

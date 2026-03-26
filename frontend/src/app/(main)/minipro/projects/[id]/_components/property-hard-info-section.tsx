@@ -1,13 +1,13 @@
 "use client";
 
-import { MiniProject } from "../../types";
+import { L4MarketingProject } from "../../types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Lock, RefreshCw } from "lucide-react";
 
 interface PropertyHardInfoSectionProps {
-  project: MiniProject;
+  project: L4MarketingProject;
   onRefresh: () => void;
 }
 
@@ -16,15 +16,15 @@ export function PropertyHardInfoSection({
   onRefresh,
 }: PropertyHardInfoSectionProps) {
   const items = [
-    { label: "地址", value: project.address || "未同步" },
-    { label: "总面积", value: project.area ? `${project.area} m²` : "未同步" },
+    { label: "小区ID", value: project.community_id || "未设置" },
+    { label: "总面积", value: project.area ? `${project.area} m²` : "未设置" },
     {
-      label: "价格",
-      value: project.price ? `¥${project.price.toLocaleString()} 万` : "未同步",
+      label: "总价",
+      value: project.total_price ? `¥${Number(project.total_price).toLocaleString()} 万` : "未设置",
     },
-    { label: "户型", value: project.layout || "未同步" },
-    { label: "朝向", value: project.orientation || "未同步" },
-    { label: "楼层信息", value: project.floor_info || "未同步" },
+    { label: "户型", value: project.layout || "未设置" },
+    { label: "朝向", value: project.orientation || "未设置" },
+    { label: "楼层信息", value: project.floor_info || "未设置" },
   ];
 
   return (
@@ -33,10 +33,10 @@ export function PropertyHardInfoSection({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CardTitle className="text-sm">房源硬信息</CardTitle>
-            <Badge variant="secondary">主项目同步</Badge>
+            <Badge variant="secondary">项目信息</Badge>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={onRefresh}>
-            <RefreshCw />
+            <RefreshCw className="h-4 w-4" />
             刷新基础信息
           </Button>
         </div>
@@ -50,7 +50,7 @@ export function PropertyHardInfoSection({
               </div>
               <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
                 <span className="truncate">{item.value}</span>
-                <Lock className="size-4 opacity-50" />
+                <Lock className="h-4 w-4 opacity-50" />
               </div>
             </div>
           ))}

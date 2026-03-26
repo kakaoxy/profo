@@ -2,12 +2,19 @@
 L4 市场营销层模型
 对应 mini_projects 小程序项目管理
 """
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, Enum as SQLEnum
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, event
+from sqlalchemy.orm import relationship, validates
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Optional
 
 from .base import BaseModel
+
+
+class PublishStatus(str):
+    """发布状态枚举"""
+    DRAFT = "草稿"
+    PUBLISHED = "发布"
 
 
 class MarketingProjectStatus(str):
@@ -24,69 +31,127 @@ class L4MarketingProject(BaseModel):
     """
     __tablename__ = "l4_marketing_projects"
 
-    # 关联 L3 项目层 (软引用，允许为空表示独立静态项目)
-    project_id = Column(String(36), nullable=True, comment="关联L3项目ID(软引用)")
+    # 主键 - 整数类型，自增
+    # 注意：继承的BaseModel使用String(36) UUID，我们需要覆盖它
+    id = Column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
 
-    # 关联顾问 (软引用)
-    consultant_id = Column(String(36), nullable=True, comment="关联顾问ID(软引用)")
+    # 小区ID - 整数类型，非空，关联小区
+    community_id = Column(Integer, nullable=False, comment="关联小区ID")
 
-    # 营销信息 (运营维护，同步不覆盖)
-    title = Column(String(200), nullable=False, comment="营销标题")
-    cover_image = Column(Text, comment="封面图URL")
-    style = Column(String(50), comment="装修风格")
-    description = Column(Text, comment="项目描述")
-    marketing_tags = Column(String(500), comment="营销标签，逗号分隔")
+    # 户型信息
+    layout = Column(String(100), nullable=False, comment="户型，如：三室两厅")
+    orientation = Column(String(50), nullable=False, comment="朝向，如：南北通透")
+    floor_info = Column(String(100), nullable=False, comment="楼层信息，如：15/28层")
 
-    # SEO 与分享 (运营维护，同步不覆盖)
-    share_title = Column(String(100), comment="分享标题")
-    share_image = Column(Text, comment="分享图片URL")
-    view_count = Column(Integer, default=0, nullable=False, comment="浏览量")
+    # 面积与价格
+    area = Column(Numeric(10, 2), nullable=False, comment="面积(m²)，保留两位小数")
+    total_price = Column(Numeric(12, 2), nullable=False, comment="总价(万元)，保留两位小数")
+    unit_price = Column(Numeric(12, 2), nullable=False, comment="单价(万元/m²)，自动计算，保留两位小数")
 
-    # 硬字段 (来自L3项目，刷新时覆盖)
-    address = Column(String(500), comment="物业地址")
-    area = Column(Numeric(10, 2), comment="面积(m²)")
-    price = Column(Numeric(15, 2), comment="预估售价(万)")
-    layout = Column(String(50), comment="户型")
-    orientation = Column(String(20), comment="朝向")
-    floor_info = Column(String(100), comment="楼层信息")
+    # 营销信息
+    title = Column(String(255), nullable=False, comment="标题，最大长度255")
+    images = Column(Text, nullable=True, comment="图片URL列表，多个用逗号分隔")
+    sort_order = Column(Integer, nullable=False, default=0, comment="排序权重，默认0")
+    tags = Column(String(500), nullable=True, comment="标签，多个用逗号分隔")
+    decoration_style = Column(String(100), nullable=True, comment="装修风格，最大长度100")
 
     # 状态控制
+    publish_status = Column(
+        String(20),
+        nullable=False,
+        default=PublishStatus.DRAFT,
+        comment="发布状态: 草稿/发布"
+    )
     project_status = Column(
         String(20),
         nullable=False,
         default=MarketingProjectStatus.IN_PROGRESS,
         comment="项目状态: 在途/在售/已售"
     )
-    sort_order = Column(Integer, default=0, nullable=False, comment="排序权重")
-    is_published = Column(Boolean, default=False, nullable=False, comment="是否发布")
-    published_at = Column(DateTime, comment="发布时间")
+
+    # 软引用关联
+    project_id = Column(Integer, nullable=True, comment="关联L3项目ID(软引用)，可为空表示独立项目")
+    consultant_id = Column(Integer, nullable=False, comment="关联顾问ID(软引用User表)")
 
     # 逻辑删除
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
+    # 时间戳（覆盖基类，使用数据库默认值）
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间"
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间"
+    )
 
     # 关联关系
     media_files = relationship(
         "L4MarketingMedia",
         back_populates="marketing_project",
-        cascade="all, delete-orphan"
-    )
-
-    # 关联顾问（软引用，通过 consultant_id 关联）
-    consultant = relationship(
-        "L4Consultant",
-        primaryjoin="L4MarketingProject.consultant_id == L4Consultant.id",
-        foreign_keys="L4MarketingProject.consultant_id",
-        uselist=False,
-        viewonly=True
+        cascade="all, delete-orphan",
+        lazy="dynamic"
     )
 
     __table_args__ = (
-        Index("idx_l4_marketing_published", "is_published", "sort_order"),
-        Index("idx_l4_marketing_project", "project_id"),
-        Index("idx_l4_marketing_consultant", "consultant_id"),
+        Index("idx_l4_marketing_community", "community_id"),
         Index("idx_l4_marketing_status", "project_status"),
+        Index("idx_l4_marketing_publish", "publish_status"),
+        Index("idx_l4_marketing_consultant", "consultant_id"),
+        Index("idx_l4_marketing_project_ref", "project_id"),
+        Index("idx_l4_marketing_sort", "sort_order"),
         Index("idx_l4_marketing_deleted", "is_deleted"),
     )
+
+    def __init__(self, **kwargs):
+        # 计算单价
+        area = kwargs.get('area')
+        total_price = kwargs.get('total_price')
+        if area is not None and total_price is not None:
+            if float(area) > 0:
+                kwargs['unit_price'] = Decimal(str(total_price)) / Decimal(str(area))
+            else:
+                kwargs['unit_price'] = Decimal('0')
+        super().__init__(**kwargs)
+
+    def recalculate_unit_price(self):
+        """重新计算单价"""
+        if self.area and float(self.area) > 0:
+            self.unit_price = Decimal(str(self.total_price)) / Decimal(str(self.area))
+        else:
+            self.unit_price = Decimal('0')
+
+    @validates('total_price')
+    def validate_total_price(self, key, value):
+        """总价变更时重新计算单价"""
+        if value is not None and self.area is not None:
+            if float(self.area) > 0:
+                self.unit_price = Decimal(str(value)) / Decimal(str(self.area))
+            else:
+                self.unit_price = Decimal('0')
+        return value
+
+    @validates('area')
+    def validate_area(self, key, value):
+        """面积变更时重新计算单价"""
+        if value is not None and float(value) > 0 and self.total_price is not None:
+            self.unit_price = Decimal(str(self.total_price)) / Decimal(str(value))
+        else:
+            self.unit_price = Decimal('0')
+        return value
+
+
+# 事件监听器，在更新前重新计算单价
+@event.listens_for(L4MarketingProject, 'before_update')
+def recalculate_unit_price_before_update(mapper, connection, target):
+    """在更新前重新计算单价"""
+    target.recalculate_unit_price()
 
 
 class L4MarketingMedia(BaseModel):
@@ -96,9 +161,12 @@ class L4MarketingMedia(BaseModel):
     """
     __tablename__ = "l4_marketing_media"
 
-    # 关联营销项目
+    # 主键 - 整数类型，自增
+    id = Column(Integer, primary_key=True, autoincrement=True, comment="媒体ID")
+
+    # 关联营销项目 - 整数外键
     marketing_project_id = Column(
-        String(36),
+        Integer,
         ForeignKey("l4_marketing_projects.id"),
         nullable=False,
         comment="营销项目ID"
@@ -113,21 +181,36 @@ class L4MarketingMedia(BaseModel):
     )
 
     # 装修阶段标记
-    renovation_stage = Column(String(50), comment="装修阶段")
+    renovation_stage = Column(String(50), nullable=True, comment="装修阶段")
 
     # 来源 A: 关联 L3 项目照片 (标记机制，URL 实时查询)
-    origin_media_id = Column(String(36), comment="来源媒体ID(L3层)")
+    origin_media_id = Column(Integer, nullable=True, comment="来源媒体ID(L3层)")
 
     # 来源 B: 独立上传 (直接存储 URL)
     file_url = Column(Text, nullable=False, comment="文件URL")
-    thumbnail_url = Column(Text, comment="缩略图URL")
+    thumbnail_url = Column(Text, nullable=True, comment="缩略图URL")
 
     # 描述信息
-    description = Column(Text, comment="描述")
-    sort_order = Column(Integer, default=0, nullable=False, comment="排序")
+    description = Column(Text, nullable=True, comment="描述")
+    sort_order = Column(Integer, nullable=False, default=0, comment="排序")
 
     # 逻辑删除
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
+    # 时间戳
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间"
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间"
+    )
 
     # 关联关系
     marketing_project = relationship(
@@ -139,30 +222,4 @@ class L4MarketingMedia(BaseModel):
         Index("idx_l4_media_project", "marketing_project_id", "renovation_stage"),
         Index("idx_l4_media_origin", "origin_media_id"),
         Index("idx_l4_media_deleted", "is_deleted"),
-    )
-
-
-class L4Consultant(BaseModel):
-    """
-    L4 营销顾问表 (原 consultants)
-    小程序端展示的顾问信息
-    """
-    __tablename__ = "l4_consultants"
-
-    name = Column(String(100), nullable=False, comment="姓名")
-    avatar_url = Column(Text, comment="头像URL")
-    role = Column(String(100), comment="职位")
-    phone = Column(String(20), comment="联系电话")
-    wx_qr_code = Column(Text, comment="微信二维码")
-    intro = Column(Text, comment="个人简介")
-    rating = Column(Numeric(2, 1), default=5.0, comment="评分")
-    completed_projects = Column(Integer, default=0, comment="完成项目数")
-    is_active = Column(Boolean, default=True, nullable=False, comment="是否在职")
-
-    # 逻辑删除
-    is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
-
-    __table_args__ = (
-        Index("idx_l4_consultants_active", "is_active"),
-        Index("idx_l4_consultants_deleted", "is_deleted"),
     )

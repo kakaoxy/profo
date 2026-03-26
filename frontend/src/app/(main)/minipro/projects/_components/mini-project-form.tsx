@@ -17,7 +17,6 @@ const defaultActions: MiniProjectFormActions = {
 
 export function MiniProjectForm({
   mode,
-  consultants,
   initialProject,
   initialPhotos = [],
   actions,
@@ -29,7 +28,6 @@ export function MiniProjectForm({
       <ViewMode
         project={initialProject}
         photos={initialPhotos}
-        consultants={consultants}
       />
     );
   }
@@ -39,7 +37,6 @@ export function MiniProjectForm({
       mode={mode}
       project={initialProject}
       photos={initialPhotos}
-      consultants={consultants}
       actions={resolvedActions}
     />
   );

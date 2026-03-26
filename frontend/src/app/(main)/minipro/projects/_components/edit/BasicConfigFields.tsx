@@ -16,71 +16,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { InfoCard } from "../ui/InfoCard";
-import { ImageInputField } from "./ImageInputField";
-import type { L4Consultant } from "../../types";
-import type { CreateValues, UpdateValues } from "../form-schema";
-import { MARKETING_PROJECT_STATUS_CONFIG } from "../../types";
+import type { FormValues } from "../form-schema";
+import { MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "../../types";
 
-interface BasicConfigFieldsProps {
-  consultants: L4Consultant[];
-}
-
-export function BasicConfigFields({ consultants }: BasicConfigFieldsProps) {
-  const { control } = useFormContext<CreateValues | UpdateValues>();
+export function BasicConfigFields() {
+  const { control } = useFormContext<FormValues>();
 
   return (
     <InfoCard title="基础配置">
       <div className="space-y-5">
-        {/* 封面图 */}
+        {/* 排序权重 */}
         <FormField
           control={control}
-          name="cover_image"
+          name="sort_order"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-slate-700">
-                封面图
+                排序权重
               </FormLabel>
               <FormControl>
-                <ImageInputField
-                  value={field.value ?? null}
-                  onChange={(value) => field.onChange(value)}
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="数值越大排序越靠前"
+                  value={String(field.value ?? 0)}
+                  onChange={(e) => {
+                    const next = e.target.value === "" ? 0 : Number(e.target.value);
+                    field.onChange(Number.isFinite(next) ? next : 0);
+                  }}
+                  className="border-slate-200 focus-visible:ring-blue-600"
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 顾问选择 */}
-        <FormField
-          control={control}
-          name="consultant_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-slate-700">
-                顾问
-              </FormLabel>
-              <FormControl>
-                <Select
-                  value={field.value ? String(field.value) : "none"}
-                  onValueChange={(val) =>
-                    field.onChange(val === "none" ? null : val)
-                  }
-                >
-                  <SelectTrigger className="w-full border-slate-200 focus:ring-blue-600">
-                    <SelectValue placeholder="选择顾问" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">不指定</SelectItem>
-                    {consultants.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -128,24 +95,67 @@ export function BasicConfigFields({ consultants }: BasicConfigFieldsProps) {
           )}
         />
 
-        {/* 发布开关 */}
+        {/* 发布状态 */}
         <FormField
           control={control}
-          name="is_published"
+          name="publish_status"
           render={({ field }) => (
-            <FormItem className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-slate-50/50 px-3 py-3">
-              <div className="grid gap-0.5">
-                <div className="text-sm font-medium text-slate-800">发布</div>
-                <div className="text-xs text-slate-500">关闭则为草稿状态</div>
-              </div>
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-slate-700">
+                发布状态
+              </FormLabel>
               <FormControl>
-                <Switch
-                  aria-label="发布"
-                  checked={Boolean(field.value)}
-                  onCheckedChange={field.onChange}
-                  className="data-[state=checked]:bg-emerald-500"
+                <Select
+                  value={field.value ?? "草稿"}
+                  onValueChange={(val) =>
+                    field.onChange(val as "草稿" | "发布")
+                  }
+                >
+                  <SelectTrigger className="w-full border-slate-200 focus:ring-blue-600">
+                    <SelectValue placeholder="选择发布状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PUBLISH_STATUS_CONFIG).map(
+                      ([value, config]) => (
+                        <SelectItem key={value} value={value}>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: config.color }}
+                            />
+                            {config.label}
+                          </div>
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 装修风格 */}
+        <FormField
+          control={control}
+          name="decoration_style"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-slate-700">
+                装修风格
+              </FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="例如：现代简约、欧式古典"
+                  value={String(field.value ?? "")}
+                  onChange={(e) =>
+                    field.onChange(e.target.value ? e.target.value : null)
+                  }
+                  className="border-slate-200 focus-visible:ring-blue-600"
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

@@ -32,7 +32,7 @@ from .lead import Lead, LeadFollowUp, LeadPriceHistory
 from .l4_marketing import (
     L4MarketingProject,
     L4MarketingMedia,
-    L4Consultant,
+    PublishStatus,
     MarketingProjectStatus,
 )
 
@@ -74,6 +74,6 @@ __all__ = [
     # L4 市场营销模型
     'L4MarketingProject',
     'L4MarketingMedia',
-    'L4Consultant',
+    'PublishStatus',
     'MarketingProjectStatus',
 ]

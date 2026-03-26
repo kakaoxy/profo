@@ -9,12 +9,10 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
-import type { L4MarketingProject, L4Consultant, L4MarketingMedia } from "../types";
+import type { L4MarketingProject, L4MarketingMedia } from "../types";
 import {
   getL4MarketingProjectAction,
-  getL4ConsultantsAction,
   getL4MarketingMediaAction,
-  refreshL4MarketingProjectAction,
 } from "../actions";
 
 import { MarketingDetailHeader } from "./detail/marketing-detail-header";
@@ -40,11 +38,9 @@ export function MarketingDetailSheet({
   const isFetchingRef = useRef(false);
 
   const [project, setProject] = useState<L4MarketingProject | null>(initialProject);
-  const [consultants, setConsultants] = useState<L4Consultant[]>([]);
   const [photos, setPhotos] = useState<L4MarketingMedia[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // 初始化数据
   useEffect(() => {
@@ -54,25 +50,20 @@ export function MarketingDetailSheet({
   }, [initialProject]);
 
   // 加载详情数据
-  const loadDetailData = useCallback(async (projectId: string) => {
+  const loadDetailData = useCallback(async (projectId: number) => {
     if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
     setIsLoading(true);
 
     try {
-      const [projectRes, consultantsRes, photosRes] = await Promise.all([
+      const [projectRes, photosRes] = await Promise.all([
         getL4MarketingProjectAction(projectId),
-        getL4ConsultantsAction(1, 100),
         getL4MarketingMediaAction(projectId, 1, 100),
       ]);
 
       if (projectRes.success && projectRes.data) {
         setProject(projectRes.data as L4MarketingProject);
-      }
-
-      if (consultantsRes.success && consultantsRes.data) {
-        setConsultants((consultantsRes.data.items as L4Consultant[]) || []);
       }
 
       if (photosRes.success && photosRes.data) {
@@ -86,27 +77,6 @@ export function MarketingDetailSheet({
       isFetchingRef.current = false;
     }
   }, []);
-
-  // 刷新项目数据
-  const handleRefreshProject = async () => {
-    if (!project?.id || isRefreshing) return;
-
-    setIsRefreshing(true);
-    try {
-      const res = await refreshL4MarketingProjectAction(project.id);
-      if (res.success) {
-        toast.success("项目已刷新");
-        await loadDetailData(project.id);
-        onRefresh?.();
-      } else {
-        toast.error(res.error || "刷新失败");
-      }
-    } catch {
-      toast.error("刷新失败");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   // 当模态框打开时加载数据
   useEffect(() => {
@@ -128,9 +98,7 @@ export function MarketingDetailSheet({
 
           <MarketingDetailHeader
             project={project}
-            isRefreshing={isRefreshing}
             onClose={onClose}
-            onRefresh={handleRefreshProject}
           />
 
           <div
@@ -154,7 +122,6 @@ export function MarketingDetailSheet({
                 <div className="lg:col-span-5 space-y-6">
                   <BasicConfigSection
                     project={project}
-                    consultants={consultants}
                     onPreviewImage={setPreviewImage}
                   />
                   <PhotosSection project={project} photos={photos} />

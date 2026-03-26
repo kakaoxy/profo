@@ -8,7 +8,7 @@ import { BasicConfigView } from "./BasicConfigView";
 import { PhotoGallery } from "./PhotoGallery";
 import type { ViewModeProps } from "../form-types";
 
-export function ViewMode({ project, photos, consultants }: ViewModeProps) {
+export function ViewMode({ project, photos }: ViewModeProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* 左侧：主要信息 */}
@@ -19,7 +19,7 @@ export function ViewMode({ project, photos, consultants }: ViewModeProps) {
 
       {/* 右侧：配置和照片 */}
       <div className="lg:col-span-5 space-y-6">
-        <BasicConfigView project={project} consultants={consultants} />
+        <BasicConfigView project={project} />
         <InfoCard title="照片">
           <PhotoGallery photos={photos} />
           <div className="mt-4 text-xs text-slate-400">
