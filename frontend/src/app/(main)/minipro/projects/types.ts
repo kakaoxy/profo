@@ -27,34 +27,21 @@ export type L4MarketingMediaListResponse =
   components["schemas"]["L4MarketingMediaListResponse"];
 
 // ============================================================================
-// L4 Consultant Types
-// ============================================================================
-
-export type L4Consultant = components["schemas"]["L4ConsultantResponse"];
-export type L4ConsultantCreate =
-  components["schemas"]["L4ConsultantCreate"];
-export type L4ConsultantUpdate =
-  components["schemas"]["L4ConsultantUpdate"];
-export type L4ConsultantListResponse =
-  components["schemas"]["L4ConsultantListResponse"];
-
-// ============================================================================
-// Other Types
-// ============================================================================
-
-export type RenovationPhoto =
-  components["schemas"]["RenovationPhotoResponse"];
-
-// ============================================================================
 // Project Status
 // ============================================================================
 
 export type MarketingProjectStatus = "在途" | "在售" | "已售";
+export type PublishStatus = "草稿" | "发布";
 
 export const MARKETING_PROJECT_STATUS = {
   IN_PROGRESS: "在途" as const,
   FOR_SALE: "在售" as const,
   SOLD: "已售" as const,
+};
+
+export const PUBLISH_STATUS = {
+  DRAFT: "草稿" as const,
+  PUBLISHED: "发布" as const,
 };
 
 export const MARKETING_PROJECT_STATUS_CONFIG: Record<
@@ -78,6 +65,22 @@ export const MARKETING_PROJECT_STATUS_CONFIG: Record<
     color: "#6b7280", // gray-500
     bgColor: "#f3f4f6", // gray-100
     description: "已成交",
+  },
+};
+
+export const PUBLISH_STATUS_CONFIG: Record<
+  PublishStatus,
+  { label: string; color: string; bgColor: string }
+> = {
+  草稿: {
+    label: "草稿",
+    color: "#f59e0b", // amber-500
+    bgColor: "#fef3c7", // amber-100
+  },
+  发布: {
+    label: "已发布",
+    color: "#10b981", // emerald-500
+    bgColor: "#d1fae5", // emerald-100
   },
 };
 
@@ -116,6 +119,18 @@ export const RENOVATION_STAGES: { value: RenovationStage; label: string }[] = [
 ];
 
 // ============================================================================
+// User Type (for consultant soft reference)
+// ============================================================================
+
+export interface User {
+  id: number;
+  username: string;
+  real_name?: string;
+  avatar?: string;
+  phone?: string;
+}
+
+// ============================================================================
 // Legacy Types (for backward compatibility during migration)
 // ============================================================================
 
@@ -125,11 +140,5 @@ export type MiniProject = L4MarketingProject;
 export type MiniProjectCreate = L4MarketingProjectCreate;
 /** @deprecated Use L4MarketingProjectUpdate instead */
 export type MiniProjectUpdate = L4MarketingProjectUpdate;
-/** @deprecated Use L4Consultant instead */
-export type Consultant = L4Consultant;
-/** @deprecated Use L4ConsultantCreate instead */
-export type ConsultantCreate = L4ConsultantCreate;
-/** @deprecated Use L4ConsultantUpdate instead */
-export type ConsultantUpdate = L4ConsultantUpdate;
 /** @deprecated Use L4MarketingMedia instead */
 export type MiniProjectPhoto = L4MarketingMedia;

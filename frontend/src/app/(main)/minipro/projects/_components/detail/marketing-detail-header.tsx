@@ -1,15 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Pencil, X, RefreshCw } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import Link from "next/link";
 import type { MarketingDetailHeaderProps } from "./types";
 
 export function MarketingDetailHeader({
   project,
-  isRefreshing,
   onClose,
-  onRefresh,
 }: MarketingDetailHeaderProps) {
   return (
     <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
@@ -30,15 +28,6 @@ export function MarketingDetailHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          刷新
-        </Button>
         <Button asChild size="sm">
           <Link href={`/minipro/projects/${project.id}/edit`}>
             <Pencil className="mr-2 h-4 w-4" />

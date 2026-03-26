@@ -2,76 +2,153 @@
 
 import * as z from "zod";
 
-// 图片路径验证
-export const imagePathSchema = z
-  .string()
-  .trim()
-  .min(1, "图片地址不能为空")
-  .refine(
-    (val) =>
-      val.startsWith("http://") ||
-      val.startsWith("https://") ||
-      val.startsWith("/"),
-    "请输入 http(s) URL 或以 / 开头的路径",
-  );
-
-// 标签数组验证（前端表单使用数组，提交时转换为逗号分隔字符串）
-export const tagsSchema = z
-  .array(z.string().trim().min(1, "标签不能为空"))
-  .max(20, "最多 20 个标签")
-  .superRefine((tags, ctx) => {
-    const seen = new Set<string>();
-    for (const tag of tags) {
-      const key = tag.toLowerCase();
-      if (seen.has(key)) {
-        ctx.addIssue({ code: "custom", message: "标签不能重复" });
-        break;
-      }
-      seen.add(key);
-    }
-  });
-
 // 项目状态枚举
 export const projectStatusSchema = z.enum(["在途", "在售", "已售"]);
 
+// 发布状态枚举
+export const publishStatusSchema = z.enum(["草稿", "发布"]);
+
+// 前端表单使用的Schema - 所有字段都是必填的
+export const formSchema = z.object({
+  // 小区信息
+  community_id: z.number().int().min(1, "请选择小区"),
+
+  // 户型信息
+  layout: z.string().trim().min(1, "请输入户型").max(100),
+  orientation: z.string().trim().min(1, "请输入朝向").max(50),
+  floor_info: z.string().trim().min(1, "请输入楼层信息").max(100),
+
+  // 面积与价格
+  area: z.number().positive("面积必须大于0"),
+  total_price: z.number().positive("总价必须大于0"),
+
+  // 营销信息
+  title: z.string().trim().min(1, "请输入标题").max(255),
+  images: z.array(z.string()),
+  sort_order: z.number().int().min(0),
+  tags: z.array(z.string()),
+  decoration_style: z.string().trim().max(100).optional(),
+
+  // 状态
+  publish_status: publishStatusSchema,
+  project_status: projectStatusSchema,
+
+  // 关联
+  consultant_id: z.number().int().min(1).optional(),
+});
+
+export type FormValues = z.infer<typeof formSchema>;
+
 // 创建表单 Schema - 与后端 L4MarketingProjectCreate 保持一致
 export const createSchema = z.object({
-  // 必填字段
-  title: z.string().trim().min(1, "营销标题不能为空").max(200, "标题最多 200 个字符"),
+  // 必填字段 - 小区信息
+  community_id: z.number().int().positive("小区ID必须大于0"),
 
-  // 可选字段（与后端保持一致，不强制要求最小长度）
-  cover_image: z.string().trim().nullable().default(null),
-  style: z.string().trim().max(50, "风格最多 50 个字符").nullable().default(null),
-  description: z.string().trim().nullable().default(null),
-  share_title: z.string().trim().max(100, "分享标题最多 100 个字符").nullable().default(null),
-  share_image: z.string().trim().nullable().default(null),
+  // 必填字段 - 户型信息
+  layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符"),
+  orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符"),
+  floor_info: z.string().trim().min(1, "楼层信息不能为空").max(100, "楼层信息最多100个字符"),
 
-  // 标签（前端使用数组，提交时转换为逗号分隔字符串）
-  marketing_tags: tagsSchema.default([]),
+  // 必填字段 - 面积与价格
+  area: z.number().positive("面积必须大于0"),
+  total_price: z.number().positive("总价必须大于0"),
 
-  // 关联字段
-  consultant_id: z.string().trim().nullable().default(null),
+  // 必填字段 - 营销信息
+  title: z.string().trim().min(1, "标题不能为空").max(255, "标题最多255个字符"),
+  images: z.string().trim().nullable().optional(),
+  sort_order: z.number().int().min(0, "排序权重不能小于0").default(0),
+  tags: z.string().trim().max(500, "标签最多500个字符").nullable().optional(),
+  decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
 
   // 状态字段
+  publish_status: publishStatusSchema.default("草稿"),
   project_status: projectStatusSchema.default("在途"),
-  sort_order: z.number().int().min(0, "排序权重不能小于 0").default(0),
-  is_published: z.boolean().default(false),
+
+  // 关联字段
+  project_id: z.number().int().positive().nullable().optional(),
+  consultant_id: z.number().int().positive().nullable().optional(),
 });
 
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
 export const updateSchema = z.object({
-  title: z.string().trim().min(1, "营销标题不能为空").max(200, "标题最多 200 个字符").optional(),
-  cover_image: z.string().trim().nullable().optional(),
-  style: z.string().trim().max(50, "风格最多 50 个字符").nullable().optional(),
-  description: z.string().trim().nullable().optional(),
-  share_title: z.string().trim().max(100, "分享标题最多 100 个字符").nullable().optional(),
-  share_image: z.string().trim().nullable().optional(),
-  marketing_tags: tagsSchema.optional(),
-  consultant_id: z.string().trim().nullable().optional(),
+  community_id: z.number().int().positive("小区ID必须大于0").optional(),
+  layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符").optional(),
+  orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符").optional(),
+  floor_info: z.string().trim().min(1, "楼层信息不能为空").max(100, "楼层信息最多100个字符").optional(),
+  area: z.number().positive("面积必须大于0").optional(),
+  total_price: z.number().positive("总价必须大于0").optional(),
+  title: z.string().trim().min(1, "标题不能为空").max(255, "标题最多255个字符").optional(),
+  images: z.string().trim().nullable().optional(),
+  sort_order: z.number().int().min(0, "排序权重不能小于0").optional(),
+  tags: z.string().trim().max(500, "标签最多500个字符").nullable().optional(),
+  decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
+  publish_status: publishStatusSchema.optional(),
   project_status: projectStatusSchema.optional(),
-  sort_order: z.number().int().min(0, "排序权重不能小于 0").optional(),
-  is_published: z.boolean().optional(),
+  project_id: z.number().int().positive().nullable().optional(),
+  consultant_id: z.number().int().positive().nullable().optional(),
 });
 
 export type CreateValues = z.infer<typeof createSchema>;
 export type UpdateValues = z.infer<typeof updateSchema>;
+
+// 将表单值转换为API创建请求
+export function formValuesToCreateRequest(values: FormValues): Record<string, unknown> {
+  return {
+    community_id: values.community_id,
+    layout: values.layout,
+    orientation: values.orientation,
+    floor_info: values.floor_info,
+    area: values.area,
+    total_price: values.total_price,
+    title: values.title,
+    images: values.images.length > 0 ? values.images.join(",") : null,
+    sort_order: values.sort_order,
+    tags: values.tags.length > 0 ? values.tags.join(",") : null,
+    decoration_style: values.decoration_style || null,
+    publish_status: values.publish_status,
+    project_status: values.project_status,
+    consultant_id: values.consultant_id,
+  };
+}
+
+// 将表单值转换为API更新请求
+export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+
+  if (values.community_id !== undefined) result.community_id = values.community_id;
+  if (values.layout !== undefined) result.layout = values.layout;
+  if (values.orientation !== undefined) result.orientation = values.orientation;
+  if (values.floor_info !== undefined) result.floor_info = values.floor_info;
+  if (values.area !== undefined) result.area = values.area;
+  if (values.total_price !== undefined) result.total_price = values.total_price;
+  if (values.title !== undefined) result.title = values.title;
+  if (values.images !== undefined) result.images = values.images.length > 0 ? values.images.join(",") : null;
+  if (values.sort_order !== undefined) result.sort_order = values.sort_order;
+  if (values.tags !== undefined) result.tags = values.tags.length > 0 ? values.tags.join(",") : null;
+  if (values.decoration_style !== undefined) result.decoration_style = values.decoration_style || null;
+  if (values.publish_status !== undefined) result.publish_status = values.publish_status;
+  if (values.project_status !== undefined) result.project_status = values.project_status;
+  if (values.consultant_id !== undefined) result.consultant_id = values.consultant_id;
+
+  return result;
+}
+
+// 将API响应转换为表单值
+export function projectToFormValues(project: Record<string, unknown>): FormValues {
+  return {
+    community_id: (project.community_id as number) || 0,
+    layout: (project.layout as string) || "",
+    orientation: (project.orientation as string) || "",
+    floor_info: (project.floor_info as string) || "",
+    area: typeof project.area === "string" ? parseFloat(project.area) : (project.area as number) || 0,
+    total_price: typeof project.total_price === "string" ? parseFloat(project.total_price) : (project.total_price as number) || 0,
+    title: (project.title as string) || "",
+    images: (project.images as string)?.split(",").filter(Boolean) || [],
+    sort_order: (project.sort_order as number) || 0,
+    tags: (project.tags as string)?.split(",").filter(Boolean) || [],
+    decoration_style: (project.decoration_style as string) || "",
+    publish_status: (project.publish_status as "草稿" | "发布") || "草稿",
+    project_status: (project.project_status as "在途" | "在售" | "已售") || "在途",
+    consultant_id: (project.consultant_id as number) || undefined,
+  };
+}

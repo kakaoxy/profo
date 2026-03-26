@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { L4MarketingMedia } from "../../types";
 import { PhotoItem } from "./photo-item";
 import { PhotoLibraryPicker } from "./photo-library-picker";
 import {
   createL4MarketingMediaAction,
   deleteL4MarketingMediaAction,
-  getL4SourcePhotosAction,
 } from "../../actions";
 import { toast } from "sonner";
-import type { RenovationPhoto } from "./types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowUpDown, FolderOpen } from "lucide-react";
+import { ArrowUpDown, FolderOpen, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -25,7 +23,7 @@ import {
 } from "@/components/ui/select";
 
 interface PhotoManagerProps {
-  projectId: string;
+  projectId: number;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
@@ -37,22 +35,14 @@ export function PhotoManager({
   photos,
   onPhotosChange,
 }: PhotoManagerProps) {
-  const [activeTab, setActiveTab] = useState<UploadTab>("sync");
+  const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [sourcePhotos, setSourcePhotos] = useState<RenovationPhoto[]>([]);
-  const [sourcePhotosLoading, setSourcePhotosLoading] = useState(false);
   const [uploadUrl, setUploadUrl] = useState("");
   const [uploadStage, setUploadStage] = useState("other");
   const [uploadSortOrder, setUploadSortOrder] = useState(photos.length);
   const [uploading, setUploading] = useState(false);
 
-  const syncedPhotos = photos.filter((p) => !!p.origin_media_id);
-  const uploadedPhotos = photos.filter((p) => !p.origin_media_id);
-  const existingPhotoIds = new Set<string>(
-    syncedPhotos.map((p) => p.origin_media_id).filter(Boolean) as string[],
-  );
-
-  const handleDeletePhoto = async (photoId: string) => {
+  const handleDeletePhoto = async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
     try {
       const result = await deleteL4MarketingMediaAction(photoId);
@@ -72,62 +62,11 @@ export function PhotoManager({
       const aStage = a.renovation_stage || "";
       const bStage = b.renovation_stage || "";
       if (aStage !== bStage) return aStage.localeCompare(bStage);
-      return (a.id || "").localeCompare(b.id || "");
+      return (a.id || 0) - (b.id || 0);
     });
     onPhotosChange(reordered);
     toast.success("排序已重置");
   };
-
-  const handlePhotosAdded = (
-    addedPhotos: L4MarketingMedia[],
-    originToNewId: Record<string, string>,
-  ) => {
-    const existingIds = new Set(
-      photos.map((p) => p.origin_media_id).filter(Boolean),
-    );
-    const newPhotos = addedPhotos
-      .filter((p) => !existingIds.has(p.origin_media_id || p.id))
-      .map((photo) => {
-        const originId = photo.origin_media_id || photo.id;
-        return {
-          ...photo,
-          id: originToNewId[originId] || photo.id,
-          marketing_project_id: projectId,
-          origin_media_id: originId,
-          file_url: photo.file_url || "",
-          renovation_stage: photo.renovation_stage || "other",
-          description: photo.description || null,
-          sort_order: photo.sort_order ?? photos.length,
-          created_at: photo.created_at || new Date().toISOString(),
-          updated_at: photo.updated_at || new Date().toISOString(),
-        };
-      });
-    onPhotosChange([...photos, ...newPhotos]);
-  };
-
-  const loadSourcePhotos = async () => {
-    setSourcePhotosLoading(true);
-    try {
-      const result = await getL4SourcePhotosAction(projectId);
-      if (result.success && result.data) {
-        setSourcePhotos(result.data as RenovationPhoto[]);
-      } else if (result.error) {
-        toast.error(result.error || "加载照片失败");
-      }
-    } catch {
-      toast.error("加载照片失败");
-    } finally {
-      setSourcePhotosLoading(false);
-    }
-  };
-
-  const loadSourcePhotosRef = useRef(loadSourcePhotos);
-
-  useEffect(() => {
-    if (pickerOpen && sourcePhotos.length === 0) {
-      loadSourcePhotosRef.current();
-    }
-  }, [pickerOpen, sourcePhotos.length]);
 
   useEffect(() => {
     setUploadSortOrder(photos.length);
@@ -171,15 +110,17 @@ export function PhotoManager({
         <CardHeader className="border-b py-4">
           <div className="flex items-center justify-between gap-3">
             <CardTitle className="text-sm">照片管理</CardTitle>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleResetOrder}
-            >
-              <ArrowUpDown />
-              重置排序
-            </Button>
+            {photos.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleResetOrder}
+              >
+                <ArrowUpDown className="h-4 w-4 mr-1" />
+                重置排序
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="py-6 space-y-4">
@@ -187,42 +128,14 @@ export function PhotoManager({
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as UploadTab)}
           >
-            <TabsList>
-              <TabsTrigger value="sync">同步照片</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="upload">手动上传</TabsTrigger>
+              <TabsTrigger value="sync">同步照片</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="sync" className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-medium text-muted-foreground">
-                  项目库资源（{syncedPhotos.length}）
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPickerOpen(true)}
-                >
-                  <FolderOpen />
-                  从项目库选择
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {syncedPhotos.map((photo, index) => (
-                  <PhotoItem
-                    key={photo.id}
-                    photo={photo}
-                    index={index}
-                    onDelete={handleDeletePhoto}
-                    isSynced={true}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="upload" className="space-y-3">
+            <TabsContent value="upload" className="space-y-4 mt-4">
               <div className="text-xs font-medium text-muted-foreground">
-                手动上传资源（{uploadedPhotos.length}）
+                手动上传资源（{photos.length}）
               </div>
               <div className="grid grid-cols-12 gap-3 rounded-md border bg-muted/20 p-3">
                 <div className="col-span-12 lg:col-span-6">
@@ -244,10 +157,12 @@ export function PhotoManager({
                       <SelectValue placeholder="选择阶段" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="signing">签约</SelectItem>
-                      <SelectItem value="renovating">改造</SelectItem>
-                      <SelectItem value="selling">销售</SelectItem>
-                      <SelectItem value="sold">已售</SelectItem>
+                      <SelectItem value="拆除">拆除</SelectItem>
+                      <SelectItem value="水电">水电</SelectItem>
+                      <SelectItem value="木瓦">木瓦</SelectItem>
+                      <SelectItem value="油漆">油漆</SelectItem>
+                      <SelectItem value="安装">安装</SelectItem>
+                      <SelectItem value="交付">交付</SelectItem>
                       <SelectItem value="other">其他</SelectItem>
                     </SelectContent>
                   </Select>
@@ -272,12 +187,12 @@ export function PhotoManager({
                     disabled={uploading}
                     onClick={handleAddUploadedPhoto}
                   >
-                    添加
+                    <Upload className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <div className="space-y-3">
-                {uploadedPhotos.map((photo, index) => (
+                {photos.map((photo, index) => (
                   <PhotoItem
                     key={photo.id}
                     photo={photo}
@@ -286,6 +201,26 @@ export function PhotoManager({
                     isSynced={false}
                   />
                 ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="sync" className="space-y-4 mt-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-xs font-medium text-muted-foreground">
+                  从其他项目同步照片
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  <FolderOpen className="h-4 w-4 mr-1" />
+                  从照片库选择
+                </Button>
+              </div>
+              <div className="text-sm text-slate-500 text-center py-8">
+                点击上方按钮从照片库中选择照片进行同步
               </div>
             </TabsContent>
           </Tabs>
@@ -297,11 +232,10 @@ export function PhotoManager({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         nextSortOrderStart={photos.length}
-        onPhotosAdded={handlePhotosAdded}
-        existingPhotoIds={existingPhotoIds}
-        photos={sourcePhotos}
-        loading={sourcePhotosLoading}
-        onLoadPhotos={loadSourcePhotos}
+        onPhotosAdded={(addedPhotos) => {
+          onPhotosChange([...photos, ...addedPhotos]);
+        }}
+        existingPhotoIds={new Set(photos.map((p) => p.id))}
       />
     </>
   );

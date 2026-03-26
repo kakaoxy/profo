@@ -1,6 +1,6 @@
 "use client";
 
-import type { L4Consultant, L4MarketingProject, L4MarketingMedia } from "../types";
+import type { L4MarketingProject, L4MarketingMedia } from "../types";
 import type { L4MarketingProjectCreate, L4MarketingProjectUpdate } from "../types";
 
 export type MiniProjectFormMode = "create" | "edit" | "view";
@@ -10,14 +10,13 @@ export interface MiniProjectFormActions {
     body: L4MarketingProjectCreate,
   ) => Promise<{ success: boolean; data?: L4MarketingProject; error?: string }>;
   updateL4MarketingProject: (
-    id: string,
+    id: number,
     body: L4MarketingProjectUpdate,
   ) => Promise<{ success: boolean; data?: L4MarketingProject; error?: string }>;
 }
 
 export interface MiniProjectFormProps {
   mode: MiniProjectFormMode;
-  consultants: L4Consultant[];
   initialProject?: L4MarketingProject;
   initialPhotos?: L4MarketingMedia[];
   actions?: MiniProjectFormActions;
@@ -26,14 +25,12 @@ export interface MiniProjectFormProps {
 export interface ViewModeProps {
   project?: L4MarketingProject;
   photos: L4MarketingMedia[];
-  consultants: L4Consultant[];
 }
 
 export interface EditModeProps {
   mode: "create" | "edit";
   project?: L4MarketingProject;
   photos: L4MarketingMedia[];
-  consultants: L4Consultant[];
   actions: MiniProjectFormActions;
 }
 
@@ -47,7 +44,6 @@ export interface PhysicalInfoViewProps {
 
 export interface BasicConfigViewProps {
   project?: L4MarketingProject;
-  consultants: L4Consultant[];
 }
 
 export interface PhotoGalleryProps {
@@ -59,7 +55,7 @@ export interface MarketingInfoFieldsProps {
 }
 
 export interface BasicConfigFieldsProps {
-  consultants: L4Consultant[];
+  // Form field props will be passed via react-hook-form context
 }
 
 export interface TagInputFieldProps {

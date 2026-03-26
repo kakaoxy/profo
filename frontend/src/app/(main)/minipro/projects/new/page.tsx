@@ -1,6 +1,4 @@
 import React from "react";
-import { fetchClient } from "@/lib/api-server";
-import type { L4Consultant } from "../types";
 import { MiniProjectForm } from "../_components/mini-project-form";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,14 +7,6 @@ import { ArrowLeft } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ProjectCreatePage() {
-  const client = await fetchClient();
-
-  const consultantsRes = await client.GET("/api/v1/admin/l4-marketing/consultants", {
-    params: { query: { page: 1, size: 100 } },
-  });
-
-  const consultants: L4Consultant[] = consultantsRes.data?.items || [];
-
   return (
     <div className="min-h-screen bg-slate-50/50">
       <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6 py-8 px-4 sm:px-6 lg:px-8">
@@ -38,7 +28,7 @@ export default async function ProjectCreatePage() {
         </div>
 
         {/* Content */}
-        <MiniProjectForm mode="create" consultants={consultants} />
+        <MiniProjectForm mode="create" />
       </div>
     </div>
   );

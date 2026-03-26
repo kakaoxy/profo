@@ -11,11 +11,11 @@ interface PhysicalInfoViewProps {
 
 export function PhysicalInfoView({ project }: PhysicalInfoViewProps) {
   return (
-    <InfoCard title="物理信息（只读）">
+    <InfoCard title="物理信息">
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <DisplayRow label="关联主项目ID" value={project?.project_id || "-"} />
-          <DisplayRow label="物业地址" value={project?.address || "-"} />
+          <DisplayRow label="小区ID" value={project?.community_id || "-"} />
           <DisplayRow
             label="面积"
             value={project?.area ? `${project.area} m²` : "-"}
@@ -24,9 +24,19 @@ export function PhysicalInfoView({ project }: PhysicalInfoViewProps) {
           <DisplayRow label="朝向" value={project?.orientation || "-"} />
           <DisplayRow label="楼层信息" value={project?.floor_info || "-"} />
           <DisplayRow
-            label="预估售价"
+            label="总价"
             value={
-              project?.price ? `¥${project.price.toLocaleString()}` : "-"
+              project?.total_price
+                ? `¥${Number(project.total_price).toLocaleString()} 万`
+                : "-"
+            }
+          />
+          <DisplayRow
+            label="单价"
+            value={
+              project?.unit_price
+                ? `¥${Number(project.unit_price).toLocaleString()}/m²`
+                : "-"
             }
           />
         </div>

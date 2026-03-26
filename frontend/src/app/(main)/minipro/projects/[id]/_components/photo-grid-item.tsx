@@ -43,7 +43,7 @@ export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: Photo
       />
       <div className="px-1">
         <p className="text-xs font-bold truncate">
-          ID: {photo.id.slice(0, 8)}
+          ID: #{photo.id}
         </p>
         <p className="text-[10px] text-muted-foreground truncate">
           {photo.description || photo.stage}

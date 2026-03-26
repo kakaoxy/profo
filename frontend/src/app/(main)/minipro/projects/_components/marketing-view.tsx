@@ -11,7 +11,6 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
 import Link from "next/link";
-import { SyncButton } from "../sync-button";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
 
 interface MarketingViewProps {
@@ -34,7 +33,8 @@ export function MarketingView({ data, total }: MarketingViewProps) {
   // 从编辑页返回时自动打开对应项目的详情
   useEffect(() => {
     if (openProjectId) {
-      const projectToOpen = data.find((p) => p.id === openProjectId);
+      const projectId = Number(openProjectId);
+      const projectToOpen = data.find((p) => p.id === projectId);
       if (projectToOpen) {
         setSelectedProject(projectToOpen);
         setIsSheetOpen(true);
@@ -48,9 +48,9 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       // Status Filter
       let statusMatch = true;
       if (activeTab === "published") {
-        statusMatch = project.is_published === true;
+        statusMatch = project.publish_status === "发布";
       } else if (activeTab === "draft") {
-        statusMatch = project.is_published === false;
+        statusMatch = project.publish_status === "草稿";
       } else if (activeTab === "for_sale") {
         statusMatch = project.project_status === "在售";
       } else if (activeTab === "sold") {
@@ -62,7 +62,8 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       const searchMatch =
         !searchLower ||
         project.title?.toLowerCase().includes(searchLower) ||
-        project.address?.toLowerCase().includes(searchLower);
+        project.layout?.toLowerCase().includes(searchLower) ||
+        project.orientation?.toLowerCase().includes(searchLower);
 
       return statusMatch && searchMatch;
     });
@@ -90,7 +91,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="搜索项目名称、地址..."
+              placeholder="搜索项目名称、户型、朝向..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-blue-600"
@@ -145,7 +146,6 @@ export function MarketingView({ data, total }: MarketingViewProps) {
 
         {/* Right: Actions */}
         <div className="flex w-full lg:w-auto gap-3">
-          <SyncButton />
           <Button
             variant="outline"
             className="flex-1 lg:flex-none bg-white border-slate-200 text-slate-700 hover:bg-slate-50"

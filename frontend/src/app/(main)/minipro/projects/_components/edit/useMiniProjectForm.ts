@@ -5,10 +5,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import type { L4MarketingProject, L4MarketingMedia } from "../../types";
+import type { L4MarketingProject } from "../../types";
 import type { L4MarketingProjectCreate, L4MarketingProjectUpdate } from "../../types";
 import type { MiniProjectFormActions } from "../form-types";
-import { createSchema, updateSchema, type CreateValues, type UpdateValues } from "../form-schema";
+import { formSchema, formValuesToCreateRequest, formValuesToUpdateRequest, projectToFormValues } from "../form-schema";
+import type * as z from "zod";
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface UseMiniProjectFormProps {
   mode: "create" | "edit";
@@ -18,10 +21,9 @@ interface UseMiniProjectFormProps {
 
 export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFormProps) {
   const router = useRouter();
-  const isCreate = mode === "create";
 
-  const form = useForm<CreateValues | UpdateValues>({
-    resolver: zodResolver(isCreate ? createSchema : updateSchema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: getDefaultValues(mode, project),
   });
 
@@ -29,44 +31,15 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
   const isSubmitting = formState.isSubmitting;
   const dirtyFields = formState.dirtyFields;
 
-  const handleSubmit = async (values: CreateValues | UpdateValues) => {
+  const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (mode === "create") {
-        const createValues = values as CreateValues;
-        const createBody: L4MarketingProjectCreate = {
-          title: createValues.title,
-          cover_image: createValues.cover_image,
-          style: createValues.style,
-          description: createValues.description,
-          marketing_tags: createValues.marketing_tags.join(","),
-          share_title: createValues.share_title,
-          share_image: createValues.share_image,
-          consultant_id: createValues.consultant_id,
-        };
+        const createBody = formValuesToCreateRequest(values) as L4MarketingProjectCreate;
 
         const result = await actions.createL4MarketingProject(createBody);
         if (result.success && result.data?.id) {
-          const projectId = result.data.id;
-          const updateBody: L4MarketingProjectUpdate = {};
-
-          // 只有在非默认值时才更新
-          if (createValues.project_status !== "在途") {
-            updateBody.project_status = createValues.project_status;
-          }
-          if (createValues.sort_order !== 0) {
-            updateBody.sort_order = createValues.sort_order;
-          }
-          if (createValues.is_published !== false) {
-            updateBody.is_published = createValues.is_published;
-          }
-
-          // 如果有状态字段需要更新，执行二次更新
-          if (Object.keys(updateBody).length > 0) {
-            await actions.updateL4MarketingProject(projectId, updateBody);
-          }
-
           toast.success("项目创建成功");
-          router.replace(`/minipro/projects/${projectId}/edit`);
+          router.replace(`/minipro/projects/${result.data.id}/edit`);
           return;
         }
         toast.error(result.error || "创建失败");
@@ -75,17 +48,14 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
 
       if (!project) return;
 
-      const dirty = dirtyFields as Partial<Record<keyof UpdateValues, boolean>>;
-      const allValues = values as UpdateValues;
+      const dirty = dirtyFields as Partial<Record<keyof FormValues, boolean>>;
       const patch: Partial<L4MarketingProjectUpdate> = {};
 
-      (Object.keys(dirty) as (keyof UpdateValues)[]).forEach((key) => {
+      // 只收集变更的字段
+      (Object.keys(dirty) as (keyof FormValues)[]).forEach((key) => {
         if (!dirty[key]) return;
-        if (key === "marketing_tags") {
-          patch[key] = (allValues[key] as string[]).join(",") as never;
-        } else {
-          patch[key] = allValues[key] as never;
-        }
+        const updateData = formValuesToUpdateRequest({ [key]: values[key] });
+        Object.assign(patch, updateData);
       });
 
       if (Object.keys(patch).length === 0) {
@@ -103,11 +73,11 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
     } catch {
       toast.error(mode === "create" ? "创建失败" : "更新失败");
     }
-  };
+  });
 
   return {
     form,
-    handleSubmit,
+    onSubmit,
     isSubmitting,
   };
 }
@@ -118,44 +88,45 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
 function getDefaultValues(
   mode: "create" | "edit",
   project?: L4MarketingProject
-): CreateValues | UpdateValues {
+): FormValues {
   if (mode === "create") {
     return {
+      community_id: 0,
+      layout: "",
+      orientation: "",
+      floor_info: "",
+      area: 0,
+      total_price: 0,
       title: "",
-      cover_image: null,
-      style: null,
-      description: null,
-      marketing_tags: [],
-      share_title: null,
-      share_image: null,
-      consultant_id: null,
-      project_status: "在途",
+      images: [],
       sort_order: 0,
-      is_published: false,
+      tags: [],
+      decoration_style: "",
+      publish_status: "草稿",
+      project_status: "在途",
+      consultant_id: undefined,
     };
   }
 
   // 编辑模式：从项目数据初始化
-  return {
-    title: project?.title ?? "",
-    cover_image: project?.cover_image ?? null,
-    style: project?.style ?? null,
-    description: project?.description ?? null,
-    marketing_tags: parseMarketingTags(project?.marketing_tags),
-    share_title: project?.share_title ?? null,
-    share_image: project?.share_image ?? null,
-    consultant_id: project?.consultant_id ?? null,
-    project_status: (project?.project_status as "在途" | "在售" | "已售") ?? "在途",
-    sort_order: project?.sort_order ?? 0,
-    is_published: project?.is_published ?? false,
-  };
-}
+  if (!project) {
+    return {
+      community_id: 0,
+      layout: "",
+      orientation: "",
+      floor_info: "",
+      area: 0,
+      total_price: 0,
+      title: "",
+      images: [],
+      sort_order: 0,
+      tags: [],
+      decoration_style: "",
+      publish_status: "草稿",
+      project_status: "在途",
+      consultant_id: undefined,
+    };
+  }
 
-/**
- * 解析营销标签（从逗号分隔字符串到数组）
- */
-function parseMarketingTags(tags: string | null | undefined): string[] {
-  if (!tags) return [];
-  if (typeof tags !== "string") return [];
-  return tags.split(",").map((t) => t.trim()).filter(Boolean);
+  return projectToFormValues(project as unknown as Record<string, unknown>);
 }

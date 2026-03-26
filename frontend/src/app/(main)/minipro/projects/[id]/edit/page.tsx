@@ -1,6 +1,6 @@
 import React from "react";
 import { fetchClient } from "@/lib/api-server";
-import type { L4MarketingProject, L4Consultant, L4MarketingMedia } from "../../types";
+import type { L4MarketingProject, L4MarketingMedia } from "../../types";
 import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,27 @@ export default async function ProjectEditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const projectId = Number(id);
+  
+  if (isNaN(projectId)) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-sm font-semibold text-red-500">无效的项目ID</div>
+        </div>
+      </div>
+    );
+  }
+
   const client = await fetchClient();
 
   // Fetch data in parallel
-  const [projectRes, consultantsRes, photosRes] = await Promise.all([
+  const [projectRes, photosRes] = await Promise.all([
     client.GET("/api/v1/admin/l4-marketing/projects/{project_id}", {
-      params: { path: { project_id: id } },
-    }),
-    client.GET("/api/v1/admin/l4-marketing/consultants", {
-      params: { query: { page: 1, size: 100 } },
+      params: { path: { project_id: projectId } },
     }),
     client.GET("/api/v1/admin/l4-marketing/projects/{project_id}/media", {
-      params: { path: { project_id: id }, query: { page: 1, size: 100 } },
+      params: { path: { project_id: projectId }, query: { page: 1, size: 100 } },
     }),
   ]);
 
@@ -53,7 +62,6 @@ export default async function ProjectEditPage({
   }
 
   const project = projectRes.data as L4MarketingProject;
-  const consultants: L4Consultant[] = consultantsRes.data?.items || [];
   const photos: L4MarketingMedia[] = photosRes.data?.items || [];
 
   return (
@@ -85,7 +93,6 @@ export default async function ProjectEditPage({
         {/* Content */}
         <MiniProjectForm
           mode="edit"
-          consultants={consultants}
           initialProject={project}
           initialPhotos={photos}
         />

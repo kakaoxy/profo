@@ -7,9 +7,9 @@ import type { RenovationPhoto } from "./types";
 interface PhotoGridProps {
   photos: RenovationPhoto[];
   loading: boolean;
-  existingPhotoIds: Set<string>;
-  selectedIds: Set<string>;
-  onTogglePhoto: (photoId: string) => void;
+  existingPhotoIds: Set<number>;
+  selectedIds: Set<number>;
+  onTogglePhoto: (photoId: number) => void;
 }
 
 export function PhotoGrid({ photos, loading, existingPhotoIds, selectedIds, onTogglePhoto }: PhotoGridProps) {

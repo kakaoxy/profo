@@ -5,11 +5,11 @@ import { FormField, FormItem, FormControl } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { FormValues } from "../schema";
-import { MiniProject } from "../../types";
-import { ArrowLeft, Eye } from "lucide-react";
+import { L4MarketingProject } from "../../types";
+import { ArrowLeft } from "lucide-react";
 
 interface FormHeaderProps {
-  project: MiniProject;
+  project: L4MarketingProject;
   onSaveDraft: () => void;
   onGoBack: () => void;
 }
@@ -28,15 +28,15 @@ export function FormHeader({
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={onGoBack}
             aria-label="返回"
           >
-            <ArrowLeft />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-semibold tracking-tight text-foreground">
-              编辑小程序项目
+              编辑营销项目
             </h1>
             <p className="text-xs text-muted-foreground truncate">
               {project.title || `ID: ${project.id}`}
@@ -45,10 +45,6 @@ export function FormHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Eye className="size-4" />
-            <span>浏览量 {project.view_count || 0}</span>
-          </div>
           <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5">
             <span className="text-xs font-medium text-muted-foreground">
               发布

@@ -5,12 +5,36 @@ import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
 import type { MarketingInfoSectionProps } from "./types";
 
-export function MarketingInfoSection({ project, onPreviewImage }: MarketingInfoSectionProps) {
+// 价格格式化
+const formatPrice = (value: string | number | undefined | null) => {
+  if (value === undefined || value === null) return "-";
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue)) return "-";
+  return `¥${(numValue * 10000).toLocaleString()}`;
+};
+
+// 单价格式化
+const formatUnitPrice = (value: string | number | undefined | null) => {
+  if (value === undefined || value === null) return "-";
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue)) return "-";
+  return `¥${numValue.toLocaleString()}/m²`;
+};
+
+// 面积格式化
+const formatArea = (value: string | number | undefined | null) => {
+  if (value === undefined || value === null) return "-";
+  const numValue = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(numValue)) return "-";
+  return `${numValue.toLocaleString()} m²`;
+};
+
+export function MarketingInfoSection({ project }: MarketingInfoSectionProps) {
   return (
     <InfoCard title="营销信息">
       <div className="space-y-4">
         <DisplayRow
-          label="营销标题"
+          label="标题"
           value={
             <span className="text-lg font-semibold text-slate-900">
               {project.title || "-"}
@@ -18,15 +42,24 @@ export function MarketingInfoSection({ project, onPreviewImage }: MarketingInfoS
           }
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <DisplayRow label="物业风格" value={project.style || "-"} />
-          <DisplayRow label="排序权重" value={project.sort_order ?? 0} />
+          <DisplayRow label="小区ID" value={project.community_id || "-"} />
+          <DisplayRow label="户型" value={project.layout || "-"} />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DisplayRow label="朝向" value={project.orientation || "-"} />
+          <DisplayRow label="楼层" value={project.floor_info || "-"} />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DisplayRow label="面积" value={formatArea(project.area)} />
+          <DisplayRow label="总价" value={formatPrice(project.total_price)} />
+        </div>
+        <DisplayRow label="单价" value={formatUnitPrice(project.unit_price)} />
         <DisplayRow
-          label="营销标签"
+          label="标签"
           value={
-            typeof project.marketing_tags === "string" && project.marketing_tags ? (
+            typeof project.tags === "string" && project.tags ? (
               <div className="flex flex-wrap gap-2">
-                {project.marketing_tags.split(",").map((tag) => (
+                {project.tags.split(",").map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
@@ -41,40 +74,6 @@ export function MarketingInfoSection({ project, onPreviewImage }: MarketingInfoS
             )
           }
         />
-        <DisplayRow
-          label="项目描述"
-          value={
-            project.description ? (
-              <div className="whitespace-pre-wrap text-slate-600 leading-relaxed">
-                {project.description}
-              </div>
-            ) : (
-              "-"
-            )
-          }
-        />
-
-        <div className="pt-4 border-t border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-800 mb-4">分享配置</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <DisplayRow label="分享标题" value={project.share_title || "-"} />
-            <DisplayRow
-              label="分享图"
-              value={
-                project.share_image ? (
-                  <button
-                    onClick={() => onPreviewImage(project.share_image!)}
-                    className="text-blue-600 hover:text-blue-700 underline underline-offset-2"
-                  >
-                    查看图片
-                  </button>
-                ) : (
-                  "-"
-                )
-              }
-            />
-          </div>
-        </div>
       </div>
     </InfoCard>
   );

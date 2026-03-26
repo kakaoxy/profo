@@ -18,15 +18,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { getFileUrl } from "@/lib/config";
 import { FormValues } from "../schema";
-import { Consultant } from "../../types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image as ImageIcon, UploadCloud } from "lucide-react";
 
 interface RightColumnProps {
-  consultants: Consultant[];
+  // 顾问功能已移除，此组件不再需要顾问列表
 }
 
-export function RightColumn({ consultants }: RightColumnProps) {
+export function RightColumn({}: RightColumnProps) {
   const form = useFormContext<FormValues>();
 
   return (
@@ -54,7 +53,7 @@ export function RightColumn({ consultants }: RightColumnProps) {
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                      <ImageIcon className="size-10 opacity-70" />
+                      <ImageIcon className="h-10 w-10 opacity-70" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -67,7 +66,7 @@ export function RightColumn({ consultants }: RightColumnProps) {
                         if (url) field.onChange(url);
                       }}
                     >
-                      <UploadCloud />
+                      <UploadCloud className="h-4 w-4 mr-1" />
                       更换封面
                     </Button>
                   </div>
@@ -90,8 +89,8 @@ export function RightColumn({ consultants }: RightColumnProps) {
                     关联顾问
                   </FormLabel>
                   <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value || undefined}
+                    onValueChange={(val) => field.onChange(val === "none" ? null : Number(val))}
+                    defaultValue={field.value ? String(field.value) : "none"}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -100,11 +99,7 @@ export function RightColumn({ consultants }: RightColumnProps) {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="none">无顾问</SelectItem>
-                      {consultants.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name} - {c.role || "顾问"}
-                        </SelectItem>
-                      ))}
+                      {/* 顾问列表已从后端移除，如需使用请从用户表获取 */}
                     </SelectContent>
                   </Select>
                   <FormMessage />
