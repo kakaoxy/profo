@@ -55,11 +55,11 @@ export function TagInputField({
         onChange={(e) => setTagInput(e.target.value)}
         onKeyDown={handleAddTag}
       />
-      {value.length === 0 && (
+      {value.length === 0 ? (
         <span className="text-[10px] text-[#707785]/60 bg-[#eff4ff] px-2 py-1 rounded border border-dashed border-[#c0c7d6]/50 cursor-pointer hover:bg-[#dce9ff] transition-colors">
           + 添加标签
         </span>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -110,7 +110,7 @@ export function PhotoManager({
         <CardHeader className="border-b py-4">
           <div className="flex items-center justify-between gap-3">
             <CardTitle className="text-sm">照片管理</CardTitle>
-            {photos.length > 0 && (
+            {photos.length > 0 ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -120,7 +120,7 @@ export function PhotoManager({
                 <ArrowUpDown className="h-4 w-4 mr-1" />
                 重置排序
               </Button>
-            )}
+            ) : null}
           </div>
         </CardHeader>
         <CardContent className="py-6 space-y-4">

@@ -112,15 +112,15 @@ export function CommunitySelect({ value, onChange }: CommunitySelectProps) {
 
           {/* 搜索结果列表 */}
           <div className="max-h-[300px] overflow-y-auto p-1">
-            {loading && (
+            {loading ? (
               <div className="flex items-center justify-center py-6 text-[#707785]">
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
                 <span className="text-xs">搜索中...</span>
               </div>
-            )}
+            ) : null}
 
             {/* 新建选项 */}
-            {!loading && results.length === 0 && query && (
+            {!loading && results.length === 0 && query ? (
               <div className="p-1">
                 <button
                   className="w-full flex items-center gap-2 p-3 text-sm text-[#005daa] bg-[#005daa]/5 hover:bg-[#005daa]/10 rounded-lg transition-colors font-bold"
@@ -130,7 +130,7 @@ export function CommunitySelect({ value, onChange }: CommunitySelectProps) {
                   <span>使用新名称 &quot;{query}&quot;</span>
                 </button>
               </div>
-            )}
+            ) : null}
 
             {/* 搜索结果 */}
             {!loading && results.map((community) => (
@@ -153,11 +153,11 @@ export function CommunitySelect({ value, onChange }: CommunitySelectProps) {
             ))}
 
             {/* 空状态提示 */}
-            {!loading && !query && results.length === 0 && (
+            {!loading && !query && results.length === 0 ? (
               <div className="py-8 text-center text-[#707785] text-xs">
                 请输入关键词查找小区
               </div>
-            )}
+            ) : null}
           </div>
         </PopoverContent>
       </Popover>

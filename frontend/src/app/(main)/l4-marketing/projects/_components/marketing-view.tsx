@@ -128,14 +128,14 @@ export function MarketingView({ data, total }: MarketingViewProps) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-11 pr-10 py-3 bg-white border-none rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-[#005daa]/20 text-sm placeholder:text-[#707785]/60"
               />
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   onClick={() => setSearchQuery("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#707785] hover:text-[#0b1c30] p-1"
                 >
                   <X className="h-4 w-4" />
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
 
