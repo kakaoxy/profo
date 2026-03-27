@@ -17,16 +17,17 @@ export function formatPrice(value: string | number | undefined | null): string {
 
 /**
  * 格式化单价显示
- * @param value - 单价值（字符串或数字）
- * @returns 格式化后的单价字符串，如 "¥10,000/㎡"
+ * @param value - 单价值（字符串或数字），单位：万元/㎡
+ * @returns 格式化后的单价字符串，如 "¥3.84万/㎡"
  */
 export function formatUnitPrice(
   value: string | number | undefined | null,
 ): string {
-  if (value === undefined || value === null) return "-";
+  if (value === undefined || value === null || value === "") return "-";
   const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "-";
-  return `¥${numValue.toLocaleString()}/㎡`;
+  if (isNaN(numValue) || numValue === 0) return "-";
+  // 后端返回的 unit_price 已经是 万元/㎡，直接显示
+  return `¥${numValue.toFixed(2)}万/㎡`;
 }
 
 /**

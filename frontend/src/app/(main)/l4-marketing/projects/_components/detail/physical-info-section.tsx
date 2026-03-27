@@ -3,6 +3,7 @@
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
 import { formatPrice, formatArea } from "./utils";
+import { formatUnitPrice } from "@/lib/formatters";
 import type { PhysicalInfoSectionProps } from "./types";
 
 export function PhysicalInfoSection({ project }: PhysicalInfoSectionProps) {
@@ -17,7 +18,7 @@ export function PhysicalInfoSection({ project }: PhysicalInfoSectionProps) {
           <DisplayRow label="朝向" value={project.orientation || "-"} />
           <DisplayRow label="楼层信息" value={project.floor_info || "-"} />
           <DisplayRow label="总价" value={formatPrice(project.total_price)} />
-          <DisplayRow label="单价" value={formatPrice(project.unit_price)} />
+          <DisplayRow label="单价" value={formatUnitPrice(project.unit_price)} />
         </div>
       </div>
     </InfoCard>

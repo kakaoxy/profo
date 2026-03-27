@@ -40,19 +40,19 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
 /**
  * 单价显示组件
  *
- * 自动计算并显示房源单价，单位为 元/㎡
+ * 自动计算并显示房源单价，单位为 万元/㎡
  * 只读显示，自动根据总价和面积计算
  *
  * @example
  * ```tsx
- * <UnitPriceDisplay value="38036" />
+ * <UnitPriceDisplay value="3.84" />
  * ```
  */
 export function UnitPriceDisplay({ value }: UnitPriceDisplayProps) {
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
-        单价 (元/㎡)
+        单价 (万元/㎡)
       </label>
       <div className="relative">
         <input

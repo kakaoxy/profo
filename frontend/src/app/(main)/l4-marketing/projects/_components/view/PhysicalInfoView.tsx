@@ -3,6 +3,7 @@
 import * as React from "react";
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
+import { formatUnitPrice } from "@/lib/formatters";
 import type { L4MarketingProject } from "../../types";
 
 interface PhysicalInfoViewProps {
@@ -33,11 +34,7 @@ export function PhysicalInfoView({ project }: PhysicalInfoViewProps) {
           />
           <DisplayRow
             label="单价"
-            value={
-              project?.unit_price
-                ? `¥${Number(project.unit_price).toLocaleString()}/m²`
-                : "-"
-            }
+            value={formatUnitPrice(project?.unit_price)}
           />
         </div>
       </div>
