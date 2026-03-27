@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { getFileUrl } from "@/lib/config";
 
 interface HeroGalleryProps {
@@ -26,10 +27,13 @@ export function HeroGallery({
     <section className="mt-4 grid grid-cols-12 gap-4 h-[500px]">
       <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-2xl group">
         {mainImage ? (
-          <img
+          <Image
             src={getFileUrl(mainImage)}
             alt="Primary view"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            fill
+            sizes="(max-width: 1024px) 100vw, 66vw"
+            priority
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#005daa]/10 to-[#0075d5]/10 flex items-center justify-center">
@@ -60,10 +64,12 @@ export function HeroGallery({
       <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-4">
         {secondaryImages[0] ? (
           <div className="relative overflow-hidden rounded-2xl group">
-            <img
+            <Image
               src={getFileUrl(secondaryImages[0])}
               alt="Interior"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              fill
+              sizes="(max-width: 1024px) 100vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
           </div>
         ) : (
@@ -90,10 +96,12 @@ export function HeroGallery({
         )}
         {secondaryImages[1] ? (
           <div className="relative overflow-hidden rounded-2xl group">
-            <img
+            <Image
               src={getFileUrl(secondaryImages[1])}
               alt="Kitchen"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              fill
+              sizes="(max-width: 1024px) 100vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
             {totalCount > 3 && (
               <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur text-[#005daa] px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-white transition-colors">

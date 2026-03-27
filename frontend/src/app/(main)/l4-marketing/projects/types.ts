@@ -4,13 +4,7 @@ import type { components } from "@/lib/api-types";
 // L4 Marketing Project Types
 // ============================================================================
 
-// Extended type with community_name that may come from backend
-type L4MarketingProjectResponse = components["schemas"]["L4MarketingProjectResponse"];
-
-export type L4MarketingProject = L4MarketingProjectResponse & {
-  /** Community Name - may be populated by backend */
-  community_name?: string | null;
-};
+export type L4MarketingProject = components["schemas"]["L4MarketingProjectResponse"];
 
 export type L4MarketingProjectCreate =
   components["schemas"]["L4MarketingProjectCreate"];

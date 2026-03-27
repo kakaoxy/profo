@@ -70,7 +70,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
           <div className="h-8 w-px bg-white/10"></div>
           <div className="flex gap-4">
             <Link
-              href="/minipro/projects"
+              href="/l4-marketing/projects"
               className="text-white/60 text-xs font-bold hover:text-white transition-colors px-3 py-2"
             >
               取消修改

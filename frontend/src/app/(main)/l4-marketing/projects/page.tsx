@@ -11,6 +11,29 @@ type L4MarketingProjectsQuery =
     search?: string;
   };
 
+/** API 错误接口 */
+interface ApiError {
+  status?: number;
+  detail?: string;
+  message?: string;
+}
+
+/** 类型守卫：检查是否为 ApiError */
+function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    ("status" in error || "detail" in error || "message" in error)
+  );
+}
+
+/** 获取错误状态码 */
+function getErrorStatusCode(error: unknown): number | undefined {
+  if (!isApiError(error)) return undefined;
+  const status = error.status;
+  return typeof status === "number" ? status : undefined;
+}
+
 function getSearchParam(
   value: string | string[] | undefined,
   fallback = "",
@@ -43,10 +66,7 @@ export default async function MarketingProjectsPage({
   });
 
   if (error || !data) {
-    const statusCode =
-      typeof error === "object" && error && "status" in error
-        ? Number((error as { status?: unknown }).status)
-        : undefined;
+    const statusCode = getErrorStatusCode(error);
     const message =
       statusCode === 401 || statusCode === 403
         ? "没有权限访问营销项目列表（请重新登录或联系管理员开通权限）"
@@ -97,7 +117,7 @@ export default async function MarketingProjectsPage({
               <span>批量导出</span>
             </button>
             <a
-              href="/minipro/projects/new"
+              href="/l4-marketing/projects/new"
               className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-[#005daa] text-white font-semibold shadow-lg shadow-[#005daa]/20 hover:opacity-95 transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="16"/><line x1="8" x2="16" y1="12" y2="12"/></svg>

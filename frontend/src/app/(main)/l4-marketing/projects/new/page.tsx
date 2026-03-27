@@ -21,7 +21,7 @@ export default async function ProjectCreatePage() {
           </div>
           <div className="flex gap-3">
             <Link
-              href="/minipro/projects"
+              href="/l4-marketing/projects"
               className="px-6 py-2.5 rounded-lg border border-[#c0c7d6]/50 text-[#0b1c30] font-medium hover:bg-[#e5eeff] transition-colors"
             >
               取消

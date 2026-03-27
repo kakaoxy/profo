@@ -2,6 +2,7 @@
 L4 市场营销层模型
 对应 mini_projects 小程序项目管理
 """
+from enum import Enum
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, event
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime, timezone
@@ -11,13 +12,13 @@ from typing import Optional
 from .base import BaseModel
 
 
-class PublishStatus(str):
+class PublishStatus(str, Enum):
     """发布状态枚举"""
     DRAFT = "草稿"
     PUBLISHED = "发布"
 
 
-class MarketingProjectStatus(str):
+class MarketingProjectStatus(str, Enum):
     """营销项目状态枚举"""
     IN_PROGRESS = "在途"      # 项目进行中，尚未挂牌
     FOR_SALE = "在售"         # 已挂牌销售

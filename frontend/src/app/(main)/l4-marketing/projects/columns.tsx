@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
+import Image from "next/image";
 import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "./types";
 import { getFileUrl } from "@/lib/config";
 import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
@@ -25,11 +26,15 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {coverImage ? (
-            <img
-              src={getFileUrl(coverImage.trim())}
-              alt="封面"
-              className="w-20 h-14 rounded-lg object-cover flex-shrink-0 border border-[#c0c7d6]/20"
-            />
+            <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-[#c0c7d6]/20 overflow-hidden">
+              <Image
+                src={getFileUrl(coverImage.trim())}
+                alt="封面"
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className="w-20 h-14 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[10px] text-[#707785] flex-shrink-0 border border-[#c0c7d6]/20">
               无图

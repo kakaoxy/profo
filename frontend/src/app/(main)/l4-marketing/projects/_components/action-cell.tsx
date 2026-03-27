@@ -44,7 +44,7 @@ export function ActionCell({ project }: ActionCellProps) {
 
   return (
     <div className="flex items-center gap-1">
-      <Link href={`/minipro/projects/${project.id}/preview`}>
+      <Link href={`/l4-marketing/projects/${project.id}/preview`}>
         <Button
           variant="ghost"
           size="sm"
@@ -55,7 +55,7 @@ export function ActionCell({ project }: ActionCellProps) {
         </Button>
       </Link>
 
-      <Link href={`/minipro/projects/${project.id}/edit`}>
+      <Link href={`/l4-marketing/projects/${project.id}/edit`}>
         <Button
           variant="ghost"
           size="sm"
