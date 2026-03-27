@@ -80,6 +80,7 @@ class L4MarketingProjectBase(BaseModel):
     """营销项目基础模型"""
     # 小区信息
     community_id: int = Field(..., gt=0, description="关联小区ID")
+    community_name: Optional[str] = Field(None, max_length=200, description="小区名称(冗余存储)")
 
     # 户型信息
     layout: str = Field(..., min_length=1, max_length=100, description="户型，如：三室两厅")
@@ -115,6 +116,7 @@ class L4MarketingProjectUpdate(BaseModel):
     """更新营销项目请求 - 所有字段可选"""
     # 小区信息
     community_id: Optional[int] = Field(None, gt=0, description="关联小区ID")
+    community_name: Optional[str] = Field(None, max_length=200, description="小区名称(冗余存储)")
 
     # 户型信息
     layout: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -149,6 +151,7 @@ class L4MarketingProjectResponse(BaseModel):
 
     # 小区信息
     community_id: int
+    community_name: Optional[str] = None
 
     # 户型信息
     layout: str
