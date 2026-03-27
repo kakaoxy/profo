@@ -35,8 +35,8 @@ export const formSchema = z.object({
   publish_status: publishStatusSchema,
   project_status: projectStatusSchema,
 
-  // 关联
-  consultant_id: z.number().int().min(1).optional(),
+  // 关联 - consultant_id 为 UUID 字符串，对应 User 表的 id 字段
+  consultant_id: z.string().trim().min(1).max(36).optional(),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -68,7 +68,8 @@ export const createSchema = z.object({
 
   // 关联字段
   project_id: z.number().int().positive().nullable().optional(),
-  consultant_id: z.number().int().positive().nullable().optional(),
+  // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
+  consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 });
 
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
@@ -87,7 +88,8 @@ export const updateSchema = z.object({
   publish_status: publishStatusSchema.optional(),
   project_status: projectStatusSchema.optional(),
   project_id: z.number().int().positive().nullable().optional(),
-  consultant_id: z.number().int().positive().nullable().optional(),
+  // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
+  consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 });
 
 export type CreateValues = z.infer<typeof createSchema>;
@@ -153,6 +155,6 @@ export function projectToFormValues(project: Record<string, unknown>): FormValue
     decoration_style: (project.decoration_style as string) || "",
     publish_status: (project.publish_status as "草稿" | "发布") || "草稿",
     project_status: (project.project_status as "在途" | "在售" | "已售") || "在途",
-    consultant_id: (project.consultant_id as number) || undefined,
+    consultant_id: (project.consultant_id as string) || undefined,
   };
 }

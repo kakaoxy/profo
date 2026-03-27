@@ -103,7 +103,7 @@ class L4MarketingProjectBase(BaseModel):
 
     # 关联
     project_id: Optional[int] = Field(None, description="关联L3项目ID(软引用)，可为空")
-    consultant_id: int = Field(..., gt=0, description="关联顾问ID(软引用User表)")
+    consultant_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
 
 
 class L4MarketingProjectCreate(L4MarketingProjectBase):
@@ -138,7 +138,7 @@ class L4MarketingProjectUpdate(BaseModel):
 
     # 关联
     project_id: Optional[int] = None
-    consultant_id: Optional[int] = Field(None, gt=0)
+    consultant_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
 
 
 class L4MarketingProjectResponse(BaseModel):
@@ -173,7 +173,7 @@ class L4MarketingProjectResponse(BaseModel):
 
     # 关联
     project_id: Optional[int] = None
-    consultant_id: int
+    consultant_id: Optional[str] = None
 
     # 系统字段
     is_deleted: bool = False
@@ -229,7 +229,7 @@ class L4MarketingProjectQuery(BaseModel):
     community_id: Optional[int] = None
     publish_status: Optional[str] = None
     project_status: Optional[str] = None
-    consultant_id: Optional[int] = None
+    consultant_id: Optional[str] = None
     project_id: Optional[int] = None
     decoration_style: Optional[str] = None
 
