@@ -39,7 +39,7 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
         const result = await actions.createL4MarketingProject(createBody);
         if (result.success && result.data?.id) {
           toast.success("项目创建成功");
-          router.push("/minipro/projects");
+          router.push("/l4-marketing/projects");
           return;
         }
         toast.error(result.error || "创建失败");
@@ -66,7 +66,7 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
       const result = await actions.updateL4MarketingProject(project.id, patch);
       if (result.success) {
         toast.success("项目更新成功");
-        router.push("/minipro/projects");
+        router.push("/l4-marketing/projects");
         return;
       }
       toast.error(result.error || "更新失败");

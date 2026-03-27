@@ -42,6 +42,7 @@ export const formSchema = z.object({
 export type FormValues = z.infer<typeof formSchema>;
 
 // 创建表单 Schema - 与后端 L4MarketingProjectCreate 保持一致
+// 后端已支持数组格式，前端直接发送数组
 export const createSchema = z.object({
   // 必填字段 - 小区信息
   community_id: z.number().int().positive("小区ID必须大于0"),
@@ -57,9 +58,9 @@ export const createSchema = z.object({
 
   // 必填字段 - 营销信息
   title: z.string().trim().min(1, "标题不能为空").max(255, "标题最多255个字符"),
-  images: z.string().trim().nullable().optional(),
+  images: z.array(z.string()).optional().default([]),
   sort_order: z.number().int().min(0, "排序权重不能小于0").default(0),
-  tags: z.string().trim().max(500, "标签最多500个字符").nullable().optional(),
+  tags: z.array(z.string()).optional().default([]),
   decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
 
   // 状态字段
@@ -73,6 +74,7 @@ export const createSchema = z.object({
 });
 
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
+// 后端已支持数组格式，前端直接发送数组
 export const updateSchema = z.object({
   community_id: z.number().int().positive("小区ID必须大于0").optional(),
   community_name: z.string().trim().max(200, "小区名称最多200个字符").nullable().optional(),
@@ -82,9 +84,9 @@ export const updateSchema = z.object({
   area: z.number().positive("面积必须大于0").optional(),
   total_price: z.number().positive("总价必须大于0").optional(),
   title: z.string().trim().min(1, "标题不能为空").max(255, "标题最多255个字符").optional(),
-  images: z.string().trim().nullable().optional(),
+  images: z.array(z.string()).optional(),
   sort_order: z.number().int().min(0, "排序权重不能小于0").optional(),
-  tags: z.string().trim().max(500, "标签最多500个字符").nullable().optional(),
+  tags: z.array(z.string()).optional(),
   decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
   publish_status: publishStatusSchema.optional(),
   project_status: projectStatusSchema.optional(),
@@ -97,6 +99,7 @@ export type CreateValues = z.infer<typeof createSchema>;
 export type UpdateValues = z.infer<typeof updateSchema>;
 
 // 将表单值转换为API创建请求
+// 后端已支持数组格式，直接传递数组
 export function formValuesToCreateRequest(values: FormValues): Record<string, unknown> {
   return {
     community_id: values.community_id,
@@ -107,9 +110,9 @@ export function formValuesToCreateRequest(values: FormValues): Record<string, un
     area: values.area,
     total_price: values.total_price,
     title: values.title,
-    images: values.images.length > 0 ? values.images.join(",") : null,
+    images: values.images.length > 0 ? values.images : null,
     sort_order: values.sort_order,
-    tags: values.tags.length > 0 ? values.tags.join(",") : null,
+    tags: values.tags.length > 0 ? values.tags : null,
     decoration_style: values.decoration_style || null,
     publish_status: values.publish_status,
     project_status: values.project_status,
@@ -118,6 +121,7 @@ export function formValuesToCreateRequest(values: FormValues): Record<string, un
 }
 
 // 将表单值转换为API更新请求
+// 后端已支持数组格式，直接传递数组
 export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -129,9 +133,9 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.area !== undefined) result.area = values.area;
   if (values.total_price !== undefined) result.total_price = values.total_price;
   if (values.title !== undefined) result.title = values.title;
-  if (values.images !== undefined) result.images = values.images.length > 0 ? values.images.join(",") : null;
+  if (values.images !== undefined) result.images = values.images.length > 0 ? values.images : null;
   if (values.sort_order !== undefined) result.sort_order = values.sort_order;
-  if (values.tags !== undefined) result.tags = values.tags.length > 0 ? values.tags.join(",") : null;
+  if (values.tags !== undefined) result.tags = values.tags.length > 0 ? values.tags : null;
   if (values.decoration_style !== undefined) result.decoration_style = values.decoration_style || null;
   if (values.publish_status !== undefined) result.publish_status = values.publish_status;
   if (values.project_status !== undefined) result.project_status = values.project_status;

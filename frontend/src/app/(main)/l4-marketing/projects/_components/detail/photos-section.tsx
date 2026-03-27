@@ -12,7 +12,7 @@ export function PhotosSection({ project, photos }: PhotosSectionProps) {
       <div className="mt-4 text-xs text-slate-400">
         如需管理照片（同步/删除/上传），请进入
         <Link
-          href={`/minipro/projects/${project.id}/edit`}
+          href={`/l4-marketing/projects/${project.id}/edit`}
           className="text-blue-600 hover:text-blue-700 underline mx-1"
         >
           编辑页

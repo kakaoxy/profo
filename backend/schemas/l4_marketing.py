@@ -2,7 +2,8 @@
 L4 市场营销层 Pydantic Schema
 符合项目指南的 API 契约规范
 """
-from typing import Optional, List
+from enum import Enum
+from typing import Optional, List, Union
 from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
@@ -12,20 +13,20 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator, model_valida
 # 基础枚举和常量
 # ============================================================================
 
-class PublishStatus(str):
+class PublishStatus(str, Enum):
     """发布状态枚举"""
     DRAFT = "草稿"
     PUBLISHED = "发布"
 
 
-class MarketingProjectStatus(str):
+class MarketingProjectStatus(str, Enum):
     """营销项目状态枚举"""
     IN_PROGRESS = "在途"
     FOR_SALE = "在售"
     SOLD = "已售"
 
 
-class MediaType(str):
+class MediaType(str, Enum):
     """媒体类型"""
     IMAGE = "image"
     VIDEO = "video"
@@ -105,6 +106,26 @@ class L4MarketingProjectBase(BaseModel):
     # 关联
     project_id: Optional[int] = Field(None, description="关联L3项目ID(软引用)，可为空")
     consultant_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
+
+    @field_validator("images", mode="before")
+    @classmethod
+    def validate_images(cls, v: Optional[Union[str, List[str]]]) -> Optional[str]:
+        """支持字符串或数组格式，统一转换为逗号分隔的字符串"""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return ",".join(v) if v else None
+        return v if v else None
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def validate_tags(cls, v: Optional[Union[str, List[str]]]) -> Optional[str]:
+        """支持字符串或数组格式，统一转换为逗号分隔的字符串"""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return ",".join(v) if v else None
+        return v if v else None
 
 
 class L4MarketingProjectCreate(L4MarketingProjectBase):

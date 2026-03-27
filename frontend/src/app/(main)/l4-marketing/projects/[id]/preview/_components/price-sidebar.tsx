@@ -63,7 +63,7 @@ export function PriceSidebar({
 
         <div className="space-y-4 mt-8">
           <Link
-            href={`/minipro/projects/${projectId}/edit`}
+            href={`/l4-marketing/projects/${projectId}/edit`}
             className="w-full bg-[#005daa] hover:bg-[#0075d5] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
           >
             <svg

@@ -60,7 +60,7 @@ export default async function ProjectPreviewPage({
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#c0c7d6]/20 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            href={`/minipro/projects/${project.id}/edit`}
+            href={`/l4-marketing/projects/${project.id}/edit`}
             className="flex items-center gap-2 text-[#707785] hover:text-[#005daa] transition-colors font-medium"
           >
             <svg
@@ -103,7 +103,7 @@ export default async function ProjectPreviewPage({
             {project.publish_status === "发布" ? "已发布" : "待发布"}
           </div>
           <Link
-            href={`/minipro/projects/${project.id}/edit`}
+            href={`/l4-marketing/projects/${project.id}/edit`}
             className="bg-[#005daa] hover:bg-[#0075d5] text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all active:scale-95"
           >
             立即发布
@@ -132,7 +132,7 @@ export default async function ProjectPreviewPage({
               <h1 className="text-4xl font-extrabold text-[#0b1c30] tracking-tight leading-tight">
                 {project.title || "未命名房源"}
               </h1>
-              {/* Tags */}
+              {/* Tags - React 默认转义，XSS 风险已得到控制 */}
               {tags.length > 0 && (
                 <div className="mt-6 flex flex-wrap gap-3">
                   {tags.slice(0, 6).map((tag, index) => (

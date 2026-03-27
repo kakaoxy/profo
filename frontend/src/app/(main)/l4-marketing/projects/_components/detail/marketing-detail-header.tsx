@@ -29,7 +29,7 @@ export function MarketingDetailHeader({
       </div>
       <div className="flex items-center gap-2">
         <Button asChild size="sm">
-          <Link href={`/minipro/projects/${project.id}/edit`}>
+          <Link href={`/l4-marketing/projects/${project.id}/edit`}>
             <Pencil className="mr-2 h-4 w-4" />
             编辑
           </Link>

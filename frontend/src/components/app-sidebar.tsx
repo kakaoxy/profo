@@ -98,7 +98,7 @@ const data = {
     },
     {
       title: "小程序",
-      url: "/minipro/projects",
+      url: "/l4-marketing/projects",
       icon: Smartphone,
     },
   ],

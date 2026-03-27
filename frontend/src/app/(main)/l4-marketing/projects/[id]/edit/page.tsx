@@ -83,13 +83,13 @@ export default async function ProjectEditPage({
               从项目导入
             </button>
             <Link
-              href="/minipro/projects"
+              href="/l4-marketing/projects"
               className="px-6 py-2.5 rounded-lg border border-[#c0c7d6]/50 text-[#0b1c30] font-medium hover:bg-[#e5eeff] transition-colors"
             >
               取消
             </Link>
             <Link
-              href={`/minipro/projects/${project.id}/preview`}
+              href={`/l4-marketing/projects/${project.id}/preview`}
               className="px-6 py-2.5 rounded-lg bg-[#e5eeff] text-[#005daa] font-medium hover:bg-[#dce9ff] transition-colors"
             >
               预览
