@@ -1763,6 +1763,11 @@ export interface components {
              */
             community_id: number;
             /**
+             * Community Name
+             * @description 小区名称(冗余存储)
+             */
+            community_name?: string | null;
+            /**
              * Layout
              * @description 户型，如：三室两厅
              */
@@ -1832,9 +1837,9 @@ export interface components {
             project_id?: number | null;
             /**
              * Consultant Id
-             * @description 关联顾问ID(软引用User表)
+             * @description 关联顾问ID(软引用User表)，UUID字符串
              */
-            consultant_id: number;
+            consultant_id?: string | null;
         };
         /**
          * L4MarketingProjectListResponse
@@ -1868,6 +1873,8 @@ export interface components {
             id: number;
             /** Community Id */
             community_id: number;
+            /** Community Name */
+            community_name?: string | null;
             /** Layout */
             layout: string;
             /** Orientation */
@@ -1897,7 +1904,7 @@ export interface components {
             /** Project Id */
             project_id?: number | null;
             /** Consultant Id */
-            consultant_id: number;
+            consultant_id?: string | null;
             /**
              * Is Deleted
              * @default false
@@ -1926,6 +1933,11 @@ export interface components {
              * @description 关联小区ID
              */
             community_id?: number | null;
+            /**
+             * Community Name
+             * @description 小区名称(冗余存储)
+             */
+            community_name?: string | null;
             /** Layout */
             layout?: string | null;
             /** Orientation */
@@ -1958,8 +1970,11 @@ export interface components {
             project_status?: string | null;
             /** Project Id */
             project_id?: number | null;
-            /** Consultant Id */
-            consultant_id?: number | null;
+            /**
+             * Consultant Id
+             * @description 关联顾问ID(软引用User表)，UUID字符串
+             */
+            consultant_id?: string | null;
         };
         /** LeadCreate */
         LeadCreate: {

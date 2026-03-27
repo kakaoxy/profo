@@ -397,8 +397,9 @@ const ConsultantSelect = ({ value, onChange }: { value: string | undefined; onCh
   const [open, setOpen] = React.useState(false);
   const [consultants, setConsultants] = React.useState<UserSimpleResponse[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [selectedConsultantName, setSelectedConsultantName] = React.useState<string | null>(null);
 
-  // Fetch consultants when popover opens
+  // Fetch consultants when popover opens or when value changes (for initial load)
   React.useEffect(() => {
     const fetchConsultants = async () => {
       setLoading(true);
@@ -406,6 +407,13 @@ const ConsultantSelect = ({ value, onChange }: { value: string | undefined; onCh
         const result = await getUsersSimpleAction({ status: "active" });
         if (result.success && result.data?.items) {
           setConsultants(result.data.items);
+          // If we have a selected value, find and cache the name
+          if (value) {
+            const found = result.data.items.find(c => c.id === value);
+            if (found) {
+              setSelectedConsultantName(found.nickname || found.username);
+            }
+          }
         } else {
           setConsultants([]);
         }
@@ -417,12 +425,23 @@ const ConsultantSelect = ({ value, onChange }: { value: string | undefined; onCh
       }
     };
 
-    if (open) {
-      fetchConsultants();
-    }
-  }, [open]);
+    // Always fetch on mount to get consultant names for display
+    fetchConsultants();
+  }, []);
 
-  // Find selected consultant by string id
+  // Update selected name when consultants list or value changes
+  React.useEffect(() => {
+    if (value && consultants.length > 0) {
+      const found = consultants.find(c => c.id === value);
+      if (found) {
+        setSelectedConsultantName(found.nickname || found.username);
+      }
+    } else if (!value) {
+      setSelectedConsultantName(null);
+    }
+  }, [value, consultants]);
+
+  // Find selected consultant by string id (for highlighting in list)
   const selectedConsultant = consultants.find(c => c.id === value);
 
   return (
@@ -440,10 +459,8 @@ const ConsultantSelect = ({ value, onChange }: { value: string | undefined; onCh
           >
             <div className="flex items-center gap-2 truncate">
               <User className="h-4 w-4 text-[#707785] shrink-0" />
-              <span className={cn("truncate", !selectedConsultant && "text-[#707785] font-normal")}>
-                {selectedConsultant
-                  ? `${selectedConsultant.nickname || selectedConsultant.username}`
-                  : "选择房源顾问..."}
+              <span className={cn("truncate", !selectedConsultantName && !selectedConsultant && "text-[#707785] font-normal")}>
+                {selectedConsultantName || (selectedConsultant ? `${selectedConsultant.nickname || selectedConsultant.username}` : "选择房源顾问...")}
               </span>
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

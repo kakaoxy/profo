@@ -38,6 +38,9 @@ class L4MarketingProject(BaseModel):
     # 小区ID - 整数类型，非空，关联小区
     community_id = Column(Integer, nullable=False, comment="关联小区ID")
 
+    # 小区名称 - 冗余存储，避免跨层级JOIN查询
+    community_name = Column(String(200), nullable=True, comment="小区名称(冗余存储)")
+
     # 户型信息
     layout = Column(String(100), nullable=False, comment="户型，如：三室两厅")
     orientation = Column(String(50), nullable=False, comment="朝向，如：南北通透")

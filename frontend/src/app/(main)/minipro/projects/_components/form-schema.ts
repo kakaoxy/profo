@@ -99,6 +99,7 @@ export type UpdateValues = z.infer<typeof updateSchema>;
 export function formValuesToCreateRequest(values: FormValues): Record<string, unknown> {
   return {
     community_id: values.community_id,
+    community_name: values.community_name || null,
     layout: values.layout,
     orientation: values.orientation,
     floor_info: values.floor_info,
@@ -120,6 +121,7 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   const result: Record<string, unknown> = {};
 
   if (values.community_id !== undefined) result.community_id = values.community_id;
+  if (values.community_name !== undefined) result.community_name = values.community_name || null;
   if (values.layout !== undefined) result.layout = values.layout;
   if (values.orientation !== undefined) result.orientation = values.orientation;
   if (values.floor_info !== undefined) result.floor_info = values.floor_info;
