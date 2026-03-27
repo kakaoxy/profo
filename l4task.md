@@ -247,6 +247,8 @@
 | - | TypeScript 类型检查 | ✅ 通过 | pnpm exec tsc --noEmit 无错误 |
 | P2-001 | 重复代码 - 格式化函数 | ✅ 完成 | 创建 lib/formatters.ts 统一导出 |
 | - | 修复 Build Error | ✅ 完成 | 修复 actions.ts 和 actions/*.ts 文件末尾换行符问题 |
+| - | 修复小区名称修改不生效 | ✅ 完成 | 在 updateSchema 中添加缺失的 community_name 字段 |
+| - | 修复社区选择界面不更新 | ✅ 完成 | FormField 注册 community_name 替代 community_id，确保状态同步 |
 
 ---
 

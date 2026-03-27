@@ -75,6 +75,7 @@ export const createSchema = z.object({
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
 export const updateSchema = z.object({
   community_id: z.number().int().positive("小区ID必须大于0").optional(),
+  community_name: z.string().trim().max(200, "小区名称最多200个字符").nullable().optional(),
   layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符").optional(),
   orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符").optional(),
   floor_info: z.string().trim().min(1, "楼层信息不能为空").max(100, "楼层信息最多100个字符").optional(),
