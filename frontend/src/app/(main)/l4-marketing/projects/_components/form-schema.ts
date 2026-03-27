@@ -101,6 +101,12 @@ export type UpdateValues = z.infer<typeof updateSchema>;
 // 将表单值转换为API创建请求
 // 后端已支持数组格式，直接传递数组
 export function formValuesToCreateRequest(values: FormValues): Record<string, unknown> {
+  // 计算单价（万元/㎡），与后端计算逻辑保持一致
+  // 后端逻辑：unit_price = total_price / area
+  const unitPrice = values.area > 0
+    ? Number((values.total_price / values.area).toFixed(2))
+    : 0;
+
   return {
     community_id: values.community_id,
     community_name: values.community_name || null,
@@ -109,6 +115,7 @@ export function formValuesToCreateRequest(values: FormValues): Record<string, un
     floor_info: values.floor_info,
     area: values.area,
     total_price: values.total_price,
+    unit_price: unitPrice,
     title: values.title,
     images: values.images.length > 0 ? values.images : null,
     sort_order: values.sort_order,
@@ -140,6 +147,16 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.publish_status !== undefined) result.publish_status = values.publish_status;
   if (values.project_status !== undefined) result.project_status = values.project_status;
   if (values.consultant_id !== undefined) result.consultant_id = values.consultant_id;
+
+  // 如果总价或面积发生变化，重新计算单价（万元/㎡）
+  // 与后端计算逻辑保持一致：unit_price = total_price / area
+  if (values.total_price !== undefined || values.area !== undefined) {
+    const area = values.area ?? 0;
+    const totalPrice = values.total_price ?? 0;
+    if (area > 0) {
+      result.unit_price = Number((totalPrice / area).toFixed(2));
+    }
+  }
 
   return result;
 }

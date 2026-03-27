@@ -254,11 +254,14 @@ function PricingSection({ control }: PricingSectionProps) {
   const area = useWatch({ control, name: "area" });
 
   // 实时计算单价（参考 leads 表单的 calculatedUnitPrice）
+  // 计算逻辑：总价(万元) / 面积(㎡) = 单价(万元/㎡)
+  // 与后端计算逻辑保持一致
   const calculatedUnitPrice = React.useMemo(() => {
     const total = typeof totalPrice === "number" ? totalPrice : 0;
     const areaNum = typeof area === "number" ? area : 0;
     if (total > 0 && areaNum > 0) {
-      return String(Math.round((total * 10000) / areaNum));
+      const wanPerSqm = total / areaNum; // 万元/㎡
+      return wanPerSqm.toFixed(2);
     }
     return "";
   }, [totalPrice, area]);
