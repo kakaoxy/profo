@@ -98,17 +98,17 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0 rounded-xl" align="start">
           <div className="max-h-[300px] overflow-y-auto p-1">
-            {loading && (
+            {loading ? (
               <div className="flex items-center justify-center py-6 text-[#707785]">
                 <span className="text-xs">加载中...</span>
               </div>
-            )}
+            ) : null}
 
-            {!loading && consultants.length === 0 && (
+            {!loading && consultants.length === 0 ? (
               <div className="py-8 text-center text-[#707785] text-xs">
                 暂无顾问数据
               </div>
-            )}
+            ) : null}
 
             {!loading && consultants.map((consultant) => (
               <button
@@ -135,7 +135,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
             ))}
 
             {/* 清除选择选项 */}
-            {!loading && value && (
+            {!loading && value ? (
               <div className="p-1 border-t border-[#c0c7d6]/20 mt-1">
                 <button
                   className="w-full flex items-center gap-2 p-3 text-sm text-[#707785] hover:bg-[#ffdad6]/30 rounded-lg transition-colors"
@@ -147,7 +147,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
                   <span>清除选择</span>
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         </PopoverContent>
       </Popover>

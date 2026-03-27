@@ -42,6 +42,22 @@ function getSearchParam(
   return value ?? fallback;
 }
 
+// 静态错误状态组件 - 提取到组件外部避免重复创建
+function ErrorState({ message, statusCode }: { message: string; statusCode?: number }) {
+  return (
+    <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-sm font-semibold text-[#ba1a1a]">{message}</div>
+        {statusCode ? (
+          <div className="mt-2 text-xs text-[#707785]">
+            状态码: {statusCode}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default async function MarketingProjectsPage({
   searchParams,
 }: {
@@ -71,18 +87,7 @@ export default async function MarketingProjectsPage({
       statusCode === 401 || statusCode === 403
         ? "没有权限访问营销项目列表（请重新登录或联系管理员开通权限）"
         : "获取营销项目列表失败，请稍后重试";
-    return (
-      <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-sm font-semibold text-[#ba1a1a]">{message}</div>
-          {statusCode ? (
-            <div className="mt-2 text-xs text-[#707785]">
-              状态码: {statusCode}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
+    return <ErrorState message={message} statusCode={statusCode} />;
   }
 
   const items: L4MarketingProject[] = data.items || [];

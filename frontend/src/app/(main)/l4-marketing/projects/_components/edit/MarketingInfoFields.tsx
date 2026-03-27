@@ -25,6 +25,21 @@ import {
 } from "./components";
 
 /**
+ * 计算单价
+ * 单价 = 总价(万元) × 10000 ÷ 面积(㎡)
+ * 返回字符串格式用于显示
+ */
+function calculateUnitPrice(totalPrice: number | undefined, area: number | undefined): string {
+  const total = typeof totalPrice === "number" ? totalPrice : 0;
+  const areaNum = typeof area === "number" ? area : 0;
+
+  if (total > 0 && areaNum > 0) {
+    return String(Math.round((total * 10000) / areaNum));
+  }
+  return "";
+}
+
+/**
  * 营销信息字段组件
  *
  * 负责房源营销相关信息的编辑，包括：
@@ -39,29 +54,10 @@ export function MarketingInfoFields() {
   const { control, watch, setValue } = useFormContext<FormValues>();
   const tags = watch("tags") ?? [];
 
-  // 监听总价和面积，实时计算单价
+  // 监听总价和面积，实时计算单价（在渲染时计算，避免 useEffect）
   const totalPrice = watch("total_price");
   const area = watch("area");
-  const unitPrice = watch("unit_price");
-
-  // 使用 ref 记录上一次计算的值，避免不必要的更新
-  const lastCalculatedPriceRef = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    const total = typeof totalPrice === "number" ? totalPrice : 0;
-    const areaNum = typeof area === "number" ? area : 0;
-
-    if (total > 0 && areaNum > 0) {
-      // 计算逻辑：总价(万元) * 10000 / 面积(㎡) = 单价(元/㎡)
-      const calculatedUnitPrice = Math.round((total * 10000) / areaNum);
-
-      // 只有计算结果与上次不同时才更新
-      if (calculatedUnitPrice !== lastCalculatedPriceRef.current) {
-        lastCalculatedPriceRef.current = calculatedUnitPrice;
-        setValue("unit_price", calculatedUnitPrice, { shouldValidate: false });
-      }
-    }
-  }, [totalPrice, area, setValue]);
+  const unitPrice = calculateUnitPrice(totalPrice, area);
 
   return (
     <div className="space-y-6">
@@ -272,7 +268,7 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
  */
 interface PricingSectionProps {
   control: ReturnType<typeof useFormContext<FormValues>>["control"];
-  unitPrice: FormValues["unit_price"];
+  unitPrice: string;
 }
 
 function PricingSection({ control, unitPrice }: PricingSectionProps) {
@@ -298,7 +294,7 @@ function PricingSection({ control, unitPrice }: PricingSectionProps) {
             />
           )}
         />
-        <UnitPriceDisplay value={String(unitPrice ?? "")} />
+        <UnitPriceDisplay value={unitPrice} />
       </div>
     </section>
   );

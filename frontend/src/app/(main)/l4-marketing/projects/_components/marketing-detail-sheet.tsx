@@ -29,6 +29,9 @@ interface MarketingDetailSheetProps {
   onRefresh?: () => void;
 }
 
+// 请求缓存，用于防止重复请求相同项目的数据
+const requestCache = new Map<number, Promise<{ project: L4MarketingProject | null; photos: L4MarketingMedia[] }>>();
+
 export function MarketingDetailSheet({
   project: initialProject,
   isOpen,
@@ -36,6 +39,7 @@ export function MarketingDetailSheet({
   onRefresh,
 }: MarketingDetailSheetProps) {
   const isFetchingRef = useRef(false);
+  const fetchedProjectIdRef = useRef<number | null>(null);
 
   const [project, setProject] = useState<L4MarketingProject | null>(initialProject);
   const [photos, setPhotos] = useState<L4MarketingMedia[]>([]);
@@ -49,26 +53,53 @@ export function MarketingDetailSheet({
     }
   }, [initialProject]);
 
-  // 加载详情数据
+  // 加载详情数据（带请求去重）
   const loadDetailData = useCallback(async (projectId: number) => {
+    // 防止重复请求同一项目
     if (isFetchingRef.current) return;
+    if (fetchedProjectIdRef.current === projectId && photos.length > 0) return;
 
     isFetchingRef.current = true;
     setIsLoading(true);
 
     try {
-      const [projectRes, photosRes] = await Promise.all([
-        getL4MarketingProjectAction(projectId),
-        getL4MarketingMediaAction(projectId, 1, 100),
-      ]);
+      // 检查缓存中是否已有进行中的请求
+      let requestPromise = requestCache.get(projectId);
 
-      if (projectRes.success && projectRes.data) {
-        setProject(projectRes.data as L4MarketingProject);
+      if (!requestPromise) {
+        // 创建新的请求 Promise
+        requestPromise = (async () => {
+          const [projectRes, photosRes] = await Promise.all([
+            getL4MarketingProjectAction(projectId),
+            getL4MarketingMediaAction(projectId, 1, 100),
+          ]);
+
+          const projectData = projectRes.success && projectRes.data
+            ? (projectRes.data as L4MarketingProject)
+            : null;
+          const photosData = photosRes.success && photosRes.data
+            ? ((photosRes.data.items as L4MarketingMedia[]) || [])
+            : [];
+
+          return { project: projectData, photos: photosData };
+        })();
+
+        // 存入缓存
+        requestCache.set(projectId, requestPromise);
+
+        // 请求完成后从缓存中移除
+        requestPromise.finally(() => {
+          requestCache.delete(projectId);
+        });
       }
 
-      if (photosRes.success && photosRes.data) {
-        setPhotos((photosRes.data.items as L4MarketingMedia[]) || []);
+      const { project: projectData, photos: photosData } = await requestPromise;
+
+      if (projectData) {
+        setProject(projectData);
       }
+      setPhotos(photosData);
+      fetchedProjectIdRef.current = projectId;
     } catch (error) {
       console.error("Failed to load detail data:", error);
       toast.error("加载详情数据失败");
@@ -76,7 +107,7 @@ export function MarketingDetailSheet({
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, []);
+  }, [photos.length]);
 
   // 当模态框打开时加载数据
   useEffect(() => {

@@ -103,7 +103,7 @@ export function HeroGallery({
               sizes="(max-width: 1024px) 100vw, 33vw"
               className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
-            {totalCount > 3 && (
+            {totalCount > 3 ? (
               <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur text-[#005daa] px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-white transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -123,7 +123,7 @@ export function HeroGallery({
                 </svg>
                 查看全部 {totalCount} 张照片
               </button>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#eff4ff] to-[#dce9ff]">

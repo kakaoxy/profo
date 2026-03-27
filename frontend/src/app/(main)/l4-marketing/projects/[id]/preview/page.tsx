@@ -133,7 +133,7 @@ export default async function ProjectPreviewPage({
                 {project.title || "未命名房源"}
               </h1>
               {/* Tags - React 默认转义，XSS 风险已得到控制 */}
-              {tags.length > 0 && (
+              {tags.length > 0 ? (
                 <div className="mt-6 flex flex-wrap gap-3">
                   {tags.slice(0, 6).map((tag, index) => (
                     <span
@@ -144,7 +144,7 @@ export default async function ProjectPreviewPage({
                     </span>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* Core Specs Bento Grid */}

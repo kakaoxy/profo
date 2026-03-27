@@ -17,7 +17,7 @@ export function ImagePreviewDialog({ imageUrl, onClose }: ImagePreviewDialogProp
           <DialogTitle>图片预览</DialogTitle>
         </DialogHeader>
         <div className="flex items-center justify-center py-4 relative w-full h-[75vh]">
-          {imageUrl && (
+          {imageUrl ? (
             <Image
               src={imageUrl}
               alt="预览"
@@ -26,7 +26,7 @@ export function ImagePreviewDialog({ imageUrl, onClose }: ImagePreviewDialogProp
               sizes="(max-width: 896px) 100vw, 896px"
               priority
             />
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>
