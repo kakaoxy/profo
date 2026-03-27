@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useFormContext, Controller } from "react-hook-form";
+import { useFormContext, Controller, useWatch } from "react-hook-form";
 import {
   FormField,
   FormItem,
@@ -25,21 +25,6 @@ import {
 } from "./components";
 
 /**
- * 计算单价
- * 单价 = 总价(万元) × 10000 ÷ 面积(㎡)
- * 返回字符串格式用于显示
- */
-function calculateUnitPrice(totalPrice: number | undefined, area: number | undefined): string {
-  const total = typeof totalPrice === "number" ? totalPrice : 0;
-  const areaNum = typeof area === "number" ? area : 0;
-
-  if (total > 0 && areaNum > 0) {
-    return String(Math.round((total * 10000) / areaNum));
-  }
-  return "";
-}
-
-/**
  * 营销信息字段组件
  *
  * 负责房源营销相关信息的编辑，包括：
@@ -54,11 +39,6 @@ export function MarketingInfoFields() {
   const { control, watch, setValue } = useFormContext<FormValues>();
   const tags = watch("tags") ?? [];
 
-  // 监听总价和面积，实时计算单价（在渲染时计算，避免 useEffect）
-  const totalPrice = watch("total_price");
-  const area = watch("area");
-  const unitPrice = calculateUnitPrice(totalPrice, area);
-
   return (
     <div className="space-y-6">
       {/* 基础信息区域 */}
@@ -68,10 +48,7 @@ export function MarketingInfoFields() {
       <LayoutSpecsSection control={control} />
 
       {/* 价格设置区域 */}
-      <PricingSection
-        control={control}
-        unitPrice={unitPrice}
-      />
+      <PricingSection control={control} />
 
       {/* 标签与风格区域 */}
       <TagsSection control={control} tags={tags} />
@@ -265,13 +242,27 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
  * 价格设置区域组件
  *
  * 包含总价输入和单价显示（自动计算）
+ * 参考 leads/add-lead-modal.tsx 的实现方式
  */
 interface PricingSectionProps {
   control: ReturnType<typeof useFormContext<FormValues>>["control"];
-  unitPrice: string;
 }
 
-function PricingSection({ control, unitPrice }: PricingSectionProps) {
+function PricingSection({ control }: PricingSectionProps) {
+  // 使用 useWatch 实时监听表单值变化（类似 leads 表单的 useState + useMemo 模式）
+  const totalPrice = useWatch({ control, name: "total_price" });
+  const area = useWatch({ control, name: "area" });
+
+  // 实时计算单价（参考 leads 表单的 calculatedUnitPrice）
+  const calculatedUnitPrice = React.useMemo(() => {
+    const total = typeof totalPrice === "number" ? totalPrice : 0;
+    const areaNum = typeof area === "number" ? area : 0;
+    if (total > 0 && areaNum > 0) {
+      return String(Math.round((total * 10000) / areaNum));
+    }
+    return "";
+  }, [totalPrice, area]);
+
   return (
     <section className="bg-[#eff4ff] rounded-2xl p-8">
       <div className="flex justify-between items-center mb-6">
@@ -294,7 +285,7 @@ function PricingSection({ control, unitPrice }: PricingSectionProps) {
             />
           )}
         />
-        <UnitPriceDisplay value={unitPrice} />
+        <UnitPriceDisplay value={calculatedUnitPrice} />
       </div>
     </section>
   );
