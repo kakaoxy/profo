@@ -393,7 +393,7 @@ const PriceInputs = ({
 };
 
 // Consultant Select Component
-const ConsultantSelect = ({ value, onChange }: { value: number | undefined; onChange: (value: number | undefined) => void }) => {
+const ConsultantSelect = ({ value, onChange }: { value: string | undefined; onChange: (value: string | undefined) => void }) => {
   const [open, setOpen] = React.useState(false);
   const [consultants, setConsultants] = React.useState<UserSimpleResponse[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -422,8 +422,8 @@ const ConsultantSelect = ({ value, onChange }: { value: number | undefined; onCh
     }
   }, [open]);
 
-  // Convert string id from API to number for comparison
-  const selectedConsultant = consultants.find(c => parseInt(c.id) === value);
+  // Find selected consultant by string id
+  const selectedConsultant = consultants.find(c => c.id === value);
 
   return (
     <div className="space-y-2">
@@ -469,10 +469,10 @@ const ConsultantSelect = ({ value, onChange }: { value: number | undefined; onCh
                 key={consultant.id}
                 className={cn(
                   "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-[#eff4ff] transition-colors group text-left",
-                  value === parseInt(consultant.id) && "bg-[#eff4ff] text-[#005daa] font-bold"
+                  value === consultant.id && "bg-[#eff4ff] text-[#005daa] font-bold"
                 )}
                 onClick={() => {
-                  onChange(parseInt(consultant.id));
+                  onChange(consultant.id);
                   setOpen(false);
                 }}
               >
@@ -484,7 +484,7 @@ const ConsultantSelect = ({ value, onChange }: { value: number | undefined; onCh
                     {consultant.username}
                   </span>
                 </div>
-                {value === parseInt(consultant.id) && <Check className="h-4 w-4" />}
+                {value === consultant.id && <Check className="h-4 w-4" />}
               </button>
             ))}
 
