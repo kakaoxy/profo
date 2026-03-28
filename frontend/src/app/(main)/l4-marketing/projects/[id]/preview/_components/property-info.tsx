@@ -26,7 +26,7 @@ export function PropertyInfo({
   const infoItems = [
     { label: "小区", value: communityName },
     { label: "户型", value: layout },
-    { label: "面积", value: area ? `${formatArea(area)}㎡` : undefined },
+    { label: "面积", value: area ? formatArea(area) : undefined },
     { label: "朝向", value: orientation },
     { label: "楼层", value: floorInfo },
     { label: "装修风格", value: decorationStyle },
