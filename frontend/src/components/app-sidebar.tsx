@@ -68,7 +68,7 @@ const data = {
       isActive: true,
     },
     {
-      title: "房源管理",
+      title: "市场情报",
       url: "#",
       icon: Building2,
       items: [
@@ -88,6 +88,11 @@ const data = {
       icon: FolderKanban,
     },
     {
+      title: "房源营销",
+      url: "/l4-marketing/projects",
+      icon: Smartphone,
+    },
+    {
       title: "用户管理",
       url: "#",
       icon: Users,
@@ -96,11 +101,7 @@ const data = {
         { title: "权限管理", url: "/users/roles" },
       ],
     },
-    {
-      title: "小程序",
-      url: "/l4-marketing/projects",
-      icon: Smartphone,
-    },
+
   ],
 };
 
