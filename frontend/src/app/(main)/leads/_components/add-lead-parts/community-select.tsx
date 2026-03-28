@@ -13,7 +13,7 @@ interface Community {
   id: number;
   name: string;
   district?: string;
-  business_circle?: string;
+  businessCircle?: string;
 }
 
 interface Props {
@@ -58,7 +58,7 @@ export const CommunitySelect: React.FC<Props> = ({ value, onChange }) => {
   }, [query, open]);
 
   const handleSelect = (community: Community) => {
-    onChange(community.name, community.district, community.business_circle);
+    onChange(community.name, community.district, community.businessCircle);
     setOpen(false);
     setQuery('');
   };
@@ -131,7 +131,7 @@ export const CommunitySelect: React.FC<Props> = ({ value, onChange }) => {
                         <div className="flex flex-col gap-0.5">
                             <span className="font-bold text-slate-900">{community.name}</span>
                             <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                {community.district} {community.business_circle && `· ${community.business_circle}`}
+                                {community.district} {community.businessCircle && `· ${community.businessCircle}`}
                             </span>
                         </div>
                         {value === community.name && <Check className="h-4 w-4" />}

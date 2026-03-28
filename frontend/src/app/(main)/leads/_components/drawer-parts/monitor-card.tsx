@@ -19,7 +19,7 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
   // 获取市场活跃度标签
   const getActivityLabel = () => {
     if (!sentiment) return { label: '数据加载中', color: 'text-slate-400' };
-    const inventoryMonths = sentiment.inventory_months;
+    const inventoryMonths = sentiment.inventoryMonths;
     if (inventoryMonths < 12) return { label: '市场活跃', color: 'text-emerald-600' };
     if (inventoryMonths < 24) return { label: '商圈活跃', color: 'text-blue-600' };
     return { label: '市场平稳', color: 'text-amber-600' };
@@ -98,9 +98,9 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
             </div>
           ) : (
             <div className={`text-lg font-black ${
-              sentiment && sentiment.inventory_months > 18 ? 'text-amber-600' : 'text-slate-900'
+              sentiment && sentiment.inventoryMonths > 18 ? 'text-amber-600' : 'text-slate-900'
             }`}>
-              {sentiment ? formatInventoryMonths(sentiment.inventory_months) : '--'} 
+              {sentiment ? formatInventoryMonths(sentiment.inventoryMonths) : '--'} 
               <span className="text-[10px] font-normal text-slate-400">月</span>
             </div>
           )}

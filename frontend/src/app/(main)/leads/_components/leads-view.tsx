@@ -1,32 +1,32 @@
 "use client";
 
-import React, {
-  useState,
-  useMemo,
-  useTransition,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useDebouncedCallback } from "use-debounce";
-import { toast } from "sonner";
-import { Lead, LeadStatus, FilterState, FollowUpMethod } from "../types";
+import { Lead, LeadStatus, FollowUpMethod } from "../types";
 import {
-  getLeadsAction,
   updateLeadAction,
   addFollowUpAction,
   deleteLeadAction,
   createLeadAction,
 } from "../actions";
+import { useLeadsFilter, useLeadSelection, useViewMode } from "../hooks";
+import { handleError, handleSuccess } from "../lib/error-handling";
+import {
+  PAGE_TITLE,
+  PAGE_SUBTITLE,
+  BUTTON_TEXT,
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  CONFIRM_DIALOG,
+  LOADING_TEXT,
+} from "../constants/ui-labels";
 import { Button } from "@/components/ui/button";
 import { LeadsFilter } from "./leads-filter";
 import { LeadsTable } from "./leads-table";
 import { LeadsGrid } from "./leads-grid";
 import { Plus, RefreshCw, Loader2 } from "lucide-react";
 
-// [性能优化] 延迟加载条件渲染的重型组件
-// 这些组件只有在用户交互时才需要
 const LeadDrawer = dynamic(
   () => import("./lead-drawer").then((mod) => mod.LeadDrawer),
   { ssr: false },
@@ -44,7 +44,7 @@ const MonitoringDashboard = dynamic(
 
 interface LeadsViewProps {
   initialLeads: Lead[];
-  initialSelectedLeadId?: string; // 用于从其他页面跳转时自动打开详情抽屉
+  initialSelectedLeadId?: string;
 }
 
 export function LeadsView({
@@ -52,122 +52,39 @@ export function LeadsView({
   initialSelectedLeadId,
 }: LeadsViewProps) {
   const router = useRouter();
-  const [leads, setLeads] = useState<Lead[]>(initialLeads);
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    statuses: [],
-    district: "",
-    creator: "",
-    layouts: [],
-    floors: [],
-  });
+  const {
+    leads,
+    setLeads,
+    filters,
+    setFilters,
+    filteredLeads,
+    isPending,
+    resetFilters,
+    refreshLeads,
+  } = useLeadsFilter(initialLeads);
 
-  // 初始化时检查是否需要打开抽屉
-  const shouldOpenDrawerInitially = Boolean(
-    initialSelectedLeadId &&
-    initialLeads.some((l) => l.id === initialSelectedLeadId),
-  );
+  const {
+    selectedLead,
+    isDrawerOpen,
+    editingLead,
+    isAddModalOpen,
+    monitoringLead,
+    openDetail,
+    closeDetail,
+    startAddLead,
+    startEditLead,
+    closeAddModal,
+    openMonitor,
+    closeMonitor,
+  } = useLeadSelection({ initialSelectedLeadId, leads });
 
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(
-    shouldOpenDrawerInitially ? initialSelectedLeadId! : null,
-  );
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(shouldOpenDrawerInitially);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [monitoringLead, setMonitoringLead] = useState<Lead | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const latestFetchIdRef = useRef(0);
+  const { viewMode, setViewMode } = useViewMode("table");
 
-  const debouncedRefetch = useDebouncedCallback((nextFilters: FilterState) => {
-    const fetchId = ++latestFetchIdRef.current;
-    startTransition(async () => {
-      const data = await getLeadsAction(nextFilters);
-      if (latestFetchIdRef.current !== fetchId) return;
-      setLeads(data);
-    });
-  }, 300);
-
-  // 清除 URL 中的 leadId 参数，保持 URL 整洁
   useEffect(() => {
     if (initialSelectedLeadId) {
       router.replace("/leads", { scroll: false });
     }
   }, [initialSelectedLeadId, router]);
-
-  // Helpers
-  const getFloorCategory = (floorInfo: string): string => {
-    try {
-      const match = floorInfo.match(/(\d+)\/(\d+)层/);
-      if (!match) return "未知";
-      const current = parseInt(match[1]);
-      const total = parseInt(match[2]);
-      const ratio = current / total;
-      if (ratio <= 0.33) return "低";
-      if (ratio <= 0.66) return "中";
-      return "高";
-    } catch {
-      return "未知";
-    }
-  };
-
-  const getLayoutRooms = (layout: string): string => {
-    const match = layout.match(/(\d+)室/);
-    if (!match) return "其他";
-    const rooms = parseInt(match[1]);
-    return rooms >= 5 ? "4+" : rooms.toString();
-  };
-
-  // Custom setFilters that also triggers server refetch for server-side filters
-  const handleSetFilters: React.Dispatch<React.SetStateAction<FilterState>> = (
-    action,
-  ) => {
-    setFilters((prevFilters) => {
-      const newFilters =
-        typeof action === "function" ? action(prevFilters) : action;
-
-      // Only refetch if server-side filters changed (search, statuses, district)
-      const serverFiltersChanged =
-        newFilters.search !== prevFilters.search ||
-        JSON.stringify(newFilters.statuses) !==
-          JSON.stringify(prevFilters.statuses) ||
-        newFilters.district !== prevFilters.district;
-
-      if (serverFiltersChanged) {
-        debouncedRefetch(newFilters);
-      }
-
-      return newFilters;
-    });
-  };
-
-  // Client-side filtering for layout, floor, creator
-  // 解构 filters 以避免整个对象作为依赖项
-  const { creator, layouts, floors } = filters;
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      const matchCreator =
-        !creator ||
-        lead.creatorName.toLowerCase().includes(creator.toLowerCase());
-      const matchLayout =
-        layouts.length === 0 ||
-        layouts.includes(getLayoutRooms(lead.layout));
-      const matchFloor =
-        floors.length === 0 ||
-        floors.includes(getFloorCategory(lead.floorInfo));
-      return matchCreator && matchLayout && matchFloor;
-    });
-  }, [leads, creator, layouts, floors]);
-
-  const selectedLead = useMemo(
-    () => leads.find((l) => l.id === selectedLeadId) || null,
-    [leads, selectedLeadId],
-  );
-
-  const handleOpenDetail = (id: string) => {
-    setSelectedLeadId(id);
-    setIsDrawerOpen(true);
-  };
 
   const handleAudit = async (
     id: string,
@@ -183,10 +100,10 @@ export function LeadsView({
 
     if (result.success) {
       setLeads((prev) => prev.map((l) => (l.id === id ? result.data : l)));
-      setIsDrawerOpen(false);
-      toast.success("审核完成");
+      closeDetail();
+      handleSuccess(SUCCESS_MESSAGES.AUDIT_COMPLETED);
     } else {
-      toast.error(result.error || "审核失败");
+      handleError(result.error, "handleAudit", { fallbackMessage: ERROR_MESSAGES.AUDIT_FAILED });
     }
   };
 
@@ -197,93 +114,64 @@ export function LeadsView({
   ) => {
     const result = await addFollowUpAction(id, method, content);
     if (result.success) {
-      const updatedLeads = await getLeadsAction(filters);
-      setLeads(updatedLeads);
-      toast.success("跟进记录已添加");
+      await refreshLeads();
+      handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);
     } else {
-      toast.error(result.error || "添加跟进记录失败");
+      handleError(result.error, "handleAddFollowUp", { fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED });
     }
   };
 
   const handleAddLead = async (newLeadData: Omit<Lead, "id" | "createdAt">) => {
     if (editingLead) {
-      // Edit Mode
       const result = await updateLeadAction(editingLead.id, newLeadData);
       if (result.success) {
         setLeads((prev) =>
           prev.map((l) => (l.id === editingLead.id ? result.data : l)),
         );
-        toast.success("线索更新成功");
-        setIsAddModalOpen(false);
+        handleSuccess(SUCCESS_MESSAGES.LEAD_UPDATED);
+        closeAddModal();
       } else {
-        toast.error(result.error || "更新失败");
+        handleError(result.error, "handleAddLead", { fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED });
       }
     } else {
-      // Create Mode - actually create the lead
       const result = await createLeadAction(newLeadData);
       if (result.success) {
-        // Refetch to get the latest list
-        const updatedLeads = await getLeadsAction(filters);
-        setLeads(updatedLeads);
-        toast.success("线索创建成功");
-        setIsAddModalOpen(false);
+        await refreshLeads();
+        handleSuccess(SUCCESS_MESSAGES.LEAD_CREATED);
+        closeAddModal();
       } else {
-        toast.error(result.error || "创建失败");
+        handleError(result.error, "handleAddLead", { fallbackMessage: ERROR_MESSAGES.CREATE_FAILED });
       }
     }
-  };
-
-  const handleEditLead = (lead: Lead) => {
-    setEditingLead(lead);
-    setIsAddModalOpen(true);
   };
 
   const handleDeleteLead = async (id: string) => {
-    if (!window.confirm("确定要删除这条线索吗？此操作无法撤销。")) return;
+    if (!window.confirm(CONFIRM_DIALOG.DELETE_TITLE + CONFIRM_DIALOG.DELETE_DESCRIPTION)) return;
     const result = await deleteLeadAction(id);
     if (result.success) {
-      const updatedLeads = await getLeadsAction(filters);
-      setLeads(updatedLeads);
-      toast.success("线索已删除");
+      await refreshLeads();
+      handleSuccess(SUCCESS_MESSAGES.LEAD_DELETED);
     } else {
-      toast.error(result.error || "删除失败");
+      handleError(result.error, "handleDeleteLead", { fallbackMessage: ERROR_MESSAGES.DELETE_FAILED });
     }
-  };
-
-  const handleResetFilters = () => {
-    const resetFilters: FilterState = {
-      search: "",
-      statuses: [],
-      district: "",
-      creator: "",
-      layouts: [],
-      floors: [],
-    };
-    setFilters(resetFilters);
-    debouncedRefetch.cancel();
-    startTransition(async () => {
-      const data = await getLeadsAction(resetFilters);
-      setLeads(data);
-    });
   };
 
   return (
     <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6 container max-w-[1600px] mx-auto">
-      {/* Page Heading */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-3xl font-black tracking-tight font-sans">
-            线索中心
+            {PAGE_TITLE}
           </h2>
           <p className="text-muted-foreground">
-            实时管理与评估房产线索流转状态
+            {PAGE_SUBTITLE}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleResetFilters}
+            onClick={resetFilters}
             disabled={isPending}
           >
             {isPending ? (
@@ -291,77 +179,67 @@ export function LeadsView({
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}
-            重置筛选
+            {BUTTON_TEXT.RESET_FILTERS}
           </Button>
           <Button
             size="sm"
             className="bg-primary shadow-md"
-            onClick={() => {
-              setEditingLead(null);
-              setIsAddModalOpen(true);
-            }}
+            onClick={startAddLead}
           >
-            <Plus className="mr-2 h-4 w-4" /> 录入新线索
+            <Plus className="mr-2 h-4 w-4" /> {BUTTON_TEXT.ADD_LEAD}
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
       <LeadsFilter
         filters={filters}
-        setFilters={handleSetFilters}
+        setFilters={setFilters}
         viewMode={viewMode}
         setViewMode={setViewMode}
       />
 
-      {/* Loading indicator */}
       {isPending && (
         <div className="flex items-center justify-center py-4">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+          <span className="ml-2 text-sm text-muted-foreground">{LOADING_TEXT.LOADING}</span>
         </div>
       )}
 
-      {/* List/Grid View */}
       {viewMode === "table" ? (
         <LeadsTable
           leads={filteredLeads}
-          onOpenDetail={handleOpenDetail}
-          onEdit={handleEditLead}
+          onOpenDetail={openDetail}
+          onEdit={startEditLead}
           onDelete={handleDeleteLead}
         />
       ) : (
         <LeadsGrid
           leads={filteredLeads}
-          onOpenDetail={handleOpenDetail}
-          onEdit={handleEditLead}
+          onOpenDetail={openDetail}
+          onEdit={startEditLead}
           onDelete={handleDeleteLead}
         />
       )}
 
-      {/* Overlays */}
       <LeadDrawer
         lead={selectedLead}
         isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={closeDetail}
         onAudit={handleAudit}
         onAddFollowUp={handleAddFollowUp}
-        onViewMonitor={(l) => {
-          setMonitoringLead(l);
-          setIsDrawerOpen(false);
-        }}
+        onViewMonitor={openMonitor}
       />
 
       {monitoringLead && (
         <MonitoringDashboard
           lead={monitoringLead}
-          onClose={() => setMonitoringLead(null)}
+          onClose={closeMonitor}
         />
       )}
 
       <AddLeadModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={closeAddModal}
         onAdd={handleAddLead}
         lead={editingLead}
       />
