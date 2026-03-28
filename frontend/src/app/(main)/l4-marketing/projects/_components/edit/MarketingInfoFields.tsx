@@ -22,6 +22,7 @@ import {
   ConsultantSelect,
   TotalPriceInput,
   UnitPriceDisplay,
+  AreaInput,
 } from "./components";
 
 /**
@@ -182,20 +183,10 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
                 面积 (㎡) <span className="text-[#ba1a1a]">*</span>
               </FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    inputMode="decimal"
-                    placeholder="例如：120.5"
-                    value={field.value || ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^\d.]/g, "");
-                      const numVal = val === "" ? 0 : parseFloat(val);
-                      field.onChange(numVal);
-                    }}
-                    className="w-full h-11 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#0b1c30]"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#707785]">㎡</span>
-                </div>
+                <AreaInput
+                  value={field.value}
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

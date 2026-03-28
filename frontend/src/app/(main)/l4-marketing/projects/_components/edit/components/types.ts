@@ -96,4 +96,14 @@ export interface PriceInputsSectionProps {
   onTotalPriceChange: (value: number) => void;
 }
 
+/**
+ * 面积输入组件Props
+ */
+export interface AreaInputProps {
+  /** 当前面积值（数字） */
+  value: number | undefined;
+  /** 变更回调，返回数字 */
+  onChange: (value: number) => void;
+}
+
 export { UserSimpleResponse };
