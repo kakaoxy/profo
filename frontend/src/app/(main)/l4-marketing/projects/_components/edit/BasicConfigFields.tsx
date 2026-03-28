@@ -174,35 +174,6 @@ export function BasicConfigFields() {
           />
         </div>
       </section>
-
-      {/* Preview Card */}
-      <section className="bg-[#dce9ff] rounded-2xl p-1 overflow-hidden">
-        <div className="bg-white rounded-[calc(1rem-2px)] overflow-hidden shadow-xl">
-          <div className="h-40 overflow-hidden relative bg-gradient-to-br from-[#005daa]/20 to-[#0075d5]/20">
-            <div className="absolute inset-0 flex items-center justify-center text-[#005daa]/30">
-              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-            </div>
-            <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-[#005daa] shadow-lg">PREVIEW</div>
-          </div>
-          <div className="p-4 space-y-2">
-            <div className="flex justify-between items-start">
-              <h4 className="font-bold text-sm text-[#0b1c30]">房源预览卡片</h4>
-              <span className="text-[#005daa] font-black text-sm">¥--万</span>
-            </div>
-            <div className="flex gap-3 text-[10px] text-[#707785] font-medium">
-              <span>--室--厅</span>
-              <span className="w-1 h-1 bg-[#c0c7d6] rounded-full mt-1.5"></span>
-              <span>--㎡</span>
-              <span className="w-1 h-1 bg-[#c0c7d6] rounded-full mt-1.5"></span>
-              <span>精装修</span>
-            </div>
-            <div className="flex gap-1.5">
-              <span className="text-[9px] bg-[#85fa51]/30 text-[#266d00] px-2 py-0.5 rounded-full font-bold">核心地段</span>
-              <span className="text-[9px] bg-[#85fa51]/30 text-[#266d00] px-2 py-0.5 rounded-full font-bold">精装修</span>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

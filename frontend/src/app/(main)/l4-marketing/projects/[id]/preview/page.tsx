@@ -48,11 +48,11 @@ export default async function ProjectPreviewPage({
       ? photos.map((p) => p.file_path).filter((path): path is string => !!path)
       : projectImages;
 
-  const mainImage = photoUrls[0];
+  const mainImage = photoUrls[0] || "";
   const secondaryImages = photoUrls.slice(1, 3).filter((path): path is string => !!path);
 
-  // Parse tags
-  const tags = project.tags?.split(",").filter(Boolean) || [];
+  // Parse tags - 处理 null、undefined 和空字符串
+  const tags = project.tags?.split(",").filter((tag) => tag.trim() !== "") || [];
 
   return (
     <div className="min-h-screen bg-[#f8f9ff]">

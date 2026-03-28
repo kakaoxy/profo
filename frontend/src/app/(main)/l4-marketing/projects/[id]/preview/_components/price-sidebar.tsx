@@ -28,7 +28,7 @@ export function PriceSidebar({
             <span className="text-lg font-bold text-[#005daa]">万</span>
           </div>
           <div className="mt-1 text-sm font-medium text-[#707785]">
-            单价：{formatUnitPrice(unitPrice)}万/㎡
+            单价：{formatUnitPrice(unitPrice)}
           </div>
         </div>
 

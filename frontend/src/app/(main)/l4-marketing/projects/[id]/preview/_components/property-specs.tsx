@@ -28,7 +28,7 @@ export function PropertySpecs({
           面积
         </span>
         <span className="text-lg font-bold text-[#0b1c30]">
-          {formatArea(area)}㎡
+          {formatArea(area)}
         </span>
       </div>
       <div className="bg-[#eff4ff] p-6 flex flex-col gap-1">
