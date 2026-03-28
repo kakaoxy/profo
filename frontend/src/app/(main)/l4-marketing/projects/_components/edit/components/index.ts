@@ -25,3 +25,6 @@ export { ConsultantSelect } from "./ConsultantSelect";
 
 // 价格相关组件
 export { TotalPriceInput, UnitPriceDisplay } from "./PriceInputs";
+
+// 面积输入组件
+export { AreaInput } from "./AreaInput";
