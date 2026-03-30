@@ -1,17 +1,26 @@
 "use client";
 
+import React, { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
 import { getStatusConfig, getPublishStatusConfig } from "./utils";
 import type { BasicConfigSectionProps } from "./types";
 
-export function BasicConfigSection({
+// 使用 memo 避免不必要的重渲染
+export const BasicConfigSection = memo(function BasicConfigSection({
   project,
-  onPreviewImage,
 }: BasicConfigSectionProps) {
-  const statusConfigItem = getStatusConfig(project.project_status || "在途");
-  const publishStatusConfig = getPublishStatusConfig(project.publish_status || "草稿");
+  // 使用 useMemo 缓存配置计算
+  const statusConfigItem = useMemo(
+    () => getStatusConfig(project.project_status || "在途"),
+    [project.project_status]
+  );
+  
+  const publishStatusConfig = useMemo(
+    () => getPublishStatusConfig(project.publish_status || "草稿"),
+    [project.publish_status]
+  );
 
   return (
     <InfoCard title="基础配置">
@@ -46,4 +55,4 @@ export function BasicConfigSection({
       </div>
     </InfoCard>
   );
-}
+});

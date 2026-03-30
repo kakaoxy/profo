@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Download, Search, X, Plus, LayoutGrid, List } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
 import Link from "next/link";
+import { MarketingDetailSheet } from "./marketing-detail-sheet";
 
 interface MarketingViewProps {
   data: L4MarketingProject[];
@@ -15,12 +15,14 @@ interface MarketingViewProps {
 }
 
 export function MarketingView({ data, total }: MarketingViewProps) {
-  const router = useRouter();
-
   // 1. Local State for Filtering
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [layoutFilter, setLayoutFilter] = useState("all");
+
+  // 模态框状态
+  const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // 2. Client-side Filtering Logic
   const filteredData = useMemo(() => {
@@ -65,9 +67,10 @@ export function MarketingView({ data, total }: MarketingViewProps) {
     });
   }, [data, activeTab, layoutFilter, searchQuery]);
 
-  // 处理行点击 - 直接跳转到编辑页
+  // 处理行点击 - 打开详情页
   const handleRowClick = (row: L4MarketingProject) => {
-    router.push(`/l4-marketing/projects/${row.id}/edit`);
+    setSelectedProject(row);
+    setIsSheetOpen(true);
   };
 
   const statusTabs = [
@@ -213,6 +216,13 @@ export function MarketingView({ data, total }: MarketingViewProps) {
         </div>
       </div>
 
+      {/* 详情模态框 */}
+      <MarketingDetailSheet
+        key={selectedProject?.id}
+        project={selectedProject}
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+      />
     </div>
   );
 }
