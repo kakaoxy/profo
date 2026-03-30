@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Download, Search, X, Plus, LayoutGrid, List } from "lucide-react";
-import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
 import Link from "next/link";
-import { MarketingDetailSheet } from "./marketing-detail-sheet";
 
 interface MarketingViewProps {
   data: L4MarketingProject[];
@@ -17,29 +15,12 @@ interface MarketingViewProps {
 }
 
 export function MarketingView({ data, total }: MarketingViewProps) {
-  const searchParams = useSearchParams();
-  const openProjectId = searchParams.get("open");
+  const router = useRouter();
 
   // 1. Local State for Filtering
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [layoutFilter, setLayoutFilter] = useState("all");
-
-  // 模态框状态
-  const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  // 从编辑页返回时自动打开对应项目的详情
-  useEffect(() => {
-    if (openProjectId) {
-      const projectId = Number(openProjectId);
-      const projectToOpen = data.find((p) => p.id === projectId);
-      if (projectToOpen) {
-        setSelectedProject(projectToOpen);
-        setIsSheetOpen(true);
-      }
-    }
-  }, [openProjectId, data]);
 
   // 2. Client-side Filtering Logic
   const filteredData = useMemo(() => {
@@ -84,15 +65,9 @@ export function MarketingView({ data, total }: MarketingViewProps) {
     });
   }, [data, activeTab, layoutFilter, searchQuery]);
 
-  // 处理行点击
+  // 处理行点击 - 直接跳转到编辑页
   const handleRowClick = (row: L4MarketingProject) => {
-    setSelectedProject(row);
-    setIsSheetOpen(true);
-  };
-
-  // 处理模态框关闭后的刷新
-  const handleSheetRefresh = () => {
-    window.location.reload();
+    router.push(`/l4-marketing/projects/${row.id}/edit`);
   };
 
   const statusTabs = [
@@ -238,14 +213,6 @@ export function MarketingView({ data, total }: MarketingViewProps) {
         </div>
       </div>
 
-      {/* 详情模态框 */}
-      <MarketingDetailSheet
-        key={selectedProject?.id}
-        project={selectedProject}
-        isOpen={isSheetOpen}
-        onClose={() => setIsSheetOpen(false)}
-        onRefresh={handleSheetRefresh}
-      />
     </div>
   );
 }
