@@ -1,11 +1,13 @@
 "use client";
 
+import React, { memo } from "react";
 import Link from "next/link";
 import { InfoCard } from "../ui/InfoCard";
 import { PhotoGallery } from "../view/PhotoGallery";
 import type { PhotosSectionProps } from "./types";
 
-export function PhotosSection({ project, photos }: PhotosSectionProps) {
+// 使用 memo 避免不必要的重渲染
+export const PhotosSection = memo(function PhotosSection({ project, photos }: PhotosSectionProps) {
   return (
     <InfoCard title="照片">
       <PhotoGallery photos={photos} />
@@ -21,4 +23,4 @@ export function PhotosSection({ project, photos }: PhotosSectionProps) {
       </div>
     </InfoCard>
   );
-}
+});

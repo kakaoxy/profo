@@ -1,11 +1,13 @@
 "use client";
 
+import React, { memo } from "react";
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
 import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
 import type { PhysicalInfoSectionProps } from "./types";
 
-export function PhysicalInfoSection({ project }: PhysicalInfoSectionProps) {
+// 使用 memo 避免不必要的重渲染
+export const PhysicalInfoSection = memo(function PhysicalInfoSection({ project }: PhysicalInfoSectionProps) {
   return (
     <InfoCard title="物理信息（只读）">
       <div className="space-y-4">
@@ -22,4 +24,4 @@ export function PhysicalInfoSection({ project }: PhysicalInfoSectionProps) {
       </div>
     </InfoCard>
   );
-}
+});

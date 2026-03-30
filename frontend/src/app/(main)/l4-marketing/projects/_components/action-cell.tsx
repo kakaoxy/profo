@@ -44,35 +44,44 @@ export function ActionCell({ project }: ActionCellProps) {
 
   return (
     <div className="flex items-center gap-1">
-      <Link href={`/l4-marketing/projects/${project.id}/preview`}>
+      <Link
+        href={`/l4-marketing/projects/${project.id}/preview`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <Button
           variant="ghost"
           size="sm"
           className="text-[#707785] hover:text-[#005daa] hover:bg-[#a5c8ff]/20 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-lg"
+          onClick={(e) => e.stopPropagation()}
         >
           <Eye className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">预览</span>
         </Button>
       </Link>
 
-      <Link href={`/l4-marketing/projects/${project.id}/edit`}>
+      <Link
+        href={`/l4-marketing/projects/${project.id}/edit`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <Button
           variant="ghost"
           size="sm"
           className="text-[#707785] hover:text-[#005daa] hover:bg-[#a5c8ff]/20 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-lg"
+          onClick={(e) => e.stopPropagation()}
         >
           <Pencil className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">编辑</span>
         </Button>
       </Link>
 
-      <div className="hidden sm:block">
+      <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className="text-[#707785] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/50 h-8 w-8 p-0 rounded-lg"
+              onClick={(e) => e.stopPropagation()}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>

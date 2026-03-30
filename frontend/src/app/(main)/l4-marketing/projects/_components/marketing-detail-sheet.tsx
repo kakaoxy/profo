@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -32,11 +32,11 @@ interface MarketingDetailSheetProps {
 // 请求缓存，用于防止重复请求相同项目的数据
 const requestCache = new Map<number, Promise<{ project: L4MarketingProject | null; photos: L4MarketingMedia[] }>>();
 
-export function MarketingDetailSheet({
+// 使用 memo 避免不必要的重渲染
+export const MarketingDetailSheet = memo(function MarketingDetailSheet({
   project: initialProject,
   isOpen,
   onClose,
-  onRefresh,
 }: MarketingDetailSheetProps) {
   const isFetchingRef = useRef(false);
   const fetchedProjectIdRef = useRef<number | null>(null);
@@ -46,12 +46,12 @@ export function MarketingDetailSheet({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 初始化数据
+  // 初始化数据 - 只在 initialProject 变化时更新
   useEffect(() => {
     if (initialProject) {
       setProject(initialProject);
     }
-  }, [initialProject]);
+  }, [initialProject?.id]); // 只依赖 id，避免不必要的更新
 
   // 加载详情数据（带请求去重）
   const loadDetailData = useCallback(async (projectId: number) => {
@@ -107,7 +107,7 @@ export function MarketingDetailSheet({
       setIsLoading(false);
       isFetchingRef.current = false;
     }
-  }, [photos.length]);
+  }, []); // 移除 photos.length 依赖，避免重复创建函数
 
   // 当模态框打开时加载数据
   useEffect(() => {
@@ -115,6 +115,14 @@ export function MarketingDetailSheet({
       loadDetailData(project.id);
     }
   }, [isOpen, project?.id, loadDetailData]);
+
+  // 重置状态当模态框关闭时
+  useEffect(() => {
+    if (!isOpen) {
+      setPhotos([]);
+      fetchedProjectIdRef.current = null;
+    }
+  }, [isOpen]);
 
   if (!project) return null;
 
@@ -145,7 +153,6 @@ export function MarketingDetailSheet({
                 <div className="lg:col-span-7 space-y-6">
                   <MarketingInfoSection
                     project={project}
-                    onPreviewImage={setPreviewImage}
                   />
                   <PhysicalInfoSection project={project} />
                 </div>
@@ -153,7 +160,6 @@ export function MarketingDetailSheet({
                 <div className="lg:col-span-5 space-y-6">
                   <BasicConfigSection
                     project={project}
-                    onPreviewImage={setPreviewImage}
                   />
                   <PhotosSection project={project} photos={photos} />
                 </div>
@@ -169,4 +175,4 @@ export function MarketingDetailSheet({
       />
     </>
   );
-}
+});
