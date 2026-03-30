@@ -2,8 +2,7 @@
 
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
-import { formatPrice, formatArea } from "./utils";
-import { formatUnitPrice } from "@/lib/formatters";
+import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
 import type { PhysicalInfoSectionProps } from "./types";
 
 export function PhysicalInfoSection({ project }: PhysicalInfoSectionProps) {

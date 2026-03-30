@@ -3,31 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
+import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
 import type { MarketingInfoSectionProps } from "./types";
-
-// 价格格式化
-const formatPrice = (value: string | number | undefined | null) => {
-  if (value === undefined || value === null) return "-";
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "-";
-  return `¥${(numValue * 10000).toLocaleString()}`;
-};
-
-// 单价格式化
-const formatUnitPrice = (value: string | number | undefined | null) => {
-  if (value === undefined || value === null) return "-";
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "-";
-  return `¥${numValue.toLocaleString()}/m²`;
-};
-
-// 面积格式化
-const formatArea = (value: string | number | undefined | null) => {
-  if (value === undefined || value === null) return "-";
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "-";
-  return `${numValue.toLocaleString()} m²`;
-};
 
 export function MarketingInfoSection({ project }: MarketingInfoSectionProps) {
   return (

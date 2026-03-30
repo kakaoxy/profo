@@ -4,52 +4,16 @@ import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { InfoCard } from "../ui/InfoCard";
 import { DisplayRow } from "../ui/DisplayRow";
+import { getStatusConfig, getPublishStatusConfig } from "../detail/utils";
 import type { L4MarketingProject } from "../../types";
-
-// 状态配置
-const statusConfig: Record<string, { label: string; className: string }> = {
-  "在售": {
-    label: "在售",
-    className: "bg-emerald-500 text-white",
-  },
-  "已售": {
-    label: "已售",
-    className: "bg-slate-300 text-slate-700",
-  },
-  "在途": {
-    label: "在途",
-    className: "bg-blue-500 text-white",
-  },
-};
-
-// 发布状态配置
-const publishStatusConfig: Record<string, { label: string; className: string }> = {
-  "发布": {
-    label: "已发布",
-    className: "bg-emerald-100 text-emerald-700",
-  },
-  "草稿": {
-    label: "草稿",
-    className: "bg-amber-100 text-amber-700",
-  },
-};
 
 interface BasicConfigViewProps {
   project?: L4MarketingProject;
 }
 
 export function BasicConfigView({ project }: BasicConfigViewProps) {
-  const projectStatus = project?.project_status || "在途";
-  const statusConfigItem = statusConfig[projectStatus] || {
-    label: projectStatus,
-    className: "bg-slate-100 text-slate-600",
-  };
-
-  const publishStatus = project?.publish_status || "草稿";
-  const publishConfig = publishStatusConfig[publishStatus] || {
-    label: publishStatus,
-    className: "bg-slate-100 text-slate-600",
-  };
+  const statusConfigItem = getStatusConfig(project?.project_status || "在途");
+  const publishConfig = getPublishStatusConfig(project?.publish_status || "草稿");
 
   return (
     <InfoCard title="基础配置">

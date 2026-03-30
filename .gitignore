@@ -78,3 +78,5 @@ backend/data.db
 *.docx
 *.pdf
 .gstack/
+
+.trae/

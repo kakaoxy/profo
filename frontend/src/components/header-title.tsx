@@ -72,7 +72,7 @@ const data = {
       ],
     },
     {
-      title: "线索管理",
+      title: "线索中心",
       url: "/leads",
       icon: PhoneIncoming,
     },

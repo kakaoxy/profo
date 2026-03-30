@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useFormContext } from "react-hook-form";
 import {
   FormField,
@@ -9,7 +8,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import type { FormValues } from "../form-schema";
 import { MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "../../types";
 
