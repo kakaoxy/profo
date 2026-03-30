@@ -80,3 +80,5 @@ backend/data.db
 .gstack/
 
 .trae/
+
+agents.md
