@@ -4,11 +4,7 @@ import { useRef, useState, useCallback } from "react";
 import { UploadCloud, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-
-export interface UploadProgress {
-  filename: string;
-  progress: number;
-}
+import type { UploadProgress } from "./use-image-upload";
 
 interface ImageUploaderProps {
   uploadingFiles: UploadProgress[];
