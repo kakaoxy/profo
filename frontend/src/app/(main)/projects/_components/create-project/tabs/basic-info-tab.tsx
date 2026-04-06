@@ -67,8 +67,9 @@ export function BasicInfoTab({ form }: TabProps) {
       <SimpleInputField
         control={control}
         name="community_name"
-        label="小区名称 *"
+        label="小区名称"
         placeholder="例如：中远两湾城"
+        required
       />
 
       {/* 产证面积 */}
@@ -148,6 +149,7 @@ export function BasicInfoTab({ form }: TabProps) {
         name="address"
         label="详细地址"
         placeholder="街道/楼栋/门牌号"
+        required
       />
     </div>
   );

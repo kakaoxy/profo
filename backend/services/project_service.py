@@ -30,11 +30,11 @@ class ProjectService(
     聚合服务类
     通过多重继承，集合了 Core, Renovation, Sales, Finance 的所有方法。
     """
-    
+
     def __init__(self, db: Session):
-        # 统一初始化数据库会话
-        # 由于所有父类的 __init__ 都是接收 db，这里统一处理即可
+        # 初始化数据库会话
         self.db = db
-        
-        # 理论上不需要调用 super().__init__(db)，因为我们在这里已经设置了 self.db
-        # 且所有子服务的方法都依赖 self.db
+
+        # 调用 ProjectCoreService 的 __init__ 以初始化子服务
+        # 注意：由于使用多重继承，需要确保只调用 ProjectCoreService 的初始化
+        ProjectCoreService.__init__(self, db)

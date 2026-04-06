@@ -19,6 +19,7 @@ interface BaseFieldProps {
   label: string;
   placeholder?: string;
   description?: string;
+  required?: boolean;
 }
 
 // 1. 通用文本/数字输入框
@@ -35,6 +36,7 @@ export function SimpleInputField({
   description,
   type = "text",
   step,
+  required,
 }: SimpleInputProps) {
   return (
     <FormField
@@ -42,7 +44,10 @@ export function SimpleInputField({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className={description ? "" : "mb-2"}>{label}</FormLabel>
+          <FormLabel className={description ? "" : "mb-2"}>
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </FormLabel>
           <FormControl>
             <Input
               type={type}
@@ -73,6 +78,7 @@ export function SimpleTextareaField({
   name,
   label,
   placeholder,
+  required,
 }: BaseFieldProps) {
   return (
     <FormField
@@ -80,7 +86,10 @@ export function SimpleTextareaField({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel>
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </FormLabel>
           <FormControl>
             <Textarea
               placeholder={placeholder}
