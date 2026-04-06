@@ -174,6 +174,7 @@ class ProjectSale(BaseModel):
     def validate_user_references(self, db) -> None:
         """验证软引用的用户ID是否存在且有效"""
         from fastapi import HTTPException, status
+        from .user import User
 
         user_id_fields = [
             ("channel_manager_id", "渠道负责人ID"),

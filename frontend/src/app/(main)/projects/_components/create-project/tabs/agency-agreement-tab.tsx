@@ -16,6 +16,7 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
         name="contract_no"
         label="合同编号"
         placeholder="请输入合同编号"
+        required
       />
 
       {/* 签约日期 & 业主交房时间 */}

@@ -14,11 +14,13 @@ from models import Project, ProjectSale, ProjectInteraction, User
 from models.base import ProjectStatus
 from schemas.project_sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
 from schemas.project import ProjectResponse
+from services.builders import ProjectResponseBuilder
 
 
 class ProjectSalesService:
     def __init__(self, db: Session):
         self.db = db
+        self.response_builder = ProjectResponseBuilder(db)
 
     def _get_project(self, project_id: str) -> Project:
         """内部辅助：获取项目实例"""
@@ -209,4 +211,4 @@ class ProjectSalesService:
 
         self.db.commit()
         self.db.refresh(project)
-        return ProjectResponse.model_validate(self._build_project_response(project))
+        return ProjectResponse.model_validate(self.response_builder.build(project))
