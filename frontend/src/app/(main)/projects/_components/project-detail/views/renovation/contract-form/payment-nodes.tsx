@@ -1,7 +1,14 @@
 "use client";
 
-import { CreditCard, Calculator, AlertTriangle } from "lucide-react";
+import { CreditCard, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RenovationContractFormValues } from "./schema";
 import { UseFormSetValue } from "react-hook-form";
 
@@ -10,6 +17,18 @@ interface PaymentNodesProps {
   setValue: UseFormSetValue<RenovationContractFormValues>;
   isEditing: boolean;
 }
+
+// 预设支付节点选项
+const PAYMENT_NODE_OPTIONS = [
+  { value: "进场", label: "进场" },
+  { value: "水电", label: "水电" },
+  { value: "木瓦", label: "木瓦" },
+  { value: "油漆", label: "油漆" },
+  { value: "安装", label: "安装" },
+  { value: "交付7天", label: "交付7天" },
+  { value: "交付1个月", label: "交付1个月" },
+  { value: "交付2个月", label: "交付2个月" },
+] as const;
 
 // 格式化金额显示
 function formatAmount(amount: number | undefined | null): string {
@@ -39,34 +58,58 @@ function PaymentNodeRow({
 
   return (
     <div className="grid grid-cols-3 gap-3 items-center py-2 px-2 bg-slate-50 rounded border-b border-slate-100 last:border-b-0">
-      {/* 支付节点 */}
+      {/* 支付节点 - 下拉选择器 */}
       <div>
-        <Input
-          type="text"
-          placeholder="如：合同签订后"
-          value={nodeValue || ""}
-          onChange={(e) => onNodeChange(e.target.value)}
-          disabled={!isEditing}
-          className="h-7 text-xs px-2"
-        />
+        {isEditing ? (
+          <Select
+            value={nodeValue || ""}
+            onValueChange={onNodeChange}
+            disabled={!isEditing}
+          >
+            <SelectTrigger className="h-7 text-xs px-2 w-full bg-white">
+              <SelectValue placeholder="选择节点" />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_NODE_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="text-xs"
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-slate-100 rounded border border-slate-200">
+            {nodeValue || "-"}
+          </div>
+        )}
       </div>
 
       {/* 支付比例 */}
       <div>
-        <div className="relative">
-          <Input
-            type="number"
-            placeholder="比例"
-            value={ratioValue ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              onRatioChange(val === "" ? undefined : parseFloat(val));
-            }}
-            disabled={!isEditing}
-            className="h-7 text-xs px-2 pr-6"
-          />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">%</span>
-        </div>
+        {isEditing ? (
+          <div className="relative">
+            <Input
+              type="number"
+              placeholder="比例"
+              value={ratioValue ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                onRatioChange(val === "" ? undefined : parseFloat(val));
+              }}
+              disabled={!isEditing}
+              className="h-7 text-xs px-2 pr-6"
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">%</span>
+          </div>
+        ) : (
+          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-slate-100 rounded border border-slate-200">
+            {ratioValue !== undefined ? `${ratioValue}%` : "-"}
+          </div>
+        )}
       </div>
 
       {/* 计算金额 */}
