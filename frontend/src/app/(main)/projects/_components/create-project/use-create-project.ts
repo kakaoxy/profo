@@ -48,8 +48,8 @@ export const useCreateProject = ({
       );
 
       const basePayload = {
-        community_name: values.community_name || null,
-        address: values.address || null,
+        community_name: values.community_name,
+        address: values.address,
         area: values.area ?? null,
         layout: layoutString || null,
         orientation: values.orientation || null,
@@ -57,7 +57,7 @@ export const useCreateProject = ({
         owner_phone: values.owner_phone || null,
         owner_id_card: values.owner_id_card || null,
         notes: values.notes || null,
-        contract_no: values.contract_no || null,
+        contract_no: values.contract_no,
         signing_price: values.signing_price ?? null,
         signing_date: toDateStr(values.signing_date),
         signing_period: values.signing_period ?? null,
