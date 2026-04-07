@@ -2,6 +2,8 @@ from typing import Optional, List, Any, Dict
 from fastapi import APIRouter, Depends, Path, Query
 from services import ProjectService
 from dependencies.projects import get_project_service
+from dependencies.auth import get_current_internal_user
+from models.user import User
 from schemas.project import SalesRolesUpdate, SalesRecordCreate, SalesRecordResponse, ProjectResponse
 
 router = APIRouter()
@@ -11,7 +13,8 @@ router = APIRouter()
 def update_sales_roles(
     project_id: str = Path(..., description="项目ID"),
     roles_data: SalesRolesUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """更新销售角色 (Sync)"""
     project = service.update_sales_roles(project_id, roles_data)
@@ -22,7 +25,8 @@ def update_sales_roles(
 def create_viewing_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """创建带看记录 (Sync)"""
     record = service.create_sales_record(project_id, record_data)
@@ -33,7 +37,8 @@ def create_viewing_record(
 def create_offer_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """创建出价记录 (Sync)"""
     record = service.create_sales_record(project_id, record_data)
@@ -44,7 +49,8 @@ def create_offer_record(
 def create_negotiation_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """创建面谈记录 (Sync)"""
     record = service.create_sales_record(project_id, record_data)
@@ -55,7 +61,8 @@ def create_negotiation_record(
 def get_sales_records(
     project_id: str = Path(..., description="项目ID"),
     record_type: Optional[str] = Query(None, description="记录类型筛选"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取销售记录 (Sync)"""
     records = service.get_sales_records(project_id, record_type)
@@ -66,7 +73,8 @@ def get_sales_records(
 def delete_sales_record(
     project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """删除销售记录 (Sync)"""
     service.delete_sales_record(project_id, record_id)

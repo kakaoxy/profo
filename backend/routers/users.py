@@ -18,7 +18,7 @@ from schemas.user import (
     PasswordResetRequest,
 )
 from utils.auth import get_password_hash
-from dependencies.auth import get_current_admin_user, get_current_active_user
+from dependencies.auth import get_current_admin_user, get_current_active_user, get_current_internal_user
 from services.user_service import user_service
 
 router = APIRouter()
@@ -55,7 +55,7 @@ def get_users(
 def get_users_simple(
     nickname: Optional[str] = Query(None, description="昵称搜索"),
     status: Optional[str] = Query("active", description="用户状态筛选"),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_internal_user),
     db: Session = Depends(get_db)
 ):
     """

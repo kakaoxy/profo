@@ -11,6 +11,8 @@ import logging
 import json
 
 from db import get_db
+from dependencies.auth import get_current_internal_user
+from models.user import User
 from schemas import PropertyIngestionModel, PushResult
 from services.importer import PropertyImporter
 from models import FailedRecord
@@ -146,7 +148,8 @@ class JSONBatchImporter:
 @router.post("", response_model=PushResult)
 def push_properties(
     properties: List[dict],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """
     JSON 数据推送接口
