@@ -11,7 +11,7 @@ import logging
 from db import get_db
 from schemas import UploadResult
 from exceptions import FileProcessingException, ResourceNotFoundException
-from dependencies.auth import get_current_operator_user, get_current_normal_user
+from dependencies.auth import get_current_internal_user
 from services.csv_batch_importer import CSVBatchImporter
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ router = APIRouter()
 def upload_csv(
     file: UploadFile = File(..., description="CSV 文件"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_operator_user)
+    current_user = Depends(get_current_internal_user)
 ):
     """
     上传并处理 CSV 文件
@@ -45,7 +45,7 @@ def upload_csv(
 @router.get("/download/{filename}")
 def download_failed_records(
     filename: str,
-    current_user = Depends(get_current_normal_user)
+    current_user = Depends(get_current_internal_user)
 ):
     """
     下载失败记录文件

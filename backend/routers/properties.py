@@ -16,7 +16,7 @@ from models import PropertyCurrent, Community, PropertyMedia
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
 from schemas import PaginatedPropertyResponse, PropertyDetailResponse
-from dependencies.auth import get_current_normal_user, get_current_operator_user
+from dependencies.auth import get_current_internal_user
 from models.user import User
 from services.property_query_service import PropertyQueryService, get_property_query_service
 
@@ -27,16 +27,20 @@ router = APIRouter()
 
 
 @router.get("/communities/search")
-def search_communities(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+def search_communities(
+    q: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_internal_user)
+):
     """Search communities by name"""
     results = db.query(Community).filter(Community.name.contains(q)).limit(20).all()
     return [
         {
-            "id": c.id, 
-            "name": c.name, 
-            "district": c.district, 
+            "id": c.id,
+            "name": c.name,
+            "district": c.district,
             "business_circle": c.business_circle
-        } 
+        }
         for c in results
     ]
 
@@ -60,7 +64,7 @@ def get_properties(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=200, description="每页数量"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_normal_user),
+    current_user: User = Depends(get_current_internal_user),
     service: PropertyQueryService = Depends(get_property_query_service)
 ):
     """
@@ -124,7 +128,7 @@ def export_properties(
     sort_by: str = Query("updated_at", description="排序字段"),
     sort_order: str = Query("desc", description="排序方向: asc | desc"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user),
+    current_user: User = Depends(get_current_internal_user),
     service: PropertyQueryService = Depends(get_property_query_service)
 ):
     """
@@ -238,9 +242,9 @@ def export_properties(
 # 动态路径必须放在静态路径之后
 @router.get("/{id}", response_model=PropertyDetailResponse)
 def get_property_detail(
-    id: int, 
-    db: Session = Depends(get_db), 
-    current_user: User = Depends(get_current_normal_user)
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取房源详情"""
     property_obj = db.query(PropertyCurrent).filter(

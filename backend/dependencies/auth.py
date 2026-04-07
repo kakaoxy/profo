@@ -163,3 +163,22 @@ async def get_current_normal_user(
         HTTPException: 403 Forbidden - 用户权限不足
     """
     return await get_current_user_with_role(["admin", "operator", "user"], current_user)
+
+
+async def get_current_internal_user(
+    current_user: User = Depends(get_current_active_user)
+) -> User:
+    """
+    获取当前内部管理用户（管理员或运营人员）
+    用于所有内部管理API的统一权限验证
+    
+    Args:
+        current_user: 当前活跃用户对象
+        
+    Returns:
+        User: 当前内部管理用户对象
+        
+    Raises:
+        HTTPException: 403 Forbidden - 用户不是管理员或运营人员
+    """
+    return await get_current_user_with_role(["admin", "operator"], current_user)

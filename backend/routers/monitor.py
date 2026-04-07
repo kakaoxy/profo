@@ -14,7 +14,7 @@ from schemas.monitor import (
     NeighborhoodRadarResponse
 )
 from services.monitor_service import MonitorService
-from dependencies.auth import get_current_normal_user, get_current_operator_user
+from dependencies.auth import get_current_internal_user
 
 router = APIRouter(prefix="/monitor")
 community_router = APIRouter(prefix="/communities")
@@ -23,7 +23,7 @@ community_router = APIRouter(prefix="/communities")
 def get_sentiment(
     community_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_normal_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     data = MonitorService.get_market_sentiment(db, community_id)
     return data
@@ -33,7 +33,7 @@ def get_trends(
     community_id: int,
     months: int = Query(6, ge=1, le=24),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_normal_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     data = MonitorService.get_trends(db, community_id, months)
     return data
@@ -42,7 +42,7 @@ def get_trends(
 def generate_strategy(
     request: AIStrategyRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     return MonitorService.generate_ai_strategy(db, request.project_id, request.user_context)
 
@@ -51,7 +51,7 @@ def generate_strategy(
 def get_neighborhood_radar(
     community_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_normal_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取周边竞品雷达数据，包含分渠道统计"""
     data = MonitorService.get_neighborhood_radar(db, community_id)
@@ -63,7 +63,7 @@ def get_neighborhood_radar(
 def get_competitors(
     community_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_normal_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     data = MonitorService.get_competitors(db, community_id)
     return data
@@ -73,7 +73,7 @@ def add_competitor(
     community_id: int,
     request: AddCompetitorRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     MonitorService.add_competitor(db, community_id, request.competitor_community_id)
     return None
@@ -83,7 +83,7 @@ def remove_competitor(
     community_id: int,
     competitor_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user)
+    current_user: User = Depends(get_current_internal_user)
 ):
     MonitorService.remove_competitor(db, community_id, competitor_id)
     return None

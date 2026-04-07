@@ -9,7 +9,7 @@ from sqlalchemy import desc
 import uuid
 
 from db import get_db
-from dependencies.auth import get_current_user as get_current_user_dep
+from dependencies.auth import get_current_internal_user
 from models import User, Lead, LeadFollowUp, LeadPriceHistory, LeadStatus, FollowUpMethod
 from schemas.lead import (
     LeadCreate, LeadUpdate, LeadResponse, PaginatedLeadResponse,
@@ -76,7 +76,7 @@ def get_leads(
     layout: Optional[str] = None,
     floor: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     """
     获取线索列表
@@ -125,7 +125,7 @@ def get_leads(
 def create_lead(
     lead_in: LeadCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     # Determine creator name helper logic if needed, but for now just ID
     db_lead = Lead(
@@ -160,7 +160,7 @@ def create_lead(
 def get_lead(
     lead_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     lead = db.query(Lead).options(joinedload(Lead.creator)).filter(Lead.id == lead_id).first()
     if not lead:
@@ -172,7 +172,7 @@ def update_lead(
     lead_id: str,
     lead_in: LeadUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     lead = db.query(Lead).options(joinedload(Lead.creator)).filter(Lead.id == lead_id).first()
     if not lead:
@@ -218,7 +218,7 @@ def update_lead(
 def delete_lead(
     lead_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
@@ -233,7 +233,7 @@ def add_follow_up(
     lead_id: str,
     follow_up_in: FollowUpCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
@@ -259,7 +259,7 @@ def add_follow_up(
 def get_follow_ups(
     lead_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     follow_ups = db.query(LeadFollowUp)\
         .filter(LeadFollowUp.lead_id == lead_id)\
@@ -271,7 +271,7 @@ def get_follow_ups(
 def get_price_history(
     lead_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     history = db.query(LeadPriceHistory)\
         .filter(LeadPriceHistory.lead_id == lead_id)\
@@ -284,7 +284,7 @@ def add_price_record(
     lead_id: str,
     price_in: PriceHistoryCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_dep)
+    current_user: User = Depends(get_current_internal_user)
 ):
     """
     Explicitly add a price record (e.g. secondary authorization)

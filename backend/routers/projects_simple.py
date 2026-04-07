@@ -7,6 +7,8 @@ from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, Depends, Query, Path, HTTPException, status
 from services import ProjectService
 from dependencies.projects import get_project_service
+from dependencies.auth import get_current_internal_user
+from models.user import User
 from schemas.project import (
     ProjectCreate, ProjectUpdate, StatusUpdate, ProjectCompleteRequest,
     ProjectResponse, ProjectListResponse, ProjectStatsResponse, ProjectReportResponse
@@ -27,7 +29,8 @@ router.include_router(sales_router, tags=["sales"])
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 def create_project(
     project_data: ProjectCreate,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """创建项目"""
     project = service.create_project(project_data)
@@ -40,7 +43,8 @@ def get_projects(
     community_name: Optional[str] = Query(None, description="小区名称筛选"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取项目列表"""
     result = service.get_projects(
@@ -59,7 +63,8 @@ def get_projects(
 
 @router.get("/stats", response_model=ProjectStatsResponse)
 def get_project_stats(
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取项目统计"""
     stats = service.get_project_stats()
@@ -70,7 +75,8 @@ def get_project_stats(
 def get_project(
     project_id: str = Path(..., description="项目ID"),
     full: bool = Query(False, description="是否获取完整详情(包含大字段)"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取项目详情"""
     project = service.get_project(project_id, include_all=full)
@@ -83,7 +89,8 @@ def get_project(
 def update_project(
     project_id: str = Path(..., description="项目ID"),
     update_data: ProjectUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """更新项目信息"""
     project = service.update_project(project_id, update_data)
@@ -95,7 +102,8 @@ def update_project(
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(
     project_id: str = Path(..., description="项目ID"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """删除项目"""
     service.delete_project(project_id)
@@ -108,7 +116,8 @@ def delete_project(
 def update_project_status(
     project_id: str = Path(..., description="项目ID"),
     status_update: StatusUpdate = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """更新项目状态"""
     project = service.update_status(project_id, status_update)
@@ -121,7 +130,8 @@ def update_project_status(
 def complete_project(
     project_id: str = Path(..., description="项目ID"),
     complete_data: ProjectCompleteRequest = ...,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """完成项目"""
     project = service.complete_project(project_id, complete_data)
@@ -135,7 +145,8 @@ def complete_project(
 @router.get("/{project_id}/report", response_model=ProjectReportResponse)
 def get_project_report(
     project_id: str = Path(..., description="项目ID"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """获取项目报告"""
     report = service.get_project_report(project_id)
@@ -150,7 +161,8 @@ def get_project_report(
 def export_projects(
     status: Optional[str] = Query(None, description="项目状态筛选"),
     community_name: Optional[str] = Query(None, description="小区名称筛选"),
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_internal_user)
 ):
     """导出项目数据"""
     result = service.get_projects(
