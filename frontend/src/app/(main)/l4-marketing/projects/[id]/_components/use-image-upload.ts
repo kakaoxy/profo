@@ -16,7 +16,7 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface UseImageUploadOptions {
-  projectId: number;
+  projectId?: number;
   uploadCategory: PhotoCategory;
   uploadStage: string;
   photos: L4MarketingMedia[];
@@ -146,7 +146,25 @@ export function useImageUpload({
               );
               const nextSortOrder = categoryPhotos.length;
 
-              // 创建媒体记录
+              // 如果没有 projectId（创建模式），直接创建临时媒体记录
+              if (!projectId) {
+                const tempMedia: L4MarketingMedia = {
+                  id: Date.now() + Math.random(), // 临时ID
+                  file_url: fileUrl,
+                  media_type: "image",
+                  photo_category: uploadCategory,
+                  renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
+                  sort_order: nextSortOrder,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                } as L4MarketingMedia;
+                currentOnPhotosChange([...currentPhotos, tempMedia]);
+                toast.success(`${file.name}: 上传成功`);
+                resolve(true);
+                return;
+              }
+
+              // 有 projectId（编辑模式），创建媒体记录
               createL4MarketingMediaAction(projectId, {
                 file_url: fileUrl,
                 media_type: "image",

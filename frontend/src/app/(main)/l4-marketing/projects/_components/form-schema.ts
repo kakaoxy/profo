@@ -98,16 +98,30 @@ export const updateSchema = z.object({
 export type CreateValues = z.infer<typeof createSchema>;
 export type UpdateValues = z.infer<typeof updateSchema>;
 
+// 媒体文件类型
+export interface MediaFile {
+  file_url: string;
+  thumbnail_url?: string;
+  media_type: "image" | "video";
+  photo_category: "marketing" | "renovation";
+  renovation_stage?: string | null;
+  description?: string;
+  sort_order?: number;
+}
+
 // 将表单值转换为API创建请求
 // 后端已支持数组格式，直接传递数组
-export function formValuesToCreateRequest(values: FormValues): Record<string, unknown> {
+export function formValuesToCreateRequest(
+  values: FormValues,
+  mediaFiles?: MediaFile[]
+): Record<string, unknown> {
   // 计算单价（万元/㎡），与后端计算逻辑保持一致
   // 后端逻辑：unit_price = total_price / area
   const unitPrice = values.area > 0
     ? Number((values.total_price / values.area).toFixed(2))
     : 0;
 
-  return {
+  const result: Record<string, unknown> = {
     community_id: values.community_id,
     community_name: values.community_name || null,
     layout: values.layout,
@@ -117,7 +131,7 @@ export function formValuesToCreateRequest(values: FormValues): Record<string, un
     total_price: values.total_price,
     unit_price: unitPrice,
     title: values.title,
-    images: values.images.length > 0 ? values.images : null,
+    images: values.images.length > 0 ? values.images.join(",") : null,
     sort_order: values.sort_order,
     tags: values.tags.length > 0 ? values.tags : null,
     decoration_style: values.decoration_style || null,
@@ -125,6 +139,13 @@ export function formValuesToCreateRequest(values: FormValues): Record<string, un
     project_status: values.project_status,
     consultant_id: values.consultant_id,
   };
+
+  // 如果有媒体文件，添加到请求中
+  if (mediaFiles && mediaFiles.length > 0) {
+    result.media_files = mediaFiles;
+  }
+
+  return result;
 }
 
 // 将表单值转换为API更新请求
@@ -140,7 +161,7 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.area !== undefined) result.area = values.area;
   if (values.total_price !== undefined) result.total_price = values.total_price;
   if (values.title !== undefined) result.title = values.title;
-  if (values.images !== undefined) result.images = values.images.length > 0 ? values.images : null;
+  if (values.images !== undefined) result.images = values.images.length > 0 ? values.images.join(",") : null;
   if (values.sort_order !== undefined) result.sort_order = values.sort_order;
   if (values.tags !== undefined) result.tags = values.tags.length > 0 ? values.tags : null;
   if (values.decoration_style !== undefined) result.decoration_style = values.decoration_style || null;

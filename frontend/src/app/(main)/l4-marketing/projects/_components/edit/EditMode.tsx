@@ -3,21 +3,50 @@
 import * as React from "react";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { InfoCard } from "../ui/InfoCard";
 import { MarketingInfoFields } from "./MarketingInfoFields";
 import { BasicConfigFields } from "./BasicConfigFields";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import type { EditModeProps } from "../form-types";
 import { DualPhotoManager } from "../../[id]/_components/dual-photo-manager";
 import Link from "next/link";
+import type { L4MarketingMedia } from "../../types";
+import type { MediaFile } from "../form-schema";
+
+// 将 L4MarketingMedia 转换为 MediaFile
+function convertToMediaFiles(photos: L4MarketingMedia[]): MediaFile[] {
+  return photos.map((photo) => ({
+    file_url: photo.file_url,
+    thumbnail_url: photo.thumbnail_url || undefined,
+    media_type: (photo.media_type as "image" | "video") || "image",
+    photo_category: photo.photo_category,
+    renovation_stage: photo.renovation_stage,
+    description: photo.description || undefined,
+    sort_order: photo.sort_order,
+  }));
+}
 
 export function EditMode({ mode, project, photos, actions }: EditModeProps) {
-  const [localPhotos, setLocalPhotos] = React.useState(photos);
+  const [localPhotos, setLocalPhotos] = React.useState<L4MarketingMedia[]>(photos);
+  
+  // 创建模式下，从 localPhotos 构建 mediaFiles
+  const mediaFiles = React.useMemo(() => {
+    if (mode === "create") {
+      return convertToMediaFiles(localPhotos);
+    }
+    return undefined;
+  }, [mode, localPhotos]);
+  
   const { form, onSubmit, isSubmitting } = useMiniProjectForm({
     mode,
     project,
     actions,
+    mediaFiles,
   });
+
+  // 处理照片变化
+  const handlePhotosChange = React.useCallback((newPhotos: L4MarketingMedia[]) => {
+    setLocalPhotos(newPhotos);
+  }, []);
 
   const submitButtonText = isSubmitting
     ? mode === "create"
@@ -35,19 +64,11 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
           <div className="lg:col-span-8 space-y-6">
             <MarketingInfoFields />
 
-            {mode === "edit" && project ? (
-              <DualPhotoManager
-                projectId={project.id}
-                photos={localPhotos}
-                onPhotosChange={setLocalPhotos}
-              />
-            ) : (
-              <InfoCard title="照片">
-                <div className="text-sm text-[#707785]">
-                  创建完成后可在编辑页管理照片。
-                </div>
-              </InfoCard>
-            )}
+            <DualPhotoManager
+              projectId={project?.id}
+              photos={localPhotos}
+              onPhotosChange={handlePhotosChange}
+            />
           </div>
 
           {/* 右侧：配置和标签风格 */}

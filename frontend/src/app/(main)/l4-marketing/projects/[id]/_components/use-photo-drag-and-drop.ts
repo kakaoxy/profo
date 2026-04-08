@@ -22,7 +22,7 @@ const CONTAINER_MARKETING = "marketing";
 const CONTAINER_RENOVATION_PREFIX = "renovation-";
 
 interface UsePhotoDragAndDropOptions {
-  projectId: number;
+  projectId?: number;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
   marketingPhotos: L4MarketingMedia[];
@@ -135,6 +135,11 @@ export function usePhotoDragAndDrop({
 
       onPhotosChange(newPhotos);
 
+      // 如果没有 projectId（创建模式），不调用 API
+      if (!projectId) {
+        return;
+      }
+
       // 保存排序
       const sortUpdates = updatedPhotos.map((p, idx) => ({
         media_id: p.id,
@@ -184,6 +189,14 @@ export function usePhotoDragAndDrop({
       );
       onPhotosChange(newPhotos);
 
+      // 如果没有 projectId（创建模式），不调用 API
+      if (!projectId) {
+        toast.success(
+          `已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`
+        );
+        return;
+      }
+
       // 调用API更新
       const updateResult = await updateL4MarketingMediaAction(
         activePhoto.id,
@@ -204,7 +217,7 @@ export function usePhotoDragAndDrop({
         onPhotosChange(photos);
       }
     },
-    [marketingPhotos, renovationPhotos, photos, onPhotosChange]
+    [marketingPhotos, renovationPhotos, photos, onPhotosChange, projectId]
   );
 
   // 拖拽开始

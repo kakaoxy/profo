@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import type { L4MarketingProject } from "../../types";
 import type { L4MarketingProjectCreate, L4MarketingProjectUpdate } from "../../types";
 import type { MiniProjectFormActions } from "../form-types";
-import { formSchema, formValuesToCreateRequest, formValuesToUpdateRequest, projectToFormValues } from "../form-schema";
+import { formSchema, formValuesToCreateRequest, formValuesToUpdateRequest, projectToFormValues, type MediaFile } from "../form-schema";
 import type * as z from "zod";
 
 type FormValues = z.infer<typeof formSchema>;
@@ -17,9 +17,10 @@ interface UseMiniProjectFormProps {
   mode: "create" | "edit";
   project?: L4MarketingProject;
   actions: MiniProjectFormActions;
+  mediaFiles?: MediaFile[];
 }
 
-export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFormProps) {
+export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMiniProjectFormProps) {
   const router = useRouter();
 
   const form = useForm<FormValues>({
@@ -34,7 +35,10 @@ export function useMiniProjectForm({ mode, project, actions }: UseMiniProjectFor
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (mode === "create") {
-        const createBody = formValuesToCreateRequest(values) as L4MarketingProjectCreate;
+        console.log("[Create] Form values:", values);
+        console.log("[Create] Media files:", mediaFiles);
+        const createBody = formValuesToCreateRequest(values, mediaFiles) as L4MarketingProjectCreate;
+        console.log("[Create] Request body:", createBody);
 
         const result = await actions.createL4MarketingProject(createBody);
         if (result.success && result.data?.id) {
