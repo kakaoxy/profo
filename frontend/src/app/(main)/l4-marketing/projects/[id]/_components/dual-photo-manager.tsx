@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -17,11 +18,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { L4MarketingMedia, PhotoCategory } from "../../types";
-import { DraggablePhotoItem } from "./draggable-photo-item";
+import { SortablePhotoItem } from "./sortable-photo-item";
 import { PhotoCategorySelector } from "./photo-category-selector";
-import { deleteL4MarketingMediaAction, batchUpdateMediaSortOrderAction } from "../../actions";
+import { deleteL4MarketingMediaAction, batchUpdateMediaSortOrderAction, updateL4MarketingMediaAction } from "../../actions";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploader } from "./image-uploader";
 import { useImageUpload } from "./use-image-upload";
@@ -39,6 +39,10 @@ interface DualPhotoManagerProps {
 
 type UploadTab = "sync" | "upload";
 
+// 容器ID常量
+const CONTAINER_MARKETING = "marketing";
+const CONTAINER_RENOVATION_PREFIX = "renovation-";
+
 export function DualPhotoManager({
   projectId,
   photos,
@@ -46,6 +50,7 @@ export function DualPhotoManager({
 }: DualPhotoManagerProps) {
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeId, setActiveId] = useState<number | null>(null);
 
   const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
   const [uploadStage, setUploadStage] = useState("other");
@@ -58,6 +63,7 @@ export function DualPhotoManager({
     onPhotosChange,
   });
 
+  // 按分类分组照片
   const marketingPhotos = useMemo(
     () => photos.filter((p) => p.photo_category === "marketing").sort((a, b) => a.sort_order - b.sort_order),
     [photos]
@@ -68,6 +74,7 @@ export function DualPhotoManager({
     [photos]
   );
 
+  // 按阶段分组改造照片
   const renovationPhotosByStage = useMemo(() => {
     const grouped: Record<string, L4MarketingMedia[]> = {};
     renovationPhotos.forEach((photo) => {
@@ -79,31 +86,103 @@ export function DualPhotoManager({
   }, [renovationPhotos]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleMarketingDragEnd = useCallback(async (event: DragEndEvent) => {
+  // 获取所有可拖拽项的ID
+  const allPhotoIds = useMemo(() => {
+    return photos.map((p) => p.id);
+  }, [photos]);
+
+  // 获取营销照片ID列表
+  const marketingPhotoIds = useMemo(() => {
+    return marketingPhotos.map((p) => p.id);
+  }, [marketingPhotos]);
+
+  // 获取改造照片ID列表（按阶段）
+  const getRenovationStageIds = useCallback((stage: string) => {
+    return (renovationPhotosByStage[stage] || []).map((p) => p.id);
+  }, [renovationPhotosByStage]);
+
+  // 拖拽开始
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as number);
+  }, []);
+
+  // 拖拽结束 - 处理跨容器拖拽
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
+    setActiveId(null);
 
-    const oldIndex = marketingPhotos.findIndex((p) => p.id === active.id);
-    const newIndex = marketingPhotos.findIndex((p) => p.id === over.id);
+    if (!over) return;
 
-    const reordered = arrayMove(marketingPhotos, oldIndex, newIndex);
+    const activePhoto = photos.find((p) => p.id === active.id);
+    if (!activePhoto) return;
 
-    const updatedPhotos = reordered.map((p, idx) => ({
-      ...p,
-      sort_order: idx,
-    }));
+    const overId = over.id;
+    const activeContainer = getContainerId(activePhoto);
+    const overContainer = getContainerIdFromOverId(overId.toString(), photos);
 
-    const newPhotos = [
-      ...updatedPhotos,
-      ...renovationPhotos,
-    ];
+    // 同一容器内排序
+    if (activeContainer === overContainer && active.id !== overId) {
+      await handleSameContainerSort(activePhoto, overId as number);
+      return;
+    }
+
+    // 跨容器拖拽
+    if (activeContainer !== overContainer) {
+      await handleCrossContainerMove(activePhoto, overContainer, overId as number | string);
+    }
+  }, [photos, projectId, onPhotosChange]);
+
+  // 获取照片所在容器ID
+  const getContainerId = (photo: L4MarketingMedia): string => {
+    if (photo.photo_category === "marketing") {
+      return CONTAINER_MARKETING;
+    }
+    return `${CONTAINER_RENOVATION_PREFIX}${photo.renovation_stage || "other"}`;
+  };
+
+  // 从overId获取容器ID
+  const getContainerIdFromOverId = (overId: string, allPhotos: L4MarketingMedia[]): string => {
+    // 如果是容器ID本身
+    if (overId === CONTAINER_MARKETING) return CONTAINER_MARKETING;
+    if (overId.startsWith(CONTAINER_RENOVATION_PREFIX)) return overId;
+
+    // 如果是照片ID，查找照片所在容器
+    const photo = allPhotos.find((p) => p.id.toString() === overId);
+    if (photo) {
+      return getContainerId(photo);
+    }
+
+    return CONTAINER_MARKETING;
+  };
+
+  // 同一容器内排序
+  const handleSameContainerSort = async (activePhoto: L4MarketingMedia, overId: number) => {
+    const isMarketing = activePhoto.photo_category === "marketing";
+    const currentList = isMarketing ? marketingPhotos : renovationPhotos.filter(
+      (p) => p.renovation_stage === activePhoto.renovation_stage
+    );
+
+    const oldIndex = currentList.findIndex((p) => p.id === activePhoto.id);
+    const newIndex = currentList.findIndex((p) => p.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(currentList, oldIndex, newIndex);
+    const updatedPhotos = reordered.map((p, idx) => ({ ...p, sort_order: idx }));
+
+    // 合并更新
+    const newPhotos = photos.map((p) => {
+      const updated = updatedPhotos.find((u) => u.id === p.id);
+      return updated || p;
+    });
 
     onPhotosChange(newPhotos);
 
+    // 保存排序
     const sortUpdates = updatedPhotos.map((p, idx) => ({
       media_id: p.id,
       sort_order: idx,
@@ -115,7 +194,53 @@ export function DualPhotoManager({
     } else {
       toast.error("保存排序失败");
     }
-  }, [marketingPhotos, renovationPhotos, onPhotosChange, projectId]);
+  };
+
+  // 跨容器移动
+  const handleCrossContainerMove = async (
+    activePhoto: L4MarketingMedia,
+    targetContainer: string,
+    overId: number | string
+  ) => {
+    const isMovingToMarketing = targetContainer === CONTAINER_MARKETING;
+    const targetStage = isMovingToMarketing
+      ? null
+      : targetContainer.replace(CONTAINER_RENOVATION_PREFIX, "");
+
+    // 更新照片的分类和阶段
+    const updatedPhoto: L4MarketingMedia = {
+      ...activePhoto,
+      photo_category: isMovingToMarketing ? "marketing" : "renovation",
+      renovation_stage: targetStage,
+    };
+
+    // 计算新的排序值
+    const targetList = isMovingToMarketing
+      ? marketingPhotos
+      : renovationPhotos.filter((p) => p.renovation_stage === targetStage);
+
+    const newSortOrder = targetList.length;
+    updatedPhoto.sort_order = newSortOrder;
+
+    // 更新本地状态
+    const newPhotos = photos.map((p) => (p.id === updatedPhoto.id ? updatedPhoto : p));
+    onPhotosChange(newPhotos);
+
+    // 调用API更新
+    const updateResult = await updateL4MarketingMediaAction(activePhoto.id, {
+      photo_category: updatedPhoto.photo_category,
+      renovation_stage: updatedPhoto.renovation_stage,
+      sort_order: newSortOrder,
+    } as any);
+
+    if (updateResult.success) {
+      toast.success(`已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`);
+    } else {
+      toast.error("移动失败");
+      // 回滚状态
+      onPhotosChange(photos);
+    }
+  };
 
   const handleDeletePhoto = useCallback(async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
@@ -131,6 +256,8 @@ export function DualPhotoManager({
       toast.error("删除照片失败");
     }
   }, [photos, onPhotosChange]);
+
+
 
   return (
     <>
@@ -212,34 +339,44 @@ export function DualPhotoManager({
             </TabsContent>
           </Tabs>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[#c0c7d6]/20">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-[#005daa]">
-                  营销照片 ({marketingPhotos.length})
-                </h4>
-                <span className="text-xs text-[#707785]">
-                  拖拽调整顺序
-                </span>
-              </div>
+          {/* 统一的 DndContext 支持跨容器拖拽 */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
 
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleMarketingDragEnd}
-              >
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[#c0c7d6]/20">
+              {/* 左侧：营销照片 */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-[#005daa]">
+                    营销照片 ({marketingPhotos.length})
+                  </h4>
+                  <span className="text-xs text-[#707785]">
+                    可拖拽到右侧
+                  </span>
+                </div>
+
                 <SortableContext
-                  items={marketingPhotos.map((p) => p.id)}
+                  items={marketingPhotoIds}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
+                  <div
+                    id={CONTAINER_MARKETING}
+                    className="space-y-2 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20"
+                  >
                     {marketingPhotos.length === 0 ? (
                       <div className="text-center py-8 text-[#707785] text-sm">
                         暂无营销照片
+                        <p className="text-xs mt-1 text-[#707785]/60">
+                          可将改造照片拖拽到此处
+                        </p>
                       </div>
                     ) : (
                       marketingPhotos.map((photo, index) => (
-                        <DraggablePhotoItem
+                        <SortablePhotoItem
                           key={photo.id}
                           photo={photo}
                           index={index}
@@ -249,52 +386,66 @@ export function DualPhotoManager({
                     )}
                   </div>
                 </SortableContext>
-              </DndContext>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-[#22c55e]">
-                  改造照片 ({renovationPhotos.length})
-                </h4>
-                <span className="text-xs text-[#707785]">
-                  按阶段分组展示
-                </span>
               </div>
 
-              <div className="space-y-4 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
-                {renovationPhotos.length === 0 ? (
-                  <div className="text-center py-8 text-[#707785] text-sm">
-                    暂无改造照片
-                  </div>
-                ) : (
-                  Object.entries(renovationPhotosByStage).map(([stage, stagePhotos]) => {
-                    const stageLabel = RENOVATION_STAGES.find(
-                      (s) => s.value === stage
-                    )?.label || "其他";
+              {/* 右侧：改造照片（按阶段分组） */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-[#22c55e]">
+                    改造照片 ({renovationPhotos.length})
+                  </h4>
+                  <span className="text-xs text-[#707785]">
+                    支持跨阶段拖拽
+                  </span>
+                </div>
 
-                    return (
-                      <div key={stage} className="space-y-2">
-                        <div className="text-xs font-medium text-[#707785] px-1">
-                          {stageLabel} ({stagePhotos.length})
+                <div className="space-y-4 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
+                  {renovationPhotos.length === 0 ? (
+                    <div className="text-center py-8 text-[#707785] text-sm">
+                      暂无改造照片
+                      <p className="text-xs mt-1 text-[#707785]/60">
+                        可将营销照片拖拽到此处
+                      </p>
+                    </div>
+                  ) : (
+                    Object.entries(renovationPhotosByStage).map(([stage, stagePhotos]) => {
+                      const stageLabel = RENOVATION_STAGES.find(
+                        (s) => s.value === stage
+                      )?.label || "其他";
+                      const containerId = `${CONTAINER_RENOVATION_PREFIX}${stage}`;
+
+                      return (
+                        <div key={stage} className="space-y-2">
+                          <div className="text-xs font-medium text-[#707785] px-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                            {stageLabel} ({stagePhotos.length})
+                          </div>
+                          <SortableContext
+                            items={getRenovationStageIds(stage)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div
+                              id={containerId}
+                              className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-[#c0c7d6]/30 hover:border-[#22c55e]/50 transition-colors"
+                            >
+                              {stagePhotos.map((photo, index) => (
+                                <SortablePhotoItem
+                                  key={photo.id}
+                                  photo={photo}
+                                  index={index}
+                                  onDelete={handleDeletePhoto}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
                         </div>
-                        <div className="space-y-2">
-                          {stagePhotos.map((photo, index) => (
-                            <DraggablePhotoItem
-                              key={photo.id}
-                              photo={photo}
-                              index={index}
-                              onDelete={handleDeletePhoto}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </DndContext>
         </div>
       </section>
 
