@@ -10,7 +10,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { TagInputField } from "./TagInputField";
 import type { FormValues } from "../form-schema";
 
 // 导入拆分的子组件
@@ -37,8 +36,7 @@ import {
  * 单价会根据总价和面积自动计算：单价 = 总价(万元) × 10000 ÷ 面积(㎡)
  */
 export function MarketingInfoFields() {
-  const { control, watch, setValue } = useFormContext<FormValues>();
-  const tags = watch("tags") ?? [];
+  const { control, setValue } = useFormContext<FormValues>();
 
   return (
     <div className="space-y-6">
@@ -50,9 +48,6 @@ export function MarketingInfoFields() {
 
       {/* 价格设置区域 */}
       <PricingSection control={control} />
-
-      {/* 标签与风格区域 */}
-      <TagsSection control={control} tags={tags} />
     </div>
   );
 }
@@ -285,44 +280,4 @@ function PricingSection({ control }: PricingSectionProps) {
   );
 }
 
-/**
- * 标签与风格区域组件
- *
- * 包含房源标签输入
- */
-interface TagsSectionProps {
-  control: ReturnType<typeof useFormContext<FormValues>>["control"];
-  tags: string[];
-}
 
-function TagsSection({ control, tags }: TagsSectionProps) {
-  return (
-    <section className="bg-[#eff4ff] rounded-2xl p-8">
-      <h3 className="text-lg font-bold text-[#0b1c30] mb-6 flex items-center gap-2">
-        <span className="w-1.5 h-6 bg-[#005daa] rounded-full"></span>
-        标签与风格 (Tags & Styles)
-      </h3>
-      <FormField
-        control={control}
-        name="tags"
-        render={({ field }) => (
-          <FormItem className="space-y-2">
-            <FormLabel className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
-              房源标签
-              <span className="text-xs text-[#707785]/60 ml-2">
-                ({tags.length}/20)
-              </span>
-            </FormLabel>
-            <FormControl>
-              <TagInputField
-                value={field.value ?? []}
-                onChange={(value) => field.onChange(value)}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </section>
-  );
-}
