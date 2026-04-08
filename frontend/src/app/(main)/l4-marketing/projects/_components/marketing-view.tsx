@@ -1,83 +1,125 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition, useCallback } from "react";
 import { Input } from "@/components/ui/input";
-import { Download, Search, X, Plus, LayoutGrid, List } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
-import Link from "next/link";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
+
+// 提取常量到模块级别，避免每次渲染重新创建
+const ROOM_COUNT_REGEX = /(\d+)室/;
 
 interface MarketingViewProps {
   data: L4MarketingProject[];
   total: number;
 }
 
+// 状态过滤器配置
+const STATUS_FILTERS = {
+  published: (p: L4MarketingProject) => p.publish_status === "发布",
+  draft: (p: L4MarketingProject) => p.publish_status === "草稿",
+  for_sale: (p: L4MarketingProject) => p.project_status === "在售",
+  sold: (p: L4MarketingProject) => p.project_status === "已售",
+  in_progress: (p: L4MarketingProject) => p.project_status === "在途",
+  all: () => true,
+} as const;
+
+// 户型过滤器配置
+const createLayoutFilter = (layoutFilter: string) => {
+  if (layoutFilter === "all") return () => true;
+
+  return (project: L4MarketingProject) => {
+    if (!project.layout) return false;
+    const roomCount = project.layout.match(ROOM_COUNT_REGEX);
+    if (!roomCount) return false;
+
+    const roomNum = parseInt(roomCount[1]);
+    if (layoutFilter === "other") {
+      return roomNum >= 4;
+    }
+    return roomCount[1] === layoutFilter;
+  };
+};
+
+// 搜索过滤器
+const createSearchFilter = (searchQuery: string) => {
+  const searchLower = searchQuery.toLowerCase().trim();
+  if (!searchLower) return () => true;
+
+  return (project: L4MarketingProject) =>
+    project.title?.toLowerCase().includes(searchLower) ||
+    project.layout?.toLowerCase().includes(searchLower) ||
+    project.orientation?.toLowerCase().includes(searchLower) ||
+    project.community_name?.toLowerCase().includes(searchLower);
+};
+
 export function MarketingView({ data, total }: MarketingViewProps) {
   // 1. Local State for Filtering
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState<keyof typeof STATUS_FILTERS>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [layoutFilter, setLayoutFilter] = useState("all");
+
+  // 使用 useTransition 优化过滤性能，保持输入响应
+  const [isPending, startTransition] = useTransition();
 
   // 模态框状态
   const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // 2. Client-side Filtering Logic
+  // 2. Memoized Filter Functions
+  const statusFilterFn = useMemo(() => STATUS_FILTERS[activeTab], [activeTab]);
+  const layoutFilterFn = useMemo(() => createLayoutFilter(layoutFilter), [layoutFilter]);
+  const searchFilterFn = useMemo(() => createSearchFilter(searchQuery), [searchQuery]);
+
+  // 3. Client-side Filtering Logic with Transition
   const filteredData = useMemo(() => {
     return data.filter((project) => {
-      // Status Filter
-      let statusMatch = true;
-      if (activeTab === "published") {
-        statusMatch = project.publish_status === "发布";
-      } else if (activeTab === "draft") {
-        statusMatch = project.publish_status === "草稿";
-      } else if (activeTab === "for_sale") {
-        statusMatch = project.project_status === "在售";
-      } else if (activeTab === "sold") {
-        statusMatch = project.project_status === "已售";
-      } else if (activeTab === "in_progress") {
-        statusMatch = project.project_status === "在途";
-      }
-
-      // Layout Filter
-      let layoutMatch = true;
-      if (layoutFilter !== "all" && project.layout) {
-        const roomCount = project.layout.match(/(\d+)室/);
-        if (roomCount) {
-          if (layoutFilter === "other") {
-            layoutMatch = parseInt(roomCount[1]) >= 4;
-          } else {
-            layoutMatch = roomCount[1] === layoutFilter;
-          }
-        }
-      }
-
-      // Search Filter
-      const searchLower = searchQuery.toLowerCase().trim();
-      const searchMatch =
-        !searchLower ||
-        project.title?.toLowerCase().includes(searchLower) ||
-        project.layout?.toLowerCase().includes(searchLower) ||
-        project.orientation?.toLowerCase().includes(searchLower) ||
-        project.community_name?.toLowerCase().includes(searchLower);
-
-      return statusMatch && layoutMatch && searchMatch;
+      return statusFilterFn(project) && layoutFilterFn(project) && searchFilterFn(project);
     });
-  }, [data, activeTab, layoutFilter, searchQuery]);
+  }, [data, statusFilterFn, layoutFilterFn, searchFilterFn]);
+
+  // 处理标签切换 - 使用 transition
+  const handleTabChange = useCallback((tab: keyof typeof STATUS_FILTERS) => {
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  }, []);
+
+  // 处理户型过滤切换 - 使用 transition
+  const handleLayoutChange = useCallback((layout: string) => {
+    startTransition(() => {
+      setLayoutFilter(layout);
+    });
+  }, []);
+
+  // 处理搜索 - 使用 transition
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    startTransition(() => {
+      setSearchQuery(value);
+    });
+  }, []);
+
+  // 清除搜索
+  const handleClearSearch = useCallback(() => {
+    startTransition(() => {
+      setSearchQuery("");
+    });
+  }, []);
 
   // 处理行点击 - 打开详情页
-  const handleRowClick = (row: L4MarketingProject) => {
+  const handleRowClick = useCallback((row: L4MarketingProject) => {
     setSelectedProject(row);
     setIsSheetOpen(true);
-  };
+  }, []);
 
   const statusTabs = [
-    { value: "all", label: "全部" },
-    { value: "in_progress", label: "在途" },
-    { value: "for_sale", label: "在售" },
-    { value: "sold", label: "已售" },
+    { value: "all" as const, label: "全部" },
+    { value: "in_progress" as const, label: "在途" },
+    { value: "for_sale" as const, label: "在售" },
+    { value: "sold" as const, label: "已售" },
   ];
 
   const layoutTabs = [
@@ -103,12 +145,12 @@ export function MarketingView({ data, total }: MarketingViewProps) {
               <Input
                 placeholder="搜索房源名称、小区或房源ID..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-11 pr-10 py-3 bg-white border-none rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-[#005daa]/20 text-sm placeholder:text-[#707785]/60"
               />
               {searchQuery ? (
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={handleClearSearch}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#707785] hover:text-[#0b1c30] p-1"
                 >
                   <X className="h-4 w-4" />
@@ -126,7 +168,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
               {statusTabs.map((tab) => (
                 <button
                   key={tab.value}
-                  onClick={() => setActiveTab(tab.value)}
+                  onClick={() => handleTabChange(tab.value)}
                   className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${
                     activeTab === tab.value
                       ? "bg-[#005daa] text-white shadow-sm"
@@ -150,9 +192,9 @@ export function MarketingView({ data, total }: MarketingViewProps) {
               onChange={(e) => {
                 const val = e.target.value;
                 if (val === "published" || val === "draft") {
-                  setActiveTab(val);
+                  handleTabChange(val);
                 } else {
-                  setActiveTab("all");
+                  handleTabChange("all");
                 }
               }}
             >
@@ -171,7 +213,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
               {layoutTabs.map((tab) => (
                 <button
                   key={tab.value}
-                  onClick={() => setLayoutFilter(tab.value)}
+                  onClick={() => handleLayoutChange(tab.value)}
                   className={`flex-1 py-2 px-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
                     layoutFilter === tab.value
                       ? "bg-[#005daa] text-white shadow-sm"
@@ -187,7 +229,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       </section>
 
       {/* --- Table Area --- */}
-      <div className="bg-white rounded-3xl border border-[#c0c7d6]/20 shadow-sm overflow-hidden">
+      <div className={`bg-white rounded-3xl border border-[#c0c7d6]/20 shadow-sm overflow-hidden ${isPending ? "opacity-70" : ""}`}>
         <div className="overflow-x-auto">
           <DataTable
             columns={columns}
