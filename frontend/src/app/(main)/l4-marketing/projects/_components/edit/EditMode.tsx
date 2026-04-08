@@ -31,14 +31,9 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* 左侧：主要信息 */}
+          {/* 左侧：主要信息和照片 */}
           <div className="lg:col-span-8 space-y-6">
             <MarketingInfoFields />
-          </div>
-
-          {/* 右侧：配置和照片 */}
-          <div className="lg:col-span-4 space-y-6">
-            <BasicConfigFields />
 
             {mode === "edit" && project ? (
               <DualPhotoManager
@@ -53,6 +48,11 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
                 </div>
               </InfoCard>
             )}
+          </div>
+
+          {/* 右侧：配置和标签风格 */}
+          <div className="lg:col-span-4 space-y-6">
+            <BasicConfigFields />
           </div>
         </div>
 

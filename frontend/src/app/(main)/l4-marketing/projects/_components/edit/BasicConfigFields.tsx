@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/form";
 import type { FormValues } from "../form-schema";
 import { MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "../../types";
+import { TagInputField } from "./TagInputField";
 
 export function BasicConfigFields() {
   const { control, watch } = useFormContext<FormValues>();
   const sortOrder = watch("sort_order") ?? 50;
+  const tags = watch("tags") ?? [];
 
   return (
     <div className="space-y-6">
@@ -127,9 +129,33 @@ export function BasicConfigFields() {
         </div>
       </section>
 
-      {/* Tags & Styles Card */}
+      {/* Tags & Styles Card - 白色卡片配色风格（与发布设置一致） */}
       <section className="bg-white border border-[#c0c7d6]/20 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-xs font-black text-[#707785] uppercase tracking-[0.2em] mb-6">标签与风格 (Tags & Styles)</h3>
         <div className="space-y-6">
+          {/* Tags */}
+          <FormField
+            control={control}
+            name="tags"
+            render={({ field }) => (
+              <FormItem className="space-y-2">
+                <FormLabel className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
+                  房源标签
+                  <span className="text-xs text-[#707785]/60 ml-2">
+                    ({tags.length}/20)
+                  </span>
+                </FormLabel>
+                <FormControl>
+                  <TagInputField
+                    value={field.value ?? []}
+                    onChange={(value) => field.onChange(value)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {/* Decoration Style */}
           <FormField
             control={control}

@@ -134,11 +134,13 @@ export function DualPhotoManager({
 
   return (
     <>
-      <Card className="py-0 gap-0">
-        <CardHeader className="border-b py-4">
-          <CardTitle className="text-sm">照片管理</CardTitle>
-        </CardHeader>
-        <CardContent className="py-6 space-y-6">
+      {/* 照片管理 - 蓝色配色风格（与价格设置一致） */}
+      <section className="bg-[#eff4ff] rounded-2xl p-8">
+        <h3 className="text-lg font-bold text-[#0b1c30] mb-6 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-[#005daa] rounded-full"></span>
+          照片管理 (Photos)
+        </h3>
+        <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="upload">手动上传</TabsTrigger>
@@ -147,7 +149,7 @@ export function DualPhotoManager({
 
             <TabsContent value="upload" className="space-y-4 mt-4">
               <div className="space-y-3">
-                <div className="text-xs font-medium text-muted-foreground">
+                <div className="text-xs font-medium text-[#707785]">
                   选择照片类别
                 </div>
                 <PhotoCategorySelector
@@ -159,7 +161,7 @@ export function DualPhotoManager({
                 {uploadCategory === "renovation" && (
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-6 lg:col-span-4">
-                      <div className="text-xs font-medium text-muted-foreground mb-1">
+                      <div className="text-xs font-medium text-[#707785] mb-1">
                         装修阶段
                       </div>
                       <Select
@@ -167,7 +169,7 @@ export function DualPhotoManager({
                         onValueChange={setUploadStage}
                         disabled={isUploading}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white border-[#c0c7d6]/50">
                           <SelectValue placeholder="选择阶段" />
                         </SelectTrigger>
                         <SelectContent>
@@ -193,7 +195,7 @@ export function DualPhotoManager({
 
             <TabsContent value="sync" className="space-y-4 mt-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-medium text-muted-foreground">
+                <div className="text-xs font-medium text-[#707785]">
                   从其他项目同步照片
                 </div>
                 <Button
@@ -201,6 +203,7 @@ export function DualPhotoManager({
                   variant="outline"
                   size="sm"
                   onClick={() => setPickerOpen(true)}
+                  className="bg-white border-[#c0c7d6]/50 hover:bg-[#e5eeff]"
                 >
                   <FolderOpen className="h-4 w-4 mr-1" />
                   从照片库选择
@@ -209,13 +212,13 @@ export function DualPhotoManager({
             </TabsContent>
           </Tabs>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[#c0c7d6]/20">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-[#005daa]">
                   营销照片 ({marketingPhotos.length})
                 </h4>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-[#707785]">
                   拖拽调整顺序
                 </span>
               </div>
@@ -229,9 +232,9 @@ export function DualPhotoManager({
                   items={marketingPhotos.map((p) => p.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-gray-50 rounded-lg">
+                  <div className="space-y-2 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
                     {marketingPhotos.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground text-sm">
+                      <div className="text-center py-8 text-[#707785] text-sm">
                         暂无营销照片
                       </div>
                     ) : (
@@ -254,14 +257,14 @@ export function DualPhotoManager({
                 <h4 className="text-sm font-semibold text-[#22c55e]">
                   改造照片 ({renovationPhotos.length})
                 </h4>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-[#707785]">
                   按阶段分组展示
                 </span>
               </div>
 
-              <div className="space-y-4 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-gray-50 rounded-lg">
+              <div className="space-y-4 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
                 {renovationPhotos.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
+                  <div className="text-center py-8 text-[#707785] text-sm">
                     暂无改造照片
                   </div>
                 ) : (
@@ -272,7 +275,7 @@ export function DualPhotoManager({
 
                     return (
                       <div key={stage} className="space-y-2">
-                        <div className="text-xs font-medium text-muted-foreground px-1">
+                        <div className="text-xs font-medium text-[#707785] px-1">
                           {stageLabel} ({stagePhotos.length})
                         </div>
                         <div className="space-y-2">
@@ -292,8 +295,8 @@ export function DualPhotoManager({
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <PhotoLibraryPicker
         projectId={projectId}
