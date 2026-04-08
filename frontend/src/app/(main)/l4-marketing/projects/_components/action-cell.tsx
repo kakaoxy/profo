@@ -6,7 +6,7 @@ import Link from "next/link";
 import { L4MarketingProject } from "../types";
 import { deleteL4MarketingProjectAction } from "../actions";
 import { toast } from "sonner";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,10 +23,10 @@ interface ActionCellProps {
   project: L4MarketingProject;
 }
 
-export function ActionCell({ project }: ActionCellProps) {
+export const ActionCell = memo(function ActionCell({ project }: ActionCellProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
       const res = await deleteL4MarketingProjectAction(project.id);
@@ -40,7 +40,7 @@ export function ActionCell({ project }: ActionCellProps) {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [project.id]);
 
   return (
     <div className="flex items-center gap-1">
@@ -111,4 +111,4 @@ export function ActionCell({ project }: ActionCellProps) {
       </div>
     </div>
   );
-}
+});

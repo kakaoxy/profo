@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { L4MarketingMedia } from "../../types";
 import { PhotoItem } from "./photo-item";
 import { PhotoLibraryPicker } from "./photo-library-picker";
@@ -21,6 +21,11 @@ import {
 import { ImageUploader } from "./image-uploader";
 import { useImageUpload } from "./use-image-upload";
 
+// 计算下一个排序值的工具函数
+function getNextSortOrder(photos: L4MarketingMedia[]): number {
+  return photos.length;
+}
+
 interface PhotoManagerProps {
   projectId: number;
   photos: L4MarketingMedia[];
@@ -37,7 +42,8 @@ export function PhotoManager({
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadStage, setUploadStage] = useState("other");
-  const [uploadSortOrder, setUploadSortOrder] = useState(photos.length);
+  // 使用函数式状态计算，避免 useEffect
+  const uploadSortOrder = getNextSortOrder(photos);
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     projectId,
@@ -47,11 +53,7 @@ export function PhotoManager({
     onPhotosChange,
   });
 
-  useEffect(() => {
-    setUploadSortOrder(photos.length);
-  }, [photos.length]);
-
-  const handleDeletePhoto = async (photoId: number) => {
+  const handleDeletePhoto = useCallback(async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
     try {
       const result = await deleteL4MarketingMediaAction(photoId);
@@ -64,9 +66,9 @@ export function PhotoManager({
     } catch {
       toast.error("删除照片失败");
     }
-  };
+  }, [photos, onPhotosChange]);
 
-  const handleResetOrder = () => {
+  const handleResetOrder = useCallback(() => {
     const reordered = [...photos].sort((a, b) => {
       const aStage = a.renovation_stage || "";
       const bStage = b.renovation_stage || "";
@@ -75,7 +77,7 @@ export function PhotoManager({
     });
     onPhotosChange(reordered);
     toast.success("排序已重置");
-  };
+  }, [photos, onPhotosChange]);
 
   return (
     <>
@@ -142,11 +144,10 @@ export function PhotoManager({
                   <Input
                     type="number"
                     value={uploadSortOrder}
-                    onChange={(e) =>
-                      setUploadSortOrder(Number(e.target.value || 0))
-                    }
+                    readOnly
                     min={0}
                     disabled={isUploading}
+                    title="排序值会根据照片数量自动计算"
                   />
                 </div>
               </div>

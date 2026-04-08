@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, memo } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo, lazy, Suspense } from "react";
 import {
   Sheet,
   SheetContent,
@@ -20,7 +20,18 @@ import { MarketingInfoSection } from "./detail/marketing-info-section";
 import { PhysicalInfoSection } from "./detail/physical-info-section";
 import { BasicConfigSection } from "./detail/basic-config-section";
 import { PhotosSection } from "./detail/photos-section";
-import { ImagePreviewDialog } from "./detail/image-preview-dialog";
+
+// 懒加载图片预览对话框
+const ImagePreviewDialog = lazy(() => import("./detail/image-preview-dialog").then(m => ({ default: m.ImagePreviewDialog })));
+
+// 图片预览对话框加载占位符
+function ImagePreviewDialogFallback() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+      <div className="animate-pulse bg-white/20 w-full max-w-5xl h-[80vh] rounded-lg" />
+    </div>
+  );
+}
 
 interface MarketingDetailSheetProps {
   project: L4MarketingProject | null;
@@ -169,10 +180,12 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
         </SheetContent>
       </Sheet>
 
-      <ImagePreviewDialog
-        imageUrl={previewImage}
-        onClose={() => setPreviewImage(null)}
-      />
+      <Suspense fallback={<ImagePreviewDialogFallback />}>
+        <ImagePreviewDialog
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
+      </Suspense>
     </>
   );
 });
