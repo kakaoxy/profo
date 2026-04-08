@@ -1,0 +1,54 @@
+"use client";
+
+import { L4MarketingMedia, PHOTO_CATEGORY_CONFIG } from "../../types";
+import { getFileUrl } from "@/lib/config";
+import { Badge } from "@/components/ui/badge";
+import { GripVertical } from "lucide-react";
+import { RENOVATION_STAGES } from "../../types";
+
+interface PhotoDragOverlayProps {
+  photo: L4MarketingMedia;
+}
+
+export function PhotoDragOverlay({ photo }: PhotoDragOverlayProps) {
+  const categoryConfig = PHOTO_CATEGORY_CONFIG[photo.photo_category];
+  const stageLabel = RENOVATION_STAGES.find(
+    (s) => s.value === photo.renovation_stage
+  )?.label;
+
+  const displayUrl = photo.file_url || photo.thumbnail_url;
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border-2 border-[#005daa] bg-white p-3 shadow-xl ring-2 ring-[#005daa]/20">
+      <div className="cursor-grabbing p-1 bg-[#e5eeff] rounded">
+        <GripVertical className="h-4 w-4 text-[#005daa]" />
+      </div>
+
+      <div
+        className="w-16 h-16 rounded-md bg-cover bg-center border shrink-0 relative"
+        style={{ backgroundImage: `url(${getFileUrl(displayUrl)})` }}
+      >
+        <Badge
+          className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px]"
+          style={{
+            backgroundColor: categoryConfig.bgColor,
+            color: categoryConfig.color,
+            borderColor: categoryConfig.color,
+          }}
+          variant="outline"
+        >
+          {categoryConfig.label}
+        </Badge>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-[#0b1c30] truncate">
+          照片 #{photo.id}
+        </p>
+        {photo.photo_category === "renovation" && stageLabel && (
+          <p className="text-xs text-[#707785]">{stageLabel}</p>
+        )}
+      </div>
+    </div>
+  );
+}
