@@ -23,4 +23,5 @@ export {
   updateL4MarketingMediaAction,
   deleteL4MarketingMediaAction,
   batchAddL4PhotosAction,
+  batchUpdateMediaSortOrderAction,
 } from "./actions/media";

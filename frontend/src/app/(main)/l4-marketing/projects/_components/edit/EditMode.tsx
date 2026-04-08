@@ -8,7 +8,7 @@ import { MarketingInfoFields } from "./MarketingInfoFields";
 import { BasicConfigFields } from "./BasicConfigFields";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import type { EditModeProps } from "../form-types";
-import { PhotoManager } from "../../[id]/_components/photo-manager";
+import { DualPhotoManager } from "../../[id]/_components/dual-photo-manager";
 import Link from "next/link";
 
 export function EditMode({ mode, project, photos, actions }: EditModeProps) {
@@ -41,7 +41,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
             <BasicConfigFields />
 
             {mode === "edit" && project ? (
-              <PhotoManager
+              <DualPhotoManager
                 projectId={project.id}
                 photos={localPhotos}
                 onPhotosChange={setLocalPhotos}

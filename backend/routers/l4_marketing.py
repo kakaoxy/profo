@@ -4,6 +4,7 @@ L4 市场营销层路由
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -27,6 +28,16 @@ from schemas.l4_marketing import (
     L4SyncResponse,
     L4RefreshResponse,
 )
+
+
+# ============================================================================
+# 批量排序更新 Schema
+# ============================================================================
+
+class MediaSortOrderUpdate(BaseModel):
+    """媒体排序更新项"""
+    media_id: int = Field(..., description="媒体ID")
+    sort_order: int = Field(..., ge=0, description="排序值")
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
@@ -229,3 +240,19 @@ async def delete_marketing_media(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Media not found"
         )
+
+
+@router.put(
+    "/projects/{project_id}/media/sort-order",
+    response_model=L4SyncResponse,
+    summary="批量更新媒体排序"
+)
+async def update_media_sort_order(
+    project_id: int,
+    sort_updates: List[MediaSortOrderUpdate],
+    service: L4MarketingMediaService = Depends(get_media_service)
+) -> L4SyncResponse:
+    """批量更新媒体排序顺序"""
+    updates = [{"media_id": u.media_id, "sort_order": u.sort_order} for u in sort_updates]
+    updated_count = service.batch_update_sort_order(project_id, updates)
+    return L4SyncResponse(total_synced=updated_count)

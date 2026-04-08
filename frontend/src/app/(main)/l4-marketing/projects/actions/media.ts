@@ -153,10 +153,11 @@ export async function batchAddL4PhotosAction(
     const result = await createL4MarketingMediaAction(projectId, {
       file_url: "",
       media_type: "image",
+      photo_category: "marketing" as any,
       origin_media_id: photoId,
       renovation_stage: "other",
       sort_order: sortOrder,
-    });
+    } as any);
 
     if (result.success && result.data) {
       results.push(result.data);
@@ -175,4 +176,35 @@ export async function batchAddL4PhotosAction(
   }
 
   return { success: true, data: results };
+}
+
+/**
+ * 批量更新媒体排序
+ */
+export async function batchUpdateMediaSortOrderAction(
+  projectId: number,
+  sortUpdates: { media_id: number; sort_order: number }[]
+) {
+  try {
+    const client = await fetchClient();
+    // 使用类型断言绕过 OpenAPI 类型检查
+    const { data, error } = await client.PUT(
+      "/api/v1/admin/l4-marketing/projects/{project_id}/media/sort-order" as any,
+      {
+        params: { path: { project_id: projectId } },
+        body: sortUpdates as any,
+      },
+    );
+
+    if (error) {
+      console.error("Failed to update media sort order:", error);
+      const { message } = parseApiError(error);
+      return { success: false, error: message };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("更新媒体排序异常:", e);
+    return { success: false, error: parseNetworkError(e) };
+  }
 }

@@ -281,3 +281,43 @@ class L4MarketingMediaService:
         db_obj.is_deleted = True
         self.db.commit()
         return True
+
+    def batch_update_sort_order(
+        self,
+        project_id: int,
+        sort_updates: List[dict]
+    ) -> int:
+        """
+        批量更新媒体排序
+
+        Args:
+            project_id: 营销项目ID
+            sort_updates: 排序更新列表，每项包含 media_id 和 sort_order
+
+        Returns:
+            更新成功的记录数
+        """
+        updated_count = 0
+        for update in sort_updates:
+            media_id = update.get("media_id")
+            sort_order = update.get("sort_order")
+
+            if media_id is None or sort_order is None:
+                continue
+
+            media = self.db.query(L4MarketingMedia).filter(
+                and_(
+                    L4MarketingMedia.id == media_id,
+                    L4MarketingMedia.marketing_project_id == project_id,
+                    L4MarketingMedia.is_deleted == False
+                )
+            ).first()
+
+            if media:
+                media.sort_order = sort_order
+                updated_count += 1
+
+        if updated_count > 0:
+            self.db.commit()
+
+        return updated_count
