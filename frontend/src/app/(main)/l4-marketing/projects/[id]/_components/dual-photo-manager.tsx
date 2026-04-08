@@ -451,10 +451,13 @@ export function DualPhotoManager({
                       );
                     })
                   ) : (
-                    // 平常模式：只显示有照片的阶段
-                    Object.entries(renovationPhotosByStage).map(([stage, stagePhotos]) => {
-                      const stageConfig = RENOVATION_STAGES.find((s) => s.value === stage);
-                      if (!stageConfig) return null;
+                    // 平常模式：只显示有照片的阶段，但按 RENOVATION_STAGES 顺序
+                    RENOVATION_STAGES.map((stageConfig) => {
+                      const stage = stageConfig.value;
+                      const stagePhotos = renovationPhotosByStage[stage] || [];
+                      // 只渲染有照片的阶段
+                      if (stagePhotos.length === 0) return null;
+
                       const containerId = `${CONTAINER_RENOVATION_PREFIX}${stage}`;
 
                       return (
