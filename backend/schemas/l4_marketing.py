@@ -217,7 +217,7 @@ class L4MarketingProjectListResponse(BaseModel):
     items: List[L4MarketingProjectResponse]
     total: int = Field(..., ge=0, description="总记录数")
     page: int = Field(..., ge=1, description="当前页码")
-    size: int = Field(..., ge=1, description="每页大小")
+    page_size: int = Field(..., ge=1, description="每页大小")
 
 
 class L4MarketingMediaListResponse(BaseModel):
@@ -225,7 +225,7 @@ class L4MarketingMediaListResponse(BaseModel):
     items: List[L4MarketingMediaResponse]
     total: int = Field(..., ge=0, description="总记录数")
     page: int = Field(..., ge=1, description="当前页码")
-    size: int = Field(..., ge=1, description="每页大小")
+    page_size: int = Field(..., ge=1, description="每页大小")
 
 
 # ============================================================================
@@ -249,7 +249,7 @@ class L4RefreshResponse(BaseModel):
 class L4MarketingProjectQuery(BaseModel):
     """营销项目查询参数"""
     page: int = Field(default=1, ge=1)
-    size: int = Field(default=20, ge=1, le=100)
+    page_size: int = Field(default=20, ge=1, le=200)
     community_id: Optional[int] = None
     publish_status: Optional[str] = None
     project_status: Optional[str] = None

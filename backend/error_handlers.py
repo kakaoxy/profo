@@ -1,13 +1,14 @@
 """
 统一错误处理中间件和处理器
 提供友好的中文错误信息和失败记录保存
+符合 AGENTS.md 规范：错误统一 {"detail":"..."} via HTTPException
 """
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, HTTPException
 from sqlalchemy.exc import (
-    IntegrityError, 
-    SQLAlchemyError, 
+    IntegrityError,
+    SQLAlchemyError,
 )
 import logging
 import json
@@ -25,9 +26,10 @@ logger = logging.getLogger(__name__)
 async def profo_exception_handler(request: Request, exc: ProfoException) -> JSONResponse:
     """
     处理自定义 Profo 异常
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     """
     logger.warning(f"业务异常: {exc.code} - {exc.message}")
-    
+
     # 根据异常类型确定 HTTP 状态码
     status_code_map = {
         "VALIDATION_ERROR": status.HTTP_400_BAD_REQUEST,
@@ -39,20 +41,12 @@ async def profo_exception_handler(request: Request, exc: ProfoException) -> JSON
         "AUTHENTICATION_ERROR": status.HTTP_401_UNAUTHORIZED,
         "PERMISSION_DENIED": status.HTTP_403_FORBIDDEN,
     }
-    
+
     status_code = status_code_map.get(exc.code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    response_content = {
-        "success": False,
-        "error": {
-            "code": exc.code,
-            "message": exc.message
-        }
-    }
-    
-    if exc.details:
-        response_content["error"]["details"] = exc.details
-    
+
+    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    response_content = {"detail": exc.message}
+
     return JSONResponse(
         status_code=status_code,
         content=response_content
@@ -60,16 +54,17 @@ async def profo_exception_handler(request: Request, exc: ProfoException) -> JSON
 
 
 async def validation_exception_handler(
-    request: Request, 
+    request: Request,
     exc: RequestValidationError
 ) -> JSONResponse:
     """
     处理请求验证错误
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     """
     error_message = format_request_validation_error(exc)
-    
+
     logger.warning(f"请求验证失败: {error_message}")
-    
+
     # 尝试保存失败记录（如果请求体包含数据）
     try:
         if request.method in ["POST", "PUT", "PATCH"]:
@@ -88,31 +83,26 @@ async def validation_exception_handler(
                     pass  # 忽略保存失败
     except:
         pass  # 忽略保存失败
-    
+
+    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "success": False,
-            "error": {
-                "code": "VALIDATION_ERROR",
-                "message": "请求参数验证失败",
-                "details": error_message
-            }
-        }
+        content={"detail": f"请求参数验证失败: {error_message}"}
     )
 
 
 async def sqlalchemy_exception_handler(
-    request: Request, 
+    request: Request,
     exc: SQLAlchemyError
 ) -> JSONResponse:
     """
     处理数据库错误
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     """
     error_message = format_database_error(exc)
-    
+
     logger.error(f"数据库错误: {error_message} - {str(exc)}")
-    
+
     # 根据错误类型确定状态码
     if isinstance(exc, IntegrityError):
         if 'UNIQUE constraint failed' in str(exc):
@@ -121,45 +111,38 @@ async def sqlalchemy_exception_handler(
             status_code = status.HTTP_400_BAD_REQUEST
     else:
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    
+
+    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     return JSONResponse(
         status_code=status_code,
-        content={
-            "success": False,
-            "error": {
-                "code": "DATABASE_ERROR",
-                "message": error_message
-            }
-        }
+        content={"detail": error_message}
     )
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """
     处理 HTTP 异常
+    FastAPI 的 HTTPException 默认格式已经是 {"detail": "..."}
+    直接透传，保持格式一致
     """
     logger.warning(f"HTTP 异常: {exc.status_code} - {exc.detail}")
-    
+
+    # HTTPException 默认就是 {"detail": "..."} 格式，直接透传
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "success": False,
-            "error": {
-                "code": f"HTTP_{exc.status_code}",
-                "message": exc.detail
-            }
-        }
+        content={"detail": exc.detail}
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     处理通用异常（兜底处理）
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     """
     # 记录完整的错误堆栈
     error_traceback = traceback.format_exc()
     logger.error(f"未处理的异常: {str(exc)}\n{error_traceback}")
-    
+
     # 尝试保存失败记录
     try:
         if request.method in ["POST", "PUT", "PATCH"]:
@@ -178,25 +161,17 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
                     pass
     except:
         pass
-    
+
     # 根据 debug 模式决定是否返回详细错误信息
     from settings import settings
-    
-    error_message = "服务器内部错误，请稍后重试"
-    error_details = None
-    
+
+    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     if settings.debug:
-        error_message = str(exc)
-        error_details = error_traceback
-    
+        error_message = f"{str(exc)}\n\n{error_traceback}"
+    else:
+        error_message = "服务器内部错误，请稍后重试"
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "success": False,
-            "error": {
-                "code": "INTERNAL_SERVER_ERROR",
-                "message": error_message,
-                "details": error_details
-            }
-        }
+        content={"detail": error_message}
     )

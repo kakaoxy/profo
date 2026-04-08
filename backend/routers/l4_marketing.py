@@ -58,7 +58,7 @@ def get_media_service(db: Session = Depends(get_db)) -> L4MarketingMediaService:
 )
 async def list_marketing_projects(
     page: int = Query(1, ge=1, description="页码"),
-    size: int = Query(20, ge=1, le=100, description="每页大小"),
+    page_size: int = Query(20, ge=1, le=200, description="每页大小"),
     publish_status: Optional[str] = Query(None, description="发布状态: 草稿/发布"),
     project_status: Optional[str] = Query(None, description="项目状态: 在途/在售/已售"),
     consultant_id: Optional[int] = Query(None, description="顾问ID"),
@@ -66,10 +66,10 @@ async def list_marketing_projects(
     service: L4MarketingProjectService = Depends(get_project_service)
 ) -> L4MarketingProjectListResponse:
     """获取营销项目列表 - 统一分页格式"""
-    skip = (page - 1) * size
+    skip = (page - 1) * page_size
     items, total = service.get_projects(
         skip=skip,
-        limit=size,
+        limit=page_size,
         publish_status=publish_status,
         project_status=project_status,
         consultant_id=consultant_id,
@@ -79,7 +79,7 @@ async def list_marketing_projects(
         items=items,
         total=total,
         page=page,
-        size=size
+        page_size=page_size
     )
 
 
@@ -164,18 +164,18 @@ async def delete_marketing_project(
 )
 async def list_marketing_media(
     project_id: int,
-    page: int = Query(1, ge=1),
-    size: int = Query(100, ge=1, le=200),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(100, ge=1, le=200, description="每页大小"),
     service: L4MarketingMediaService = Depends(get_media_service)
 ) -> L4MarketingMediaListResponse:
     """获取营销项目的媒体列表"""
-    skip = (page - 1) * size
-    items, total = service.get_media_list(project_id, skip=skip, limit=size)
+    skip = (page - 1) * page_size
+    items, total = service.get_media_list(project_id, skip=skip, limit=page_size)
     return L4MarketingMediaListResponse(
         items=items,
         total=total,
         page=page,
-        size=size
+        page_size=page_size
     )
 
 

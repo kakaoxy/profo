@@ -1,8 +1,7 @@
 """
 角色管理相关路由
 """
-from fastapi import APIRouter, Depends, Query
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -82,7 +81,7 @@ def update_role(
     return role_service.update_role(db, role_id, role_data)
 
 
-@router.delete("/roles/{role_id}")
+@router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_role(
     role_id: str,
     current_user: User = Depends(get_current_admin_user),
@@ -91,5 +90,5 @@ def delete_role(
     """
     删除角色
     """
-    result = role_service.delete_role(db, role_id)
-    return JSONResponse(status_code=200, content=result)
+    role_service.delete_role(db, role_id)
+    return None
