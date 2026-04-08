@@ -13,7 +13,7 @@ import type {
 export async function getL4MarketingMediaAction(
   projectId: number,
   page = 1,
-  size = 100,
+  page_size = 100,
 ) {
   try {
     const client = await fetchClient();
@@ -22,7 +22,7 @@ export async function getL4MarketingMediaAction(
       {
         params: {
           path: { project_id: projectId },
-          query: { page, size },
+          query: { page, page_size },
         },
       },
     );

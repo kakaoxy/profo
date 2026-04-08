@@ -611,7 +611,9 @@ export interface paths {
         };
         /**
          * Export Projects
-         * @description 导出项目数据
+         * @description 导出项目数据为 CSV 文件
+         *
+         *     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
          */
         get: operations["export_projects_api_v1_projects_export_get"];
         put?: never;
@@ -1680,10 +1682,10 @@ export interface components {
              */
             page: number;
             /**
-             * Size
+             * Page Size
              * @description 每页大小
              */
-            size: number;
+            page_size: number;
         };
         /**
          * L4MarketingMediaResponse
@@ -1859,10 +1861,10 @@ export interface components {
              */
             page: number;
             /**
-             * Size
+             * Page Size
              * @description 每页大小
              */
-            size: number;
+            page_size: number;
         };
         /**
          * L4MarketingProjectResponse
@@ -4892,9 +4894,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -5721,13 +5721,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": unknown;
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -5967,7 +5965,9 @@ export interface operations {
     get_leads_api_v1_leads__get: {
         parameters: {
             query?: {
+                /** @description 页码 */
                 page?: number;
+                /** @description 每页数量 */
                 page_size?: number;
                 search?: string | null;
                 statuses?: components["schemas"]["LeadStatus"][] | null;
@@ -6331,7 +6331,7 @@ export interface operations {
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页大小 */
-                size?: number;
+                page_size?: number;
                 /** @description 发布状态: 草稿/发布 */
                 publish_status?: string | null;
                 /** @description 项目状态: 在途/在售/已售 */
@@ -6498,8 +6498,10 @@ export interface operations {
     list_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_get: {
         parameters: {
             query?: {
+                /** @description 页码 */
                 page?: number;
-                size?: number;
+                /** @description 每页大小 */
+                page_size?: number;
             };
             header?: never;
             path: {

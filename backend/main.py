@@ -159,14 +159,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     return JSONResponse(
         status_code=429,
         content={
-            "success": False,
-            "error": {
-                "code": "RATE_LIMIT_EXCEEDED",
-                "message": "请求过于频繁，请稍后重试",
-                "details": {
-                    "retry_after": exc.retry_after
-                }
-            }
+            "detail": f"请求过于频繁，请稍后重试"
         },
         headers={"Retry-After": str(exc.retry_after)}
     )

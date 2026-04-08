@@ -67,8 +67,8 @@ def _serialize_lead_for_list(lead: Lead) -> dict:
 
 @router.get("/", response_model=PaginatedLeadListResponse)
 def get_leads(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=200, description="每页数量"),
     search: Optional[str] = None,
     statuses: Optional[List[LeadStatus]] = Query(None),
     district: Optional[str] = None,

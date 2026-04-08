@@ -30,7 +30,7 @@ export default async function ProjectPreviewPage({
       params: { path: { project_id: projectId } },
     }),
     client.GET("/api/v1/admin/l4-marketing/projects/{project_id}/media", {
-      params: { path: { project_id: projectId }, query: { page: 1, size: 100 } },
+      params: { path: { project_id: projectId }, query: { page: 1, page_size: 100 } },
     }),
   ]);
 
