@@ -4,12 +4,14 @@ import { useState, useMemo, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -20,6 +22,7 @@ import {
 import { L4MarketingMedia, PhotoCategory } from "../../types";
 import { SortablePhotoItem } from "./sortable-photo-item";
 import { DroppableStage } from "./droppable-stage";
+import { PhotoDragOverlay } from "./photo-drag-overlay";
 import { PhotoCategorySelector } from "./photo-category-selector";
 import { deleteL4MarketingMediaAction, batchUpdateMediaSortOrderAction, updateL4MarketingMediaAction } from "../../actions";
 import { toast } from "sonner";
@@ -105,6 +108,12 @@ export function DualPhotoManager({
   const getRenovationStageIds = useCallback((stage: string) => {
     return (renovationPhotosByStage[stage] || []).map((p) => p.id);
   }, [renovationPhotosByStage]);
+
+  // 获取正在拖拽的照片
+  const activePhoto = useMemo(() => {
+    if (!activeId) return null;
+    return photos.find((p) => p.id === activeId) || null;
+  }, [activeId, photos]);
 
   // 拖拽开始
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -343,10 +352,9 @@ export function DualPhotoManager({
           {/* 统一的 DndContext 支持跨容器拖拽 */}
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={pointerWithin}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[#c0c7d6]/20">
               {/* 左侧：营销照片 */}
@@ -480,6 +488,13 @@ export function DualPhotoManager({
                 </div>
               </div>
             </div>
+
+            {/* 拖拽时的浮动预览 */}
+            <DragOverlay>
+              {activePhoto ? (
+                <PhotoDragOverlay photo={activePhoto} />
+              ) : null}
+            </DragOverlay>
           </DndContext>
         </div>
       </section>
