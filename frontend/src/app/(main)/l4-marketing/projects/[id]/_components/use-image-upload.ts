@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
 import { createL4MarketingMediaAction } from "../../actions";
-import type { L4MarketingMedia } from "../../types";
+import type { L4MarketingMedia, PhotoCategory } from "../../types";
 
 export interface UploadProgress {
   filename: string;
@@ -17,8 +17,8 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface UseImageUploadOptions {
   projectId: number;
+  uploadCategory: PhotoCategory;
   uploadStage: string;
-  uploadSortOrder: number;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
@@ -54,8 +54,8 @@ async function getValidToken(): Promise<string | null> {
 
 export function useImageUpload({
   projectId,
+  uploadCategory,
   uploadStage,
-  uploadSortOrder,
   photos,
   onPhotosChange,
 }: UseImageUploadOptions): UseImageUploadReturn {
@@ -140,13 +140,20 @@ export function useImageUpload({
               const currentPhotos = photosRef.current;
               const currentOnPhotosChange = onPhotosChangeRef.current;
 
+              // 计算排序值（基于当前分类的照片数量）
+              const categoryPhotos = currentPhotos.filter(
+                (p) => p.photo_category === uploadCategory
+              );
+              const nextSortOrder = categoryPhotos.length;
+
               // 创建媒体记录
               createL4MarketingMediaAction(projectId, {
                 file_url: fileUrl,
                 media_type: "image",
-                renovation_stage: uploadStage,
-                sort_order: uploadSortOrder,
-              }).then((createResult) => {
+                photo_category: uploadCategory as any,
+                renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
+                sort_order: nextSortOrder,
+              } as any).then((createResult) => {
                 if (createResult.success && createResult.data) {
                   currentOnPhotosChange([...currentPhotos, createResult.data as L4MarketingMedia]);
                   toast.success(`${file.name}: 上传成功`);
@@ -189,7 +196,7 @@ export function useImageUpload({
       });
     },
     // 只保留稳定的依赖：projectId, uploadStage, uploadSortOrder
-    [projectId, uploadStage, uploadSortOrder]
+    [projectId, uploadCategory, uploadStage]
   );
 
   const uploadFiles = useCallback(

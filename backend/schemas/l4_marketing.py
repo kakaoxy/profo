@@ -32,6 +32,12 @@ class MediaType(str, Enum):
     VIDEO = "video"
 
 
+class PhotoCategory(str, Enum):
+    """照片分类"""
+    MARKETING = "marketing"
+    RENOVATION = "renovation"
+
+
 # ============================================================================
 # L4 Marketing Media Schemas
 # ============================================================================
@@ -39,7 +45,8 @@ class MediaType(str, Enum):
 class L4MarketingMediaBase(BaseModel):
     """营销媒体基础模型"""
     media_type: str = Field(default="image", description="媒体类型: image/video")
-    renovation_stage: Optional[str] = Field(None, max_length=50, description="装修阶段")
+    photo_category: PhotoCategory = Field(default=PhotoCategory.MARKETING, description="照片分类: marketing/renovation")
+    renovation_stage: Optional[str] = Field(None, max_length=50, description="装修阶段(仅改造照片)")
     description: Optional[str] = Field(None, description="描述")
     sort_order: int = Field(default=0, ge=0, description="排序")
 
@@ -53,6 +60,7 @@ class L4MarketingMediaCreate(L4MarketingMediaBase):
 
 class L4MarketingMediaUpdate(BaseModel):
     """更新媒体请求"""
+    photo_category: Optional[PhotoCategory] = Field(None, description="照片分类")
     renovation_stage: Optional[str] = Field(None, max_length=50)
     description: Optional[str] = None
     sort_order: Optional[int] = Field(None, ge=0)

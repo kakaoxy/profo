@@ -42,13 +42,11 @@ export function PhotoManager({
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadStage, setUploadStage] = useState("other");
-  // 使用函数式状态计算，避免 useEffect
-  const uploadSortOrder = getNextSortOrder(photos);
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     projectId,
+    uploadCategory: "marketing",
     uploadStage,
-    uploadSortOrder,
     photos,
     onPhotosChange,
   });
@@ -136,19 +134,6 @@ export function PhotoManager({
                       <SelectItem value="other">其他</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="col-span-6 lg:col-span-4">
-                  <div className="text-xs font-medium text-muted-foreground mb-1">
-                    排序
-                  </div>
-                  <Input
-                    type="number"
-                    value={uploadSortOrder}
-                    readOnly
-                    min={0}
-                    disabled={isUploading}
-                    title="排序值会根据照片数量自动计算"
-                  />
                 </div>
               </div>
 

@@ -61,7 +61,11 @@ export default async function ProjectEditPage({
   }
 
   const project = projectRes.data as L4MarketingProject;
-  const photos: L4MarketingMedia[] = photosRes.data?.items || [];
+  // 为 API 返回的数据添加默认的 photo_category 字段
+  const photos: L4MarketingMedia[] = (photosRes.data?.items || []).map((item: any) => ({
+    ...item,
+    photo_category: item.photo_category || "marketing",
+  })) as L4MarketingMedia[];
 
   return (
     <div className="min-h-screen bg-[#f8f9ff]">

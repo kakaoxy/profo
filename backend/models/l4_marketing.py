@@ -25,6 +25,12 @@ class MarketingProjectStatus(str, Enum):
     SOLD = "已售"             # 已成交
 
 
+class PhotoCategory(str, Enum):
+    """照片分类枚举"""
+    MARKETING = "marketing"      # 营销照片
+    RENOVATION = "renovation"    # 改造照片
+
+
 class L4MarketingProject(BaseModel):
     """
     L4 营销项目表 (原 mini_projects)
@@ -184,8 +190,16 @@ class L4MarketingMedia(BaseModel):
         comment="媒体类型: image/video"
     )
 
-    # 装修阶段标记
-    renovation_stage = Column(String(50), nullable=True, comment="装修阶段")
+    # 照片分类
+    photo_category = Column(
+        String(20),
+        nullable=False,
+        default=PhotoCategory.MARKETING,
+        comment="照片分类: marketing(营销照片)/renovation(改造照片)"
+    )
+
+    # 装修阶段标记（仅改造照片使用）
+    renovation_stage = Column(String(50), nullable=True, comment="装修阶段: 拆除/水电/木瓦/油漆/安装/交付/other")
 
     # 来源 A: 关联 L3 项目照片 (标记机制，URL 实时查询)
     origin_media_id = Column(Integer, nullable=True, comment="来源媒体ID(L3层)")
@@ -223,7 +237,8 @@ class L4MarketingMedia(BaseModel):
     )
 
     __table_args__ = (
-        Index("idx_l4_media_project", "marketing_project_id", "renovation_stage"),
+        Index("idx_l4_media_project", "marketing_project_id", "photo_category"),
+        Index("idx_l4_media_stage", "marketing_project_id", "renovation_stage"),
         Index("idx_l4_media_origin", "origin_media_id"),
         Index("idx_l4_media_deleted", "is_deleted"),
     )

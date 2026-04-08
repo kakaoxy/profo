@@ -22,6 +22,8 @@ type L4MarketingMediaResponse = components["schemas"]["L4MarketingMediaResponse"
 export type L4MarketingMedia = L4MarketingMediaResponse & {
   /** File path for the media */
   file_path?: string;
+  /** Photo category: marketing or renovation */
+  photo_category: PhotoCategory;
 };
 
 export type L4MarketingMediaCreate =
@@ -86,6 +88,35 @@ export const PUBLISH_STATUS_CONFIG: Record<
     label: "已发布",
     color: "#10b981", // emerald-500
     bgColor: "#d1fae5", // emerald-100
+  },
+};
+
+// ============================================================================
+// Photo Category
+// ============================================================================
+
+export type PhotoCategory = "marketing" | "renovation";
+
+export const PHOTO_CATEGORY = {
+  MARKETING: "marketing" as const,
+  RENOVATION: "renovation" as const,
+};
+
+export const PHOTO_CATEGORY_CONFIG: Record<
+  PhotoCategory,
+  { label: string; color: string; bgColor: string; description: string }
+> = {
+  marketing: {
+    label: "营销照片",
+    color: "#005daa",
+    bgColor: "#e5eeff",
+    description: "用于房源展示的营销图片",
+  },
+  renovation: {
+    label: "改造照片",
+    color: "#22c55e",
+    bgColor: "#dcfce7",
+    description: "记录装修改造过程的照片",
   },
 };
 
