@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
 import { createL4MarketingMediaAction } from "../../actions";
@@ -61,6 +61,14 @@ export function useImageUpload({
 }: UseImageUploadOptions): UseImageUploadReturn {
   const [uploadingFiles, setUploadingFiles] = useState<UploadProgress[]>([]);
   const isUploading = uploadingFiles.length > 0;
+
+  // 使用 ref 存储 photos 和 onPhotosChange，避免频繁变化导致 useCallback 重建
+  const photosRef = useRef(photos);
+  const onPhotosChangeRef = useRef(onPhotosChange);
+
+  // 同步 ref 值
+  photosRef.current = photos;
+  onPhotosChangeRef.current = onPhotosChange;
 
   const uploadFile = useCallback(
     async (file: File): Promise<boolean> => {
@@ -128,6 +136,10 @@ export function useImageUpload({
                 return;
               }
 
+              // 使用 ref 获取最新值
+              const currentPhotos = photosRef.current;
+              const currentOnPhotosChange = onPhotosChangeRef.current;
+
               // 创建媒体记录
               createL4MarketingMediaAction(projectId, {
                 file_url: fileUrl,
@@ -136,7 +148,7 @@ export function useImageUpload({
                 sort_order: uploadSortOrder,
               }).then((createResult) => {
                 if (createResult.success && createResult.data) {
-                  onPhotosChange([...photos, createResult.data as L4MarketingMedia]);
+                  currentOnPhotosChange([...currentPhotos, createResult.data as L4MarketingMedia]);
                   toast.success(`${file.name}: 上传成功`);
                   resolve(true);
                 } else {
@@ -176,7 +188,8 @@ export function useImageUpload({
         xhr.send(formData);
       });
     },
-    [projectId, uploadStage, uploadSortOrder, photos, onPhotosChange]
+    // 只保留稳定的依赖：projectId, uploadStage, uploadSortOrder
+    [projectId, uploadStage, uploadSortOrder]
   );
 
   const uploadFiles = useCallback(

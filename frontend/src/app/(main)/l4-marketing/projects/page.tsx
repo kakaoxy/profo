@@ -74,7 +74,7 @@ export default async function MarketingProjectsPage({
     params: {
       query: {
         page,
-        size,
+        page_size: size,
         publish_status: publishStatus || undefined,
         project_status: projectStatus || undefined,
       } satisfies L4MarketingProjectsQuery,
