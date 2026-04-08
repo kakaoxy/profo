@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { L4MarketingMedia, PhotoCategory } from "../../types";
 import { SortablePhotoItem } from "./sortable-photo-item";
+import { DroppableStage } from "./droppable-stage";
 import { PhotoCategorySelector } from "./photo-category-selector";
 import { deleteL4MarketingMediaAction, batchUpdateMediaSortOrderAction, updateL4MarketingMediaAction } from "../../actions";
 import { toast } from "sonner";
@@ -395,30 +396,64 @@ export function DualPhotoManager({
                     改造照片 ({renovationPhotos.length})
                   </h4>
                   <span className="text-xs text-[#707785]">
-                    支持跨阶段拖拽
+                    {activeId ? "拖拽到目标阶段" : "支持跨阶段拖拽"}
                   </span>
                 </div>
 
-                <div className="space-y-4 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
-                  {renovationPhotos.length === 0 ? (
-                    <div className="text-center py-8 text-[#707785] text-sm">
-                      暂无改造照片
-                      <p className="text-xs mt-1 text-[#707785]/60">
-                        可将营销照片拖拽到此处
-                      </p>
-                    </div>
-                  ) : (
-                    Object.entries(renovationPhotosByStage).map(([stage, stagePhotos]) => {
-                      const stageLabel = RENOVATION_STAGES.find(
-                        (s) => s.value === stage
-                      )?.label || "其他";
+                <div className="space-y-3 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
+                  {/* 拖拽时显示所有阶段，平常只显示有照片的阶段 */}
+                  {activeId ? (
+                    // 拖拽模式：显示所有阶段作为放置目标
+                    RENOVATION_STAGES.map((stageConfig) => {
+                      const stage = stageConfig.value;
+                      const stagePhotos = renovationPhotosByStage[stage] || [];
                       const containerId = `${CONTAINER_RENOVATION_PREFIX}${stage}`;
 
                       return (
-                        <div key={stage} className="space-y-2">
+                        <div key={stage} className="space-y-1">
                           <div className="text-xs font-medium text-[#707785] px-1 flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
-                            {stageLabel} ({stagePhotos.length})
+                            {stageConfig.label} ({stagePhotos.length})
+                          </div>
+                          <SortableContext
+                            items={getRenovationStageIds(stage)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <DroppableStage
+                              id={containerId}
+                              isEmpty={stagePhotos.length === 0}
+                              isActive={true}
+                            >
+                              {stagePhotos.length === 0 && (
+                                <div className="text-center text-xs text-[#22c55e]/60">
+                                  拖拽到此处
+                                </div>
+                              )}
+                              {stagePhotos.map((photo, index) => (
+                                <SortablePhotoItem
+                                  key={photo.id}
+                                  photo={photo}
+                                  index={index}
+                                  onDelete={handleDeletePhoto}
+                                />
+                              ))}
+                            </DroppableStage>
+                          </SortableContext>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    // 平常模式：只显示有照片的阶段
+                    Object.entries(renovationPhotosByStage).map(([stage, stagePhotos]) => {
+                      const stageConfig = RENOVATION_STAGES.find((s) => s.value === stage);
+                      if (!stageConfig) return null;
+                      const containerId = `${CONTAINER_RENOVATION_PREFIX}${stage}`;
+
+                      return (
+                        <div key={stage} className="space-y-1">
+                          <div className="text-xs font-medium text-[#707785] px-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                            {stageConfig.label} ({stagePhotos.length})
                           </div>
                           <SortableContext
                             items={getRenovationStageIds(stage)}
