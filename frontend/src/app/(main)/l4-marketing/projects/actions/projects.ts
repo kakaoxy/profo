@@ -60,7 +60,7 @@ export async function createL4MarketingProjectAction(
   body: L4MarketingProjectCreate,
 ) {
   try {
-    console.log("[Action] Creating project with body:", JSON.stringify(body, null, 2));
+    // console.log("[Action] Creating project with body:", JSON.stringify(body, null, 2));
     const client = await fetchClient();
     const { data, error } = await client.POST(
       "/api/v1/admin/l4-marketing/projects",
@@ -78,7 +78,7 @@ export async function createL4MarketingProjectAction(
       };
     }
 
-    console.log("[Action] Created project:", data);
+    // console.log("[Action] Created project:", data);
     revalidatePath("/l4-marketing/projects");
     return { success: true, data };
   } catch (e) {
