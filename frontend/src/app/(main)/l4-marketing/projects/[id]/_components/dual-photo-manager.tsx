@@ -24,7 +24,7 @@ import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
 
 interface DualPhotoManagerProps {
-  projectId: number;
+  projectId?: number;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
@@ -79,6 +79,15 @@ export function DualPhotoManager({
 
   const handleDeletePhoto = useCallback(async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
+
+    // 如果没有 projectId（创建模式），只删除本地状态
+    if (!projectId) {
+      onPhotosChange(photos.filter((p) => p.id !== photoId));
+      toast.success("照片已删除");
+      return;
+    }
+
+    // 有 projectId（编辑模式），调用 API 删除
     try {
       const result = await deleteL4MarketingMediaAction(photoId);
       if (result.success) {
@@ -90,7 +99,7 @@ export function DualPhotoManager({
     } catch {
       toast.error("删除照片失败");
     }
-  }, [photos, onPhotosChange]);
+  }, [photos, onPhotosChange, projectId]);
 
   return (
     <>
@@ -102,9 +111,9 @@ export function DualPhotoManager({
         </h3>
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={projectId ? "grid w-full grid-cols-2" : "grid w-full"}>
               <TabsTrigger value="upload">手动上传</TabsTrigger>
-              <TabsTrigger value="sync">同步照片</TabsTrigger>
+              {projectId && <TabsTrigger value="sync">同步照片</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="upload" className="space-y-4 mt-4">
@@ -206,16 +215,18 @@ export function DualPhotoManager({
         </div>
       </section>
 
-      <PhotoLibraryPicker
-        projectId={projectId}
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        nextSortOrderStart={photos.length}
-        onPhotosAdded={(addedPhotos) => {
-          onPhotosChange([...photos, ...addedPhotos]);
-        }}
-        existingPhotoIds={new Set(photos.map((p) => p.id))}
-      />
+      {projectId && (
+        <PhotoLibraryPicker
+          projectId={projectId}
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          nextSortOrderStart={photos.length}
+          onPhotosAdded={(addedPhotos) => {
+            onPhotosChange([...photos, ...addedPhotos]);
+          }}
+          existingPhotoIds={new Set(photos.map((p) => p.id))}
+        />
+      )}
     </>
   );
 }

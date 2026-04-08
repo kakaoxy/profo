@@ -100,15 +100,39 @@ class L4MarketingProjectService:
         创建独立营销项目
 
         Args:
-            data: 创建数据
+            data: 创建数据，可包含媒体文件列表
 
         Returns:
             创建的营销项目
         """
-        db_obj = L4MarketingProject(**data.model_dump())
+        # 提取媒体文件数据（如果有）
+        media_files = data.media_files
+        
+        # 创建项目对象（不包含 media_files）
+        project_data = data.model_dump(exclude={'media_files'})
+        db_obj = L4MarketingProject(**project_data)
         self.db.add(db_obj)
         self.db.commit()
         self.db.refresh(db_obj)
+        
+        # 如果有媒体文件，批量创建媒体记录
+        if media_files:
+            for idx, media_data in enumerate(media_files):
+                media_obj = L4MarketingMedia(
+                    marketing_project_id=db_obj.id,
+                    file_url=media_data.file_url,
+                    thumbnail_url=media_data.thumbnail_url,
+                    media_type=media_data.media_type,
+                    photo_category=media_data.photo_category,
+                    renovation_stage=media_data.renovation_stage,
+                    description=media_data.description,
+                    sort_order=media_data.sort_order if media_data.sort_order is not None else idx,
+                    origin_media_id=media_data.origin_media_id
+                )
+                self.db.add(media_obj)
+            
+            self.db.commit()
+        
         return db_obj
 
     def update_project(

@@ -8,6 +8,9 @@ import { getFileUrl } from "@/lib/config";
 import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
 import { ActionCell } from "./_components/action-cell";
 
+// 判断是否为开发环境
+const isDev = process.env.NODE_ENV === "development";
+
 export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "title",
@@ -23,17 +26,28 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
         bgColor: "#f3f4f6",
       };
 
+      const imageUrl = coverImage ? getFileUrl(coverImage.trim()) : null;
+
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
-          {coverImage ? (
+          {imageUrl ? (
             <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-[#c0c7d6]/20 overflow-hidden">
-              <Image
-                src={getFileUrl(coverImage.trim())}
-                alt="封面"
-                fill
-                sizes="80px"
-                className="object-cover"
-              />
+              {isDev ? (
+                // 开发环境使用 img 标签避免私有 IP 限制
+                <img
+                  src={imageUrl}
+                  alt="封面"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={imageUrl}
+                  alt="封面"
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                />
+              )}
             </div>
           ) : (
             <div className="w-20 h-14 rounded-lg bg-[#eff4ff] flex items-center justify-center text-[10px] text-[#707785] flex-shrink-0 border border-[#c0c7d6]/20">

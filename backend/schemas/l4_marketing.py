@@ -138,7 +138,7 @@ class L4MarketingProjectBase(BaseModel):
 
 class L4MarketingProjectCreate(L4MarketingProjectBase):
     """创建营销项目请求"""
-    pass
+    media_files: Optional[List[L4MarketingMediaCreate]] = Field(None, description="媒体文件列表，创建项目时同时上传图片")
 
 
 class L4MarketingProjectUpdate(BaseModel):
