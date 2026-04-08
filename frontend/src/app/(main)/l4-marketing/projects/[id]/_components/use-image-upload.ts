@@ -213,7 +213,7 @@ export function useImageUpload({
         xhr.send(formData);
       });
     },
-    // 只保留稳定的依赖：projectId, uploadStage, uploadSortOrder
+    // 只保留稳定的依赖：projectId, uploadCategory, uploadStage
     [projectId, uploadCategory, uploadStage]
   );
 
