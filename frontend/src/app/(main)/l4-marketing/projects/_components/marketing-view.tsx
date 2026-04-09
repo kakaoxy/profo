@@ -1,22 +1,25 @@
 "use client";
 
-import { useState, useMemo, useTransition, useCallback } from "react";
+import { useState, useMemo, useTransition, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
+import { Pagination } from "./pagination";
+import { cn } from "@/lib/utils";
 
-// 提取常量到模块级别，避免每次渲染重新创建
 const ROOM_COUNT_REGEX = /(\d+)室/;
 
 interface MarketingViewProps {
   data: L4MarketingProject[];
   total: number;
+  currentPage: number;
+  pageSize: number;
 }
 
-// 状态过滤器配置
 const STATUS_FILTERS = {
   published: (p: L4MarketingProject) => p.publish_status === "发布",
   draft: (p: L4MarketingProject) => p.publish_status === "草稿",
@@ -26,7 +29,6 @@ const STATUS_FILTERS = {
   all: () => true,
 } as const;
 
-// 户型过滤器配置
 const createLayoutFilter = (layoutFilter: string) => {
   if (layoutFilter === "all") return () => true;
 
@@ -43,7 +45,6 @@ const createLayoutFilter = (layoutFilter: string) => {
   };
 };
 
-// 搜索过滤器
 const createSearchFilter = (searchQuery: string) => {
   const searchLower = searchQuery.toLowerCase().trim();
   if (!searchLower) return () => true;
@@ -55,46 +56,57 @@ const createSearchFilter = (searchQuery: string) => {
     project.community_name?.toLowerCase().includes(searchLower);
 };
 
-export function MarketingView({ data, total }: MarketingViewProps) {
-  // 1. Local State for Filtering
+export function MarketingView({ data, total, currentPage, pageSize }: MarketingViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [activeTab, setActiveTab] = useState<keyof typeof STATUS_FILTERS>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [layoutFilter, setLayoutFilter] = useState("all");
-
-  // 使用 useTransition 优化过滤性能，保持输入响应
   const [isPending, startTransition] = useTransition();
+  const [isPageLoading, setIsPageLoading] = useState(false);
 
-  // 模态框状态
   const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // 2. Memoized Filter Functions
   const statusFilterFn = useMemo(() => STATUS_FILTERS[activeTab], [activeTab]);
   const layoutFilterFn = useMemo(() => createLayoutFilter(layoutFilter), [layoutFilter]);
   const searchFilterFn = useMemo(() => createSearchFilter(searchQuery), [searchQuery]);
 
-  // 3. Client-side Filtering Logic with Transition
   const filteredData = useMemo(() => {
     return data.filter((project) => {
       return statusFilterFn(project) && layoutFilterFn(project) && searchFilterFn(project);
     });
   }, [data, statusFilterFn, layoutFilterFn, searchFilterFn]);
 
-  // 处理标签切换 - 使用 transition
+  const totalPages = Math.ceil(total / pageSize);
+
+  // 当页面变化时重置加载状态
+  useEffect(() => {
+    setIsPageLoading(false);
+  }, [currentPage]);
+
+  const handlePageChange = useCallback((page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+
+    setIsPageLoading(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", page.toString());
+    router.push(`/l4-marketing/projects?${params.toString()}`);
+  }, [currentPage, totalPages, searchParams, router]);
+
   const handleTabChange = useCallback((tab: keyof typeof STATUS_FILTERS) => {
     startTransition(() => {
       setActiveTab(tab);
     });
   }, []);
 
-  // 处理户型过滤切换 - 使用 transition
   const handleLayoutChange = useCallback((layout: string) => {
     startTransition(() => {
       setLayoutFilter(layout);
     });
   }, []);
 
-  // 处理搜索 - 使用 transition
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     startTransition(() => {
@@ -102,14 +114,12 @@ export function MarketingView({ data, total }: MarketingViewProps) {
     });
   }, []);
 
-  // 清除搜索
   const handleClearSearch = useCallback(() => {
     startTransition(() => {
       setSearchQuery("");
     });
   }, []);
 
-  // 处理行点击 - 打开详情页
   const handleRowClick = useCallback((row: L4MarketingProject) => {
     setSelectedProject(row);
     setIsSheetOpen(true);
@@ -229,7 +239,15 @@ export function MarketingView({ data, total }: MarketingViewProps) {
       </section>
 
       {/* --- Table Area --- */}
-      <div className={`bg-white rounded-3xl border border-[#c0c7d6]/20 shadow-sm overflow-hidden ${isPending ? "opacity-70" : ""}`}>
+      <div className={cn(
+        "bg-white rounded-3xl border border-[#c0c7d6]/20 shadow-sm overflow-hidden relative",
+        (isPending || isPageLoading) && "opacity-70"
+      )}>
+        {(isPending || isPageLoading) && (
+          <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+            <Loader2 className="h-8 w-8 animate-spin text-[#005daa]" />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <DataTable
             columns={columns}
@@ -238,27 +256,16 @@ export function MarketingView({ data, total }: MarketingViewProps) {
           />
         </div>
 
-        {/* Pagination */}
-        <div className="px-8 py-5 bg-[#eff4ff]/50 flex items-center justify-between border-t border-[#c0c7d6]/10">
-          <div className="text-xs text-[#707785] font-medium">
-            显示 <span className="text-[#0b1c30]">1 - {Math.min(filteredData.length, 10)}</span> 之 <span className="text-[#0b1c30]">{total}</span> 个房源
-          </div>
-          <div className="flex items-center gap-1">
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#c0c7d6]/30 text-[#707785] hover:bg-[#eff4ff] hover:text-[#005daa] transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#005daa] text-white font-bold shadow-md shadow-[#005daa]/20">1</button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg text-[#707785] hover:bg-[#eff4ff] transition-all">2</button>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg text-[#707785] hover:bg-[#eff4ff] transition-all">3</button>
-            <span className="px-2 text-[#707785]">...</span>
-            <button className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#c0c7d6]/30 text-[#707785] hover:bg-[#eff4ff] hover:text-[#005daa] transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          total={total}
+          pageSize={pageSize}
+          isLoading={isPageLoading}
+          onPageChange={handlePageChange}
+        />
       </div>
 
-      {/* 详情模态框 */}
       <MarketingDetailSheet
         key={selectedProject?.id}
         project={selectedProject}
