@@ -42,3 +42,17 @@ export const LIFECYCLE_STEPS = [
   { status: LeadStatus.VISITED, label: '商务谈判' },
   { status: LeadStatus.SIGNED, label: '签约收房' }
 ];
+
+/**
+ * 获取状态样式配置
+ * 带类型守卫的安全访问函数，处理可能无效的状态值
+ */
+export function getStatusStyleConfig(status: string): { label: string; className: string } {
+  if (Object.values(LeadStatus).includes(status as LeadStatus)) {
+    return STATUS_STYLE_CONFIG[status as LeadStatus];
+  }
+  return {
+    label: status,
+    className: "bg-slate-100 text-slate-600",
+  };
+}

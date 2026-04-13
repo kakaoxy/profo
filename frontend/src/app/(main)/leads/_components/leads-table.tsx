@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, LeadStatus } from "../types";
-import { STATUS_STYLE_CONFIG } from "../constants";
+import { getStatusStyleConfig } from "../constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,10 +50,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
       </thead>
       <tbody className="divide-y divide-slate-100">
         {leads.map((lead) => {
-          const config = STATUS_STYLE_CONFIG[lead.status] || {
-            label: lead.status,
-            className: "bg-slate-100 text-slate-600",
-          };
+          const config = getStatusStyleConfig(lead.status);
 
           return (
             <tr
