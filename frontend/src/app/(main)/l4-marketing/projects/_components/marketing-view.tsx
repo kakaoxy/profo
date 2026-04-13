@@ -3,13 +3,17 @@
 import { useState, useMemo, useTransition, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Search, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, X, Download } from "lucide-react";
+import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "../types";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
 import { Pagination } from "./pagination";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 
 const ROOM_COUNT_REGEX = /(\d+)室/;
 
@@ -81,7 +85,6 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
 
   const totalPages = Math.ceil(total / pageSize);
 
-  // 当页面变化时重置加载状态
   useEffect(() => {
     setIsPageLoading(false);
   }, [currentPage]);
@@ -125,13 +128,6 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     setIsSheetOpen(true);
   }, []);
 
-  const statusTabs = [
-    { value: "all" as const, label: "全部" },
-    { value: "in_progress" as const, label: "在途" },
-    { value: "for_sale" as const, label: "在售" },
-    { value: "sold" as const, label: "已售" },
-  ];
-
   const layoutTabs = [
     { value: "all", label: "全部" },
     { value: "1", label: "1室" },
@@ -141,113 +137,104 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   ];
 
   return (
-    <div className="space-y-6">
-      {/* --- Bento Filter Card --- */}
-      <section className="bg-[#eff4ff] rounded-2xl p-6">
-        <div className="grid grid-cols-12 gap-6">
-          {/* Search Bar */}
-          <div className="col-span-12 lg:col-span-4">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#707785] mb-2">
-              搜索房源
-            </label>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#005daa]" />
-              <Input
-                placeholder="搜索房源名称、小区或房源ID..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="pl-11 pr-10 py-3 bg-white border-none rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-[#005daa]/20 text-sm placeholder:text-[#707785]/60"
-              />
-              {searchQuery ? (
-                <button
-                  onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#707785] hover:text-[#0b1c30] p-1"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : null}
-            </div>
+    <div className="space-y-4">
+      {/* --- Top Toolbar --- */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        {/* Left: Filter Area */}
+        <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
+          {/* Search Input */}
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="搜索房源名称..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-blue-600"
+            />
+            {searchQuery ? (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            ) : null}
           </div>
 
-          {/* Project Status Filter */}
-          <div className="col-span-12 lg:col-span-4">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#707785] mb-2">
-              项目状态
-            </label>
-            <div className="flex p-1 bg-white rounded-xl shadow-sm">
-              {statusTabs.map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => handleTabChange(tab.value)}
-                  className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${
-                    activeTab === tab.value
-                      ? "bg-[#005daa] text-white shadow-sm"
-                      : "text-[#707785] hover:bg-[#eff4ff]"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+          {/* Layout Tabs */}
+          <div className="flex p-1 bg-slate-100/50 rounded-lg">
+            {layoutTabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => handleLayoutChange(tab.value)}
+                className={`py-1.5 px-3 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+                  layoutFilter === tab.value
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {/* Publish Status Filter */}
-          <div className="col-span-12 lg:col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#707785] mb-2">
-              发布状态
-            </label>
-            <select
-              className="w-full px-4 py-3 bg-white border-none rounded-xl shadow-sm focus:ring-2 focus:ring-[#005daa]/20 appearance-none font-body text-sm text-[#0b1c30] cursor-pointer"
-              value={activeTab === "published" ? "published" : activeTab === "draft" ? "draft" : "all"}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === "published" || val === "draft") {
-                  handleTabChange(val);
-                } else {
-                  handleTabChange("all");
-                }
-              }}
+          {/* Status Tabs */}
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTERS)}
+            className="w-full sm:w-auto"
+          >
+            <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg">
+              <TabsTrigger value="all" className="text-xs px-3">
+                全部
+              </TabsTrigger>
+              <TabsTrigger
+                value="in_progress"
+                className="text-xs px-3 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"
+              >
+                在途
+              </TabsTrigger>
+              <TabsTrigger
+                value="for_sale"
+                className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+              >
+                在售
+              </TabsTrigger>
+              <TabsTrigger
+                value="sold"
+                className="text-xs px-3 data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800"
+              >
+                已售
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex w-full lg:w-auto gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 lg:flex-none bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            onClick={() => toast.success("正在生成报表...")}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            导出
+          </Button>
+
+          <div className="flex-1 lg:flex-none">
+            <Link
+              href="/l4-marketing/projects/new"
+              className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700"
             >
-              <option value="all">全部状态</option>
-              <option value="draft">草稿</option>
-              <option value="published">已发布</option>
-            </select>
-          </div>
-
-          {/* Layout Tabs Filter */}
-          <div className="col-span-12 lg:col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#707785] mb-2">
-              户型
-            </label>
-            <div className="flex p-1 bg-white rounded-xl shadow-sm overflow-x-auto">
-              {layoutTabs.map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => handleLayoutChange(tab.value)}
-                  className={`flex-1 py-2 px-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
-                    layoutFilter === tab.value
-                      ? "bg-[#005daa] text-white shadow-sm"
-                      : "text-[#707785] hover:bg-[#eff4ff]"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+              <Plus className="mr-2 h-4 w-4" />
+              新建房源
+            </Link>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* --- Table Area --- */}
-      <div className={cn(
-        "bg-white rounded-3xl border border-[#c0c7d6]/20 shadow-sm overflow-hidden relative",
-        (isPending || isPageLoading) && "opacity-70"
-      )}>
-        {(isPending || isPageLoading) && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-            <Loader2 className="h-8 w-8 animate-spin text-[#005daa]" />
-          </div>
-        )}
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <DataTable
             columns={columns}
@@ -255,15 +242,13 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
             onRowClick={handleRowClick}
           />
         </div>
+      </div>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          total={total}
-          pageSize={pageSize}
-          isLoading={isPageLoading}
-          onPageChange={handlePageChange}
-        />
+      {/* Footer Info */}
+      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+        <span>
+          显示 {filteredData.length} 条记录 (共 {total} 条)
+        </span>
       </div>
 
       <MarketingDetailSheet

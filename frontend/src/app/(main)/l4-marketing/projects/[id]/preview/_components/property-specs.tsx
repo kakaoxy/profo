@@ -16,39 +16,39 @@ export function PropertySpecs({
   orientation,
 }: PropertySpecsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-0.5 rounded-2xl overflow-hidden bg-[#c0c7d6]/10 border border-[#c0c7d6]/10">
-      <div className="bg-[#eff4ff] p-6 flex flex-col gap-1">
-        <span className="text-[10px] font-bold text-[#707785] uppercase tracking-wider">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-0.5 rounded-xl overflow-hidden bg-slate-200 border border-slate-200">
+      <div className="bg-slate-50 p-6 flex flex-col gap-1">
+        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
           户型
         </span>
-        <span className="text-lg font-bold text-[#0b1c30]">{layout || "--"}</span>
+        <span className="text-lg font-bold text-slate-800">{layout || "--"}</span>
       </div>
-      <div className="bg-[#eff4ff] p-6 flex flex-col gap-1">
-        <span className="text-[10px] font-bold text-[#707785] uppercase tracking-wider">
+      <div className="bg-slate-50 p-6 flex flex-col gap-1">
+        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
           面积
         </span>
-        <span className="text-lg font-bold text-[#0b1c30]">
+        <span className="text-lg font-bold text-slate-800">
           {formatArea(area)}
         </span>
       </div>
-      <div className="bg-[#eff4ff] p-6 flex flex-col gap-1">
+      <div className="bg-slate-50 p-6 flex flex-col gap-1">
         <div className="flex items-center gap-1">
-          <span className="text-[10px] font-bold text-[#707785] uppercase tracking-wider">
+          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
             单价
           </span>
-          <span className="text-[8px] bg-[#005daa]/10 text-[#005daa] px-1 rounded">
+          <span className="text-[8px] bg-blue-100 text-blue-700 px-1 rounded">
             自动计算
           </span>
         </div>
-        <span className="text-lg font-bold text-[#0b1c30]">
+        <span className="text-lg font-bold text-slate-800">
           {formatUnitPrice(unitPrice)}
         </span>
       </div>
-      <div className="bg-[#eff4ff] p-6 flex flex-col gap-1">
-        <span className="text-[10px] font-bold text-[#707785] uppercase tracking-wider">
+      <div className="bg-slate-50 p-6 flex flex-col gap-1">
+        <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
           朝向
         </span>
-        <span className="text-lg font-bold text-[#0b1c30]">
+        <span className="text-lg font-bold text-slate-800">
           {orientation || "--"}
         </span>
       </div>

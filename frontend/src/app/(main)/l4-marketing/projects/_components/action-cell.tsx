@@ -42,17 +42,21 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
     }
   }, [project.id]);
 
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <div className="flex items-center gap-1">
       <Link
         href={`/l4-marketing/projects/${project.id}/preview`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleClick}
       >
         <Button
           variant="ghost"
           size="sm"
-          className="text-[#707785] hover:text-[#005daa] hover:bg-[#a5c8ff]/20 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-lg"
-          onClick={(e) => e.stopPropagation()}
+          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          onClick={handleClick}
         >
           <Eye className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">预览</span>
@@ -61,47 +65,47 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
 
       <Link
         href={`/l4-marketing/projects/${project.id}/edit`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleClick}
       >
         <Button
           variant="ghost"
           size="sm"
-          className="text-[#707785] hover:text-[#005daa] hover:bg-[#a5c8ff]/20 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-lg"
-          onClick={(e) => e.stopPropagation()}
+          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          onClick={handleClick}
         >
           <Pencil className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">编辑</span>
         </Button>
       </Link>
 
-      <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
+      <div className="hidden sm:block" onClick={handleClick}>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="text-[#707785] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/50 h-8 w-8 p-0 rounded-lg"
-              onClick={(e) => e.stopPropagation()}
+              className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+              onClick={handleClick}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="bg-white border-[#c0c7d6]/20">
+          <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-[#0b1c30]">确认删除项目？</AlertDialogTitle>
-              <AlertDialogDescription className="text-[#707785]">
+              <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
+              <AlertDialogDescription>
                 此操作将删除营销项目 &quot;{project.title}&quot;。该操作不可撤销。
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="border-[#c0c7d6]/50 text-[#0b1c30]">取消</AlertDialogCancel>
+              <AlertDialogCancel>取消</AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
                   e.preventDefault();
                   handleDelete();
                 }}
                 disabled={isDeleting}
-                className="bg-[#ba1a1a] hover:bg-[#93000a]"
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
               >
                 {isDeleting ? "删除中..." : "确认删除"}
               </AlertDialogAction>

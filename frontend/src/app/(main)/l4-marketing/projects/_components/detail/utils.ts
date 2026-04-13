@@ -1,18 +1,18 @@
 "use client";
 
-// 状态配置
+// 状态配置 - 与 projects 保持一致
 export const statusConfig: Record<string, { label: string; className: string }> = {
   "在售": {
     label: "在售",
-    className: "bg-emerald-100 text-emerald-700",
+    className: "bg-emerald-500 text-white",
   },
   "已售": {
     label: "已售",
-    className: "bg-slate-100 text-slate-700",
+    className: "bg-slate-300 text-slate-700",
   },
   "在途": {
     label: "在途",
-    className: "bg-blue-100 text-blue-700",
+    className: "bg-blue-500 text-white",
   },
 };
 
@@ -20,11 +20,11 @@ export const statusConfig: Record<string, { label: string; className: string }> 
 export const publishStatusConfig: Record<string, { label: string; className: string }> = {
   "发布": {
     label: "已发布",
-    className: "bg-emerald-100 text-emerald-700",
+    className: "bg-emerald-500 text-white",
   },
   "草稿": {
     label: "草稿",
-    className: "bg-amber-100 text-amber-700",
+    className: "bg-amber-500 text-white",
   },
 };
 

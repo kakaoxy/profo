@@ -54,7 +54,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
       : "保存中..."
     : mode === "create"
       ? "创建项目"
-      : "保存并发布";
+      : "保存修改";
 
   return (
     <Form {...form}>
@@ -78,12 +78,12 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
         </div>
 
         {/* Fixed Bottom Actions */}
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#0b1c30]/90 backdrop-blur-xl px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-8 z-50">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-8 z-50">
           <div className="flex flex-col">
-            <span className="text-[#707785]/60 text-[10px] uppercase font-bold tracking-widest">当前状态</span>
+            <span className="text-slate-400 text-[10px] uppercase font-medium tracking-wider">当前状态</span>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#85fa51] rounded-full animate-pulse"></div>
-              <span className="text-white text-sm font-bold">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-white text-sm font-medium">
                 {mode === "create" ? "正在创建新项目" : `正在编辑: 房源 #${project?.id}`}
               </span>
             </div>
@@ -92,14 +92,14 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
           <div className="flex gap-4">
             <Link
               href="/l4-marketing/projects"
-              className="text-white/60 text-xs font-bold hover:text-white transition-colors px-3 py-2"
+              className="text-slate-400 text-sm hover:text-white transition-colors px-3 py-2"
             >
-              取消修改
+              取消
             </Link>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#005daa] hover:bg-[#0075d5] text-white text-xs font-black px-6 py-2 rounded-lg transition-all shadow-lg shadow-[#005daa]/20"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-all"
             >
               {submitButtonText}
             </Button>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { getFileUrl } from "@/lib/config";
 import { useRef, useState, useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
 
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
@@ -18,18 +19,18 @@ interface HeroGalleryProps {
 function ImagePlaceholder({ size = "large" }: { size?: "large" | "small" }) {
   const dimensions = size === "large" ? { width: 64, height: 64 } : { width: 48, height: 48 };
   return (
-    <div className="w-full h-full bg-gradient-to-br from-[#005daa]/10 to-[#0075d5]/10 flex items-center justify-center">
+    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width={dimensions.width}
         height={dimensions.height}
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#005daa"
+        stroke="currentColor"
         strokeWidth="1"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="opacity-30"
+        className="text-slate-300"
       >
         <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
         <circle cx="9" cy="9" r="2" />
@@ -42,7 +43,7 @@ function ImagePlaceholder({ size = "large" }: { size?: "large" | "small" }) {
 // 次要图片占位符组件
 function SecondaryImagePlaceholder() {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#eff4ff] to-[#dce9ff]">
+    <div className="relative overflow-hidden rounded-xl bg-slate-100">
       <div className="absolute inset-0 flex items-center justify-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -50,11 +51,11 @@ function SecondaryImagePlaceholder() {
           height="48"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#707785"
+          stroke="currentColor"
           strokeWidth="1"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="opacity-30"
+          className="text-slate-300"
         >
           <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
           <circle cx="9" cy="9" r="2" />
@@ -78,8 +79,14 @@ export function HeroGallery({
         ? "已成交"
         : "在途中";
 
+  const statusColor =
+    projectStatus === "在售"
+      ? "bg-emerald-500"
+      : projectStatus === "已售"
+        ? "bg-slate-400"
+        : "bg-blue-500";
+
   // 使用 ref 追踪图片加载错误状态，避免触发重新渲染
-  // 使用 state 来强制重新渲染一次（当错误发生时）
   const mainImageErrorRef = useRef(false);
   const secondaryImageErrorsRef = useRef<boolean[]>([false, false]);
   const [renderKey, setRenderKey] = useState(0);
@@ -105,7 +112,7 @@ export function HeroGallery({
 
   return (
     <section className="mt-4 grid grid-cols-12 gap-4 h-[500px]" key={renderKey}>
-      <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-2xl group">
+      <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-xl group">
         {!shouldShowMainPlaceholder ? (
           isDev ? (
             <img
@@ -129,14 +136,14 @@ export function HeroGallery({
           <ImagePlaceholder size="large" />
         )}
         <div className="absolute top-4 left-4">
-          <span className="bg-[#9d6a00] text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
+          <Badge className={`${statusColor} text-white px-3 py-1 text-sm font-medium`}>
             {statusText}
-          </span>
+          </Badge>
         </div>
       </div>
       <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-4">
         {!shouldShowSecondaryPlaceholder0 ? (
-          <div className="relative overflow-hidden rounded-2xl group">
+          <div className="relative overflow-hidden rounded-xl group">
             {isDev ? (
               <img
                 src={getFileUrl(secondaryImages[0]!)}
@@ -159,7 +166,7 @@ export function HeroGallery({
           <SecondaryImagePlaceholder />
         )}
         {!shouldShowSecondaryPlaceholder1 ? (
-          <div className="relative overflow-hidden rounded-2xl group">
+          <div className="relative overflow-hidden rounded-xl group">
             {isDev ? (
               <img
                 src={getFileUrl(secondaryImages[1]!)}
@@ -178,7 +185,7 @@ export function HeroGallery({
               />
             )}
             {totalCount > 3 ? (
-              <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur text-[#005daa] px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-white transition-colors">
+              <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur text-slate-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-white transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"
