@@ -1,6 +1,6 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, Row } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LineChart, Trash2, Wallet } from "lucide-react";
@@ -19,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 const formatMoney = (value: number | undefined | null) => {
   if (value === undefined || value === null) return "-";
@@ -35,35 +35,121 @@ const formatWan = (value: number | string | undefined | null) => {
   return `${value}`;
 };
 
-// 🎨 优化配色：无边框风格，色彩更纯粹
+// 优化配色：无边框风格，色彩更纯粹
 const statusConfig: Record<string, { label: string; className: string }> = {
   signing: {
     label: "签约",
-    // 使用纯色背景 + 白色文字
     className: "bg-blue-500 text-white hover:bg-blue-600",
   },
   renovating: {
     label: "装修",
-    // 使用纯色背景 + 白色文字
     className: "bg-orange-500 text-white hover:bg-orange-600",
   },
   selling: {
     label: "在售",
-    // 使用中灰背景 + 浅灰色文字（不同于其他状态）
     className: "bg-emerald-500 text-white hover:bg-emerald-600",
   },
   sold: {
     label: "已售",
-    // 使用纯色背景 + 白色文字
     className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
   },
 };
+
+// 提取 ActionCell 为独立组件，使用 useCallback 优化性能
+function ActionCell({ row }: { row: Row<Project> }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    setIsDeleting(true);
+    try {
+      const res = await deleteProjectAction(row.original.id);
+      if (res.success) {
+        toast.success("项目已删除");
+      } else {
+        toast.error(res.message);
+      }
+    } catch {
+      toast.error("删除失败");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [row.original.id]);
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
+  const monitorHref = `?monitor_id=${row.original.id}&project_name=${encodeURIComponent(row.original.name)}`;
+  const cashflowHref = `?cashflow_id=${row.original.id}&community_name=${encodeURIComponent(row.original.community_name || "")}&address=${encodeURIComponent(row.original.address || "")}`;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Link href={monitorHref} scroll={false} onClick={handleClick}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+        >
+          <LineChart className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline text-xs font-medium">监控</span>
+        </Button>
+      </Link>
+
+      <Link href={cashflowHref} scroll={false} onClick={handleClick}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+        >
+          <Wallet className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline text-xs font-medium">账本</span>
+        </Button>
+      </Link>
+
+      <div className="hidden sm:block">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+              onClick={handleClick}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent onClick={handleClick}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
+              <AlertDialogDescription>
+                此操作将把项目标记为删除状态。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDelete();
+                }}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                确认删除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+}
+
 export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
     header: "项目名称 / ID",
     cell: ({ row }) => {
-      // 移动端布局逻辑保持不变，重点优化样式
       const status = row.original.status || "signing";
       const config = statusConfig[status];
 
@@ -115,9 +201,8 @@ export const columns: ColumnDef<Project>[] = [
 
       return (
         <div className="hidden md:block">
-          {/* 这里去掉了 border，使用了更圆润的 pill 形状 */}
           <Badge
-            variant="secondary" // 使用 secondary 变体去除默认的黑色边框
+            variant="secondary"
             className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${config.className}`}
           >
             {config.label}
@@ -180,10 +265,6 @@ export const columns: ColumnDef<Project>[] = [
 
       return (
         <div className="hidden lg:block text-right">
-          {/* 关键修改：
-             1. href 改为 "?" + 参数，表示停留在当前页
-             2. scroll={false} 防止页面滚动到顶部
-          */}
           <Link
             href={`?cashflow_id=${
               row.original.id
@@ -201,99 +282,6 @@ export const columns: ColumnDef<Project>[] = [
   {
     id: "actions",
     header: "操作",
-    cell: function ActionCell({ row }) {
-      const [isDeleting, setIsDeleting] = useState(false);
-      
-      const handleDelete = async () => {
-        setIsDeleting(true);
-        try {
-          const res = await deleteProjectAction(row.original.id);
-          if (res.success) {
-            toast.success("项目已删除");
-            // Need a way to refresh the list, but for now we just show feedback
-          } else {
-            toast.error(res.message);
-          }
-        } catch {
-          toast.error("删除失败");
-        } finally {
-          setIsDeleting(false);
-        }
-      };
-
-      return (
-        <div className="flex items-center gap-1">
-          <Link
-            href={`?monitor_id=${
-              row.original.id
-            }&project_name=${encodeURIComponent(row.original.name)}`}
-            scroll={false}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
-            >
-              <LineChart className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline text-xs font-medium">监控</span>
-            </Button>
-          </Link>
-
-          <Link
-            href={`?cashflow_id=${
-              row.original.id
-            }&community_name=${encodeURIComponent(row.original.community_name || "")}&address=${encodeURIComponent(row.original.address || "")}`}
-            scroll={false}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
-            >
-              <Wallet className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline text-xs font-medium">账本</span>
-            </Button>
-          </Link>
-
-          <div className="hidden sm:block">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-              <AlertDialogHeader>
-                <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  此操作将把项目标记为删除状态。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleDelete();
-                  }}
-                  disabled={isDeleting}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  确认删除
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          </div>
-        </div>
-      );
-    },
+    cell: ActionCell,
   },
 ];

@@ -101,8 +101,13 @@ export function ProjectDetailSheet({
   };
 
   // 视图切换与数据加载监听
+  // 使用 ref 来避免重复调用 refreshProjectData
+  const initialLoadRef = useRef(false);
+  
   useEffect(() => {
-    if (isOpen && project?.id) {
+    if (isOpen && project?.id && !initialLoadRef.current) {
+      initialLoadRef.current = true;
+      
       const index = STAGE_CONFIG.findIndex((s) =>
         (s.aliases as readonly string[]).includes(project.status)
       );
@@ -116,8 +121,12 @@ export function ProjectDetailSheet({
       // 关键逻辑：如果初始状态就是 sold，直接加载 full 数据
       refreshProjectData(targetMode === "sold");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, project?.id, project?.status]);
+    
+    // 当 sheet 关闭时重置 ref
+    if (!isOpen) {
+      initialLoadRef.current = false;
+    }
+  }, [isOpen, project?.id, project?.status, viewMode, refreshProjectData]);
 
   if (!project) return null;
 

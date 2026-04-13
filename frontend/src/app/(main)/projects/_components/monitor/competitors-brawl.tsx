@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   Filter,
@@ -94,55 +94,60 @@ export function CompetitorsBrawl({
     return match ? parseInt(match[1], 10) : 0;
   };
 
-  // 前端过滤
-  const filteredItems = allItems.filter((item) => {
-    // 1. 状态筛选
-    let matchStatus = false;
-    if (statusFilters.includes("on_sale") && item.status === "on_sale")
-      matchStatus = true;
-    if (statusFilters.includes("sold") && item.status === "sold")
-      matchStatus = true;
-    if (!matchStatus) return false;
+  // 使用 useMemo 缓存过滤和排序结果，避免直接修改原数组
+  const filteredItems = useMemo(() => {
+    // 1. 前端过滤
+    let items = allItems.filter((item) => {
+      // 状态筛选
+      let matchStatus = false;
+      if (statusFilters.includes("on_sale") && item.status === "on_sale")
+        matchStatus = true;
+      if (statusFilters.includes("sold") && item.status === "sold")
+        matchStatus = true;
+      if (!matchStatus) return false;
 
-    // 2. 户型筛选 (如果未选择任何户型，则不过滤)
-    if (layoutFilters.length > 0) {
-      const roomCount = getRoomCount(item.layout);
-      const matchLayout = layoutFilters.some((filter) => {
-        if (filter === "4室+") {
-          return roomCount >= 4;
-        }
-        // 提取 "1室" -> 1
-        const filterCount = parseInt(filter, 10);
-        return roomCount === filterCount;
-      });
-      if (!matchLayout) return false;
-    }
-
-    // 3. 搜索筛选 (目前仅支持小区名模糊搜索)
-    if (searchQuery) {
-      if (!item.community.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
+      // 户型筛选 (如果未选择任何户型，则不过滤)
+      if (layoutFilters.length > 0) {
+        const roomCount = getRoomCount(item.layout);
+        const matchLayout = layoutFilters.some((filter) => {
+          if (filter === "4室+") {
+            return roomCount >= 4;
+          }
+          // 提取 "1室" -> 1
+          const filterCount = parseInt(filter, 10);
+          return roomCount === filterCount;
+        });
+        if (!matchLayout) return false;
       }
+
+      // 搜索筛选 (目前仅支持小区名模糊搜索)
+      if (searchQuery) {
+        if (!item.community.toLowerCase().includes(searchQuery.toLowerCase())) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // 2. 排序逻辑 - 使用 [...items] 创建新数组，避免修改原数组
+    if (sortConfig.key && sortConfig.direction) {
+      items = [...items].sort((a, b) => {
+        // 始终优先显示 is_current
+        if (a.is_current && !b.is_current) return -1;
+        if (!a.is_current && b.is_current) return 1;
+
+        const valA = a[sortConfig.key!];
+        const valB = b[sortConfig.key!];
+
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
     }
 
-    return true;
-  });
-
-  // 排序逻辑
-  if (sortConfig.key && sortConfig.direction) {
-    filteredItems.sort((a, b) => {
-      // 始终优先显示 is_current
-      if (a.is_current && !b.is_current) return -1;
-      if (!a.is_current && b.is_current) return 1;
-
-      const valA = a[sortConfig.key!];
-      const valB = b[sortConfig.key!];
-
-      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
-  }
+    return items;
+  }, [allItems, statusFilters, layoutFilters, searchQuery, sortConfig]);
 
   const toggleFilter = (status: "on_sale" | "sold") => {
     setStatusFilters((prev) => {
