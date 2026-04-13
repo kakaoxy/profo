@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, LeadStatus } from "../types";
-import { STATUS_STYLE_CONFIG } from "../constants";
+import { getStatusStyleConfig } from "../constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,10 +39,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {leads.map((lead) => {
-        const config = STATUS_STYLE_CONFIG[lead.status] || {
-          label: lead.status,
-          className: "bg-slate-100 text-slate-600",
-        };
+        const config = getStatusStyleConfig(lead.status);
 
         return (
           <Card
