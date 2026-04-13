@@ -1,20 +1,23 @@
-import React from 'react';
-import Image from 'next/image';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Home } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Lead, LeadStatus } from '../types';
-import { STATUS_CONFIG } from '../constants';
+"use client";
 
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import React from "react";
+import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Home, LineChart, Pencil, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Lead, LeadStatus } from "../types";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -23,111 +26,194 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
-export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onEdit, onDelete }) => {
+// 状态配置 - 与 projects 保持一致的无边框纯色风格
+const statusConfig: Record<string, { label: string; className: string }> = {
+  pending_assessment: {
+    label: "待评估",
+    className: "bg-blue-500 text-white",
+  },
+  pending_visit: {
+    label: "待看房",
+    className: "bg-orange-500 text-white",
+  },
+  visited: {
+    label: "已看房",
+    className: "bg-emerald-500 text-white",
+  },
+  signed: {
+    label: "已签约",
+    className: "bg-indigo-500 text-white",
+  },
+  rejected: {
+    label: "已驳回",
+    className: "bg-slate-300 text-slate-700",
+  },
+};
+
+export const LeadsTable: React.FC<LeadsTableProps> = ({
+  leads,
+  onOpenDetail,
+  onEdit,
+  onDelete,
+}) => {
   return (
-    <Card className="border-none shadow-sm overflow-hidden bg-white/80">
-      <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead className="bg-slate-50/50 border-b">
-            <tr className="text-left text-[11px] font-black uppercase tracking-wider text-muted-foreground">
-              <th className="p-3 sm:p-4 pl-4 sm:pl-8">小区基本面</th>
-              <th className="p-3 sm:p-4 hidden sm:table-cell">面积/户型</th>
-              <th className="p-3 sm:p-4">价格</th>
-              <th className="p-3 sm:p-4 text-center">状态</th>
-              <th className="p-3 sm:p-4 hidden lg:table-cell">最后跟进</th>
-              <th className="p-3 sm:p-4 pr-4 sm:pr-8 text-right">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-sm">
-            {leads.map(lead => (
-              <tr 
-                  key={lead.id} 
-                  className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                  onClick={() => onOpenDetail(lead.id)}
-              >
-                <td className="p-3 sm:p-4 pl-4 sm:pl-8">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-16 overflow-hidden rounded-md bg-slate-100 border relative flex items-center justify-center">
-                      {lead.images && lead.images.length > 0 ? (
-                         <Image 
-                           src={lead.images[0]} 
-                           alt="prop" 
-                           fill
-                           className="object-cover transition-transform group-hover:scale-105" 
-                           sizes="64px"
-                           unoptimized={lead.images[0]?.includes('127.0.0.1') || lead.images[0]?.includes('localhost')}
-                         />
-                      ) : (
-                         <Home className="h-5 w-5 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-900 group-hover:text-primary">{lead.communityName}</span>
-                      <span className="text-xs text-muted-foreground">{lead.district} · {lead.businessArea}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-3 sm:p-4 hidden sm:table-cell">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{lead.layout}</span>
-                    <span className="text-xs text-muted-foreground">{lead.area}㎡ · {lead.floorInfo}</span>
-                  </div>
-                </td>
-                <td className="p-3 sm:p-4">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-blue-600">¥{lead.totalPrice}万</span>
-                    <span className="text-[10px] text-muted-foreground">{lead.unitPrice?.toFixed(2)}万/㎡</span>
-                  </div>
-                </td>
-                <td className="p-3 sm:p-4 text-center">
-                  <Badge 
-                    variant={
-                      lead.status === LeadStatus.SIGNED ? "secondary" :
-                      lead.status === LeadStatus.VISITED ? "default" : 
-                      lead.status === LeadStatus.REJECTED ? "destructive" :
-                      lead.status === LeadStatus.PENDING_VISIT ? "outline" : "default"
-                    }
-                    className={cn(
-                      "font-bold",
-                      lead.status === LeadStatus.SIGNED && "bg-indigo-100 text-indigo-700 border-indigo-200",
-                      lead.status === LeadStatus.VISITED && "bg-emerald-100 text-emerald-700 border-emerald-200",
-                      lead.status === LeadStatus.PENDING_VISIT && "bg-orange-100 text-orange-700 border-orange-200",
-                      lead.status === LeadStatus.PENDING_ASSESSMENT && "bg-blue-100 text-blue-700 border-blue-200"
+    <table className="w-full border-collapse">
+      <thead className="bg-slate-50/50 border-b border-slate-200">
+        <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <th className="p-4 pl-6 font-medium">小区 / 房源信息</th>
+          <th className="p-4 hidden md:table-cell font-medium">户型 / 面积</th>
+          <th className="p-4 hidden sm:table-cell font-medium text-right">总价 / 单价</th>
+          <th className="p-4 text-center font-medium">状态</th>
+          <th className="p-4 hidden lg:table-cell font-medium">区域</th>
+          <th className="p-4 hidden xl:table-cell font-medium">录入人</th>
+          <th className="p-4 pr-6 text-right font-medium">操作</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-100">
+        {leads.map((lead) => {
+          const config = statusConfig[lead.status] || {
+            label: lead.status,
+            className: "bg-slate-100 text-slate-600",
+          };
+
+          return (
+            <tr
+              key={lead.id}
+              className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+              onClick={() => onOpenDetail(lead.id)}
+            >
+              {/* 小区 / 房源信息 */}
+              <td className="p-4 pl-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-16 overflow-hidden rounded-md bg-slate-100 border border-slate-200 relative flex items-center justify-center shrink-0">
+                    {lead.images && lead.images.length > 0 ? (
+                      <Image
+                        src={lead.images[0]}
+                        alt={lead.communityName}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                        sizes="64px"
+                        unoptimized={
+                          lead.images[0]?.includes("127.0.0.1") ||
+                          lead.images[0]?.includes("localhost")
+                        }
+                      />
+                    ) : (
+                      <Home className="h-5 w-5 text-slate-300" />
                     )}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-slate-900 text-sm truncate max-w-[180px] group-hover:text-blue-600 transition-colors">
+                      {lead.communityName}
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono tracking-tight">
+                      ID: {lead.id.slice(0, 8)}
+                    </span>
+                  </div>
+                </div>
+              </td>
+
+              {/* 户型 / 面积 */}
+              <td className="p-4 hidden md:table-cell">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-slate-700">
+                    {lead.layout || "-"}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {lead.area > 0 ? `${lead.area}㎡` : "-"} · {lead.floorInfo || "-"}
+                  </span>
+                </div>
+              </td>
+
+              {/* 总价 / 单价 */}
+              <td className="p-4 hidden sm:table-cell">
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-bold text-slate-800 tabular-nums">
+                    {lead.totalPrice > 0 ? `¥${lead.totalPrice}万` : "-"}
+                  </span>
+                  <span className="text-xs text-slate-500 tabular-nums">
+                    {lead.unitPrice > 0 ? `${lead.unitPrice.toFixed(2)}万/㎡` : "-"}
+                  </span>
+                </div>
+              </td>
+
+              {/* 状态 */}
+              <td className="p-4 text-center">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none",
+                    config.className
+                  )}
+                >
+                  {config.label}
+                </Badge>
+              </td>
+
+              {/* 区域 */}
+              <td className="p-4 hidden lg:table-cell">
+                <span className="text-sm text-slate-600">
+                  {lead.district || "-"}
+                  {lead.businessArea ? ` · ${lead.businessArea}` : ""}
+                </span>
+              </td>
+
+              {/* 录入人 */}
+              <td className="p-4 hidden xl:table-cell">
+                <span className="text-sm text-slate-600 bg-slate-50 px-2 py-1 rounded-md">
+                  {lead.creatorName || "-"}
+                </span>
+              </td>
+
+              {/* 操作 */}
+              <td className="p-4 pr-6 text-right">
+                <div
+                  className="flex items-center justify-end gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 p-0 rounded-full transition-all"
+                    onClick={() => onEdit(lead)}
                   >
-                    {STATUS_CONFIG[lead.status]?.label}
-                  </Badge>
-                </td>
-                <td className="p-3 sm:p-4 hidden lg:table-cell">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-xs">{lead.creatorName}</span>
-                    <span className="text-[10px] text-muted-foreground">{lead.lastFollowUpAt || lead.createdAt}</span>
-                  </div>
-                </td>
-                <td className="p-3 sm:p-4 pr-4 sm:pr-8 text-right">
-                  <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(lead)}>
-                          <Pencil className="mr-2 h-4 w-4" /> 编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDelete(lead.id)} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" /> 删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full transition-all"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          此操作将永久删除该线索，无法恢复。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onDelete(lead.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          确认删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 };

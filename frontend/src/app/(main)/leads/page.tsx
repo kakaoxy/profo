@@ -10,7 +10,7 @@ interface PageProps {
     search?: string;
     statuses?: string;
     district?: string;
-    leadId?: string; // 用于从其他页面跳转时自动打开详情抽屉
+    leadId?: string;
   }>;
 }
 
@@ -100,7 +100,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const leads: Lead[] = (data?.items || []).map(mapBackendToFrontend);
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-slate-50/50">
+    <div className="min-h-screen bg-slate-50/50">
       <LeadsView initialLeads={leads} initialSelectedLeadId={params.leadId} />
     </div>
   );
