@@ -12,29 +12,29 @@ import { ActionCell } from "./_components/action-cell";
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
 
-// 优化配色：无边框风格，色彩更纯粹
+// 使用 types.ts 中定义的状态配置，转换为 Badge 所需的 className 格式
 const statusConfig: Record<string, { label: string; className: string }> = {
   "在途": {
-    label: "在途",
+    label: MARKETING_PROJECT_STATUS_CONFIG["在途"].label,
     className: "bg-blue-500 text-white hover:bg-blue-600",
   },
   "在售": {
-    label: "在售",
+    label: MARKETING_PROJECT_STATUS_CONFIG["在售"].label,
     className: "bg-emerald-500 text-white hover:bg-emerald-600",
   },
   "已售": {
-    label: "已售",
+    label: MARKETING_PROJECT_STATUS_CONFIG["已售"].label,
     className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
   },
 };
 
 const publishStatusConfig: Record<string, { label: string; className: string }> = {
   "草稿": {
-    label: "草稿",
+    label: PUBLISH_STATUS_CONFIG["草稿"].label,
     className: "bg-amber-500 text-white hover:bg-amber-600",
   },
   "发布": {
-    label: "已发布",
+    label: PUBLISH_STATUS_CONFIG["发布"].label,
     className: "bg-emerald-500 text-white hover:bg-emerald-600",
   },
 };

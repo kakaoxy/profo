@@ -208,7 +208,11 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Trash2 className="mr-2 h-4 w-4" />
                       删除
                     </Button>
