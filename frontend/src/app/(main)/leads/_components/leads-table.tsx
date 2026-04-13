@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, LeadStatus } from "../types";
-import { STATUS_CONFIG } from "../constants";
+import { STATUS_STYLE_CONFIG } from "../constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,29 +27,7 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
-// 状态配置 - 复用 constants.ts 中的 STATUS_CONFIG 并映射为无边框纯色风格
-const statusConfig: Record<string, { label: string; className: string }> = {
-  [LeadStatus.PENDING_ASSESSMENT]: {
-    label: STATUS_CONFIG[LeadStatus.PENDING_ASSESSMENT].label,
-    className: "bg-blue-500 text-white",
-  },
-  [LeadStatus.PENDING_VISIT]: {
-    label: STATUS_CONFIG[LeadStatus.PENDING_VISIT].label,
-    className: "bg-orange-500 text-white",
-  },
-  [LeadStatus.VISITED]: {
-    label: STATUS_CONFIG[LeadStatus.VISITED].label,
-    className: "bg-emerald-500 text-white",
-  },
-  [LeadStatus.SIGNED]: {
-    label: STATUS_CONFIG[LeadStatus.SIGNED].label,
-    className: "bg-indigo-500 text-white",
-  },
-  [LeadStatus.REJECTED]: {
-    label: STATUS_CONFIG[LeadStatus.REJECTED].label,
-    className: "bg-slate-300 text-slate-700",
-  },
-};
+
 
 export const LeadsTable: React.FC<LeadsTableProps> = ({
   leads,
@@ -72,7 +50,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
       </thead>
       <tbody className="divide-y divide-slate-100">
         {leads.map((lead) => {
-          const config = statusConfig[lead.status] || {
+          const config = STATUS_STYLE_CONFIG[lead.status] || {
             label: lead.status,
             className: "bg-slate-100 text-slate-600",
           };
