@@ -69,11 +69,11 @@ export function Pagination({
 
   if (totalPages <= 1) {
     return (
-      <div className="px-8 py-5 bg-[#eff4ff]/50 flex items-center justify-between border-t border-[#c0c7d6]/10">
-        <div className="text-xs text-[#707785] font-medium">
+      <div className="px-6 py-4 bg-slate-50 flex items-center justify-between border-t border-slate-200">
+        <div className="text-xs text-slate-500">
           {total > 0 ? (
             <>
-              共 <span className="text-[#0b1c30]">{total}</span> 个房源
+              共 <span className="text-slate-700 font-medium">{total}</span> 个房源
             </>
           ) : (
             <span>暂无数据</span>
@@ -84,11 +84,11 @@ export function Pagination({
   }
 
   return (
-    <div className="px-8 py-5 bg-[#eff4ff]/50 flex items-center justify-between border-t border-[#c0c7d6]/10">
-      <div className="text-xs text-[#707785] font-medium">
+    <div className="px-6 py-4 bg-slate-50 flex items-center justify-between border-t border-slate-200">
+      <div className="text-xs text-slate-500">
         {total > 0 ? (
           <>
-            显示 <span className="text-[#0b1c30]">{startItem} - {endItem}</span> 之 <span className="text-[#0b1c30]">{total}</span> 个房源
+            显示 <span className="text-slate-700 font-medium">{startItem} - {endItem}</span> 之 <span className="text-slate-700 font-medium">{total}</span> 个房源
           </>
         ) : (
           <span>暂无数据</span>
@@ -101,10 +101,10 @@ export function Pagination({
           onClick={handlePrevPage}
           disabled={currentPage <= 1 || isLoading}
           className={cn(
-            "w-9 h-9 flex items-center justify-center rounded-lg border border-[#c0c7d6]/30 transition-all",
+            "w-8 h-8 flex items-center justify-center rounded-md border transition-all",
             currentPage <= 1 || isLoading
-              ? "text-[#c0c7d6] cursor-not-allowed"
-              : "text-[#707785] hover:bg-[#eff4ff] hover:text-[#005daa] hover:border-[#005daa]/30"
+              ? "text-slate-300 cursor-not-allowed border-slate-200"
+              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 border-slate-200"
           )}
           aria-label="上一页"
         >
@@ -114,17 +114,17 @@ export function Pagination({
         {/* 页码按钮 */}
         {paginationItems.map((item, index) => (
           item === "..." ? (
-            <span key={`ellipsis-${index}`} className="px-2 text-[#707785]">...</span>
+            <span key={`ellipsis-${index}`} className="px-2 text-slate-400">...</span>
           ) : (
             <button
               key={item}
               onClick={() => handlePageClick(item as number)}
               disabled={isLoading}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-lg text-sm font-bold transition-all",
+                "w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-all",
                 currentPage === item
-                  ? "bg-[#005daa] text-white shadow-md shadow-[#005daa]/20"
-                  : "text-[#707785] hover:bg-[#eff4ff] hover:text-[#005daa]"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-600 hover:bg-white hover:text-slate-900"
               )}
             >
               {item}
@@ -137,10 +137,10 @@ export function Pagination({
           onClick={handleNextPage}
           disabled={currentPage >= totalPages || isLoading}
           className={cn(
-            "w-9 h-9 flex items-center justify-center rounded-lg border border-[#c0c7d6]/30 transition-all",
+            "w-8 h-8 flex items-center justify-center rounded-md border transition-all",
             currentPage >= totalPages || isLoading
-              ? "text-[#c0c7d6] cursor-not-allowed"
-              : "text-[#707785] hover:bg-[#eff4ff] hover:text-[#005daa] hover:border-[#005daa]/30"
+              ? "text-slate-300 cursor-not-allowed border-slate-200"
+              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 border-slate-200"
           )}
           aria-label="下一页"
         >

@@ -7,6 +7,8 @@ import { HeroGallery } from "./_components/hero-gallery";
 import { PropertySpecs } from "./_components/property-specs";
 import { PropertyInfo } from "./_components/property-info";
 import { PriceSidebar } from "./_components/price-sidebar";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, CheckCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -59,58 +61,30 @@ export default async function ProjectPreviewPage({
   const tags = project.tags?.split(",").filter((tag) => tag.trim() !== "") || [];
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff]">
+    <div className="min-h-screen bg-slate-50/50">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#c0c7d6]/20 px-6 py-4 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link
-            href={`/l4-marketing/projects/${project.id}/edit`}
-            className="flex items-center gap-2 text-[#707785] hover:text-[#005daa] transition-colors font-medium"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m12 19-7-7 7-7" />
-              <path d="M19 12H5" />
-            </svg>
-            <span>返回编辑</span>
+          <Link href={`/l4-marketing/projects/${project.id}/edit`}>
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span>返回编辑</span>
+            </Button>
           </Link>
-          <div className="h-4 w-px bg-[#c0c7d6]/30"></div>
-          <span className="text-sm font-medium text-[#707785]">
+          <div className="h-4 w-px bg-slate-200"></div>
+          <span className="text-sm text-slate-500">
             预览模式：{project.community_name || "未知小区"}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1 rounded-full bg-[#85fa51]/20 text-[#266d00] text-xs font-bold flex items-center gap-1">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
+          <div className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
+            <CheckCircle className="h-3 w-3" />
             {project.publish_status === "发布" ? "已发布" : "待发布"}
           </div>
-          <Link
-            href={`/l4-marketing/projects/${project.id}/edit`}
-            className="bg-[#005daa] hover:bg-[#0075d5] text-white px-6 py-2 rounded-lg font-bold shadow-md transition-all active:scale-95"
-          >
-            立即发布
+          <Link href={`/l4-marketing/projects/${project.id}/edit`}>
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+              立即发布
+            </Button>
           </Link>
         </div>
       </nav>
@@ -129,20 +103,20 @@ export default async function ProjectPreviewPage({
           <div className="lg:col-span-2 space-y-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-[#707785] text-sm font-bold bg-[#eff4ff] px-3 py-1 rounded">
+                <span className="text-slate-500 text-sm font-medium bg-slate-100 px-3 py-1 rounded">
                   小区：{project.community_name || "未知小区"}
                 </span>
               </div>
-              <h1 className="text-4xl font-extrabold text-[#0b1c30] tracking-tight leading-tight">
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
                 {project.title || "未命名房源"}
               </h1>
-              {/* Tags - React 默认转义，XSS 风险已得到控制 */}
+              {/* Tags */}
               {tags.length > 0 ? (
-                <div className="mt-6 flex flex-wrap gap-3">
+                <div className="mt-6 flex flex-wrap gap-2">
                   {tags.slice(0, 6).map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-[#85fa51]/20 text-[#266d00] border border-[#266d00]/10 px-3 py-1 rounded-full text-xs font-medium"
+                      className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-medium"
                     >
                       {tag}
                     </span>
@@ -183,12 +157,12 @@ export default async function ProjectPreviewPage({
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#eff4ff] border-t border-[#c0c7d6]/10 mt-12 py-12">
+      <footer className="bg-slate-100 border-t border-slate-200 mt-12 py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="text-lg font-bold text-[#707785] mb-4">
+          <div className="text-lg font-bold text-slate-600 mb-4">
             Estate Logic
           </div>
-          <p className="text-[#707785] text-sm max-w-md mx-auto">
+          <p className="text-slate-500 text-sm max-w-md mx-auto">
             房源核心数据预览视图。仅供内部审核和责任人校对使用。
           </p>
         </div>
