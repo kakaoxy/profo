@@ -13,7 +13,7 @@ export const STATUS_CONFIG = {
  * 状态样式配置 - 用于表格和网格组件的纯色背景样式
  * 复用 STATUS_CONFIG 中的 label，统一维护样式
  */
-export const STATUS_STYLE_CONFIG: Record<string, { label: string; className: string }> = {
+export const STATUS_STYLE_CONFIG: Record<LeadStatus, { label: string; className: string }> = {
   [LeadStatus.PENDING_ASSESSMENT]: {
     label: STATUS_CONFIG[LeadStatus.PENDING_ASSESSMENT].label,
     className: "bg-blue-500 text-white",
