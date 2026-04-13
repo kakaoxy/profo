@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, LeadStatus } from "../types";
+import { STATUS_CONFIG } from "../constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,26 +28,26 @@ interface LeadsGridProps {
   onDelete: (id: string) => void;
 }
 
-// 状态配置 - 与 projects 保持一致的无边框纯色风格
+// 状态配置 - 复用 constants.ts 中的 STATUS_CONFIG 并映射为无边框纯色风格
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pending_assessment: {
-    label: "待评估",
+  [LeadStatus.PENDING_ASSESSMENT]: {
+    label: STATUS_CONFIG[LeadStatus.PENDING_ASSESSMENT].label,
     className: "bg-blue-500 text-white",
   },
-  pending_visit: {
-    label: "待看房",
+  [LeadStatus.PENDING_VISIT]: {
+    label: STATUS_CONFIG[LeadStatus.PENDING_VISIT].label,
     className: "bg-orange-500 text-white",
   },
-  visited: {
-    label: "已看房",
+  [LeadStatus.VISITED]: {
+    label: STATUS_CONFIG[LeadStatus.VISITED].label,
     className: "bg-emerald-500 text-white",
   },
-  signed: {
-    label: "已签约",
+  [LeadStatus.SIGNED]: {
+    label: STATUS_CONFIG[LeadStatus.SIGNED].label,
     className: "bg-indigo-500 text-white",
   },
-  rejected: {
-    label: "已驳回",
+  [LeadStatus.REJECTED]: {
+    label: STATUS_CONFIG[LeadStatus.REJECTED].label,
     className: "bg-slate-300 text-slate-700",
   },
 };
