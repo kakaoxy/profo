@@ -48,7 +48,7 @@ export const LIFECYCLE_STEPS = [
  * 带类型守卫的安全访问函数，处理可能无效的状态值
  */
 export function getStatusStyleConfig(status: string): { label: string; className: string } {
-  if (Object.values(LeadStatus).includes(status as LeadStatus)) {
+  if (status in STATUS_STYLE_CONFIG) {
     return STATUS_STYLE_CONFIG[status as LeadStatus];
   }
   return {
