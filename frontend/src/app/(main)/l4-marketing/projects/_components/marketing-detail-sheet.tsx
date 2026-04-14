@@ -31,7 +31,6 @@ import {
 } from "../actions";
 
 import { MarketingInfoSection } from "./detail/marketing-info-section";
-import { PhysicalInfoSection } from "./detail/physical-info-section";
 import { BasicConfigSection } from "./detail/basic-config-section";
 import { PhotosSection } from "./detail/photos-section";
 
@@ -253,17 +252,14 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
               </div>
             ) : (
               <div className="space-y-6">
-                {/* 1. 营销信息 - 核心信息展示 */}
+                {/* 1. 基础信息 - 核心信息展示 */}
                 <MarketingInfoSection project={project} />
 
-                {/* 2. 照片信息 */}
-                <PhotosSection project={project} photos={photos} />
-
-                {/* 3. 基础配置 */}
+                {/* 2. 状态信息 */}
                 <BasicConfigSection project={project} />
 
-                {/* 4. 物理信息（只读） */}
-                <PhysicalInfoSection project={project} />
+                {/* 3. 图片信息 */}
+                <PhotosSection project={project} photos={photos} />
               </div>
             )}
           </div>
