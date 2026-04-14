@@ -252,20 +252,18 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-7 space-y-6">
-                  <MarketingInfoSection
-                    project={project}
-                  />
-                  <PhysicalInfoSection project={project} />
-                </div>
+              <div className="space-y-6">
+                {/* 1. 营销信息 - 核心信息展示 */}
+                <MarketingInfoSection project={project} />
 
-                <div className="lg:col-span-5 space-y-6">
-                  <BasicConfigSection
-                    project={project}
-                  />
-                  <PhotosSection project={project} photos={photos} />
-                </div>
+                {/* 2. 照片信息 */}
+                <PhotosSection project={project} photos={photos} />
+
+                {/* 3. 基础配置 */}
+                <BasicConfigSection project={project} />
+
+                {/* 4. 物理信息（只读） */}
+                <PhysicalInfoSection project={project} />
               </div>
             )}
           </div>
