@@ -1,5 +1,7 @@
 "use client";
 
+import { MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "../../types";
+
 // 状态配置 - 与 projects 保持一致
 export const statusConfig: Record<string, { label: string; className: string }> = {
   "在售": {
@@ -8,7 +10,7 @@ export const statusConfig: Record<string, { label: string; className: string }> 
   },
   "已售": {
     label: "已售",
-    className: "bg-slate-300 text-slate-700",
+    className: "bg-slate-400 text-white",
   },
   "在途": {
     label: "在途",
@@ -27,6 +29,28 @@ export const publishStatusConfig: Record<string, { label: string; className: str
     className: "bg-amber-500 text-white",
   },
 };
+
+// 格式化日期
+export function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("zh-CN");
+}
+
+// 计算相对时间
+export function getRelativeTime(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "今天";
+  if (diffDays === 1) return "昨天";
+  if (diffDays < 7) return `${diffDays} 天前`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} 个月前`;
+  return `${Math.floor(diffDays / 365)} 年前`;
+}
 
 // 格式化价格
 export function formatPrice(value: number | string | undefined | null): string {
@@ -62,4 +86,25 @@ export function getPublishStatusConfig(status: string) {
       className: "bg-slate-100 text-slate-600",
     }
   );
+}
+
+// 获取文件URL
+export function getFileUrl(url: string | undefined | null): string {
+  if (!url) return "";
+
+  // 如果已经是完整的 URL (http/https) 或者是本地预览的 Blob URL，直接返回
+  if (
+    url.startsWith("blob:") ||
+    url.startsWith("http") ||
+    url.startsWith("https") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+
+  // 如果是相对路径，拼接后端 Base URL
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const serverRoot = apiBase.replace(/\/api\/v1\/?$/, "");
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  return `${serverRoot}${cleanPath}`;
 }
