@@ -1,9 +1,9 @@
 "use client";
 
-import React, { memo, useMemo, useState } from "react";
+import React, { memo, useMemo, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ImageIcon, Eye } from "lucide-react";
+import { ImageIcon, Eye, ImageOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,78 @@ import { getFileUrl } from "./utils";
 import { PHOTO_CATEGORY_CONFIG } from "../../types";
 import type { L4MarketingMedia, PhotoCategory } from "../../types";
 import type { PhotosSectionProps } from "./types";
+
+// 单个照片项组件（带加载失败处理）
+interface PhotoItemProps {
+  photo: L4MarketingMedia;
+  onPreview: (photo: L4MarketingMedia) => void;
+}
+
+const PhotoItem = memo(function PhotoItem({ photo, onPreview }: PhotoItemProps) {
+  const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleError = useCallback(() => {
+    setIsError(true);
+    setIsLoading(false);
+  }, []);
+
+  const handleLoad = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  const imageUrl = getFileUrl(photo.file_url || photo.thumbnail_url);
+
+  return (
+    <div
+      className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer"
+      onClick={() => onPreview(photo)}
+    >
+      {isError ? (
+        // 加载失败时的降级显示
+        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+          <ImageOff className="w-8 h-8 text-slate-300 mb-1" />
+          <span className="text-[10px] text-slate-400">加载失败</span>
+        </div>
+      ) : (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt="Photo"
+            className={`object-cover w-full h-full hover:scale-105 transition-transform duration-500 ${
+              isLoading ? 'opacity-0' : 'opacity-100'
+            }`}
+            onError={handleError}
+            onLoad={handleLoad}
+          />
+          
+          {/* 加载占位 */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+              <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-400 rounded-full animate-spin" />
+            </div>
+          )}
+
+          {/* Hover Mask with Preview Icon */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+            <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md transition-opacity" />
+          </div>
+        </>
+      )}
+
+      {/* Sort Order Badge */}
+      <div className="absolute top-1.5 right-1.5">
+        <Badge
+          variant="secondary"
+          className="text-[10px] bg-black/50 text-white border-0 px-1.5 py-0"
+        >
+          #{(photo.sort_order ?? 0) + 1}
+        </Badge>
+      </div>
+    </div>
+  );
+});
 
 // 照片分组显示组件
 interface PhotoGridProps {
@@ -39,33 +111,11 @@ const PhotoGrid = memo(function PhotoGrid({ photos, category, onPreview }: Photo
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
       {filteredPhotos.map((photo) => (
-        <div
+        <PhotoItem
           key={photo.id}
-          className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer"
-          onClick={() => onPreview(photo)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={getFileUrl(photo.file_url || photo.thumbnail_url)}
-            alt="Photo"
-            className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
-          />
-
-          {/* Hover Mask with Preview Icon */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md transition-opacity" />
-          </div>
-
-          {/* Sort Order Badge */}
-          <div className="absolute top-1.5 right-1.5">
-            <Badge
-              variant="secondary"
-              className="text-[10px] bg-black/50 text-white border-0 px-1.5 py-0"
-            >
-              #{(photo.sort_order ?? 0) + 1}
-            </Badge>
-          </div>
-        </div>
+          photo={photo}
+          onPreview={onPreview}
+        />
       ))}
     </div>
   );
