@@ -39,34 +39,33 @@ const PhotoGrid = memo(function PhotoGrid({ photos, category, onPreview }: Photo
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
       {filteredPhotos.map((photo) => (
-        <Dialog key={photo.id}>
-          <div className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getFileUrl(photo.file_url || photo.thumbnail_url)}
-              alt="Photo"
-              className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
-            />
+        <div
+          key={photo.id}
+          className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer"
+          onClick={() => onPreview(photo)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getFileUrl(photo.file_url || photo.thumbnail_url)}
+            alt="Photo"
+            className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
+          />
 
-            {/* Hover Mask with Preview Icon */}
-            <div 
-              className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center"
-              onClick={() => onPreview(photo)}
-            >
-              <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md transition-opacity" />
-            </div>
-
-            {/* Sort Order Badge */}
-            <div className="absolute top-1.5 right-1.5">
-              <Badge
-                variant="secondary"
-                className="text-[10px] bg-black/50 text-white border-0 px-1.5 py-0"
-              >
-                #{(photo.sort_order ?? 0) + 1}
-              </Badge>
-            </div>
+          {/* Hover Mask with Preview Icon */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+            <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md transition-opacity" />
           </div>
-        </Dialog>
+
+          {/* Sort Order Badge */}
+          <div className="absolute top-1.5 right-1.5">
+            <Badge
+              variant="secondary"
+              className="text-[10px] bg-black/50 text-white border-0 px-1.5 py-0"
+            >
+              #{(photo.sort_order ?? 0) + 1}
+            </Badge>
+          </div>
+        </div>
       ))}
     </div>
   );
