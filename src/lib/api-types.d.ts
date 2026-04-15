@@ -1366,28 +1366,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/l4-marketing/available-projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取L3项目详情
-         * @description 获取单个L3项目详情
-         *
-         *     用于项目选择器中预览项目信息
-         */
-        get: operations["get_l3_project_detail_api_v1_admin_l4_marketing_available_projects__project_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/l4-marketing/projects/import-from-l3/{project_id}": {
         parameters: {
             query?: never;
@@ -1395,6 +1373,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
          * 从L3项目导入数据
          * @description 从L3项目导入数据
@@ -1403,8 +1383,6 @@ export interface paths {
          *     采用写时复制(CoW)模式，L4独立存储数据
          */
         post: operations["import_from_l3_project_api_v1_admin_l4_marketing_projects_import_from_l3__project_id__post"];
-        put?: never;
-        get?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7009,37 +6987,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["L3ProjectListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_l3_project_detail_api_v1_admin_l4_marketing_available_projects__project_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["L3ProjectBriefResponse"];
                 };
             };
             /** @description Validation Error */
