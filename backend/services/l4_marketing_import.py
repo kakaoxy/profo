@@ -179,6 +179,9 @@ class L4MarketingImportService:
                     floor = room_number[:-2]  # 去掉后两位，前面是楼层
                     try:
                         floor_num = int(floor)
+                        # 确保楼层数 >= 1，处理如 '001' 这种特殊情况
+                        if floor_num == 0 and len(room_number) == 3:
+                            floor_num = 1  # 3位房间号且楼层为0时，默认为1层
                         if 1 <= floor_num <= 100:
                             return f"{floor_num}层"
                     except ValueError:
