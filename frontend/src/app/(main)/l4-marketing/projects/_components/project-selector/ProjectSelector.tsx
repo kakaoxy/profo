@@ -110,7 +110,7 @@ export function ProjectSelector({
         </DialogHeader>
 
         <div className="relative px-6">
-          <Search className="absolute left-9 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="搜索小区名称..."
             value={searchQuery}
@@ -120,7 +120,7 @@ export function ProjectSelector({
           {searchQuery && (
             <button
               onClick={handleClearSearch}
-              className="absolute right-9 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               <X className="w-4 h-4" />
             </button>
