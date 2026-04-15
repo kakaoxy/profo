@@ -46,7 +46,7 @@ class ImportableMediaResponse(BaseModel):
     """可导入的媒体资源信息"""
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(..., description="媒体ID")
+    id: str = Field(..., description="媒体ID")
     file_url: str = Field(..., description="文件URL")
     thumbnail_url: Optional[str] = Field(None, description="缩略图URL")
     photo_category: str = Field(..., description="照片分类")

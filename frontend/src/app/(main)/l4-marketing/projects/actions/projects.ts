@@ -227,7 +227,7 @@ export async function importFromL3ProjectAction(projectId: string) {
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(
-      "/api/v1/admin/l4-marketing/projects/import-from-l3/{project_id}" as any,
+      "/api/v1/admin/l4-marketing/projects/import-from-l3/{project_id}",
       {
         params: { path: { project_id: projectId } },
       },

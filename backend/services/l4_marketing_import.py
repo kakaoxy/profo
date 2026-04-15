@@ -27,12 +27,12 @@ class L4MarketingImportService:
         project_id: str
     ) -> Optional[L3ProjectImportResponse]:
         """从L3项目导入数据
-        
+
         采用写时复制模式，将L3项目数据转换为L4营销房源初始数据
-        
+
         Args:
             project_id: L3项目ID
-            
+
         Returns:
             导入数据响应，项目不存在返回None
         """
@@ -59,13 +59,16 @@ class L4MarketingImportService:
         # 获取可导入的媒体资源
         available_media = self._get_available_media(project_id)
 
+        # 从地址提取楼层信息
+        floor_info = self._extract_floor_info(project.address)
+
         return L3ProjectImportResponse(
             project_id=project_id,
             community_id=community_id,
             community_name=project.community_name or "",
             layout=project.layout,
             orientation=project.orientation,
-            floor_info=None,  # L3项目无楼层信息，需用户补充
+            floor_info=floor_info,
             area=area,
             total_price=total_price,
             unit_price=unit_price,
@@ -132,3 +135,53 @@ class L4MarketingImportService:
             )
             for idx, photo in enumerate(photos)
         ]
+
+    def _extract_floor_info(self, address: Optional[str]) -> Optional[str]:
+        """从地址中提取楼层信息
+
+        尝试从地址中解析楼层信息，例如：
+        - "1号楼2单元301室" -> "3层"
+        - "12号楼1单元1502室" -> "15层"
+
+        Args:
+            address: 物业地址
+
+        Returns:
+            提取的楼层信息，无法提取时返回None
+        """
+        if not address:
+            return None
+
+        import re
+
+        # 匹配房间号模式：通常是3-4位数字，前1-2位表示楼层
+        # 如 301 -> 3层, 1502 -> 15层, 0801 -> 8层
+        patterns = [
+            r'(\d+)号楼.*?(\d+)单元(\d{3,4})室',  # 1号楼2单元301室
+            r'(\d+)栋.*?(\d+)单元(\d{3,4})室',   # 1栋2单元301室
+            r'(\d+)[栋号楼].*?(\d{3,4})[室号]',    # 1号楼301室
+            r'(\d{3,4})室',                       # 301室
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, address)
+            if match:
+                groups = match.groups()
+                if len(groups) >= 3:
+                    room_number = groups[2]
+                elif len(groups) >= 2:
+                    room_number = groups[1]
+                else:
+                    room_number = groups[0]
+
+                # 根据房间号计算楼层
+                if len(room_number) >= 3:
+                    floor = room_number[:-2]  # 去掉后两位，前面是楼层
+                    try:
+                        floor_num = int(floor)
+                        if 1 <= floor_num <= 100:
+                            return f"{floor_num}层"
+                    except ValueError:
+                        continue
+
+        return None

@@ -66,8 +66,8 @@ def sample_project_data():
         "decoration_style": "现代简约",
         "publish_status": PublishStatus.DRAFT,
         "project_status": MarketingProjectStatus.IN_PROGRESS,
-        "project_id": None,
-        "consultant_id": 1
+        "consultant_id": None,
+        "project_id": None
     }
 
 
@@ -241,25 +241,25 @@ class TestL4MarketingProjectFields:
         assert status_col['type'].__class__.__name__ in ['VARCHAR', 'String', 'ENUM', 'Enum']
         assert status_col['nullable'] == False
 
-    def test_project_id_field_is_integer_nullable(self, db):
-        """测试project_id字段为整数类型、允许为空（软引用）"""
+    def test_project_id_field_is_string36_nullable(self, db):
+        """测试project_id字段为String(36)类型、允许为空（软引用L3项目ID）"""
         inspector = inspect(engine)
         columns = {col['name']: col for col in inspector.get_columns('l4_marketing_projects')}
-        
+
         assert 'project_id' in columns
         project_id_col = columns['project_id']
-        assert project_id_col['type'].__class__.__name__ in ['INTEGER', 'Integer']
+        assert project_id_col['type'].__class__.__name__ in ['VARCHAR', 'String']
         assert project_id_col['nullable'] == True
 
-    def test_consultant_id_field_is_integer_not_null(self, db):
-        """测试consultant_id字段为整数类型、非空（软引用User表）"""
+    def test_consultant_id_field_is_string36_nullable(self, db):
+        """测试consultant_id字段为String(36)类型、允许为空（软引用User表）"""
         inspector = inspect(engine)
         columns = {col['name']: col for col in inspector.get_columns('l4_marketing_projects')}
-        
+
         assert 'consultant_id' in columns
         consultant_id_col = columns['consultant_id']
-        assert consultant_id_col['type'].__class__.__name__ in ['INTEGER', 'Integer']
-        assert consultant_id_col['nullable'] == False
+        assert consultant_id_col['type'].__class__.__name__ in ['VARCHAR', 'String']
+        assert consultant_id_col['nullable'] == True
 
     def test_created_at_field_is_datetime_not_null(self, db):
         """测试created_at字段为日期时间类型、非空"""
@@ -377,7 +377,7 @@ class TestL4MarketingProjectSchema:
             "area": 120.50,
             "total_price": 500.00,
             "title": "精装修三居室",
-            "consultant_id": 1
+            "consultant_id": "uuid-consultant-123"
         }
         schema = L4MarketingProjectCreate(**valid_data)
         assert schema.community_id == 1
@@ -393,7 +393,7 @@ class TestL4MarketingProjectSchema:
             "area": 120.50,
             "total_price": 500.00,
             "title": "精装修三居室",
-            "consultant_id": 1
+            "consultant_id": "uuid-consultant-123"
         }
         with pytest.raises(Exception):
             L4MarketingProjectCreate(**invalid_data)
@@ -408,7 +408,7 @@ class TestL4MarketingProjectSchema:
             "area": 120.50,
             "total_price": 500.00,
             "title": "x" * 256,  # 超过255字符
-            "consultant_id": 1
+            "consultant_id": "uuid-consultant-123"
         }
         with pytest.raises(Exception):
             L4MarketingProjectCreate(**invalid_data)
@@ -435,7 +435,7 @@ class TestL4MarketingProjectSchema:
             "total_price": Decimal("500.00"),
             "unit_price": Decimal("4.15"),
             "title": "精装修三居室",
-            "consultant_id": 1,
+            "consultant_id": "uuid-consultant-123",
             "publish_status": "草稿",
             "project_status": "在途",
             "sort_order": 0,
@@ -510,37 +510,37 @@ class TestSoftReference:
 
     def test_project_id_can_reference_l3_project(self, db, sample_project_data):
         """测试project_id可以引用L3项目"""
-        sample_project_data['project_id'] = 123
+        sample_project_data['project_id'] = "uuid-l3-project-123"
         project = L4MarketingProject(**sample_project_data)
         db.add(project)
         db.commit()
         db.refresh(project)
-        
-        assert project.project_id == 123
+
+        assert project.project_id == "uuid-l3-project-123"
 
     def test_soft_reference_does_not_enforce_integrity(self, db, sample_project_data):
         """测试软引用不强制外键完整性"""
         # 可以引用不存在的L3项目ID
-        sample_project_data['project_id'] = 99999  # 不存在的ID
+        sample_project_data['project_id'] = "non-existent-uuid-99999"  # 不存在的ID
         project = L4MarketingProject(**sample_project_data)
         db.add(project)
         db.commit()
         db.refresh(project)
-        
+
         # 应该成功保存，不会因为外键约束而失败
-        assert project.project_id == 99999
+        assert project.project_id == "non-existent-uuid-99999"
 
     def test_consultant_id_references_user_table(self, db, sample_project_data):
         """测试consultant_id软引用User表"""
         # consultant_id是User表的软引用，可以引用不存在的用户ID
-        sample_project_data['consultant_id'] = 99999  # 不存在的用户ID
+        sample_project_data['consultant_id'] = "non-existent-user-uuid-99999"  # 不存在的用户ID
         project = L4MarketingProject(**sample_project_data)
         db.add(project)
         db.commit()
         db.refresh(project)
-        
+
         # 应该成功保存，不会因为外键约束而失败
-        assert project.consultant_id == 99999
+        assert project.consultant_id == "non-existent-user-uuid-99999"
 
 
 # ============================================================================

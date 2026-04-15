@@ -4,7 +4,9 @@ L4 市场营销层导入路由
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import Field
 from sqlalchemy.orm import Session
+import re
 
 from db import get_db
 from dependencies.auth import get_current_operator_user
@@ -105,18 +107,32 @@ async def get_l3_project_detail(
 # L3 项目导入 API
 # ============================================================================
 
+def validate_uuid(project_id: str) -> str:
+    """验证UUID格式"""
+    uuid_pattern = re.compile(
+        r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$',
+        re.IGNORECASE
+    )
+    if not uuid_pattern.match(project_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="项目ID格式无效，应为UUID格式"
+        )
+    return project_id
+
+
 @router.post(
     "/projects/import-from-l3/{project_id}",
     response_model=L3ProjectImportResponse,
     summary="从L3项目导入数据"
 )
 async def import_from_l3_project(
-    project_id: str,
+    project_id: str = Depends(validate_uuid),
     query_service: L4MarketingQueryService = Depends(get_query_service),
     import_service: L4MarketingImportService = Depends(get_import_service)
 ) -> L3ProjectImportResponse:
     """从L3项目导入数据
-    
+
     根据L3项目ID获取可导入的数据，用于创建营销房源
     采用写时复制(CoW)模式，L4独立存储数据
     """
