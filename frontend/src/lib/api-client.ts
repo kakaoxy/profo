@@ -21,7 +21,7 @@ async function tryRefreshTokenClient(): Promise<boolean> {
       // 调用后端 API 进行刷新 (需要 refresh_token 在 cookie 中)
       // 由于 refresh_token 是 httpOnly，客户端无法直接读取
       // 我们需要通过后端 API 路由来处理
-      const response = await fetch("/api/v1/auth/refresh", {
+      const response = await fetch("/api/auth/refresh", {
         method: "POST",
         credentials: "include", // 重要：携带 cookies
       });
@@ -46,6 +46,23 @@ async function tryRefreshTokenClient(): Promise<boolean> {
 }
 
 /**
+ * 自定义中间件：确保请求携带 credentials
+ *
+ * [安全修复] 所有请求必须携带 httpOnly Cookie
+ */
+const credentialsMiddleware: Middleware = {
+  async onRequest({ request }) {
+    // 确保请求携带 cookies
+    // 注意：token 已由 httpOnly Cookie 自动携带，无需手动设置 Authorization
+    // 克隆请求并设置 credentials
+    const newRequest = new Request(request, {
+      credentials: "include",
+    });
+    return newRequest;
+  },
+};
+
+/**
  * 自定义中间件：处理 Token 注入和全局错误拦截
  *
  * [安全修复] 不再从 localStorage 读取 token
@@ -53,14 +70,7 @@ async function tryRefreshTokenClient(): Promise<boolean> {
  * 中间件仅处理 401 刷新逻辑
  */
 const authMiddleware: Middleware = {
-  // 1. 请求拦截器：确保携带 credentials
-  async onRequest({ request }) {
-    // 确保请求携带 cookies
-    // 注意：token 已由 httpOnly Cookie 自动携带，无需手动设置 Authorization
-    return request;
-  },
-
-  // 2. 响应拦截器：全局错误处理 + 自动刷新
+  // 响应拦截器：全局错误处理 + 自动刷新
   async onResponse({ response, request }) {
     // 处理 401 Unauthorized
     if (response.status === 401) {
@@ -85,12 +95,32 @@ const authMiddleware: Middleware = {
         // [修复] 重新构造请求，确保使用新的cookie
         console.log("🔁 [Client] Token 刷新成功，重试原始请求...");
 
-        // 克隆请求并确保携带 credentials
-        const newRequest = new Request(request, {
+        // [关键修复] 使用 client 重新发起请求，而不是直接使用 fetch
+        // 这样可以确保请求经过完整的中间件链
+        const method = request.method.toUpperCase();
+        const requestUrl = new URL(request.url);
+        
+        // 提取路径部分（去掉 baseUrl）
+        const baseUrl = new URL(API_BASE_URL);
+        let path = requestUrl.pathname;
+        if (path.startsWith(baseUrl.pathname)) {
+          path = path.slice(baseUrl.pathname.length);
+        }
+        
+        // 重新使用 client 发起请求
+        // 注意：这里我们直接使用 fetch 但确保携带 credentials
+        // 由于 token 已经刷新，cookie 中已经包含新的 access_token
+        const retryResponse = await fetch(request.url, {
+          method: method,
+          headers: request.headers,
+          body: request.body,
           credentials: "include",
+          // 保持相同的 mode 和 cache 设置
+          mode: request.mode,
+          cache: request.cache,
         });
 
-        return fetch(newRequest);
+        return retryResponse;
       }
 
       // 刷新失败，执行登出逻辑
@@ -121,5 +151,7 @@ export const client = createClient<paths>({
   baseUrl: API_BASE_URL,
 });
 
-// [修复] 使用 .use() 方法注册中间件
+// 注册中间件：credentials 中间件必须先注册，确保所有请求携带 cookie
+client.use(credentialsMiddleware);
+// 注册认证中间件，处理 401 刷新
 client.use(authMiddleware);

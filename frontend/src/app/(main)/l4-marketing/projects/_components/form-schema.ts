@@ -37,6 +37,9 @@ export const formSchema = z.object({
 
   // 关联 - consultant_id 为 UUID 字符串，对应 User 表的 id 字段
   consultant_id: z.string().trim().min(1).max(36).optional(),
+
+  // 关联L3项目ID（软引用）
+  project_id: z.string().optional(),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -201,5 +204,24 @@ export function projectToFormValues(project: Record<string, unknown>): FormValue
     publish_status: (project.publish_status as "草稿" | "发布") || "草稿",
     project_status: (project.project_status as "在途" | "在售" | "已售") || "在途",
     consultant_id: (project.consultant_id as string) || undefined,
+    project_id: (project.project_id as string) || undefined,
+  };
+}
+
+// 将导入数据转换为表单值
+export function importDataToFormValues(data: Record<string, unknown>): Partial<FormValues> {
+  return {
+    project_id: (data.project_id as string) || undefined,
+    community_id: (data.community_id as number) || 0,
+    community_name: (data.community_name as string) || "",
+    layout: (data.layout as string) || "",
+    orientation: (data.orientation as string) || "",
+    floor_info: (data.floor_info as string) || "",
+    area: typeof data.area === "string" ? parseFloat(data.area) : (data.area as number) || 0,
+    total_price: typeof data.total_price === "string" ? parseFloat(data.total_price) : (data.total_price as number) || 0,
+    unit_price: typeof data.unit_price === "string" ? parseFloat(data.unit_price) : (data.unit_price as number) || undefined,
+    title: (data.title as string) || "",
+    tags: (data.tags as string)?.split(",").filter(Boolean) || [],
+    decoration_style: (data.decoration_style as string) || "",
   };
 }

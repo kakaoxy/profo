@@ -80,7 +80,7 @@ class L4MarketingProject(BaseModel):
     )
 
     # 软引用关联
-    project_id = Column(Integer, nullable=True, comment="关联L3项目ID(软引用)，可为空表示独立项目")
+    project_id = Column(String(36), nullable=True, comment="关联L3项目ID(软引用)，可为空表示独立项目")
     consultant_id = Column(String(36), nullable=True, comment="关联顾问ID(软引用User表)，User表id为String(36) UUID")
 
     # 逻辑删除

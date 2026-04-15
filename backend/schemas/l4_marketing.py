@@ -112,7 +112,7 @@ class L4MarketingProjectBase(BaseModel):
     project_status: str = Field(default=MarketingProjectStatus.IN_PROGRESS, description="项目状态: 在途/在售/已售")
 
     # 关联
-    project_id: Optional[int] = Field(None, description="关联L3项目ID(软引用)，可为空")
+    project_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，可为空，UUID字符串")
     consultant_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
 
     @field_validator("images", mode="before")
@@ -168,7 +168,7 @@ class L4MarketingProjectUpdate(BaseModel):
     project_status: Optional[str] = Field(None, description="项目状态: 在途/在售/已售")
 
     # 关联
-    project_id: Optional[int] = None
+    project_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，UUID字符串")
     consultant_id: Optional[str] = Field(None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
 
 
@@ -204,7 +204,7 @@ class L4MarketingProjectResponse(BaseModel):
     project_status: str
 
     # 关联
-    project_id: Optional[int] = None
+    project_id: Optional[str] = None
     consultant_id: Optional[str] = None
 
     # 系统字段
@@ -262,6 +262,6 @@ class L4MarketingProjectQuery(BaseModel):
     publish_status: Optional[str] = None
     project_status: Optional[str] = None
     consultant_id: Optional[str] = None
-    project_id: Optional[int] = None
+    project_id: Optional[str] = None
     decoration_style: Optional[str] = None
 
