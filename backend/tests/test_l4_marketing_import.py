@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from models import Base, Project, ProjectContract, ProjectSale, RenovationPhoto
+from models.base import ProjectStatus
 from models.l4_marketing import L4MarketingProject
 from services.l4_marketing_query import L4MarketingQueryService
 from services.l4_marketing_import import L4MarketingImportService
@@ -45,11 +46,11 @@ def sample_l3_project(db):
         area=Decimal("120.50"),
         layout="三室两厅",
         orientation="南北通透",
-        status="签约"
+        status=ProjectStatus.SIGNING
     )
     db.add(project)
     db.commit()
-    
+
     # 添加合同
     contract = ProjectContract(
         project_id=project.id,
@@ -58,7 +59,7 @@ def sample_l3_project(db):
     )
     db.add(contract)
     db.commit()
-    
+
     return project
 
 
@@ -100,14 +101,14 @@ class TestL4MarketingQueryService:
                 name=f"项目{i}",
                 community_name=f"小区{i}",
                 address=f"地址{i}",
-                status="签约"
+                status=ProjectStatus.SIGNING
             )
             db.add(project)
         db.commit()
-        
+
         service = L4MarketingQueryService(db)
         items, total = service.get_available_l3_projects(page=1, page_size=2)
-        
+
         assert total == 5
         assert len(items) == 2
 
@@ -159,17 +160,16 @@ class TestL4MarketingImportService:
         # 添加媒体资源
         photo = RenovationPhoto(
             project_id=sample_l3_project.id,
-            file_url="https://example.com/photo.jpg",
-            thumbnail_url="https://example.com/thumb.jpg",
-            renovation_stage="水电",
-            sort_order=1
+            url="https://example.com/photo.jpg",
+            stage="水电",
+            description="测试照片"
         )
         db.add(photo)
         db.commit()
-        
+
         service = L4MarketingImportService(db)
         result = service.import_from_l3_project("test-project-001")
-        
+
         assert len(result.available_media) == 1
         assert result.available_media[0].file_url == "https://example.com/photo.jpg"
 
@@ -192,7 +192,7 @@ class TestL4MarketingImportService:
     def test_generate_title(self, db):
         """测试标题生成逻辑"""
         service = L4MarketingImportService(db)
-        
+
         # 完整信息
         project = Project(
             community_name="小区A",
@@ -202,13 +202,55 @@ class TestL4MarketingImportService:
         title = service._generate_title(project)
         assert "小区A" in title
         assert "三室" in title
-        
+
         # 只有小区名
         project = Project(community_name="小区B")
         title = service._generate_title(project)
         assert title == "小区B"
-        
+
         # 无信息
         project = Project()
         title = service._generate_title(project)
         assert title == "未命名房源"
+
+    def test_extract_floor_info(self, db):
+        """测试楼层信息提取"""
+        service = L4MarketingImportService(db)
+
+        # 标准格式：X号楼X单元XXX室
+        assert service._extract_floor_info("1号楼2单元301室") == "3层"
+        assert service._extract_floor_info("12号楼1单元1502室") == "15层"
+        assert service._extract_floor_info("8号楼3单元0801室") == "8层"
+
+        # 栋/号楼格式
+        assert service._extract_floor_info("1栋2单元501室") == "5层"
+        assert service._extract_floor_info("5号楼201室") == "2层"
+
+        # 只有房间号
+        assert service._extract_floor_info("301室") == "3层"
+        assert service._extract_floor_info("1502室") == "15层"
+
+        # 无法提取的情况
+        assert service._extract_floor_info("") is None
+        assert service._extract_floor_info(None) is None
+        assert service._extract_floor_info("无具体地址") is None
+
+    def test_import_with_floor_info(self, db):
+        """测试导入时包含楼层信息"""
+        project = Project(
+            id="test-floor-project",
+            name="测试楼层项目",
+            community_name="测试小区",
+            address="5号楼2单元1203室",
+            area=Decimal("100.00"),
+            layout="两室一厅",
+            status=ProjectStatus.SIGNING
+        )
+        db.add(project)
+        db.commit()
+
+        service = L4MarketingImportService(db)
+        result = service.import_from_l3_project("test-floor-project")
+
+        assert result is not None
+        assert result.floor_info == "12层"
