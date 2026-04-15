@@ -104,14 +104,13 @@ export function ProjectSelector({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] sm:max-h-[80vh] grid-rows-[auto_auto_1fr_auto] gap-0 overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>选择关联项目</DialogTitle>
         </DialogHeader>
 
-        {/* 搜索框 */}
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="relative px-6">
+          <Search className="absolute left-9 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="搜索小区名称..."
             value={searchQuery}
@@ -121,15 +120,14 @@ export function ProjectSelector({
           {searchQuery && (
             <button
               onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-9 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* 项目列表 */}
-        <ScrollArea className="flex-1 my-4 -mx-6 px-6">
+        <ScrollArea className="min-h-0 overflow-hidden py-2 px-6">
           <div className="space-y-3">
             {projects.map((project) => (
               <ProjectListItem
@@ -164,9 +162,8 @@ export function ProjectSelector({
           </div>
         </ScrollArea>
 
-        {/* 底部操作 */}
-        <div className="flex items-center justify-between pt-4 border-t">
-          <div className="text-sm text-slate-500">
+        <div className="flex items-center justify-between gap-2 px-6 py-3 border-t bg-white">
+          <div className="text-sm text-slate-500 truncate min-w-0 flex-1">
             {selectedProject ? (
               <span>
                 已选择: <span className="font-medium text-slate-900">{selectedProject.name}</span>
@@ -175,13 +172,14 @@ export function ProjectSelector({
               "请选择项目"
             )}
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose}>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button variant="outline" onClick={onClose} size="sm">
               取消
             </Button>
             <Button
               onClick={handleConfirm}
               disabled={!selectedProjectId}
+              size="sm"
               className="bg-blue-600 hover:bg-blue-700"
             >
               确认选择

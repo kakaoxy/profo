@@ -51,16 +51,15 @@ export function ImportPreview({
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] sm:max-h-[85vh] grid-rows-[auto_1fr_auto] gap-0 overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>导入数据预览</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 my-4 -mx-6 px-6">
+        <ScrollArea className="min-h-0 overflow-hidden py-2 px-6">
           <div className="space-y-6">
-            {/* 基本信息 */}
             <Section title="基本信息">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InfoItem
                   icon={<Building2 className="w-4 h-4" />}
                   label="小区名称"
@@ -87,9 +86,8 @@ export function ImportPreview({
               </div>
             </Section>
 
-            {/* 面积与价格 */}
             <Section title="面积与价格">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <InfoItem
                   icon={<Maximize className="w-4 h-4" />}
                   label="面积"
@@ -113,7 +111,6 @@ export function ImportPreview({
               </div>
             </Section>
 
-            {/* 营销信息 */}
             <Section title="营销信息">
               <div className="p-3 bg-slate-50 rounded-lg">
                 <p className="text-sm font-medium text-slate-700">标题</p>
@@ -121,7 +118,6 @@ export function ImportPreview({
               </div>
             </Section>
 
-            {/* 媒体资源 */}
             {data.available_media.length > 0 && (
               <Section
                 title={`媒体资源 (${selectedMedia.size}/${data.available_media.length})`}
@@ -134,7 +130,7 @@ export function ImportPreview({
                   <span className="text-sm text-slate-600">全选</span>
                 </div>
 
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {data.available_media.map((media) => (
                     <MediaItem
                       key={media.id}
@@ -149,15 +145,15 @@ export function ImportPreview({
           </div>
         </ScrollArea>
 
-        {/* 底部操作 */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onCancel} disabled={loading}>
+        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t bg-white">
+          <Button variant="outline" onClick={onCancel} disabled={loading} size="sm">
             取消
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700"
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
           >
             {loading ? "导入中..." : "确认导入"}
           </Button>
