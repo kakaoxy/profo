@@ -71,6 +71,8 @@ export default async function MarketingProjectsPage({
   const size = Number(getSearchParam(params?.size, "20")) || 20;
   const publishStatus = getSearchParam(params?.publish_status, "");
   const projectStatus = getSearchParam(params?.project_status, "");
+  const consultantId = getSearchParam(params?.consultant_id, "");
+  const communityId = getSearchParam(params?.community_id, "");
 
   const client = await fetchClient();
   const { data, error } = await client.GET("/api/v1/admin/l4-marketing/projects", {
@@ -80,6 +82,8 @@ export default async function MarketingProjectsPage({
         page_size: size,
         publish_status: publishStatus || undefined,
         project_status: projectStatus || undefined,
+        consultant_id: consultantId ? Number(consultantId) : undefined,
+        community_id: communityId ? Number(communityId) : undefined,
       } satisfies L4MarketingProjectsQuery,
     },
   });

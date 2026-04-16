@@ -24,14 +24,15 @@ interface MarketingViewProps {
   pageSize: number;
 }
 
-const STATUS_FILTERS = {
-  published: (p: L4MarketingProject) => p.publish_status === "发布",
-  draft: (p: L4MarketingProject) => p.publish_status === "草稿",
-  for_sale: (p: L4MarketingProject) => p.project_status === "在售",
-  sold: (p: L4MarketingProject) => p.project_status === "已售",
-  in_progress: (p: L4MarketingProject) => p.project_status === "在途",
-  all: () => true,
-} as const;
+// 状态过滤映射：将前端 tab 值映射到后端 API 参数
+const STATUS_FILTER_MAP: Record<string, { project_status?: string; publish_status?: string }> = {
+  all: {},
+  in_progress: { project_status: "在途" },
+  for_sale: { project_status: "在售" },
+  sold: { project_status: "已售" },
+  published: { publish_status: "发布" },
+  draft: { publish_status: "草稿" },
+};
 
 const createLayoutFilter = (layoutFilter: string) => {
   if (layoutFilter === "all") return () => true;
@@ -64,30 +65,52 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<keyof typeof STATUS_FILTERS>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [layoutFilter, setLayoutFilter] = useState("all");
+  // 从 URL 读取初始状态
+  const initialTab = (searchParams.get("status_tab") as keyof typeof STATUS_FILTER_MAP) || "all";
+  const initialLayout = searchParams.get("layout") || "all";
+  const initialSearch = searchParams.get("search") || "";
+
+  const [activeTab, setActiveTab] = useState<keyof typeof STATUS_FILTER_MAP>(initialTab);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [layoutFilter, setLayoutFilter] = useState(initialLayout);
   const [isPending, startTransition] = useTransition();
   const [isPageLoading, setIsPageLoading] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const statusFilterFn = useMemo(() => STATUS_FILTERS[activeTab], [activeTab]);
+  // 客户端过滤（仅用于户型和搜索，状态过滤已移至服务端）
   const layoutFilterFn = useMemo(() => createLayoutFilter(layoutFilter), [layoutFilter]);
   const searchFilterFn = useMemo(() => createSearchFilter(searchQuery), [searchQuery]);
 
   const filteredData = useMemo(() => {
     return data.filter((project) => {
-      return statusFilterFn(project) && layoutFilterFn(project) && searchFilterFn(project);
+      return layoutFilterFn(project) && searchFilterFn(project);
     });
-  }, [data, statusFilterFn, layoutFilterFn, searchFilterFn]);
+  }, [data, layoutFilterFn, searchFilterFn]);
 
   const totalPages = Math.ceil(total / pageSize);
 
   useEffect(() => {
     setIsPageLoading(false);
   }, [currentPage]);
+
+  const updateUrlParams = useCallback((updates: Record<string, string | undefined>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === undefined || value === "" || value === "all") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+    
+    // 重置到第一页当过滤条件变化时
+    params.set("page", "1");
+    
+    router.push(`/l4-marketing/projects?${params.toString()}`);
+  }, [searchParams, router]);
 
   const handlePageChange = useCallback((page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
@@ -98,16 +121,21 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     router.push(`/l4-marketing/projects?${params.toString()}`);
   }, [currentPage, totalPages, searchParams, router]);
 
-  const handleTabChange = useCallback((tab: keyof typeof STATUS_FILTERS) => {
-    startTransition(() => {
-      setActiveTab(tab);
+  const handleTabChange = useCallback((tab: keyof typeof STATUS_FILTER_MAP) => {
+    setActiveTab(tab);
+    const filterParams = STATUS_FILTER_MAP[tab];
+    updateUrlParams({
+      status_tab: tab === "all" ? undefined : tab,
+      project_status: filterParams.project_status,
+      publish_status: filterParams.publish_status,
     });
-  }, []);
+  }, [updateUrlParams]);
 
   const handleLayoutChange = useCallback((layout: string) => {
     startTransition(() => {
       setLayoutFilter(layout);
     });
+    // 户型过滤仍使用客户端过滤，不更新 URL
   }, []);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,6 +143,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     startTransition(() => {
       setSearchQuery(value);
     });
+    // 搜索使用客户端过滤，不更新 URL
   }, []);
 
   const handleClearSearch = useCallback(() => {
@@ -181,7 +210,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
           {/* Status Tabs */}
           <Tabs
             value={activeTab}
-            onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTERS)}
+            onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTER_MAP)}
             className="w-full sm:w-auto"
           >
             <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg">
