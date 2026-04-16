@@ -1,184 +1,282 @@
 "use client";
 
-import React, { memo, useMemo, useState, useCallback } from "react";
+import React, { memo, useState, useMemo, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ImageIcon, Eye, ImageOff, Upload, Link2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ImageIcon, FolderOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getFileUrl } from "./utils";
-import { PHOTO_CATEGORY_CONFIG, RENOVATION_STAGES } from "../../types";
+import { toast } from "sonner";
+import {
+  DndContext,
+  pointerWithin,
+  DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+
+import { RENOVATION_STAGES } from "../../types";
 import type { L4MarketingMedia, PhotoCategory } from "../../types";
 import type { PhotosSectionProps } from "./types";
+import {
+  deleteL4MarketingMediaAction,
+  updateL4MarketingMediaAction,
+  batchUpdateMediaSortOrderAction,
+} from "../../actions";
 
-// 获取装修阶段标签
-function getRenovationStageLabel(stage?: string | null): string {
-  if (!stage) return "";
-  const found = RENOVATION_STAGES.find((s) => s.value === stage);
-  return found?.label || stage;
-}
+import { ImageUploader } from "../photo-manager/image-uploader";
+import { useImageUpload } from "../photo-manager/use-image-upload";
+import { PhotoCategorySelector } from "../photo-manager/photo-category-selector";
+import { PhotoLibraryPicker } from "../photo-manager/photo-library-picker";
+import { PhotoDragOverlay } from "../photo-manager/photo-drag-overlay";
+import { MarketingPhotoList } from "./marketing-photo-list";
+import { RenovationPhotoList } from "./renovation-photo-list";
 
-// 单个照片项组件（带加载失败处理）
-interface PhotoItemProps {
-  photo: L4MarketingMedia;
-  onPreview: (photo: L4MarketingMedia) => void;
-  showStage?: boolean;
-}
+const CONTAINER_MARKETING = "marketing";
+const CONTAINER_RENOVATION_PREFIX = "renovation-";
 
-const PhotoItem = memo(function PhotoItem({ photo, onPreview, showStage }: PhotoItemProps) {
-  const [isError, setIsError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+type UploadTab = "sync" | "upload";
 
-  const handleError = useCallback(() => {
-    setIsError(true);
-    setIsLoading(false);
-  }, []);
-
-  const handleLoad = useCallback(() => {
-    setIsLoading(false);
-  }, []);
-
-  const imageUrl = getFileUrl(photo.file_url || photo.thumbnail_url);
-  const stageLabel = showStage ? getRenovationStageLabel(photo.renovation_stage) : "";
-
-  return (
-    <div
-      className="aspect-square relative group rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer"
-      onClick={() => onPreview(photo)}
-    >
-      {isError ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
-          <ImageOff className="w-8 h-8 text-slate-300 mb-1" />
-          <span className="text-[10px] text-slate-400">加载失败</span>
-        </div>
-      ) : (
-        <>
-          <img
-            src={imageUrl}
-            alt="Photo"
-            className={`object-cover w-full h-full hover:scale-105 transition-transform duration-500 ${
-              isLoading ? "opacity-0" : "opacity-100"
-            }`}
-            onError={handleError}
-            onLoad={handleLoad}
-          />
-
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
-              <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-400 rounded-full animate-spin" />
-            </div>
-          )}
-
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md transition-opacity" />
-          </div>
-        </>
-      )}
-
-      {/* 装修阶段标签 */}
-      {showStage && stageLabel && (
-        <div className="absolute top-2 left-2">
-          <Badge className="bg-black/60 text-white text-[10px] border-0 px-1.5 py-0">
-            {stageLabel}
-          </Badge>
-        </div>
-      )}
-    </div>
-  );
-});
-
-// 照片网格组件
-interface PhotoGridProps {
-  photos: L4MarketingMedia[];
-  category: PhotoCategory;
-  onPreview: (photo: L4MarketingMedia) => void;
-}
-
-const PhotoGrid = memo(function PhotoGrid({ photos, category, onPreview }: PhotoGridProps) {
-  const filteredPhotos = useMemo(() => {
-    return photos
-      .filter((p) => p.photo_category === category)
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  }, [photos, category]);
-
-  if (filteredPhotos.length === 0) {
-    return (
-      <div className="text-sm text-slate-400 py-8 text-center bg-slate-50 rounded-lg">
-        暂无{PHOTO_CATEGORY_CONFIG[category].label}
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
-      {filteredPhotos.map((photo) => (
-        <PhotoItem
-          key={photo.id}
-          photo={photo}
-          onPreview={onPreview}
-          showStage={category === "renovation"}
-        />
-      ))}
-    </div>
-  );
-});
-
-// 图片预览对话框组件
-interface PhotoPreviewDialogProps {
-  photo: L4MarketingMedia | null;
-  onClose: () => void;
-}
-
-const PhotoPreviewDialog = memo(function PhotoPreviewDialog({
-  photo,
-  onClose,
-}: PhotoPreviewDialogProps) {
-  if (!photo) return null;
-
-  return (
-    <Dialog open={!!photo} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl border-none bg-transparent shadow-none p-0">
-        <DialogTitle className="sr-only">图片预览</DialogTitle>
-        <img
-          src={getFileUrl(photo.file_url || photo.thumbnail_url)}
-          alt="Large Preview"
-          className="w-full h-auto max-h-[80vh] object-contain rounded-lg shadow-2xl"
-        />
-        {photo.renovation_stage && (
-          <div className="absolute bottom-4 left-4">
-            <Badge className="bg-black/60 text-white border-0 text-xs">
-              {getRenovationStageLabel(photo.renovation_stage)}
-            </Badge>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-});
-
-// 使用 memo 避免不必要的重渲染
 export const PhotosSection = memo(function PhotosSection({
   project,
-  photos,
+  photos: initialPhotos,
 }: PhotosSectionProps) {
-  const [previewPhoto, setPreviewPhoto] = useState<L4MarketingMedia | null>(null);
+  const projectId = project.id;
+  const [photos, setPhotos] = useState<L4MarketingMedia[]>(initialPhotos);
+  const [activeTab, setActiveTab] = useState<UploadTab>("upload");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
+  const [uploadStage, setUploadStage] = useState("other");
+  const [activeId, setActiveId] = useState<number | null>(null);
 
-  // 按类别分组照片
-  const { marketingPhotos, renovationPhotos } = useMemo(
-    () => ({
-      marketingPhotos: photos.filter((p) => p.photo_category === "marketing"),
-      renovationPhotos: photos.filter((p) => p.photo_category === "renovation"),
-    }),
+  React.useEffect(() => {
+    setPhotos(initialPhotos);
+  }, [initialPhotos]);
+
+  const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
+    projectId,
+    uploadCategory,
+    uploadStage,
+    photos,
+    onPhotosChange: setPhotos,
+  });
+
+  const marketingPhotos = useMemo(
+    () =>
+      photos
+        .filter((p) => p.photo_category === "marketing")
+        .sort((a, b) => a.sort_order - b.sort_order),
     [photos]
+  );
+
+  const renovationPhotos = useMemo(
+    () =>
+      photos
+        .filter((p) => p.photo_category === "renovation")
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [photos]
+  );
+
+  const renovationPhotosByStage = useMemo(() => {
+    const grouped: Record<string, L4MarketingMedia[]> = {};
+    renovationPhotos.forEach((photo) => {
+      const stage = photo.renovation_stage || "other";
+      if (!grouped[stage]) grouped[stage] = [];
+      grouped[stage].push(photo);
+    });
+    return grouped;
+  }, [renovationPhotos]);
+
+  const marketingPhotoIds = useMemo(
+    () => marketingPhotos.map((p) => p.id),
+    [marketingPhotos]
+  );
+
+  const getRenovationStageIds = useCallback(
+    (stage: string) => {
+      return (renovationPhotosByStage[stage] || []).map((p) => p.id);
+    },
+    [renovationPhotosByStage]
+  );
+
+  const activePhoto = useMemo(() => {
+    if (!activeId) return null;
+    return photos.find((p) => p.id === activeId) || null;
+  }, [activeId, photos]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const getContainerId = useCallback((photo: L4MarketingMedia): string => {
+    if (photo.photo_category === "marketing") {
+      return CONTAINER_MARKETING;
+    }
+    return `${CONTAINER_RENOVATION_PREFIX}${photo.renovation_stage || "other"}`;
+  }, []);
+
+  const getContainerIdFromOverId = useCallback(
+    (overId: string, allPhotos: L4MarketingMedia[]): string => {
+      if (overId === CONTAINER_MARKETING) return CONTAINER_MARKETING;
+      if (overId.startsWith(CONTAINER_RENOVATION_PREFIX)) return overId;
+
+      const photo = allPhotos.find((p) => p.id.toString() === overId);
+      if (photo) {
+        return getContainerId(photo);
+      }
+
+      return CONTAINER_MARKETING;
+    },
+    [getContainerId]
+  );
+
+  const handleSameContainerSort = useCallback(
+    async (activePhoto: L4MarketingMedia, overId: number) => {
+      const isMarketing = activePhoto.photo_category === "marketing";
+      const currentList = isMarketing
+        ? marketingPhotos
+        : renovationPhotos.filter(
+            (p) => p.renovation_stage === activePhoto.renovation_stage
+          );
+
+      const oldIndex = currentList.findIndex((p) => p.id === activePhoto.id);
+      const newIndex = currentList.findIndex((p) => p.id === overId);
+
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(currentList, oldIndex, newIndex);
+      const updatedPhotos = reordered.map((p, idx) => ({ ...p, sort_order: idx }));
+
+      const newPhotos = photos.map((p) => {
+        const updated = updatedPhotos.find((u) => u.id === p.id);
+        return updated || p;
+      });
+
+      setPhotos(newPhotos);
+
+      const sortUpdates = updatedPhotos.map((p, idx) => ({
+        media_id: p.id,
+        sort_order: idx,
+      }));
+
+      const result = await batchUpdateMediaSortOrderAction(projectId, sortUpdates);
+      if (!result.success) {
+        toast.error("保存排序失败");
+      }
+    },
+    [marketingPhotos, renovationPhotos, photos, projectId]
+  );
+
+  const handleCrossContainerMove = useCallback(
+    async (activePhoto: L4MarketingMedia, targetContainer: string) => {
+      const isMovingToMarketing = targetContainer === CONTAINER_MARKETING;
+      const targetStage = isMovingToMarketing
+        ? null
+        : targetContainer.replace(CONTAINER_RENOVATION_PREFIX, "");
+
+      const updatedPhoto: L4MarketingMedia = {
+        ...activePhoto,
+        photo_category: isMovingToMarketing ? "marketing" : "renovation",
+        renovation_stage: targetStage,
+      };
+
+      const targetList = isMovingToMarketing
+        ? marketingPhotos
+        : renovationPhotos.filter((p) => p.renovation_stage === targetStage);
+
+      const newSortOrder = targetList.length;
+      updatedPhoto.sort_order = newSortOrder;
+
+      const newPhotos = photos.map((p) =>
+        p.id === updatedPhoto.id ? updatedPhoto : p
+      );
+      setPhotos(newPhotos);
+
+      const updateResult = await updateL4MarketingMediaAction(activePhoto.id, {
+        photo_category: updatedPhoto.photo_category,
+        renovation_stage: updatedPhoto.renovation_stage,
+        sort_order: newSortOrder,
+      });
+
+      if (updateResult.success) {
+        toast.success(
+          `已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`
+        );
+      } else {
+        toast.error("移动失败");
+        setPhotos(photos);
+      }
+    },
+    [marketingPhotos, renovationPhotos, photos]
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as number);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveId(null);
+
+      if (!over) return;
+
+      const activePhoto = photos.find((p) => p.id === active.id);
+      if (!activePhoto) return;
+
+      const overId = over.id;
+      const activeContainer = getContainerId(activePhoto);
+      const overContainer = getContainerIdFromOverId(overId.toString(), photos);
+
+      if (activeContainer === overContainer && active.id !== overId) {
+        await handleSameContainerSort(activePhoto, overId as number);
+        return;
+      }
+
+      if (activeContainer !== overContainer) {
+        await handleCrossContainerMove(activePhoto, overContainer);
+      }
+    },
+    [photos, getContainerId, getContainerIdFromOverId, handleSameContainerSort, handleCrossContainerMove]
+  );
+
+  const handleDeletePhoto = useCallback(
+    async (photoId: number) => {
+      if (!confirm("确定删除这张照片吗？")) return;
+
+      try {
+        const result = await deleteL4MarketingMediaAction(photoId);
+        if (result.success) {
+          setPhotos(photos.filter((p) => p.id !== photoId));
+          toast.success("照片已删除");
+        } else {
+          toast.error(result.error || "删除照片失败");
+        }
+      } catch {
+        toast.error("删除照片失败");
+      }
+    },
+    [photos]
+  );
+
+  const handlePhotosAdded = useCallback(
+    (addedPhotos: L4MarketingMedia[]) => {
+      setPhotos((prev) => [...prev, ...addedPhotos]);
+      toast.success(`成功添加 ${addedPhotos.length} 张照片`);
+    },
+    []
   );
 
   return (
     <div className="bg-white rounded-lg border border-slate-200">
-      {/* 头部 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <ImageIcon className="w-4 h-4 text-slate-400" />
@@ -187,66 +285,120 @@ export const PhotosSection = memo(function PhotosSection({
             共 {photos.length} 张
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-7 text-xs">
-            <Upload className="mr-1 h-3 w-3" />
-            上传照片
-          </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs">
-            <Link2 className="mr-1 h-3 w-3" />
-            关联L3照片
-          </Button>
-        </div>
       </div>
 
-      {/* 内容区域 */}
-      <div className="p-4">
-        {photos.length === 0 ? (
+      <div className="p-4 space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload">手动上传</TabsTrigger>
+            <TabsTrigger value="sync">同步照片</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload" className="space-y-4 mt-4">
+            <div className="space-y-3">
+              <div className="text-xs font-medium text-slate-500">
+                选择照片类别
+              </div>
+              <PhotoCategorySelector
+                value={uploadCategory}
+                onChange={setUploadCategory}
+                disabled={isUploading}
+              />
+
+              {uploadCategory === "renovation" && (
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-6 lg:col-span-4">
+                    <div className="text-xs font-medium text-slate-500 mb-1">
+                      装修阶段
+                    </div>
+                    <select
+                      value={uploadStage}
+                      onChange={(e) => setUploadStage(e.target.value)}
+                      disabled={isUploading}
+                      className="w-full h-9 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {RENOVATION_STAGES.map((stage) => (
+                        <option key={stage.value} value={stage.value}>
+                          {stage.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <ImageUploader
+              uploadingFiles={uploadingFiles}
+              isUploading={isUploading}
+              onUpload={uploadFiles}
+              disabled={isUploading}
+            />
+          </TabsContent>
+
+          <TabsContent value="sync" className="space-y-4 mt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs font-medium text-slate-500">
+                从其他项目同步照片
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPickerOpen(true)}
+                className="bg-white border-slate-200 hover:bg-slate-50"
+              >
+                <FolderOpen className="h-4 w-4 mr-1" />
+                从照片库选择
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {photos.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={pointerWithin}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+              <MarketingPhotoList
+                photos={marketingPhotos}
+                photoIds={marketingPhotoIds}
+                onDelete={handleDeletePhoto}
+              />
+
+              <RenovationPhotoList
+                photos={renovationPhotos}
+                activeId={activeId}
+                getStageIds={getRenovationStageIds}
+                onDelete={handleDeletePhoto}
+              />
+            </div>
+
+            <DragOverlay>
+              {activePhoto ? <PhotoDragOverlay photo={activePhoto} /> : null}
+            </DragOverlay>
+          </DndContext>
+        )}
+
+        {photos.length === 0 && !isUploading && (
           <div className="text-center py-8 text-slate-400">
             <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">暂无照片</p>
             <p className="text-xs mt-1">请上传或关联照片</p>
           </div>
-        ) : (
-          <Tabs defaultValue="marketing" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="marketing" className="text-xs">
-                营销照片
-                <Badge variant="secondary" className="ml-1.5 text-[10px] bg-slate-100 text-slate-500">
-                  {marketingPhotos.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="renovation" className="text-xs">
-                改造照片
-                <Badge variant="secondary" className="ml-1.5 text-[10px] bg-slate-100 text-slate-500">
-                  {renovationPhotos.length}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="marketing" className="mt-0">
-              <PhotoGrid
-                photos={photos}
-                category="marketing"
-                onPreview={setPreviewPhoto}
-              />
-            </TabsContent>
-
-            <TabsContent value="renovation" className="mt-0">
-              <PhotoGrid
-                photos={photos}
-                category="renovation"
-                onPreview={setPreviewPhoto}
-              />
-            </TabsContent>
-          </Tabs>
         )}
       </div>
 
-      {/* 图片预览对话框 */}
-      <PhotoPreviewDialog
-        photo={previewPhoto}
-        onClose={() => setPreviewPhoto(null)}
+      <PhotoLibraryPicker
+        projectId={projectId}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        nextSortOrderStart={photos.length}
+        onPhotosAdded={handlePhotosAdded}
+        existingPhotoIds={new Set(photos.map((p) => p.id))}
       />
     </div>
   );
