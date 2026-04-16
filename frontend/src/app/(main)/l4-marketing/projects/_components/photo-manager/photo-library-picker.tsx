@@ -23,7 +23,7 @@ interface PhotoLibraryPickerProps {
   onOpenChange: (open: boolean) => void;
   nextSortOrderStart: number;
   onPhotosAdded: (photos: L4MarketingMedia[]) => void;
-  existingPhotoIds: Set<number>;
+  existingPhotoIds: Set<number | string>;
 }
 
 export function PhotoLibraryPicker({
