@@ -10,27 +10,30 @@ import { cn } from "@/lib/utils";
 import type { ImportPreviewProps, ImportableMedia } from "./types";
 
 /**
+ * API基础URL常量
+ * 从环境变量或配置中获取
+ */
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+/**
  * 获取完整的媒体URL
  * 处理相对路径和绝对路径
  */
 function getFullMediaUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
-  
+
   // 如果已经是完整URL，直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
-  
-  // 如果是以 / 开头的相对路径，添加后端API基础URL
+
+  // 如果是以 / 开头的相对路径，直接拼接
   if (url.startsWith('/')) {
-    // 从环境变量或配置中获取API基础URL
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-    return `${apiBaseUrl}${url}`;
+    return `${API_BASE_URL}${url}`;
   }
-  
+
   // 其他情况，假设是相对路径，添加 /
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-  return `${apiBaseUrl}/${url}`;
+  return `${API_BASE_URL}/${url}`;
 }
 
 /**
