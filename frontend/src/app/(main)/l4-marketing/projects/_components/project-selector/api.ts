@@ -175,15 +175,6 @@ export async function fetchProjectDetail(
     throw new Error("获取项目详情失败：无数据返回");
   }
 
-  // 转换后端返回的数据格式（处理类型不匹配问题）
-  const transformedData = transformProjectData(result.data as Record<string, unknown>);
-
-  // 使用Zod进行运行时类型验证
-  const parseResult = L3ProjectBriefSchema.safeParse(transformedData);
-  if (!parseResult.success) {
-    console.error("项目详情数据格式错误:", parseResult.error);
-    throw new Error("获取项目详情失败：数据格式错误");
-  }
-
-  return parseResult.data;
+  // 转换并验证后端返回的数据格式（transformProjectData内部已包含Zod验证）
+  return transformProjectData(result.data as Record<string, unknown>);
 }
