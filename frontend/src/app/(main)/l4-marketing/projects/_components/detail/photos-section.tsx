@@ -5,6 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, FolderOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -311,18 +318,22 @@ export const PhotosSection = memo(function PhotosSection({
                     <div className="text-xs font-medium text-slate-500 mb-1">
                       装修阶段
                     </div>
-                    <select
+                    <Select
                       value={uploadStage}
-                      onChange={(e) => setUploadStage(e.target.value)}
+                      onValueChange={setUploadStage}
                       disabled={isUploading}
-                      className="w-full h-9 px-3 rounded-md border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      {RENOVATION_STAGES.map((stage) => (
-                        <option key={stage.value} value={stage.value}>
-                          {stage.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RENOVATION_STAGES.map((stage) => (
+                          <SelectItem key={stage.value} value={stage.value}>
+                            {stage.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               )}
