@@ -42,7 +42,7 @@ export interface L3ProjectListResponse {
 
 export interface ImportableMedia {
   /** 媒体ID */
-  id: number;
+  id: string;
   /** 文件URL */
   file_url: string;
   /** 缩略图URL */
@@ -55,6 +55,8 @@ export interface ImportableMedia {
   description?: string;
   /** 排序 */
   sort_order: number;
+  /** 媒体类型 */
+  media_type?: 'image' | 'video';
 }
 
 // ============================================================================
