@@ -5,23 +5,38 @@ import type { LayoutInputsProps } from "./types";
 
 /**
  * 户型输入组件
- * 
+ *
  * 提供室、厅、卫的独立输入，自动组合成户型字符串
  * 支持从现有户型字符串解析初始值
- * 
+ *
  * @example
  * ```tsx
- * <LayoutInputs 
- *   value="3室2厅1卫" 
- *   onChange={(layout) => console.log(layout)} 
+ * <LayoutInputs
+ *   value="3室2厅1卫"
+ *   onChange={(layout) => console.log(layout)}
  * />
  * ```
  */
 export function LayoutInputs({ value, onChange }: LayoutInputsProps) {
+  // 从户型字符串解析值的辅助函数
+  const parseLayoutValue = (layoutValue: string) => ({
+    room: layoutValue.match(/(\d+)室/)?.[1] || "",
+    hall: layoutValue.match(/(\d+)厅/)?.[1] || "",
+    toilet: layoutValue.match(/(\d+)卫/)?.[1] || "",
+  });
+
   // 从户型字符串解析初始值
-  const [room, setRoom] = React.useState(() => value.match(/(\d+)室/)?.[1] || "");
-  const [hall, setHall] = React.useState(() => value.match(/(\d+)厅/)?.[1] || "");
-  const [toilet, setToilet] = React.useState(() => value.match(/(\d+)卫/)?.[1] || "");
+  const [room, setRoom] = React.useState(() => parseLayoutValue(value).room);
+  const [hall, setHall] = React.useState(() => parseLayoutValue(value).hall);
+  const [toilet, setToilet] = React.useState(() => parseLayoutValue(value).toilet);
+
+  // 当外部 value 变化时，同步更新内部状态
+  React.useEffect(() => {
+    const parsed = parseLayoutValue(value);
+    setRoom(parsed.room);
+    setHall(parsed.hall);
+    setToilet(parsed.toilet);
+  }, [value]);
 
   /**
    * 处理单个输入变化
