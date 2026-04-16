@@ -32,7 +32,7 @@ export function ProjectSelector({
 
   // 加载项目列表
   const loadProjects = React.useCallback(
-    async (currentPage: number, query: string) => {
+    async (currentPage: number, query: string, signal?: AbortSignal) => {
       setLoading(true);
       try {
         const response = await fetchAvailableProjects({
@@ -40,14 +40,19 @@ export function ProjectSelector({
           page: currentPage,
           page_size: PAGE_SIZE,
         });
+        // 检查是否已取消
+        if (signal?.aborted) return;
         setProjects((prev) =>
           currentPage === 1 ? response.items : [...prev, ...response.items]
         );
         setTotal(response.total);
       } catch (error) {
+        if (signal?.aborted) return;
         toast.error(error instanceof Error ? error.message : "加载项目失败");
       } finally {
-        setLoading(false);
+        if (!signal?.aborted) {
+          setLoading(false);
+        }
       }
     },
     []
@@ -55,27 +60,37 @@ export function ProjectSelector({
 
   // 初始加载
   React.useEffect(() => {
-    if (open) {
-      loadProjects(1, "");
-    }
+    if (!open) return;
+
+    const abortController = new AbortController();
+    loadProjects(1, "", abortController.signal);
+
+    return () => {
+      abortController.abort();
+    };
   }, [open, loadProjects]);
 
   // 搜索防抖
   React.useEffect(() => {
     if (!open) return;
 
+    const abortController = new AbortController();
     const timer = setTimeout(() => {
       setPage(1);
-      loadProjects(1, searchQuery);
+      loadProjects(1, searchQuery, abortController.signal);
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      abortController.abort();
+    };
   }, [searchQuery, open, loadProjects]);
 
   // 加载更多
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
+    // 加载更多不需要取消，因为用户明确触发了操作
     loadProjects(nextPage, searchQuery);
   };
 

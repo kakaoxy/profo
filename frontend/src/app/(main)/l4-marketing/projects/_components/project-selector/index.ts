@@ -14,10 +14,22 @@ export type {
   ProjectQueryParams,
 } from "./types";
 
+// Schema导出
+export {
+  L3ProjectBriefSchema,
+  L3ProjectListResponseSchema,
+  ImportableMediaSchema,
+  ImportPreviewDataSchema,
+  ProjectQueryParamsSchema,
+} from "./schemas";
+
 // 组件导出
 export { ProjectSelector } from "./ProjectSelector";
 export { ProjectListItem } from "./ProjectListItem";
 export { ImportPreview } from "./ImportPreview";
+export { Section } from "./Section";
+export { InfoItem } from "./InfoItem";
+export { MediaItem } from "./MediaItem";
 
 // API导出
 export {

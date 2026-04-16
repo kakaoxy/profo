@@ -7,6 +7,12 @@ import {
   importFromL3ProjectAction,
   getL3ProjectDetailAction,
 } from "../../actions/projects";
+import { detectMediaType } from "@/lib/media-utils";
+import {
+  L3ProjectBriefSchema,
+  L3ProjectListResponseSchema,
+  ImportPreviewDataSchema,
+} from "./schemas";
 import type {
   L3ProjectBrief,
   L3ProjectListResponse,
@@ -30,7 +36,14 @@ export async function fetchAvailableProjects(
     throw new Error("获取项目列表失败：无数据返回");
   }
 
-  return result.data as L3ProjectListResponse;
+  // 使用Zod进行运行时类型验证
+  const parseResult = L3ProjectListResponseSchema.safeParse(result.data);
+  if (!parseResult.success) {
+    console.error("项目列表数据格式错误:", parseResult.error);
+    throw new Error("获取项目列表失败：数据格式错误");
+  }
+
+  return parseResult.data;
 }
 
 /**
@@ -49,51 +62,49 @@ export async function fetchImportData(
     throw new Error("导入数据失败：无数据返回");
   }
 
-  // 转换后端返回的数据格式以匹配前端类型
+  // 转换后端返回的数据格式
   const rawData = result.data as Record<string, unknown>;
   const rawMedia = (rawData.available_media || []) as Array<Record<string, unknown>>;
-  
-  return {
-    project_id: String(rawData.project_id || ''),
+
+  const transformedData = {
+    project_id: String(rawData.project_id || ""),
     community_id: rawData.community_id ? Number(rawData.community_id) : undefined,
-    community_name: String(rawData.community_name || ''),
+    community_name: String(rawData.community_name || ""),
     layout: rawData.layout ? String(rawData.layout) : undefined,
     orientation: rawData.orientation ? String(rawData.orientation) : undefined,
     floor_info: rawData.floor_info ? String(rawData.floor_info) : undefined,
     area: rawData.area ? Number(rawData.area) : undefined,
     total_price: rawData.total_price ? Number(rawData.total_price) : undefined,
     unit_price: rawData.unit_price ? Number(rawData.unit_price) : undefined,
-    title: String(rawData.title || ''),
+    title: String(rawData.title || ""),
     tags: rawData.tags ? String(rawData.tags) : undefined,
-    decoration_style: rawData.decoration_style ? String(rawData.decoration_style) : undefined,
+    decoration_style: rawData.decoration_style
+      ? String(rawData.decoration_style)
+      : undefined,
     available_media: rawMedia.map((media) => ({
-      id: String(media.id || ''),
-      file_url: String(media.file_url || ''),
-      thumbnail_url: media.thumbnail_url ? String(media.thumbnail_url) : undefined,
-      photo_category: String(media.photo_category || 'renovation'),
-      renovation_stage: media.renovation_stage ? String(media.renovation_stage) : undefined,
+      id: String(media.id || ""),
+      file_url: String(media.file_url || ""),
+      thumbnail_url: media.thumbnail_url
+        ? String(media.thumbnail_url)
+        : undefined,
+      photo_category: String(media.photo_category || "renovation"),
+      renovation_stage: media.renovation_stage
+        ? String(media.renovation_stage)
+        : undefined,
       description: media.description ? String(media.description) : undefined,
       sort_order: Number(media.sort_order || 0),
-      media_type: detectMediaType(String(media.file_url || '')),
+      media_type: detectMediaType(String(media.file_url || "")),
     })),
   };
-}
 
-/**
- * 检测媒体类型
- */
-function detectMediaType(url: string): 'image' | 'video' | undefined {
-  if (!url) return undefined;
-  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
-  const lowerUrl = url.toLowerCase();
-  if (videoExtensions.some(ext => lowerUrl.endsWith(ext))) {
-    return 'video';
+  // 使用Zod进行运行时类型验证
+  const parseResult = ImportPreviewDataSchema.safeParse(transformedData);
+  if (!parseResult.success) {
+    console.error("导入数据格式错误:", parseResult.error);
+    throw new Error("导入数据失败：数据格式错误");
   }
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-  if (imageExtensions.some(ext => lowerUrl.endsWith(ext))) {
-    return 'image';
-  }
-  return undefined;
+
+  return parseResult.data;
 }
 
 /**
@@ -127,5 +138,12 @@ export async function fetchProjectDetail(
     throw new Error("获取项目详情失败：无数据返回");
   }
 
-  return result.data as L3ProjectBrief;
+  // 使用Zod进行运行时类型验证
+  const parseResult = L3ProjectBriefSchema.safeParse(result.data);
+  if (!parseResult.success) {
+    console.error("项目详情数据格式错误:", parseResult.error);
+    throw new Error("获取项目详情失败：数据格式错误");
+  }
+
+  return parseResult.data;
 }
