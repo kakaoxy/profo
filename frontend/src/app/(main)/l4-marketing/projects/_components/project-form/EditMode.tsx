@@ -37,7 +37,9 @@ function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[
     file_url: item.file_url,
     thumbnail_url: item.thumbnail_url,
     media_type: item.media_type || "image",
-    photo_category: item.photo_category as "marketing" | "renovation",
+    photo_category: ["marketing", "renovation"].includes(item.photo_category)
+      ? (item.photo_category as "marketing" | "renovation")
+      : "marketing",
     renovation_stage: item.renovation_stage ?? null,
     description: item.description ?? null,
     sort_order: item.sort_order ?? index,
