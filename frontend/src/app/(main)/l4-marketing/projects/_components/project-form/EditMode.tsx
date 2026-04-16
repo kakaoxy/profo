@@ -15,6 +15,7 @@ import { ProjectImportButton } from "./ProjectImportButton";
 import Link from "next/link";
 import type { L4MarketingMedia } from "../../types";
 import type { MediaFile } from "../form-schema";
+import type { ImportableMedia } from "../project-selector/types";
 
 // 将 L4MarketingMedia 转换为 MediaFile
 function convertToMediaFiles(photos: L4MarketingMedia[]): MediaFile[] {
@@ -26,6 +27,24 @@ function convertToMediaFiles(photos: L4MarketingMedia[]): MediaFile[] {
     renovation_stage: photo.renovation_stage,
     description: photo.description || undefined,
     sort_order: photo.sort_order,
+  }));
+}
+
+// 将 ImportableMedia 转换为 L4MarketingMedia
+function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[] {
+  return media.map((item, index) => ({
+    id: Number(item.id) || -Date.now() - index, // 临时ID，负数表示未保存
+    file_url: item.file_url,
+    thumbnail_url: item.thumbnail_url,
+    media_type: item.media_type || "image",
+    photo_category: item.photo_category as "marketing" | "renovation",
+    renovation_stage: item.renovation_stage ?? null,
+    description: item.description ?? null,
+    sort_order: item.sort_order ?? index,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    marketing_project_id: 0, // 临时值，创建后会被后端替换
+    is_deleted: false,
   }));
 }
 
@@ -47,6 +66,12 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     mediaFiles,
   });
 
+  // 处理导入的媒体数据
+  const handleMediaImport = React.useCallback((importedMedia: ImportableMedia[]) => {
+    const convertedMedia = convertImportableToL4Media(importedMedia);
+    setLocalPhotos((prev) => [...prev, ...convertedMedia]);
+  }, []);
+
   // 项目导入功能
   const {
     isImporting,
@@ -60,7 +85,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     handleConfirmImport,
     handleCancelImport,
     clearImport,
-  } = useProjectImport({ form });
+  } = useProjectImport({ form, onMediaImport: handleMediaImport });
 
   // 处理照片变化
   const handlePhotosChange = React.useCallback((newPhotos: L4MarketingMedia[]) => {
