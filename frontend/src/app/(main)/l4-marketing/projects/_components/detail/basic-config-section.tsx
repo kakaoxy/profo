@@ -1,13 +1,16 @@
 "use client";
 
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { User } from "lucide-react";
 import {
   getStatusConfig,
   getPublishStatusConfig,
   formatDate,
 } from "./utils";
+import { getUsersSimpleAction } from "@/app/(main)/users/actions";
 import type { BasicConfigSectionProps } from "./types";
+import type { UserSimpleResponse } from "@/app/(main)/users/actions";
 
 // 状态卡片组件
 interface StatusCardProps {
@@ -58,6 +61,36 @@ export const BasicConfigSection = memo(function BasicConfigSection({
     [project.publish_status]
   );
 
+  // 获取顾问信息
+  const [consultant, setConsultant] = useState<UserSimpleResponse | null>(null);
+  const [isLoadingConsultant, setIsLoadingConsultant] = useState(false);
+
+  useEffect(() => {
+    const fetchConsultant = async () => {
+      if (!project.consultant_id) {
+        setConsultant(null);
+        return;
+      }
+
+      setIsLoadingConsultant(true);
+      try {
+        const result = await getUsersSimpleAction({ status: "active" });
+        if (result.success && result.data?.items) {
+          const found = result.data.items.find(
+            (c: UserSimpleResponse) => c.id === project.consultant_id
+          );
+          setConsultant(found || null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch consultant:", err);
+      } finally {
+        setIsLoadingConsultant(false);
+      }
+    };
+
+    fetchConsultant();
+  }, [project.consultant_id]);
+
   return (
     <div className="space-y-4">
       {/* 房源状态区域 */}
@@ -103,8 +136,21 @@ export const BasicConfigSection = memo(function BasicConfigSection({
             value={project.sort_order ?? 0}
           />
           <ConfigItem
-            label="关联顾问ID"
-            value={project.consultant_id ?? "-"}
+            label="关联顾问"
+            value={
+              isLoadingConsultant ? (
+                <span className="text-slate-400">加载中...</span>
+              ) : consultant ? (
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-slate-400" />
+                  <span>{consultant.nickname || consultant.username}</span>
+                </div>
+              ) : project.consultant_id ? (
+                <span className="text-slate-400">顾问未找到</span>
+              ) : (
+                "-"
+              )
+            }
           />
           <ConfigItem
             label="关联L3项目ID"
