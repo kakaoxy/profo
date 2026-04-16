@@ -7,13 +7,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/config";
 import type { ImportPreviewProps, ImportableMedia } from "./types";
-
-/**
- * API基础URL常量
- * 从环境变量或配置中获取
- */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 /**
  * 获取完整的媒体URL
