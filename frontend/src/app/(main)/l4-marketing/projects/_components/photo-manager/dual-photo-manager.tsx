@@ -24,7 +24,7 @@ import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
 
 interface DualPhotoManagerProps {
-  projectId?: number;
+  l3ProjectId?: string | null;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
@@ -32,7 +32,7 @@ interface DualPhotoManagerProps {
 type UploadTab = "sync" | "upload";
 
 export function DualPhotoManager({
-  projectId,
+  l3ProjectId,
   photos,
   onPhotosChange,
 }: DualPhotoManagerProps) {
@@ -42,7 +42,7 @@ export function DualPhotoManager({
   const [uploadStage, setUploadStage] = useState("other");
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
-    projectId,
+    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
     uploadCategory,
     uploadStage,
     photos,
@@ -70,7 +70,7 @@ export function DualPhotoManager({
     handleDragStart,
     handleDragEnd,
   } = usePhotoDragAndDrop({
-    projectId,
+    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
     photos,
     onPhotosChange,
     marketingPhotos,
@@ -80,14 +80,14 @@ export function DualPhotoManager({
   const handleDeletePhoto = useCallback(async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
 
-    // 如果没有 projectId（创建模式），只删除本地状态
-    if (!projectId) {
+    // 如果没有 l3ProjectId（创建模式），只删除本地状态
+    if (!l3ProjectId) {
       onPhotosChange(photos.filter((p) => p.id !== photoId));
       toast.success("照片已删除");
       return;
     }
 
-    // 有 projectId（编辑模式），调用 API 删除
+    // 有 l3ProjectId（编辑模式），调用 API 删除
     try {
       const result = await deleteL4MarketingMediaAction(photoId);
       if (result.success) {
@@ -99,7 +99,7 @@ export function DualPhotoManager({
     } catch {
       toast.error("删除照片失败");
     }
-  }, [photos, onPhotosChange, projectId]);
+  }, [photos, onPhotosChange, l3ProjectId]);
 
   return (
     <>
@@ -111,9 +111,9 @@ export function DualPhotoManager({
         </h3>
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
-            <TabsList className={projectId ? "grid w-full grid-cols-2" : "grid w-full"}>
+            <TabsList className={l3ProjectId ? "grid w-full grid-cols-2" : "grid w-full"}>
               <TabsTrigger value="upload">手动上传</TabsTrigger>
-              {projectId && <TabsTrigger value="sync">同步照片</TabsTrigger>}
+              {l3ProjectId && <TabsTrigger value="sync">同步照片</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="upload" className="space-y-4 mt-4">
@@ -215,9 +215,9 @@ export function DualPhotoManager({
         </div>
       </section>
 
-      {projectId && (
+      {l3ProjectId && (
         <PhotoLibraryPicker
-          projectId={projectId}
+          l3ProjectId={l3ProjectId}
           open={pickerOpen}
           onOpenChange={setPickerOpen}
           nextSortOrderStart={photos.length}

@@ -27,7 +27,7 @@ function getNextSortOrder(photos: L4MarketingMedia[]): number {
 }
 
 interface PhotoManagerProps {
-  projectId: number;
+  l3ProjectId?: string | null;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
@@ -35,7 +35,7 @@ interface PhotoManagerProps {
 type UploadTab = "sync" | "upload";
 
 export function PhotoManager({
-  projectId,
+  l3ProjectId,
   photos,
   onPhotosChange,
 }: PhotoManagerProps) {
@@ -44,7 +44,7 @@ export function PhotoManager({
   const [uploadStage, setUploadStage] = useState("other");
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
-    projectId,
+    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
     uploadCategory: "marketing",
     uploadStage,
     photos,
@@ -181,7 +181,7 @@ export function PhotoManager({
       </Card>
 
       <PhotoLibraryPicker
-        projectId={projectId}
+        l3ProjectId={l3ProjectId}
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         nextSortOrderStart={photos.length}

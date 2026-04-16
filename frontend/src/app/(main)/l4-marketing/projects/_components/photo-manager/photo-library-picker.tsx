@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,9 +15,10 @@ import { toast } from "sonner";
 import type { RenovationPhoto } from "./types";
 import type { StageOption } from "./types";
 import type { L4MarketingMedia } from "../../types";
+import { getRenovationPhotosAction } from "@/app/(main)/projects/actions/renovation";
 
 interface PhotoLibraryPickerProps {
-  projectId: number;
+  l3ProjectId: string | null | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   nextSortOrderStart: number;
@@ -26,7 +27,7 @@ interface PhotoLibraryPickerProps {
 }
 
 export function PhotoLibraryPicker({
-  projectId,
+  l3ProjectId,
   open,
   onOpenChange,
   onPhotosAdded,
@@ -34,12 +35,52 @@ export function PhotoLibraryPicker({
 }: PhotoLibraryPickerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<StageOption>("all");
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock photos for now - in real implementation this would fetch from API
-  const photos: RenovationPhoto[] = [];
-  const loading = false;
+  // 获取装修照片列表
+  const fetchPhotos = useCallback(async () => {
+    if (!l3ProjectId) return;
+
+    setLoading(true);
+    try {
+      const result = await getRenovationPhotosAction(l3ProjectId);
+      if (result.success && result.data) {
+        // 转换后端返回的数据格式为 RenovationPhoto 格式
+        const formattedPhotos: RenovationPhoto[] = result.data.map((photo: unknown) => {
+          const p = photo as Record<string, unknown>;
+          return {
+            id: String(p.id),
+            project_id: String(p.project_id),
+            stage: String(p.stage || ""),
+            url: String(p.url || ""),
+            filename: p.filename ? String(p.filename) : null,
+            description: p.description ? String(p.description) : null,
+            created_at: String(p.created_at || ""),
+          };
+        });
+        setPhotos(formattedPhotos);
+      } else {
+        toast.error(result.message || "获取照片失败");
+        setPhotos([]);
+      }
+    } catch (error) {
+      console.error("获取照片异常:", error);
+      toast.error("获取照片失败");
+      setPhotos([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [l3ProjectId]);
+
+  // 当弹窗打开时获取照片
+  useEffect(() => {
+    if (open) {
+      fetchPhotos();
+    }
+  }, [open, fetchPhotos]);
 
   const handleOpenChange = async (newOpen: boolean) => {
     if (newOpen) {
@@ -63,7 +104,7 @@ export function PhotoLibraryPicker({
     });
   }, [photos, activeStage, searchQuery]);
 
-  const togglePhoto = (photoId: number) => {
+  const togglePhoto = (photoId: number | string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(photoId)) {
       newSelected.delete(photoId);
