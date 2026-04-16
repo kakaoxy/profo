@@ -52,7 +52,7 @@ export function PhotoLibraryPicker({
         const formattedPhotos: RenovationPhoto[] = result.data.map((photo: unknown) => {
           const p = photo as Record<string, unknown>;
           return {
-            id: String(p.id),
+            id: p.id ? String(p.id) : String(-Date.now()),
             project_id: String(p.project_id),
             stage: String(p.stage || ""),
             url: String(p.url || ""),
