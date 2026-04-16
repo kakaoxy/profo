@@ -8,7 +8,7 @@ import { BasicConfigFields } from "./BasicConfigFields";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import { useProjectImport } from "./useProjectImport";
 import type { EditModeProps } from "../form-types";
-import { DualPhotoManager } from "../../[id]/_components/dual-photo-manager";
+import { DualPhotoManager } from "../photo-manager";
 import { ProjectSelector } from "../project-selector/ProjectSelector";
 import { ImportPreview } from "../project-selector/ImportPreview";
 import { ProjectImportButton } from "./ProjectImportButton";
