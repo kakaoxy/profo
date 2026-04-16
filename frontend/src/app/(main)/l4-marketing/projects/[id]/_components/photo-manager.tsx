@@ -99,7 +99,7 @@ export function PhotoManager({
         <CardContent className="py-6 space-y-4">
           <Tabs
             value={activeTab}
-            onValueChange={(v: string) => setActiveTab(v as UploadTab)}
+            onValueChange={(v) => setActiveTab(v as UploadTab)}
           >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="upload">手动上传</TabsTrigger>
