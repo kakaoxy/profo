@@ -38,8 +38,8 @@ export const formSchema = z.object({
   // 关联 - consultant_id 为 UUID 字符串，对应 User 表的 id 字段
   consultant_id: z.string().trim().min(1).max(36).optional(),
 
-  // 关联L3项目ID（软引用）
-  project_id: z.string().optional(),
+  // 关联L3项目ID（软引用）- 后端期望字符串类型(UUID)
+  project_id: z.string().trim().min(1).max(36).nullable().optional(),
 });
 
 export type FormValues = z.infer<typeof formSchema>;
@@ -70,8 +70,8 @@ export const createSchema = z.object({
   publish_status: publishStatusSchema.default("草稿"),
   project_status: projectStatusSchema.default("在途"),
 
-  // 关联字段
-  project_id: z.number().int().positive().nullable().optional(),
+  // 关联字段 - project_id 为字符串类型(UUID)
+  project_id: z.string().trim().min(1).max(36).nullable().optional(),
   // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
   consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 });
@@ -92,8 +92,8 @@ export const updateSchema = z.object({
   tags: z.array(z.string()).optional(),
   decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
   publish_status: publishStatusSchema.optional(),
-  project_status: projectStatusSchema.optional(),
-  project_id: z.number().int().positive().nullable().optional(),
+  project_status: projectStatusSchema.optional(),// 关联字段 - project_id 为字符串类型(UUID)
+  project_id: z.string().trim().min(1).max(36).nullable().optional(),
   // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
   consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
 });
@@ -143,6 +143,11 @@ export function formValuesToCreateRequest(
     consultant_id: values.consultant_id,
   };
 
+  // 关联L3项目ID - 后端期望字符串类型(UUID)
+  if (values.project_id !== undefined) {
+    result.project_id = values.project_id;
+  }
+
   // 如果有媒体文件，添加到请求中
   if (mediaFiles && mediaFiles.length > 0) {
     result.media_files = mediaFiles;
@@ -171,6 +176,7 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.publish_status !== undefined) result.publish_status = values.publish_status;
   if (values.project_status !== undefined) result.project_status = values.project_status;
   if (values.consultant_id !== undefined) result.consultant_id = values.consultant_id;
+  if (values.project_id !== undefined) result.project_id = values.project_id;
 
   // 如果总价或面积发生变化，重新计算单价（万元/㎡）
   // 与后端计算逻辑保持一致：unit_price = total_price / area
@@ -210,8 +216,11 @@ export function projectToFormValues(project: Record<string, unknown>): FormValue
 
 // 将导入数据转换为表单值
 export function importDataToFormValues(data: Record<string, unknown>): Partial<FormValues> {
+  // project_id 保持字符串类型（后端返回的是UUID字符串）
+  const projectId = (data.project_id as string) || undefined;
+
   return {
-    project_id: (data.project_id as string) || undefined,
+    project_id: projectId,
     community_id: (data.community_id as number) || 0,
     community_name: (data.community_name as string) || "",
     layout: (data.layout as string) || "",

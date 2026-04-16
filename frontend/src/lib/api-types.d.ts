@@ -1395,6 +1395,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        get?: never;
+        put?: never;
         /**
          * 从L3项目导入数据
          * @description 从L3项目导入数据
@@ -1403,8 +1405,6 @@ export interface paths {
          *     采用写时复制(CoW)模式，L4独立存储数据
          */
         post: operations["import_from_l3_project_api_v1_admin_l4_marketing_projects_import_from_l3__project_id__post"];
-        put?: never;
-        get?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1717,7 +1717,7 @@ export interface components {
              * Id
              * @description 媒体ID
              */
-            id: number;
+            id: string;
             /**
              * File Url
              * @description 文件URL
@@ -2115,9 +2115,9 @@ export interface components {
             project_status: string;
             /**
              * Project Id
-             * @description 关联L3项目ID(软引用)，可为空
+             * @description 关联L3项目ID(软引用)，可为空，UUID字符串
              */
-            project_id?: number | null;
+            project_id?: string | null;
             /**
              * Consultant Id
              * @description 关联顾问ID(软引用User表)，UUID字符串
@@ -2190,7 +2190,7 @@ export interface components {
             /** Project Status */
             project_status: string;
             /** Project Id */
-            project_id?: number | null;
+            project_id?: string | null;
             /** Consultant Id */
             consultant_id?: string | null;
             /**
@@ -2256,8 +2256,11 @@ export interface components {
              * @description 项目状态: 在途/在售/已售
              */
             project_status?: string | null;
-            /** Project Id */
-            project_id?: number | null;
+            /**
+             * Project Id
+             * @description 关联L3项目ID(软引用)，UUID字符串
+             */
+            project_id?: string | null;
             /**
              * Consultant Id
              * @description 关联顾问ID(软引用User表)，UUID字符串
