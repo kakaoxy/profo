@@ -118,7 +118,7 @@ export function useProjectImport({
   const clearImport = React.useCallback(() => {
     setSelectedProject(null);
     setImportData(null);
-    form.setValue("project_id", undefined);
+    form.setValue("project_id", null);
   }, [form]);
 
   return {
