@@ -9,10 +9,11 @@ import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { fetchImportData } from "../project-selector/api";
 import { importDataToFormValues, type FormValues } from "../form-schema";
-import type { ImportPreviewData, L3ProjectBrief } from "../project-selector/types";
+import type { ImportPreviewData, L3ProjectBrief, ImportableMedia } from "../project-selector/types";
 
 interface UseProjectImportProps {
   form: UseFormReturn<FormValues>;
+  onMediaImport?: (media: ImportableMedia[]) => void;
 }
 
 interface UseProjectImportReturn {
@@ -37,6 +38,7 @@ interface UseProjectImportReturn {
  */
 export function useProjectImport({
   form,
+  onMediaImport,
 }: UseProjectImportProps): UseProjectImportReturn {
   const [isImporting, setIsImporting] = React.useState(false);
   const [showSelector, setShowSelector] = React.useState(false);
@@ -96,9 +98,14 @@ export function useProjectImport({
     // 清除所有验证错误
     form.clearErrors();
 
+    // 传递导入的媒体数据给父组件
+    if (onMediaImport && importData.available_media.length > 0) {
+      onMediaImport(importData.available_media);
+    }
+
     toast.success("数据导入成功，请检查并完善信息");
     setShowPreview(false);
-  }, [importData, form]);
+  }, [importData, form, onMediaImport]);
 
   // 取消导入
   const handleCancelImport = React.useCallback(() => {
