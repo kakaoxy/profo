@@ -41,7 +41,7 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMi
         console.log("[Create] Request body:", createBody);
 
         const result = await actions.createL4MarketingProject(createBody);
-        if (result.success && result.data?.id) {
+        if (result.success) {
           toast.success("项目创建成功");
           router.push("/l4-marketing/projects");
           return;

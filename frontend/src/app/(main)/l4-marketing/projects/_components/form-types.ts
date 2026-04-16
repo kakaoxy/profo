@@ -2,17 +2,18 @@
 
 import type { L4MarketingProject, L4MarketingMedia } from "../types";
 import type { L4MarketingProjectCreate, L4MarketingProjectUpdate } from "../types";
+import type { ActionResult } from "../actions/projects";
 
 export type MiniProjectFormMode = "create" | "edit" | "view";
 
 export interface MiniProjectFormActions {
   createL4MarketingProject: (
     body: L4MarketingProjectCreate,
-  ) => Promise<{ success: boolean; data?: L4MarketingProject; error?: string }>;
+  ) => Promise<ActionResult<L4MarketingProject>>;
   updateL4MarketingProject: (
     id: number,
     body: L4MarketingProjectUpdate,
-  ) => Promise<{ success: boolean; data?: L4MarketingProject; error?: string }>;
+  ) => Promise<ActionResult<L4MarketingProject>>;
 }
 
 export interface MiniProjectFormProps {

@@ -321,25 +321,34 @@ class L4MarketingMediaService:
         Returns:
             更新成功的记录数
         """
+        if not sort_updates:
+            return 0
+
+        # 构建 media_id -> sort_order 映射
+        update_map = {
+            u.get("media_id"): u.get("sort_order")
+            for u in sort_updates
+            if u.get("media_id") is not None and u.get("sort_order") is not None
+        }
+
+        if not update_map:
+            return 0
+
+        # 一次性查询所有需要更新的媒体记录
+        media_ids = list(update_map.keys())
+        media_list = self.db.query(L4MarketingMedia).filter(
+            and_(
+                L4MarketingMedia.id.in_(media_ids),
+                L4MarketingMedia.marketing_project_id == project_id,
+                L4MarketingMedia.is_deleted == False
+            )
+        ).all()
+
+        # 更新排序值
         updated_count = 0
-        for update in sort_updates:
-            media_id = update.get("media_id")
-            sort_order = update.get("sort_order")
-
-            if media_id is None or sort_order is None:
-                continue
-
-            media = self.db.query(L4MarketingMedia).filter(
-                and_(
-                    L4MarketingMedia.id == media_id,
-                    L4MarketingMedia.marketing_project_id == project_id,
-                    L4MarketingMedia.is_deleted == False
-                )
-            ).first()
-
-            if media:
-                media.sort_order = sort_order
-                updated_count += 1
+        for media in media_list:
+            media.sort_order = update_map[media.id]
+            updated_count += 1
 
         if updated_count > 0:
             self.db.commit()
