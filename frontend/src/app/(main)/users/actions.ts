@@ -23,6 +23,28 @@ export type RoleListResponse = components["schemas"]["RoleListResponse"];
 // ==================== User Actions ====================
 
 /**
+ * Get User by ID
+ */
+export async function getUserByIdAction(userId: string) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET("/api/v1/users/users/{user_id}", {
+      params: { path: { user_id: userId } },
+    });
+
+    if (error) {
+      console.error("Get user by id error", error);
+      return { success: false, message: "获取用户信息失败" };
+    }
+
+    return { success: true, data };
+  } catch (e) {
+    console.error("Get user by id exception:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
  * Get Users List
  */
 export async function getUsersAction(params: {
