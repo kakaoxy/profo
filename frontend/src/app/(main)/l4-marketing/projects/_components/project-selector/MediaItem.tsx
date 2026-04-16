@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Image, Video, AlertCircle } from "lucide-react";
-import { cn, escapeHtml } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { getFileUrl } from "@/lib/config";
 import { isVideoFile } from "@/lib/media-utils";
 import type { ImportableMedia } from "./types";
@@ -44,7 +44,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
         <>
           <img
             src={imageUrl}
-            alt={escapeHtml(media.description) || "媒体资源"}
+            alt={media.description || "媒体资源"}
             className={cn(
               "w-full h-full object-cover transition-opacity duration-200",
               loadState === "loaded" ? "opacity-100" : "opacity-0"
