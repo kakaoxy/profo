@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { L4MarketingMedia } from "../../types";
 import { PhotoItem } from "./photo-item";
-import { PhotoLibraryPicker } from "./photo-library-picker";
+import { PhotoLibraryPicker } from "../../_components/photo-manager";
 import { deleteL4MarketingMediaAction } from "../../actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ImageUploader } from "./image-uploader";
-import { useImageUpload } from "./use-image-upload";
+import { ImageUploader } from "../../_components/photo-manager";
+import { useImageUpload } from "../../_components/photo-manager";
 
 // 计算下一个排序值的工具函数
 function getNextSortOrder(photos: L4MarketingMedia[]): number {
@@ -185,7 +185,7 @@ export function PhotoManager({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         nextSortOrderStart={photos.length}
-        onPhotosAdded={(addedPhotos) => {
+        onPhotosAdded={(addedPhotos: L4MarketingMedia[]) => {
           onPhotosChange([...photos, ...addedPhotos]);
         }}
         existingPhotoIds={new Set(photos.map((p) => p.id))}

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ViewMode } from "./view/ViewMode";
-import { EditMode } from "./edit/EditMode";
+import { EditMode } from "./project-form/EditMode";
 import {
   createL4MarketingProjectAction,
   updateL4MarketingProjectAction,
