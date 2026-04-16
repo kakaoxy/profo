@@ -1,13 +1,37 @@
 "use client";
 
 import * as React from "react";
-import { Building2, MapPin, Maximize, LayoutGrid, Compass, Wallet, Image } from "lucide-react";
+import { Building2, MapPin, Maximize, LayoutGrid, Compass, Wallet, Image, Video, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { ImportPreviewProps, ImportableMedia } from "./types";
+
+/**
+ * 获取完整的媒体URL
+ * 处理相对路径和绝对路径
+ */
+function getFullMediaUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  
+  // 如果已经是完整URL，直接返回
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // 如果是以 / 开头的相对路径，添加后端API基础URL
+  if (url.startsWith('/')) {
+    // 从环境变量或配置中获取API基础URL
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    return `${apiBaseUrl}${url}`;
+  }
+  
+  // 其他情况，假设是相对路径，添加 /
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  return `${apiBaseUrl}/${url}`;
+}
 
 /**
  * 导入预览组件
@@ -19,12 +43,12 @@ export function ImportPreview({
   onCancel,
   loading = false,
 }: ImportPreviewProps) {
-  const [selectedMedia, setSelectedMedia] = React.useState<Set<number>>(
+  const [selectedMedia, setSelectedMedia] = React.useState<Set<string>>(
     new Set(data.available_media.map((m) => m.id))
   );
 
   // 切换媒体选择
-  const toggleMedia = (mediaId: number) => {
+  const toggleMedia = (mediaId: string) => {
     setSelectedMedia((prev) => {
       const next = new Set(prev);
       if (next.has(mediaId)) {
@@ -209,6 +233,16 @@ function InfoItem({
 }
 
 /**
+ * 检测是否为视频文件
+ */
+function isVideoFile(url: string | undefined): boolean {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+  const lowerUrl = url.toLowerCase();
+  return videoExtensions.some(ext => lowerUrl.endsWith(ext));
+}
+
+/**
  * 媒体项组件
  */
 function MediaItem({
@@ -220,6 +254,19 @@ function MediaItem({
   selected: boolean;
   onToggle: () => void;
 }) {
+  const [loadState, setLoadState] = React.useState<'loading' | 'loaded' | 'error'>('loading');
+  const [imageUrl, setImageUrl] = React.useState<string | undefined>(undefined);
+
+  // 处理URL并检测媒体类型
+  React.useEffect(() => {
+    const rawUrl = media.thumbnail_url || media.file_url;
+    const fullUrl = getFullMediaUrl(rawUrl);
+    setImageUrl(fullUrl);
+    setLoadState('loading');
+  }, [media.thumbnail_url, media.file_url]);
+
+  const isVideo = media.media_type === 'video' || isVideoFile(media.file_url);
+
   return (
     <div
       onClick={onToggle}
@@ -228,15 +275,48 @@ function MediaItem({
         selected ? "border-blue-500" : "border-transparent"
       )}
     >
-      {media.thumbnail_url || media.file_url ? (
-        <img
-          src={media.thumbnail_url || media.file_url}
-          alt={media.description || "媒体资源"}
-          className="w-full h-full object-cover"
-        />
+      {imageUrl ? (
+        <>
+          <img
+            src={imageUrl}
+            alt={media.description || "媒体资源"}
+            className={cn(
+              "w-full h-full object-cover transition-opacity duration-200",
+              loadState === 'loaded' ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setLoadState('loaded')}
+            onError={() => setLoadState('error')}
+          />
+          
+          {/* 加载状态 */}
+          {loadState === 'loading' && (
+            <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin" />
+            </div>
+          )}
+          
+          {/* 错误状态 */}
+          {loadState === 'error' && (
+            <div className="absolute inset-0 bg-slate-100 flex flex-col items-center justify-center p-2">
+              <AlertCircle className="w-6 h-6 text-slate-400 mb-1" />
+              <span className="text-xs text-slate-500 text-center">加载失败</span>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-          <Image className="w-8 h-8 text-slate-300" />
+        <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center">
+          {isVideo ? (
+            <Video className="w-8 h-8 text-slate-300" />
+          ) : (
+            <Image className="w-8 h-8 text-slate-300" />
+          )}
+        </div>
+      )}
+
+      {/* 视频标识 */}
+      {isVideo && (
+        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center">
+          <Video className="w-3 h-3 text-white" />
         </div>
       )}
 
@@ -251,7 +331,7 @@ function MediaItem({
 
       {/* 阶段标签 */}
       {media.renovation_stage && (
-        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1">
+        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1 truncate">
           {media.renovation_stage}
         </div>
       )}
