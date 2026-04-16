@@ -55,7 +55,8 @@ export const PhotosSection = memo(function PhotosSection({
   project,
   photos: initialPhotos,
 }: PhotosSectionProps) {
-  const projectId = project.id;
+  const l4ProjectId = project.id;
+  const l3ProjectId = project.project_id;
   const [photos, setPhotos] = useState<L4MarketingMedia[]>(initialPhotos);
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -68,7 +69,7 @@ export const PhotosSection = memo(function PhotosSection({
   }, [initialPhotos]);
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
-    projectId,
+    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
     uploadCategory,
     uploadStage,
     photos,
@@ -174,12 +175,12 @@ export const PhotosSection = memo(function PhotosSection({
         sort_order: idx,
       }));
 
-      const result = await batchUpdateMediaSortOrderAction(projectId, sortUpdates);
+      const result = await batchUpdateMediaSortOrderAction(l4ProjectId, sortUpdates);
       if (!result.success) {
         toast.error("保存排序失败");
       }
     },
-    [marketingPhotos, renovationPhotos, photos, projectId]
+    [marketingPhotos, renovationPhotos, photos, l4ProjectId]
   );
 
   const handleCrossContainerMove = useCallback(
@@ -404,7 +405,7 @@ export const PhotosSection = memo(function PhotosSection({
       </div>
 
       <PhotoLibraryPicker
-        projectId={projectId}
+        l3ProjectId={l3ProjectId}
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         nextSortOrderStart={photos.length}

@@ -1,8 +1,8 @@
 import { RENOVATION_STAGES } from "../../types";
 
 export interface RenovationPhoto {
-  id: number;
-  project_id: number;
+  id: number | string;
+  project_id: number | string;
   stage: string;
   url: string;
   filename?: string | null;

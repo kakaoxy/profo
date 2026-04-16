@@ -120,7 +120,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
               <MarketingInfoFields />
 
               <DualPhotoManager
-                projectId={project?.id}
+                l3ProjectId={project?.project_id}
                 photos={localPhotos}
                 onPhotosChange={handlePhotosChange}
               />
