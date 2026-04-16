@@ -8,9 +8,9 @@ import {
   getPublishStatusConfig,
   formatDate,
 } from "./utils";
-import { getUsersSimpleAction } from "@/app/(main)/users/actions";
+import { getUserByIdAction } from "@/app/(main)/users/actions";
 import type { BasicConfigSectionProps } from "./types";
-import type { UserSimpleResponse } from "@/app/(main)/users/actions";
+import type { UserResponse } from "@/app/(main)/users/actions";
 
 // 状态卡片组件
 interface StatusCardProps {
@@ -62,7 +62,7 @@ export const BasicConfigSection = memo(function BasicConfigSection({
   );
 
   // 获取顾问信息
-  const [consultant, setConsultant] = useState<UserSimpleResponse | null>(null);
+  const [consultant, setConsultant] = useState<UserResponse | null>(null);
   const [isLoadingConsultant, setIsLoadingConsultant] = useState(false);
 
   useEffect(() => {
@@ -74,12 +74,9 @@ export const BasicConfigSection = memo(function BasicConfigSection({
 
       setIsLoadingConsultant(true);
       try {
-        const result = await getUsersSimpleAction({ status: "active" });
-        if (result.success && result.data?.items) {
-          const found = result.data.items.find(
-            (c: UserSimpleResponse) => c.id === project.consultant_id
-          );
-          setConsultant(found || null);
+        const result = await getUserByIdAction(project.consultant_id);
+        if (result.success && result.data) {
+          setConsultant(result.data as UserResponse);
         }
       } catch (err) {
         console.error("Failed to fetch consultant:", err);
