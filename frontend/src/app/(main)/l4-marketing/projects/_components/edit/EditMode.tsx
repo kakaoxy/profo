@@ -82,15 +82,13 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* 左侧：主要信息和照片 */}
             <div className="lg:col-span-8 space-y-6">
-              {/* 导入按钮（仅在创建模式显示） */}
-              {mode === "create" && (
-                <ProjectImportButton
-                  selectedProject={selectedProject}
-                  isImporting={isImporting}
-                  onImport={openSelector}
-                  onClear={clearImport}
-                />
-              )}
+              {/* 导入按钮 */}
+              <ProjectImportButton
+                selectedProject={selectedProject}
+                isImporting={isImporting}
+                onImport={openSelector}
+                onClear={clearImport}
+              />
 
               <MarketingInfoFields />
 

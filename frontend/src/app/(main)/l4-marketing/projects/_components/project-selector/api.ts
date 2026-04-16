@@ -36,8 +36,26 @@ export async function fetchAvailableProjects(
     throw new Error("获取项目列表失败：无数据返回");
   }
 
+  // 转换后端返回的数据格式（处理类型不匹配问题）
+  const rawData = result.data as { items: Array<Record<string, unknown>>; total: number; page: number; page_size: number };
+  const transformedData = {
+    items: rawData.items.map((item) => ({
+      id: String(item.id || ""),
+      name: String(item.name || ""),
+      community_name: String(item.community_name || ""),
+      address: String(item.address || ""),
+      area: item.area ? Number(item.area) : undefined,
+      layout: item.layout ? String(item.layout) : undefined,
+      orientation: item.orientation ? String(item.orientation) : undefined,
+      status: String(item.status || ""),
+    })),
+    total: Number(rawData.total || 0),
+    page: Number(rawData.page || 1),
+    page_size: Number(rawData.page_size || 20),
+  };
+
   // 使用Zod进行运行时类型验证
-  const parseResult = L3ProjectListResponseSchema.safeParse(result.data);
+  const parseResult = L3ProjectListResponseSchema.safeParse(transformedData);
   if (!parseResult.success) {
     console.error("项目列表数据格式错误:", parseResult.error);
     throw new Error("获取项目列表失败：数据格式错误");
@@ -138,8 +156,21 @@ export async function fetchProjectDetail(
     throw new Error("获取项目详情失败：无数据返回");
   }
 
+  // 转换后端返回的数据格式（处理类型不匹配问题）
+  const rawData = result.data as Record<string, unknown>;
+  const transformedData = {
+    id: String(rawData.id || ""),
+    name: String(rawData.name || ""),
+    community_name: String(rawData.community_name || ""),
+    address: String(rawData.address || ""),
+    area: rawData.area ? Number(rawData.area) : undefined,
+    layout: rawData.layout ? String(rawData.layout) : undefined,
+    orientation: rawData.orientation ? String(rawData.orientation) : undefined,
+    status: String(rawData.status || ""),
+  };
+
   // 使用Zod进行运行时类型验证
-  const parseResult = L3ProjectBriefSchema.safeParse(result.data);
+  const parseResult = L3ProjectBriefSchema.safeParse(transformedData);
   if (!parseResult.success) {
     console.error("项目详情数据格式错误:", parseResult.error);
     throw new Error("获取项目详情失败：数据格式错误");
