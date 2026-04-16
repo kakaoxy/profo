@@ -21,6 +21,23 @@ import type {
 } from "./types";
 
 /**
+ * 转换原始项目数据为L3ProjectBrief格式
+ * 处理后端返回的类型不匹配问题（如area字段为字符串而非数字）
+ */
+function transformProjectData(rawData: Record<string, unknown>): L3ProjectBrief {
+  return {
+    id: String(rawData.id || ""),
+    name: String(rawData.name || ""),
+    community_name: String(rawData.community_name || ""),
+    address: String(rawData.address || ""),
+    area: rawData.area ? Number(rawData.area) : undefined,
+    layout: rawData.layout ? String(rawData.layout) : undefined,
+    orientation: rawData.orientation ? String(rawData.orientation) : undefined,
+    status: String(rawData.status || ""),
+  };
+}
+
+/**
  * 获取可关联的L3项目列表
  */
 export async function fetchAvailableProjects(
@@ -39,16 +56,7 @@ export async function fetchAvailableProjects(
   // 转换后端返回的数据格式（处理类型不匹配问题）
   const rawData = result.data as { items: Array<Record<string, unknown>>; total: number; page: number; page_size: number };
   const transformedData = {
-    items: rawData.items.map((item) => ({
-      id: String(item.id || ""),
-      name: String(item.name || ""),
-      community_name: String(item.community_name || ""),
-      address: String(item.address || ""),
-      area: item.area ? Number(item.area) : undefined,
-      layout: item.layout ? String(item.layout) : undefined,
-      orientation: item.orientation ? String(item.orientation) : undefined,
-      status: String(item.status || ""),
-    })),
+    items: rawData.items.map(transformProjectData),
     total: Number(rawData.total || 0),
     page: Number(rawData.page || 1),
     page_size: Number(rawData.page_size || 20),
@@ -157,17 +165,7 @@ export async function fetchProjectDetail(
   }
 
   // 转换后端返回的数据格式（处理类型不匹配问题）
-  const rawData = result.data as Record<string, unknown>;
-  const transformedData = {
-    id: String(rawData.id || ""),
-    name: String(rawData.name || ""),
-    community_name: String(rawData.community_name || ""),
-    address: String(rawData.address || ""),
-    area: rawData.area ? Number(rawData.area) : undefined,
-    layout: rawData.layout ? String(rawData.layout) : undefined,
-    orientation: rawData.orientation ? String(rawData.orientation) : undefined,
-    status: String(rawData.status || ""),
-  };
+  const transformedData = transformProjectData(result.data as Record<string, unknown>);
 
   // 使用Zod进行运行时类型验证
   const parseResult = L3ProjectBriefSchema.safeParse(transformedData);
