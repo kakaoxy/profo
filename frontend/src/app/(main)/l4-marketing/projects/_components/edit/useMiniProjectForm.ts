@@ -46,7 +46,7 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMi
           router.push("/l4-marketing/projects");
           return;
         }
-        toast.error(result.success ? "创建失败：返回数据不完整" : result.error || "创建失败");
+        toast.error(result.success ? "创建失败：返回数据不完整" : (result.error || "创建失败"));
         return;
       }
 
