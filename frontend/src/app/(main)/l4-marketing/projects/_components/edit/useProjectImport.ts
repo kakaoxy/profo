@@ -88,9 +88,13 @@ export function useProjectImport({
         form.setValue(key as keyof FormValues, value as FormValues[keyof FormValues], {
           shouldDirty: true,
           shouldTouch: true,
+          shouldValidate: false,
         });
       }
     });
+
+    // 清除所有验证错误
+    form.clearErrors();
 
     toast.success("数据导入成功，请检查并完善信息");
     setShowPreview(false);
