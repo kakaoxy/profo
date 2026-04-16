@@ -92,7 +92,8 @@ export const updateSchema = z.object({
   tags: z.array(z.string()).optional(),
   decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
   publish_status: publishStatusSchema.optional(),
-  project_status: projectStatusSchema.optional(),// 关联字段 - project_id 为字符串类型(UUID)
+  project_status: projectStatusSchema.optional(),
+  // 关联字段 - project_id 为字符串类型(UUID)
   project_id: z.string().trim().min(1).max(36).nullable().optional(),
   // consultant_id 为 UUID 字符串，对应 User 表的 id 字段
   consultant_id: z.string().trim().min(1).max(36).nullable().optional(),
