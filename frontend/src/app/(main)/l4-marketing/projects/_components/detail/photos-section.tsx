@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { ImageIcon, FolderOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// 开发环境检测常量（比直接使用 process.env.NODE_ENV 更清晰）
-const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 import {
   Select,
   SelectContent,
@@ -16,6 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// 开发环境检测常量（在所有 import 之后定义）
+const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 import { toast } from "sonner";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import {
@@ -320,6 +321,10 @@ export const PhotosSection = memo(function PhotosSection({
     setPickerOpen(true);
   }, []);
 
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as UploadTab);
+  }, []);
+
   return (
     <div className="bg-white rounded-lg border border-slate-200">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -333,7 +338,7 @@ export const PhotosSection = memo(function PhotosSection({
       </div>
 
       <div className="p-4 space-y-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload">手动上传</TabsTrigger>
             <TabsTrigger value="sync">同步照片</TabsTrigger>
