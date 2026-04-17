@@ -59,6 +59,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   // 生成营销照片依赖签名：只包含影响主图选择的关键信息（ID和排序）
   // URL变化时不需要触发重计算，getMarketingMainImage会直接从photos读取最新URL
   const marketingPhotosSignature = useMemo(() => {
+    if (!photos || photos.length === 0) return "";
     return photos
       .filter((p) => p.photo_category === "marketing")
       .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
