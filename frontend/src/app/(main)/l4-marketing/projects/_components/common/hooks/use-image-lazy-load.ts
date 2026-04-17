@@ -51,8 +51,9 @@ export function useImageLazyLoad(
   // 使用 ref 跟踪加载是否已完成，避免超时后覆盖成功状态
   const isCompleteRef = useRef(false);
   const startTimeRef = useRef<number>(0);
-  // 使用 ref 缓存 DOM 元素，避免重复创建和移除
+  // 使用 ref 缓存 DOM 元素和 observer，避免重复创建和移除
   const elementRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Intersection Observer 检测视口
   useEffect(() => {
@@ -62,8 +63,18 @@ export function useImageLazyLoad(
       return;
     }
 
-    // 如果已经可见，不需要再监听
-    if (isVisible) return;
+    // 如果已经可见，清理 DOM 元素并返回
+    if (isVisible) {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      if (elementRef.current) {
+        document.body.removeChild(elementRef.current);
+        elementRef.current = null;
+      }
+      return;
+    }
 
     // 复用或创建占位元素
     if (!elementRef.current) {
@@ -73,11 +84,10 @@ export function useImageLazyLoad(
       document.body.appendChild(elementRef.current);
     }
 
-    const observer = new IntersectionObserver(
+    observerRef.current = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect();
         }
       },
       {
@@ -86,16 +96,23 @@ export function useImageLazyLoad(
       }
     );
 
-    observer.observe(elementRef.current);
+    observerRef.current.observe(elementRef.current);
 
     return () => {
-      observer.disconnect();
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
     };
   }, [src, isVisible, rootMargin, threshold]);
 
   // 组件卸载时清理 DOM 元素
   useEffect(() => {
     return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
       if (elementRef.current) {
         document.body.removeChild(elementRef.current);
         elementRef.current = null;
