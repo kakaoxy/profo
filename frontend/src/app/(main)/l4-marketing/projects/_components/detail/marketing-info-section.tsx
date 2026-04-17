@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useMemo } from "react";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
@@ -55,7 +56,16 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   project,
   photos = [],
 }: MarketingInfoSectionProps & { photos?: L4MarketingMedia[] }) {
-  const mainImage = useMemo(() => getMarketingMainImage(project, photos), [project, photos]);
+  // 使用稳定的依赖：照片数量和ID组合，避免数组引用变化导致缓存失效
+  const photoDependencyKey = useMemo(() => {
+    return `${photos.length}-${photos.map(p => p.id).join(',')}-${photos[0]?.thumbnail_url || ''}`;
+  }, [photos]);
+
+  const mainImage = useMemo(
+    () => getMarketingMainImage(project, photos),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [project.id, photoDependencyKey]
+  );
 
   // 缓存标签渲染
   const tagsContent = useMemo(() => {
@@ -82,12 +92,15 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
     <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       {/* 左侧：营销主图 */}
       <div className="relative">
-        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 border border-slate-200 relative">
           {mainImage ? (
-            <img
+            <Image
               src={mainImage}
               alt="营销主图"
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 280px"
+              priority
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">

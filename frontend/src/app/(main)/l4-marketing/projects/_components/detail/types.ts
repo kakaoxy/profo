@@ -1,5 +1,3 @@
-"use client";
-
 import type { L4MarketingProject, L4MarketingMedia } from "../../types";
 
 // 营销详情头部组件属性
