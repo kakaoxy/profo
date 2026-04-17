@@ -1,6 +1,8 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { cn } from "@/lib/utils";
 import { L4MarketingMedia } from "../../types";
 import { SortablePhotoItem } from "./sortable-photo-item";
 
@@ -17,6 +19,14 @@ export function MarketingPhotoList({
   photoIds,
   onDelete,
 }: MarketingPhotoListProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: CONTAINER_MARKETING,
+    data: {
+      type: "stage",
+      stage: "marketing",
+    },
+  });
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -26,30 +36,41 @@ export function MarketingPhotoList({
         <span className="text-xs text-[#707785]">可拖拽到右侧</span>
       </div>
 
-      <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
-        <div
-          id={CONTAINER_MARKETING}
-          className="space-y-2 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20"
-        >
+      <div
+        ref={setNodeRef}
+        id={CONTAINER_MARKETING}
+        data-droppable="true"
+        className={cn(
+          "rounded border-2 border-dashed transition-all min-h-[100px] p-3",
+          isOver
+            ? "border-[#005daa] bg-[#eff4ff] ring-2 ring-[#005daa]/20"
+            : "border-[#005daa]/30 bg-[#eff4ff]/30"
+        )}
+      >
+        <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
           {photos.length === 0 ? (
-            <div className="text-center py-8 text-[#707785] text-sm">
-              暂无营销照片
-              <p className="text-xs mt-1 text-[#707785]/60">
-                可将改造照片拖拽到此处
-              </p>
+            <div className="flex items-center justify-center h-full py-8">
+              <div className="text-center text-[#707785] text-sm pointer-events-none">
+                暂无营销照片
+                <p className="text-xs mt-1 text-[#707785]/60">
+                  可将改造照片拖拽到此处
+                </p>
+              </div>
             </div>
           ) : (
-            photos.map((photo, index) => (
-              <SortablePhotoItem
-                key={photo.id}
-                photo={photo}
-                index={index}
-                onDelete={onDelete}
-              />
-            ))
+            <div className="space-y-2">
+              {photos.map((photo, index) => (
+                <SortablePhotoItem
+                  key={photo.id}
+                  photo={photo}
+                  index={index}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
           )}
-        </div>
-      </SortableContext>
+        </SortableContext>
+      </div>
     </div>
   );
 }

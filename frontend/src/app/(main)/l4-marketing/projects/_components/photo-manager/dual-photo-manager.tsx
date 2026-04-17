@@ -3,10 +3,36 @@
 import { useState, useCallback, useMemo, Suspense, lazy } from "react";
 import {
   DndContext,
-  pointerWithin,
+  closestCenter,
   DragOverlay,
+  CollisionDetection,
+  rectIntersection,
 } from "@dnd-kit/core";
 import { L4MarketingMedia, PhotoCategory } from "../../types";
+
+// 自定义碰撞检测：优先识别容器（阶段）而不是照片
+const customCollisionDetection: CollisionDetection = (args) => {
+  // 首先使用 rectIntersection 检测所有碰撞
+  const collisions = rectIntersection(args);
+  
+  // 如果没有碰撞，返回空数组
+  if (collisions.length === 0) {
+    return [];
+  }
+  
+  // 分离容器碰撞和照片碰撞
+  const containerCollisions = collisions.filter(
+    (collision) => collision.id === "marketing" || String(collision.id).startsWith("renovation-")
+  );
+  
+  // 如果有容器碰撞，优先返回容器碰撞
+  if (containerCollisions.length > 0) {
+    return containerCollisions;
+  }
+  
+  // 否则返回所有碰撞
+  return collisions;
+};
 import { PhotoDragOverlay } from "./photo-drag-overlay";
 import { PhotoCategorySelector } from "./photo-category-selector";
 import { deleteL4MarketingMediaAction } from "../../actions";
@@ -185,7 +211,7 @@ export function DualPhotoManager({
           {/* 统一的 DndContext 支持跨容器拖拽 */}
           <DndContext
             sensors={sensors}
-            collisionDetection={pointerWithin}
+            collisionDetection={customCollisionDetection}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
