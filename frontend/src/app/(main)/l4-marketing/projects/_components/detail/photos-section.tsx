@@ -1,6 +1,7 @@
 "use client";
 
-import React, { memo, useState, useMemo, useCallback } from "react";
+import React, { memo, useState, useMemo, useCallback, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, FolderOpen } from "lucide-react";
@@ -16,20 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import {
-  DndContext,
-  pointerWithin,
-  DragOverlay,
-  DragStartEvent,
-  DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import {
   arrayMove,
-  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 
 import { RENOVATION_STAGES } from "../../types";
@@ -45,10 +35,23 @@ import { ImageUploader } from "../photo-manager/image-uploader";
 import { useImageUpload } from "../photo-manager/use-image-upload";
 import { PhotoCategorySelector } from "../photo-manager/photo-category-selector";
 import { PhotoLibraryPicker } from "../photo-manager/photo-library-picker";
-import { PhotoDragOverlay } from "../photo-manager/photo-drag-overlay";
 import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
 import { usePerformanceMonitor, PerformanceReport } from "./performance-monitor";
+
+// 动态导入拖拽相关组件以减少初始 bundle 大小
+const DndProvider = dynamic(
+  () => import("./dnd-provider").then((mod) => mod.DndProvider),
+  { ssr: false }
+);
+const DragOverlay = dynamic(
+  () => import("@dnd-kit/core").then((mod) => mod.DragOverlay),
+  { ssr: false }
+);
+const PhotoDragOverlay = dynamic(
+  () => import("../photo-manager/photo-drag-overlay").then((mod) => mod.PhotoDragOverlay),
+  { ssr: false }
+);
 
 const CONTAINER_MARKETING = "marketing";
 const CONTAINER_RENOVATION_PREFIX = "renovation-";
@@ -153,11 +156,6 @@ export const PhotosSection = memo(function PhotosSection({
     if (!activeId) return null;
     return photos.find((p) => p.id === activeId) || null;
   }, [activeId, photos]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
 
   const getContainerId = useCallback((photo: L4MarketingMedia): string => {
     if (photo.photo_category === "marketing") {
@@ -318,6 +316,10 @@ export const PhotosSection = memo(function PhotosSection({
     []
   );
 
+  const handleOpenPicker = useCallback(() => {
+    setPickerOpen(true);
+  }, []);
+
   return (
     <div className="bg-white rounded-lg border border-slate-200">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -392,7 +394,7 @@ export const PhotosSection = memo(function PhotosSection({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setPickerOpen(true)}
+                onClick={handleOpenPicker}
                 className="bg-white border-slate-200 hover:bg-slate-50"
               >
                 <FolderOpen className="h-4 w-4 mr-1" />
@@ -403,12 +405,7 @@ export const PhotosSection = memo(function PhotosSection({
         </Tabs>
 
         {photos.length > 0 && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={pointerWithin}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
+          <DndProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
               <MarketingPhotoList
                 photos={marketingPhotos}
@@ -427,7 +424,7 @@ export const PhotosSection = memo(function PhotosSection({
             <DragOverlay>
               {activePhoto ? <PhotoDragOverlay photo={activePhoto} /> : null}
             </DragOverlay>
-          </DndContext>
+          </DndProvider>
         )}
 
         {photos.length === 0 && !isUploading && (

@@ -1,14 +1,21 @@
 /**
- * Detail 组件导出
+ * ⚠️ 警告：此文件为 barrel file，不建议使用
  *
- * @deprecated 为了避免打包膨胀问题，建议直接从具体模块导入，而不是通过此 barrel file。
- * 示例：
- *   // 推荐
- *   import { MarketingPhotoList } from "./marketing-photo-list";
+ * @deprecated 使用此 barrel file 会导致打包工具无法进行 tree-shaking，增加 bundle 大小。
+ * 请直接从具体模块导入所需内容。
  *
- *   // 避免
+ * ❌ 避免这样使用：
  *   import { MarketingPhotoList } from "./index";
+ *   import { formatDate } from "./index";
+ *
+ * ✅ 推荐这样使用：
+ *   import { MarketingPhotoList } from "./marketing-photo-list";
+ *   import { formatDate } from "./utils";
+ *
+ * 预计在未来的版本中会移除此 barrel file。
  */
+
+// ==================== ⚠️ 以下导出仅供向后兼容，请勿在新代码中使用 ====================
 
 // 组件导出
 export { MarketingPhotoList } from "./marketing-photo-list";

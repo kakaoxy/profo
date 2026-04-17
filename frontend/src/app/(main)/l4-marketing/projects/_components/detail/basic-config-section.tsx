@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useMemo } from "react";
+import { memo } from "react";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
@@ -80,16 +80,9 @@ function useConsultant(consultantId: string | null | undefined) {
 export const BasicConfigSection = memo(function BasicConfigSection({
   project,
 }: BasicConfigSectionProps) {
-  // 使用 useMemo 缓存配置计算
-  const statusConfig = useMemo(
-    () => getStatusConfig(project.project_status || "在途"),
-    [project.project_status]
-  );
-
-  const publishConfig = useMemo(
-    () => getPublishStatusConfig(project.publish_status || "草稿"),
-    [project.publish_status]
-  );
+  // 简单的配置查找直接使用函数调用，无需 useMemo
+  const statusConfig = getStatusConfig(project.project_status || "在途");
+  const publishConfig = getPublishStatusConfig(project.publish_status || "草稿");
 
   // 使用 SWR 获取顾问信息（替代 useEffect + useState）
   const { consultant, isLoading: isLoadingConsultant } = useConsultant(project.consultant_id);
