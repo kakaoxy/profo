@@ -58,21 +58,12 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
 }: MarketingInfoSectionProps & { photos?: L4MarketingMedia[] }) {
   // 生成营销照片依赖签名：只包含影响主图选择的关键信息（ID和排序）
   // URL变化时不需要触发重计算，getMarketingMainImage会直接从photos读取最新URL
-  // 使用 reduce 一次性完成过滤和映射，减少遍历次数
   const marketingPhotosSignature = useMemo(() => {
-    const marketingPhotos = photos
+    return photos
       .filter((p) => p.photo_category === "marketing")
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-    
-    let signature = "";
-    for (let i = 0; i < marketingPhotos.length; i++) {
-      const p = marketingPhotos[i];
-      signature += `${p.id}:${p.sort_order ?? 0}`;
-      if (i < marketingPhotos.length - 1) {
-        signature += "|";
-      }
-    }
-    return signature;
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((p) => `${p.id}:${p.sort_order ?? 0}`)
+      .join("|");
   }, [photos]);
 
   const mainImage = useMemo(
