@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, memo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +9,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { FilterBar } from "./filter-bar";
-import { PhotoGrid } from "./photo-grid";
+import { VirtualizedPhotoGrid } from "./virtualized-photo-grid";
 import { PickerFooter } from "./picker-footer";
 import { toast } from "sonner";
 import type { RenovationPhoto } from "./types";
 import type { StageOption } from "./types";
 import type { L4MarketingMedia } from "../../types";
 import { getRenovationPhotosAction } from "@/app/(main)/projects/actions/renovation";
+import { usePerformanceMonitor } from "./use-performance-monitor";
 
 interface PhotoLibraryPickerProps {
   l3ProjectId: string | null | undefined;
@@ -26,7 +27,13 @@ interface PhotoLibraryPickerProps {
   existingPhotoIds: Set<number | string>;
 }
 
-export function PhotoLibraryPicker({
+// 性能监控配置
+const PERFORMANCE_CONFIG = {
+  targetOpenTime: 300, // 目标打开时间300ms
+  warningThreshold: 500, // 警告阈值500ms
+};
+
+export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
   l3ProjectId,
   open,
   onOpenChange,
@@ -39,59 +46,124 @@ export function PhotoLibraryPicker({
   const [submitting, setSubmitting] = useState(false);
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
-  // 获取装修照片列表
+  const openStartTimeRef = useRef<number>(0);
+  const { recordMetric, getMetrics } = usePerformanceMonitor("photo-library-picker");
+
+  // 延迟加载数据，优先保证弹窗打开响应
   const fetchPhotos = useCallback(async () => {
     if (!l3ProjectId) return;
 
-    setLoading(true);
-    try {
-      const result = await getRenovationPhotosAction(l3ProjectId);
-      if (result.success && result.data) {
-        // 转换后端返回的数据格式为 RenovationPhoto 格式
-        const formattedPhotos: RenovationPhoto[] = result.data.map((photo: unknown) => {
-          const p = photo as Record<string, unknown>;
-          return {
-            id: p.id ? String(p.id) : String(-Date.now()),
-            project_id: String(p.project_id),
-            stage: String(p.stage || ""),
-            url: String(p.url || ""),
-            filename: p.filename ? String(p.filename) : null,
-            description: p.description ? String(p.description) : null,
-            created_at: String(p.created_at || ""),
-          };
-        });
-        setPhotos(formattedPhotos);
-      } else {
-        toast.error(result.message || "获取照片失败");
-        setPhotos([]);
-      }
-    } catch (error) {
-      console.error("获取照片异常:", error);
-      toast.error("获取照片失败");
-      setPhotos([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [l3ProjectId]);
+    // 使用requestIdleCallback延迟非关键数据加载
+    const loadData = async () => {
+      setLoading(true);
+      const fetchStartTime = performance.now();
 
-  // 当弹窗打开时获取照片
+      try {
+        const result = await getRenovationPhotosAction(l3ProjectId);
+        const fetchEndTime = performance.now();
+
+        if (result.success && result.data) {
+          // 使用requestIdleCallback处理数据转换，避免阻塞主线程
+          const processData = () => {
+            const formattedPhotos: RenovationPhoto[] = result.data!.map((photo: unknown) => {
+              const p = photo as Record<string, unknown>;
+              return {
+                id: p.id ? String(p.id) : String(-Date.now()),
+                project_id: String(p.project_id),
+                stage: String(p.stage || ""),
+                url: String(p.url || ""),
+                filename: p.filename ? String(p.filename) : null,
+                description: p.description ? String(p.description) : null,
+                created_at: String(p.created_at || ""),
+              };
+            });
+            setPhotos(formattedPhotos);
+
+            // 记录数据获取性能
+            recordMetric("data_fetch", fetchEndTime - fetchStartTime);
+            recordMetric("data_process", performance.now() - fetchEndTime);
+          };
+
+          if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+            window.requestIdleCallback(processData, { timeout: 100 });
+          } else {
+            setTimeout(processData, 0);
+          }
+        } else {
+          toast.error(result.message || "获取照片失败");
+          setPhotos([]);
+        }
+      } catch (error) {
+        console.error("获取照片异常:", error);
+        toast.error("获取照片失败");
+        setPhotos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // 延迟数据加载，优先保证UI响应
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(loadData, { timeout: 200 });
+    } else {
+      setTimeout(loadData, 50);
+    }
+  }, [l3ProjectId, recordMetric]);
+
+  // 弹窗打开时记录开始时间并延迟加载数据
   useEffect(() => {
     if (open) {
+      openStartTimeRef.current = performance.now();
+      setIsVisible(true);
       fetchPhotos();
+    } else {
+      // 延迟重置状态，等待动画完成
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setPhotos([]);
+        setSelectedIds(new Set());
+        setSearchQuery("");
+        setActiveStage("all");
+      }, 200);
+      return () => clearTimeout(timer);
     }
   }, [open, fetchPhotos]);
 
-  const handleOpenChange = async (newOpen: boolean) => {
-    if (newOpen) {
-      setSelectedIds(new Set());
-      setSearchQuery("");
-      setActiveStage("all");
+  // 弹窗内容渲染完成后记录打开时间
+  useEffect(() => {
+    if (open && isVisible) {
+      // 使用requestAnimationFrame确保在渲染完成后记录
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const openTime = performance.now() - openStartTimeRef.current;
+          recordMetric("dialog_open", openTime);
+
+          // 性能警告
+          if (openTime > PERFORMANCE_CONFIG.warningThreshold) {
+            console.warn(
+              `[PhotoLibraryPicker] 弹窗打开时间过长: ${openTime.toFixed(2)}ms, 目标: ${PERFORMANCE_CONFIG.targetOpenTime}ms`
+            );
+          }
+        });
+      });
+    }
+  }, [open, isVisible, recordMetric]);
+
+  const handleOpenChange = useCallback(async (newOpen: boolean) => {
+    if (!newOpen) {
+      // 打印性能报告
+      const metrics = getMetrics();
+      console.log("[PhotoLibraryPicker] 性能报告:", metrics);
     }
     onOpenChange(newOpen);
-  };
+  }, [onOpenChange, getMetrics]);
 
   const filteredPhotos = useMemo(() => {
+    if (!searchQuery && activeStage === "all") {
+      return photos;
+    }
     return photos.filter((photo) => {
       const matchesStage = activeStage === "all" || photo.stage === activeStage;
       const matchesSearch =
@@ -104,47 +176,66 @@ export function PhotoLibraryPicker({
     });
   }, [photos, activeStage, searchQuery]);
 
-  const togglePhoto = (photoId: number | string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(photoId)) {
-      newSelected.delete(photoId);
-    } else {
-      newSelected.add(photoId);
-    }
-    setSelectedIds(newSelected);
-  };
+  const togglePhoto = useCallback((photoId: number | string) => {
+    setSelectedIds((prev) => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(photoId)) {
+        newSelected.delete(photoId);
+      } else {
+        newSelected.add(photoId);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const toggleAll = () => {
-    if (selectedIds.size === filteredPhotos.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredPhotos.map((p) => p.id)));
-    }
-  };
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === filteredPhotos.length) {
+        return new Set();
+      } else {
+        return new Set(filteredPhotos.map((p) => p.id));
+      }
+    });
+  }, [filteredPhotos]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (selectedIds.size === 0) {
       toast.error("请至少选择一张照片");
       return;
     }
 
     setSubmitting(true);
+    const submitStartTime = performance.now();
+
     try {
-      // Mock implementation - in real scenario this would call API
       toast.success(`成功选择 ${selectedIds.size} 张照片`);
       onPhotosAdded([]);
       onOpenChange(false);
+
+      recordMetric("submit", performance.now() - submitStartTime);
     } catch (error) {
       console.error("Exception adding photos:", error);
       toast.error("添加照片失败");
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [selectedIds, onPhotosAdded, onOpenChange, recordMetric]);
+
+  // 如果没有打开且不显示，返回null避免不必要的渲染
+  if (!open && !isVisible) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[1200px] h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent
+        className="max-w-[1200px] h-[85vh] flex flex-col p-0 gap-0"
+        // 禁用动画以提升性能
+        style={{
+          animation: "none",
+          transition: "none",
+        }}
+      >
         <DialogHeader className="p-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
@@ -168,7 +259,7 @@ export function PhotoLibraryPicker({
           onToggleAll={toggleAll}
         />
 
-        <PhotoGrid
+        <VirtualizedPhotoGrid
           photos={filteredPhotos}
           loading={loading}
           existingPhotoIds={existingPhotoIds}
@@ -187,4 +278,4 @@ export function PhotoLibraryPicker({
       </DialogContent>
     </Dialog>
   );
-}
+});
