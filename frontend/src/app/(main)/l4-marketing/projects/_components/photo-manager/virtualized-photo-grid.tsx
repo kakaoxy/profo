@@ -8,7 +8,7 @@ import type { RenovationPhoto } from "./types";
 interface VirtualizedPhotoGridProps {
   photos: RenovationPhoto[];
   loading: boolean;
-  existingPhotoIds: Set<number | string>;
+  existingPhotoUrls: Set<string>;
   selectedIds: Set<number | string>;
   onTogglePhoto: (photoId: number | string) => void;
 }
@@ -24,7 +24,7 @@ const GRID_CONFIG = {
 export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
   photos,
   loading,
-  existingPhotoIds,
+  existingPhotoUrls,
   selectedIds,
   onTogglePhoto,
 }: VirtualizedPhotoGridProps) {
@@ -107,7 +107,7 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
           key={photo.id}
           photo={photo}
           isSelected={selectedIds.has(photo.id)}
-          isExisting={existingPhotoIds.has(photo.id)}
+          isExisting={existingPhotoUrls.has(photo.url)}
           onToggle={() => onTogglePhoto(photo.id)}
           style={{
             position: "absolute",
@@ -121,7 +121,7 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
     }
 
     return items;
-  }, [visibleRange, getPhotoAtIndex, columnCount, selectedIds, existingPhotoIds, onTogglePhoto, containerWidth]);
+  }, [visibleRange, getPhotoAtIndex, columnCount, selectedIds, existingPhotoUrls, onTogglePhoto, containerWidth]);
 
   if (loading) {
     return (
