@@ -2,9 +2,11 @@
 
 import { memo, useMemo, useCallback } from "react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import type { L4MarketingMedia } from "../../types";
 import { OptimizedPhotoItem } from "./optimized-photo-item";
 import { usePerformanceMonitor } from "./performance-monitor";
+import { cn } from "@/lib/utils";
 
 const CONTAINER_MARKETING = "marketing";
 
@@ -23,6 +25,15 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
   const { metrics } = usePerformanceMonitor("MarketingPhotoList", {
     enableFPS: false,
     logToConsole: false,
+  });
+
+  // 使用 useDroppable 使营销照片区域成为可放置目标
+  const { isOver, setNodeRef } = useDroppable({
+    id: CONTAINER_MARKETING,
+    data: {
+      type: "stage",
+      stage: "marketing",
+    },
   });
 
   // 使用 useCallback 稳定 onDelete 回调，避免子组件不必要的重渲染
@@ -56,8 +67,15 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
 
       <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
         <div
+          ref={setNodeRef}
           id={CONTAINER_MARKETING}
-          className="space-y-2 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200"
+          className={cn(
+            "space-y-2 min-h-[80px] max-h-[300px] overflow-y-auto p-2 rounded-lg border transition-all",
+            // 默认样式
+            "bg-slate-50 border-slate-200",
+            // 拖拽悬停时的样式
+            isOver && "border-[#005daa] bg-[#f0f7ff] ring-2 ring-[#005daa]/20"
+          )}
           style={{
             // 优化滚动性能
             willChange: "scroll-position",
