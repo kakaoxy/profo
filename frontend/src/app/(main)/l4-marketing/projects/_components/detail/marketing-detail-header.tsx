@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo } from "react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,9 +35,11 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
             <h1 className="text-lg font-bold text-slate-900 leading-tight">
               {project.title || "未命名项目"}
             </h1>
-            <span className="text-slate-400 text-sm">
-              {project.community_name ? `· ${project.community_name}` : ""}
-            </span>
+            {project.community_name ? (
+              <span className="text-slate-400 text-sm">
+                · {project.community_name}
+              </span>
+            ) : null}
             <span className="text-slate-400 text-sm">
               (ID:{project.id})
             </span>

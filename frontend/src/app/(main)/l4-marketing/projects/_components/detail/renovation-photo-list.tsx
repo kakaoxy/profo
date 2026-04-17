@@ -107,11 +107,11 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                       isEmpty={stagePhotos.length === 0}
                       isActive={true}
                     >
-                      {stagePhotos.length === 0 && (
+                      {stagePhotos.length === 0 ? (
                         <div className="text-center text-xs text-emerald-600/60">
                           拖拽到此处
                         </div>
-                      )}
+                      ) : null}
                       {renderStagePhotos(stagePhotos)}
                     </DroppableStage>
                   </SortableContext>
