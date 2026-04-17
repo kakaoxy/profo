@@ -80,14 +80,14 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
         }}
       >
         {/* 占位符/加载状态 */}
-        {imageStatus !== "loaded" && (
+        {imageStatus !== "loaded" ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
           </div>
-        )}
+        ) : null}
 
         {/* 实际图片 - 使用img标签配合loading="lazy" */}
-        {isInViewport && (
+        {isInViewport ? (
           <img
             src={thumbnailUrl}
             alt={photo.description || `Photo ${photo.id}`}
@@ -101,7 +101,7 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
               willChange: "opacity",
             }}
           />
-        )}
+        ) : null}
       </div>
 
       {/* 信息区域 */}

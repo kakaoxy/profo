@@ -42,15 +42,11 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
     );
   }, [containerWidth]);
 
-  // 计算行数
-  const rowCount = useMemo(() => {
-    return Math.ceil(photos.length / columnCount);
-  }, [photos.length, columnCount]);
+  // 计算行数（简单计算，无需 useMemo）
+  const rowCount = Math.ceil(photos.length / columnCount);
 
-  // 计算总高度
-  const totalHeight = useMemo(() => {
-    return rowCount * (GRID_CONFIG.rowHeight + GRID_CONFIG.gap);
-  }, [rowCount]);
+  // 计算总高度（简单计算，无需 useMemo）
+  const totalHeight = rowCount * (GRID_CONFIG.rowHeight + GRID_CONFIG.gap);
 
   // 监听容器尺寸变化
   useEffect(() => {

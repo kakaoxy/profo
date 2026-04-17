@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback, useMemo, Suspense, lazy } from "react";
 import {
   DndContext,
   pointerWithin,
@@ -18,10 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RENOVATION_STAGES } from "../../types";
 import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PhotoLibraryPicker } from "./photo-library-picker";
 import { usePhotoDragAndDrop } from "./use-photo-drag-and-drop";
 import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
+
+const PhotoLibraryPicker = lazy(() => import("./photo-library-picker").then(mod => ({ default: mod.PhotoLibraryPicker })));
 
 interface DualPhotoManagerProps {
   l3ProjectId?: string | null;
@@ -113,7 +114,7 @@ export function DualPhotoManager({
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
             <TabsList className={l3ProjectId ? "grid w-full grid-cols-2" : "grid w-full"}>
               <TabsTrigger value="upload">手动上传</TabsTrigger>
-              {l3ProjectId && <TabsTrigger value="sync">同步照片</TabsTrigger>}
+              {l3ProjectId ? <TabsTrigger value="sync">同步照片</TabsTrigger> : null}
             </TabsList>
 
             <TabsContent value="upload" className="space-y-4 mt-4">
@@ -127,7 +128,7 @@ export function DualPhotoManager({
                   disabled={isUploading}
                 />
 
-                {uploadCategory === "renovation" && (
+                {uploadCategory === "renovation" ? (
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-6 lg:col-span-4">
                       <div className="text-xs font-medium text-[#707785] mb-1">
@@ -151,7 +152,7 @@ export function DualPhotoManager({
                       </Select>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
               <ImageUploader
@@ -215,18 +216,20 @@ export function DualPhotoManager({
         </div>
       </section>
 
-      {l3ProjectId && (
-        <PhotoLibraryPicker
-          l3ProjectId={l3ProjectId}
-          open={pickerOpen}
-          onOpenChange={setPickerOpen}
-          nextSortOrderStart={photos.length}
-          onPhotosAdded={(addedPhotos) => {
-            onPhotosChange([...photos, ...addedPhotos]);
-          }}
-          existingPhotoIds={new Set(photos.map((p) => p.id))}
-        />
-      )}
+      {l3ProjectId ? (
+        <Suspense fallback={null}>
+          <PhotoLibraryPicker
+            l3ProjectId={l3ProjectId}
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            nextSortOrderStart={photos.length}
+            onPhotosAdded={(addedPhotos) => {
+              onPhotosChange([...photos, ...addedPhotos]);
+            }}
+            existingPhotoIds={new Set(photos.map((p) => p.id))}
+          />
+        </Suspense>
+      ) : null}
     </>
   );
 }
