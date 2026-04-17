@@ -51,6 +51,8 @@ export function useImageLazyLoad(
   // 使用 ref 跟踪加载是否已完成，避免超时后覆盖成功状态
   const isCompleteRef = useRef(false);
   const startTimeRef = useRef<number>(0);
+  // 使用 ref 缓存 DOM 元素，避免重复创建和移除
+  const elementRef = useRef<HTMLDivElement | null>(null);
 
   // Intersection Observer 检测视口
   useEffect(() => {
@@ -63,11 +65,13 @@ export function useImageLazyLoad(
     // 如果已经可见，不需要再监听
     if (isVisible) return;
 
-    // 创建一个占位元素来监听
-    const element = document.createElement("div");
-    element.style.position = "absolute";
-    element.style.visibility = "hidden";
-    document.body.appendChild(element);
+    // 复用或创建占位元素
+    if (!elementRef.current) {
+      elementRef.current = document.createElement("div");
+      elementRef.current.style.position = "absolute";
+      elementRef.current.style.visibility = "hidden";
+      document.body.appendChild(elementRef.current);
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -82,13 +86,22 @@ export function useImageLazyLoad(
       }
     );
 
-    observer.observe(element);
+    observer.observe(elementRef.current);
 
     return () => {
       observer.disconnect();
-      document.body.removeChild(element);
     };
   }, [src, isVisible, rootMargin, threshold]);
+
+  // 组件卸载时清理 DOM 元素
+  useEffect(() => {
+    return () => {
+      if (elementRef.current) {
+        document.body.removeChild(elementRef.current);
+        elementRef.current = null;
+      }
+    };
+  }, []);
 
   // 图片加载逻辑
   useEffect(() => {
