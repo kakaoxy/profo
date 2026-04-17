@@ -188,7 +188,7 @@ export function PhotoManager({
         onPhotosAdded={(addedPhotos: L4MarketingMedia[]) => {
           onPhotosChange([...photos, ...addedPhotos]);
         }}
-        existingPhotoIds={new Set(photos.map((p) => p.id))}
+        existingPhotoUrls={new Set(photos.map((p) => p.file_url))}
       />
     </>
   );

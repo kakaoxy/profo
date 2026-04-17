@@ -24,7 +24,7 @@ interface PhotoLibraryPickerProps {
   onOpenChange: (open: boolean) => void;
   nextSortOrderStart: number;
   onPhotosAdded: (photos: L4MarketingMedia[]) => void;
-  existingPhotoIds: Set<number | string>;
+  existingPhotoUrls: Set<string>;
 }
 
 // 性能监控配置
@@ -38,7 +38,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
   open,
   onOpenChange,
   onPhotosAdded,
-  existingPhotoIds,
+  existingPhotoUrls,
 }: PhotoLibraryPickerProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStage, setActiveStage] = useState<StageOption>("all");
@@ -231,7 +231,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-w-[1200px] h-[85vh] flex flex-col p-0 gap-0"
+        className="sm:max-w-none max-w-[95vw] w-[1400px] h-[85vh] flex flex-col p-0 gap-0"
         // 禁用动画以提升性能
         style={{
           animation: "none",
@@ -264,7 +264,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
         <VirtualizedPhotoGrid
           photos={filteredPhotos}
           loading={loading}
-          existingPhotoIds={existingPhotoIds}
+          existingPhotoUrls={existingPhotoUrls}
           selectedIds={selectedIds}
           onTogglePhoto={togglePhoto}
         />

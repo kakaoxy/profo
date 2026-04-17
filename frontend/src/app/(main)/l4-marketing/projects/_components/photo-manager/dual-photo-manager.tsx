@@ -226,7 +226,7 @@ export function DualPhotoManager({
             onPhotosAdded={(addedPhotos) => {
               onPhotosChange([...photos, ...addedPhotos]);
             }}
-            existingPhotoIds={new Set(photos.map((p) => p.id))}
+            existingPhotoUrls={new Set(photos.map((p) => p.file_url))}
           />
         </Suspense>
       ) : null}

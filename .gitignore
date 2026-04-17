@@ -75,6 +75,7 @@ backend/data.db
 .env.*.local
 
 *.doc
+.playwright-cli/
 *.docx
 *.pdf
 .gstack/

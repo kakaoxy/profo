@@ -443,7 +443,7 @@ export const PhotosSection = memo(function PhotosSection({
         onOpenChange={setPickerOpen}
         nextSortOrderStart={photos.length}
         onPhotosAdded={handlePhotosAdded}
-        existingPhotoIds={new Set(photos.map((p) => p.id))}
+        existingPhotoUrls={new Set(photos.map((p) => p.file_url))}
       />
 
       {/* 性能报告（仅开发环境） */}
