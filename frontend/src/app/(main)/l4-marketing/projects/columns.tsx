@@ -45,15 +45,26 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
     header: "房源信息",
     cell: ({ row }) => {
       const project = row.original;
-      const images = project.images?.split(",") || [];
-      const coverImage = images[0];
+
+      // 优先从 media_files 获取营销图片，如果没有则使用 images 字段
+      let imageUrl: string | null = null;
+      if (project.media_files && project.media_files.length > 0) {
+        // 获取第一张营销图片，优先使用 thumbnail_url
+        const firstMedia = project.media_files[0];
+        imageUrl = getFileUrl(firstMedia.thumbnail_url || firstMedia.file_url);
+      } else if (project.images) {
+        // 回退到 images 字段
+        const images = project.images.split(",").filter(Boolean);
+        if (images.length > 0) {
+          imageUrl = getFileUrl(images[0].trim());
+        }
+      }
+
       const status = project.project_status || "在途";
       const config = statusConfig[status] || {
         label: status,
         className: "bg-slate-100 text-slate-600",
       };
-
-      const imageUrl = coverImage ? getFileUrl(coverImage.trim()) : null;
 
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
