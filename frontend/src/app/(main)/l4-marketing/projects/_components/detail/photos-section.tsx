@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, FolderOpen } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// 开发环境检测常量（比直接使用 process.env.NODE_ENV 更清晰）
+const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 import {
   Select,
   SelectContent,
@@ -70,7 +73,7 @@ export const PhotosSection = memo(function PhotosSection({
   const { metrics } = usePerformanceMonitor("PhotosSection", {
     enableFPS: true,
     fpsSampleInterval: 2000,
-    logToConsole: process.env.NODE_ENV === "development",
+    logToConsole: IS_DEVELOPMENT,
     thresholds: {
       loadTime: 1000,
       fcp: 1800,
@@ -86,7 +89,7 @@ export const PhotosSection = memo(function PhotosSection({
 
   // 开发环境下显示性能报告快捷键
   React.useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
+    if (!IS_DEVELOPMENT) return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl/Cmd + Shift + P 切换性能报告

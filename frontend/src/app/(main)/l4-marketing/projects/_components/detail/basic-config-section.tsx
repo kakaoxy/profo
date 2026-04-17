@@ -1,6 +1,7 @@
 "use client";
 
-import React, { memo, useMemo, useState, useEffect } from "react";
+import React, { memo, useMemo } from "react";
+import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
 import {
@@ -46,6 +47,35 @@ function ConfigItem({ label, value }: ConfigItemProps) {
   );
 }
 
+// 使用 SWR 获取顾问信息
+function useConsultant(consultantId: string | null | undefined) {
+  const { data, error, isLoading } = useSWR(
+    consultantId ? [`user`, consultantId] : null,
+    async ([, id]) => {
+      const result = await getUserByIdAction(id);
+      if (result.success && result.data) {
+        return result.data as UserResponse;
+      }
+      // 处理错误情况 - 使用类型守卫获取错误消息
+      const errorMessage = !result.success
+        ? result.message
+        : "获取顾问信息失败";
+      throw new Error(errorMessage);
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 1分钟内去重
+    }
+  );
+
+  return {
+    consultant: data || null,
+    isLoading,
+    error,
+  };
+}
+
 // 使用 memo 避免不必要的重渲染
 export const BasicConfigSection = memo(function BasicConfigSection({
   project,
@@ -61,32 +91,8 @@ export const BasicConfigSection = memo(function BasicConfigSection({
     [project.publish_status]
   );
 
-  // 获取顾问信息
-  const [consultant, setConsultant] = useState<UserResponse | null>(null);
-  const [isLoadingConsultant, setIsLoadingConsultant] = useState(false);
-
-  useEffect(() => {
-    const fetchConsultant = async () => {
-      if (!project.consultant_id) {
-        setConsultant(null);
-        return;
-      }
-
-      setIsLoadingConsultant(true);
-      try {
-        const result = await getUserByIdAction(project.consultant_id);
-        if (result.success && result.data) {
-          setConsultant(result.data as UserResponse);
-        }
-      } catch (err) {
-        console.error("Failed to fetch consultant:", err);
-      } finally {
-        setIsLoadingConsultant(false);
-      }
-    };
-
-    fetchConsultant();
-  }, [project.consultant_id]);
+  // 使用 SWR 获取顾问信息（替代 useEffect + useState）
+  const { consultant, isLoading: isLoadingConsultant } = useConsultant(project.consultant_id);
 
   return (
     <div className="space-y-4">

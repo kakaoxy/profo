@@ -1,4 +1,16 @@
-// Detail 组件导出
+/**
+ * Detail 组件导出
+ *
+ * @deprecated 为了避免打包膨胀问题，建议直接从具体模块导入，而不是通过此 barrel file。
+ * 示例：
+ *   // 推荐
+ *   import { MarketingPhotoList } from "./marketing-photo-list";
+ *
+ *   // 避免
+ *   import { MarketingPhotoList } from "./index";
+ */
+
+// 组件导出
 export { MarketingPhotoList } from "./marketing-photo-list";
 export { RenovationPhotoList } from "./renovation-photo-list";
 export { PhotosSection } from "./photos-section";
