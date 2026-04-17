@@ -1,7 +1,6 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
@@ -9,7 +8,7 @@ import { getFileUrl } from "./utils";
 import type { MarketingInfoSectionProps } from "./types";
 import type { L4MarketingMedia } from "../../types";
 
-// 获取营销主图（MARKETING分类首图）
+// 获取营销主图（MARKETING分类首图，无营销照片时使用改造照片第一张）
 function getMarketingMainImage(project: any, photos: L4MarketingMedia[]): string | null {
   // 优先从 photos 中找 marketing 分类的第一张
   const marketingPhoto = photos
@@ -18,7 +17,16 @@ function getMarketingMainImage(project: any, photos: L4MarketingMedia[]): string
   if (marketingPhoto) {
     return getFileUrl(marketingPhoto.file_url || marketingPhoto.thumbnail_url);
   }
-  // 其次使用 project.images
+
+  // 降级策略：没有营销照片时，使用改造照片的第一张
+  const renovationPhoto = photos
+    .filter((p) => p.photo_category === "renovation")
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+  if (renovationPhoto) {
+    return getFileUrl(renovationPhoto.file_url || renovationPhoto.thumbnail_url);
+  }
+
+  // 最后使用 project.images
   if (project.images) {
     const firstImage = project.images.split(",")[0];
     if (firstImage) return getFileUrl(firstImage.trim());
@@ -99,13 +107,10 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
       <div className="relative">
         <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 border border-slate-200 relative">
           {mainImage ? (
-            <Image
+            <img
               src={mainImage}
               alt="营销主图"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 280px"
-              priority
+              className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
