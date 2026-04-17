@@ -56,15 +56,11 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   project,
   photos = [],
 }: MarketingInfoSectionProps & { photos?: L4MarketingMedia[] }) {
-  // 使用稳定的依赖：照片数量和ID组合，避免数组引用变化导致缓存失效
-  const photoDependencyKey = useMemo(() => {
-    return `${photos.length}-${photos.map(p => p.id).join(',')}-${photos[0]?.thumbnail_url || ''}`;
-  }, [photos]);
-
   const mainImage = useMemo(
     () => getMarketingMainImage(project, photos),
+    // 依赖photos的关键属性，避免数组引用变化导致不必要的重计算
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [project.id, photoDependencyKey]
+    [project.id, photos.length, photos[0]?.id, photos[0]?.thumbnail_url]
   );
 
   // 缓存标签渲染
