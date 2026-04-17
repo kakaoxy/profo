@@ -231,16 +231,22 @@ export function usePhotoDragAndDrop({
       const { active, over } = event;
       setActiveId(null);
 
-      console.log("[DragEnd] active.id:", active.id, "over:", over?.id);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[DragEnd] active.id:", active.id, "over:", over?.id);
+      }
 
       if (!over) {
-        console.log("[DragEnd] No over target, returning");
+        if (process.env.NODE_ENV === "development") {
+          console.log("[DragEnd] No over target, returning");
+        }
         return;
       }
 
       const activePhoto = photos.find((p) => p.id === active.id);
       if (!activePhoto) {
-        console.log("[DragEnd] Active photo not found");
+        if (process.env.NODE_ENV === "development") {
+          console.log("[DragEnd] Active photo not found");
+        }
         return;
       }
 
@@ -248,18 +254,24 @@ export function usePhotoDragAndDrop({
       const activeContainer = getContainerId(activePhoto);
       const overContainer = getContainerIdFromOverId(overId.toString(), photos);
 
-      console.log("[DragEnd] activeContainer:", activeContainer, "overContainer:", overContainer, "overId:", overId);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[DragEnd] activeContainer:", activeContainer, "overContainer:", overContainer, "overId:", overId);
+      }
 
       // 同一容器内排序
       if (activeContainer === overContainer && active.id !== overId) {
-        console.log("[DragEnd] Same container sort");
+        if (process.env.NODE_ENV === "development") {
+          console.log("[DragEnd] Same container sort");
+        }
         await handleSameContainerSort(activePhoto, overId as number);
         return;
       }
 
       // 跨容器拖拽
       if (activeContainer !== overContainer) {
-        console.log("[DragEnd] Cross container move");
+        if (process.env.NODE_ENV === "development") {
+          console.log("[DragEnd] Cross container move");
+        }
         await handleCrossContainerMove(activePhoto, overContainer, overId as number | string);
       }
     },
