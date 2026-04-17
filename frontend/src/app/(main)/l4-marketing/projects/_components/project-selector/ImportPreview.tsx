@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Compass,
   Wallet,
+  Tag,
 } from "lucide-react";
 import {
   Dialog,
@@ -96,6 +97,12 @@ export function ImportPreview({
                   label="朝向"
                   value={data.orientation || "未设置"}
                   muted={!data.orientation}
+                />
+                <InfoItem
+                  icon={<Tag className="w-4 h-4" />}
+                  label="项目状态"
+                  value={data.status || "未设置"}
+                  muted={!data.status}
                 />
               </div>
             </Section>

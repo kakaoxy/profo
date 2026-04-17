@@ -88,6 +88,8 @@ export interface ImportPreviewData {
   tags?: string;
   /** 装修风格 */
   decoration_style?: string;
+  /** 项目状态 */
+  status?: string;
   /** 可导入的媒体资源 */
   available_media: ImportableMedia[];
 }

@@ -85,6 +85,9 @@ class L3ProjectImportResponse(BaseModel):
     tags: Optional[str] = Field(None, description="标签")
     decoration_style: Optional[str] = Field(None, description="装修风格")
 
+    # 项目状态
+    status: Optional[str] = Field(None, description="项目状态")
+
     # 可导入的媒体资源
     available_media: List[ImportableMediaResponse] = Field(
         default_factory=list,

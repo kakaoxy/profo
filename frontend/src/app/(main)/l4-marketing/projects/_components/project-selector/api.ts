@@ -118,6 +118,7 @@ export async function fetchImportData(
     decoration_style: rawData.decoration_style
       ? String(rawData.decoration_style)
       : undefined,
+    status: rawData.status ? String(rawData.status) : undefined,
     available_media: rawMedia.map((media) => ({
       id: String(media.id || ""),
       file_url: String(media.file_url || ""),
