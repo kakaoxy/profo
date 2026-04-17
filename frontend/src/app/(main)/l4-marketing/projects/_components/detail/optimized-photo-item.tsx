@@ -74,9 +74,7 @@ function useImageLoader(src: string | undefined) {
 
     // 超时处理
     const timeout = setTimeout(() => {
-      if (status === "loading") {
-        setStatus("error");
-      }
+      setStatus("error");
     }, 10000);
 
     return () => clearTimeout(timeout);
