@@ -1,9 +1,10 @@
 "use client";
 
-import { memo, useState, useRef, useEffect, useMemo, CSSProperties } from "react";
+import { memo, useMemo, CSSProperties } from "react";
 import { cn } from "@/lib/utils";
-import { getFileUrl } from "@/lib/config";
 import { Check } from "lucide-react";
+import { useElementVisibility, useSimpleImageLoader } from "../common/hooks";
+import { getOptimizedImageUrl } from "../common/utils";
 import type { RenovationPhoto } from "./types";
 
 interface VirtualizedPhotoGridItemProps {
@@ -14,30 +15,10 @@ interface VirtualizedPhotoGridItemProps {
   style: CSSProperties;
 }
 
-// 懒加载图片 hook
-function useLazyImage(src: string, isVisible: boolean) {
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState(false);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    if (!isVisible || loaded || error) return;
-
-    const img = new Image();
-    img.src = src;
-    img.onload = () => setLoaded(true);
-    img.onerror = () => setError(true);
-    imageRef.current = img;
-
-    return () => {
-      img.onload = null;
-      img.onerror = null;
-    };
-  }, [src, isVisible, loaded, error]);
-
-  return { loaded, error };
-}
-
+/**
+ * 虚拟化照片网格项组件
+ * 使用共享的懒加载 Hooks 和工具函数
+ */
 export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
   photo,
   isSelected,
@@ -45,43 +26,19 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
   onToggle,
   style,
 }: VirtualizedPhotoGridItemProps) {
-  const [isInViewport, setIsInViewport] = useState(false);
-  const elementRef = useRef<HTMLDivElement>(null);
+  // 使用共享的元素视口检测 Hook
+  const { ref: elementRef, isVisible: isInViewport } = useElementVisibility<HTMLDivElement>();
 
-  // 使用 Intersection Observer 实现懒加载
-  useEffect(() => {
-    const element = elementRef.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInViewport(true);
-          observer.disconnect();
-        }
-      },
-      {
-        rootMargin: "100px", // 提前100px开始加载
-        threshold: 0.1,
-      }
-    );
-
-    observer.observe(element);
-
-    return () => observer.disconnect();
-  }, []);
-
-  const imageUrl = getFileUrl(photo.url);
-  const { loaded: imageLoaded } = useLazyImage(imageUrl, isInViewport);
-
-  // 生成缩略图URL（如果后端支持）
+  // 使用优化的图片 URL
+  const imageUrl = photo.url;
   const thumbnailUrl = useMemo(() => {
-    // 如果URL包含图片处理参数，添加缩略图参数
-    if (imageUrl.includes("?")) {
-      return `${imageUrl}&w=200&q=75`;
-    }
-    return `${imageUrl}?w=200&q=75`;
+    return getOptimizedImageUrl(imageUrl, { width: 200, height: 200, quality: 75 });
   }, [imageUrl]);
+
+  // 使用共享的图片加载 Hook
+  const { status: imageStatus } = useSimpleImageLoader(
+    isInViewport ? thumbnailUrl : null
+  );
 
   return (
     <div
@@ -123,7 +80,7 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
         }}
       >
         {/* 占位符/加载状态 */}
-        {!imageLoaded && (
+        {imageStatus !== "loaded" && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
           </div>
@@ -138,7 +95,7 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
             decoding="async"
             className={cn(
               "w-full h-full object-cover transition-opacity duration-200",
-              imageLoaded ? "opacity-100" : "opacity-0"
+              imageStatus === "loaded" ? "opacity-100" : "opacity-0"
             )}
             style={{
               willChange: "opacity",
