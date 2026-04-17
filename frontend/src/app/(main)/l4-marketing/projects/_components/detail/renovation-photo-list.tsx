@@ -1,11 +1,12 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useMemo, useCallback } from "react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { L4MarketingMedia } from "../../types";
 import { RENOVATION_STAGES } from "../../types";
-import { SortablePhotoItem } from "../photo-manager/sortable-photo-item";
+import { OptimizedPhotoItem } from "./optimized-photo-item";
 import { DroppableStage } from "../photo-manager/droppable-stage";
+import { usePerformanceMonitor } from "./performance-monitor";
 
 const CONTAINER_RENOVATION_PREFIX = "renovation-";
 
@@ -22,7 +23,13 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
   getStageIds,
   onDelete,
 }: RenovationPhotoListProps) {
-  // 按阶段分组照片
+  // 性能监控
+  usePerformanceMonitor("RenovationPhotoList", {
+    enableFPS: false,
+    logToConsole: false,
+  });
+
+  // 按阶段分组照片 - 使用 useMemo 缓存
   const photosByStage = useMemo(() => {
     return photos.reduce((grouped, photo) => {
       const stage = photo.renovation_stage || "other";
@@ -31,6 +38,29 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
       return grouped;
     }, {} as Record<string, L4MarketingMedia[]>);
   }, [photos]);
+
+  // 使用 useCallback 稳定 onDelete 回调
+  const handleDelete = useCallback(
+    (photoId: number) => {
+      onDelete(photoId);
+    },
+    [onDelete]
+  );
+
+  // 渲染阶段照片列表 - 使用 useMemo 缓存
+  const renderStagePhotos = useCallback(
+    (stagePhotos: L4MarketingMedia[]) => {
+      return stagePhotos.map((photo, index) => (
+        <OptimizedPhotoItem
+          key={photo.id}
+          photo={photo}
+          index={index}
+          onDelete={handleDelete}
+        />
+      ));
+    },
+    [handleDelete]
+  );
 
   return (
     <div className="space-y-3">
@@ -43,7 +73,17 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
         </span>
       </div>
 
-      <div className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
+      <div 
+        className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200"
+        style={{
+          // 优化滚动性能
+          willChange: "scroll-position",
+          // 使用 GPU 加速
+          transform: "translateZ(0)",
+          // 减少重绘区域
+          contain: "layout style paint",
+        }}
+      >
         {/* 拖拽时显示所有阶段，平常只显示有照片的阶段 */}
         {activeId
           ? // 拖拽模式：显示所有阶段作为放置目标
@@ -72,14 +112,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                           拖拽到此处
                         </div>
                       )}
-                      {stagePhotos.map((photo, index) => (
-                        <SortablePhotoItem
-                          key={photo.id}
-                          photo={photo}
-                          index={index}
-                          onDelete={onDelete}
-                        />
-                      ))}
+                      {renderStagePhotos(stagePhotos)}
                     </DroppableStage>
                   </SortableContext>
                 </div>
@@ -107,14 +140,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                       id={containerId}
                       className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-slate-300 hover:border-emerald-400 transition-colors"
                     >
-                      {stagePhotos.map((photo, index) => (
-                        <SortablePhotoItem
-                          key={photo.id}
-                          photo={photo}
-                          index={index}
-                          onDelete={onDelete}
-                        />
-                      ))}
+                      {renderStagePhotos(stagePhotos)}
                     </div>
                   </SortableContext>
                 </div>
