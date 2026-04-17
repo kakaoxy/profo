@@ -62,6 +62,9 @@ class L4MarketingImportService:
         # 从地址提取楼层信息
         floor_info = self._extract_floor_info(project.address)
 
+        # 获取项目状态
+        status = project.status.value if hasattr(project.status, 'value') else str(project.status) if project.status else None
+
         return L3ProjectImportResponse(
             project_id=project_id,
             community_id=community_id,
@@ -75,6 +78,7 @@ class L4MarketingImportService:
             title=title,
             tags=None,
             decoration_style=None,
+            status=status,
             available_media=available_media
         )
 

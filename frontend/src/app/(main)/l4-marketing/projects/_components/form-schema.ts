@@ -215,6 +215,29 @@ export function projectToFormValues(project: Record<string, unknown>): FormValue
   };
 }
 
+/**
+ * 将L3项目状态映射为L4项目状态
+ * L3状态: signing(签约中/在途), for_sale/on_sale(在售), sold(已售), renovating(装修中)等
+ * L4状态: 在途, 在售, 已售
+ */
+function mapL3StatusToL4(status?: string): "在途" | "在售" | "已售" {
+  if (!status) return "在途";
+
+  const statusMap: Record<string, "在途" | "在售" | "已售"> = {
+    signing: "在途",
+    for_sale: "在售",
+    on_sale: "在售",
+    available: "在售",
+    sold: "已售",
+    completed: "已售",
+    renovating: "在途",
+    renovation: "在途",
+    pending: "在途",
+  };
+
+  return statusMap[status.toLowerCase()] || "在途";
+}
+
 // 将导入数据转换为表单值
 export function importDataToFormValues(data: Record<string, unknown>): Partial<FormValues> {
   // project_id 保持字符串类型（后端返回的是UUID字符串）
@@ -233,5 +256,6 @@ export function importDataToFormValues(data: Record<string, unknown>): Partial<F
     title: (data.title as string) || "",
     tags: (data.tags as string)?.split(",").filter(Boolean) || [],
     decoration_style: (data.decoration_style as string) || "",
+    project_status: mapL3StatusToL4(data.status as string),
   };
 }

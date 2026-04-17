@@ -50,6 +50,7 @@ export const ImportPreviewDataSchema = z.object({
   title: z.string(),
   tags: z.string().optional(),
   decoration_style: z.string().optional(),
+  status: z.string().optional(),
   available_media: z.array(ImportableMediaSchema),
 });
 
