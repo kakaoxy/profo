@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
-import { getFileUrl, formatDate } from "./utils";
+import { getFileUrl } from "./utils";
 import type { MarketingInfoSectionProps } from "./types";
 import type { L4MarketingMedia } from "../../types";
 
@@ -93,12 +93,6 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
     return null;
   }, [project.tags]);
 
-  // 缓存创建时间格式化
-  const createdDate = useMemo(
-    () => (project.created_at ? formatDate(project.created_at) : "-"),
-    [project.created_at]
-  );
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       {/* 左侧：营销主图 */}
@@ -179,7 +173,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
         {/* 第四行：创建时间 */}
         <InfoRow
           label="创建时间"
-          value={createdDate}
+          value={project.created_at ? new Date(project.created_at).toLocaleDateString("zh-CN") : "-"}
         />
       </div>
     </div>

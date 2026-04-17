@@ -321,10 +321,6 @@ export const PhotosSection = memo(function PhotosSection({
     setPickerOpen(true);
   }, []);
 
-  const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value as UploadTab);
-  }, []);
-
   return (
     <div className="bg-white rounded-lg border border-slate-200">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -338,7 +334,7 @@ export const PhotosSection = memo(function PhotosSection({
       </div>
 
       <div className="p-4 space-y-4">
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as UploadTab)}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="upload">手动上传</TabsTrigger>
             <TabsTrigger value="sync">同步照片</TabsTrigger>
