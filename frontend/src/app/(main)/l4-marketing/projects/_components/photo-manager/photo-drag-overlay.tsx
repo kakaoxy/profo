@@ -41,7 +41,7 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
       <div
         className="w-16 h-16 rounded-md bg-slate-100 border shrink-0 relative overflow-hidden"
       >
-        {optimizedUrl && (
+        {optimizedUrl ? (
           <img
             src={optimizedUrl}
             alt={`照片 #${photo.id}`}
@@ -50,7 +50,7 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
             height={64}
             decoding="async"
           />
-        )}
+        ) : null}
         <Badge
           className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px] pointer-events-none"
           style={{
@@ -68,9 +68,9 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
         <p className="text-xs font-medium text-[#0b1c30] truncate">
           照片 #{photo.id}
         </p>
-        {photo.photo_category === "renovation" && stageLabel && (
+        {photo.photo_category === "renovation" && stageLabel ? (
           <p className="text-xs text-[#707785] truncate">{stageLabel}</p>
-        )}
+        ) : null}
       </div>
     </div>
   );

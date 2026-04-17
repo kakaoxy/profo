@@ -30,7 +30,7 @@ export function PickerFooter({ selectedCount, submitting, onCancel, onSubmit }: 
           disabled={selectedCount === 0 || submitting}
           className="gap-2"
         >
-          {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           <Plus className="w-4 h-4" />
           确定添加
         </Button>

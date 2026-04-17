@@ -64,11 +64,11 @@ export function RenovationPhotoList({
                       isEmpty={stagePhotos.length === 0}
                       isActive={true}
                     >
-                      {stagePhotos.length === 0 && (
+                      {stagePhotos.length === 0 ? (
                         <div className="text-center text-xs text-[#22c55e]/60">
                           拖拽到此处
                         </div>
-                      )}
+                      ) : null}
                       {stagePhotos.map((photo, index) => (
                         <SortablePhotoItem
                           key={photo.id}

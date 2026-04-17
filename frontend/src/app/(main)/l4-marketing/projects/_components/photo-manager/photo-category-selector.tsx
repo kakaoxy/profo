@@ -10,7 +10,8 @@ interface PhotoCategorySelectorProps {
   disabled?: boolean;
 }
 
-const categories: { value: PhotoCategory; icon: React.ReactNode }[] = [
+// 提升到模块级别，避免每次渲染重新创建
+const CATEGORIES: { value: PhotoCategory; icon: React.ReactNode }[] = [
   { value: "marketing", icon: <Camera className="h-4 w-4" /> },
   { value: "renovation", icon: <Paintbrush className="h-4 w-4" /> },
 ];
@@ -22,7 +23,7 @@ export function PhotoCategorySelector({
 }: PhotoCategorySelectorProps) {
   return (
     <div className="flex gap-2">
-      {categories.map((cat) => {
+      {CATEGORIES.map((cat) => {
         const config = PHOTO_CATEGORY_CONFIG[cat.value];
         const isActive = value === cat.value;
 
