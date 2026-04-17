@@ -16,7 +16,7 @@ import type { RenovationPhoto } from "./types";
 import type { StageOption } from "./types";
 import type { L4MarketingMedia } from "../../types";
 import { getRenovationPhotosAction } from "@/app/(main)/projects/actions/renovation";
-import { usePerformanceMonitor } from "./use-performance-monitor";
+import { usePerformanceMonitor } from "../common/hooks";
 
 interface PhotoLibraryPickerProps {
   l3ProjectId: string | null | undefined;
@@ -49,7 +49,10 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
   const [isVisible, setIsVisible] = useState(false);
 
   const openStartTimeRef = useRef<number>(0);
-  const { recordMetric, getMetrics } = usePerformanceMonitor("photo-library-picker");
+  const { logMetric, metrics } = usePerformanceMonitor("photo-library-picker", {
+    enableFPS: false,
+    logToConsole: process.env.NODE_ENV === "development",
+  });
 
   // 延迟加载数据，优先保证弹窗打开响应
   const fetchPhotos = useCallback(async () => {
@@ -82,8 +85,8 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
             setPhotos(formattedPhotos);
 
             // 记录数据获取性能
-            recordMetric("data_fetch", fetchEndTime - fetchStartTime);
-            recordMetric("data_process", performance.now() - fetchEndTime);
+            logMetric("data_fetch", fetchEndTime - fetchStartTime);
+            logMetric("data_process", performance.now() - fetchEndTime);
           };
 
           if (typeof window !== "undefined" && "requestIdleCallback" in window) {
@@ -110,7 +113,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
     } else {
       setTimeout(loadData, 50);
     }
-  }, [l3ProjectId, recordMetric]);
+  }, [l3ProjectId, logMetric]);
 
   // 弹窗打开时记录开始时间并延迟加载数据
   useEffect(() => {
@@ -138,7 +141,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           const openTime = performance.now() - openStartTimeRef.current;
-          recordMetric("dialog_open", openTime);
+          logMetric("dialog_open", openTime);
 
           // 性能警告
           if (openTime > PERFORMANCE_CONFIG.warningThreshold) {
@@ -149,16 +152,15 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
         });
       });
     }
-  }, [open, isVisible, recordMetric]);
+  }, [open, isVisible, logMetric]);
 
   const handleOpenChange = useCallback(async (newOpen: boolean) => {
     if (!newOpen) {
       // 打印性能报告
-      const metrics = getMetrics();
       console.log("[PhotoLibraryPicker] 性能报告:", metrics);
     }
     onOpenChange(newOpen);
-  }, [onOpenChange, getMetrics]);
+  }, [onOpenChange, metrics]);
 
   const filteredPhotos = useMemo(() => {
     if (!searchQuery && activeStage === "all") {
@@ -212,14 +214,14 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
       onPhotosAdded([]);
       onOpenChange(false);
 
-      recordMetric("submit", performance.now() - submitStartTime);
+      logMetric("submit", performance.now() - submitStartTime);
     } catch (error) {
       console.error("Exception adding photos:", error);
       toast.error("添加照片失败");
     } finally {
       setSubmitting(false);
     }
-  }, [selectedIds, onPhotosAdded, onOpenChange, recordMetric]);
+  }, [selectedIds, onPhotosAdded, onOpenChange, logMetric]);
 
   // 如果没有打开且不显示，返回null避免不必要的渲染
   if (!open && !isVisible) {
