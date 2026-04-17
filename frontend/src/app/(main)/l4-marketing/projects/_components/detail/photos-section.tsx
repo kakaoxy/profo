@@ -45,6 +45,7 @@ import { PhotoLibraryPicker } from "../photo-manager/photo-library-picker";
 import { PhotoDragOverlay } from "../photo-manager/photo-drag-overlay";
 import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
+import { usePerformanceMonitor, PerformanceReport } from "./performance-monitor";
 
 const CONTAINER_MARKETING = "marketing";
 const CONTAINER_RENOVATION_PREFIX = "renovation-";
@@ -63,10 +64,41 @@ export const PhotosSection = memo(function PhotosSection({
   const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
   const [uploadStage, setUploadStage] = useState("other");
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [showPerfReport, setShowPerfReport] = useState(false);
+
+  // 性能监控
+  const { metrics } = usePerformanceMonitor("PhotosSection", {
+    enableFPS: true,
+    fpsSampleInterval: 2000,
+    logToConsole: process.env.NODE_ENV === "development",
+    thresholds: {
+      loadTime: 1000,
+      fcp: 1800,
+      lcp: 2500,
+      cls: 0.1,
+      fps: 30,
+    },
+  });
 
   React.useEffect(() => {
     setPhotos(initialPhotos);
   }, [initialPhotos]);
+
+  // 开发环境下显示性能报告快捷键
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Shift + P 切换性能报告
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "P") {
+        e.preventDefault();
+        setShowPerfReport((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
@@ -411,6 +443,13 @@ export const PhotosSection = memo(function PhotosSection({
         nextSortOrderStart={photos.length}
         onPhotosAdded={handlePhotosAdded}
         existingPhotoIds={new Set(photos.map((p) => p.id))}
+      />
+
+      {/* 性能报告（仅开发环境） */}
+      <PerformanceReport
+        componentName="PhotosSection"
+        metrics={metrics}
+        visible={showPerfReport}
       />
     </div>
   );
