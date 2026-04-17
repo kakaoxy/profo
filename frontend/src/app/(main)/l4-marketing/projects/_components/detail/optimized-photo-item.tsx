@@ -50,6 +50,8 @@ function useLazyLoad<T extends HTMLElement>() {
 function useImageLoader(src: string | undefined) {
   const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">("idle");
   const [loadTime, setLoadTime] = useState<number>(0);
+  // 使用 ref 跟踪加载是否已完成，避免超时后覆盖成功状态
+  const isCompleteRef = useRef(false);
 
   useEffect(() => {
     if (!src) {
@@ -57,6 +59,8 @@ function useImageLoader(src: string | undefined) {
       return;
     }
 
+    // 重置完成标记
+    isCompleteRef.current = false;
     setStatus("loading");
     const startTime = performance.now();
 
@@ -64,17 +68,21 @@ function useImageLoader(src: string | undefined) {
     img.src = src;
 
     img.onload = () => {
+      isCompleteRef.current = true;
       setStatus("loaded");
       setLoadTime(Math.round(performance.now() - startTime));
     };
 
     img.onerror = () => {
+      isCompleteRef.current = true;
       setStatus("error");
     };
 
     // 超时处理
     const timeout = setTimeout(() => {
-      setStatus("error");
+      if (!isCompleteRef.current) {
+        setStatus("error");
+      }
     }, 10000);
 
     return () => clearTimeout(timeout);
