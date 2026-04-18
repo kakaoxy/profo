@@ -13,6 +13,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   Smartphone,
+  LucideIcon,
 } from "lucide-react";
 import {
   Collapsible,
@@ -59,7 +60,15 @@ interface User {
   };
 }
 
-const data = {
+interface NavItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  isActive?: boolean;
+  items?: { title: string; url: string }[];
+}
+
+const data: { navMain: NavItem[] } = {
   navMain: [
     {
       title: "工作台",
@@ -101,17 +110,64 @@ const data = {
         { title: "权限管理", url: "/users/roles" },
       ],
     },
-
   ],
 };
+
+interface MenuButtonProps {
+  item: NavItem;
+  isActive: boolean | undefined;
+  state: "expanded" | "collapsed";
+  hasSubmenu: boolean | undefined;
+}
+
+const MenuButton = React.forwardRef<
+  HTMLButtonElement,
+  MenuButtonProps & Omit<React.ComponentProps<typeof SidebarMenuButton>, "isActive" | "tooltip">
+>(({ item, isActive, state, hasSubmenu, ...props }, ref) => {
+  const Icon = item.icon;
+  const buttonContent = (
+    <SidebarMenuButton
+      ref={ref}
+      tooltip={state === "collapsed" && !hasSubmenu ? item.title : undefined}
+      isActive={isActive}
+      className={`
+        rounded-lg px-3 py-2.5 transition-all duration-200
+        ${isActive
+          ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium shadow-sm"
+          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
+        }
+      `}
+      {...props}
+    >
+      <Icon
+        className={`h-5 w-5 ${isActive ? "text-slate-800 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}
+        strokeWidth={isActive ? 2 : 1.5}
+      />
+      <span className="text-sm tracking-tight">{item.title}</span>
+      {state === "expanded" && hasSubmenu && (
+        <ChevronRight className="ml-auto h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+      )}
+    </SidebarMenuButton>
+  );
+
+  if (item.url && item.url !== "#") {
+    return (
+      <Link href={item.url} className="w-full">
+        {buttonContent}
+      </Link>
+    );
+  }
+  return buttonContent;
+});
+MenuButton.displayName = "MenuButton";
 
 export function AppSidebar({ user }: { user: User | null }) {
   const { state, isMobile } = useSidebar();
   const pathname = usePathname();
 
   return (
-    <Sidebar 
-      collapsible="icon" 
+    <Sidebar
+      collapsible="icon"
       className="border-r-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl"
     >
       {/* Apple-style Header */}
@@ -143,52 +199,6 @@ export function AppSidebar({ user }: { user: User | null }) {
                 pathname === item.url ||
                 item.items?.some((sub) => pathname.startsWith(sub.url));
 
-              const MenuButton = React.forwardRef<
-                HTMLButtonElement,
-                React.ComponentProps<typeof SidebarMenuButton>
-              >((props, ref) => {
-                const ButtonContent = (
-                  <SidebarMenuButton
-                    ref={ref}
-                    tooltip={
-                      state === "collapsed" && !hasSubmenu
-                        ? item.title
-                        : undefined
-                    }
-                    isActive={isActive}
-                    className={`
-                      rounded-lg px-3 py-2.5 transition-all duration-200
-                      ${isActive 
-                        ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium shadow-sm" 
-                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
-                      }
-                    `}
-                    {...props}
-                  >
-                    {item.icon && (
-                      <item.icon 
-                        className={`h-5 w-5 ${isActive ? "text-slate-800 dark:text-white" : "text-slate-500 dark:text-slate-400"}`} 
-                        strokeWidth={isActive ? 2 : 1.5}
-                      />
-                    )}
-                    <span className="text-sm tracking-tight">{item.title}</span>
-                    {state === "expanded" && hasSubmenu && (
-                      <ChevronRight className="ml-auto h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    )}
-                  </SidebarMenuButton>
-                );
-
-                if (item.url && item.url !== "#") {
-                  return (
-                    <Link href={item.url} className="w-full">
-                      {ButtonContent}
-                    </Link>
-                  );
-                }
-                return ButtonContent;
-              });
-              MenuButton.displayName = "MenuButton";
-
               if (state === "collapsed") {
                 if (hasSubmenu) {
                   return (
@@ -196,7 +206,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                       <HoverCard openDelay={100} closeDelay={200}>
                         <HoverCardTrigger asChild>
                           <div>
-                            <MenuButton />
+                            <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
                           </div>
                         </HoverCardTrigger>
                         <HoverCardContent
@@ -232,7 +242,7 @@ export function AppSidebar({ user }: { user: User | null }) {
 
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <MenuButton />
+                    <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
                   </SidebarMenuItem>
                 );
               }
@@ -247,7 +257,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
-                        <MenuButton />
+                        <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub className="ml-5 mt-1 border-l border-slate-200/60 dark:border-slate-700/60 pl-3 space-y-1">
@@ -279,7 +289,7 @@ export function AppSidebar({ user }: { user: User | null }) {
 
               return (
                 <SidebarMenuItem key={item.title}>
-                  <MenuButton />
+                  <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
                 </SidebarMenuItem>
               );
             })}
@@ -335,7 +345,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">{user?.role?.name || "管理员"}</p>
               </div>
               <DropdownMenuSeparator className="hidden" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => logoutAction()}
                 className="rounded-lg px-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer"
               >
