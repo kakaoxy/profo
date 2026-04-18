@@ -50,7 +50,7 @@ export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
       {isVisible ? (
         <Image
           src={getFileUrl(photo.url)}
-          alt=""
+          alt={photo.description || photo.filename || "装修照片"}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
           loading="lazy"
