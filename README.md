@@ -206,29 +206,51 @@ graph LR
 backend/
 ├── routers/              # API路由层
 │   ├── projects_simple.py      # 项目路由
+│   ├── projects_renovation.py # 装修路由
+│   ├── projects_sales.py      # 销售路由
 │   ├── leads.py               # 线索路由
 │   ├── l4_marketing.py        # 营销路由
 │   ├── auth.py                # 认证路由
+│   ├── users.py               # 用户路由
+│   ├── roles.py               # 角色路由
+│   ├── files.py               # 文件路由
+│   ├── upload.py              # 上传路由
+│   ├── cashflow_simple.py     # 现金流路由
+│   ├── properties.py          # 房源路由
 │   └── ...
 ├── services/             # 业务逻辑层
 │   ├── project_service.py     # 项目服务
+│   ├── project_core.py        # 项目核心服务
+│   ├── project_renovation.py  # 装修服务
+│   ├── project_sales.py       # 销售服务
+│   ├── project_finance.py     # 财务服务
 │   ├── l4_marketing_service.py # 营销服务
 │   ├── auth_service.py        # 认证服务
+│   ├── user_service.py        # 用户服务
 │   └── ...
 ├── models/               # 数据模型层
 │   ├── project.py             # 项目模型
 │   ├── user.py                # 用户模型
 │   ├── lead.py                # 线索模型
+│   ├── community.py           # 小区模型
+│   ├── property.py            # 房源模型
+│   ├── media.py               # 媒体模型
+│   ├── l4_marketing.py        # 营销模型
 │   └── base.py                # 基础模型
 ├── schemas/              # Pydantic模型
 │   ├── project.py             # 项目Schema
+│   ├── user.py                # 用户Schema
+│   ├── lead.py                # 线索Schema
 │   └── ...
 ├── dependencies/         # 依赖注入
 │   ├── auth.py                # 认证依赖
 │   └── projects.py            # 项目依赖
-└── utils/                # 工具函数
-    ├── auth.py                # 认证工具
-    └── permission.py          # 权限工具
+├── utils/                # 工具函数
+│   ├── auth.py                # 认证工具
+│   ├── permission.py          # 权限工具
+│   └── query_params.py        # 查询参数工具
+└── tests/                     # 测试目录
+    └── ...
 ```
 
 ### 数据库架构详解
@@ -315,14 +337,14 @@ source .venv/bin/activate
 
 # 5. 安装依赖
 uv pip install -e .
-
+```bash
 # 6. 配置环境变量
 cp .env.example .env
-# 编辑 .env 文件，设置必要配置：
-# - JWT_SECRET_KEY
-# - WECHAT_APPID
-# - WECHAT_SECRET
-
+# 编辑 .env 文件，设置必要配置（必须设置 JWT_SECRET_KEY）：
+# - JWT_SECRET_KEY（必填）
+# - WECHAT_APPID（可选，微信登录用）
+# - WECHAT_SECRET（可选，微信登录用）
+```
 # 7. 初始化数据库
 uv run python init_db.py
 
@@ -353,7 +375,7 @@ uv run alembic upgrade head
 
 ```
 账号: admin
-密码: admin123..
+密码: admin123
 ```
 
 ---
@@ -460,11 +482,11 @@ main                 # 生产分支
 #### RESTful API规范
 
 ```
-GET    /api/v1/projects          # 列表查询
-POST   /api/v1/projects          # 创建资源
-GET    /api/v1/projects/{id}     # 详情查询
-PUT    /api/v1/projects/{id}     # 更新资源
-DELETE /api/v1/projects/{id}     # 删除资源
+GET    /api/projects          # 列表查询
+POST   /api/projects          # 创建资源
+GET    /api/projects/{id}     # 详情查询
+PUT    /api/projects/{id}     # 更新资源
+DELETE /api/projects/{id}     # 删除资源
 ```
 
 #### 响应格式
@@ -509,12 +531,12 @@ DELETE /api/v1/projects/{id}     # 删除资源
 #### 1. 用户登录
 
 ```http
-POST /api/v1/auth/login
+POST /api/auth/login
 Content-Type: application/json
 
 {
   "username": "admin",
-  "password": "Fdd123.."
+  "password": "admin123"
 }
 ```
 
@@ -538,7 +560,7 @@ Content-Type: application/json
 #### 2. 获取当前用户
 
 ```http
-GET /api/v1/auth/me
+GET /api/auth/me
 Authorization: Bearer {access_token}
 ```
 
@@ -547,7 +569,7 @@ Authorization: Bearer {access_token}
 #### 1. 获取项目列表
 
 ```http
-GET /api/v1/projects?page=1&page_size=20&status=signing
+GET /api/projects?page=1&page_size=20&status=signing
 Authorization: Bearer {access_token}
 ```
 
@@ -576,7 +598,7 @@ Authorization: Bearer {access_token}
 #### 2. 创建项目
 
 ```http
-POST /api/v1/projects
+POST /api/projects
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -594,7 +616,7 @@ Content-Type: application/json
 #### 3. 更新项目状态
 
 ```http
-PUT /api/v1/projects/{id}/status
+PUT /api/projects/{id}/status
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -609,14 +631,14 @@ Content-Type: application/json
 #### 1. 获取线索列表
 
 ```http
-GET /api/v1/leads?page=1&page_size=20&status=pending_assessment
+GET /api/leads?page=1&page_size=20&status=pending_assessment
 Authorization: Bearer {access_token}
 ```
 
 #### 2. 创建线索
 
 ```http
-POST /api/v1/leads
+POST /api/leads
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -632,7 +654,7 @@ Content-Type: application/json
 #### 3. 添加跟进记录
 
 ```http
-POST /api/v1/leads/{id}/follow-ups
+POST /api/leads/{id}/follow-ups
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -647,14 +669,14 @@ Content-Type: application/json
 #### 1. 获取营销项目列表
 
 ```http
-GET /api/v1/admin/l4-marketing/projects?page=1&page_size=20
+GET /api/admin/l4-marketing/projects?page=1&page_size=20
 Authorization: Bearer {access_token}
 ```
 
 #### 2. 创建营销项目
 
 ```http
-POST /api/v1/admin/l4-marketing/projects
+POST /api/admin/l4-marketing/projects
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -671,7 +693,7 @@ Content-Type: application/json
 #### 3. 添加媒体文件
 
 ```http
-POST /api/v1/admin/l4-marketing/projects/{id}/media
+POST /api/admin/l4-marketing/projects/{id}/media
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -686,22 +708,22 @@ Content-Type: application/json
 
 | 模块 | 端点 | 方法 | 描述 |
 |------|------|------|------|
-| 认证 | /api/v1/auth/login | POST | 用户登录 |
-| 认证 | /api/v1/auth/refresh | POST | 刷新Token |
-| 认证 | /api/v1/auth/me | GET | 获取当前用户 |
-| 用户 | /api/v1/users | GET/POST | 用户列表/创建 |
-| 用户 | /api/v1/users/{id} | GET/PUT/DELETE | 用户详情/更新/删除 |
-| 角色 | /api/v1/roles | GET/POST | 角色列表/创建 |
-| 项目 | /api/v1/projects | GET/POST | 项目列表/创建 |
-| 项目 | /api/v1/projects/{id} | GET/PUT/DELETE | 项目详情/更新/删除 |
-| 项目 | /api/v1/projects/{id}/status | PUT | 更新项目状态 |
-| 项目 | /api/v1/projects/{id}/cashflow | GET/POST | 现金流查询/创建 |
-| 线索 | /api/v1/leads | GET/POST | 线索列表/创建 |
-| 线索 | /api/v1/leads/{id} | GET/PUT/DELETE | 线索详情/更新/删除 |
-| 线索 | /api/v1/leads/{id}/follow-ups | GET/POST | 跟进记录 |
-| 营销 | /api/v1/admin/l4-marketing/projects | GET/POST | 营销项目列表/创建 |
-| 营销 | /api/v1/admin/l4-marketing/projects/{id} | GET/PUT/DELETE | 营销项目详情/更新/删除 |
-| 文件 | /api/v1/files/upload | POST | 文件上传 |
+| 认证 | /api/auth/login | POST | 用户登录 |
+| 认证 | /api/auth/refresh | POST | 刷新Token |
+| 认证 | /api/auth/me | GET | 获取当前用户 |
+| 用户 | /api/users | GET/POST | 用户列表/创建 |
+| 用户 | /api/users/{id} | GET/PUT/DELETE | 用户详情/更新/删除 |
+| 角色 | /api/roles | GET/POST | 角色列表/创建 |
+| 项目 | /api/projects | GET/POST | 项目列表/创建 |
+| 项目 | /api/projects/{id} | GET/PUT/DELETE | 项目详情/更新/删除 |
+| 项目 | /api/projects/{id}/status | PUT | 更新项目状态 |
+| 项目 | /api/projects/{id}/cashflow | GET/POST | 现金流查询/创建 |
+| 线索 | /api/leads | GET/POST | 线索列表/创建 |
+| 线索 | /api/leads/{id} | GET/PUT/DELETE | 线索详情/更新/删除 |
+| 线索 | /api/leads/{id}/follow-ups | GET/POST | 跟进记录 |
+| 营销 | /api/admin/l4-marketing/projects | GET/POST | 营销项目列表/创建 |
+| 营销 | /api/admin/l4-marketing/projects/{id} | GET/PUT/DELETE | 营销项目详情/更新/删除 |
+| 文件 | /api/files/upload | POST | 文件上传 |
 
 ---
 
@@ -729,8 +751,12 @@ erDiagram
         string password
         string nickname
         string phone
+        string avatar
+        string wechat_openid
+        string wechat_unionid
         string role_id
         string status
+        boolean must_change_password
         datetime last_login_at
         datetime created_at
     }
@@ -849,8 +875,13 @@ erDiagram
 | password | String(255) | 密码哈希 |
 | nickname | String(100) | 昵称 |
 | phone | String(20) | 手机号，唯一 |
+| avatar | String(500) | 头像URL |
+| wechat_openid | String(100) | 微信OpenID，唯一 |
+| wechat_unionid | String(100) | 微信UnionID，唯一 |
+| wechat_session_key | String(100) | 微信会话密钥 |
 | role_id | String(36) | 角色ID，外键 |
 | status | String(20) | 状态: active/inactive/banned |
+| must_change_password | Boolean | 是否必须修改密码 |
 | last_login_at | DateTime | 最后登录时间 |
 
 **索引：**
@@ -870,8 +901,8 @@ erDiagram
 | area | Numeric(10,2) | 产证面积(m²) |
 | layout | String(50) | 户型 |
 | orientation | String(50) | 朝向 |
-| status | Enum | 项目状态 |
-| renovation_stage | Enum | 改造子阶段 |
+| status | Enum | 项目状态: signing/renovating/selling/sold/deleted |
+| renovation_stage | Enum | 改造子阶段: 拆除/设计/水电/木瓦/油漆/安装/交付/已完成 |
 | is_deleted | Boolean | 逻辑删除标记 |
 
 **索引：**
@@ -924,7 +955,7 @@ erDiagram
 | total_price | Numeric(15,2) | 总价(万) |
 | unit_price | Numeric(12,2) | 单价(元/m²) |
 | eval_price | Numeric(15,2) | 评估价(万) |
-| status | Enum | 线索状态 |
+| status | Enum | 线索状态: pending_assessment/pending_visit/rejected/visited/signed |
 | district | String(50) | 行政区 |
 | business_area | String(50) | 商圈 |
 
@@ -1164,7 +1195,7 @@ pnpm gen-api
 **检查清单：**
 
 1. 确认文件大小不超过限制（默认100MB）
-2. 确认文件类型在允许列表中
+2. 确认文件类型在允许列表中（支持：.jpg, .jpeg, .png, .pdf, .xlsx, .xls, .csv, .doc, .docx）
 3. 检查static/uploads目录是否有写入权限
 4. 确认Content-Type设置为multipart/form-data
 
