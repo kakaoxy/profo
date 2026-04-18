@@ -2,8 +2,8 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
-import type { ProjectQueryParams } from "../_components/project-selector/types";
-import type { ActionResult } from "./projects";
+import type { ProjectQueryParams } from "@/app/(main)/l4-marketing/projects/_components/project-selector/types";
+import type { ActionResult } from "@/app/(main)/l4-marketing/projects/actions/projects";
 
 /**
  * 获取可关联的L3项目列表

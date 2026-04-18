@@ -2,7 +2,7 @@ import React from "react";
 import { fetchClient } from "@/lib/api-server";
 import { z } from "zod";
 import { notFound } from "next/navigation";
-import type { L4MarketingProject, L4MarketingMedia, PhotoCategory } from "../../types";
+import type { L4MarketingProject, L4MarketingMedia, PhotoCategory } from "@/app/(main)/l4-marketing/projects/types";
 import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
 import { ArrowLeft, Eye } from "lucide-react";

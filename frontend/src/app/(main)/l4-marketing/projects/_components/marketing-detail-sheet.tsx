@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
-import type { L4MarketingProject, L4MarketingMedia } from "../types";
+import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import {
   getL4MarketingProjectAction,
   getL4MarketingMediaAction,

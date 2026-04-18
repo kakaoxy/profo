@@ -1,12 +1,12 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
 import type {
   L4MarketingMediaCreate,
   L4MarketingMediaUpdate,
-} from "../types";
+} from "@/app/(main)/l4-marketing/projects/types";
 
 /**
  * 获取媒体列表
@@ -70,8 +70,8 @@ export async function createL4MarketingMediaAction(
       };
     }
 
-    revalidatePath(`/l4-marketing/projects/${projectId}`);
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag(`l4-marketing-project-${projectId}`, { expire: 0 });
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data };
   } catch (e) {
     console.error("创建媒体异常:", e);
@@ -109,8 +109,8 @@ export async function updateL4MarketingMediaAction(
       };
     }
 
-    revalidatePath(`/l4-marketing/projects/${projectId}`);
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag(`l4-marketing-project-${projectId}`, { expire: 0 });
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data };
   } catch (e) {
     console.error("更新媒体异常:", e);
@@ -142,8 +142,8 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
       };
     }
 
-    revalidatePath(`/l4-marketing/projects/${projectId}`);
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag(`l4-marketing-project-${projectId}`, { expire: 0 });
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true };
   } catch (e) {
     console.error("删除媒体异常:", e);
@@ -180,8 +180,8 @@ export async function batchAddL4PhotosAction(
     }
   }
 
-  revalidatePath(`/l4-marketing/projects/${projectId}`);
-  revalidatePath("/l4-marketing/projects");
+  revalidateTag(`l4-marketing-project-${projectId}`, { expire: 0 });
+  revalidateTag("l4-marketing-projects", { expire: 0 });
 
   if (errors.length > 0) {
     return {
@@ -218,8 +218,8 @@ export async function batchUpdateMediaSortOrderAction(
       return { success: false, error: message };
     }
 
-    revalidatePath(`/l4-marketing/projects/${projectId}`);
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag(`l4-marketing-project-${projectId}`, { expire: 0 });
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data };
   } catch (e) {
     console.error("更新媒体排序异常:", e);

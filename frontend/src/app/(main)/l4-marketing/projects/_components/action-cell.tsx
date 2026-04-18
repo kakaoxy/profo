@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
-import { L4MarketingProject } from "../types";
+import { L4MarketingProject } from "@/app/(main)/l4-marketing/projects/types";
 import { deleteL4MarketingProjectAction } from "../actions";
 import { toast } from "sonner";
 import { memo, useCallback, useState } from "react";

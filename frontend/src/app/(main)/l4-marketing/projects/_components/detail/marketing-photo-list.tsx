@@ -3,7 +3,7 @@
 import { memo, useMemo, useCallback } from "react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
-import type { L4MarketingMedia } from "../../types";
+import type { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import { OptimizedPhotoItem } from "./optimized-photo-item";
 import { usePerformanceMonitor } from "./performance-monitor";
 import { cn } from "@/lib/utils";

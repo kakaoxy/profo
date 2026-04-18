@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, Suspense, lazy } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { L4MarketingMedia, PhotoCategory, RENOVATION_STAGES } from "../../types";
+import { L4MarketingMedia, PhotoCategory, RENOVATION_STAGES } from "@/app/(main)/l4-marketing/projects/types";
 import { customCollisionDetection } from "./collision-detection";
 import { PhotoDragOverlay } from "./photo-drag-overlay";
 import { PhotoCategorySelector } from "./photo-category-selector";
