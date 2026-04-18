@@ -40,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright snapshots and test artifacts
+*-snapshots/
+*.yaml
+after-drag.yaml
+
+# Package manager lock files (using pnpm)
+package-lock.json
+yarn.lock
+
+# OpenAPI generated files (generated from backend)
+openapi.json
