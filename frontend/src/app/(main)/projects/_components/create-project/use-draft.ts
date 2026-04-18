@@ -13,24 +13,45 @@ interface UseDraftProps {
 }
 
 /**
+ * 防抖函数返回类型
+ * 包含主函数和取消方法
+ */
+interface DebouncedFunction<T extends (...args: unknown[]) => void> {
+  (...args: Parameters<T>): void;
+  cancel: () => void;
+}
+
+/**
  * 防抖函数
  * @param fn 要执行的函数
  * @param delay 延迟时间（毫秒）
+ * @returns 防抖函数和取消方法
  */
 function debounce<T extends (...args: unknown[]) => void>(
   fn: T,
   delay: number
-): (...args: Parameters<T>) => void {
+): DebouncedFunction<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  return (...args: Parameters<T>) => {
+  const debouncedFn = (...args: Parameters<T>) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
     timeoutId = setTimeout(() => {
       fn(...args);
+      timeoutId = null;
     }, delay);
   };
+
+  // 添加取消方法，用于清理待执行的定时器
+  debouncedFn.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  return debouncedFn;
 }
 
 /**
@@ -41,7 +62,7 @@ function debounce<T extends (...args: unknown[]) => void>(
  */
 export function useDraft({ form, open, isEditMode }: UseDraftProps) {
   // 使用 ref 存储防抖函数，避免重复创建
-  const saveDraftRef = useRef<ReturnType<typeof debounce> | null>(null);
+  const saveDraftRef = useRef<DebouncedFunction<(value: unknown) => void> | null>(null);
 
   // 草稿恢复
   useEffect(() => {
@@ -86,20 +107,22 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
 
     return () => {
       subscription.unsubscribe();
-      // 组件卸载时立即保存一次，确保数据不丢失
-      if (saveDraftRef.current) {
-        const currentValues = form.getValues();
-        try {
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(currentValues));
-        } catch (e) {
-          console.error("Failed to save draft on cleanup:", e);
-        }
+      // 取消待执行的防抖定时器，防止内存泄漏
+      saveDraftRef.current?.cancel();
+      // 立即保存当前值，确保数据不丢失
+      const currentValues = form.getValues();
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(currentValues));
+      } catch (e) {
+        console.error("Failed to save draft on cleanup:", e);
       }
     };
   }, [open, form, isEditMode]);
 
   // 清除草稿
   const clearDraft = useCallback(() => {
+    // 取消待执行的保存操作
+    saveDraftRef.current?.cancel();
     localStorage.removeItem(DRAFT_KEY);
     form.reset({ community_name: "" });
     toast.success("草稿已清空");
