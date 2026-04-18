@@ -80,3 +80,40 @@ export interface CashFlowApiResponse {
   records: CashFlowRecordRaw[];
   summary: CashFlowSummaryRaw;
 }
+
+// ==========================================
+// 4. 数据映射函数
+// ==========================================
+
+/**
+ * 将后端原始记录映射为前端组件使用的数据结构
+ */
+export function mapToCashFlowRecord(
+  raw: CashFlowRecordRaw,
+  projectId: string
+): CashFlowRecord {
+  return {
+    id: raw.id,
+    project_id: projectId,
+    type: raw.type,
+    category: raw.category,
+    amount: Number(raw.amount),
+    date: raw.date,
+    notes: raw.description,
+    created_at: raw.created_at,
+  };
+}
+
+/**
+ * 将后端原始统计数据映射为前端组件使用的数据结构
+ */
+export function mapToCashFlowStats(raw: CashFlowSummaryRaw): CashFlowStats {
+  return {
+    total_income: Number(raw.total_income),
+    total_expense: Number(raw.total_expense),
+    net_cash_flow: Number(raw.net_cash_flow),
+    roi: Number(raw.roi ?? 0),
+    annualized_return: Number(raw.annualized_return ?? 0),
+    holding_days: Number(raw.holding_days ?? 0),
+  };
+}

@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { deleteCashFlowRecordAction } from "./client-actions";
+import { deleteCashFlowRecordAction } from "../actions";
 import { toast } from "sonner";
 
 import { CashFlowRecord } from "../types";
@@ -206,7 +206,6 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
         projectId={projectId}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        // [修复] 传递 onSuccess 回调
         onSuccess={() => {
           if (onRefresh) onRefresh();
         }}

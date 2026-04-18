@@ -15,8 +15,13 @@ import {
 import { HeaderStats } from "./header-stats";
 import { TrendChart } from "./trend-chart";
 import { LedgerTable } from "./ledger-table";
-import { getProjectCashFlowAction } from "./client-actions";
-import { CashFlowRecord, CashFlowStats } from "../types";
+import { getProjectCashFlowAction } from "../actions";
+import {
+  CashFlowRecord,
+  CashFlowStats,
+  mapToCashFlowRecord,
+  mapToCashFlowStats,
+} from "../types";
 
 export function CashFlowSheet() {
   const router = useRouter();
@@ -51,25 +56,10 @@ export function CashFlowSheet() {
         return;
       }
 
-      const records = apiData.records.map((r) => ({
-        id: r.id,
-        project_id: projectId,
-        type: r.type,
-        category: r.category,
-        amount: Number(r.amount),
-        date: r.date,
-        notes: r.description,
-        created_at: r.created_at,
-      })) as CashFlowRecord[];
-
-      const stats = {
-        total_income: Number(apiData.summary.total_income),
-        total_expense: Number(apiData.summary.total_expense),
-        net_cash_flow: Number(apiData.summary.net_cash_flow),
-        roi: Number(apiData.summary.roi || 0),
-        annualized_return: Number(apiData.summary.annualized_return || 0),
-        holding_days: Number(apiData.summary.holding_days || 0),
-      };
+      const records = apiData.records.map((r) =>
+        mapToCashFlowRecord(r, projectId)
+      );
+      const stats = mapToCashFlowStats(apiData.summary);
 
       setData({ stats, records });
     } catch (error) {

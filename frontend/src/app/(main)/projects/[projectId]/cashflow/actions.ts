@@ -3,42 +3,16 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
-
-// ==========================================
-// 1. 手动定义类型 (与后端 Pydantic Schema 保持一致)
-// ==========================================
-
-// [关键修复] 更新为 type, date, description 以匹配后端
-export interface CashFlowRecordResponse {
-  id: string;
-  project_id: string;
-  type: "income" | "expense"; // 后端字段: type
-  category: string;
-  amount: number | string;
-  date: string; // 后端字段: date
-  description?: string; // 后端字段: description
-  created_at: string;
-}
-
-// 对应后端 CashFlowSummary
-export interface CashFlowSummary {
-  total_income: number;
-  total_expense: number;
-  net_cash_flow: number;
-  roi?: number;
-  annualized_return?: number;
-  holding_days?: number;
-}
-
-// 对应后端响应结构
-interface CashFlowData {
-  records: CashFlowRecordResponse[];
-  summary: CashFlowSummary;
-}
+import {
+  CashFlowRecordRaw,
+  CashFlowSummaryRaw,
+  CashFlowApiResponse,
+  TransactionType,
+} from "./types";
 
 // 前端创建表单的 Payload
 interface CashFlowCreatePayload {
-  type: "income" | "expense";
+  type: TransactionType;
   category: string;
   amount: number | string;
   date: string;
@@ -64,7 +38,7 @@ export async function getProjectCashFlowAction(projectId: string) {
     return null;
   }
 
-  const cashFlowData = extractApiData<CashFlowData>(data);
+  const cashFlowData = extractApiData<CashFlowApiResponse>(data);
   return cashFlowData ?? null;
 }
 
