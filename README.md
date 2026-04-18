@@ -102,7 +102,7 @@ graph TB
 ```mermaid
 graph TB
     subgraph "L4 市场营销层"
-        L4[mini_projects - CMS]
+        L4[l4_marketing_projects - CMS]
         L4D[角色: 门面与作品集]
         L4F[职责: 房源营销展示<br/>历史案例作品集]
     end
@@ -152,21 +152,56 @@ frontend/src/
 ├── app/                    # Next.js App Router
 │   ├── (main)/            # 主布局路由组
 │   │   ├── projects/      # 项目管理模块
+│   │   │   ├── [projectId]/  # 项目详情路由
+│   │   │   │   └── cashflow/ # 现金流模块
+│   │   │   ├── _components/  # 项目共享组件
+│   │   │   │   ├── create-project/  # 创建项目组件
+│   │   │   │   ├── monitor/        # 监控大屏组件
+│   │   │   │   └── project-detail/ # 项目详情组件
+│   │   │   └── actions/     # 项目相关API actions
 │   │   ├── leads/         # 线索管理模块
+│   │   │   ├── _components/  # 线索共享组件
+│   │   │   │   ├── add-lead-parts/   # 添加线索组件
+│   │   │   │   └── drawer-parts/     # 抽屉组件
+│   │   │   ├── actions/    # 线索相关API actions
+│   │   │   ├── constants/  # 常量配置
+│   │   │   └── hooks/      # 线索模块hooks
 │   │   ├── l4-marketing/  # 营销管理模块
+│   │   │   ├── projects/
+│   │   │   │   ├── [id]/   # 营销项目详情
+│   │   │   │   │   ├── _components/  # 详情页组件
+│   │   │   │   │   ├── edit/         # 编辑页面
+│   │   │   │   │   └── preview/      # 预览页面
+│   │   │   │   └── _components/
+│   │   │   │       ├── common/       # 通用组件
+│   │   │   │       ├── detail/       # 详情组件
+│   │   │   │       ├── photo-manager/# 照片管理组件
+│   │   │   │       ├── project-form/ # 项目表单组件
+│   │   │   │       └── project-selector/ # 项目选择器
+│   │   │   └── actions/    # 营销相关API actions
 │   │   ├── properties/    # 房源管理模块
+│   │   │   ├── _components/  # 房源共享组件
+│   │   │   ├── governance/    # 房源治理模块
+│   │   │   ├── upload/       # 房源上传模块
+│   │   │   └── actions.ts    # 房源API actions
 │   │   └── users/         # 用户管理模块
+│   │       ├── _components/  # 用户共享组件
+│   │       ├── roles/        # 角色管理
+│   │       └── actions/      # 用户API actions
+│   ├── api/               # Next.js API路由
+│   │   └── auth/          # 认证相关API
+│   │       └── refresh/    # Token刷新
+│   ├── login/             # 登录页面
+│   │   ├── actions.ts     # 登录actions
+│   │   └── refresh-action.ts
 │   ├── layout.tsx         # 根布局
 │   └── globals.css        # 全局样式
-├── components/
-│   ├── ui/               # Shadcn UI组件
-│   ├── app-sidebar.tsx   # 应用侧边栏
-│   └── swr-provider.tsx  # SWR配置提供者
+├── components.json        # Shadcn UI组件配置
 ├── lib/
 │   ├── api-server.ts     # API客户端
 │   ├── api-types.d.ts    # OpenAPI生成类型
 │   └── utils.ts          # 工具函数
-└── hooks/                # 自定义Hooks
+└── hooks/                # 自定义Hooks (分散在各模块内)
 ```
 
 #### 状态管理方案
@@ -210,6 +245,7 @@ backend/
 │   ├── projects_sales.py      # 销售路由
 │   ├── leads.py               # 线索路由
 │   ├── l4_marketing.py        # 营销路由
+│   ├── l4_marketing_import.py # 营销导入路由
 │   ├── auth.py                # 认证路由
 │   ├── users.py               # 用户路由
 │   ├── roles.py               # 角色路由
@@ -217,7 +253,9 @@ backend/
 │   ├── upload.py              # 上传路由
 │   ├── cashflow_simple.py     # 现金流路由
 │   ├── properties.py          # 房源路由
-│   └── ...
+│   ├── admin.py               # 管理后台路由
+│   ├── monitor.py             # 监控路由
+│   └── push.py                # 推送路由
 ├── services/             # 业务逻辑层
 │   ├── project_service.py     # 项目服务
 │   ├── project_core.py        # 项目核心服务
@@ -225,22 +263,58 @@ backend/
 │   ├── project_sales.py       # 销售服务
 │   ├── project_finance.py     # 财务服务
 │   ├── l4_marketing_service.py # 营销服务
+│   ├── l4_marketing_query.py  # 营销查询服务
+│   ├── l4_marketing_import.py # 营销导入服务
 │   ├── auth_service.py        # 认证服务
 │   ├── user_service.py        # 用户服务
-│   └── ...
+│   ├── role_service.py        # 角色服务
+│   ├── cashflow_service.py    # 现金流服务
+│   ├── monitor_service.py     # 监控服务
+│   ├── property_query_service.py # 房源查询服务
+│   ├── merger.py              # 数据合并服务
+│   ├── parser.py              # 解析服务
+│   ├── importer.py            # 导入服务
+│   ├── csv_batch_importer.py   # CSV批量导入
+│   ├── error_service.py       # 错误处理服务
+│   ├── builders/              # 响应构建器
+│   │   └── project_response_builder.py
+│   ├── core/                  # 核心业务
+│   │   └── project_core_service.py
+│   ├── queries/               # 查询逻辑
+│   │   └── project_query.py
+│   ├── state/                 # 状态管理
+│   │   └── project_state_manager.py
+│   └── utils/                 # 服务工具
+│       └── date_parser.py
 ├── models/               # 数据模型层
-│   ├── project.py             # 项目模型
-│   ├── user.py                # 用户模型
-│   ├── lead.py                # 线索模型
+│   ├── project.py             # 项目模型(含Project, ProjectContract, ProjectOwner等)
+│   ├── user.py                # 用户模型(含User, Role)
+│   ├── lead.py                # 线索模型(含Lead, LeadFollowUp, LeadPriceHistory)
 │   ├── community.py           # 小区模型
 │   ├── property.py            # 房源模型
 │   ├── media.py               # 媒体模型
-│   ├── l4_marketing.py        # 营销模型
-│   └── base.py                # 基础模型
+│   ├── l4_marketing.py         # 营销模型
+│   ├── error.py               # 错误模型
+│   └── base.py                # 基础模型和枚举
 ├── schemas/              # Pydantic模型
 │   ├── project.py             # 项目Schema
 │   ├── user.py                # 用户Schema
 │   ├── lead.py                # 线索Schema
+│   ├── community.py           # 小区Schema
+│   ├── contract.py            # 合同Schema
+│   ├── owner.py               # 业主Schema
+│   ├── finance.py             # 财务Schema
+│   ├── renovation.py          # 装修Schema
+│   ├── sale.py                # 销售Schema
+│   ├── followup.py            # 跟进记录Schema
+│   ├── evaluation.py          # 评估Schema
+│   ├── interaction.py         # 互动记录Schema
+│   ├── status_log.py          # 状态日志Schema
+│   ├── l4_marketing.py        # 营销Schema
+│   ├── property.py            # 房源Schema
+│   ├── common.py              # 通用Schema
+│   ├── enums.py               # 枚举定义
+│   ├── response.py            # 响应Schema
 │   └── ...
 ├── dependencies/         # 依赖注入
 │   ├── auth.py                # 认证依赖
@@ -248,9 +322,33 @@ backend/
 ├── utils/                # 工具函数
 │   ├── auth.py                # 认证工具
 │   ├── permission.py          # 权限工具
-│   └── query_params.py        # 查询参数工具
-└── tests/                     # 测试目录
-    └── ...
+│   ├── query_params.py        # 查询参数工具
+│   ├── jwt_validator.py       # JWT验证器
+│   ├── param_parser.py        # 参数解析器
+│   └── error_formatters.py    # 错误格式化
+├── scripts/              # 运维脚本
+│   └── audit_db.py           # 数据库审计脚本
+├── tests/                # 测试目录
+│   ├── test_api.py
+│   ├── test_auth.py
+│   ├── test_projects.py
+│   ├── test_leads.py
+│   ├── test_l4_marketing.py
+│   ├── test_cashflow.py
+│   ├── test_detail_response.py
+│   ├── test_importer.py
+│   ├── test_l4_marketing_import.py
+│   ├── test_l4_marketing_service.py
+│   ├── test_monitor_api.py
+│   ├── test_status_flow.py
+│   ├── test_upload.py
+│   ├── test_users_refactor.py
+│   ├── test_date_normalization.py
+│   ├── test_exceptions.py
+│   ├── test_param_parser.py
+│   ├── test_parser.py
+│   └── test_query_params.py
+└── alembic/              # 数据库迁移
 ```
 
 ### 数据库架构详解
@@ -482,11 +580,11 @@ main                 # 生产分支
 #### RESTful API规范
 
 ```
-GET    /api/projects          # 列表查询
-POST   /api/projects          # 创建资源
-GET    /api/projects/{id}     # 详情查询
-PUT    /api/projects/{id}     # 更新资源
-DELETE /api/projects/{id}     # 删除资源
+GET    /api/v1/projects          # 列表查询
+POST   /api/v1/projects          # 创建资源
+GET    /api/v1/projects/{id}     # 详情查询
+PUT    /api/v1/projects/{id}     # 更新资源
+DELETE /api/v1/projects/{id}     # 删除资源
 ```
 
 #### 响应格式
@@ -531,7 +629,7 @@ DELETE /api/projects/{id}     # 删除资源
 #### 1. 用户登录
 
 ```http
-POST /api/auth/login
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -547,7 +645,7 @@ Content-Type: application/json
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
   "token_type": "bearer",
-  "expires_in": 3600,
+  "expires_in": 36000,
   "user": {
     "id": "uuid",
     "username": "admin",
@@ -560,7 +658,7 @@ Content-Type: application/json
 #### 2. 获取当前用户
 
 ```http
-GET /api/auth/me
+GET /api/v1/auth/me
 Authorization: Bearer {access_token}
 ```
 
@@ -569,7 +667,7 @@ Authorization: Bearer {access_token}
 #### 1. 获取项目列表
 
 ```http
-GET /api/projects?page=1&page_size=20&status=signing
+GET /api/v1/projects?page=1&page_size=20&status=signing
 Authorization: Bearer {access_token}
 ```
 
@@ -598,7 +696,7 @@ Authorization: Bearer {access_token}
 #### 2. 创建项目
 
 ```http
-POST /api/projects
+POST /api/v1/projects
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -616,7 +714,7 @@ Content-Type: application/json
 #### 3. 更新项目状态
 
 ```http
-PUT /api/projects/{id}/status
+PUT /api/v1/projects/{id}/status
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -631,14 +729,14 @@ Content-Type: application/json
 #### 1. 获取线索列表
 
 ```http
-GET /api/leads?page=1&page_size=20&status=pending_assessment
+GET /api/v1/leads?page=1&page_size=20&status=pending_assessment
 Authorization: Bearer {access_token}
 ```
 
 #### 2. 创建线索
 
 ```http
-POST /api/leads
+POST /api/v1/leads
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -654,7 +752,7 @@ Content-Type: application/json
 #### 3. 添加跟进记录
 
 ```http
-POST /api/leads/{id}/follow-ups
+POST /api/v1/leads/{id}/follow-ups
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -669,14 +767,14 @@ Content-Type: application/json
 #### 1. 获取营销项目列表
 
 ```http
-GET /api/admin/l4-marketing/projects?page=1&page_size=20
+GET /api/v1/admin/l4-marketing/projects?page=1&page_size=20
 Authorization: Bearer {access_token}
 ```
 
 #### 2. 创建营销项目
 
 ```http
-POST /api/admin/l4-marketing/projects
+POST /api/v1/admin/l4-marketing/projects
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -693,7 +791,7 @@ Content-Type: application/json
 #### 3. 添加媒体文件
 
 ```http
-POST /api/admin/l4-marketing/projects/{id}/media
+POST /api/v1/admin/l4-marketing/projects/{id}/media
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -708,22 +806,22 @@ Content-Type: application/json
 
 | 模块 | 端点 | 方法 | 描述 |
 |------|------|------|------|
-| 认证 | /api/auth/login | POST | 用户登录 |
-| 认证 | /api/auth/refresh | POST | 刷新Token |
-| 认证 | /api/auth/me | GET | 获取当前用户 |
-| 用户 | /api/users | GET/POST | 用户列表/创建 |
-| 用户 | /api/users/{id} | GET/PUT/DELETE | 用户详情/更新/删除 |
-| 角色 | /api/roles | GET/POST | 角色列表/创建 |
-| 项目 | /api/projects | GET/POST | 项目列表/创建 |
-| 项目 | /api/projects/{id} | GET/PUT/DELETE | 项目详情/更新/删除 |
-| 项目 | /api/projects/{id}/status | PUT | 更新项目状态 |
-| 项目 | /api/projects/{id}/cashflow | GET/POST | 现金流查询/创建 |
-| 线索 | /api/leads | GET/POST | 线索列表/创建 |
-| 线索 | /api/leads/{id} | GET/PUT/DELETE | 线索详情/更新/删除 |
-| 线索 | /api/leads/{id}/follow-ups | GET/POST | 跟进记录 |
-| 营销 | /api/admin/l4-marketing/projects | GET/POST | 营销项目列表/创建 |
-| 营销 | /api/admin/l4-marketing/projects/{id} | GET/PUT/DELETE | 营销项目详情/更新/删除 |
-| 文件 | /api/files/upload | POST | 文件上传 |
+| 认证 | /api/v1/auth/login | POST | 用户登录 |
+| 认证 | /api/v1/auth/refresh | POST | 刷新Token |
+| 认证 | /api/v1/auth/me | GET | 获取当前用户 |
+| 用户 | /api/v1/users | GET/POST | 用户列表/创建 |
+| 用户 | /api/v1/users/{id} | GET/PUT/DELETE | 用户详情/更新/删除 |
+| 角色 | /api/v1/roles | GET/POST | 角色列表/创建 |
+| 项目 | /api/v1/projects | GET/POST | 项目列表/创建 |
+| 项目 | /api/v1/projects/{id} | GET/PUT/DELETE | 项目详情/更新/删除 |
+| 项目 | /api/v1/projects/{id}/status | PUT | 更新项目状态 |
+| 项目 | /api/v1/projects/{id}/cashflow | GET/POST | 现金流查询/创建 |
+| 线索 | /api/v1/leads | GET/POST | 线索列表/创建 |
+| 线索 | /api/v1/leads/{id} | GET/PUT/DELETE | 线索详情/更新/删除 |
+| 线索 | /api/v1/leads/{id}/follow-ups | GET/POST | 跟进记录 |
+| 营销 | /api/v1/admin/l4-marketing/projects | GET/POST | 营销项目列表/创建 |
+| 营销 | /api/v1/admin/l4-marketing/projects/{id} | GET/PUT/DELETE | 营销项目详情/更新/删除 |
+| 文件 | /api/v1/files/upload | POST | 文件上传 |
 
 ---
 
@@ -739,22 +837,33 @@ erDiagram
     PROJECT ||--o{ PROJECT_OWNER : has
     PROJECT ||--|| PROJECT_SALE : has
     PROJECT ||--o{ PROJECT_FOLLOW_UP : has
+    PROJECT ||--o{ PROJECT_EVALUATION : has
+    PROJECT ||--o{ PROJECT_INTERACTION : has
     PROJECT ||--o{ FINANCE_RECORD : has
     PROJECT ||--o{ PROJECT_STATUS_LOG : has
     PROJECT ||--|| PROJECT_RENOVATION : has
     PROJECT_RENOVATION ||--o{ RENOVATION_PHOTO : has
-    LEAD ||--o{ FOLLOW_UP : has
+    LEAD ||--o{ LEAD_FOLLOWUP : has
+    LEAD ||--o{ LEAD_PRICE_HISTORY : has
+    LEAD ||--o| COMMUNITY : sourced_from
+    L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : has
+    L4_MARKETING_PROJECT }o--|| PROJECT : references
+    PROPERTY_CURRENT ||--o{ PROPERTY_HISTORY : snapshots
+    PROPERTY_CURRENT }o--|| COMMUNITY : belongs_to
+    COMMUNITY ||--o{ COMMUNITY_ALIAS : has
+    COMMUNITY ||--o{ COMMUNITY_COMPETITOR : competes_with
 
     USER {
-        string id
-        string username
+        string id PK
+        string username UK
         string password
         string nickname
-        string phone
+        string phone UK
         string avatar
-        string wechat_openid
-        string wechat_unionid
-        string role_id
+        string wechat_openid UK
+        string wechat_unionid UK
+        string wechat_session_key
+        string role_id FK
         string status
         boolean must_change_password
         datetime last_login_at
@@ -762,20 +871,20 @@ erDiagram
     }
 
     ROLE {
-        string id
-        string name
-        string code
+        string id PK
+        string name UK
+        string code UK
         text description
         json permissions
         boolean is_active
     }
 
     PROJECT {
-        string id
+        string id PK
         string name
         string community_name
         string address
-        string project_manager_id
+        string project_manager_id FK
         decimal area
         string layout
         string orientation
@@ -783,84 +892,295 @@ erDiagram
         string renovation_stage
         boolean is_deleted
         datetime created_at
+        datetime updated_at
     }
 
     PROJECT_CONTRACT {
-        string id
-        string project_id
-        string contract_no
+        string id PK
+        string project_id FK UK
+        string contract_no UK
         decimal signing_price
         datetime signing_date
         integer signing_period
+        integer extension_period
+        decimal extension_rent
+        string cost_assumption
+        datetime planned_handover_date
+        text other_agreements
+        json signing_materials
+        string contract_status
         boolean is_deleted
     }
 
     PROJECT_OWNER {
-        string id
-        string project_id
+        string id PK
+        string project_id FK
         string owner_name
         string owner_phone
+        string owner_id_card
         string relation_type
+        text owner_info
         boolean is_deleted
     }
 
     PROJECT_SALE {
-        string id
-        string project_id
+        string id PK
+        string project_id FK UK
         datetime listing_date
         decimal list_price
         datetime sold_date
         decimal sold_price
+        string channel_manager_id
+        string property_agent_id
+        string negotiator_id
         string transaction_status
+        boolean is_deleted
+    }
+
+    PROJECT_FOLLOW_UP {
+        string id PK
+        string project_id FK
+        string follow_up_type
+        text content
+        datetime follow_up_at
+        string follower_id
+    }
+
+    PROJECT_EVALUATION {
+        string id PK
+        string project_id FK
+        string evaluation_type
+        decimal evaluation_price
+        text remark
+        string evaluator_id
+        datetime evaluation_at
+    }
+
+    PROJECT_INTERACTION {
+        string id PK
+        string project_id FK
+        string record_type
+        string interaction_target
+        text content
+        datetime interaction_at
+        string operator_id
+        decimal price
     }
 
     FINANCE_RECORD {
-        string id
-        string project_id
+        string id PK
+        string project_id FK
         string type
         string category
         decimal amount
         datetime record_date
         string operator_id
+        text remark
+    }
+
+    PROJECT_STATUS_LOG {
+        string id PK
+        string project_id FK
+        string old_status
+        string new_status
+        string trigger_event
+        string operator_id
+        datetime operate_at
+        text remark
     }
 
     PROJECT_RENOVATION {
-        string id
-        string project_id
+        string id PK
+        string project_id FK UK
         string renovation_company
         datetime contract_start_date
         datetime contract_end_date
+        datetime actual_start_date
+        datetime actual_end_date
         decimal hard_contract_amount
         json stage_completed_dates
+        decimal soft_budget
+        decimal soft_actual_cost
+        string soft_detail_attachment
+        decimal design_fee
+        decimal demolition_fee
+        decimal garbage_fee
+        decimal other_extra_fee
+        text other_fee_reason
+        boolean is_deleted
     }
 
     RENOVATION_PHOTO {
-        string id
-        string project_id
-        string renovation_id
+        string id PK
+        string project_id FK
+        string renovation_id FK
         string stage
         string url
         string filename
+        text description
         boolean is_deleted
     }
 
     LEAD {
-        string id
+        string id PK
         string community_name
+        integer is_hot
         string layout
+        string orientation
+        string floor_info
         decimal area
         decimal total_price
+        decimal unit_price
+        decimal eval_price
         string status
+        text audit_reason
+        string auditor_id
+        datetime audit_time
+        json images
         string district
+        string business_area
+        text remarks
+        string creator_id
+        integer source_property_id
+        datetime last_follow_up_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    LEAD_FOLLOWUP {
+        string id PK
+        string lead_id FK
+        string method
+        text content
+        datetime followed_at
+        string created_by_id
+    }
+
+    LEAD_PRICE_HISTORY {
+        string id PK
+        string lead_id FK
+        decimal price
+        text remark
+        datetime recorded_at
+        string created_by_id
+    }
+
+    L4_MARKETING_PROJECT {
+        integer id PK
+        integer community_id FK
+        string community_name
+        string layout
+        string orientation
+        string floor_info
+        decimal area
+        decimal total_price
+        decimal unit_price
+        string title
+        text images
+        integer sort_order
+        string tags
+        string decoration_style
+        string publish_status
+        string project_status
+        string project_id FK
+        string consultant_id FK
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    L4_MARKETING_MEDIA {
+        integer id PK
+        integer marketing_project_id FK
+        string media_type
+        string photo_category
+        string renovation_stage
+        integer origin_media_id
+        text file_url
+        text thumbnail_url
+        text description
+        integer sort_order
+        boolean is_deleted
+        datetime created_at
+        datetime updated_at
+    }
+
+    COMMUNITY {
+        integer id PK
+        string name UK
+        integer city_id
+        string district
+        string business_circle
+        float avg_price_wan
+        integer total_properties
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    COMMUNITY_ALIAS {
+        integer id PK
+        integer community_id FK
+        string alias_name
+        string data_source
         datetime created_at
     }
 
-    FOLLOW_UP {
-        string id
-        string lead_id
-        string method
-        text content
-        datetime follow_up_at
+    COMMUNITY_COMPETITOR {
+        integer id PK
+        integer community_id FK
+        integer competitor_community_id FK
+        datetime created_at
+    }
+
+    PROPERTY_CURRENT {
+        integer id PK
+        string data_source
+        string source_property_id
+        integer community_id FK
+        string status
+        string property_type
+        integer rooms
+        integer halls
+        integer baths
+        string orientation
+        string floor_original
+        integer floor_number
+        integer total_floors
+        string floor_level
+        decimal build_area
+        decimal inner_area
+        decimal listed_price_wan
+        datetime listed_date
+        decimal sold_price_wan
+        datetime sold_date
+        integer build_year
+        string building_structure
+        string decoration
+        boolean elevator
+        string ownership_type
+        integer ownership_years
+        string last_transaction
+        string heating_method
+        text listing_remarks
+        datetime created_at
+        datetime updated_at
+    }
+
+    PROPERTY_HISTORY {
+        integer id PK
+        string data_source
+        string source_property_id
+        string change_type
+        datetime captured_at
+        string status
+        integer community_id
+        integer rooms
+        float build_area
+        float listed_price_wan
+        float sold_price_wan
+        datetime listed_date
+        datetime sold_date
     }
 ```
 
@@ -1102,7 +1422,7 @@ graph TB
     end
 
     subgraph "L4 营销层"
-        L4D[(mini_projects)]
+        L4D[(l4_marketing_projects)]
         L4M[媒体文件]
     end
 
@@ -1300,33 +1620,65 @@ ProFo/
 ├── frontend/                    # 前端项目
 │   ├── src/
 │   │   ├── app/                # Next.js App Router
-│   │   ├── components/         # 组件目录
+│   │   │   ├── (main)/         # 主布局路由组
+│   │   │   │   ├── projects/   # 项目管理模块
+│   │   │   │   ├── leads/      # 线索管理模块
+│   │   │   │   ├── l4-marketing/  # 营销管理模块
+│   │   │   │   ├── properties/ # 房源管理模块
+│   │   │   │   └── users/      # 用户管理模块
+│   │   │   ├── api/            # API路由
+│   │   │   └── login/          # 登录页面
 │   │   ├── lib/                # 工具库
-│   │   └── hooks/              # 自定义Hooks
+│   │   │   ├── api-server.ts   # API客户端
+│   │   │   ├── api-types.d.ts  # OpenAPI类型
+│   │   │   └── utils.ts         # 工具函数
+│   │   └── hooks/              # 自定义Hooks (分散在各模块)
 │   ├── public/                 # 静态资源
-│   ├── package.json            # 依赖配置
-│   └── next.config.ts          # Next.js配置
+│   ├── components.json          # Shadcn UI配置
+│   ├── package.json             # 依赖配置
+│   ├── next.config.ts          # Next.js配置
+│   ├── eslint.config.mjs       # ESLint配置
+│   └── postcss.config.mjs       # PostCSS配置
 │
 ├── backend/                     # 后端项目
-│   ├── routers/                # API路由
-│   ├── services/               # 业务逻辑
-│   ├── models/                 # 数据模型
+│   ├── routers/                # API路由层
+│   ├── services/               # 业务逻辑层
+│   │   ├── builders/          # 响应构建器
+│   │   ├── core/              # 核心业务
+│   │   ├── queries/           # 查询逻辑
+│   │   ├── state/             # 状态管理
+│   │   └── utils/             # 服务工具
+│   ├── models/                 # 数据模型层
 │   ├── schemas/                # Pydantic模型
 │   ├── dependencies/           # 依赖注入
 │   ├── utils/                  # 工具函数
+│   ├── scripts/                # 运维脚本
 │   ├── tests/                  # 测试目录
+│   ├── static/uploads/         # 上传文件目录
 │   ├── main.py                 # 应用入口
 │   ├── settings.py             # 配置管理
 │   ├── db.py                   # 数据库连接
+│   ├── alembic.ini             # Alembic配置
 │   └── pyproject.toml          # 项目配置
 │
 ├── deploy/                      # 部署配置
 │   ├── docker-compose.yml      # Docker编排
-│   ├── nginx.conf              # Nginx配置
-│   └── setup-server.sh         # 服务器初始化
+│   ├── deploy.sh               # 部署脚本
+│   ├── deploy.bat              # Windows部署脚本
+│   ├── ecosystem.config.js     # PM2配置
+│   ├── profo-nginx.conf        # Nginx配置
+│   ├── setup-server.sh         # 服务器初始化
+│   ├── .env.backend.production # 后端生产环境配置
+│   └── .env.frontend.production # 前端生产环境配置
 │
-└── docs/                        # 文档目录
-    └── project.md              # 项目文档
+├── docs/                        # 文档目录
+│   └── project.md              # 项目文档
+│
+├── .github/workflows/          # GitHub Actions
+│   └── lint.yml               # Lint工作流
+│
+├── .gitignore
+└── README.md                   # 项目说明文档
 ```
 
 ### 相关链接
@@ -1342,7 +1694,7 @@ ProFo/
 
 ### 许可证
 
-[MIT License](LICENSE)
+[Apache 2.0 License](LICENSE)
 
 ---
 
