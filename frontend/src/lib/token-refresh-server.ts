@@ -16,7 +16,6 @@ interface RefreshResult {
 
 // 使用全局变量存储刷新状态和结果（在服务端跨请求共享）
 declare global {
-  // eslint-disable-next-line no-var
   var __tokenRefreshState: {
     isRefreshing: boolean;
     refreshPromise: Promise<RefreshResult | null> | null;

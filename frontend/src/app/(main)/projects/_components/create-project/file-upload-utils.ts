@@ -53,7 +53,7 @@ export function isTokenExpired(token: string): boolean {
  * 获取有效的 access token
  */
 export async function getValidToken(): Promise<string | null> {
-  let token = localStorage.getItem("access_token") || localStorage.getItem("token");
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
   const tokenExpired = token ? isTokenExpired(token) : true;
   if (!token || tokenExpired) {

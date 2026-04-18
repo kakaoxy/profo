@@ -68,9 +68,10 @@ export function getDefaultValues(
     community_name: project?.community_name || "",
     address: project?.address || "",
     area: project?.area,
-    rooms: layoutData.rooms,
-    halls: layoutData.halls,
-    bathrooms: layoutData.bathrooms,
+    // 修复：户型字段设置合理的默认值，避免验证失败
+    rooms: layoutData.rooms ?? 2,
+    halls: layoutData.halls ?? 1,
+    bathrooms: layoutData.bathrooms ?? 1,
     orientation: isEditMode
       ? (project?.orientation as FormValues["orientation"]) || "南北"
       : "南北",

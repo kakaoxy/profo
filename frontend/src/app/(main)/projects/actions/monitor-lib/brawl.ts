@@ -126,7 +126,7 @@ export async function getCompetitorsBrawlAction(projectId: string) {
       uniqueCommunities.map((name) => fetchCommunityData(client, name)),
     );
 
-    let allItems: BrawlItem[] = [];
+    const allItems: BrawlItem[] = [];
     let countOnSale = 0;
     let countSold = 0;
 
