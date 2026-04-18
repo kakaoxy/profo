@@ -10,6 +10,13 @@ import type {
 } from "../types";
 import type { ProjectQueryParams } from "../_components/project-selector/types";
 
+// Re-export L3 project actions for backward compatibility
+export {
+  getAvailableL3ProjectsAction,
+  importFromL3ProjectAction,
+  getL3ProjectDetailAction,
+} from "./l3-projects";
+
 // ============================================================================
 // 统一返回类型定义
 // ============================================================================
@@ -200,102 +207,6 @@ export async function deleteL4MarketingProjectAction(id: number): Promise<Action
     return { success: true, data: undefined };
   } catch (e) {
     console.error("删除项目异常:", e);
-    return { success: false, error: parseNetworkError(e) };
-  }
-}
-
-/**
- * 获取可关联的L3项目列表
- */
-export async function getAvailableL3ProjectsAction(
-  params: ProjectQueryParams
-) {
-  try {
-    const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/l4-marketing/available-projects",
-      {
-        params: {
-          query: {
-            page: params.page,
-            page_size: params.page_size,
-            community_name: params.community_name,
-            status: params.status,
-          },
-        },
-      },
-    );
-
-    if (error) {
-      console.error("Failed to fetch available L3 projects:", error);
-      const { message } = parseApiError(error);
-      return {
-        success: false,
-        error: message,
-      };
-    }
-
-    return { success: true, data };
-  } catch (e) {
-    console.error("获取可关联项目列表异常:", e);
-    return { success: false, error: parseNetworkError(e) };
-  }
-}
-
-/**
- * 从L3项目导入数据
- */
-export async function importFromL3ProjectAction(projectId: string) {
-  try {
-    const client = await fetchClient();
-    const { data, error } = await client.POST(
-      "/api/v1/admin/l4-marketing/projects/import-from-l3/{project_id}",
-      {
-        params: { path: { project_id: projectId } },
-      },
-    );
-
-    if (error) {
-      console.error("Failed to import from L3 project:", error);
-      const { message } = parseApiError(error);
-      return {
-        success: false,
-        error: message,
-      };
-    }
-
-    return { success: true, data };
-  } catch (e) {
-    console.error("从L3项目导入数据异常:", e);
-    return { success: false, error: parseNetworkError(e) };
-  }
-}
-
-/**
- * 获取L3项目详情
- */
-export async function getL3ProjectDetailAction(projectId: string) {
-  try {
-    const client = await fetchClient();
-    const { data, error } = await client.GET(
-      "/api/v1/admin/l4-marketing/available-projects/{project_id}",
-      {
-        params: { path: { project_id: projectId } },
-      },
-    );
-
-    if (error) {
-      console.error("Failed to fetch L3 project detail:", error);
-      const { message } = parseApiError(error);
-      return {
-        success: false,
-        error: message,
-      };
-    }
-
-    return { success: true, data };
-  } catch (e) {
-    console.error("获取L3项目详情异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
