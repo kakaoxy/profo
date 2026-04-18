@@ -200,6 +200,7 @@ export function usePhotoDragAndDrop({
       // 调用API更新
       const updateResult = await updateL4MarketingMediaAction(
         activePhoto.id,
+        projectId || 0,
         {
           photo_category: updatedPhoto.photo_category,
           renovation_stage: updatedPhoto.renovation_stage,

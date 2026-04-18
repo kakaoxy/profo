@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
+import { revalidatePath } from "next/cache";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
 import type {
   L4MarketingMediaCreate,
@@ -69,6 +70,8 @@ export async function createL4MarketingMediaAction(
       };
     }
 
+    revalidatePath(`/l4-marketing/projects/${projectId}`);
+    revalidatePath("/l4-marketing/projects");
     return { success: true, data };
   } catch (e) {
     console.error("创建媒体异常:", e);
@@ -81,6 +84,7 @@ export async function createL4MarketingMediaAction(
  */
 export async function updateL4MarketingMediaAction(
   mediaId: number,
+  projectId: number,
   body: L4MarketingMediaUpdate,
 ) {
   try {
@@ -102,6 +106,8 @@ export async function updateL4MarketingMediaAction(
       };
     }
 
+    revalidatePath(`/l4-marketing/projects/${projectId}`);
+    revalidatePath("/l4-marketing/projects");
     return { success: true, data };
   } catch (e) {
     console.error("更新媒体异常:", e);
@@ -112,7 +118,7 @@ export async function updateL4MarketingMediaAction(
 /**
  * 删除媒体
  */
-export async function deleteL4MarketingMediaAction(mediaId: number) {
+export async function deleteL4MarketingMediaAction(mediaId: number, projectId: number) {
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -131,6 +137,8 @@ export async function deleteL4MarketingMediaAction(mediaId: number) {
       };
     }
 
+    revalidatePath(`/l4-marketing/projects/${projectId}`);
+    revalidatePath("/l4-marketing/projects");
     return { success: true };
   } catch (e) {
     console.error("删除媒体异常:", e);
@@ -167,6 +175,9 @@ export async function batchAddL4PhotosAction(
     }
   }
 
+  revalidatePath(`/l4-marketing/projects/${projectId}`);
+  revalidatePath("/l4-marketing/projects");
+
   if (errors.length > 0) {
     return {
       success: results.length > 0,
@@ -202,6 +213,8 @@ export async function batchUpdateMediaSortOrderAction(
       return { success: false, error: message };
     }
 
+    revalidatePath(`/l4-marketing/projects/${projectId}`);
+    revalidatePath("/l4-marketing/projects");
     return { success: true, data };
   } catch (e) {
     console.error("更新媒体排序异常:", e);

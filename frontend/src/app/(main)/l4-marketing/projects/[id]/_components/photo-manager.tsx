@@ -54,7 +54,8 @@ export function PhotoManager({
   const handleDeletePhoto = useCallback(async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
     try {
-      const result = await deleteL4MarketingMediaAction(photoId);
+      const projectId = l3ProjectId ? parseInt(l3ProjectId) : 0;
+      const result = await deleteL4MarketingMediaAction(photoId, projectId);
       if (result.success) {
         onPhotosChange(photos.filter((p) => p.id !== photoId));
         toast.success("照片已删除");
@@ -64,7 +65,7 @@ export function PhotoManager({
     } catch {
       toast.error("删除照片失败");
     }
-  }, [photos, onPhotosChange]);
+  }, [photos, onPhotosChange, l3ProjectId]);
 
   const handleResetOrder = useCallback(() => {
     const reordered = [...photos].sort((a, b) => {

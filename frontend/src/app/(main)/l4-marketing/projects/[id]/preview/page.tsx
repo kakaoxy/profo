@@ -1,5 +1,6 @@
 import React from "react";
 import { fetchClient } from "@/lib/api-server";
+import { z } from "zod";
 import type { L4MarketingProject, L4MarketingMedia } from "../../types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,17 +13,25 @@ import { ArrowLeft, CheckCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+// 路由参数验证 schema
+const paramsSchema = z.object({
+  id: z.string().min(1).regex(/^\d+$/, "ID 必须是数字"),
+});
+
 export default async function ProjectPreviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const projectId = Number(id);
 
-  if (isNaN(projectId)) {
+  // 验证路由参数
+  const parsed = paramsSchema.safeParse({ id });
+  if (!parsed.success) {
     notFound();
   }
+
+  const projectId = Number(parsed.data.id);
 
   const client = await fetchClient();
 

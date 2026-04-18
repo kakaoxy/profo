@@ -242,11 +242,15 @@ export const PhotosSection = memo(function PhotosSection({
       );
       setPhotos(newPhotos);
 
-      const updateResult = await updateL4MarketingMediaAction(activePhoto.id, {
-        photo_category: updatedPhoto.photo_category,
-        renovation_stage: updatedPhoto.renovation_stage,
-        sort_order: newSortOrder,
-      });
+      const updateResult = await updateL4MarketingMediaAction(
+        activePhoto.id,
+        l4ProjectId,
+        {
+          photo_category: updatedPhoto.photo_category,
+          renovation_stage: updatedPhoto.renovation_stage,
+          sort_order: newSortOrder,
+        }
+      );
 
       if (updateResult.success) {
         toast.success(
@@ -295,7 +299,7 @@ export const PhotosSection = memo(function PhotosSection({
       if (!confirm("确定删除这张照片吗？")) return;
 
       try {
-        const result = await deleteL4MarketingMediaAction(photoId);
+        const result = await deleteL4MarketingMediaAction(photoId, l4ProjectId);
         if (result.success) {
           setPhotos(photos.filter((p) => p.id !== photoId));
           toast.success("照片已删除");
@@ -306,7 +310,7 @@ export const PhotosSection = memo(function PhotosSection({
         toast.error("删除照片失败");
       }
     },
-    [photos]
+    [photos, l4ProjectId]
   );
 
   const handlePhotosAdded = useCallback(
