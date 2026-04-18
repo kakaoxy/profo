@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Quote, ImageIcon, Copy, Check } from "lucide-react";
-import { Project } from "../../../../types";
+import { Project, RenovationPhoto } from "../../../../types";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,138 @@ import { RENOVATION_STAGES } from "../../constants";
 import { cn } from "@/lib/utils";
 import { differenceInDays, parseISO, format } from "date-fns";
 import { getFileUrl } from "../../utils";
+
+// [优化] 使用 memo 缓存单个阶段照片组件，避免不必要的重渲染
+interface StagePhotoItemProps {
+  photo: RenovationPhoto;
+  stageLabel: string;
+  photoCount: number;
+  allPhotos: RenovationPhoto[];
+}
+
+const StagePhotoItem = memo(function StagePhotoItem({ 
+  photo, 
+  stageLabel, 
+  photoCount,
+  allPhotos 
+}: StagePhotoItemProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  return (
+    <div className="flex-none w-[200px] group">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-slate-100">
+            <AspectRatio ratio={4 / 3}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={getFileUrl(photo.url)}
+                alt={stageLabel}
+                loading="lazy"
+                decoding="async"
+                onLoad={() => setImageLoaded(true)}
+                className={cn(
+                  "object-cover w-full h-full transition-all duration-500 group-hover:scale-110",
+                  imageLoaded ? "opacity-100" : "opacity-0 bg-slate-100"
+                )}
+              />
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-slate-100 animate-pulse" />
+              )}
+            </AspectRatio>
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+              <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
+                {photoCount} 张
+              </Badge>
+            </div>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl p-0 bg-black/90 border-0 overflow-hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{stageLabel} 影像记录</DialogTitle>
+            <DialogDescription>
+              正在查看 {stageLabel} 阶段的照片背景。
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[80vh]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+              {allPhotos.map((p, i) => (
+                <LazyPhoto key={i} photo={p} index={i} />
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+});
+
+// [优化] 懒加载 Dialog 内部的照片，使用 Intersection Observer 或延迟加载
+interface LazyPhotoProps {
+  photo: RenovationPhoto;
+  index: number;
+}
+
+const LazyPhoto = memo(function LazyPhoto({ photo, index }: LazyPhotoProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  return (
+    <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-800">
+      {isVisible ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img 
+          src={getFileUrl(photo.url)} 
+          className={cn(
+            "object-contain w-full h-full transition-opacity duration-300",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )} 
+          alt="" 
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setIsLoaded(true)}
+        />
+      ) : (
+        <LazyPhotoPlaceholder onVisible={() => setIsVisible(true)} />
+      )}
+      {!isLoaded && isVisible && (
+        <div className="absolute inset-0 bg-slate-700 animate-pulse" />
+      )}
+    </div>
+  );
+});
+
+// 使用 Intersection Observer 检测元素是否进入视口
+interface LazyPhotoPlaceholderProps {
+  onVisible: () => void;
+}
+
+const LazyPhotoPlaceholder = memo(function LazyPhotoPlaceholder({ onVisible }: LazyPhotoPlaceholderProps) {
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            onVisible();
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: "100px" }
+    );
+    
+    observer.observe(node);
+    
+    return () => observer.disconnect();
+  }, [onVisible]);
+
+  return (
+    <div ref={ref} className="absolute inset-0 bg-slate-800 animate-pulse" />
+  );
+});
 
 export function VisualJourney({ project }: { project: Project }) {
   const photos = project.renovation_photos || [];
@@ -56,44 +188,14 @@ export function VisualJourney({ project }: { project: Project }) {
           <div className="flex p-6 gap-6">
             {groupedPhotos.length > 0 ? (
               groupedPhotos.map((stage, idx) => (
-                <div key={stage.key} className="flex-none w-[200px] group">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-slate-100">
-                        <AspectRatio ratio={4 / 3}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={getFileUrl(stage.photos[0].url)}
-                            alt={stage.label}
-                            className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                          />
-                        </AspectRatio>
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                          <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
-                            {stage.photos.length} 张
-                          </Badge>
-                        </div>
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl p-0 bg-black/90 border-0 overflow-hidden">
-                      <DialogHeader className="sr-only">
-                        <DialogTitle>{stage.label} 影像记录</DialogTitle>
-                        <DialogDescription>
-                          正在查看 {stage.label} 阶段的照片背景。
-                        </DialogDescription>
-                      </DialogHeader>
-                      <ScrollArea className="max-h-[80vh]">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                          {stage.photos.map((p, i) => (
-                            <div key={i} className="relative aspect-video rounded-lg overflow-hidden">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={getFileUrl(p.url)} className="object-contain w-full h-full" alt="" />
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </DialogContent>
-                  </Dialog>
+                <div key={stage.key}>
+                  {/* [优化] 使用 memoized 组件渲染照片 */}
+                  <StagePhotoItem
+                    photo={stage.photos[0]}
+                    stageLabel={stage.label}
+                    photoCount={stage.photos.length}
+                    allPhotos={stage.photos}
+                  />
                   
                   <div className="mt-4 space-y-1 pl-1">
                     <div className="flex items-center gap-1.5">

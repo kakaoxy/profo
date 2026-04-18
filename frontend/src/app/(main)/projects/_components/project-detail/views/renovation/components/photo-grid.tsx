@@ -1,9 +1,10 @@
 "use client";
 
+import { useState, memo } from "react";
 import { UploadCloud, Plus, Loader2, Trash2, Eye } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getFileUrl } from "../../../utils";
-import { Progress } from "@/components/ui/progress"; // [New] Import Progress component
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 // [New] Define the structure for a photo currently being uploaded
 export interface UploadingPhoto {
@@ -34,7 +36,7 @@ export interface UploadingPhoto {
 
 interface PhotoGridProps {
   photos: RenovationPhoto[];
-  uploadingPhotos?: UploadingPhoto[]; // [New] Accept uploading queue
+  uploadingPhotos?: UploadingPhoto[];
   isCurrent: boolean;
   isFuture: boolean;
   isLoading: boolean;
@@ -42,19 +44,102 @@ interface PhotoGridProps {
   onDelete: (photoId: string) => void;
 }
 
-export function PhotoGrid({
-  photos,
-  uploadingPhotos = [], // Default to empty array
-  isCurrent,
-  isFuture,
-  isLoading,
-  onUpload,
-  onDelete,
-}: PhotoGridProps) {
-  // Helper: Render the uploading (optimistic) item
-  const renderUploadingItem = (item: UploadingPhoto) => (
+// [优化] 使用 memo 缓存照片项组件，避免不必要的重渲染
+interface PhotoItemProps {
+  photo: RenovationPhoto;
+  isFuture: boolean;
+  onDelete: (photoId: string) => void;
+}
+
+const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoItemProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  return (
+    <Dialog>
+      <div className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={getFileUrl(photo.url)}
+          alt={photo.filename || "Renovation Photo"}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setImageLoaded(true)}
+          className={cn(
+            "object-cover w-full h-full hover:scale-105 transition-all duration-500 cursor-pointer",
+            imageLoaded ? "opacity-100" : "opacity-0"
+          )}
+        />
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+        )}
+
+        {/* Hover Mask */}
+        <DialogTrigger asChild>
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors cursor-pointer flex items-center justify-center">
+            <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md" />
+          </div>
+        </DialogTrigger>
+
+        {/* Delete Button */}
+        {!isFuture && (
+          <div
+            className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="bg-white/90 p-1.5 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm transition-colors"
+                  title="Delete Photo"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Are you sure you want to delete this photo?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action will delete the photo record. If physical
+                    deletion is configured, the file will also be removed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDelete(photo.id)}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Confirm Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+      </div>
+
+      {/* Large Preview Modal */}
+      <DialogContent className="max-w-3xl border-none bg-transparent shadow-none p-0">
+        <DialogTitle className="sr-only">
+          Photo Preview - {photo.filename || "Untitled"}
+        </DialogTitle>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={getFileUrl(photo.url)}
+          alt="Large Preview"
+          className="w-full h-auto rounded-lg shadow-2xl"
+        />
+      </DialogContent>
+    </Dialog>
+  );
+});
+
+// [优化] 使用 memo 缓存上传中照片项组件
+const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
+  return (
     <div
-      key={item.id}
       className="aspect-square relative rounded-md overflow-hidden bg-slate-50 border border-slate-200"
     >
       {/* Local Preview Image */}
@@ -78,8 +163,6 @@ export function PhotoGrid({
               <Progress
                 value={item.progress}
                 className="h-1.5 w-full bg-white/40"
-                // You might need to check your Progress component API for indicator styling
-                // or ensure standard shadcn/ui Progress works here
               />
             </div>
             <span className="text-[10px] text-white font-medium drop-shadow-md">
@@ -90,84 +173,33 @@ export function PhotoGrid({
       </div>
     </div>
   );
+});
 
+export function PhotoGrid({
+  photos,
+  uploadingPhotos = [],
+  isCurrent,
+  isFuture,
+  isLoading,
+  onUpload,
+  onDelete,
+}: PhotoGridProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
-      {/* 1. Server Photos (Existing Logic) */}
+      {/* 1. Server Photos - [优化] 使用 memoized 组件 */}
       {photos.map((photo) => (
-        <Dialog key={photo.id}>
-          <div className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getFileUrl(photo.url)}
-              alt={photo.filename || "Renovation Photo"}
-              className="object-cover w-full h-full hover:scale-105 transition-transform duration-500 cursor-pointer"
-            />
-
-            {/* Hover Mask */}
-            <DialogTrigger asChild>
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors cursor-pointer flex items-center justify-center">
-                <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md" />
-              </div>
-            </DialogTrigger>
-
-            {/* Delete Button */}
-            {!isFuture && (
-              <div
-                className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <button
-                      className="bg-white/90 p-1.5 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm transition-colors"
-                      title="Delete Photo"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Are you sure you want to delete this photo?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action will delete the photo record. If physical
-                        deletion is configured, the file will also be removed.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => onDelete(photo.id)}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        Confirm Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
-          </div>
-
-          {/* Large Preview Modal */}
-          <DialogContent className="max-w-3xl border-none bg-transparent shadow-none p-0">
-            <DialogTitle className="sr-only">
-              Photo Preview - {photo.filename || "Untitled"}
-            </DialogTitle>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={getFileUrl(photo.url)}
-              alt="Large Preview"
-              className="w-full h-auto rounded-lg shadow-2xl"
-            />
-          </DialogContent>
-        </Dialog>
+        <PhotoItem
+          key={photo.id}
+          photo={photo}
+          isFuture={isFuture}
+          onDelete={onDelete}
+        />
       ))}
 
-      {/* 2. [New] Uploading Photos (Optimistic UI) */}
-      {uploadingPhotos.map(renderUploadingItem)}
+      {/* 2. Uploading Photos */}
+      {uploadingPhotos.map((item) => (
+        <UploadingItem key={item.id} item={item} />
+      ))}
 
       {/* 3. Upload Button */}
       {!isFuture && (
@@ -178,14 +210,9 @@ export function PhotoGrid({
             multiple
             className="hidden"
             onChange={onUpload}
-            // Note: We typically don't disable the input during optimistic uploads
-            // unless we want to strictly enforce one-at-a-time.
-            // Keeping it consistent with your 'isLoading' logic for now.
             disabled={isLoading}
           />
           {isLoading ? (
-            // This loading state usually comes from 'submitting stage',
-            // not the photo upload itself anymore (since photos have their own progress bars)
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : isCurrent ? (
             <UploadCloud className="h-6 w-6" />
