@@ -941,7 +941,7 @@ erDiagram
 
     PROJECT_CONTRACT {
         string id PK
-        string project_id FK UK
+        string project_id FK
         string contract_no UK
         decimal signing_price
         datetime signing_date
@@ -969,7 +969,7 @@ erDiagram
 
     PROJECT_SALE {
         string id PK
-        string project_id FK UK
+        string project_id FK
         datetime listing_date
         decimal list_price
         datetime sold_date
@@ -1035,7 +1035,7 @@ erDiagram
 
     PROJECT_RENOVATION {
         string id PK
-        string project_id FK UK
+        string project_id FK
         string renovation_company
         datetime contract_start_date
         datetime contract_end_date
