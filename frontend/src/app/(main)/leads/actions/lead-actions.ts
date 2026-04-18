@@ -2,9 +2,10 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
-import { Lead, FilterState, LeadStatus } from "../types";
+import { Lead, FilterState } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
 import type { components, operations } from "@/lib/api-types";
+import { mapBackendToFrontend } from "../lib/utils";
 
 type LeadsQuery =
   operations["get_leads_api_v1_leads__get"]["parameters"]["query"];
@@ -12,33 +13,6 @@ type LeadCreatePayload =
   operations["create_lead_api_v1_leads__post"]["requestBody"]["content"]["application/json"];
 type LeadUpdatePayload =
   operations["update_lead_api_v1_leads__lead_id__put"]["requestBody"]["content"]["application/json"];
-
-type BackendLead = components["schemas"]["LeadResponse"];
-
-function mapBackendToFrontend(backendLead: BackendLead): Lead {
-  return {
-    id: backendLead.id,
-    communityName: backendLead.community_name,
-    layout: backendLead.layout ?? "",
-    orientation: backendLead.orientation ?? "",
-    floorInfo: backendLead.floor_info ?? "",
-    area: backendLead.area ?? 0,
-    totalPrice: backendLead.total_price ?? 0,
-    unitPrice: backendLead.unit_price ?? 0,
-    status: backendLead.status as LeadStatus,
-    evalPrice: backendLead.eval_price ?? undefined,
-    auditReason: backendLead.audit_reason ?? undefined,
-    auditorId: backendLead.auditor_id?.toString() ?? undefined,
-    auditTime: backendLead.audit_time ?? undefined,
-    images: backendLead.images || [],
-    district: backendLead.district ?? "",
-    businessArea: backendLead.business_area ?? "",
-    remarks: backendLead.remarks ?? "",
-    creatorName: backendLead.creator_name ?? "未知",
-    lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
-    createdAt: new Date(backendLead.created_at).toLocaleString(),
-  };
-}
 
 export async function createLeadAction(
   data: Omit<Lead, "id" | "createdAt">

@@ -1,7 +1,8 @@
 import { fetchClient } from "@/lib/api-server";
 import { LeadsView } from "./_components/leads-view";
-import type { Lead, LeadStatus } from "./types";
+import type { Lead } from "./types";
 import type { operations } from "@/lib/api-types";
+import { mapBackendToFrontend } from "./lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -17,52 +18,6 @@ interface PageProps {
 // Map backend response to frontend Lead type
 type LeadsQuery =
   operations["get_leads_api_v1_leads__get"]["parameters"]["query"];
-
-function mapBackendToFrontend(backendLead: {
-  id: string;
-  community_name: string;
-  layout?: string | null;
-  orientation?: string | null;
-  floor_info?: string | null;
-  area?: number | null;
-  total_price?: number | null;
-  unit_price?: number | null;
-  eval_price?: number | null;
-  status: string;
-  audit_reason?: string | null;
-  auditor_id?: string | null;
-  audit_time?: string | null;
-  images?: string[];
-  district?: string | null;
-  business_area?: string | null;
-  remarks?: string | null;
-  creator_name?: string | null;
-  last_follow_up_at?: string | null;
-  created_at: string;
-}): Lead {
-  return {
-    id: backendLead.id,
-    communityName: backendLead.community_name,
-    layout: backendLead.layout ?? "",
-    orientation: backendLead.orientation ?? "",
-    floorInfo: backendLead.floor_info ?? "",
-    area: backendLead.area ?? 0,
-    totalPrice: backendLead.total_price ?? 0,
-    unitPrice: backendLead.unit_price ?? 0,
-    status: backendLead.status as LeadStatus,
-    evalPrice: backendLead.eval_price ?? undefined,
-    auditReason: backendLead.audit_reason ?? undefined,
-    auditorId: backendLead.auditor_id?.toString() ?? undefined,
-    auditTime: backendLead.audit_time ?? undefined,
-    images: backendLead.images || [],
-    district: backendLead.district ?? "",
-    businessArea: backendLead.business_area ?? "",
-    remarks: backendLead.remarks ?? "",
-    creatorName: backendLead.creator_name ?? "未知",
-    lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
-    createdAt: new Date(backendLead.created_at).toLocaleString(),
-  };
-}
 
 export default async function LeadsPage({ searchParams }: PageProps) {
   const params = await searchParams;
