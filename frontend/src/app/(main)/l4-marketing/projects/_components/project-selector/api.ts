@@ -6,7 +6,7 @@ import {
   getAvailableL3ProjectsAction,
   importFromL3ProjectAction,
   getL3ProjectDetailAction,
-} from "../../actions/projects";
+} from "../../actions/l3-projects";
 import { detectMediaType } from "@/lib/media-utils";
 import {
   L3ProjectBriefSchema,

@@ -8,14 +8,6 @@ import type {
   L4MarketingProjectCreate,
   L4MarketingProject,
 } from "../types";
-import type { ProjectQueryParams } from "../_components/project-selector/types";
-
-// Re-export L3 project actions for backward compatibility
-export {
-  getAvailableL3ProjectsAction,
-  importFromL3ProjectAction,
-  getL3ProjectDetailAction,
-} from "./l3-projects";
 
 // ============================================================================
 // 统一返回类型定义
