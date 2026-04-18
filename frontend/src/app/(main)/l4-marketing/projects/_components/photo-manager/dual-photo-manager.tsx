@@ -116,7 +116,8 @@ export function DualPhotoManager({
 
     // 有 l3ProjectId（编辑模式），调用 API 删除
     try {
-      const result = await deleteL4MarketingMediaAction(photoId);
+      const projectId = l3ProjectId ? parseInt(l3ProjectId) : 0;
+      const result = await deleteL4MarketingMediaAction(photoId, projectId);
       if (result.success) {
         onPhotosChange(photos.filter((p) => p.id !== photoId));
         toast.success("照片已删除");

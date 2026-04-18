@@ -1,5 +1,7 @@
 import React from "react";
 import { fetchClient } from "@/lib/api-server";
+import { z } from "zod";
+import { notFound } from "next/navigation";
 import type { L4MarketingProject, L4MarketingMedia, PhotoCategory } from "../../types";
 import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
@@ -7,6 +9,11 @@ import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
+
+// 路由参数验证 schema
+const paramsSchema = z.object({
+  id: z.string().min(1).regex(/^\d+$/, "ID 必须是数字"),
+});
 
 // API 返回的媒体项类型
 interface ApiMediaItem {
@@ -51,17 +58,14 @@ export default async function ProjectEditPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const projectId = Number(id);
 
-  if (isNaN(projectId)) {
-    return (
-      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-sm font-semibold text-red-600">无效的项目ID</div>
-        </div>
-      </div>
-    );
+  // 验证路由参数
+  const parsed = paramsSchema.safeParse({ id });
+  if (!parsed.success) {
+    notFound();
   }
+
+  const projectId = Number(parsed.data.id);
 
   const client = await fetchClient();
 
