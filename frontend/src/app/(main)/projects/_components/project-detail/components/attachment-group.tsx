@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -115,14 +116,16 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
       <div className="flex-shrink-0">
         {attachment.fileType === "image" ? (
           <div
-            className="h-10 w-10 rounded overflow-hidden border cursor-pointer"
+            className="h-10 w-10 rounded overflow-hidden border cursor-pointer relative"
             onClick={() => onPreview(attachment.url, attachment.fileType)}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={attachment.url}
               alt={attachment.filename}
-              className="h-full w-full object-cover"
+              fill
+              sizes="40px"
+              unoptimized
+              className="object-cover"
             />
           </div>
         ) : (

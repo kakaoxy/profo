@@ -1,163 +1,20 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Quote, ImageIcon, Copy, Check } from "lucide-react";
-import { Project, RenovationPhoto } from "../../../../types";
+import { ImageIcon } from "lucide-react";
+import { Project } from "../../../../types";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { RENOVATION_STAGES } from "../../constants";
-import { cn } from "@/lib/utils";
-import { differenceInDays, parseISO, format } from "date-fns";
-import { getFileUrl } from "../../utils";
+import { format, parseISO } from "date-fns";
+import { StagePhotoItem } from "./components/stage-photo-item";
+import { SummaryReport } from "./components/summary-report";
 
-// [优化] 使用 memo 缓存单个阶段照片组件，避免不必要的重渲染
-interface StagePhotoItemProps {
-  photo: RenovationPhoto;
-  stageLabel: string;
-  photoCount: number;
-  allPhotos: RenovationPhoto[];
-}
-
-const StagePhotoItem = memo(function StagePhotoItem({ 
-  photo, 
-  stageLabel, 
-  photoCount,
-  allPhotos 
-}: StagePhotoItemProps) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  return (
-    <div className="flex-none w-[200px] group">
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-slate-100">
-            <AspectRatio ratio={4 / 3}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={getFileUrl(photo.url)}
-                alt={stageLabel}
-                loading="lazy"
-                decoding="async"
-                onLoad={() => setImageLoaded(true)}
-                className={cn(
-                  "object-cover w-full h-full transition-all duration-500 group-hover:scale-110",
-                  imageLoaded ? "opacity-100" : "opacity-0 bg-slate-100"
-                )}
-              />
-              {!imageLoaded && (
-                <div className="absolute inset-0 bg-slate-100 animate-pulse" />
-              )}
-            </AspectRatio>
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-              <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
-                {photoCount} 张
-              </Badge>
-            </div>
-          </div>
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl p-0 bg-black/90 border-0 overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>{stageLabel} 影像记录</DialogTitle>
-            <DialogDescription>
-              正在查看 {stageLabel} 阶段的照片背景。
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[80vh]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-              {allPhotos.map((p, i) => (
-                <LazyPhoto key={p.id} photo={p} index={i} />
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-});
-
-// [优化] 懒加载 Dialog 内部的照片，使用 Intersection Observer 或延迟加载
-interface LazyPhotoProps {
-  photo: RenovationPhoto;
-  index: number;
-}
-
-const LazyPhoto = memo(function LazyPhoto({ photo, index }: LazyPhotoProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  return (
-    <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-800">
-      {isVisible ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img 
-          src={getFileUrl(photo.url)} 
-          className={cn(
-            "object-contain w-full h-full transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0"
-          )} 
-          alt="" 
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setIsLoaded(true)}
-        />
-      ) : (
-        <LazyPhotoPlaceholder onVisible={() => setIsVisible(true)} />
-      )}
-      {!isLoaded && isVisible && (
-        <div className="absolute inset-0 bg-slate-700 animate-pulse" />
-      )}
-    </div>
-  );
-});
-
-// 使用 Intersection Observer 检测元素是否进入视口
-interface LazyPhotoPlaceholderProps {
-  onVisible: () => void;
-}
-
-const LazyPhotoPlaceholder = memo(function LazyPhotoPlaceholder({ onVisible }: LazyPhotoPlaceholderProps) {
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onVisible();
-            observer.disconnect();
-          }
-        });
-      },
-      { rootMargin: "100px" }
-    );
-    
-    observer.observe(node);
-    
-    return () => observer.disconnect();
-  }, [onVisible]);
-
-  return (
-    <div ref={ref} className="absolute inset-0 bg-slate-800 animate-pulse" />
-  );
-});
+export { SummaryReport };
 
 export function VisualJourney({ project }: { project: Project }) {
   const photos = project.renovation_photos || [];
   const stageDates = project.renovationStageDates || {};
 
-  // 按阶段分组照片
   const groupedPhotos = RENOVATION_STAGES.map((stage) => {
     const stagePhotos = photos.filter(
       (p) => p.stage === stage.value || p.stage === stage.key
@@ -189,14 +46,13 @@ export function VisualJourney({ project }: { project: Project }) {
             {groupedPhotos.length > 0 ? (
               groupedPhotos.map((stage, idx) => (
                 <div key={stage.key}>
-                  {/* [优化] 使用 memoized 组件渲染照片 */}
                   <StagePhotoItem
                     photo={stage.photos[0]}
                     stageLabel={stage.label}
                     photoCount={stage.photos.length}
                     allPhotos={stage.photos}
                   />
-                  
+
                   <div className="mt-4 space-y-1 pl-1">
                     <div className="flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
@@ -219,96 +75,6 @@ export function VisualJourney({ project }: { project: Project }) {
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
-      </CardContent>
-    </Card>
-  );
-}
-
-export function SummaryReport({ project }: { project: Project }) {
-  const [copied, setCopied] = useState(false);
-
-  const netProfit = Number(project.net_cash_flow) || 0;
-  const roi = Number(project.roi) || 0;
-  const totalInvestment = Number(project.total_expense) || 0;
-  
-  const signingDate = (project.signing_date || project.created_at);
-  const soldDateStr = (project.sold_at || project.sold_date);
-  
-  let occupationDays = 0;
-  if (signingDate) {
-    const start = parseISO(signingDate);
-    const end = soldDateStr ? parseISO(soldDateStr) : new Date();
-    occupationDays = Math.max(0, differenceInDays(end, start));
-  }
-
-  const formatSimpleDate = (dStr: string | null | undefined) => {
-    if (!dStr) return "--";
-    try {
-      return format(parseISO(dStr), "yyyy/MM/dd");
-    } catch {
-      return "--";
-    }
-  };
-
-  const reportContent = `【项目结案喜报】🎉
---------------------------------
-🏠 项目：${project.name}
-📍 地址：${project.address || project.community_name || "--"}
-
-💰 财务复盘
-• 成交价格：¥${Number(project.sold_price || 0).toFixed(1)} 万
-• 投资总额：¥${(totalInvestment / 10000).toFixed(1)} 万
-• 净 利 润：${netProfit >= 0 ? "+" : ""}¥${(netProfit / 10000).toFixed(1)} 万 
-• 投资回报：${roi.toFixed(1)}% (ROI)
-
-⏱ 项目周期
-• 拿房日期：${formatSimpleDate(signingDate)}
-• 售出日期：${formatSimpleDate(soldDateStr)}
-• 历时天数：${occupationDays} 天
-
-📸 影像记录：已归档 ${project.renovation_photos?.length || 0} 张
-
-感谢团队的辛勤付出！🚀`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(reportContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <Card className="border-slate-200 shadow-sm flex flex-col h-full bg-slate-50/50">
-      <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-700">
-          <Quote className="h-4 w-4 text-red-400 rotate-180" />
-          项目结案简报
-        </CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "h-8 gap-2 font-medium transition-all group",
-            copied ? "border-emerald-500 text-emerald-600 bg-emerald-50" : "hover:border-slate-400"
-          )}
-          onClick={handleCopy}
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5" />
-              已复制
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" />
-              复制完整报告
-            </>
-          )}
-        </Button>
-      </CardHeader>
-      <CardContent className="p-5">
-        <div className="bg-white rounded-lg border border-slate-200 shadow-inner p-6 font-mono text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-          {reportContent}
-        </div>
       </CardContent>
     </Card>
   );
