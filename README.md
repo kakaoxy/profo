@@ -151,6 +151,10 @@ graph TB
 frontend/src/
 ├── app/                    # Next.js App Router
 │   ├── (main)/            # 主布局路由组
+│   │   ├── _components/   # 主布局共享组件
+│   │   │   ├── leads-table.tsx
+│   │   │   └── stat-card.tsx
+│   │   ├── _lib/          # 主布局共享工具
 │   │   ├── projects/      # 项目管理模块
 │   │   │   ├── [projectId]/  # 项目详情路由
 │   │   │   │   └── cashflow/ # 现金流模块
@@ -158,7 +162,8 @@ frontend/src/
 │   │   │   │   ├── create-project/  # 创建项目组件
 │   │   │   │   ├── monitor/        # 监控大屏组件
 │   │   │   │   └── project-detail/ # 项目详情组件
-│   │   │   └── actions/     # 项目相关API actions
+│   │   │   ├── actions/     # 项目相关API actions
+│   │   │   └── types/       # 项目类型定义
 │   │   ├── leads/         # 线索管理模块
 │   │   │   ├── _components/  # 线索共享组件
 │   │   │   │   ├── add-lead-parts/   # 添加线索组件
@@ -188,6 +193,7 @@ frontend/src/
 │   │       ├── _components/  # 用户共享组件
 │   │       ├── roles/        # 角色管理
 │   │       └── actions/      # 用户API actions
+│   │   └── layout.tsx     # 主布局
 │   ├── api/               # Next.js API路由
 │   │   └── auth/          # 认证相关API
 │   │       └── refresh/    # Token刷新
@@ -196,12 +202,30 @@ frontend/src/
 │   │   └── refresh-action.ts
 │   ├── layout.tsx         # 根布局
 │   └── globals.css        # 全局样式
-├── components.json        # Shadcn UI组件配置
-├── lib/
-│   ├── api-server.ts     # API客户端
-│   ├── api-types.d.ts    # OpenAPI生成类型
-│   └── utils.ts          # 工具函数
-└── hooks/                # 自定义Hooks (分散在各模块内)
+├── components/            # 组件目录
+│   ├── ui/                # shadcn/ui组件
+│   ├── app-sidebar.tsx    # 应用侧边栏
+│   ├── error-boundary.tsx # 错误边界
+│   └── swr-provider.tsx   # SWR提供者
+├── lib/                   # 核心代码
+│   ├── api-client.ts      # API客户端（浏览器端）
+│   ├── api-server.ts      # API客户端（服务端）
+│   ├── api-helpers.ts     # API辅助函数
+│   ├── api-upload.ts      # API上传工具
+│   ├── api-types.d.ts     # OpenAPI生成类型
+│   ├── config.ts          # 应用配置
+│   ├── error-utils.ts     # 错误处理工具
+│   ├── file-utils.ts      # 文件处理工具
+│   ├── formatters.ts      # 格式化工具
+│   ├── media-utils.ts     # 媒体处理工具
+│   ├── token-refresh-server.ts # Token刷新（服务端）
+│   ├── action-result.ts   # Action结果类型
+│   └── utils.ts           # 通用工具函数
+├── hooks/                 # 自定义Hooks
+│   └── use-mobile.ts      # 移动端检测Hook
+├── test/                  # 测试目录
+│   └── setup.ts           # 测试配置
+└── proxy.ts               # Next.js中间件代理
 ```
 
 #### 状态管理方案
@@ -287,17 +311,21 @@ backend/
 │   └── utils/                 # 服务工具
 │       └── date_parser.py
 ├── models/               # 数据模型层
-│   ├── project.py             # 项目模型(含Project, ProjectContract, ProjectOwner等)
-│   ├── user.py                # 用户模型(含User, Role)
-│   ├── lead.py                # 线索模型(含Lead, LeadFollowUp, LeadPriceHistory)
+│   ├── project.py             # 项目模型
+│   ├── user.py                # 用户模型
+│   ├── lead.py                # 线索模型
 │   ├── community.py           # 小区模型
 │   ├── property.py            # 房源模型
 │   ├── media.py               # 媒体模型
-│   ├── l4_marketing.py         # 营销模型
+│   ├── l4_marketing.py        # 营销模型
 │   ├── error.py               # 错误模型
 │   └── base.py                # 基础模型和枚举
 ├── schemas/              # Pydantic模型
 │   ├── project.py             # 项目Schema
+│   ├── project_core.py        # 项目核心Schema
+│   ├── project_renovation.py  # 装修Schema
+│   ├── project_sales.py       # 销售Schema
+│   ├── project_finance.py     # 财务Schema
 │   ├── user.py                # 用户Schema
 │   ├── lead.py                # 线索Schema
 │   ├── community.py           # 小区Schema
@@ -311,7 +339,12 @@ backend/
 │   ├── interaction.py         # 互动记录Schema
 │   ├── status_log.py          # 状态日志Schema
 │   ├── l4_marketing.py        # 营销Schema
+│   ├── l4_project_import.py   # L4项目导入Schema
 │   ├── property.py            # 房源Schema
+│   ├── property_core.py       # 房源核心Schema
+│   ├── property_response.py   # 房源响应Schema
+│   ├── monitor.py             # 监控Schema
+│   ├── upload.py              # 上传Schema
 │   ├── common.py              # 通用Schema
 │   ├── enums.py               # 枚举定义
 │   ├── response.py            # 响应Schema
@@ -347,8 +380,17 @@ backend/
 │   ├── test_exceptions.py
 │   ├── test_param_parser.py
 │   ├── test_parser.py
-│   └── test_query_params.py
-└── alembic/              # 数据库迁移
+│   ├── test_query_params.py
+│   └── test_internal_api_permissions.py
+├── common.py             # 通用配置（限流器等）
+├── conftest.py           # 测试配置
+├── error_handlers.py     # 全局错误处理
+├── exceptions.py         # 自定义异常
+├── main.py               # 应用入口
+├── settings.py           # 配置管理
+├── db.py                 # 数据库连接
+├── alembic.ini           # Alembic配置
+└── pyproject.toml        # 项目配置
 ```
 
 ### 数据库架构详解
@@ -371,12 +413,14 @@ engine = create_engine(
     settings.database_url,
     echo=settings.database_echo,
     connect_args={
-        "check_same_thread": False,  # SQLite多线程支持
+        "check_same_thread": False,  # SQLite 特定配置
         "timeout": 30,               # 连接超时
     },
-    poolclass=StaticPool,
+    poolclass=StaticPool,            # 使用静态连接池（SQLite多线程支持）
     pool_pre_ping=True,              # 连接有效性检查
-    pool_recycle=3600,               # 连接回收
+    execution_options={
+        "compiled_cache": {},        # 启用编译缓存以提高查询性能
+    }
 )
 ```
 
@@ -435,14 +479,14 @@ source .venv/bin/activate
 
 # 5. 安装依赖
 uv pip install -e .
-```bash
+
 # 6. 配置环境变量
 cp .env.example .env
-# 编辑 .env 文件，设置必要配置（必须设置 JWT_SECRET_KEY）：
+# 编辑 .env 文件，设置必要配置：
 # - JWT_SECRET_KEY（必填）
-# - WECHAT_APPID（可选，微信登录用）
-# - WECHAT_SECRET（可选，微信登录用）
-```
+# - WECHAT_APPID（必填，微信登录用）
+# - WECHAT_SECRET（必填，微信登录用）
+
 # 7. 初始化数据库
 uv run python init_db.py
 
@@ -849,6 +893,7 @@ erDiagram
     L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : has
     L4_MARKETING_PROJECT }o--|| PROJECT : references
     PROPERTY_CURRENT ||--o{ PROPERTY_HISTORY : snapshots
+    PROPERTY_CURRENT ||--o{ PROPERTY_MEDIA : has
     PROPERTY_CURRENT }o--|| COMMUNITY : belongs_to
     COMMUNITY ||--o{ COMMUNITY_ALIAS : has
     COMMUNITY ||--o{ COMMUNITY_COMPETITOR : competes_with
@@ -1181,6 +1226,17 @@ erDiagram
         float sold_price_wan
         datetime listed_date
         datetime sold_date
+    }
+
+    PROPERTY_MEDIA {
+        integer id PK
+        string data_source
+        string source_property_id
+        string media_type
+        string url
+        string description
+        integer sort_order
+        datetime created_at
     }
 ```
 
