@@ -108,7 +108,6 @@ export function TrendChart({ data }: TrendChartProps) {
                 border: "none",
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
-              // [修复] recharts 的 ValueType 包含数组类型，使用类型断言处理
               formatter={(value) => {
                 // ValueType 可能是 string | number | readonly (string | number)[]
                 // 我们只处理数值情况

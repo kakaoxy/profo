@@ -25,7 +25,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { createCashFlowRecordAction } from "./client-actions";
+import { createCashFlowRecordAction } from "../actions";
 import {
   INCOME_CATEGORIES,
   EXPENSE_CATEGORIES,
