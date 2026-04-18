@@ -93,10 +93,6 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     params: { query: queryParams },
   });
 
-  if (error) {
-    console.error("Failed to fetch leads:", error);
-  }
-
   const leads: Lead[] = (data?.items || []).map(mapBackendToFrontend);
 
   return (
