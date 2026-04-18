@@ -150,7 +150,7 @@ const MenuButton = React.forwardRef<
     </SidebarMenuButton>
   );
 
-  if (item.url && item.url !== "#") {
+  if (item.url && item.url !== "#" && !hasSubmenu) {
     return (
       <Link href={item.url} className="w-full">
         {buttonContent}
