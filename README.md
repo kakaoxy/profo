@@ -724,47 +724,45 @@ erDiagram
     LEAD ||--o{ FOLLOW_UP : has
 
     USER {
-        string id PK
-        string username UK
+        string id
+        string username
         string password
         string nickname
-        string phone UK
-        string role_id FK
+        string phone
+        string role_id
         string status
         datetime last_login_at
         datetime created_at
-        datetime updated_at
     }
 
     ROLE {
-        string id PK
-        string name UK
-        string code UK
+        string id
+        string name
+        string code
         text description
         json permissions
         boolean is_active
     }
 
     PROJECT {
-        string id PK
+        string id
         string name
         string community_name
         string address
-        string project_manager_id FK
+        string project_manager_id
         decimal area
         string layout
         string orientation
-        enum status
-        enum renovation_stage
+        string status
+        string renovation_stage
         boolean is_deleted
         datetime created_at
-        datetime updated_at
     }
 
     PROJECT_CONTRACT {
-        string id PK
-        string project_id FK UK
-        string contract_no UK
+        string id
+        string project_id
+        string contract_no
         decimal signing_price
         datetime signing_date
         integer signing_period
@@ -772,8 +770,8 @@ erDiagram
     }
 
     PROJECT_OWNER {
-        string id PK
-        string project_id FK
+        string id
+        string project_id
         string owner_name
         string owner_phone
         string relation_type
@@ -781,8 +779,8 @@ erDiagram
     }
 
     PROJECT_SALE {
-        string id PK
-        string project_id FK UK
+        string id
+        string project_id
         datetime listing_date
         decimal list_price
         datetime sold_date
@@ -791,8 +789,8 @@ erDiagram
     }
 
     FINANCE_RECORD {
-        string id PK
-        string project_id FK
+        string id
+        string project_id
         string type
         string category
         decimal amount
@@ -801,8 +799,8 @@ erDiagram
     }
 
     PROJECT_RENOVATION {
-        string id PK
-        string project_id FK UK
+        string id
+        string project_id
         string renovation_company
         datetime contract_start_date
         datetime contract_end_date
@@ -811,9 +809,9 @@ erDiagram
     }
 
     RENOVATION_PHOTO {
-        string id PK
-        string project_id FK
-        string renovation_id FK
+        string id
+        string project_id
+        string renovation_id
         string stage
         string url
         string filename
@@ -821,7 +819,7 @@ erDiagram
     }
 
     LEAD {
-        string id PK
+        string id
         string community_name
         string layout
         decimal area
@@ -832,8 +830,8 @@ erDiagram
     }
 
     FOLLOW_UP {
-        string id PK
-        string lead_id FK
+        string id
+        string lead_id
         string method
         text content
         datetime follow_up_at
