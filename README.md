@@ -875,28 +875,27 @@ Content-Type: application/json
 
 ```mermaid
 erDiagram
-    USER ||--o{ PROJECT : manages
-    USER }|--|| ROLE : has
-    PROJECT ||--|| PROJECT_CONTRACT : has
-    PROJECT ||--o{ PROJECT_OWNER : has
-    PROJECT ||--|| PROJECT_SALE : has
-    PROJECT ||--o{ PROJECT_FOLLOW_UP : has
-    PROJECT ||--o{ PROJECT_EVALUATION : has
-    PROJECT ||--o{ PROJECT_INTERACTION : has
-    PROJECT ||--o{ FINANCE_RECORD : has
-    PROJECT ||--o{ PROJECT_STATUS_LOG : has
-    PROJECT ||--|| PROJECT_RENOVATION : has
-    PROJECT_RENOVATION ||--o{ RENOVATION_PHOTO : has
-    LEAD ||--o{ LEAD_FOLLOWUP : has
-    LEAD ||--o{ LEAD_PRICE_HISTORY : has
-    LEAD ||--o| COMMUNITY : sourced_from
-    L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : has
-    L4_MARKETING_PROJECT }o--|| PROJECT : references
-    PROPERTY_CURRENT ||--o{ PROPERTY_HISTORY : snapshots
-    PROPERTY_CURRENT ||--o{ PROPERTY_MEDIA : has
-    PROPERTY_CURRENT }o--|| COMMUNITY : belongs_to
-    COMMUNITY ||--o{ COMMUNITY_ALIAS : has
-    COMMUNITY ||--o{ COMMUNITY_COMPETITOR : competes_with
+    USER ||--o{ PROJECT : "manages"
+    USER }|--|| ROLE : "has"
+    PROJECT ||--|| PROJECT_CONTRACT : "has"
+    PROJECT ||--o{ PROJECT_OWNER : "has"
+    PROJECT ||--|| PROJECT_SALE : "has"
+    PROJECT ||--o{ PROJECT_FOLLOW_UP : "has"
+    PROJECT ||--o{ PROJECT_EVALUATION : "has"
+    PROJECT ||--o{ PROJECT_INTERACTION : "has"
+    PROJECT ||--o{ FINANCE_RECORD : "has"
+    PROJECT ||--o{ PROJECT_STATUS_LOG : "has"
+    PROJECT ||--|| PROJECT_RENOVATION : "has"
+    PROJECT_RENOVATION ||--o{ RENOVATION_PHOTO : "has"
+    LEAD ||--o{ LEAD_FOLLOWUP : "has"
+    LEAD ||--o{ LEAD_PRICE_HISTORY : "has"
+    L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : "has"
+    L4_MARKETING_PROJECT }o--|| PROJECT : "references"
+    PROPERTY_CURRENT ||--o{ PROPERTY_HISTORY : "snapshots"
+    PROPERTY_CURRENT ||--o{ PROPERTY_MEDIA : "has"
+    PROPERTY_CURRENT }o--|| COMMUNITY : "belongs_to"
+    COMMUNITY ||--o{ COMMUNITY_ALIAS : "has"
+    COMMUNITY ||--o{ COMMUNITY_COMPETITOR : "competes_with"
 
     USER {
         string id PK
