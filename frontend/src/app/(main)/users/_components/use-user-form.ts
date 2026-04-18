@@ -19,7 +19,6 @@ const createSchema = z.object({
     .regex(/[!@#$%^&*(),.?":{}|<>]/, "密码必须包含至少一个特殊字符"),
   role_id: z.string().min(1, "请选择角色"),
   phone: z.string().max(20).optional().or(z.literal("")),
-  status: z.string().optional(),
 });
 
 const editSchema = z.object({
@@ -37,7 +36,6 @@ const defaultFormValues = {
   password: "",
   role_id: "",
   phone: "",
-  status: "active",
 };
 
 type FormValues = z.infer<typeof editSchema>;
@@ -72,7 +70,8 @@ export function useUserForm({ user, open, onOpenChange }: UseUserFormProps) {
     } else {
       form.reset(defaultFormValues);
     }
-  }, [user, form, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, open]);
 
   async function onSubmit(values: FormValues) {
     setIsPending(true);
