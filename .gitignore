@@ -1,4 +1,6 @@
-# Python
+# ==========================================
+# Python 相关
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,77 +12,148 @@ dist/
 downloads/
 eggs/
 .eggs/
+lib/
 lib64/
 parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+
+# 测试与覆盖率
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
-.vscode
-.kiro/
-.kiro/specs/profo-real-estate
-.claude/
-*.jpg
-*.png
+cover/
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+
+# 数据库迁移
 alembic/
 
-# UV
+# ==========================================
+# UV 包管理器
+# ==========================================
 .venv/
 venv/
 example/
 
-# Node
+# ==========================================
+# Node.js / Next.js 相关
+# ==========================================
+# 依赖
 node_modules/
+.pnp
+.pnp.js
+
+# 构建输出
+.next/
+out/
 dist/
 dist-ssr/
+build/
+
+# 类型声明
+*.tsbuildinfo
+next-env.d.ts
+
+# 部署平台
+.vercel
+
+# 本地配置
 *.local
 
-# Logs
+# ==========================================
+# 日志文件
+# ==========================================
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Editor
+# ==========================================
+# 编辑器与 IDE
+# ==========================================
+# VS Code
 .vscode/*
 !.vscode/extensions.json
+
+# JetBrains 系列
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Database
+# ==========================================
+# 操作系统文件
+# ==========================================
+.DS_Store
+
+# ==========================================
+# 数据库文件
+# ==========================================
 *.db
 *.sqlite
 *.sqlite3
-*.csv
-*.db
+*.sqlite3-journal
 *.db-*
 *.db.*
 backend/data.db
 
-# Environment
+# ==========================================
+# 数据文件
+# ==========================================
+*.csv
+
+# ==========================================
+# 环境变量
+# ==========================================
 .env
 .env.local
 .env.*.local
 
+# ==========================================
+# 文档与媒体文件
+# ==========================================
+*.jpg
+*.png
 *.doc
-.playwright-cli/
 *.docx
 *.pdf
-.gstack/
+*.pem
 
+# ==========================================
+# 特定工具与框架
+# ==========================================
+.playwright-cli/
+.gstack/
+.kiro/
+.kiro/specs/profo-real-estate
+.claude/
 .trae/
 
+# ==========================================
+# 项目特定文件
+# ==========================================
 agents.md
 AGENTS.md
+
+# ==========================================
+# Chrome DevTools 性能追踪文件
+# ==========================================
+*.trace.json
+trace-*.json
