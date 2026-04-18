@@ -11,6 +11,38 @@ import {
 import { StatCard, LeadsTable } from "./_components";
 import { formatCurrency, formatRelativeTime } from "./_lib";
 
+interface ApiLead {
+  id: string;
+  community_name: string;
+  layout?: string | null;
+  area?: number | null;
+  orientation?: string | null;
+  total_price?: number | null;
+  created_at: string;
+}
+
+interface Lead {
+  id: string;
+  communityName: string;
+  layout?: string | null;
+  area?: number | null;
+  orientation?: string | null;
+  totalPrice?: number | null;
+  createdAt: string;
+}
+
+function convertApiLeadToLead(apiLead: ApiLead): Lead {
+  return {
+    id: apiLead.id,
+    communityName: apiLead.community_name,
+    layout: apiLead.layout,
+    area: apiLead.area,
+    orientation: apiLead.orientation,
+    totalPrice: apiLead.total_price,
+    createdAt: apiLead.created_at,
+  };
+}
+
 async function getDashboardData() {
   const client = await fetchClient();
 
@@ -30,10 +62,13 @@ async function getDashboardData() {
       }),
     ]);
 
+  const apiLeads = (pendingLeadsRes.data?.items as ApiLead[]) || [];
+  const leads = apiLeads.map(convertApiLeadToLead);
+
   return {
     propertiesTotal: propertiesRes.data?.total || 0,
     projectStats: projectsStatsRes.data || {},
-    leads: pendingLeadsRes.data?.items || [],
+    leads,
     pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
     signedLeadsTotal: signedLeadsRes.data?.total || 0,
   };
