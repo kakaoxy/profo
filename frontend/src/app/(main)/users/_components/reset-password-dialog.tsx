@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,8 +26,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { resetUserPasswordAction } from "../actions";
-import type { UserResponse } from "../actions";
+import { resetUserPasswordAction } from "../actions/index";
+import type { UserResponse } from "../actions/index";
 
 const schema = z.object({
   password: z.string().min(6, "密码至少6个字符"),
@@ -39,14 +39,15 @@ interface ResetPasswordDialogProps {
   user: UserResponse | null;
 }
 
+const defaultFormValues = { password: "" };
+
 export function ResetPasswordDialog({ open, onOpenChange, user }: ResetPasswordDialogProps) {
   const [isPending, setIsPending] = useState(false);
+  const defaultValues = useMemo(() => defaultFormValues, []);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      password: "",
-    },
+    defaultValues,
   });
 
   async function onSubmit(values: z.infer<typeof schema>) {
