@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -77,11 +78,12 @@ export function PhotoPicker({ projectId, onSelect, trigger, title = "选择照�
                   className="group relative aspect-square rounded overflow-hidden border bg-slate-50 cursor-pointer hover:border-primary transition-colors"
                   onClick={() => handleSelect(photo)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={getFileUrl(photo.url)}
                     alt="source"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 25vw"
                   />
                   <div className="absolute top-1 left-1">
                     <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[10px] px-1 h-4">

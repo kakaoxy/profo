@@ -32,6 +32,8 @@ export function DataTable<TData, TValue>({
   container = true,
   containerClassName,
 }: DataTableProps<TData, TValue>) {
+  // 禁用 ESLint 规则：@tanstack/react-table 的 useReactTable hook 在当前 ESLint 配置中被标记为不兼容库
+  // 这是误报，因为 @tanstack/react-table 是官方推荐的表格库，与 React 完全兼容
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
