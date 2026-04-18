@@ -3,12 +3,12 @@ import { ClipboardList, ChevronRight } from "lucide-react";
 
 interface Lead {
   id: string;
-  community_name: string;
+  communityName: string;
   layout?: string | null;
   area?: number | null;
   orientation?: string | null;
-  total_price?: number | null;
-  created_at: string;
+  totalPrice?: number | null;
+  createdAt: string;
 }
 
 interface LeadsTableProps {
@@ -68,7 +68,7 @@ export function LeadsTable({ leads, formatCurrency, formatRelativeTime }: LeadsT
                 <td className="px-4 sm:px-6 py-4">
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {lead.community_name}
+                      {lead.communityName}
                     </span>
                     <div className="flex items-center gap-2 mt-1 sm:hidden text-xs text-slate-500">
                       <span>{lead.layout || "-"}</span>
@@ -95,12 +95,12 @@ export function LeadsTable({ leads, formatCurrency, formatRelativeTime }: LeadsT
 
                 <td className="px-4 sm:px-6 py-4">
                   <div className="text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">
-                    {lead.total_price ? (
+                    {lead.totalPrice ? (
                       <>
                         <span className="text-xs font-normal text-slate-400 mr-0.5">
                           ¥
                         </span>
-                        {formatCurrency(lead.total_price)}
+                        {formatCurrency(lead.totalPrice)}
                       </>
                     ) : (
                       "-"
@@ -109,7 +109,7 @@ export function LeadsTable({ leads, formatCurrency, formatRelativeTime }: LeadsT
                 </td>
 
                 <td className="px-4 sm:px-6 py-4 text-sm text-slate-400 hidden md:table-cell text-right">
-                  {formatRelativeTime(lead.created_at)}
+                  {formatRelativeTime(lead.createdAt)}
                 </td>
 
                 <td className="px-4 sm:px-6 py-4 text-right">
