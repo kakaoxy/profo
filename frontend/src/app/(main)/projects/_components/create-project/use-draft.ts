@@ -124,7 +124,30 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
     // 取消待执行的保存操作
     saveDraftRef.current?.cancel();
     localStorage.removeItem(DRAFT_KEY);
-    form.reset({ community_name: "" });
+    // 重置所有字段为初始值
+    form.reset({
+      community_name: "",
+      address: "",
+      area: undefined,
+      rooms: undefined,
+      halls: undefined,
+      bathrooms: undefined,
+      orientation: "南北",
+      owner_name: "",
+      owner_phone: "",
+      owner_id_card: "",
+      notes: "",
+      contract_no: "",
+      signing_price: undefined,
+      signing_date: undefined,
+      signing_period: undefined,
+      extension_period: undefined,
+      extension_rent: undefined,
+      cost_assumption: "",
+      planned_handover_date: undefined,
+      other_agreements: "",
+      attachments: [],
+    });
     toast.success("草稿已清空");
   }, [form]);
 
