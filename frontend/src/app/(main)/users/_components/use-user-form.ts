@@ -65,7 +65,7 @@ export function useUserForm({ user, open, onOpenChange }: UseUserFormProps) {
         nickname: user.nickname || "",
         role_id: user.role_id,
         phone: user.phone || "",
-        status: user.status,
+        status: user.status || "active",
       });
     } else {
       form.reset(defaultFormValues);
