@@ -25,7 +25,7 @@ export function CompetitorsTable({
   onSort,
 }: CompetitorsTableProps) {
   return (
-    <div className="hidden sm:block overflow-x-auto scrollbar-hide">
+    <div className="overflow-x-auto scrollbar-hide">
       <Table className="min-w-[1000px]">
         <TableHeader className="bg-slate-50/50">
           <TableRow className="hover:bg-transparent border-b border-slate-100">
