@@ -16,7 +16,7 @@ import {
 import { UserTable } from "./user-table";
 import { UserDialog } from "./user-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
-import type { UserListResponse, UserResponse, RoleResponse } from "../actions";
+import type { UserListResponse, UserResponse, RoleResponse } from "../actions/index";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface UsersClientProps {
@@ -40,19 +40,9 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams(searchParams);
-    
-    // Simple logic: if query matches username or nickname
-    // actually API supports username OR nickname. 
-    // For simplicity, let's just search 'username' for now or 'nickname' if user typed chinese?
-    // Let's just set 'username' parameter for now, or maybe 'nickname'.
-    // Or we can add a selector.
-    // Let's assume standard behavior: text search hits both if backend supported "q", but backend has distinct fields.
-    // I'll set 'nickname' if it looks like a name, or 'username' otherwise, or just set 'username' as primary search.
-    // Actually backend router logic: `username: Optional[str]`, `nickname: Optional[str]`. 
-    // I'll just use 'nickname' for search input for now as it's more human friendly, or create a combined search?
-    // Let's use 'username' for now as it is unique ID.
+
     if (searchQuery) {
-        params.set("username", searchQuery); // Search by username primarily
+        params.set("username", searchQuery);
     } else {
         params.delete("username");
     }

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 
 import { RoleTable } from "./role-table";
 import { RoleDialog } from "./role-dialog";
-import type { RoleListResponse, RoleResponse } from "@/app/(main)/users/actions";
+import type { RoleListResponse, RoleResponse } from "@/app/(main)/users/actions/index";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface RolesClientProps {

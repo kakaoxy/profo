@@ -32,8 +32,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { deleteRoleAction } from "../../actions";
-import type { RoleResponse } from "../../actions";
+import { deleteRoleAction } from "../../actions/index";
+import type { RoleResponse } from "../../actions/index";
 import { PERMISSIONS } from "../../constants";
 
 interface RoleTableProps {

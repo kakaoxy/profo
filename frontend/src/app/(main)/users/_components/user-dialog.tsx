@@ -1,11 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   Dialog,
@@ -35,33 +30,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
-import { createUserAction, updateUserAction } from "../actions";
-import type { UserResponse, RoleResponse, UserUpdate, UserCreate } from "../actions";
-
-// Create Schema
-const createSchema = z.object({
-  username: z.string().min(3, "用户名至少3个字符").max(100),
-  nickname: z.string().max(100).optional(),
-  password: z.string()
-    .min(8, "密码至少8个字符")
-    .regex(/[A-Z]/, "密码必须包含至少一个大写字母")
-    .regex(/[a-z]/, "密码必须包含至少一个小写字母")
-    .regex(/\d/, "密码必须包含至少一个数字")
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, "密码必须包含至少一个特殊字符"),
-  role_id: z.string().min(1, "请选择角色"),
-  phone: z.string().max(20).optional().or(z.literal("")),
-  status: z.string().optional(),
-});
-
-// Edit Schema
-const editSchema = z.object({
-  username: z.string().optional(),
-  password: z.string().optional(),
-  nickname: z.string().max(100).optional(),
-  role_id: z.string().min(1, "请选择角色"),
-  phone: z.string().max(20).optional().or(z.literal("")),
-  status: z.string().optional(),
-});
+import { useUserForm } from "./use-user-form";
+import type { UserResponse, RoleResponse } from "../actions/index";
 
 interface UserDialogProps {
   open: boolean;
@@ -71,99 +41,21 @@ interface UserDialogProps {
 }
 
 export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps) {
-  const [isPending, setIsPending] = useState(false);
-
-  // Determine which schema to use
-  const schema = user ? editSchema : createSchema;
-  
-  // Use looser type for form to accommodate both schemas
-  const form = useForm<z.infer<typeof editSchema>>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      username: "",
-      nickname: "",
-      password: "",
-      role_id: "",
-      phone: "",
-      status: "active",
-    },
-  });
-
-  useEffect(() => {
-    if (user) {
-      form.reset({
-        username: user.username,
-        nickname: user.nickname || "",
-        role_id: user.role_id,
-        phone: user.phone || "",
-        status: user.status,
-      });
-    } else {
-      form.reset({
-        username: "",
-        nickname: "",
-        password: "",
-        role_id: "",
-        phone: "",
-        status: "active",
-      });
-    }
-  }, [user, form, open]);
-
-  async function onSubmit(values: z.infer<typeof editSchema>) {
-    setIsPending(true);
-    try {
-      let result;
-      if (user) {
-        // Prepare update data
-        const updateData: UserUpdate = {
-          nickname: values.nickname || null,
-          role_id: values.role_id,
-          phone: values.phone || null,
-          status: values.status,
-          avatar: user.avatar, // Keep existing avatar
-        };
-        result = await updateUserAction(user.id, updateData);
-      } else {
-        // Create mode
-        const createData: UserCreate = {
-           username: values.username!, // Validated by createSchema
-           password: values.password!, // Validated by createSchema
-           role_id: values.role_id,
-           nickname: values.nickname || null,
-           phone: values.phone || null,
-           // status not supported in UserCreate, defaults to active on backend
-        };
-        result = await createUserAction(createData);
-      }
-
-      if (result.success) {
-        toast.success(result.message);
-        onOpenChange(false);
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("操作失败");
-    } finally {
-      setIsPending(false);
-    }
-  }
+  const { form, isPending, isEdit, onSubmit } = useUserForm({ user, open, onOpenChange });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{user ? "编辑用户" : "新建用户"}</DialogTitle>
+          <DialogTitle>{isEdit ? "编辑用户" : "新建用户"}</DialogTitle>
           <DialogDescription>
-            {user ? "修改用户信息" : "创建新用户并分配角色"}
+            {isEdit ? "修改用户信息" : "创建新用户并分配角色"}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {!user && (
+          <form onSubmit={onSubmit} className="space-y-4">
+            {!isEdit && (
               <FormField
                 control={form.control}
                 name="username"
@@ -171,7 +63,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                   <FormItem>
                     <FormLabel>用户名</FormLabel>
                     <FormControl>
-                      <Input placeholder="登录账号" {...field} value={field.value || ''} />
+                      <Input placeholder="登录账号" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -179,7 +71,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
               />
             )}
 
-            {!user && (
+            {!isEdit && (
               <FormField
                 control={form.control}
                 name="password"
@@ -187,7 +79,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                   <FormItem>
                     <FormLabel>密码</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="设置登录密码" {...field} value={field.value || ''} />
+                      <Input type="password" placeholder="设置登录密码" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormDescription>至少8位，包含大小写字母、数字和特殊字符</FormDescription>
                     <FormMessage />
@@ -203,7 +95,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                 <FormItem>
                   <FormLabel>昵称</FormLabel>
                   <FormControl>
-                    <Input placeholder="显示名称" {...field} value={field.value || ''} />
+                    <Input placeholder="显示名称" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,7 +108,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>角色</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="选择角色" />
@@ -242,14 +134,14 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                 <FormItem>
                   <FormLabel>手机号</FormLabel>
                   <FormControl>
-                    <Input placeholder="可选" {...field} value={field.value || ''} />
+                    <Input placeholder="可选" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {user && (
+            {isEdit && (
               <FormField
                 control={form.control}
                 name="status"
@@ -258,13 +150,13 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">账号状态</FormLabel>
                       <FormDescription>
-                         {field.value === "active" ? "正常使用中" : "账号已禁用"}
+                        {field.value === "active" ? "正常使用中" : "账号已禁用"}
                       </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
                         checked={field.value === "active"}
-                        onCheckedChange={(checked: boolean) => 
+                        onCheckedChange={(checked: boolean) =>
                           field.onChange(checked ? "active" : "inactive")
                         }
                       />

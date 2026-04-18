@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { getUsersAction, getRolesAction } from "./actions";
+import { getUsersAction, getRolesAction } from "./actions/index";
 import { UsersClient } from "./_components/users-client";
 
 export default async function UsersPage(props: {
@@ -38,8 +38,6 @@ export default async function UsersPage(props: {
     <div className="flex flex-col gap-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">用户管理</h2>
-        <div className="flex items-center space-x-2">
-        </div>
       </div>
       
       <Suspense fallback={<div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>}>

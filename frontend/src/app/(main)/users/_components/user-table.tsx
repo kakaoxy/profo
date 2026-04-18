@@ -34,8 +34,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { deleteUserAction } from "../actions";
-import type { UserResponse } from "../actions";
+import { deleteUserAction } from "../actions/index";
+import type { UserResponse } from "../actions/index";
 import { USER_STATUS } from "../constants";
 
 interface UserTableProps {
