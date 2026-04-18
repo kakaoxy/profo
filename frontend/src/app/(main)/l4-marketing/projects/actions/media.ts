@@ -81,6 +81,9 @@ export async function createL4MarketingMediaAction(
 
 /**
  * 更新媒体
+ * @param mediaId - 媒体ID
+ * @param projectId - 项目ID，用于缓存重新验证
+ * @param body - 更新数据
  */
 export async function updateL4MarketingMediaAction(
   mediaId: number,
@@ -117,6 +120,8 @@ export async function updateL4MarketingMediaAction(
 
 /**
  * 删除媒体
+ * @param mediaId - 媒体ID
+ * @param projectId - 项目ID，用于缓存重新验证
  */
 export async function deleteL4MarketingMediaAction(mediaId: number, projectId: number) {
   try {
