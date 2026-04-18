@@ -107,20 +107,8 @@ export const formSchema = z
 
     // 附件列表
     attachments: z.array(attachmentSchema).optional(),
-  })
-  .refine(
-    (data) => {
-      // 至少有一个户型数值有定义（允许为0）
-      const hasRooms = data.rooms !== undefined;
-      const hasHalls = data.halls !== undefined;
-      const hasBathrooms = data.bathrooms !== undefined;
-      return hasRooms || hasHalls || hasBathrooms;
-    },
-    {
-      message: "户型至少需要一个数值（室、厅、卫至少填一个）",
-      path: ["rooms"],
-    }
-  );
+  });
+// 移除户型必填验证 - layout 是可选字段，允许用户不填户型
 
 // 这个类型现在被强制用于 useForm 泛型
 export type FormValues = z.infer<typeof formSchema>;
