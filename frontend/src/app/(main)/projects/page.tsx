@@ -30,6 +30,14 @@ type ProjectStatsResponse =
 
 type ApiProjectItem = components["schemas"]["ProjectResponse"];
 
+function toNumber(value: string | null | undefined): number | undefined {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+  const num = Number(value);
+  return isNaN(num) ? undefined : num;
+}
+
 function mapProjectResponse(item: ApiProjectItem): Project {
   return {
     id: item.id,
@@ -39,22 +47,22 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     updated_at: item.updated_at,
     community_name: item.community_name ?? undefined,
     address: item.address ?? undefined,
-    area: item.area ? Number(item.area) : undefined,
+    area: toNumber(item.area),
     layout: item.layout ?? undefined,
     orientation: item.orientation ?? undefined,
-    signing_price: item.signing_price ? Number(item.signing_price) : undefined,
+    signing_price: toNumber(item.signing_price),
     signing_date: item.signing_date ?? undefined,
     signing_period: item.signing_period ?? undefined,
     extension_period: item.extension_period ?? undefined,
-    extension_rent: item.extension_rent ? Number(item.extension_rent) : undefined,
+    extension_rent: toNumber(item.extension_rent),
     cost_assumption: item.cost_assumption ?? undefined,
     planned_handover_date: item.planned_handover_date ?? undefined,
     other_agreements: item.other_agreements ?? undefined,
     renovation_stage: item.renovation_stage ?? undefined,
     contract_no: item.contract_no ?? undefined,
-    list_price: item.list_price ? Number(item.list_price) : undefined,
+    list_price: toNumber(item.list_price),
     listing_date: item.listing_date ?? undefined,
-    sold_price: item.sold_price ? Number(item.sold_price) : undefined,
+    sold_price: toNumber(item.sold_price),
     sold_date: item.sold_date ?? undefined,
   };
 }
