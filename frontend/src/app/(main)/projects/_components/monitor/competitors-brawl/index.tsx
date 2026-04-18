@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SectionHeader } from "../section-header";
@@ -15,10 +15,27 @@ interface CompetitorsBrawlProps {
   communityName?: string;
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export function CompetitorsBrawl({
   projectId,
   communityName,
 }: CompetitorsBrawlProps) {
+  const isMobile = useIsMobile();
   const [statusFilters, setStatusFilters] = useState<("on_sale" | "sold")[]>([
     "on_sale",
   ]);
@@ -105,15 +122,14 @@ export function CompetitorsBrawl({
             <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
               暂无数据
             </div>
+          ) : isMobile ? (
+            <CompetitorsCard items={filteredItems} />
           ) : (
-            <>
-              <CompetitorsCard items={filteredItems} />
-              <CompetitorsTable
-                items={filteredItems}
-                sortConfig={sortConfig}
-                onSort={handleSort}
-              />
-            </>
+            <CompetitorsTable
+              items={filteredItems}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
           )}
         </Card>
       </div>

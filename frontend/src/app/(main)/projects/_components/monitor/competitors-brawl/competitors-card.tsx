@@ -9,7 +9,7 @@ interface CompetitorsCardProps {
 
 export function CompetitorsCard({ items }: CompetitorsCardProps) {
   return (
-    <div className="sm:hidden divide-y divide-slate-100">
+    <div className="divide-y divide-slate-100">
       {items.map((item) => (
         <div
           key={item.id}

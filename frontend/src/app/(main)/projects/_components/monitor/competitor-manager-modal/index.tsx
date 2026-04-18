@@ -54,12 +54,10 @@ export function CompetitorManagerModal({
     await addCompetitor(competitorId);
     setSearchQuery("");
     setIsAdding(false);
-    onUpdate();
   };
 
   const handleRemove = async (competitorId: number) => {
     await removeCompetitor(competitorId);
-    onUpdate();
   };
 
   if (!isOpen) return null;
