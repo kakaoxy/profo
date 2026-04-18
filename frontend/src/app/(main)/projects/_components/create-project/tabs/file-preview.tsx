@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   FileSpreadsheet,
   FileImage,
@@ -179,6 +179,24 @@ interface FileListProps {
  * 按分类分组显示附件
  */
 export function FileList({ attachments, onRemove }: FileListProps) {
+  // 使用 useMemo 缓存分组结果，避免每次渲染重新计算
+  const groupedAttachments = useMemo(() => {
+    return attachments.reduce(
+      (acc, att) => {
+        const key = att.category;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(att);
+        return acc;
+      },
+      {} as Record<string, Attachment[]>
+    );
+  }, [attachments]);
+
+  const groupedEntries = useMemo(
+    () => Object.entries(groupedAttachments),
+    [groupedAttachments]
+  );
+
   if (attachments.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
@@ -189,20 +207,9 @@ export function FileList({ attachments, onRemove }: FileListProps) {
     );
   }
 
-  // 按分类分组
-  const groupedAttachments = attachments.reduce(
-    (acc, att) => {
-      const key = att.category;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(att);
-      return acc;
-    },
-    {} as Record<string, Attachment[]>
-  );
-
   return (
     <div className="space-y-4">
-      {Object.entries(groupedAttachments).map(([category, files]) => (
+      {groupedEntries.map(([category, files]) => (
         <div key={category} className="space-y-2">
           <h4 className="text-sm font-medium text-muted-foreground">
             {getCategoryLabel(category as Attachment["category"])}（{files.length}）

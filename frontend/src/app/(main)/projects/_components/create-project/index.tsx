@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Plus, Loader2, Save, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,15 +33,15 @@ interface CreateProjectDialogProps {
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSuccess?: () => void; // 添加 onSuccess 回调 prop
+  onSuccess?: () => void;
 }
 
-export function CreateProjectDialog({ 
-  project, 
-  trigger, 
-  open: controlledOpen, 
+export function CreateProjectDialog({
+  project,
+  trigger,
+  open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
-  onSuccess // 解构 onSuccess
+  onSuccess,
 }: CreateProjectDialogProps = {}) {
   const {
     form,
@@ -52,16 +53,19 @@ export function CreateProjectDialog({
     clearDraft,
     onSubmit,
     isEditMode,
-  } = useCreateProject({ project, onSuccess }); // 将 onSuccess 传给 hook
+  } = useCreateProject({ project, onSuccess });
 
   // 支持受控和非受控模式
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = controlledOnOpenChange || setInternalOpen;
 
-  // 处理表单提交，添加错误处理
-  const handleSubmit = (e: React.FormEvent) => {
-    onSubmit(e);
-  };
+  // 使用 useMemo 缓存错误列表，避免每次渲染重新计算
+  const errorEntries = useMemo(
+    () => Object.entries(form.formState.errors),
+    [form.formState.errors]
+  );
+
+  const hasErrors = errorEntries.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -107,14 +111,14 @@ export function CreateProjectDialog({
         {/* --- Body --- */}
         <div className="flex-1 overflow-hidden bg-slate-50/50">
           <Form {...form}>
-            <form onSubmit={handleSubmit} className="h-full flex flex-col">
+            <form onSubmit={onSubmit} className="h-full flex flex-col">
               {/* 表单错误提示 */}
-              {Object.keys(form.formState.errors).length > 0 && (
+              {hasErrors && (
                 <Alert variant="destructive" className="m-6 mb-0">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     表单验证失败，请检查以下字段：
-                    {Object.entries(form.formState.errors).map(([key, error]) => (
+                    {errorEntries.map(([key, error]) => (
                       <div key={key} className="text-sm mt-1">
                         • {key}: {error?.message as string}
                       </div>
