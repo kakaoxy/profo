@@ -28,40 +28,88 @@ type ProjectListResponse =
 type ProjectStatsResponse =
   paths["/api/v1/projects/stats"]["get"]["responses"][200]["content"]["application/json"];
 
-/**
- * 将 API 返回的项目数据映射为前端 Project 类型
- */
-function mapProjectResponse(item: Record<string, unknown>): Project {
+interface ApiProjectItem {
+  id: unknown;
+  name?: unknown;
+  status?: unknown;
+  created_at?: unknown;
+  updated_at?: unknown;
+  community_name?: unknown;
+  address?: unknown;
+  area?: unknown;
+  layout?: unknown;
+  orientation?: unknown;
+  signing_price?: unknown;
+  signing_date?: unknown;
+  signing_period?: unknown;
+  extension_period?: unknown;
+  extension_rent?: unknown;
+  cost_assumption?: unknown;
+  planned_handover_date?: unknown;
+  other_agreements?: unknown;
+  renovation_stage?: unknown;
+  contract_no?: unknown;
+  list_price?: unknown;
+  listing_date?: unknown;
+  sold_price?: unknown;
+  sold_date?: unknown;
+  total_income?: unknown;
+  total_expense?: unknown;
+  net_cash_flow?: unknown;
+  roi?: unknown;
+}
+
+function isValidProjectItem(item: unknown): item is ApiProjectItem {
+  return item !== null && typeof item === "object" && "id" in (item as Record<string, unknown>);
+}
+
+function toStringOrUndefined(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function toNumberOrUndefined(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+function mapProjectResponse(item: ApiProjectItem): Project {
   return {
     id: String(item.id),
-    name: String(item.name ?? ""),
-    status: String(item.status),
-    created_at: String(item.created_at),
-    updated_at: String(item.updated_at),
-    community_name: item.community_name ? String(item.community_name) : undefined,
-    address: item.address ? String(item.address) : undefined,
-    area: item.area ? Number(item.area) : undefined,
-    layout: item.layout ? String(item.layout) : undefined,
-    orientation: item.orientation ? String(item.orientation) : undefined,
-    signing_price: item.signing_price ? Number(item.signing_price) : undefined,
-    signing_date: item.signing_date ? String(item.signing_date) : undefined,
-    signing_period: item.signing_period ? Number(item.signing_period) : undefined,
-    extension_period: item.extension_period ? Number(item.extension_period) : undefined,
-    extension_rent: item.extension_rent ? Number(item.extension_rent) : undefined,
-    cost_assumption: item.cost_assumption ? String(item.cost_assumption) : undefined,
-    planned_handover_date: item.planned_handover_date ? String(item.planned_handover_date) : undefined,
-    other_agreements: item.other_agreements ? String(item.other_agreements) : undefined,
-    renovation_stage: item.renovation_stage ? String(item.renovation_stage) : undefined,
-    contract_no: item.contract_no ? String(item.contract_no) : undefined,
-    list_price: item.list_price ? Number(item.list_price) : undefined,
-    listing_date: item.listing_date ? String(item.listing_date) : undefined,
-    sold_price: item.sold_price ? Number(item.sold_price) : undefined,
-    sold_date: item.sold_date ? String(item.sold_date) : undefined,
-    total_income: item.total_income ? Number(item.total_income) : undefined,
-    total_expense: item.total_expense ? Number(item.total_expense) : undefined,
-    net_cash_flow: item.net_cash_flow ? Number(item.net_cash_flow) : undefined,
-    roi: item.roi ? Number(item.roi) : undefined,
-  } as Project;
+    name: toStringOrUndefined(item.name) ?? "",
+    status: toStringOrUndefined(item.status) ?? "",
+    created_at: toStringOrUndefined(item.created_at) ?? "",
+    updated_at: toStringOrUndefined(item.updated_at) ?? "",
+    community_name: toStringOrUndefined(item.community_name),
+    address: toStringOrUndefined(item.address),
+    area: toNumberOrUndefined(item.area),
+    layout: toStringOrUndefined(item.layout),
+    orientation: toStringOrUndefined(item.orientation),
+    signing_price: toNumberOrUndefined(item.signing_price),
+    signing_date: toStringOrUndefined(item.signing_date),
+    signing_period: toNumberOrUndefined(item.signing_period),
+    extension_period: toNumberOrUndefined(item.extension_period),
+    extension_rent: toNumberOrUndefined(item.extension_rent),
+    cost_assumption: toStringOrUndefined(item.cost_assumption),
+    planned_handover_date: toStringOrUndefined(item.planned_handover_date),
+    other_agreements: toStringOrUndefined(item.other_agreements),
+    renovation_stage: toStringOrUndefined(item.renovation_stage),
+    contract_no: toStringOrUndefined(item.contract_no),
+    list_price: toNumberOrUndefined(item.list_price),
+    listing_date: toStringOrUndefined(item.listing_date),
+    sold_price: toNumberOrUndefined(item.sold_price),
+    sold_date: toStringOrUndefined(item.sold_date),
+    total_income: toNumberOrUndefined(item.total_income),
+    total_expense: toNumberOrUndefined(item.total_expense),
+    net_cash_flow: toNumberOrUndefined(item.net_cash_flow),
+    roi: toNumberOrUndefined(item.roi),
+  };
+}
+
+function isProjectListResponse(data: unknown): data is ProjectListResponse {
+  return data !== null && typeof data === "object" && "items" in (data as Record<string, unknown>);
+}
+
+function isProjectStatsResponse(data: unknown): data is ProjectStatsResponse {
+  return data !== null && typeof data === "object";
 }
 
 export default async function ProjectsPage({ searchParams }: PageProps) {
@@ -90,18 +138,14 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     }),
   ]);
 
-  // 使用类型安全的数据提取
-  const listData = listRes.data as ProjectListResponse | undefined;
-  const projectData: Project[] = (listData?.items ?? []).map(mapProjectResponse);
-  const total = listData?.total ?? 0;
+  const projectData: Project[] = isProjectListResponse(listRes.data)
+    ? (listRes.data.items ?? []).filter(isValidProjectItem).map(mapProjectResponse)
+    : [];
+  const total = isProjectListResponse(listRes.data) ? listRes.data.total ?? 0 : 0;
 
-  const statsData = statsRes.data as ProjectStatsResponse | undefined;
-  const stats = statsData ?? {
-    signing: 0,
-    renovating: 0,
-    selling: 0,
-    sold: 0,
-  };
+  const stats = isProjectStatsResponse(statsRes.data)
+    ? statsRes.data
+    : { signing: 0, renovating: 0, selling: 0, sold: 0 };
 
   return (
     <div className="min-h-screen bg-slate-50/50">

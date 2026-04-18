@@ -1,12 +1,49 @@
 import React from "react";
 import { fetchClient } from "@/lib/api-server";
-import type { L4MarketingProject, L4MarketingMedia } from "../../types";
+import type { L4MarketingProject, L4MarketingMedia, PhotoCategory } from "../../types";
 import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
 import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
+
+// API 返回的媒体项类型
+interface ApiMediaItem {
+  id?: unknown;
+  file_path?: unknown;
+  photo_category?: unknown;
+  [key: string]: unknown;
+}
+
+// 类型守卫：验证是否为有效的媒体项
+function isApiMediaItem(item: unknown): item is ApiMediaItem {
+  return item !== null && typeof item === "object";
+}
+
+// 类型守卫：验证是否为有效的照片类别
+function isPhotoCategory(value: unknown): value is PhotoCategory {
+  return value === "marketing" || value === "renovation";
+}
+
+// 将 API 媒体项转换为 L4MarketingMedia
+function mapToL4MarketingMedia(item: ApiMediaItem): L4MarketingMedia {
+  return {
+    ...item,
+    id: typeof item.id === "number" || typeof item.id === "string" ? item.id : 0,
+    file_path: typeof item.file_path === "string" ? item.file_path : undefined,
+    photo_category: isPhotoCategory(item.photo_category) ? item.photo_category : "marketing",
+  } as L4MarketingMedia;
+}
+
+// 从响应中提取错误状态码
+function extractStatusCode(error: unknown): number | undefined {
+  if (typeof error === "object" && error !== null && "status" in error) {
+    const status = (error as { status?: unknown }).status;
+    return typeof status === "number" ? status : undefined;
+  }
+  return undefined;
+}
 
 export default async function ProjectEditPage({
   params,
@@ -39,12 +76,7 @@ export default async function ProjectEditPage({
   ]);
 
   if (projectRes.error || !projectRes.data) {
-    const statusCode =
-      typeof projectRes.error === "object" &&
-      projectRes.error &&
-      "status" in projectRes.error
-        ? Number((projectRes.error as { status?: unknown }).status)
-        : undefined;
+    const statusCode = extractStatusCode(projectRes.error);
     const message =
       statusCode === 401 || statusCode === 403
         ? "没有权限访问该项目（请重新登录或联系管理员开通权限）"
@@ -62,11 +94,12 @@ export default async function ProjectEditPage({
   }
 
   const project = projectRes.data as L4MarketingProject;
+
   // 为 API 返回的数据添加默认的 photo_category 字段
-  const photos: L4MarketingMedia[] = (photosRes.data?.items || []).map((item: any) => ({
-    ...item,
-    photo_category: item.photo_category || "marketing",
-  })) as L4MarketingMedia[];
+  const apiItems = Array.isArray(photosRes.data?.items) ? photosRes.data.items : [];
+  const photos: L4MarketingMedia[] = apiItems
+    .filter(isApiMediaItem)
+    .map(mapToL4MarketingMedia);
 
   return (
     <div className="min-h-screen bg-slate-50/50">
