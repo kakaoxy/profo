@@ -3,12 +3,16 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
+import type { components } from "@/lib/api-types";
 import {
   CashFlowRecordRaw,
   CashFlowSummaryRaw,
   CashFlowApiResponse,
   TransactionType,
 } from "./types";
+
+// 使用生成的 API 类型
+type CashFlowRecordCreate = components["schemas"]["CashFlowRecordCreate"];
 
 // 前端创建表单的 Payload
 interface CashFlowCreatePayload {
@@ -53,9 +57,9 @@ export async function createCashFlowRecordAction(
   const client = await fetchClient();
 
   // 构造 Request Body，映射前端字段到后端 Schema
-  const requestBody = {
+  const requestBody: CashFlowRecordCreate = {
     type: payload.type,
-    category: payload.category,
+    category: payload.category as CashFlowRecordCreate["category"],
     amount: Number(payload.amount),
     date: payload.date,
     description: payload.notes,
@@ -65,7 +69,6 @@ export async function createCashFlowRecordAction(
     "/api/v1/projects/{project_id}/cashflow",
     {
       params: { path: { project_id: projectId } },
-      // @ts-expect-error generated types mismatch due to manual schema update
       body: requestBody,
     },
   );
