@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, memo } from "react";
+import Image from "next/image";
 import { UploadCloud, Plus, Loader2, Trash2, Eye } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getFileUrl } from "../../../utils";
@@ -57,15 +58,16 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
   return (
     <Dialog>
       <div className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+          <Image
           src={getFileUrl(photo.url)}
           alt={photo.filename || "Renovation Photo"}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
           loading="lazy"
-          decoding="async"
+          unoptimized
           onLoad={() => setImageLoaded(true)}
           className={cn(
-            "object-cover w-full h-full hover:scale-105 transition-all duration-500 cursor-pointer",
+            "object-cover hover:scale-105 transition-all duration-500 cursor-pointer",
             imageLoaded ? "opacity-100" : "opacity-0"
           )}
         />
@@ -125,12 +127,17 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
         <DialogTitle className="sr-only">
           Photo Preview - {photo.filename || "Untitled"}
         </DialogTitle>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={getFileUrl(photo.url)}
-          alt="Large Preview"
-          className="w-full h-auto rounded-lg shadow-2xl"
-        />
+        <div className="relative w-full aspect-video">
+          <Image
+            src={getFileUrl(photo.url)}
+            alt="Large Preview"
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            unoptimized
+            className="object-contain rounded-lg shadow-2xl"
+            priority
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -144,11 +151,13 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
       className="aspect-square relative rounded-md overflow-hidden bg-slate-50 border border-slate-200"
     >
       {/* Local Preview Image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={item.previewUrl}
         alt="Uploading..."
-        className="object-cover w-full h-full opacity-60 blur-[1px] transition-all"
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
+        unoptimized
+        className="object-cover opacity-60 blur-[1px] transition-all"
       />
 
       {/* Progress Overlay */}

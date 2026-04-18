@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -137,9 +137,10 @@ export function ProjectDetailSheet({
     currentStatusIndex === -1 ? 0 : currentStatusIndex;
 
   // 处理 signing_materials：后端返回的是附件对象数组
-  const attachments: import("./types").AttachmentInfo[] = (() => {
+  const attachments = useMemo<import("./types").AttachmentInfo[]>(() => {
     const materials = project.signing_materials;
     if (!materials) return [];
+
     // 如果是数组（附件对象数组）- 新格式
     if (Array.isArray(materials)) {
       return materials.map((item: unknown) => {
@@ -147,18 +148,18 @@ export function ProjectDetailSheet({
         if (typeof item === 'string') {
           // 旧格式：URL字符串
           const url = item;
+          const ext = url.split('.').pop()?.toLowerCase() || '';
+          let fileType = 'other';
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) fileType = 'image';
+          else if (['pdf'].includes(ext)) fileType = 'pdf';
+          else if (['xlsx', 'xls', 'csv'].includes(ext)) fileType = 'excel';
+          else if (['doc', 'docx'].includes(ext)) fileType = 'word';
+
           return {
             filename: url.split('/').pop() || 'unknown',
             url: url,
             category: 'other',
-            fileType: (() => {
-              const ext = url.split('.').pop()?.toLowerCase() || '';
-              if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
-              if (['pdf'].includes(ext)) return 'pdf';
-              if (['xlsx', 'xls', 'csv'].includes(ext)) return 'excel';
-              if (['doc', 'docx'].includes(ext)) return 'word';
-              return 'other';
-            })(),
+            fileType,
           };
         }
         // 新格式：附件对象
@@ -177,7 +178,7 @@ export function ProjectDetailSheet({
       return (materials as { attachments?: import("./types").AttachmentInfo[] }).attachments || [];
     }
     return [];
-  })();
+  }, [project.signing_materials]);
 
   const handlers: AttachmentHandlers = {
     onPreview: (url, fileType) => {
