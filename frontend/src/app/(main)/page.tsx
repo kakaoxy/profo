@@ -11,6 +11,9 @@ import {
 import { StatCard, LeadsTable } from "./_components";
 import { formatCurrency, formatRelativeTime } from "./_lib";
 import { mapBackendToFrontend } from "./leads/lib/utils";
+import type { components } from "@/lib/api-types";
+
+type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
 
 async function getDashboardData() {
   const client = await fetchClient();
@@ -52,13 +55,11 @@ export default async function DashboardPage() {
     signedLeadsTotal,
   } = await getDashboardData();
 
-  const statsData =
-    (projectStats as { data?: Record<string, number> })?.data || projectStats;
-  const signingCount = (statsData as Record<string, number>)?.signing || 0;
-  const renovatingCount =
-    (statsData as Record<string, number>)?.renovating || 0;
-  const sellingCount = (statsData as Record<string, number>)?.selling || 0;
-  const soldCount = (statsData as Record<string, number>)?.sold || 0;
+  const stats = projectStats as ProjectStatsResponse;
+  const signingCount = stats?.signing ?? 0;
+  const renovatingCount = stats?.renovating ?? 0;
+  const sellingCount = stats?.selling ?? 0;
+  const soldCount = stats?.sold ?? 0;
 
   const totalActiveProjects = signingCount + renovatingCount + sellingCount;
   const getPercent = (val: number) =>
