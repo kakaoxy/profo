@@ -135,6 +135,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
     </Dialog>
   );
 });
+PhotoItem.displayName = "PhotoItem";
 
 // [优化] 使用 memo 缓存上传中照片项组件
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
@@ -174,6 +175,7 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
     </div>
   );
 });
+UploadingItem.displayName = "UploadingItem";
 
 export function PhotoGrid({
   photos,

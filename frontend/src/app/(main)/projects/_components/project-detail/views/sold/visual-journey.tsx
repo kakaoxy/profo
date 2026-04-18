@@ -77,7 +77,7 @@ const StagePhotoItem = memo(function StagePhotoItem({
           <ScrollArea className="max-h-[80vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
               {allPhotos.map((p, i) => (
-                <LazyPhoto key={i} photo={p} index={i} />
+                <LazyPhoto key={p.id} photo={p} index={i} />
               ))}
             </div>
           </ScrollArea>
