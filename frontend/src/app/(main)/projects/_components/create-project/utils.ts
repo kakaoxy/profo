@@ -49,6 +49,57 @@ export interface AttachmentInput {
   size?: number;
 }
 
+/** 类型守卫：检查是否为 AttachmentInput */
+function isAttachmentInput(item: unknown): item is AttachmentInput {
+  if (typeof item !== "object" || item === null) return false;
+  const obj = item as Record<string, unknown>;
+  return (
+    typeof obj.filename === "string" &&
+    typeof obj.url === "string"
+  );
+}
+
+/** 类型守卫：检查是否为带 attachments 的对象 */
+function isAttachmentContainer(
+  item: unknown
+): item is { attachments?: unknown[] } {
+  return typeof item === "object" && item !== null && "attachments" in item;
+}
+
+/** 生成唯一 ID */
+function generateId(): string {
+  return crypto.randomUUID();
+}
+
+/** 验证并返回合法的 AttachmentCategory */
+function validateCategory(category: unknown): AttachmentCategory {
+  const validCategories: AttachmentCategory[] = [
+    "signing_contract",
+    "property_certificate",
+    "property_survey",
+    "owner_id_card",
+    "owner_bank_card",
+    "renovation_contract",
+    "handover_document",
+    "receipt",
+    "cooperation_confirmation",
+    "store_investment_agreement",
+    "value_added_service",
+    "other",
+  ];
+  return validCategories.includes(category as AttachmentCategory)
+    ? (category as AttachmentCategory)
+    : "other";
+}
+
+/** 验证并返回合法的 AttachmentType */
+function validateFileType(fileType: unknown): AttachmentType {
+  const validTypes: AttachmentType[] = ["excel", "image", "pdf", "word"];
+  return validTypes.includes(fileType as AttachmentType)
+    ? (fileType as AttachmentType)
+    : "pdf";
+}
+
 /**
  * 转换后端附件数据为前端格式
  */
@@ -73,7 +124,7 @@ export function convertAttachments(
         // 旧格式：URL字符串
         const url = item;
         return {
-          id: Math.random().toString(36).substring(7),
+          id: generateId(),
           filename: url.split("/").pop() || "unknown",
           url: url,
           category: "other" as AttachmentCategory,
@@ -82,37 +133,49 @@ export function convertAttachments(
           uploadedAt: new Date().toISOString(),
         };
       }
+
       // 新格式：附件对象
-      const att = item as AttachmentInput;
+      if (isAttachmentInput(item)) {
+        return {
+          id: generateId(),
+          filename: item.filename || "unknown",
+          url: item.url,
+          category: validateCategory(item.category),
+          fileType: validateFileType(item.fileType),
+          size: item.size ?? 0,
+          uploadedAt: new Date().toISOString(),
+        };
+      }
+
+      // 无效数据返回默认值
       return {
-        id: Math.random().toString(36).substring(7),
-        filename: att.filename || "unknown",
-        url: att.url,
-        category: (att.category || "other") as AttachmentCategory,
-        fileType: (att.fileType || "pdf") as AttachmentType,
-        size: att.size || 0,
+        id: generateId(),
+        filename: "unknown",
+        url: "",
+        category: "other" as AttachmentCategory,
+        fileType: "pdf" as AttachmentType,
+        size: 0,
         uploadedAt: new Date().toISOString(),
       };
     });
   }
 
   // 如果是对象（旧格式，包含 attachments 数组）
-  if (
-    typeof materials === "object" &&
-    materials !== null &&
-    "attachments" in materials
-  ) {
-    const mats = materials as { attachments?: AttachmentInput[] };
-    return (
-      mats.attachments?.map((att) => ({
-        ...att,
-        id: Math.random().toString(36).substring(7),
+  if (isAttachmentContainer(materials)) {
+    const attachments = materials.attachments;
+    if (!Array.isArray(attachments)) return [];
+
+    return attachments
+      .filter(isAttachmentInput)
+      .map((att) => ({
+        id: generateId(),
+        filename: att.filename || "unknown",
+        url: att.url,
+        category: validateCategory(att.category),
+        fileType: validateFileType(att.fileType),
+        size: att.size ?? 0,
         uploadedAt: new Date().toISOString(),
-        category: att.category as AttachmentCategory,
-        fileType: att.fileType as AttachmentType,
-        size: att.size || 0,
-      })) || []
-    );
+      }));
   }
 
   return [];
