@@ -1,15 +1,6 @@
 import Link from "next/link";
 import { ClipboardList, ChevronRight } from "lucide-react";
-
-interface Lead {
-  id: string;
-  communityName: string;
-  layout?: string | null;
-  area?: number | null;
-  orientation?: string | null;
-  totalPrice?: number | null;
-  createdAt: string;
-}
+import type { Lead } from "../leads/types";
 
 interface LeadsTableProps {
   leads: Lead[];
