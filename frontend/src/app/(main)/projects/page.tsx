@@ -64,6 +64,10 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     listing_date: item.listing_date ?? undefined,
     sold_price: toNumber(item.sold_price),
     sold_date: item.sold_date ?? undefined,
+    total_income: toNumber(item.total_income),
+    total_expense: toNumber(item.total_expense),
+    net_cash_flow: toNumber(item.net_cash_flow),
+    roi: item.roi ?? undefined,
   };
 }
 
