@@ -1,4 +1,4 @@
-import { RENOVATION_STAGES } from "../../types";
+import { RENOVATION_STAGES } from "@/app/(main)/l4-marketing/projects/types";
 
 export interface RenovationPhoto {
   id: number | string;

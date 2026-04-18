@@ -6,7 +6,7 @@ import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
 import { getFileUrl } from "./utils";
 import type { MarketingInfoSectionProps } from "./types";
-import type { L4MarketingMedia } from "../../types";
+import type { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 
 // 获取营销主图（MARKETING分类首图，无营销照片时使用改造照片第一张）
 function getMarketingMainImage(project: any, photos: L4MarketingMedia[]): string | null {

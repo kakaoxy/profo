@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
-import type { L4MarketingMedia } from "../../types";
+import type { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import {
   deleteL4MarketingMediaAction,
   updateL4MarketingMediaAction,

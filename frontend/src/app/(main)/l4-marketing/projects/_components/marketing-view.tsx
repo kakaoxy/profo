@@ -9,7 +9,7 @@ import { Search, X, Download } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
-import { L4MarketingProject } from "../types";
+import { L4MarketingProject } from "@/app/(main)/l4-marketing/projects/types";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
 import { Pagination } from "./pagination";
 import Link from "next/link";

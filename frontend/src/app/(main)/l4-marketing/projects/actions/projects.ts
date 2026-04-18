@@ -1,13 +1,13 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
 import type {
   L4MarketingProjectUpdate,
   L4MarketingProjectCreate,
   L4MarketingProject,
-} from "../types";
+} from "@/app/(main)/l4-marketing/projects/types";
 
 // ============================================================================
 // 统一返回类型定义
@@ -101,7 +101,7 @@ export async function createL4MarketingProjectAction(
       };
     }
 
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data: data! };
   } catch (e) {
     console.error("创建项目异常:", e);
@@ -164,8 +164,8 @@ export async function updateL4MarketingProjectAction(
       };
     }
 
-    revalidatePath(`/l4-marketing/projects/${id}`);
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag(`l4-marketing-project-${id}`, { expire: 0 });
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data: data! };
   } catch (e) {
     console.error("更新项目异常:", e);
@@ -195,7 +195,7 @@ export async function deleteL4MarketingProjectAction(id: number): Promise<Action
       };
     }
 
-    revalidatePath("/l4-marketing/projects");
+    revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data: undefined };
   } catch (e) {
     console.error("删除项目异常:", e);

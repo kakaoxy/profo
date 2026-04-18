@@ -13,7 +13,7 @@ import { VirtualizedPhotoGrid } from "./virtualized-photo-grid";
 import { PickerFooter } from "./picker-footer";
 import { toast } from "sonner";
 import type { StageOption } from "./types";
-import type { L4MarketingMedia } from "../../types";
+import type { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import { usePhotoLibrary } from "./use-photo-library";
 
 interface PhotoLibraryPickerProps {

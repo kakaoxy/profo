@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { L4MarketingMedia } from "../../types";
+import { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import { PhotoItem } from "./photo-item";
 import { PhotoLibraryPicker } from "../../_components/photo-manager";
 import { deleteL4MarketingMediaAction } from "../../actions";

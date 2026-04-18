@@ -10,7 +10,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { L4MarketingMedia } from "../../types";
+import { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import {
   batchUpdateMediaSortOrderAction,
   updateL4MarketingMediaAction,

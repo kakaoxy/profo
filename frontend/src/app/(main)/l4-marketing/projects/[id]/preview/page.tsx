@@ -1,7 +1,7 @@
 import React from "react";
 import { fetchClient } from "@/lib/api-server";
 import { z } from "zod";
-import type { L4MarketingProject, L4MarketingMedia } from "../../types";
+import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HeroGallery } from "./_components/hero-gallery";

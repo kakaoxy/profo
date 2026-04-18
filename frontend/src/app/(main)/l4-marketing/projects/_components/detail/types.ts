@@ -1,4 +1,4 @@
-import type { L4MarketingProject, L4MarketingMedia } from "../../types";
+import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
 
 // 营销详情头部组件属性
 export interface MarketingDetailHeaderProps {

@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-import { RENOVATION_STAGES } from "../../types";
-import type { PhotoCategory } from "../../types";
+import { RENOVATION_STAGES } from "@/app/(main)/l4-marketing/projects/types";
+import type { PhotoCategory } from "@/app/(main)/l4-marketing/projects/types";
 import type { PhotosSectionProps } from "./types";
 
 import { ImageUploader } from "../photo-manager/image-uploader";
