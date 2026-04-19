@@ -12,6 +12,8 @@
 后续修改 Router 层时，应改为直接依赖具体的子 Service，最终删除此文件。
 目前保留此类是为了让现有的 Router 代码无需修改即可运行。
 """
+from typing import Optional, List, Dict, Any
+
 from sqlalchemy.orm import Session
 
 # 导入拆分后的子服务
@@ -20,12 +22,18 @@ from .project_renovation import ProjectRenovationService
 from .project_sales import ProjectSalesService
 from .project_finance import ProjectFinanceService
 
+# 导入模型和 Schema 类型
+from models import Project, ProjectRenovation, RenovationPhoto, ProjectInteraction
+from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
+from schemas.project_renovation import RenovationUpdate, RenovationContractUpdate
+from schemas.project_sales import SalesRolesUpdate, SalesRecordCreate, ProjectCompleteRequest
+
 
 class ProjectService:
     """
     聚合服务类 (Facade模式)
     通过组合方式，聚合了 Core, Renovation, Sales, Finance 的所有方法。
-    
+
     设计说明：
     - 使用组合替代多重继承，避免初始化顺序和属性覆盖问题
     - 所有方法调用委托给对应的具体服务实例
@@ -42,74 +50,95 @@ class ProjectService:
 
     # ========== ProjectCoreService 方法委托 ==========
 
-    def create_project(self, *args, **kwargs):
-        return self._core_service.create_project(*args, **kwargs)
+    def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
+        return self._core_service.create_project(project_data)
 
-    def get_project(self, *args, **kwargs):
-        return self._core_service.get_project(*args, **kwargs)
+    def get_project(self, project_id: str, include_all: bool = False) -> Optional[ProjectResponse]:
+        return self._core_service.get_project(project_id, include_all)
 
-    def get_projects(self, *args, **kwargs):
-        return self._core_service.get_projects(*args, **kwargs)
+    def get_projects(
+        self,
+        status_filter: Optional[str] = None,
+        community_name: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50
+    ) -> Dict[str, Any]:
+        return self._core_service.get_projects(status_filter, community_name, page, page_size)
 
-    def update_project(self, *args, **kwargs):
-        return self._core_service.update_project(*args, **kwargs)
+    def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
+        return self._core_service.update_project(project_id, update_data)
 
-    def delete_project(self, *args, **kwargs):
-        return self._core_service.delete_project(*args, **kwargs)
+    def delete_project(self, project_id: str) -> None:
+        return self._core_service.delete_project(project_id)
 
-    def update_status(self, *args, **kwargs):
-        return self._core_service.update_status(*args, **kwargs)
+    def update_status(self, project_id: str, status_update: StatusUpdate) -> ProjectResponse:
+        return self._core_service.update_status(project_id, status_update)
 
-    def get_project_stats(self, *args, **kwargs):
-        return self._core_service.get_project_stats(*args, **kwargs)
+    def get_project_stats(self) -> Dict[str, int]:
+        return self._core_service.get_project_stats()
 
     # ========== ProjectRenovationService 方法委托 ==========
 
-    def update_renovation_stage(self, *args, **kwargs):
-        return self._renovation_service.update_renovation_stage(*args, **kwargs)
+    def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
+        return self._renovation_service.update_renovation_stage(project_id, renovation_data)
 
-    def get_renovation_info(self, *args, **kwargs):
-        return self._renovation_service.get_renovation_info(*args, **kwargs)
+    def get_renovation_info(self, project_id: str) -> Optional[ProjectRenovation]:
+        return self._renovation_service.get_renovation_info(project_id)
 
-    def update_renovation_info(self, *args, **kwargs):
-        return self._renovation_service.update_renovation_info(*args, **kwargs)
+    def update_renovation_info(self, project_id: str, renovation_data: dict) -> ProjectRenovation:
+        return self._renovation_service.update_renovation_info(project_id, renovation_data)
 
-    def add_renovation_photo(self, *args, **kwargs):
-        return self._renovation_service.add_renovation_photo(*args, **kwargs)
+    def add_renovation_photo(
+        self,
+        project_id: str,
+        stage: str,
+        url: str,
+        filename: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> RenovationPhoto:
+        return self._renovation_service.add_renovation_photo(project_id, stage, url, filename, description)
 
-    def get_renovation_photos(self, *args, **kwargs):
-        return self._renovation_service.get_renovation_photos(*args, **kwargs)
+    def get_renovation_photos(self, project_id: str, stage: Optional[str] = None) -> List[RenovationPhoto]:
+        return self._renovation_service.get_renovation_photos(project_id, stage)
 
-    def delete_renovation_photo(self, *args, **kwargs):
-        return self._renovation_service.delete_renovation_photo(*args, **kwargs)
+    def delete_renovation_photo(self, project_id: str, photo_id: str) -> None:
+        return self._renovation_service.delete_renovation_photo(project_id, photo_id)
 
-    def get_renovation_contract(self, *args, **kwargs):
-        return self._renovation_service.get_renovation_contract(*args, **kwargs)
+    def get_renovation_contract(self, project_id: str) -> ProjectRenovation:
+        return self._renovation_service.get_renovation_contract(project_id)
 
-    def update_renovation_contract(self, *args, **kwargs):
-        return self._renovation_service.update_renovation_contract(*args, **kwargs)
+    def update_renovation_contract(
+        self,
+        project_id: str,
+        contract_data: RenovationContractUpdate
+    ) -> ProjectRenovation:
+        return self._renovation_service.update_renovation_contract(project_id, contract_data)
 
     # ========== ProjectSalesService 方法委托 ==========
 
-    def update_sales_roles(self, *args, **kwargs):
-        return self._sales_service.update_sales_roles(*args, **kwargs)
+    def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
+        return self._sales_service.update_sales_roles(project_id, roles_data)
 
-    def create_sales_record(self, *args, **kwargs):
-        return self._sales_service.create_sales_record(*args, **kwargs)
+    def create_sales_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
+        return self._sales_service.create_sales_record(project_id, record_data)
 
-    def get_sales_records(self, *args, **kwargs):
-        return self._sales_service.get_sales_records(*args, **kwargs)
+    def get_sales_records(
+        self,
+        project_id: str,
+        record_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        return self._sales_service.get_sales_records(project_id, record_type)
 
-    def delete_sales_record(self, *args, **kwargs):
-        return self._sales_service.delete_sales_record(*args, **kwargs)
+    def delete_sales_record(self, project_id: str, record_id: str) -> None:
+        return self._sales_service.delete_sales_record(project_id, record_id)
 
-    def complete_project(self, *args, **kwargs):
-        return self._sales_service.complete_project(*args, **kwargs)
+    def complete_project(self, project_id: str, complete_data: ProjectCompleteRequest) -> ProjectResponse:
+        return self._sales_service.complete_project(project_id, complete_data)
 
     # ========== ProjectFinanceService 方法委托 ==========
 
-    def sync_project_financials(self, *args, **kwargs):
-        return self._finance_service.sync_project_financials(*args, **kwargs)
+    def sync_project_financials(self, project_id: str) -> None:
+        return self._finance_service.sync_project_financials(project_id)
 
-    def get_project_report(self, *args, **kwargs):
-        return self._finance_service.get_project_report(*args, **kwargs)
+    def get_project_report(self, project_id: str) -> Dict[str, Any]:
+        return self._finance_service.get_project_report(project_id)
