@@ -15,10 +15,10 @@ from models.base import ProjectStatus, RenovationStage
 
 
 class ProjectFinanceService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
-    def sync_project_financials(self, project_id: str):
+    def sync_project_financials(self, project_id: str) -> None:
         """
         [核心同步逻辑]
         同步计算项目的财务数据，并更新到 Project 表的缓存字段中。

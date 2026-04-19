@@ -18,7 +18,7 @@ from services.builders import ProjectResponseBuilder
 
 
 class ProjectSalesService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
         self.response_builder = ProjectResponseBuilder(db)
 
@@ -160,6 +160,7 @@ class ProjectSalesService:
 
     def delete_sales_record(self, project_id: str, record_id: str) -> None:
         """删除销售记录（现在是互动记录）"""
+        self._get_project(project_id)
         record = self.db.query(ProjectInteraction).filter(
             ProjectInteraction.id == record_id,
             ProjectInteraction.project_id == project_id

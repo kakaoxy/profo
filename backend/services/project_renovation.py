@@ -7,6 +7,7 @@
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 from fastapi import HTTPException, status
 import uuid
 
@@ -16,7 +17,7 @@ from schemas.project_renovation import RenovationUpdate, RenovationContractUpdat
 
 
 class ProjectRenovationService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     def _get_project(self, project_id: str) -> Project:
@@ -76,7 +77,6 @@ class ProjectRenovationService:
             dates[current_stage] = renovation_data.stage_completed_at.strftime("%Y-%m-%d")
             renovation.stage_completed_dates = dates
 
-            from sqlalchemy.orm.attributes import flag_modified
             flag_modified(renovation, "stage_completed_dates")
 
         # 更新到下一个阶段
