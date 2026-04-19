@@ -30,10 +30,10 @@ CashFlowServiceDep = Annotated[CashFlowService, Depends(get_cashflow_service)]
 
 @router.post("/projects/{project_id}/cashflow", response_model=CashFlowRecordResponse, status_code=201)
 def create_cashflow_record(
-    project_id: str = Path(..., description="项目ID"),
-    record_data: CashFlowRecordCreate = ...,
-    service: CashFlowServiceDep = ...,
-    current_user: CurrentUserDep = ...
+    record_data: CashFlowRecordCreate,
+    service: CashFlowServiceDep,
+    current_user: CurrentUserDep,
+    project_id: str = Path(..., description="项目ID")
 ) -> CashFlowRecordResponse:
     """创建现金流记录"""
     record = service.create_cashflow_record(project_id, record_data)
@@ -42,9 +42,9 @@ def create_cashflow_record(
 
 @router.get("/projects/{project_id}/cashflow", response_model=CashFlowResponse)
 def get_project_cashflow(
-    project_id: str = Path(..., description="项目ID"),
-    service: CashFlowServiceDep = ...,
-    current_user: CurrentUserDep = ...
+    service: CashFlowServiceDep,
+    current_user: CurrentUserDep,
+    project_id: str = Path(..., description="项目ID")
 ) -> CashFlowResponse:
     """获取项目现金流明细和汇总"""
     records = service.get_cashflow_records(project_id)
@@ -56,10 +56,10 @@ def get_project_cashflow(
 
 @router.delete("/projects/{project_id}/cashflow/{record_id}", status_code=204)
 def delete_cashflow_record(
+    service: CashFlowServiceDep,
+    current_user: CurrentUserDep,
     project_id: str = Path(..., description="项目ID"),
-    record_id: str = Path(..., description="记录ID"),
-    service: CashFlowServiceDep = ...,
-    current_user: CurrentUserDep = ...
+    record_id: str = Path(..., description="记录ID")
 ) -> None:
     """删除现金流记录"""
     service.delete_cashflow_record(record_id, project_id)
