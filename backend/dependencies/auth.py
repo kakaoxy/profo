@@ -120,97 +120,68 @@ CurrentNormalUserDep = Annotated[User, Depends(require_roles(["admin", "operator
 CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operator"]))]
 
 
-# 向后兼容的函数形式（已标记为弃用，建议迁移到 Annotated 类型）
+# 向后兼容的函数形式
+# 这些函数统一使用 require_roles 工厂函数，保持逻辑一致性
+
+
 async def get_current_admin_user(
-    current_user: CurrentActiveUserDep,
+    current_user: CurrentAdminUserDep,
 ) -> User:
     """
     获取当前管理员用户
 
     Args:
-        current_user: 当前活跃用户对象
+        current_user: 当前管理员用户对象（通过 CurrentAdminUserDep 验证）
 
     Returns:
         User: 当前管理员用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 用户不是管理员
     """
-    if current_user.role.code != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="权限不足"
-        )
     return current_user
 
 
 async def get_current_operator_user(
-    current_user: CurrentActiveUserDep,
+    current_user: CurrentOperatorUserDep,
 ) -> User:
     """
     获取当前运营人员用户
 
     Args:
-        current_user: 当前活跃用户对象
+        current_user: 当前运营人员用户对象（通过 CurrentOperatorUserDep 验证）
 
     Returns:
         User: 当前运营人员用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 用户不是运营人员
     """
-    if current_user.role.code not in ["admin", "operator"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="权限不足"
-        )
     return current_user
 
 
 async def get_current_normal_user(
-    current_user: CurrentActiveUserDep,
+    current_user: CurrentNormalUserDep,
 ) -> User:
     """
     获取当前普通用户
 
     Args:
-        current_user: 当前活跃用户对象
+        current_user: 当前普通用户对象（通过 CurrentNormalUserDep 验证）
 
     Returns:
         User: 当前普通用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 用户权限不足
     """
-    if current_user.role.code not in ["admin", "operator", "user"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="权限不足"
-        )
     return current_user
 
 
 async def get_current_internal_user(
-    current_user: CurrentActiveUserDep,
+    current_user: CurrentInternalUserDep,
 ) -> User:
     """
     获取当前内部管理用户（管理员或运营人员）
     用于所有内部管理API的统一权限验证
 
     Args:
-        current_user: 当前活跃用户对象
+        current_user: 当前内部管理用户对象（通过 CurrentInternalUserDep 验证）
 
     Returns:
         User: 当前内部管理用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 用户不是管理员或运营人员
     """
-    if current_user.role.code not in ["admin", "operator"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="权限不足"
-        )
     return current_user
 
 
