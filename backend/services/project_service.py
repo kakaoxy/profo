@@ -79,13 +79,13 @@ class ProjectService:
 
     # ========== ProjectRenovationService 方法委托 ==========
 
-    def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
+    def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> ProjectResponse:
         return self._renovation_service.update_renovation_stage(project_id, renovation_data)
 
     def get_renovation_info(self, project_id: str) -> Optional[ProjectRenovation]:
         return self._renovation_service.get_renovation_info(project_id)
 
-    def update_renovation_info(self, project_id: str, renovation_data: dict) -> ProjectRenovation:
+    def update_renovation_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectRenovation:
         return self._renovation_service.update_renovation_info(project_id, renovation_data)
 
     def add_renovation_photo(
