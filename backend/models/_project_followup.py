@@ -22,17 +22,6 @@ class ProjectFollowUp(BaseModel):
         Index("idx_followup_date", "follow_up_at"),
     )
 
-    def validate_user_references(self, db) -> None:
-        """验证软引用的用户ID是否存在且有效"""
-        from .user import User
-        if self.follower_id:
-            user = db.query(User).filter(
-                User.id == self.follower_id,
-                User.status == "active"
-            ).first()
-            if not user:
-                raise ValueError(f"无效的跟进人ID: {self.follower_id}")
-
 
 class ProjectEvaluation(BaseModel):
     """项目评估记录表"""
@@ -50,14 +39,3 @@ class ProjectEvaluation(BaseModel):
         Index("idx_evaluation_project", "project_id"),
         Index("idx_evaluation_date", "evaluation_at"),
     )
-
-    def validate_user_references(self, db) -> None:
-        """验证软引用的用户ID是否存在且有效"""
-        from .user import User
-        if self.evaluator_id:
-            user = db.query(User).filter(
-                User.id == self.evaluator_id,
-                User.status == "active"
-            ).first()
-            if not user:
-                raise ValueError(f"无效的评估人ID: {self.evaluator_id}")

@@ -25,14 +25,3 @@ class ProjectInteraction(BaseModel):
         Index("idx_interaction_date", "interaction_at"),
         Index("idx_interaction_type", "record_type"),
     )
-
-    def validate_user_references(self, db) -> None:
-        """验证软引用的用户ID是否存在且有效"""
-        from .user import User
-        if self.operator_id:
-            user = db.query(User).filter(
-                User.id == self.operator_id,
-                User.status == "active"
-            ).first()
-            if not user:
-                raise ValueError(f"无效的操作人ID: {self.operator_id}")

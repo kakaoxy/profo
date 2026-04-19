@@ -23,14 +23,3 @@ class ProjectStatusLog(BaseModel):
         Index("idx_statuslog_project", "project_id"),
         Index("idx_statuslog_date", "operate_at"),
     )
-
-    def validate_user_references(self, db) -> None:
-        """验证软引用的用户ID是否存在且有效"""
-        from .user import User
-        if self.operator_id:
-            user = db.query(User).filter(
-                User.id == self.operator_id,
-                User.status == "active"
-            ).first()
-            if not user:
-                raise ValueError(f"无效的操作人ID: {self.operator_id}")
