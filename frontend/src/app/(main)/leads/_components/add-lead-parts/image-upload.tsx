@@ -42,34 +42,66 @@ export const ImageUpload: React.FC<Props> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
+  // 尝试刷新 token
+  const tryRefreshToken = async (): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data.access_token || null;
+    } catch {
+      return null;
+    }
+  };
+
   const uploadFile = useCallback(async (file: File): Promise<string | null> => {
     // 验证文件类型
     if (!file.type.startsWith('image/')) {
       toast.error(`${file.name}: 不是有效的图片文件`);
       return null;
     }
-    
+
     // 验证文件大小
     if (file.size > maxFileSize * 1024 * 1024) {
       toast.error(`${file.name}: 文件过大，最大支持 ${maxFileSize}MB`);
       return null;
     }
-    
+
     try {
+      // 获取 token - 优先从 localStorage，否则尝试刷新
+      let token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      if (!token) {
+        token = await tryRefreshToken();
+      }
+      if (!token) {
+        toast.error('登录已过期，请重新登录');
+        return null;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/v1/files/upload`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.detail || `上传失败: ${response.status}`);
       }
-      
+
       const result = await response.json();
       // 后端返回的 URL 可能是相对路径，需要拼接完整 URL
       const imageUrl = result.data?.url || result.url || result.file_url || result.path;
