@@ -2,13 +2,12 @@
 认证相关路由
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
-from typing import Annotated, Optional, Dict, Any
+from typing import Annotated, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.concurrency import run_in_threadpool
 from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -25,11 +24,8 @@ from services.auth_service import AuthService
 from common import limiter
 
 
-AuthServiceDep = Annotated[AuthService, Depends()]
 DBSessionDep = Annotated[Session, Depends(get_db)]
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
-RateLimitDep = Annotated[Request, Depends(get_remote_address)]
-
 
 router = APIRouter()
 
