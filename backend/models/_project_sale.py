@@ -35,14 +35,16 @@ class ProjectSale(BaseModel):
         """验证销售角色用户ID是否有效"""
         from .user import User
 
-        user_ids = [
+        user_fields = [
             ("channel_manager_id", self.channel_manager_id),
             ("property_agent_id", self.property_agent_id),
             ("negotiator_id", self.negotiator_id),
         ]
 
-        for field_name, user_id in user_ids:
-            if user_id:
-                user = db.query(User).filter(User.id == user_id).first()
-                if not user:
+        user_ids = [uid for _, uid in user_fields if uid]
+        if user_ids:
+            existing_users = db.query(User.id).filter(User.id.in_(user_ids)).all()
+            existing_ids = {user.id for user in existing_users}
+            for field_name, user_id in user_fields:
+                if user_id and user_id not in existing_ids:
                     raise ValueError(f"无效的用户ID: {user_id} (字段: {field_name})")
