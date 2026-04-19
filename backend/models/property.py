@@ -2,7 +2,7 @@
 房源相关模型
 包含房源当前状态和历史快照表
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, Boolean, Text,
@@ -73,8 +73,8 @@ class PropertyCurrent(Base):
     owner_id = Column(Integer, nullable=True, comment="所有者ID(预留)")
     visibility = Column(String(20), default="private", comment="可见性(预留)")
     is_active = Column(Boolean, default=True, comment="是否激活")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), comment="更新时间")
     
     # 关系
     community = relationship("Community", back_populates="properties")
@@ -127,7 +127,7 @@ class PropertyHistory(Base):
     
     # 变更信息
     change_type = Column(SQLEnum(ChangeType), nullable=False, comment="变更类型")
-    captured_at = Column(DateTime, default=datetime.now, comment="快照时间")
+    captured_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="快照时间")
     
     # 快照的核心字段
     status = Column(SQLEnum(PropertyStatus), nullable=False, comment="状态")
