@@ -72,26 +72,27 @@ export function useProjectDetail({
   }, [router, refreshProjectData]);
 
   useEffect(() => {
-    if (isOpen && project?.id) {
-      const index = STAGE_CONFIG.findIndex((s) =>
-        (s.aliases as readonly string[]).includes(project.status),
-      );
-      const safeIndex = index === -1 ? 0 : index;
-      const targetMode = STAGE_CONFIG[safeIndex].key;
-
-      if (viewMode !== targetMode) {
-        setViewMode(targetMode);
-      }
-
-      if (!initialLoadRef.current) {
-        initialLoadRef.current = true;
-        refreshProjectData(targetMode === "sold");
-      }
-    }
-
-    if (!isOpen) {
+    if (!isOpen || !project?.id) {
       initialLoadRef.current = false;
+      return;
     }
+
+    if (initialLoadRef.current) {
+      return;
+    }
+
+    const index = STAGE_CONFIG.findIndex((s) =>
+      (s.aliases as readonly string[]).includes(project.status),
+    );
+    const safeIndex = index === -1 ? 0 : index;
+    const targetMode = STAGE_CONFIG[safeIndex].key;
+
+    if (viewMode !== targetMode) {
+      setViewMode(targetMode);
+    }
+
+    initialLoadRef.current = true;
+    refreshProjectData(targetMode === "sold");
   }, [isOpen, project?.id, project?.status, viewMode, refreshProjectData]);
 
   const currentStatusIndex = STAGE_CONFIG.findIndex((s) =>
