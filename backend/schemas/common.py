@@ -64,9 +64,7 @@ class PropertyHistoryResponse(BaseModel):
     sold_price_wan: Optional[float] = None
     build_area: Optional[float] = None
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FailedRecordResponse(BaseModel):
@@ -78,6 +76,4 @@ class FailedRecordResponse(BaseModel):
     occurred_at: datetime
     is_handled: bool
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True)
