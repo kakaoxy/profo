@@ -3,7 +3,7 @@
 包含小区响应、列表、合并等模型
 """
 from datetime import datetime
-from typing import List, Optional
+
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -11,13 +11,13 @@ class CommunityResponse(BaseModel):
     """小区响应模型"""
     id: int
     name: str
-    city_id: Optional[int] = None
-    district: Optional[str] = None
-    business_circle: Optional[str] = None
-    avg_price_wan: Optional[float] = None
+    city_id: int | None = None
+    district: str | None = None
+    business_circle: str | None = None
+    avg_price_wan: float | None = None
     total_properties: int
     created_at: datetime
-    
+
     model_config = {
         "from_attributes": True
     }
@@ -26,14 +26,14 @@ class CommunityResponse(BaseModel):
 class CommunityListResponse(BaseModel):
     """小区列表响应"""
     total: int
-    items: List[CommunityResponse]
+    items: list[CommunityResponse]
 
 
 class CommunityMergeRequest(BaseModel):
     """小区合并请求"""
-    primary_id: int = Field(..., description="主小区ID")
-    merge_ids: List[int] = Field(..., min_length=1, description="要合并的小区ID列表")
-    
+    primary_id: int = Field(description="主小区ID")
+    merge_ids: list[int] = Field(min_length=1, description="要合并的小区ID列表")
+
     @model_validator(mode='after')
     def validate_merge_ids(self):
         """验证合并ID列表"""
@@ -54,4 +54,4 @@ class CommunityMergeResponse(BaseModel):
 class DictionaryResponse(BaseModel):
     """字典响应模型"""
     type: str
-    items: List[str]
+    items: list[str]
