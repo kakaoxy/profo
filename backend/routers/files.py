@@ -1,5 +1,5 @@
-from typing import Dict, Any
-from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends, Request
+from typing import Annotated
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 import os
 import shutil
@@ -7,31 +7,32 @@ import uuid
 import filetype
 import logging
 from datetime import datetime
+from pathlib import Path, PurePath
+from pydantic import BaseModel
 from settings import settings
 from db import get_db
-from models.user import User
-from dependencies.auth import get_current_operator_user
+from dependencies.auth import CurrentOperatorUserDep
 
-router = APIRouter()
+router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
 
-# Ensure upload directory exists
-if not os.path.exists(settings.upload_dir):
-    os.makedirs(settings.upload_dir)
 
-@router.post("/upload", response_model=Dict[str, Any], summary="上传文件")
+class FileUploadResponse(BaseModel):
+    url: str
+    filename: str
+
+
+@router.post("/upload", summary="上传文件", response_model=FileUploadResponse)
 def upload_file(
-    request: Request,
-    file: UploadFile = File(...),
+    current_user: CurrentOperatorUserDep,
+    file: Annotated[UploadFile, File()],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user)
-):
+) -> FileUploadResponse:
     """
     Handle file upload (Sync - Run in threadpool by FastAPI)
     Optimized to read only first 2KB for MIME check.
     """
     try:
-        # 1. Validate Extension
         ext = os.path.splitext(file.filename)[1].lower()
         if ext not in settings.allowed_extensions:
             raise HTTPException(
@@ -39,10 +40,8 @@ def upload_file(
                 detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}"
             )
 
-        # 2. Validate MIME Type (Read only Header)
-        # Use file.file which is the underlying SpooledTemporaryFile
         header = file.file.read(2048)
-        file.file.seek(0) # Reset immediately
+        file.file.seek(0)
 
         kind = filetype.guess(header)
         if kind is None:
@@ -54,20 +53,26 @@ def upload_file(
                 detail=f"不支持的文件类型。检测到的MIME类型: {kind.mime}"
             )
 
-        # 3. Generate unique filename
-        filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
-        file_path = os.path.join(settings.upload_dir, filename)
+        file.file.seek(0, 2)
+        file_size = file.file.tell()
+        file.file.seek(0)
+        if file_size > settings.max_upload_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes"
+            )
 
-        # 4. Save File (Blocking I/O - Safe in 'def')
+        filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
+        upload_path = Path(settings.upload_dir)
+        upload_path.mkdir(parents=True, exist_ok=True)
+        file_path = upload_path / filename
+
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 5. Return URL
-        # Construct URL relative to api prefix or root?
-        # History suggests "/static/uploads/..."
-        url = f"/{settings.upload_dir.replace(os.sep, '/')}/{filename}"
+        url = f"/{PurePath(settings.upload_dir).as_posix()}/{filename}"
 
-        return {"url": url, "filename": filename}
+        return FileUploadResponse(url=url, filename=filename)
 
     except HTTPException:
         raise
