@@ -1,9 +1,10 @@
 """
 角色管理相关路由
 """
-from fastapi import APIRouter, Depends, Query, status
+from typing import Annotated, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from db import get_db
 from models.user import User
@@ -18,16 +19,20 @@ from services.role_service import role_service
 
 router = APIRouter()
 
+# 依赖注入类型别名
+CurrentAdminUser = Annotated[User, Depends(get_current_admin_user)]
+DBSession = Annotated[Session, Depends(get_db)]
+
 
 @router.get("/roles", response_model=RoleListResponse)
 def get_roles(
-    name: Optional[str] = Query(None, description="角色名称搜索"),
-    code: Optional[str] = Query(None, description="角色代码搜索"),
-    is_active: Optional[bool] = Query(None, description="是否激活筛选"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
+    db: DBSession,
+    current_user: CurrentAdminUser,
+    name: Annotated[Optional[str], Query(description="角色名称搜索")] = None,
+    code: Annotated[Optional[str], Query(description="角色代码搜索")] = None,
+    is_active: Annotated[Optional[bool], Query(description="是否激活筛选")] = None,
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ):
     """
     获取角色列表，支持搜索和筛选
@@ -43,15 +48,14 @@ def get_roles(
 @router.get("/roles/{role_id}", response_model=RoleResponse)
 def get_role(
     role_id: str,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DBSession,
+    current_user: CurrentAdminUser,
+) -> RoleResponse:
     """
     获取指定角色信息
     """
     role = role_service.get_role_by_id(db, role_id)
     if not role:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="角色不存在")
     return role
 
@@ -59,9 +63,9 @@ def get_role(
 @router.post("/roles", response_model=RoleResponse)
 def create_role(
     role_data: RoleCreate,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DBSession,
+    current_user: CurrentAdminUser,
+) -> RoleResponse:
     """
     创建新角色
     """
@@ -72,9 +76,9 @@ def create_role(
 def update_role(
     role_id: str,
     role_data: RoleUpdate,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DBSession,
+    current_user: CurrentAdminUser,
+) -> RoleResponse:
     """
     更新角色信息
     """
@@ -84,9 +88,9 @@ def update_role(
 @router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_role(
     role_id: str,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DBSession,
+    current_user: CurrentAdminUser,
+) -> None:
     """
     删除角色
     """

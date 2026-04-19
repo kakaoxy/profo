@@ -2,21 +2,22 @@
 JSON 推送 API 路由
 处理 JSON 数组的批量房源数据推送
 """
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Annotated, List
+
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime
 from pydantic import ValidationError
 import logging
-import json
 
 from db import get_db
 from schemas import PropertyIngestionModel, PushResult
 from services.importer import PropertyImporter
-from models import FailedRecord
 from exceptions import ValidationException, BusinessLogicException
 from utils.error_formatters import format_validation_error
 from services.error_service import save_failed_record
+
+# 依赖注入类型别名
+DBSession = Annotated[Session, Depends(get_db)]
 
 
 logger = logging.getLogger(__name__)
@@ -125,7 +126,7 @@ class JSONBatchImporter:
         """
         return format_validation_error(error)
     
-    def _save_failed_record_raw(self, raw_data: dict, error: str, db: Session):
+    def _save_failed_record_raw(self, raw_data: dict, error: str, db: Session) -> None:
         """
         保存失败记录到数据库（使用统一的错误处理器）
         
@@ -145,9 +146,9 @@ class JSONBatchImporter:
 
 @router.post("", response_model=PushResult)
 def push_properties(
-    properties: List[dict],
-    db: Session = Depends(get_db)
-):
+    properties: Annotated[List[dict], Body()],
+    db: DBSession,
+) -> PushResult:
     """
     JSON 数据推送接口
     
