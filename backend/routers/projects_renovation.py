@@ -1,53 +1,49 @@
-from typing import Optional, List, Any, Dict
-from fastapi import APIRouter, Depends, Path, Query
-from services import ProjectService
-from dependencies.projects import get_project_service
-from dependencies.auth import get_current_internal_user
-from models.user import User
+from typing import Annotated, Optional, List, Any, Dict
+from fastapi import APIRouter, Path, Query
+from dependencies.projects import ProjectServiceDep
+from dependencies.auth import CurrentInternalUserDep
 from schemas.project import RenovationUpdate, RenovationPhotoResponse, ProjectResponse
 from schemas.project_renovation import RenovationContractUpdate, RenovationContractResponse
 
-# Note: Prefix is handled by parent router inclusion
 router = APIRouter()
 
 
 @router.put("/{project_id}/renovation", response_model=ProjectResponse)
 def update_renovation_stage(
-    project_id: str = Path(..., description="项目ID"),
-    renovation_data: RenovationUpdate = ...,
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    renovation_data: RenovationUpdate,
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """更新改造阶段 (Sync)"""
+    """更新改造阶段"""
     project = service.update_renovation_stage(project_id, renovation_data)
     return project
 
 
 @router.post("/{project_id}/renovation/photos", response_model=RenovationPhotoResponse)
 def upload_renovation_photo(
-    project_id: str = Path(..., description="项目ID"),
-    stage: str = Query(..., description="改造阶段"),
-    url: str = Query(..., description="图片URL"),
-    filename: Optional[str] = Query(None, description="文件名"),
-    description: Optional[str] = Query(None, description="描述"),
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    stage: Annotated[str, Query(description="改造阶段")],
+    url: Annotated[str, Query(description="图片URL")],
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
+    filename: Annotated[Optional[str], Query(description="文件名")] = None,
+    description: Annotated[Optional[str], Query(description="描述")] = None,
 ):
-    """上传改造阶段照片 (Sync)"""
+    """上传改造阶段照片"""
     photo = service.add_renovation_photo(project_id, stage, url, filename, description)
     return photo
 
 
 @router.get("/{project_id}/renovation/photos", response_model=List[Dict[str, Any]])
 def get_renovation_photos(
-    project_id: str = Path(..., description="项目ID"),
-    stage: Optional[str] = Query(None, description="改造阶段筛选"),
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
+    stage: Annotated[Optional[str], Query(description="改造阶段筛选")] = None,
 ):
-    """获取改造阶段照片 (Sync)"""
+    """获取改造阶段照片"""
     photos = service.get_renovation_photos(project_id, stage)
-    # 将 ORM 对象转换为字典
     photos_dict = [
         {
             "id": photo.id,
@@ -67,34 +63,34 @@ def get_renovation_photos(
 
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
 def delete_renovation_photo(
-    project_id: str = Path(..., description="项目ID"),
-    photo_id: str = Path(..., description="照片ID"),
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    photo_id: Annotated[str, Path(description="照片ID")],
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """删除改造阶段照片 (Sync)"""
+    """删除改造阶段照片"""
     service.delete_renovation_photo(project_id, photo_id)
     return None
 
 
 @router.get("/{project_id}/renovation/contract", response_model=RenovationContractResponse)
 def get_renovation_contract(
-    project_id: str = Path(..., description="项目ID"),
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """获取装修合同信息 (Sync)"""
+    """获取装修合同信息"""
     contract = service.get_renovation_contract(project_id)
     return contract
 
 
 @router.put("/{project_id}/renovation/contract", response_model=RenovationContractResponse)
 def update_renovation_contract(
-    project_id: str = Path(..., description="项目ID"),
-    contract_data: RenovationContractUpdate = ...,
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    contract_data: RenovationContractUpdate,
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """更新装修合同信息 (Sync)"""
+    """更新装修合同信息"""
     contract = service.update_renovation_contract(project_id, contract_data)
     return contract
