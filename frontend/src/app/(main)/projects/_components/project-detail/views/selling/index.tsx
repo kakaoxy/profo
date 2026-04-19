@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 interface SellingViewProps {
   project: Project;
   onRefresh?: () => void;
+  onDealSuccess?: () => Promise<void>;
 }
 
-export function SellingView({ project, onRefresh }: SellingViewProps) {
+export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewProps) {
   return (
     <div className="relative pb-24 animate-in fade-in slide-in-from-right-4 duration-300">
       {/* 0. 基础信息概览 */}
@@ -43,7 +44,7 @@ export function SellingView({ project, onRefresh }: SellingViewProps) {
         <div className="w-[180px]">
           {/* 覆盖默认按钮样式为翠绿色 */}
           <div className="[&_button]:bg-emerald-600 [&_button]:hover:bg-emerald-700 [&_button]:text-white">
-            <DealDialog project={project} onSuccess={onRefresh} />
+            <DealDialog project={project} onSuccess={onDealSuccess} />
           </div>
         </div>
       </div>

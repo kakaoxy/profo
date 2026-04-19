@@ -29,9 +29,10 @@ import { cn } from "@/lib/utils";
 interface RenovationViewProps {
   project: Project;
   onRefresh?: () => void;
+  onListingSuccess?: () => Promise<void>;
 }
 
-export function RenovationView({ project, onRefresh }: RenovationViewProps) {
+export function RenovationView({ project, onRefresh, onListingSuccess }: RenovationViewProps) {
   const router = useRouter();
   const [listingDate, setListingDate] = useState<Date | undefined>(new Date());
   const [listPrice, setListPrice] = useState<string>("");
@@ -41,8 +42,8 @@ export function RenovationView({ project, onRefresh }: RenovationViewProps) {
     try {
       // 调用 Action 更新状态为 selling，并传入上架时间
       const res = await updateProjectStatusAction(
-        project.id, 
-        "selling", 
+        project.id,
+        "selling",
         listingDate?.toISOString(),
         listPrice ? parseFloat(listPrice) : undefined
       );
@@ -50,9 +51,8 @@ export function RenovationView({ project, onRefresh }: RenovationViewProps) {
 
       toast.success("装修已完成，项目已转为在售状态！");
 
-      // 刷新数据
-      router.refresh();
-      if (onRefresh) await onRefresh();
+      // 刷新数据并自动跳转到在售阶段
+      if (onListingSuccess) await onListingSuccess();
     } catch (error: unknown) {
       // [修复 2] 使用 unknown 替代 any，并进行安全类型检查
       const msg = error instanceof Error ? error.message : "操作失败";
