@@ -112,6 +112,11 @@ class ProjectCoreService:
         signing_date = parse_date_string(project_data.signing_date)
         planned_handover_date = parse_date_string(project_data.planned_handover_date)
 
+        # Convert signing_materials Pydantic models to dicts for JSON serialization
+        signing_materials = None
+        if project_data.signing_materials:
+            signing_materials = [m.model_dump() for m in project_data.signing_materials]
+
         contract = ProjectContract(
             id=str(uuid.uuid4()),
             project_id=project_id,
@@ -124,7 +129,7 @@ class ProjectCoreService:
             cost_assumption=project_data.cost_assumption,
             planned_handover_date=planned_handover_date,
             other_agreements=project_data.other_agreements,
-            signing_materials=project_data.signing_materials,
+            signing_materials=signing_materials,
             contract_status="生效" if signing_date else "未生效",
             is_deleted=False,
             created_at=now,
@@ -298,6 +303,15 @@ class ProjectCoreService:
             contract_updates['signing_date'] = parse_date_string(contract_updates['signing_date'])
         if 'planned_handover_date' in contract_updates:
             contract_updates['planned_handover_date'] = parse_date_string(contract_updates['planned_handover_date'])
+
+        # Convert signing_materials Pydantic models to dicts for JSON serialization
+        if 'signing_materials' in contract_updates and contract_updates['signing_materials']:
+            materials = contract_updates['signing_materials']
+            if isinstance(materials, list):
+                contract_updates['signing_materials'] = [
+                    m.model_dump() if hasattr(m, 'model_dump') else m
+                    for m in materials
+                ]
 
         if not contract_updates:
             return
