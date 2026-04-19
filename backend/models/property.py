@@ -24,7 +24,7 @@ class PropertyCurrent(Base):
     source_property_id = Column(String(100), nullable=False, comment="来源平台的房源ID")
     
     # 关联小区
-    community_id = Column(Integer, ForeignKey("communities.id"), nullable=False, comment="小区ID")
+    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="小区ID")
     
     # 核心字段
     status = Column(SQLEnum(PropertyStatus), nullable=False, comment="状态")
