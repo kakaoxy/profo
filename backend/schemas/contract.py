@@ -9,16 +9,16 @@ from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 
 class SigningMaterial(BaseModel):
     """签约材料附件"""
-    filename: str = Field(..., description="文件名")
-    url: str = Field(..., description="文件URL")
-    category: str = Field(..., description="附件分类")
-    fileType: str = Field(..., description="文件类型")
+    filename: str = Field(description="文件名")
+    url: str = Field(description="文件URL")
+    category: str = Field(description="附件分类")
+    fileType: str = Field(description="文件类型")
     size: int = Field(default=0, description="文件大小(字节)")
 
 
 class ContractBase(BaseModel):
     """合同基础字段"""
-    contract_no: str = Field(..., max_length=100, description="合同编号")
+    contract_no: str = Field(max_length=100, description="合同编号")
     signing_price: Optional[Decimal] = Field(None, description="签约价格(万)")
     signing_date: Optional[datetime] = Field(None, description="签约日期")
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
@@ -35,7 +35,7 @@ class ContractBase(BaseModel):
 
 class ContractCreate(ContractBase):
     """创建合同请求"""
-    project_id: str = Field(..., description="项目ID")
+    project_id: str = Field(description="项目ID")
 
 
 class ContractUpdate(BaseModel):
@@ -55,8 +55,8 @@ class ContractUpdate(BaseModel):
 
 class ContractResponse(ContractBase):
     """合同响应"""
-    id: str = Field(..., description="合同ID")
-    project_id: str = Field(..., description="项目ID")
+    id: str = Field(description="合同ID")
+    project_id: str = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime
