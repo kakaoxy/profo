@@ -5,7 +5,7 @@ from models.base import RenovationStage
 
 class RenovationUpdate(BaseModel):
     """更新改造阶段请求模型"""
-    renovation_stage: RenovationStage = Field(description="改造子阶段")
+    renovation_stage: RenovationStage = Field(..., description="改造子阶段")
     stage_completed_at: Optional[datetime] = Field(None, description="阶段完成时间")
     model_config = ConfigDict(from_attributes=True)
 
