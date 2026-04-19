@@ -40,6 +40,15 @@ def upload_file(
                 detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}"
             )
 
+        file.file.seek(0, 2)
+        file_size = file.file.tell()
+        file.file.seek(0)
+        if file_size > settings.max_upload_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes"
+            )
+
         header = file.file.read(2048)
         file.file.seek(0)
 
@@ -51,15 +60,6 @@ def upload_file(
              raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"不支持的文件类型。检测到的MIME类型: {kind.mime}"
-            )
-
-        file.file.seek(0, 2)
-        file_size = file.file.tell()
-        file.file.seek(0)
-        if file_size > settings.max_upload_size:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes"
             )
 
         filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
