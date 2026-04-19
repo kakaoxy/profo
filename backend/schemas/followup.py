@@ -8,9 +8,9 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class FollowUpBase(BaseModel):
     """跟进记录基础字段"""
-    follow_up_type: str = Field(..., description="跟进方式")
+    follow_up_type: str = Field(description="跟进方式")
     content: Optional[str] = Field(None, description="跟进详情")
-    follow_up_at: datetime = Field(..., description="跟进时间")
+    follow_up_at: datetime = Field(description="跟进时间")
     follower_id: Optional[str] = Field(None, description="跟进人ID")
 
     model_config = ConfigDict(from_attributes=True)
@@ -18,7 +18,7 @@ class FollowUpBase(BaseModel):
 
 class FollowUpCreate(FollowUpBase):
     """创建跟进记录请求"""
-    project_id: str = Field(..., description="项目ID")
+    project_id: str = Field(description="项目ID")
 
 
 class FollowUpUpdate(BaseModel):
@@ -31,8 +31,8 @@ class FollowUpUpdate(BaseModel):
 
 class FollowUpResponse(FollowUpBase):
     """跟进记录响应"""
-    id: str = Field(..., description="跟进记录ID")
-    project_id: str = Field(..., description="项目ID")
+    id: str = Field(description="跟进记录ID")
+    project_id: str = Field(description="项目ID")
     created_at: datetime
     updated_at: datetime
 
