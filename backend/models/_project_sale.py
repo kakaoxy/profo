@@ -2,7 +2,7 @@
 销售交易模型
 """
 from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Session
 
 from .base import BaseModel
 
@@ -30,3 +30,19 @@ class ProjectSale(BaseModel):
         Index("idx_sale_project", "project_id"),
         Index("idx_sale_status", "transaction_status"),
     )
+
+    def validate_user_references(self, db: Session) -> None:
+        """验证销售角色用户ID是否有效"""
+        from .user import User
+
+        user_ids = [
+            ("channel_manager_id", self.channel_manager_id),
+            ("property_agent_id", self.property_agent_id),
+            ("negotiator_id", self.negotiator_id),
+        ]
+
+        for field_name, user_id in user_ids:
+            if user_id:
+                user = db.query(User).filter(User.id == user_id).first()
+                if not user:
+                    raise ValueError(f"无效的用户ID: {user_id} (字段: {field_name})")
