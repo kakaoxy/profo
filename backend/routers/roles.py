@@ -3,31 +3,24 @@
 """
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query, status
 
-from db import get_db
-from models.user import User
 from schemas.user import (
     RoleCreate,
     RoleUpdate,
     RoleResponse,
     RoleListResponse,
 )
-from dependencies.auth import get_current_admin_user
+from dependencies.auth import DbSessionDep, CurrentAdminUserDep
 from services.role_service import role_service
 
 router = APIRouter()
 
-# 依赖注入类型别名
-CurrentAdminUser = Annotated[User, Depends(get_current_admin_user)]
-DBSession = Annotated[Session, Depends(get_db)]
-
 
 @router.get("/roles", response_model=RoleListResponse)
 def get_roles(
-    db: DBSession,
-    current_user: CurrentAdminUser,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
     name: Annotated[Optional[str], Query(description="角色名称搜索")] = None,
     code: Annotated[Optional[str], Query(description="角色代码搜索")] = None,
     is_active: Annotated[Optional[bool], Query(description="是否激活筛选")] = None,
@@ -48,8 +41,8 @@ def get_roles(
 @router.get("/roles/{role_id}", response_model=RoleResponse)
 def get_role(
     role_id: str,
-    db: DBSession,
-    current_user: CurrentAdminUser,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
 ) -> RoleResponse:
     """
     获取指定角色信息
@@ -63,8 +56,8 @@ def get_role(
 @router.post("/roles", response_model=RoleResponse)
 def create_role(
     role_data: RoleCreate,
-    db: DBSession,
-    current_user: CurrentAdminUser,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
 ) -> RoleResponse:
     """
     创建新角色
@@ -76,8 +69,8 @@ def create_role(
 def update_role(
     role_id: str,
     role_data: RoleUpdate,
-    db: DBSession,
-    current_user: CurrentAdminUser,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
 ) -> RoleResponse:
     """
     更新角色信息
@@ -88,8 +81,8 @@ def update_role(
 @router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_role(
     role_id: str,
-    db: DBSession,
-    current_user: CurrentAdminUser,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
 ) -> None:
     """
     删除角色
