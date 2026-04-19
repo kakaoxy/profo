@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import get_current_internal_user
-from models.user import User
+from dependencies.auth import CurrentInternalUserDep
 from schemas.monitor import (
     AddCompetitorRequest,
     AIStrategyRequest,
@@ -21,7 +20,6 @@ router = APIRouter(prefix="/monitor")
 community_router = APIRouter(prefix="/communities")
 
 DbSessionDep = Annotated[Session, Depends(get_db)]
-CurrentInternalUserDep = Annotated[User, Depends(get_current_internal_user)]
 
 
 @router.get("/communities/{community_id}/sentiment", response_model=MarketSentimentResponse)
