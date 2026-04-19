@@ -1,9 +1,8 @@
 """
 用户和角色相关模型
 """
-from sqlalchemy import Column, String, Integer, Text, ForeignKey, Boolean, DateTime, Index
+from sqlalchemy import Column, String, Integer, Text, ForeignKey, Boolean, DateTime, Index, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.sqlite import JSON
 from datetime import datetime
 
 from .base import BaseModel

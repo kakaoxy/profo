@@ -1,9 +1,7 @@
 """
 装修信息模型
 """
-from sqlalchemy import Column, String, Numeric, DateTime, Text, Boolean, ForeignKey, Index
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import Column, String, Numeric, DateTime, Text, Boolean, ForeignKey, Index, JSON
 
 from .base import BaseModel
 
