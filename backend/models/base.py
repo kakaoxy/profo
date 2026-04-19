@@ -1,9 +1,10 @@
 """
 基础模型和枚举类型
 """
-from sqlalchemy.orm import declarative_base
+import uuid
 import enum
 from datetime import datetime, timezone
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, DateTime, func
 
 
