@@ -32,6 +32,9 @@ class ProjectService(
     """
 
     def __init__(self, db: Session) -> None:
-        # 显式调用 ProjectCoreService 的 __init__ 以确保正确的初始化顺序
-        # 避免多重继承中 super() 可能导致的 MRO 问题
+        # 显式调用所有父类的 __init__ 以确保每个父类都被正确初始化
+        # 避免多重继承中 super() 可能导致的 MRO 顺序问题
         ProjectCoreService.__init__(self, db)
+        ProjectRenovationService.__init__(self, db)
+        ProjectSalesService.__init__(self, db)
+        ProjectFinanceService.__init__(self, db)
