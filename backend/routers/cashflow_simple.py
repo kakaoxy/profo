@@ -22,7 +22,7 @@ def get_cashflow_service(db: Session = Depends(get_db)):
     return CashFlowService(db)
 
 
-CurrentUserDep = Annotated[User, Depends(get_current_internal_user)]
+CurrentInternalUserDep = Annotated[User, Depends(get_current_internal_user)]
 CashFlowServiceDep = Annotated[CashFlowService, Depends(get_cashflow_service)]
 
 
@@ -33,7 +33,7 @@ def create_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_data: CashFlowRecordCreate = ...,
     service: CashFlowServiceDep = ...,
-    current_user: CurrentUserDep = ...
+    current_user: CurrentInternalUserDep = ...
 ) -> CashFlowRecordResponse:
     """创建现金流记录"""
     record = service.create_cashflow_record(project_id, record_data)
@@ -44,7 +44,7 @@ def create_cashflow_record(
 def get_project_cashflow(
     project_id: str = Path(..., description="项目ID"),
     service: CashFlowServiceDep = ...,
-    current_user: CurrentUserDep = ...
+    current_user: CurrentInternalUserDep = ...
 ) -> CashFlowResponse:
     """获取项目现金流明细和汇总"""
     records = service.get_cashflow_records(project_id)
@@ -59,7 +59,7 @@ def delete_cashflow_record(
     project_id: str = Path(..., description="项目ID"),
     record_id: str = Path(..., description="记录ID"),
     service: CashFlowServiceDep = ...,
-    current_user: CurrentUserDep = ...
+    current_user: CurrentInternalUserDep = ...
 ) -> None:
     """删除现金流记录"""
     service.delete_cashflow_record(record_id, project_id)
