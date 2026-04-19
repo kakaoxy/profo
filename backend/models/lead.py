@@ -1,16 +1,12 @@
 """
 Leads Management Models
 """
-from datetime import datetime
-from typing import Optional, TYPE_CHECKING
-from sqlalchemy import Column, String, Float, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.sqlite import JSON
 
 from .base import Base, LeadStatus, FollowUpMethod
-
-if TYPE_CHECKING:
-    from .property import PropertyCurrent
 
 class Lead(Base):
     """线索主表"""
@@ -51,8 +47,8 @@ class Lead(Base):
     
     # Timestamps
     last_follow_up_at = Column(DateTime, nullable=True, comment="最后跟进时间")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), comment="更新时间")
 
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id])
@@ -63,14 +59,6 @@ class Lead(Base):
     @property
     def creator_name(self):
         return self.creator.nickname if self.creator else None
-
-    @property
-    def source_property(self) -> Optional["PropertyCurrent"]:
-        """软引用关联的房源"""
-        if self.source_property_id:
-            from .property import PropertyCurrent
-            return self.db.query(PropertyCurrent).filter(PropertyCurrent.id == self.source_property_id).first()
-        return None
 
     __table_args__ = (
         Index("idx_lead_status", "status"),
@@ -87,7 +75,7 @@ class LeadFollowUp(Base):
     
     method = Column(SQLEnum(FollowUpMethod), nullable=False, comment="跟进方式")
     content = Column(Text, nullable=False, comment="跟进内容")
-    followed_at = Column(DateTime, default=datetime.now, comment="跟进时间")
+    followed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="跟进时间")
     
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, comment="跟进人ID")
     
@@ -108,7 +96,7 @@ class LeadPriceHistory(Base):
     
     price = Column(Numeric(15, 2), nullable=False, comment="授权价格(万)")
     remark = Column(Text, comment="调整备注/原因")
-    recorded_at = Column(DateTime, default=datetime.now, comment="记录时间")
+    recorded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="记录时间")
     
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, comment="记录人ID")
     
