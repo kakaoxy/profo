@@ -23,12 +23,12 @@ from services.property_query_service import PropertyQueryService, get_property_q
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
-
 # 定义共享依赖类型别名
 SessionDep = Annotated[Session, Depends(get_db)]
 CurrentUserDep = Annotated[User, Depends(get_current_internal_user)]
 PropertyServiceDep = Annotated[PropertyQueryService, Depends(get_property_query_service)]
+
+router = APIRouter()
 
 
 @router.get("/communities/search")
