@@ -2,8 +2,9 @@
 认证相关路由
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
-from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from typing import Annotated, Optional, Dict, Any
+from fastapi import APIRouter, Body, Depends, HTTPException, status, Query, Request
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.concurrency import run_in_threadpool
 from slowapi.util import get_remote_address
@@ -24,22 +25,28 @@ from services.auth_service import AuthService
 from common import limiter
 
 
+AuthServiceDep = Annotated[AuthService, Depends()]
+DBSessionDep = Annotated[Session, Depends(get_db)]
+CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
+RateLimitDep = Annotated[Request, Depends(get_remote_address)]
+
+
 router = APIRouter()
 
 
 # ==================== 速率限制依赖 ====================
-def get_rate_key(request: Request, username: str = ""):
+def get_rate_key(request: Request, username: str = "") -> str:
     """获取速率限制的 key，基于 IP + 用户名"""
     return f"{get_remote_address(request)}:{username}"
 
 
 @router.post("/token", response_model=TokenResponse)
-@limiter.limit("5/minute")  # 登录限制：5次/分钟
+@limiter.limit("5/minute")
 def login_for_access_token(
     request: Request,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: DBSessionDep
+) -> TokenResponse:
     """
     OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
     速率限制：5次/分钟
@@ -71,12 +78,12 @@ def login_for_access_token(
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")  # 登录限制：5次/分钟
+@limiter.limit("5/minute")
 def login(
     request: Request,
-    login_data: LoginRequest,
-    db: Session = Depends(get_db)
-):
+    login_data: Annotated[LoginRequest, Body()],
+    db: DBSessionDep
+) -> TokenResponse:
     """
     用户名密码登录 (Sync - Run in threadpool by FastAPI)
     速率限制：5次/分钟
@@ -97,9 +104,9 @@ def login(
 
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_access_token(
-    refresh_data: RefreshTokenRequest,
-    db: Session = Depends(get_db)
-):
+    refresh_data: Annotated[RefreshTokenRequest, Body()],
+    db: DBSessionDep
+) -> TokenResponse:
     """
     刷新令牌 (Sync - Run in threadpool by FastAPI)
     """
@@ -120,10 +127,10 @@ def wechat_authorize(
 
 @router.get("/wechat/callback")
 async def wechat_callback(
-    code: str = Query(...),
-    state: str = Query(...),
-    db: Session = Depends(get_db)
-):
+    code: Annotated[str, Query(description="微信授权码")],
+    state: Annotated[str, Query(description="状态参数")],
+    db: DBSessionDep
+) -> RedirectResponse:
     """
     微信授权回调 (Async for HTTP, run_in_threadpool for DB)
     """
@@ -152,17 +159,16 @@ async def wechat_callback(
     
     # 5. 重定向
     frontend_url = f"http://localhost:3000/login?token={result['access_token']}&refresh_token={result['refresh_token']}"
-    from fastapi.responses import RedirectResponse
     return RedirectResponse(url=frontend_url, status_code=status.HTTP_302_FOUND)
 
 
 @router.post("/wechat/login", response_model=TokenResponse)
-@limiter.limit("5/minute")  # 微信登录限制：5次/分钟
+@limiter.limit("5/minute")
 async def wechat_app_login(
     request: Request,
-    login_data: WechatLoginRequest,
-    db: Session = Depends(get_db)
-):
+    login_data: Annotated[WechatLoginRequest, Body()],
+    db: DBSessionDep
+) -> TokenResponse:
     """
     微信小程序登录 (Async for HTTP, run_in_threadpool for DB)
     速率限制：5次/分钟
@@ -189,8 +195,8 @@ async def wechat_app_login(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_active_user)
-):
+    current_user: CurrentUserDep
+) -> UserResponse:
     """
     获取当前用户信息
     """
