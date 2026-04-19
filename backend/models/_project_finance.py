@@ -23,14 +23,3 @@ class FinanceRecord(BaseModel):
         Index("idx_finance_project_date", "project_id", "record_date"),
         Index("idx_finance_type_category", "type", "category"),
     )
-
-    def validate_user_references(self, db) -> None:
-        """验证软引用的用户ID是否存在且有效"""
-        from .user import User
-        if self.operator_id:
-            user = db.query(User).filter(
-                User.id == self.operator_id,
-                User.status == "active"
-            ).first()
-            if not user:
-                raise ValueError(f"无效的经办人ID: {self.operator_id}")

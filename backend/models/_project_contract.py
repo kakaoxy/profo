@@ -1,9 +1,7 @@
 """
 签约合同模型
 """
-from sqlalchemy import Column, String, Integer, Numeric, DateTime, Text, Boolean, ForeignKey, Index
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy import Column, String, Integer, Numeric, DateTime, Text, Boolean, ForeignKey, Index, JSON
 
 from .base import BaseModel
 

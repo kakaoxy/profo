@@ -5,8 +5,6 @@ from sqlalchemy.orm import declarative_base
 import enum
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, func
-from sqlalchemy.dialects.postgresql import UUID
-import uuid
 
 
 Base = declarative_base()

@@ -2,9 +2,8 @@
 Leads Management Models
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric
+from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.sqlite import JSON
 
 from .base import Base, LeadStatus, FollowUpMethod
 
