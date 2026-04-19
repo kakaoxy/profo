@@ -71,6 +71,18 @@ export function useProjectDetail({
     setViewMode("renovation");
   }, [router, refreshProjectData]);
 
+  const handleListingSuccess = useCallback(async () => {
+    router.refresh();
+    await refreshProjectData();
+    setViewMode("selling");
+  }, [router, refreshProjectData]);
+
+  const handleDealSuccess = useCallback(async () => {
+    router.refresh();
+    await refreshProjectData();
+    setViewMode("sold");
+  }, [router, refreshProjectData]);
+
   useEffect(() => {
     if (!isOpen || !project?.id) {
       initialLoadRef.current = false;
@@ -109,5 +121,7 @@ export function useProjectDetail({
     refreshProjectData,
     handleViewModeChange,
     handleHandoverSuccess,
+    handleListingSuccess,
+    handleDealSuccess,
   };
 }

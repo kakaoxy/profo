@@ -45,6 +45,8 @@ export function ProjectDetailSheet({
     refreshProjectData,
     handleViewModeChange,
     handleHandoverSuccess,
+    handleListingSuccess,
+    handleDealSuccess,
   } = useProjectDetail({ initialProject, isOpen });
 
   const { attachments, createHandlers } = useProjectAttachments({
@@ -95,6 +97,7 @@ export function ProjectDetailSheet({
                     key={viewKey}
                     project={project}
                     onRefresh={refreshProjectData}
+                    onListingSuccess={handleListingSuccess}
                   />
                 )}
                 {viewMode === "selling" && (
@@ -102,6 +105,7 @@ export function ProjectDetailSheet({
                     key={viewKey}
                     project={project}
                     onRefresh={refreshProjectData}
+                    onDealSuccess={handleDealSuccess}
                   />
                 )}
                 {(viewMode === "signing" ||
