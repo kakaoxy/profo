@@ -1,9 +1,7 @@
-from typing import Optional, List, Any, Dict
-from fastapi import APIRouter, Depends, Path, Query
-from services import ProjectService
-from dependencies.projects import get_project_service
-from dependencies.auth import get_current_internal_user
-from models.user import User
+from typing import Annotated, Optional, List, Any, Dict
+from fastapi import APIRouter, Path, Query
+from dependencies.projects import ProjectServiceDep
+from dependencies.auth import CurrentInternalUserDep
 from schemas.project import SalesRolesUpdate, SalesRecordCreate, SalesRecordResponse, ProjectResponse
 
 router = APIRouter()
@@ -11,71 +9,71 @@ router = APIRouter()
 
 @router.put("/{project_id}/selling/roles", response_model=ProjectResponse)
 def update_sales_roles(
-    project_id: str = Path(..., description="项目ID"),
-    roles_data: SalesRolesUpdate = ...,
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    roles_data: SalesRolesUpdate,
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """更新销售角色 (Sync)"""
+    """更新销售角色"""
     project = service.update_sales_roles(project_id, roles_data)
     return project
 
 
 @router.post("/{project_id}/selling/viewings", response_model=SalesRecordResponse, status_code=201)
 def create_viewing_record(
-    project_id: str = Path(..., description="项目ID"),
-    record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    record_data: SalesRecordCreate,
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """创建带看记录 (Sync)"""
+    """创建带看记录"""
     record = service.create_sales_record(project_id, record_data)
     return record
 
 
 @router.post("/{project_id}/selling/offers", response_model=SalesRecordResponse, status_code=201)
 def create_offer_record(
-    project_id: str = Path(..., description="项目ID"),
-    record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    record_data: SalesRecordCreate,
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """创建出价记录 (Sync)"""
+    """创建出价记录"""
     record = service.create_sales_record(project_id, record_data)
     return record
 
 
 @router.post("/{project_id}/selling/negotiations", response_model=SalesRecordResponse, status_code=201)
 def create_negotiation_record(
-    project_id: str = Path(..., description="项目ID"),
-    record_data: SalesRecordCreate = ...,
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    record_data: SalesRecordCreate,
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """创建面谈记录 (Sync)"""
+    """创建面谈记录"""
     record = service.create_sales_record(project_id, record_data)
     return record
 
 
 @router.get("/{project_id}/selling/records", response_model=List[Dict[str, Any]])
 def get_sales_records(
-    project_id: str = Path(..., description="项目ID"),
-    record_type: Optional[str] = Query(None, description="记录类型筛选"),
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
+    record_type: Annotated[Optional[str], Query(description="记录类型筛选")] = None,
 ):
-    """获取销售记录 (Sync)"""
+    """获取销售记录"""
     records = service.get_sales_records(project_id, record_type)
     return records
 
 
 @router.delete("/{project_id}/selling/records/{record_id}", status_code=204)
 def delete_sales_record(
-    project_id: str = Path(..., description="项目ID"),
-    record_id: str = Path(..., description="记录ID"),
-    service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_internal_user)
+    project_id: Annotated[str, Path(description="项目ID")],
+    record_id: Annotated[str, Path(description="记录ID")],
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
 ):
-    """删除销售记录 (Sync)"""
+    """删除销售记录"""
     service.delete_sales_record(project_id, record_id)
     return None
