@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import get_current_internal_user
+from dependencies.auth import CurrentInternalUserDep
 from models.user import User
 from services import CashFlowService
 from schemas.project import (
@@ -22,7 +22,6 @@ def get_cashflow_service(db: Session = Depends(get_db)):
     return CashFlowService(db)
 
 
-CurrentInternalUserDep = Annotated[User, Depends(get_current_internal_user)]
 CashFlowServiceDep = Annotated[CashFlowService, Depends(get_cashflow_service)]
 
 
