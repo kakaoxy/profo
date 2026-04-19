@@ -3,7 +3,7 @@ L4 市场营销层模型
 对应 mini_projects 小程序项目管理
 """
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, event
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -155,6 +155,16 @@ class L4MarketingProject(BaseModel):
         else:
             self.unit_price = Decimal('0')
         return value
+
+
+@event.listens_for(L4MarketingProject, 'before_update')
+def recalculate_unit_price_before_update(mapper, connection, target):
+    """在更新前重新计算单价 - 仅当total_price或area实际变化时才计算"""
+    if target.total_price is not None and target.area is not None:
+        if float(target.area) > 0:
+            target.unit_price = Decimal(str(target.total_price)) / Decimal(str(target.area))
+        else:
+            target.unit_price = Decimal('0')
 
 
 class L4MarketingMedia(BaseModel):
