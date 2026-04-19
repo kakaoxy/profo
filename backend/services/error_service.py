@@ -4,7 +4,7 @@
 """
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 from models.error import FailedRecord
@@ -43,7 +43,7 @@ def save_failed_record(
             payload=json.dumps(data, ensure_ascii=False, default=str),
             failure_type=failure_type,
             failure_reason=error_message,
-            occurred_at=datetime.now(),
+            occurred_at=datetime.now(timezone.utc),
             is_handled=False
         )
         

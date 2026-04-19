@@ -2,7 +2,7 @@
 错误处理相关模型
 包含FailedRecord表
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Index
@@ -19,7 +19,7 @@ class FailedRecord(Base):
     payload: str = Column(Text, nullable=False, comment="原始数据(JSON)")
     failure_type: str = Column(String(50), nullable=False, comment="失败类型")
     failure_reason: str = Column(Text, nullable=False, comment="失败原因")
-    occurred_at: datetime = Column(DateTime, default=lambda: datetime.now(), comment="发生时间")
+    occurred_at: datetime = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="发生时间")
     is_handled: bool = Column(Boolean, default=False, comment="是否已处理")
     handled_at: Optional[datetime] = Column(DateTime, nullable=True, comment="处理时间")
     handler_notes: Optional[str] = Column(Text, nullable=True, comment="处理备注")
