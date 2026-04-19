@@ -133,9 +133,9 @@ class PropertyHistory(Base):
     status = Column(SQLEnum(PropertyStatus), nullable=False, comment="状态")
     community_id = Column(Integer, nullable=True, comment="小区ID")
     rooms = Column(Integer, nullable=True, comment="室")
-    build_area = Column(Float, nullable=True, comment="建筑面积")
-    listed_price_wan = Column(Float, nullable=True, comment="挂牌价(万)")
-    sold_price_wan = Column(Float, nullable=True, comment="成交价(万)")
+    build_area = Column(Numeric(10, 2), nullable=True, comment="建筑面积")
+    listed_price_wan = Column(Numeric(15, 2), nullable=True, comment="挂牌价(万)")
+    sold_price_wan = Column(Numeric(15, 2), nullable=True, comment="成交价(万)")
     listed_date = Column(DateTime, nullable=True, comment="上架时间")
     sold_date = Column(DateTime, nullable=True, comment="成交时间")
     
