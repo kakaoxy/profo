@@ -2,7 +2,8 @@
 小区相关模型
 包含Community和CommunityAlias表
 """
-from datetime import datetime
+import uuid
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -11,8 +12,8 @@ from .base import Base
 class Community(Base):
     """小区表"""
     __tablename__ = "communities"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(200), nullable=False, unique=True, comment="小区名称(标准化)")
     city_id = Column(Integer, nullable=True, comment="城市ID")
     district = Column(String(100), nullable=True, comment="行政区")
@@ -20,8 +21,8 @@ class Community(Base):
     avg_price_wan = Column(Float, nullable=True, comment="小区均价(万)")
     total_properties = Column(Integer, default=0, comment="房源总数")
     is_active = Column(Boolean, default=True, comment="是否激活(软删除)")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False, comment="更新时间")
     
     # 关系
     properties = relationship("PropertyCurrent", back_populates="community")
@@ -44,12 +45,12 @@ class Community(Base):
 class CommunityAlias(Base):
     """小区别名表 - 用于小区合并后的别名查找"""
     __tablename__ = "community_aliases"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    community_id = Column(Integer, ForeignKey("communities.id"), nullable=False, comment="关联的主小区ID")
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="关联的主小区ID")
     alias_name = Column(String(200), nullable=False, comment="别名")
     data_source = Column(String(50), nullable=False, comment="数据来源")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
     
     # 关系
     community = relationship("Community", back_populates="aliases")
@@ -66,11 +67,11 @@ class CommunityAlias(Base):
 class CommunityCompetitor(Base):
     """小区竞品关联表"""
     __tablename__ = "community_competitors"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    community_id = Column(Integer, ForeignKey("communities.id"), nullable=False, comment="主小区ID")
-    competitor_community_id = Column(Integer, ForeignKey("communities.id"), nullable=False, comment="竞品小区ID")
-    created_at = Column(DateTime, default=datetime.now, comment="创建时间")
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="主小区ID")
+    competitor_community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="竞品小区ID")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
     
     # 唯一约束: 避免重复添加
     __table_args__ = (
