@@ -4,7 +4,7 @@
 
 注意：已适配新的规范化表结构，装修信息使用 ProjectRenovation 表
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -103,7 +103,7 @@ class ProjectRenovationService:
             ProjectRenovation.is_deleted == False
         ).first()
 
-    def update_renovation_info(self, project_id: str, renovation_data: dict) -> ProjectRenovation:
+    def update_renovation_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectRenovation:
         """更新装修信息"""
         project = self._get_project(project_id)
 

@@ -80,7 +80,8 @@ class ProjectService:
     # ========== ProjectRenovationService 方法委托 ==========
 
     def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> ProjectResponse:
-        return self._renovation_service.update_renovation_stage(project_id, renovation_data)
+        project = self._renovation_service.update_renovation_stage(project_id, renovation_data)
+        return ProjectResponse.model_validate(self._core_service.response_builder.build(project))
 
     def get_renovation_info(self, project_id: str) -> Optional[ProjectRenovation]:
         return self._renovation_service.get_renovation_info(project_id)
