@@ -131,7 +131,7 @@ class PropertyHistory(Base):
     
     # 快照的核心字段
     status = Column(SQLEnum(PropertyStatus), nullable=False, comment="状态")
-    community_id = Column(Integer, nullable=True, comment="小区ID")
+    community_id = Column(String(36), nullable=True, comment="小区ID")
     rooms = Column(Integer, nullable=True, comment="室")
     build_area = Column(Numeric(10, 2), nullable=True, comment="建筑面积")
     listed_price_wan = Column(Numeric(15, 2), nullable=True, comment="挂牌价(万)")
