@@ -1,6 +1,8 @@
 """
 财务流水相关Schema（替换原cashflow_records）
 """
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
@@ -9,10 +11,10 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class FinanceBase(BaseModel):
     """财务记录基础字段"""
-    type: str = Field(..., description="流水类型：income/expense")
-    category: str = Field(..., description="费用类别")
-    amount: Decimal = Field(..., description="金额(元)")
-    record_date: datetime = Field(..., description="发生日期")
+    type: str = Field(description="流水类型：income/expense")
+    category: str = Field(description="费用类别")
+    amount: Decimal = Field(description="金额(元)")
+    record_date: datetime = Field(description="发生日期")
     operator_id: Optional[str] = Field(None, description="经办人ID")
     remark: Optional[str] = Field(None, description="备注")
 
@@ -21,7 +23,7 @@ class FinanceBase(BaseModel):
 
 class FinanceCreate(FinanceBase):
     """创建财务记录请求"""
-    project_id: str = Field(..., description="项目ID")
+    project_id: str = Field(description="项目ID")
 
 
 class FinanceUpdate(BaseModel):
@@ -36,8 +38,8 @@ class FinanceUpdate(BaseModel):
 
 class FinanceResponse(FinanceBase):
     """财务记录响应"""
-    id: str = Field(..., description="财务记录ID")
-    project_id: str = Field(..., description="项目ID")
+    id: str = Field(description="财务记录ID")
+    project_id: str = Field(description="项目ID")
     created_at: datetime
     updated_at: datetime
 
