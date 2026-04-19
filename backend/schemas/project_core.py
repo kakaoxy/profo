@@ -49,9 +49,9 @@ class ProjectBase(BaseModel):
     orientation: Optional[str] = Field(None, max_length=50, description="朝向")
 
     # 财务缓存字段
-    total_income: Decimal = Field(default=Decimal(0))
-    total_expense: Decimal = Field(default=Decimal(0))
-    net_cash_flow: Decimal = Field(default=Decimal(0))
+    total_income: Decimal = Field(default_factory=Decimal)
+    total_expense: Decimal = Field(default_factory=Decimal)
+    net_cash_flow: Decimal = Field(default_factory=Decimal)
     roi: float = Field(default=0.0)
 
     model_config = ConfigDict(from_attributes=True)
@@ -91,13 +91,6 @@ class ProjectCreate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator('signing_date', 'planned_handover_date', 'listing_date', mode='before')
-    @classmethod
-    def validate_date_fields(cls, v):
-        if v is None:
-            return None
-        # 保持字符串格式，由服务层处理转换
-        return v
 
 class ProjectUpdate(BaseModel):
     """更新项目请求模型 (所有字段可选) - 已适配规范化表结构"""
@@ -150,13 +143,6 @@ class ProjectUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @field_validator('signing_date', 'planned_handover_date', 'listing_date', mode='before')
-    @classmethod
-    def validate_date_fields(cls, v):
-        if v is None:
-            return None
-        # 保持字符串格式，由服务层处理转换
-        return v
 
 class ProjectResponse(BaseModel):
     """
@@ -211,9 +197,9 @@ class ProjectResponse(BaseModel):
     negotiator_id: Optional[str] = Field(None, description="联卖谈判人ID")
 
     # 财务缓存
-    total_income: Optional[Decimal] = Field(default=Decimal(0))
-    total_expense: Optional[Decimal] = Field(default=Decimal(0))
-    net_cash_flow: Optional[Decimal] = Field(default=Decimal(0))
+    total_income: Optional[Decimal] = Field(default_factory=Decimal)
+    total_expense: Optional[Decimal] = Field(default_factory=Decimal)
+    net_cash_flow: Optional[Decimal] = Field(default_factory=Decimal)
     roi: Optional[float] = Field(default=0.0)
 
     # 签约材料附件
