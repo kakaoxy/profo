@@ -27,9 +27,6 @@ class Project(BaseModel):
 
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
-
     __table_args__ = (
         Index("idx_project_status", "status"),
         Index("idx_project_deleted", "is_deleted"),

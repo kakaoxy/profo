@@ -30,22 +30,3 @@ class ProjectSale(BaseModel):
         Index("idx_sale_project", "project_id"),
         Index("idx_sale_status", "transaction_status"),
     )
-
-    def validate_user_references(self, db) -> None:
-        """验证软引用的用户ID是否存在且有效"""
-        from .user import User
-        user_id_fields = [
-            ("channel_manager_id", "渠道负责人ID"),
-            ("property_agent_id", "房源维护人ID"),
-            ("negotiator_id", "联卖谈判人ID"),
-        ]
-
-        for field_name, field_desc in user_id_fields:
-            user_id = getattr(self, field_name)
-            if user_id:
-                user = db.query(User).filter(
-                    User.id == user_id,
-                    User.status == "active"
-                ).first()
-                if not user:
-                    raise ValueError(f"无效的{field_desc}: {user_id}")
