@@ -124,7 +124,7 @@ CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operat
 # 这些函数统一使用 require_roles 工厂函数，保持逻辑一致性
 
 
-async def get_current_admin_user(
+def get_current_admin_user(
     current_user: CurrentAdminUserDep,
 ) -> User:
     """
@@ -142,7 +142,7 @@ async def get_current_admin_user(
     return current_user
 
 
-async def get_current_operator_user(
+def get_current_operator_user(
     current_user: CurrentOperatorUserDep,
 ) -> User:
     """
@@ -160,7 +160,7 @@ async def get_current_operator_user(
     return current_user
 
 
-async def get_current_normal_user(
+def get_current_normal_user(
     current_user: CurrentNormalUserDep,
 ) -> User:
     """
@@ -178,7 +178,7 @@ async def get_current_normal_user(
     return current_user
 
 
-async def get_current_internal_user(
+def get_current_internal_user(
     current_user: CurrentInternalUserDep,
 ) -> User:
     """
