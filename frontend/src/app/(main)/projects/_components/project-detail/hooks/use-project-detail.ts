@@ -72,9 +72,7 @@ export function useProjectDetail({
   }, [router, refreshProjectData]);
 
   useEffect(() => {
-    if (isOpen && project?.id && !initialLoadRef.current) {
-      initialLoadRef.current = true;
-
+    if (isOpen && project?.id) {
       const index = STAGE_CONFIG.findIndex((s) =>
         (s.aliases as readonly string[]).includes(project.status),
       );
@@ -85,7 +83,10 @@ export function useProjectDetail({
         setViewMode(targetMode);
       }
 
-      refreshProjectData(targetMode === "sold");
+      if (!initialLoadRef.current) {
+        initialLoadRef.current = true;
+        refreshProjectData(targetMode === "sold");
+      }
     }
 
     if (!isOpen) {
