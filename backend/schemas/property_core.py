@@ -1,6 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 from .enums import IngestionStatus
 
 
@@ -29,39 +28,39 @@ class PropertyIngestionModel(BaseModel):
     
     # 面积信息
     build_area: float = Field(..., gt=0, alias="面积", description="建筑面积(㎡)")
-    inner_area: Optional[float] = Field(None, gt=0, alias="套内面积", description="套内面积(㎡)")
-    
+    inner_area: float | None = Field(None, gt=0, alias="套内面积", description="套内面积(㎡)")
+
     # 动态必填字段 - 在售
-    listed_price_wan: Optional[float] = Field(None, gt=0, alias="挂牌价", description="挂牌价(万)")
-    listed_date: Optional[datetime] = Field(None, alias="上架时间", description="上架时间")
-    
+    listed_price_wan: float | None = Field(None, gt=0, alias="挂牌价", description="挂牌价(万)")
+    listed_date: datetime | None = Field(None, alias="上架时间", description="上架时间")
+
     # 动态必填字段 - 成交
-    sold_price_wan: Optional[float] = Field(None, gt=0, alias="成交价", description="成交价(万)")
-    sold_date: Optional[datetime] = Field(None, alias="成交时间", description="成交时间")
-    
+    sold_price_wan: float | None = Field(None, gt=0, alias="成交价", description="成交价(万)")
+    sold_date: datetime | None = Field(None, alias="成交时间", description="成交时间")
+
     # 其他可选字段
-    property_type: Optional[str] = Field(None, alias="物业类型", description="物业类型")
-    build_year: Optional[int] = Field(None, ge=1900, le=2100, alias="建筑年代", description="建筑年代")
-    building_structure: Optional[str] = Field(None, alias="建筑结构", description="建筑结构")
-    decoration: Optional[str] = Field(None, alias="装修情况", description="装修情况")
-    elevator: Optional[bool] = Field(None, alias="电梯", description="是否有电梯")
-    
+    property_type: str | None = Field(None, alias="物业类型", description="物业类型")
+    build_year: int | None = Field(None, ge=1900, le=2100, alias="建筑年代", description="建筑年代")
+    building_structure: str | None = Field(None, alias="建筑结构", description="建筑结构")
+    decoration: str | None = Field(None, alias="装修情况", description="装修情况")
+    elevator: bool | None = Field(None, alias="电梯", description="是否有电梯")
+
     # 产权信息
-    ownership_type: Optional[str] = Field(None, alias="产权性质", description="产权性质")
-    ownership_years: Optional[int] = Field(None, gt=0, alias="产权年限", description="产权年限")
-    last_transaction: Optional[str] = Field(None, alias="上次交易", description="上次交易信息")
-    
+    ownership_type: str | None = Field(None, alias="产权性质", description="产权性质")
+    ownership_years: int | None = Field(None, gt=0, alias="产权年限", description="产权年限")
+    last_transaction: str | None = Field(None, alias="上次交易", description="上次交易信息")
+
     # 其他信息
-    heating_method: Optional[str] = Field(None, alias="供暖方式", description="供暖方式")
-    listing_remarks: Optional[str] = Field(None, alias="房源描述", description="房源描述")
-    
+    heating_method: str | None = Field(None, alias="供暖方式", description="供暖方式")
+    listing_remarks: str | None = Field(None, alias="房源描述", description="房源描述")
+
     # 图片信息
-    image_urls: Optional[List[str]] = Field(None, alias="图片链接", description="房源图片URL列表")
-    
+    image_urls: list[str] | None = Field(None, alias="图片链接", description="房源图片URL列表")
+
     # 区域信息
-    city_id: Optional[int] = Field(None, alias="城市ID", description="城市ID")
-    district: Optional[str] = Field(None, alias="行政区", description="行政区")
-    business_circle: Optional[str] = Field(None, alias="商圈", description="商圈")
+    city_id: int | None = Field(None, alias="城市ID", description="城市ID")
+    district: str | None = Field(None, alias="行政区", description="行政区")
+    business_circle: str | None = Field(None, alias="商圈", description="商圈")
     
     @field_validator('community_name', 'data_source', 'source_property_id', 'orientation', 'floor_original', mode='before')
     @classmethod
@@ -100,7 +99,7 @@ class PropertyIngestionModel(BaseModel):
                 raise ValueError("成交房源必须提供成交时间")
         return self
     
-    model_config = {
-        "populate_by_name": True,  # 允许使用字段名或别名
-        "str_strip_whitespace": True,  # 自动去除空格
-    }
+    model_config = ConfigDict(
+        populate_by_name=True,
+        str_strip_whitespace=True,
+    )

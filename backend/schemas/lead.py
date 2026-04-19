@@ -1,9 +1,8 @@
 """
 Leads Management Pydantic Schemas
 """
-from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from models.base import LeadStatus, FollowUpMethod
 
@@ -22,17 +21,16 @@ class FollowUpResponse(FollowUpBase):
     lead_id: str
     followed_at: datetime
     created_by_id: str
-    created_by_name: Optional[str] = None # Helper field, might need extra logic to populate
+    created_by_name: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ----------------------
 # Price History Schemas
 # ----------------------
 class PriceHistoryBase(BaseModel):
     price: float
-    remark: Optional[str] = None
+    remark: str | None = None
 
 class PriceHistoryCreate(PriceHistoryBase):
     pass
@@ -42,10 +40,9 @@ class PriceHistoryResponse(PriceHistoryBase):
     lead_id: str
     recorded_at: datetime
     created_by_id: str
-    created_by_name: Optional[str] = None
+    created_by_name: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ----------------------
 # Lead Schemas
@@ -53,71 +50,65 @@ class PriceHistoryResponse(PriceHistoryBase):
 class LeadBase(BaseModel):
     community_name: str
     is_hot: int = 0
-    layout: Optional[str] = None
-    orientation: Optional[str] = None
-    floor_info: Optional[str] = None
-    area: Optional[float] = None
-    total_price: Optional[float] = None
-    unit_price: Optional[float] = None
-    eval_price: Optional[float] = None
+    layout: str | None = None
+    orientation: str | None = None
+    floor_info: str | None = None
+    area: float | None = None
+    total_price: float | None = None
+    unit_price: float | None = None
+    eval_price: float | None = None
     
-    district: Optional[str] = None
-    business_area: Optional[str] = None
-    remarks: Optional[str] = None
+    district: str | None = None
+    business_area: str | None = None
+    remarks: str | None = None
     
-    source_property_id: Optional[int] = None
+    source_property_id: int | None = None
 
 class LeadCreate(LeadBase):
-    # status defaults to PENDING_ASSESSMENT in model, but can be set on create
-    status: Optional[LeadStatus] = LeadStatus.PENDING_ASSESSMENT
-    images: List[str] = []
+    status: LeadStatus | None = LeadStatus.PENDING_ASSESSMENT
+    images: list[str] = []
 
 class LeadUpdate(BaseModel):
-    # Allow partial updates
-    community_name: Optional[str] = None
-    is_hot: Optional[int] = None
-    layout: Optional[str] = None
-    orientation: Optional[str] = None
-    floor_info: Optional[str] = None
-    area: Optional[float] = None
-    total_price: Optional[float] = None
-    unit_price: Optional[float] = None
-    eval_price: Optional[float] = None
+    community_name: str | None = None
+    is_hot: int | None = None
+    layout: str | None = None
+    orientation: str | None = None
+    floor_info: str | None = None
+    area: float | None = None
+    total_price: float | None = None
+    unit_price: float | None = None
+    eval_price: float | None = None
     
-    status: Optional[LeadStatus] = None
-    audit_reason: Optional[str] = None
+    status: LeadStatus | None = None
+    audit_reason: str | None = None
     
-    images: Optional[List[str]] = None
-    district: Optional[str] = None
-    business_area: Optional[str] = None
-    remarks: Optional[str] = None
+    images: list[str] | None = None
+    district: str | None = None
+    business_area: str | None = None
+    remarks: str | None = None
 
-    last_follow_up_at: Optional[datetime] = None
+    last_follow_up_at: datetime | None = None
 
 class LeadResponse(LeadBase):
     id: str
     status: LeadStatus
-    audit_reason: Optional[str] = None
-    auditor_id: Optional[str] = None
-    audit_time: Optional[datetime] = None
+    audit_reason: str | None = None
+    auditor_id: str | None = None
+    audit_time: datetime | None = None
     
-    images: List[str] = []
+    images: list[str] = []
     
-    creator_id: Optional[str] = None
-    creator_name: Optional[str] = None # Helper to avoid extra fetching
+    creator_id: str | None = None
+    creator_name: str | None = None
     
-    last_follow_up_at: Optional[datetime] = None
+    last_follow_up_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
-    
-    # Optional nested data, avoid deep nesting by default to keep list lightweight
-    # follow_ups: List[FollowUpResponse] = [] 
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PaginatedLeadResponse(BaseModel):
-    items: List[LeadResponse]
+    items: list[LeadResponse]
     total: int
     page: int
     page_size: int
@@ -134,32 +125,32 @@ class LeadListItem(BaseModel):
     id: str
     community_name: str
     is_hot: int = 0
-    layout: Optional[str] = None
-    orientation: Optional[str] = None
-    floor_info: Optional[str] = None
-    area: Optional[float] = None
-    total_price: Optional[float] = None
-    unit_price: Optional[float] = None
-    eval_price: Optional[float] = None
+    layout: str | None = None
+    orientation: str | None = None
+    floor_info: str | None = None
+    area: float | None = None
+    total_price: float | None = None
+    unit_price: float | None = None
+    eval_price: float | None = None
     status: LeadStatus
-    audit_reason: Optional[str] = None
-    auditor_id: Optional[str] = None
-    audit_time: Optional[datetime] = None
-    images: List[str] = []
-    district: Optional[str] = None
-    business_area: Optional[str] = None
-    remarks: Optional[str] = None
-    creator_id: Optional[str] = None
-    creator_name: Optional[str] = None
-    source_property_id: Optional[int] = None
-    last_follow_up_at: Optional[datetime] = None
+    audit_reason: str | None = None
+    auditor_id: str | None = None
+    audit_time: datetime | None = None
+    images: list[str] = []
+    district: str | None = None
+    business_area: str | None = None
+    remarks: str | None = None
+    creator_id: str | None = None
+    creator_name: str | None = None
+    source_property_id: int | None = None
+    last_follow_up_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
 
 class PaginatedLeadListResponse(BaseModel):
     """列表分页响应 - 使用 LeadListItem 避免性能问题"""
-    items: List[LeadListItem]
+    items: list[LeadListItem]
     total: int
     page: int
     page_size: int
