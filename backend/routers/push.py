@@ -4,20 +4,17 @@ JSON 推送 API 路由
 """
 from typing import Annotated, List
 
-from fastapi import APIRouter, Body, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Body
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 import logging
 
-from db import get_db
 from schemas import PropertyIngestionModel, PushResult
 from services.importer import PropertyImporter
 from exceptions import ValidationException, BusinessLogicException
 from utils.error_formatters import format_validation_error
 from services.error_service import save_failed_record
-
-# 依赖注入类型别名
-DBSession = Annotated[Session, Depends(get_db)]
+from dependencies.auth import DbSessionDep
 
 
 logger = logging.getLogger(__name__)
@@ -147,7 +144,7 @@ class JSONBatchImporter:
 @router.post("", response_model=PushResult)
 def push_properties(
     properties: Annotated[List[dict], Body()],
-    db: DBSession,
+    db: DbSessionDep,
 ) -> PushResult:
     """
     JSON 数据推送接口
