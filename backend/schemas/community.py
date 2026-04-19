@@ -49,3 +49,9 @@ class CommunityMergeResponse(BaseModel):
     success: bool
     affected_properties: int
     message: str
+
+
+class DictionaryResponse(BaseModel):
+    """字典响应模型"""
+    type: str
+    items: List[str]
