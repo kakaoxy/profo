@@ -90,8 +90,8 @@ class ProjectService:
         return self._core_service.get_project(project_id, include_all=False)
 
     def update_renovation_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectResponse:
-        project = self._renovation_service.update_renovation_info(project_id, renovation_data)
-        return ProjectResponse.model_validate(self._core_service.response_builder.build(project))
+        self._renovation_service.update_renovation_info(project_id, renovation_data)
+        return self._core_service.get_project(project_id, include_all=False)
 
     def add_renovation_photo(
         self,
