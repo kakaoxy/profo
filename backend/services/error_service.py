@@ -8,9 +8,16 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 from models.error import FailedRecord
-from db import SessionLocal
+from db import engine
+from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
+
+ErrorSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
 def save_failed_record(
     data: Dict[str, Any],
@@ -19,25 +26,24 @@ def save_failed_record(
     data_source: Optional[str] = None
 ) -> bool:
     """
-    保存失败记录到数据库
-    
+    保存失败记录到数据库（使用独立连接避免事务冲突）
+
     Args:
         data: 原始数据
         error_message: 错误信息
         failure_type: 失败类型
         data_source: 数据来源
-    
+
     Returns:
         bool: 是否保存成功
     """
     db = None
     try:
-        db = SessionLocal()
-        
-        # 如果没有提供 data_source，尝试从数据中提取
+        db = ErrorSessionLocal()
+
         if not data_source:
             data_source = data.get('数据源') or data.get('data_source')
-        
+
         failed_record = FailedRecord(
             data_source=data_source,
             payload=json.dumps(data, ensure_ascii=False, default=str),
@@ -46,19 +52,19 @@ def save_failed_record(
             occurred_at=datetime.now(timezone.utc),
             is_handled=False
         )
-        
+
         db.add(failed_record)
         db.commit()
-        
+
         logger.info(f"失败记录已保存: {failure_type} - {error_message[:50]}")
         return True
-    
+
     except Exception as e:
         logger.error(f"保存失败记录时出错: {str(e)}")
         if db:
             db.rollback()
         return False
-    
+
     finally:
         if db:
             db.close()
