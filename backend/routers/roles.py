@@ -34,7 +34,9 @@ def get_roles(
     
     return RoleListResponse(
         total=total,
-        items=roles
+        items=roles,
+        page=page,
+        size=page_size
     )
 
 

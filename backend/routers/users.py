@@ -47,7 +47,9 @@ def get_users(
 
     return UserListResponse(
         total=total,
-        items=users
+        items=users,
+        page=page,
+        size=page_size
     )
 
 
@@ -55,6 +57,8 @@ def get_users(
 def get_users_simple(
     nickname: Optional[str] = Query(None, description="昵称搜索"),
     status: Optional[str] = Query("active", description="用户状态筛选"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(100, ge=1, le=500, description="每页数量"),
     current_user: User = Depends(get_current_internal_user),
     db: Session = Depends(get_db)
 ):
@@ -85,7 +89,9 @@ def get_users_simple(
 
     return UserSimpleListResponse(
         total=len(items),
-        items=items
+        items=items,
+        page=page,
+        size=page_size
     )
 
 
