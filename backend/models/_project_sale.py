@@ -45,6 +45,9 @@ class ProjectSale(BaseModel):
         if user_ids:
             existing_users = db.query(User.id).filter(User.id.in_(user_ids)).all()
             existing_ids = {user.id for user in existing_users}
-            for field_name, user_id in user_fields:
-                if user_id and user_id not in existing_ids:
-                    raise ValueError(f"无效的用户ID: {user_id} (字段: {field_name})")
+        else:
+            existing_ids = set()
+
+        for field_name, user_id in user_fields:
+            if user_id and user_id not in existing_ids:
+                raise ValueError(f"无效的用户ID: {user_id} (字段: {field_name})")
