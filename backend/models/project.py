@@ -287,18 +287,13 @@ class ProjectInteraction(BaseModel):
 
     def validate_user_references(self, db) -> None:
         """验证软引用的用户ID是否存在且有效"""
-        from fastapi import HTTPException, status
-
         if self.operator_id:
             user = db.query(User).filter(
                 User.id == self.operator_id,
                 User.status == "active"
             ).first()
             if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"无效的操作人ID: {self.operator_id}"
-                )
+                raise ValueError(f"无效的操作人ID: {self.operator_id}")
 
 
 class FinanceRecord(BaseModel):
