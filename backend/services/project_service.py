@@ -32,6 +32,6 @@ class ProjectService(
     """
 
     def __init__(self, db: Session) -> None:
-        # 调用 ProjectCoreService 的 __init__ 以初始化数据库会话和子服务
-        # 使用 super() 确保多重继承时正确的 MRO 初始化
-        super().__init__(db)
+        # 显式调用 ProjectCoreService 的 __init__ 以确保正确的初始化顺序
+        # 避免多重继承中 super() 可能导致的 MRO 问题
+        ProjectCoreService.__init__(self, db)
