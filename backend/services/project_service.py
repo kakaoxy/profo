@@ -83,11 +83,15 @@ class ProjectService:
         project = self._renovation_service.update_renovation_stage(project_id, renovation_data)
         return ProjectResponse.model_validate(self._core_service.response_builder.build(project))
 
-    def get_renovation_info(self, project_id: str) -> Optional[ProjectRenovation]:
-        return self._renovation_service.get_renovation_info(project_id)
+    def get_renovation_info(self, project_id: str) -> Optional[ProjectResponse]:
+        renovation = self._renovation_service.get_renovation_info(project_id)
+        if not renovation:
+            return None
+        return self._core_service.get_project(project_id, include_all=False)
 
-    def update_renovation_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectRenovation:
-        return self._renovation_service.update_renovation_info(project_id, renovation_data)
+    def update_renovation_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectResponse:
+        project = self._renovation_service.update_renovation_info(project_id, renovation_data)
+        return ProjectResponse.model_validate(self._core_service.response_builder.build(project))
 
     def add_renovation_photo(
         self,
