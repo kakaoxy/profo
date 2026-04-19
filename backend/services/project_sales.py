@@ -36,7 +36,13 @@ class ProjectSalesService:
 
     def _validate_user_ids(self, sale: ProjectSale) -> None:
         """验证销售记录中的用户ID是否有效"""
-        sale.validate_user_references(self.db)
+        try:
+            sale.validate_user_references(self.db)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
 
     def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判) - 使用用户ID"""
