@@ -137,7 +137,7 @@ async def get_current_admin_user(
         User: 当前管理员用户对象
 
     Raises:
-        HTTPException: 403 Forbidden - 权限不足（角色不是 admin）
+        HTTPException: 403 Forbidden - 权限不足（由 CurrentAdminUserDep 依赖验证）
     """
     return current_user
 
@@ -155,7 +155,7 @@ async def get_current_operator_user(
         User: 当前运营人员用户对象
 
     Raises:
-        HTTPException: 403 Forbidden - 权限不足（角色不是 admin 或 operator）
+        HTTPException: 403 Forbidden - 权限不足（由 CurrentOperatorUserDep 依赖验证）
     """
     return current_user
 
@@ -173,7 +173,7 @@ async def get_current_normal_user(
         User: 当前普通用户对象
 
     Raises:
-        HTTPException: 403 Forbidden - 权限不足（角色不在允许列表中）
+        HTTPException: 403 Forbidden - 权限不足（由 CurrentNormalUserDep 依赖验证）
     """
     return current_user
 
@@ -192,7 +192,7 @@ async def get_current_internal_user(
         User: 当前内部管理用户对象
 
     Raises:
-        HTTPException: 403 Forbidden - 权限不足（角色不是 admin 或 operator）
+        HTTPException: 403 Forbidden - 权限不足（由 CurrentInternalUserDep 依赖验证）
     """
     return current_user
 
