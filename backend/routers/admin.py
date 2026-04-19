@@ -3,28 +3,27 @@
 小区管理路由
 处理小区查询、搜索和合并操作
 """
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct, desc
-from typing import Optional, List
+from sqlalchemy import func, distinct
+from typing import Annotated, Optional
 import logging
 
-from db import get_db
 from models.community import Community
 from models.property import PropertyCurrent
 from schemas.community import (
     CommunityListResponse,
     CommunityResponse,
     CommunityMergeRequest,
-    CommunityMergeResponse
+    CommunityMergeResponse,
+    DictionaryResponse,
 )
 from services.merger import CommunityMerger
-from dependencies.auth import get_current_operator_user, get_current_admin_user
-from models.user import User
+from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSessionDep
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["管理员"])
 
 class CommunityQueryService:
     """
@@ -109,12 +108,12 @@ service = CommunityQueryService()
 
 @router.get("/communities", response_model=CommunityListResponse)
 def get_communities(
-    search: Optional[str] = Query(None, description="小区名称搜索（模糊匹配）"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user)
-):
+    db: DbSessionDep,
+    current_user: CurrentOperatorUserDep,
+    search: Annotated[str | None, Query(description="小区名称搜索（模糊匹配）")] = None,
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
+) -> CommunityListResponse:
     """
     查询小区列表
     """
@@ -127,14 +126,14 @@ def get_communities(
     return result
 
 
-@router.get("/dictionaries")
+@router.get("/dictionaries", response_model=DictionaryResponse)
 def get_dictionaries(
-    type: str = Query(..., description="字典类型: district | business_circle"),
-    search: Optional[str] = Query(None, description="模糊搜索关键词"),
-    limit: int = Query(50, ge=1, le=500, description="返回数量上限"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_operator_user)
-):
+    db: DbSessionDep,
+    current_user: CurrentOperatorUserDep,
+    type: Annotated[str, Query(description="字典类型: district | business_circle")],
+    search: Annotated[str | None, Query(description="模糊搜索关键词")] = None,
+    limit: Annotated[int, Query(ge=1, le=500, description="返回数量上限")] = 50,
+) -> DictionaryResponse:
     """
     返回行政区或商圈的去重列表
     """
@@ -165,16 +164,16 @@ def get_dictionaries(
     
     # 扁平化结果 (SQLAlchemy 返回的是 Row 对象，例如 [('朝阳区',), ('海淀区',)])
     values = [r[0] for r in results if r[0]]
-    
-    return {"type": type, "items": values}
+
+    return DictionaryResponse(type=type, items=values)
 
 
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
 def merge_communities(
     request: CommunityMergeRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+) -> CommunityMergeResponse:
     """
     合并小区操作
     """
@@ -196,12 +195,11 @@ def merge_communities(
             raise ValueError(result.message)
 
         logger.info(f"小区合并成功: {result.message}")
-        response_data = CommunityMergeResponse(
+        return CommunityMergeResponse(
             success=True,
             affected_properties=result.affected_properties,
             message=result.message
         )
-        return response_data
 
     except ValueError as e:
         logger.warning(f"小区合并业务验证失败: {str(e)}")
