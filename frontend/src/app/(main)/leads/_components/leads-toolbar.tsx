@@ -9,10 +9,10 @@ import { toast } from "sonner";
 
 import { LeadTabValue, LeadStatus } from "../types";
 
-const VALID_TAB_VALUES: string[] = ["all", ...Object.values(LeadStatus)];
+const VALID_TAB_VALUES: LeadTabValue[] = ["all", ...Object.values(LeadStatus)];
 
 function isValidTabValue(value: string): value is LeadTabValue {
-  return VALID_TAB_VALUES.includes(value);
+  return VALID_TAB_VALUES.includes(value as LeadTabValue);
 }
 
 interface LeadsToolbarProps {
