@@ -80,7 +80,7 @@ def format_request_validation_error(error: RequestValidationError) -> str:
         if 'missing' in error_type:
             error_messages.append(f"缺少必填参数: {field}")
         elif 'type_error' in error_type:
-            if 'list' in error_type or 'list' in error_message.lower():
+            if 'list' in error_type or 'is_list' in error_type or 'list' in error_message.lower():
                 error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
             elif 'float' in error_type:
                 error_messages.append(f"参数 {field} 必须是数字")
