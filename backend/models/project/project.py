@@ -38,7 +38,7 @@ ProjectRenovation.photos = relationship("RenovationPhoto", back_populates="renov
 RenovationPhoto.project = relationship("Project", back_populates="renovation_photos")
 RenovationPhoto.renovation = relationship("ProjectRenovation", back_populates="photos")
 
-from ..user.user import User
+from models.user.user import User
 Project.project_manager = relationship("User", back_populates="managed_projects")
 User.managed_projects = relationship("Project", back_populates="project_manager")
 
