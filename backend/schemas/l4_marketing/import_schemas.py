@@ -67,7 +67,7 @@ class L3ProjectImportResponse(BaseModel):
     project_id: str = Field(description="L3项目ID")
 
     # 小区信息
-    community_id: Optional[int] = Field(default=None, description="小区ID")
+    community_id: Optional[str] = Field(default=None, description="小区ID（UUID字符串）")
     community_name: str = Field(description="小区名称")
 
     # 户型信息

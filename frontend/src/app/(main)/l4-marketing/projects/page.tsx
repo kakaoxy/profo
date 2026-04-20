@@ -146,8 +146,8 @@ async function ProjectsDataFetcher({
         page_size: size,
         publish_status: publishStatus || undefined,
         project_status: projectStatus || undefined,
-        consultant_id: consultantId ? Number(consultantId) : undefined,
-        community_id: communityId ? Number(communityId) : undefined,
+        consultant_id: consultantId || undefined,
+        community_id: communityId || undefined,
       } satisfies L4MarketingProjectsQuery,
     },
   });

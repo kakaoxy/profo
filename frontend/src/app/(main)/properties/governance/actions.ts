@@ -16,8 +16,8 @@ interface ApiError {
 }
 
 export async function mergeCommunitiesAction(
-  primaryId: number,
-  mergeIds: number[],
+  primaryId: string,
+  mergeIds: string[],
 ): Promise<MergeResult> {
   if (!primaryId || mergeIds.length === 0) {
     return { success: false, message: "参数错误：未选择主小区或被合并小区" };

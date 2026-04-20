@@ -18,7 +18,7 @@ class MonitorService:
     """市场监控服务"""
 
     @staticmethod
-    def get_market_sentiment(db: Session, community_id: int) -> Dict:
+    def get_market_sentiment(db: Session, community_id: str) -> Dict:
         """Calculate market sentiment (floor stats and inventory months)
         
         去重逻辑: 相同 build_area + floor_level + price 的房源视为同一套房
@@ -102,7 +102,7 @@ class MonitorService:
 
 
     @staticmethod
-    def get_trends(db: Session, community_id: int, months: int) -> List[TrendData]:
+    def get_trends(db: Session, community_id: str, months: int) -> List[TrendData]:
         start_date = datetime.now() - timedelta(days=30 * months)
         
         # Group by Month
@@ -146,11 +146,11 @@ class MonitorService:
         return sorted([TrendData(**v) for v in data_map.values()], key=lambda x: x.month)
 
     @staticmethod
-    def get_competitors(db: Session, community_id: int) -> List[CompetitorResponse]:
+    def get_competitors(db: Session, community_id: str) -> List[CompetitorResponse]:
         comps = db.query(CommunityCompetitor).filter(
             CommunityCompetitor.community_id == community_id
         ).all()
-        
+
         results = []
         for comp in comps:
             c = db.query(Community).filter(Community.id == comp.competitor_community_id).first()
@@ -164,7 +164,7 @@ class MonitorService:
         return results
 
     @staticmethod
-    def add_competitor(db: Session, community_id: int, competitor_id: int):
+    def add_competitor(db: Session, community_id: str, competitor_id: str):
         exists = db.query(CommunityCompetitor).filter(
             CommunityCompetitor.community_id == community_id,
             CommunityCompetitor.competitor_community_id == competitor_id
@@ -173,9 +173,9 @@ class MonitorService:
             new_comp = CommunityCompetitor(community_id=community_id, competitor_community_id=competitor_id)
             db.add(new_comp)
             db.commit()
-            
+
     @staticmethod
-    def remove_competitor(db: Session, community_id: int, competitor_id: int):
+    def remove_competitor(db: Session, community_id: str, competitor_id: str):
         db.query(CommunityCompetitor).filter(
             CommunityCompetitor.community_id == community_id,
             CommunityCompetitor.competitor_community_id == competitor_id
@@ -192,7 +192,7 @@ class MonitorService:
         )
 
     @staticmethod
-    def get_neighborhood_radar(db: Session, community_id: int) -> NeighborhoodRadarResponse:
+    def get_neighborhood_radar(db: Session, community_id: str) -> NeighborhoodRadarResponse:
         """获取周边竞品雷达数据
         
         包含本案小区和所有竞品小区的挂牌/成交统计，按数据来源分渠道

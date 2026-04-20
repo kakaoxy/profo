@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 
 class CommunityResponse(BaseModel):
     """小区响应模型"""
-    id: int
+    id: str
     name: str
     city_id: int | None = None
     district: str | None = None
@@ -31,8 +31,8 @@ class CommunityListResponse(BaseModel):
 
 class CommunityMergeRequest(BaseModel):
     """小区合并请求"""
-    primary_id: int = Field(description="主小区ID")
-    merge_ids: list[int] = Field(min_length=1, description="要合并的小区ID列表")
+    primary_id: str = Field(description="主小区ID（UUID字符串）")
+    merge_ids: list[str] = Field(min_length=1, description="要合并的小区ID列表（UUID字符串）")
 
     @model_validator(mode='after')
     def validate_merge_ids(self):

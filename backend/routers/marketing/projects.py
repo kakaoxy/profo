@@ -72,8 +72,8 @@ async def list_marketing_projects(
     page_size: int = Query(20, ge=1, le=200, description="每页大小"),
     publish_status: Optional[str] = Query(None, description="发布状态: 草稿/发布"),
     project_status: Optional[str] = Query(None, description="项目状态: 在途/在售/已售"),
-    consultant_id: Optional[int] = Query(None, description="顾问ID"),
-    community_id: Optional[int] = Query(None, description="小区ID"),
+    consultant_id: Optional[str] = Query(None, description="顾问ID"),
+    community_id: Optional[str] = Query(None, description="小区ID"),
     service: L4MarketingProjectService = Depends(get_project_service)
 ) -> L4MarketingProjectListResponse:
     """获取营销项目列表 - 统一分页格式"""

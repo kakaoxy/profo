@@ -7,8 +7,8 @@ import type { CompetitorItem } from "../../../actions/monitor-lib/types";
 interface CompetitorListProps {
   competitors: CompetitorItem[];
   loading: boolean;
-  deletingId: number | null;
-  onRemove: (id: number) => void;
+  deletingId: string | null;
+  onRemove: (id: string) => void;
 }
 
 export function CompetitorList({

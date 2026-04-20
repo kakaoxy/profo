@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { searchCommunitiesAction } from "../../../actions/monitor-lib/competitors";
 
 interface CommunitySearchItem {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface UseCommunitySearchProps {
-  existingIds: number[];
-  currentCommunityId: number | null;
+  existingIds: string[];
+  currentCommunityId: string | null;
 }
 
 interface UseCommunitySearchReturn {
@@ -40,7 +40,7 @@ export function useCommunitySearch({
       const result = await searchCommunitiesAction(searchQuery);
       if (isMounted && result.success && result.data) {
         const existing = new Set(existingIds);
-        existing.add(currentCommunityId ?? -1);
+        if (currentCommunityId) existing.add(currentCommunityId);
         setSearchResults(result.data.filter((c) => !existing.has(c.id)));
       }
       if (isMounted) setIsSearching(false);

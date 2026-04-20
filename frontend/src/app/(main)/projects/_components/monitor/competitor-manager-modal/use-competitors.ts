@@ -18,12 +18,12 @@ interface UseCompetitorsProps {
 
 interface UseCompetitorsReturn {
   competitors: CompetitorItem[];
-  communityId: number | null;
+  communityId: string | null;
   loading: boolean;
-  deletingId: number | null;
+  deletingId: string | null;
   refresh: () => void;
-  addCompetitor: (competitorId: number) => Promise<void>;
-  removeCompetitor: (competitorId: number) => Promise<void>;
+  addCompetitor: (competitorId: string) => Promise<void>;
+  removeCompetitor: (competitorId: string) => Promise<void>;
 }
 
 export function useCompetitors({
@@ -32,9 +32,9 @@ export function useCompetitors({
   isOpen,
 }: UseCompetitorsProps): UseCompetitorsReturn {
   const [competitors, setCompetitors] = useState<CompetitorItem[]>([]);
-  const [communityId, setCommunityId] = useState<number | null>(null);
+  const [communityId, setCommunityId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function useCompetitors({
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   const addCompetitor = useCallback(
-    async (competitorId: number) => {
+    async (competitorId: string) => {
       if (!communityId) {
         toast.error("未获取到当前小区信息，无法添加");
         return;
@@ -81,7 +81,7 @@ export function useCompetitors({
   );
 
   const removeCompetitor = useCallback(
-    async (competitorId: number) => {
+    async (competitorId: string) => {
       if (!communityId) return;
       setDeletingId(competitorId);
       const result = await removeCompetitorAction(communityId, competitorId);

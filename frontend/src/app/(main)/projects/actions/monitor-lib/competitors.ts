@@ -86,7 +86,7 @@ export async function searchCommunitiesAction(keyword: string) {
       return { success: false, message: "搜索失败" };
     }
 
-    const { items } = extractPaginatedData<{ id: number; name: string }>(communitiesData);
+    const { items } = extractPaginatedData<{ id: string; name: string }>(communitiesData);
     return { success: true, data: items || [] };
   } catch (e) {
     console.error("搜索小区异常:", e);
@@ -98,8 +98,8 @@ export async function searchCommunitiesAction(keyword: string) {
  * 添加竞品小区
  */
 export async function addCompetitorAction(
-  communityId: number,
-  competitorId: number,
+  communityId: string,
+  competitorId: string,
 ) {
   try {
     const client = await fetchClient();
@@ -126,8 +126,8 @@ export async function addCompetitorAction(
  * 删除竞品小区
  */
 export async function removeCompetitorAction(
-  communityId: number,
-  competitorId: number,
+  communityId: string,
+  competitorId: string,
 ) {
   try {
     const client = await fetchClient();

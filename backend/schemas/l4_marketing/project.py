@@ -15,7 +15,7 @@ from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
 class L4MarketingProjectBase(BaseModel):
     """营销项目基础模型"""
     # 小区信息
-    community_id: int = Field(gt=0, description="关联小区ID")
+    community_id: str = Field(min_length=1, max_length=36, description="关联小区ID（UUID字符串）")
     community_name: str | None = Field(default=None, max_length=200, description="小区名称(冗余存储)")
 
     # 户型信息
@@ -51,7 +51,7 @@ class L4MarketingProjectCreate(L4MarketingProjectBase):
 class L4MarketingProjectUpdate(BaseModel):
     """更新营销项目请求 - 所有字段可选"""
     # 小区信息
-    community_id: int | None = Field(default=None, gt=0, description="关联小区ID")
+    community_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联小区ID（UUID字符串）")
     community_name: str | None = Field(default=None, max_length=200, description="小区名称(冗余存储)")
 
     # 户型信息
@@ -112,7 +112,7 @@ class L4MarketingProjectResponse(BaseModel):
     id: int
 
     # 小区信息
-    community_id: int
+    community_id: str
     community_name: str | None = None
 
     # 户型信息

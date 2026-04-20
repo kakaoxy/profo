@@ -33,8 +33,8 @@ class MarketingProjectService:
         limit: int = 20,
         publish_status: Optional[str] = None,
         project_status: Optional[str] = None,
-        consultant_id: Optional[int] = None,
-        community_id: Optional[int] = None,
+        consultant_id: Optional[str] = None,
+        community_id: Optional[str] = None,
     ) -> Tuple[List[L4MarketingProject], int]:
         """
         获取营销项目列表

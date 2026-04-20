@@ -24,7 +24,7 @@ DbSessionDep = Annotated[Session, Depends(get_db)]
 
 @router.get("/communities/{community_id}/sentiment", response_model=MarketSentimentResponse)
 def get_sentiment(
-    community_id: int,
+    community_id: str,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> MarketSentimentResponse:
@@ -33,7 +33,7 @@ def get_sentiment(
 
 @router.get("/communities/{community_id}/trends", response_model=List[TrendData])
 def get_trends(
-    community_id: int,
+    community_id: str,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     months: Annotated[int, Query(ge=1, le=24)] = 6,
@@ -52,7 +52,7 @@ def generate_strategy(
 
 @router.get("/communities/{community_id}/radar", response_model=NeighborhoodRadarResponse)
 def get_neighborhood_radar(
-    community_id: int,
+    community_id: str,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> NeighborhoodRadarResponse:
@@ -65,7 +65,7 @@ def get_neighborhood_radar(
 
 @community_router.get("/{community_id}/competitors", response_model=List[CompetitorResponse])
 def get_competitors(
-    community_id: int,
+    community_id: str,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> List[CompetitorResponse]:
@@ -74,7 +74,7 @@ def get_competitors(
 
 @community_router.post("/{community_id}/competitors", status_code=201)
 def add_competitor(
-    community_id: int,
+    community_id: str,
     request: AddCompetitorRequest,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
@@ -84,8 +84,8 @@ def add_competitor(
 
 @community_router.delete("/{community_id}/competitors/{competitor_id}", status_code=204)
 def remove_competitor(
-    community_id: int,
-    competitor_id: int,
+    community_id: str,
+    competitor_id: str,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> None:

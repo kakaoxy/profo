@@ -195,8 +195,13 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
 // 将API响应转换为表单值
 // 注意：后端现在直接返回数组格式，无需再进行 split 转换
 export function projectToFormValues(project: Record<string, unknown>): FormValues {
+  // 将 community_id 转换为字符串（支持数字和字符串类型）
+  const communityId = project.community_id !== undefined && project.community_id !== null
+    ? String(project.community_id)
+    : "";
+
   return {
-    community_id: (project.community_id as string) || "",
+    community_id: communityId,
     community_name: (project.community_name as string) || undefined,
     layout: (project.layout as string) || "",
     orientation: (project.orientation as string) || "",
@@ -247,9 +252,14 @@ export function importDataToFormValues(data: Record<string, unknown>): Partial<F
   // project_id 保持字符串类型（后端返回的是UUID字符串）
   const projectId = (data.project_id as string) || undefined;
 
+  // 将 community_id 转换为字符串（支持数字和字符串类型）
+  const communityId = data.community_id !== undefined && data.community_id !== null
+    ? String(data.community_id)
+    : "";
+
   return {
     project_id: projectId,
-    community_id: (data.community_id as string) || "",
+    community_id: communityId,
     community_name: (data.community_name as string) || "",
     layout: (data.layout as string) || "",
     orientation: (data.orientation as string) || "",

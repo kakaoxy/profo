@@ -40,7 +40,7 @@ class TrendResponse(BaseModel):
 # --- Neighboring Competitors ---
 
 class CompetitorResponse(BaseModel):
-    community_id: int
+    community_id: str
     community_name: str
     avg_price: float
     on_sale_count: int
@@ -49,7 +49,7 @@ class CompetitorResponse(BaseModel):
 
 
 class AddCompetitorRequest(BaseModel):
-    competitor_community_id: int
+    competitor_community_id: str
 
 
 # --- AI Strategy ---
@@ -76,7 +76,7 @@ class AIStrategyResponse(BaseModel):
 
 class NeighborhoodRadarItem(BaseModel):
     """周边竞品雷达单项数据"""
-    community_id: int
+    community_id: str
     community_name: str
     is_subject: bool
     listing_count: int
