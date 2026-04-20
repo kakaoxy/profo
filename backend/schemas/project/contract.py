@@ -4,7 +4,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
-from pydantic import BaseModel, Field, ConfigDict, AliasChoices
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class SigningMaterial(BaseModel):

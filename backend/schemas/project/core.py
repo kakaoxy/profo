@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
 from models.base import ProjectStatus
 
 if TYPE_CHECKING:
-    from .project_sales import SalesRecordResponse
-    from .project_renovation import RenovationPhotoResponse
+    from .sales import SalesRecordResponse
+    from .renovation import RenovationPhotoResponse
     from .contract import SigningMaterial
 
 
@@ -225,7 +225,7 @@ class ProjectResponse(BaseModel):
 
 
 # 统一分页响应格式 - 继承自 PaginatedResponse
-from .common import PaginatedResponse
+from ..response import PaginatedResponse
 
 class ProjectListResponse(PaginatedResponse[ProjectResponse]):
     """项目列表响应 - 统一分页格式"""

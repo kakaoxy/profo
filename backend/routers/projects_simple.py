@@ -56,7 +56,7 @@ def get_projects(
         items=result["items"],
         total=result["total"],
         page=page,
-        size=page_size
+        page_size=page_size
     )
 
 

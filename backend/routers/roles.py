@@ -36,7 +36,7 @@ def get_roles(
         total=total,
         items=roles,
         page=page,
-        size=page_size
+        page_size=page_size
     )
 
 

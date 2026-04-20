@@ -119,7 +119,7 @@ class PropertyQueryService:
         return PaginatedPropertyResponse(
             total=total,
             page=page,
-            size=page_size,
+            page_size=page_size,
             items=items
         )
     

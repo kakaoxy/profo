@@ -1,6 +1,19 @@
 """
 数据验证模型 (Pydantic Schemas)
 按功能模块拆分的Pydantic模型
+
+目录结构:
+- common.py: 通用模型（分页、基础响应等）
+- response.py: 统一API响应模型
+- enums.py: 枚举类型定义
+- upload.py: 上传和导入相关
+- project/: 项目管理相关
+- property/: 房源管理相关
+- lead/: Leads管理相关
+- community/: 小区管理相关
+- user/: 用户和认证相关
+- monitor/: 监控和市场分析相关
+- l4_marketing/: L4市场营销层
 """
 
 from .enums import IngestionStatus, MediaTypeEnum
@@ -17,6 +30,7 @@ from .common import (
     FloorInfo
 )
 
+# 3. Property (房源)
 from .property import (
     PropertyIngestionModel,
     PropertyResponse,
@@ -25,16 +39,19 @@ from .property import (
     PropertyHistoryResponse,
     FloorInfo,
 )
+
+# 4. Community (小区)
 from .community import (
     CommunityResponse,
     CommunityListResponse,
     CommunityMergeRequest,
     CommunityMergeResponse,
 )
+
+# 5. Upload (上传导入)
 from .upload import UploadResult, PushResult, ImportResult, BatchImportResult
 
-# 2. 导入 Project (从聚合文件导入，或直接从子模块导入)
-# 这里保持从 .project 导入，因为我们在上一步已经把 .project 做成了聚合入口
+# 6. Project (项目) - 从新位置导入
 from .project import (
     BaseResponse,
     ProjectCreate,
@@ -57,6 +74,7 @@ from .project import (
     ProjectReportResponse,
 )
 
+# 7. User (用户)
 from .user import (
     UserCreate,
     UserUpdate,
@@ -73,6 +91,32 @@ from .user import (
     WechatLoginRequest,
 )
 
+# 8. Lead (Leads管理)
+from .lead import (
+    LeadCreate,
+    LeadUpdate,
+    LeadResponse,
+    PaginatedLeadResponse,
+    LeadListItem,
+    PaginatedLeadListResponse,
+)
+
+# 9. Monitor (监控和市场分析)
+from .monitor import (
+    FloorStats,
+    MarketSentimentResponse,
+    TrendData,
+    TrendResponse,
+    CompetitorResponse,
+    AddCompetitorRequest,
+    AIStrategyRequest,
+    RiskPoints,
+    AIStrategyResponse,
+    NeighborhoodRadarItem,
+    NeighborhoodRadarResponse,
+)
+
+# 10. L4 Marketing
 from .l4_marketing import (
     PublishStatus,
     MarketingProjectStatus,
@@ -163,6 +207,27 @@ __all__ = [
     'TokenResponse',
     'RefreshTokenRequest',
     'WechatLoginRequest',
+
+    # Lead
+    'LeadCreate',
+    'LeadUpdate',
+    'LeadResponse',
+    'PaginatedLeadResponse',
+    'LeadListItem',
+    'PaginatedLeadListResponse',
+
+    # Monitor
+    'FloorStats',
+    'MarketSentimentResponse',
+    'TrendData',
+    'TrendResponse',
+    'CompetitorResponse',
+    'AddCompetitorRequest',
+    'AIStrategyRequest',
+    'RiskPoints',
+    'AIStrategyResponse',
+    'NeighborhoodRadarItem',
+    'NeighborhoodRadarResponse',
 
     # L4 Marketing
     'PublishStatus',

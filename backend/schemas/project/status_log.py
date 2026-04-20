@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
-from .common import PaginatedResponse
+from ..response import PaginatedResponse
 
 
 class StatusLogBase(BaseModel):

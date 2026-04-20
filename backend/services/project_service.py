@@ -25,8 +25,8 @@ from .project_finance import ProjectFinanceService
 # 导入模型和 Schema 类型
 from models import Project, ProjectRenovation, RenovationPhoto, ProjectInteraction
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
-from schemas.project_renovation import RenovationUpdate, RenovationContractUpdate
-from schemas.project_sales import SalesRolesUpdate, SalesRecordCreate, ProjectCompleteRequest
+from schemas.project.renovation import RenovationUpdate, RenovationContractUpdate
+from schemas.project.sales import SalesRolesUpdate, SalesRecordCreate, ProjectCompleteRequest
 
 
 class ProjectService:

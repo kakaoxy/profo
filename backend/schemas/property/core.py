@@ -1,6 +1,9 @@
+"""
+房源核心接收模型
+"""
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
-from .enums import IngestionStatus
+from ..enums import IngestionStatus
 
 
 class PropertyIngestionModel(BaseModel):

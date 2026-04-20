@@ -90,7 +90,7 @@ async def list_marketing_projects(
         items=items,
         total=total,
         page=page,
-        size=page_size
+        page_size=page_size
     )
 
 
@@ -186,7 +186,7 @@ async def list_marketing_media(
         items=items,
         total=total,
         page=page,
-        size=page_size
+        page_size=page_size
     )
 
 
