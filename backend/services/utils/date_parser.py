@@ -1,60 +1,49 @@
 """
-日期解析工具模块
-提供日期字符串到 datetime 对象的解析功能
+日期解析工具函数
 """
+from datetime import datetime, date
+from typing import Union, Optional
 
-from typing import Optional, Union
-from datetime import datetime
 
-
-def parse_date_string(value: Union[str, datetime, None]) -> Optional[datetime]:
+def parse_date_string(date_value: Union[str, datetime, date, None]) -> Optional[datetime]:
     """
-    解析日期字符串为 datetime 对象
-
-    支持格式:
-        - YYYY-MM-DD (标准日期格式)
-        - ISO 格式字符串
-        - datetime 对象（直接返回）
-        - YYYY-MM-DDTHH:MM:SS.sssZ (UTC格式)
+    解析日期字符串或日期对象为 datetime 对象
 
     Args:
-        value: 待解析的日期值，可以是字符串、datetime对象或None
+        date_value: 日期字符串、datetime 对象、date 对象或 None
 
     Returns:
-        解析后的 datetime 对象，解析失败或输入为None时返回None
-
-    Examples:
-        >>> parse_date_string("2024-01-15")
-        datetime(2024, 1, 15, 0, 0)
-        >>> parse_date_string(datetime.now())
-        datetime(2024, 1, 15, 10, 30, 0)
-        >>> parse_date_string(None)
-        None
+        datetime 对象或 None
     """
-    if value is None:
+    if date_value is None:
         return None
 
-    if isinstance(value, datetime):
-        return value
+    if isinstance(date_value, datetime):
+        return date_value
 
-    if isinstance(value, str):
-        # 尝试解析 YYYY-MM-DD 格式
-        if len(value) == 10 and value.count('-') == 2:
+    if isinstance(date_value, date):
+        return datetime.combine(date_value, datetime.min.time())
+
+    if isinstance(date_value, str):
+        # 尝试多种日期格式
+        formats = [
+            "%Y-%m-%d",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y/%m/%d",
+            "%Y/%m/%d %H:%M:%S",
+            "%d-%m-%Y",
+            "%d/%m/%Y",
+        ]
+
+        for fmt in formats:
             try:
-                year, month, day = map(int, value.split('-'))
-                return datetime(year, month, day)
+                return datetime.strptime(date_value.strip(), fmt)
             except ValueError:
-                pass
+                continue
 
-        # 尝试解析 ISO 格式
+        # 如果都失败了，尝试 ISO 格式
         try:
-            return datetime.fromisoformat(value.replace('Z', '+00:00').replace('+00:00', ''))
-        except ValueError:
-            pass
-
-        # 尝试其他格式
-        try:
-            return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            return datetime.fromisoformat(date_value.replace('Z', '+00:00'))
         except ValueError:
             pass
 

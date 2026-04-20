@@ -1,3 +1,7 @@
+"""
+角色服务
+处理角色管理的业务逻辑
+"""
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Optional, List
@@ -5,7 +9,10 @@ from typing import Optional, List
 from models.user import Role
 from schemas.user import RoleCreate, RoleUpdate
 
+
 class RoleService:
+    """角色服务"""
+
     def get_roles(
         self, 
         db: Session, 
@@ -15,6 +22,7 @@ class RoleService:
         page: int = 1,
         page_size: int = 50
     ) -> tuple[int, List[Role]]:
+        """获取角色列表"""
         query = db.query(Role)
         
         if name:
@@ -31,9 +39,11 @@ class RoleService:
         return total, roles
 
     def get_role_by_id(self, db: Session, role_id: str) -> Optional[Role]:
+        """根据ID获取角色"""
         return db.query(Role).filter(Role.id == role_id).first()
 
     def create_role(self, db: Session, role_data: RoleCreate) -> Role:
+        """创建角色"""
         # Check name existence
         existing_name = db.query(Role).filter(Role.name == role_data.name).first()
         if existing_name:
@@ -57,6 +67,7 @@ class RoleService:
         return db_role
 
     def update_role(self, db: Session, role_id: str, role_data: RoleUpdate) -> Role:
+        """更新角色"""
         role = self.get_role_by_id(db, role_id)
         if not role:
             raise HTTPException(
@@ -97,6 +108,7 @@ class RoleService:
         return role
 
     def delete_role(self, db: Session, role_id: str) -> dict:
+        """删除角色"""
         role = self.get_role_by_id(db, role_id)
         if not role:
             raise HTTPException(
@@ -114,4 +126,6 @@ class RoleService:
         db.commit()
         return {"message": "角色删除成功"}
 
+
+# 全局服务实例
 role_service = RoleService()

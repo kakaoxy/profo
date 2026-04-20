@@ -1,3 +1,10 @@
+"""
+认证服务层
+
+将业务逻辑从路由中分离，处理并发阻塞问题：
+- 数据库操作 (Sync) -> 供路由层 run_in_threadpool 调用或 def 路由直接调用
+- 外部 API 调用 (Async) -> 供 async 路由调用
+"""
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
@@ -19,6 +26,7 @@ from utils.auth import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 class AuthService:
     """
@@ -64,8 +72,6 @@ class AuthService:
                 data={"sub": user.id, "role": user.role.code, "scope": "reset_password"},
                 expires_delta=temp_expires
             )
-            # 通过异常或特定返回结构传递给 Router 处理
-            # 这里选择返回特定字典让 Router 抛出异常
             return {
                 "require_password_change": True,
                 "temp_token": temp_token

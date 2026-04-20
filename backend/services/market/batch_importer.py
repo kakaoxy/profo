@@ -14,13 +14,14 @@ from sqlalchemy.orm import Session
 from pydantic import ValidationError
 
 from schemas import PropertyIngestionModel, UploadResult
-from services.importer import PropertyImporter
+from .importer import PropertyImporter
 from models import FailedRecord
 from exceptions import FileProcessingException
 from utils.error_formatters import format_validation_error
-from services.error_service import save_failed_record
+from services.system import save_failed_record
 
 logger = logging.getLogger(__name__)
+
 
 class CSVBatchImporter:
     """CSV 批量导入处理器"""

@@ -14,7 +14,7 @@ from schemas.monitor import (
     NeighborhoodRadarResponse,
     TrendData,
 )
-from services.monitor_service import MonitorService
+from services.monitor import MonitorService
 
 router = APIRouter(prefix="/monitor")
 community_router = APIRouter(prefix="/communities")

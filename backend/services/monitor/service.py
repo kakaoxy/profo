@@ -1,14 +1,22 @@
+"""
+市场监控服务
+提供市场分析、竞品监控、趋势数据等功能
+"""
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_, desc, extract
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
+
 from models import PropertyCurrent, PropertyHistory, Community, CommunityCompetitor, PropertyStatus, Project
 from schemas.monitor import (
     FloorStats, TrendData, CompetitorResponse, RiskPoints, AIStrategyResponse,
     NeighborhoodRadarItem, NeighborhoodRadarResponse
 )
 
+
 class MonitorService:
+    """市场监控服务"""
+
     @staticmethod
     def get_market_sentiment(db: Session, community_id: int) -> Dict:
         """Calculate market sentiment (floor stats and inventory months)
@@ -16,7 +24,6 @@ class MonitorService:
         去重逻辑: 相同 build_area + floor_level + price 的房源视为同一套房
         """
         # 1. 查询当前挂牌房源 - 使用子查询去重
-        # 去重条件: build_area, floor_level, listed_price_wan 相同则为重复
         from sqlalchemy import distinct, tuple_
         
         # 获取去重后的挂牌房源统计
@@ -36,8 +43,6 @@ class MonitorService:
             func.count().label("count"),
             func.avg(current_subquery.c.listed_price_wan).label("avg_price")
         ).group_by(current_subquery.c.floor_level).all()
-        
-        # print(f"[MonitorService] community_id={community_id}, current_query (deduplicated): {current_query}")
         
         # 2. 查询过去12个月成交房源 - 同样去重
         one_year_ago = datetime.now() - timedelta(days=365)
@@ -59,8 +64,6 @@ class MonitorService:
             func.count().label("count"),
             func.avg(deals_subquery.c.sold_price_wan).label("avg_price")
         ).group_by(deals_subquery.c.floor_level).all()
-        
-        # print(f"[MonitorService] deals_query (deduplicated): {deals_query}")
         
         # 3. 楼层级别映射: DB存储 '高楼层/中楼层/低楼层', API返回 'high/mid/low'
         db_level_map = {'high': '高楼层', 'mid': '中楼层', 'low': '低楼层'}
@@ -105,23 +108,18 @@ class MonitorService:
         # Group by Month
         # SQLite uses strftime('%Y-%m', date_column)
         
-        # Listings (History table or Current table listed_date)
-        # Using Current table listed_date for simplicity of active market trends
-        
         # Deals
         deals = db.query(
             func.strftime('%Y-%m', PropertyCurrent.sold_date).label('month'),
             func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000).label('avg_deal_price'),
-            func.count(PropertyCurrent.id).label('volume')
+            func.count(PropertyCurrent.id).label("volume")
         ).filter(
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.SOLD,
             PropertyCurrent.sold_date >= start_date
         ).group_by('month').all()
         
-        # Listings Price (avg listing price of properties listed or active in that month?)
-        # This is harder to reconstruct from just 'current' table.
-        # We can use PropertyHistory or just current listed properties listed in that month.
+        # Listings Price
         listings = db.query(
              func.strftime('%Y-%m', PropertyCurrent.listed_date).label('month'),
              func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label('avg_list_price')
@@ -160,8 +158,8 @@ class MonitorService:
                 results.append(CompetitorResponse(
                     community_id=c.id,
                     community_name=c.name,
-                    avg_price=c.avg_price_wan * 10000 if c.avg_price_wan else 0, # Assuming wan -> unit price estimate? Or just wan total? API says 52000, likely unit price.
-                    on_sale_count=c.total_properties # Or real-time count
+                    avg_price=c.avg_price_wan * 10000 if c.avg_price_wan else 0,
+                    on_sale_count=c.total_properties
                 ))
         return results
 
@@ -187,7 +185,6 @@ class MonitorService:
     @staticmethod
     def generate_ai_strategy(db: Session, project_id: str, context: str) -> AIStrategyResponse:
         # Mock implementation for now
-        # Ideally: Fetch project info -> Build Prompt -> Call LLM -> Parse
         return AIStrategyResponse(
             report_markdown="### AI Analysis\nBased on current market trends (Mock Data), the property is well positioned...",
             risk_points=RiskPoints(profit_critical_price=2000000, daily_cost=500),
@@ -247,7 +244,6 @@ class MonitorService:
         ).group_by(PropertyCurrent.community_id, PropertyCurrent.data_source).all()
 
         # 5. 在内存中聚合数据
-        # 初始化 stats 结构
         all_stats = {cid: {
             "listing_count": 0, "listing_beike": 0, "listing_iaij": 0, "listing_total_price": 0.0,
             "deal_count": 0, "deal_beike": 0, "deal_iaij": 0, "deal_total_price": 0.0
@@ -256,7 +252,7 @@ class MonitorService:
         # 处理挂牌数据
         for row in listing_query:
             cid = row.community_id
-            if cid not in all_stats: continue # Should not happen
+            if cid not in all_stats: continue
             src = (row.data_source or "").lower()
             count = row.count
             avg = row.avg_price or 0
@@ -285,8 +281,7 @@ class MonitorService:
             elif "5i5j" in src or "我爱" in src or "iaij" in src:
                 all_stats[cid]["deal_iaij"] += count
 
-        # 6. 获取本案成交均价作为基准 (计算 ultimate averages)
-        # 先处理所有 final averages
+        # 6. 获取本案成交均价作为基准
         final_stats = {}
         for cid, data in all_stats.items():
             l_count = data["listing_count"]
@@ -311,7 +306,7 @@ class MonitorService:
             # 计算价差
             if is_subject:
                 spread_percent = 0.0
-                spread_label = "[ 📍 当前位置 ]"
+                spread_label = "[ 当前位置 ]"
             elif subject_deal_avg > 0 and stats["deal_avg_price"] > 0:
                 spread_percent = ((stats["deal_avg_price"] - subject_deal_avg) / subject_deal_avg) * 100
                 if spread_percent > 0:

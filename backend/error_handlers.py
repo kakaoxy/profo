@@ -17,7 +17,7 @@ from starlette.concurrency import run_in_threadpool
 
 from exceptions import ProfoException
 from utils.error_formatters import format_request_validation_error, format_database_error
-from services.error_service import save_failed_record
+from services.system import save_failed_record
 
 logger = logging.getLogger(__name__)
 

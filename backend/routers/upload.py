@@ -12,7 +12,7 @@ from db import get_db
 from schemas import UploadResult
 from exceptions import FileProcessingException, ResourceNotFoundException
 from dependencies.auth import get_current_internal_user
-from services.csv_batch_importer import CSVBatchImporter
+from services.market import CSVBatchImporter
 
 logger = logging.getLogger(__name__)
 

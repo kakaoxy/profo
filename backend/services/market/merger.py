@@ -1,3 +1,7 @@
+"""
+小区合并服务
+处理小区的合并逻辑，包括别名迁移、房源更新及状态变更
+"""
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
@@ -6,10 +10,9 @@ import logging
 
 from models.community import Community, CommunityAlias
 from models.property import PropertyCurrent
-# 假设 MergeResult 定义在 schemas 或 dto 中，这里保留原有类定义
-# from schemas import CommunityMergeResponse
 
 logger = logging.getLogger(__name__)
+
 
 class MergeResult:
     """合并结果值对象"""
@@ -17,6 +20,7 @@ class MergeResult:
         self.success = success
         self.affected_properties = affected_properties
         self.message = message
+
 
 class CommunityMerger:
     """

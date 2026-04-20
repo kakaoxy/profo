@@ -1,3 +1,7 @@
+"""
+用户服务
+处理用户管理的业务逻辑
+"""
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Optional, List
@@ -6,7 +10,10 @@ from models.user import User
 from schemas.user import UserCreate, UserUpdate, PasswordResetRequest, PasswordChange
 from utils.auth import get_password_hash, verify_password, validate_password_strength
 
+
 class UserService:
+    """用户服务"""
+
     def get_users(
         self, 
         db: Session, 
@@ -17,6 +24,7 @@ class UserService:
         page: int = 1,
         page_size: int = 50
     ) -> tuple[int, List[User]]:
+        """获取用户列表"""
         query = db.query(User)
         
         if username:
@@ -35,9 +43,11 @@ class UserService:
         return total, users
 
     def get_user_by_id(self, db: Session, user_id: str) -> Optional[User]:
+        """根据ID获取用户"""
         return db.query(User).filter(User.id == user_id).first()
 
     def create_user(self, db: Session, user_data: UserCreate) -> User:
+        """创建用户"""
         # Check username existence
         existing_user = db.query(User).filter(User.username == user_data.username).first()
         if existing_user:
@@ -75,6 +85,7 @@ class UserService:
         return db_user
 
     def update_user(self, db: Session, user_id: str, user_data: UserUpdate) -> User:
+        """更新用户"""
         user = self.get_user_by_id(db, user_id)
         if not user:
             raise HTTPException(
@@ -103,6 +114,7 @@ class UserService:
         return user
 
     def reset_password(self, db: Session, user_id: str, password_data: PasswordResetRequest) -> dict:
+        """重置密码"""
         user = self.get_user_by_id(db, user_id)
         if not user:
             raise HTTPException(
@@ -122,6 +134,7 @@ class UserService:
         return {"message": "密码重置成功"}
 
     def delete_user(self, db: Session, user_id: str, current_user_id: str) -> dict:
+        """删除用户"""
         if user_id == current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -140,6 +153,7 @@ class UserService:
         return {"message": "用户删除成功"}
 
     def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict:
+        """修改密码"""
         if not verify_password(password_data.current_password, current_user.password):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -158,4 +172,6 @@ class UserService:
         db.commit()
         return {"message": "密码修改成功"}
 
+
+# 全局服务实例
 user_service = UserService()

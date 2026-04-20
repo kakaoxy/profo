@@ -12,7 +12,6 @@ from fastapi import HTTPException, status
 from models import Project
 from models.base import ProjectStatus
 from schemas.project import StatusUpdate
-from services.utils import parse_date_string
 
 
 class ProjectStateManager:
@@ -120,6 +119,7 @@ class ProjectStateManager:
             status_update: 状态更新数据
         """
         from models.project import ProjectSale
+        from services.utils import parse_date_string
 
         if new_status == ProjectStatus.SELLING.value:
             sale = self.db.query(ProjectSale).filter(

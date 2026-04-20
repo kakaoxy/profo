@@ -19,6 +19,7 @@ ErrorSessionLocal = sessionmaker(
     bind=engine
 )
 
+
 def save_failed_record(
     data: Dict[str, Any],
     error_message: str,

@@ -18,9 +18,7 @@ from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.base import ProjectStatus
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
 from services.utils import parse_date_string
-from services.builders import ProjectResponseBuilder
-from services.queries import ProjectQueryService
-from services.state import ProjectStateManager
+from .internal import ProjectQueryService, ProjectResponseBuilder, ProjectStateManager
 
 
 class ProjectCoreService:

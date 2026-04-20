@@ -1,3 +1,7 @@
+"""
+房源导入服务
+处理房源数据的导入、更新和历史快照记录
+"""
 from datetime import datetime
 from typing import Optional, Tuple, Any, List
 from sqlalchemy.orm import Session
@@ -9,11 +13,12 @@ from models import (
     PropertyStatus, ChangeType, PropertyMedia, MediaType
 )
 from schemas import PropertyIngestionModel, ImportResult, UploadResult, PushResult, BatchImportResult, FloorInfo
-from services.parser import FloorParser
 from utils.error_formatters import format_database_error
-from services.error_service import save_failed_record
+from services.system import save_failed_record
+from .parser import FloorParser
 
 logger = logging.getLogger(__name__)
+
 
 class PropertyImporter:
     """处理房源数据导入的核心服务"""
