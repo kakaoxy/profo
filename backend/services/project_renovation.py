@@ -13,7 +13,7 @@ import uuid
 
 from models import Project, ProjectRenovation, RenovationPhoto
 from models.base import ProjectStatus
-from schemas.project_renovation import RenovationUpdate, RenovationContractUpdate
+from schemas.project.renovation import RenovationUpdate, RenovationContractUpdate
 
 
 class ProjectRenovationService:

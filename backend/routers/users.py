@@ -49,7 +49,7 @@ def get_users(
         total=total,
         items=users,
         page=page,
-        size=page_size
+        page_size=page_size
     )
 
 
@@ -91,7 +91,7 @@ def get_users_simple(
         total=len(items),
         items=items,
         page=page,
-        size=page_size
+        page_size=page_size
     )
 
 

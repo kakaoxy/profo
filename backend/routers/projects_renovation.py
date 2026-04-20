@@ -3,7 +3,7 @@ from fastapi import APIRouter, Path, Query
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import RenovationUpdate, RenovationPhotoResponse, ProjectResponse
-from schemas.project_renovation import RenovationContractUpdate, RenovationContractResponse
+from schemas.project.renovation import RenovationContractUpdate, RenovationContractResponse
 
 router = APIRouter()
 

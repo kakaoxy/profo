@@ -1,5 +1,9 @@
+"""
+监控和市场分析相关Schema
+"""
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
+
 
 # --- Market Sentiment ---
 
@@ -10,11 +14,13 @@ class FloorStats(BaseModel):
     current_count: int
     current_avg_price: float
 
+
 class MarketSentimentResponse(BaseModel):
     floor_stats: list[FloorStats]
     inventory_months: float
 
     model_config = ConfigDict(from_attributes=True)
+
 
 # --- Trend & Positioning ---
 
@@ -24,10 +30,12 @@ class TrendData(BaseModel):
     deal_price: float
     volume: int
 
+
 class TrendResponse(BaseModel):
     trends: list[TrendData]
 
     model_config = ConfigDict(from_attributes=True)
+
 
 # --- Neighboring Competitors ---
 
@@ -39,8 +47,10 @@ class CompetitorResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class AddCompetitorRequest(BaseModel):
     competitor_community_id: int
+
 
 # --- AI Strategy ---
 
@@ -48,9 +58,11 @@ class AIStrategyRequest(BaseModel):
     project_id: str
     user_context: str
 
+
 class RiskPoints(BaseModel):
     profit_critical_price: float
     daily_cost: float
+
 
 class AIStrategyResponse(BaseModel):
     report_markdown: str
@@ -87,3 +99,22 @@ class NeighborhoodRadarResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+__all__ = [
+    # Market Sentiment
+    "FloorStats",
+    "MarketSentimentResponse",
+    # Trend
+    "TrendData",
+    "TrendResponse",
+    # Competitors
+    "CompetitorResponse",
+    "AddCompetitorRequest",
+    # AI Strategy
+    "AIStrategyRequest",
+    "RiskPoints",
+    "AIStrategyResponse",
+    # Neighborhood Radar
+    "NeighborhoodRadarItem",
+    "NeighborhoodRadarResponse",
+]

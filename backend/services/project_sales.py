@@ -12,7 +12,7 @@ import uuid
 
 from models import Project, ProjectSale, ProjectInteraction, User
 from models.base import ProjectStatus
-from schemas.project_sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
+from schemas.project.sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
 from schemas.project import ProjectResponse
 from services.builders import ProjectResponseBuilder
 

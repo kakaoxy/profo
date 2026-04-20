@@ -55,3 +55,12 @@ class DictionaryResponse(BaseModel):
     """字典响应模型"""
     type: str
     items: list[str]
+
+
+__all__ = [
+    "CommunityResponse",
+    "CommunityListResponse",
+    "CommunityMergeRequest",
+    "CommunityMergeResponse",
+    "DictionaryResponse",
+]

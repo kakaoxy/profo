@@ -12,14 +12,14 @@ T = TypeVar("T")
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """统一分页响应格式
-    
+
     符合 AGENTS.md 规范第 29 条:
-    列表接口必须返回 items/total/page/size 固定结构
+    列表接口必须返回 items/total/page/page_size 固定结构
     """
     items: List[T] = Field(..., description="数据列表")
     total: int = Field(..., description="总记录数")
     page: int = Field(..., description="当前页码")
-    size: int = Field(..., description="每页数量")
+    page_size: int = Field(..., description="每页数量")
 
     model_config = ConfigDict(from_attributes=True)
 

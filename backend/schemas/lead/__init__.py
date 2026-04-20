@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 from models.base import LeadStatus, FollowUpMethod
 
+
 # ----------------------
 # Follow Up Schemas
 # ----------------------
@@ -13,8 +14,10 @@ class FollowUpBase(BaseModel):
     method: FollowUpMethod
     content: str
 
+
 class FollowUpCreate(FollowUpBase):
     pass
+
 
 class FollowUpResponse(FollowUpBase):
     id: str
@@ -25,6 +28,7 @@ class FollowUpResponse(FollowUpBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 # ----------------------
 # Price History Schemas
 # ----------------------
@@ -32,8 +36,10 @@ class PriceHistoryBase(BaseModel):
     price: float
     remark: str | None = None
 
+
 class PriceHistoryCreate(PriceHistoryBase):
     pass
+
 
 class PriceHistoryResponse(PriceHistoryBase):
     id: str
@@ -43,6 +49,7 @@ class PriceHistoryResponse(PriceHistoryBase):
     created_by_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 # ----------------------
 # Lead Schemas
@@ -64,9 +71,11 @@ class LeadBase(BaseModel):
     
     source_property_id: int | None = None
 
+
 class LeadCreate(LeadBase):
     status: LeadStatus | None = LeadStatus.PENDING_ASSESSMENT
     images: list[str] = []
+
 
 class LeadUpdate(BaseModel):
     community_name: str | None = None
@@ -89,6 +98,7 @@ class LeadUpdate(BaseModel):
 
     last_follow_up_at: datetime | None = None
 
+
 class LeadResponse(LeadBase):
     id: str
     status: LeadStatus
@@ -106,6 +116,7 @@ class LeadResponse(LeadBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class PaginatedLeadResponse(BaseModel):
     items: list[LeadResponse]
@@ -155,3 +166,22 @@ class PaginatedLeadListResponse(BaseModel):
     page: int
     page_size: int
 
+
+__all__ = [
+    # Follow Up
+    "FollowUpBase",
+    "FollowUpCreate",
+    "FollowUpResponse",
+    # Price History
+    "PriceHistoryBase",
+    "PriceHistoryCreate",
+    "PriceHistoryResponse",
+    # Lead
+    "LeadBase",
+    "LeadCreate",
+    "LeadUpdate",
+    "LeadResponse",
+    "PaginatedLeadResponse",
+    "LeadListItem",
+    "PaginatedLeadListResponse",
+]

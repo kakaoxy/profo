@@ -1,8 +1,11 @@
+"""
+房源响应模型
+"""
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
-from .common import PaginatedResponse
+from ..response import PaginatedResponse
 
 
 class PropertyResponse(BaseModel):
@@ -293,7 +296,6 @@ class PropertyDetailResponse(BaseModel):
             sold_date=property_obj.sold_date,
             transaction_duration_days=transaction_duration_days,
             transaction_duration_display=transaction_duration_display,
-            discount_rate_display=discount_rate_display,
             property_type=property_obj.property_type,
             build_year=property_obj.build_year,
             building_structure=property_obj.building_structure,

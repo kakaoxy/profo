@@ -4,7 +4,8 @@
 from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
-from .common import PaginatedResponse
+
+from ..response import PaginatedResponse
 
 
 # =======================================
