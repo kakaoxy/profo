@@ -1,36 +1,30 @@
 """
-backend/services/cashflow_service.py
-现金流业务逻辑服务
+项目财务业务服务
 
-注意：已适配新的规范化表结构，使用 FinanceRecord 替换 CashFlowRecord
+负责：项目财务计算、现金流记录管理、财务报告生成
+注意：已适配新的规范化表结构，财务流水使用 FinanceRecord 表
 """
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from typing import Dict, Any, List
 from decimal import Decimal
+from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func
 from fastapi import HTTPException, status
 import logging
 
 from models import FinanceRecord, Project, ProjectContract, ProjectSale
 from models.base import CashFlowType, CashFlowCategory
 
-# [新增] 引入负责计算财务数据的服务
-from services.project_finance import ProjectFinanceService
-
-# 配置日志记录
 logger = logging.getLogger(__name__)
 
 
-class CashFlowService:
-    """现金流业务逻辑服务"""
+class FinanceService:
+    """项目财务服务"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
-        # [新增] 初始化财务服务实例
-        self.finance_service = ProjectFinanceService(db)
 
-    def create_cashflow_record(self, project_id: str, record_data) -> FinanceRecord:
+    def create_record(self, project_id: str, record_data) -> FinanceRecord:
         """创建现金流记录"""
         logger.info(f"Creating cashflow record for project {project_id}")
 
@@ -45,12 +39,12 @@ class CashFlowService:
 
         # 验证现金流类型和分类匹配
         try:
-            self._validate_cashflow_category(record_data.type, record_data.category)
+            self._validate_category(record_data.type, record_data.category)
         except HTTPException as e:
             logger.error(f"Cashflow category validation failed: {e.detail}")
             raise
 
-        # 创建新的 FinanceRecord（替换原来的 CashFlowRecord）
+        # 创建新的 FinanceRecord
         record = FinanceRecord(
             project_id=project_id,
             type=record_data.type.value,
@@ -66,9 +60,9 @@ class CashFlowService:
         self.db.commit()
         self.db.refresh(record)
 
-        # [关键修复] 创建成功后，触发财务数据同步计算
+        # 创建成功后，触发财务数据同步计算
         try:
-            self.finance_service.sync_project_financials(project_id)
+            self.sync_financials(project_id)
             logger.info(f"Project financials synced for project {project_id}")
         except Exception as e:
             logger.error(f"Failed to sync project financials: {str(e)}")
@@ -76,7 +70,7 @@ class CashFlowService:
         logger.info(f"Cashflow record created successfully: {record.id}")
         return record
 
-    def get_cashflow_records(self, project_id: str) -> List[FinanceRecord]:
+    def get_records(self, project_id: str) -> List[FinanceRecord]:
         """获取项目现金流记录"""
         logger.info(f"Getting cashflow records for project {project_id}")
         try:
@@ -92,7 +86,7 @@ class CashFlowService:
                 detail="获取现金流记录失败"
             )
 
-    def delete_cashflow_record(self, record_id: str, project_id: str) -> None:
+    def delete_record(self, record_id: str, project_id: str) -> None:
         """删除现金流记录"""
         logger.info(f"Deleting cashflow record {record_id} for project {project_id}")
 
@@ -111,19 +105,17 @@ class CashFlowService:
         self.db.delete(record)
         self.db.commit()
 
-        # [关键修复] 删除成功后，触发财务数据同步计算
+        # 删除成功后，触发财务数据同步计算
         try:
-            self.finance_service.sync_project_financials(project_id)
+            self.sync_financials(project_id)
             logger.info(f"Project financials synced for project {project_id}")
         except Exception as e:
             logger.error(f"Failed to sync project financials: {str(e)}")
 
         logger.info(f"Cashflow record deleted successfully: {record_id}")
 
-    def get_cashflow_summary(self, project_id: str) -> Dict[str, Any]:
-        """
-        获取现金流汇总
-        """
+    def get_summary(self, project_id: str) -> Dict[str, Any]:
+        """获取现金流汇总"""
         logger.info(f"Getting cashflow summary for project {project_id}")
 
         try:
@@ -142,16 +134,16 @@ class CashFlowService:
                 ProjectSale.project_id == project_id
             ).first()
 
-            # 2. 聚合计算收入支出（使用新的 FinanceRecord 表）
+            # 2. 聚合计算收入支出
             result = self.db.query(
                 func.sum(
-                    case(
+                    func.case(
                         (FinanceRecord.type == "income", FinanceRecord.amount),
                         else_=0
                     )
                 ).label("total_income"),
                 func.sum(
-                    case(
+                    func.case(
                         (FinanceRecord.type == "expense", FinanceRecord.amount),
                         else_=0
                     )
@@ -162,27 +154,23 @@ class CashFlowService:
             total_expense = result.total_expense or Decimal('0')
             net_cash_flow = total_income - total_expense
 
-            # 3. 计算 ROI (转为百分比数值)
+            # 3. 计算 ROI
             roi_decimal = (net_cash_flow / total_expense) if total_expense > 0 else Decimal('0.0')
             roi = float(roi_decimal * 100)
 
-            # 4. 计算资金占用天数 (Holding Days)
-            # 逻辑：已售取 (成交日期 - 签约日期)，未售取 (今天 - 签约日期)
+            # 4. 计算资金占用天数
             holding_days = 0
             start_date = contract.signing_date if contract else project.created_at
 
             if start_date:
-                # 统一转为 date 对象计算天数，忽略时分秒
                 end_date = datetime.now()
-                # 只有状态为已售且有成交日期时才取成交日期
                 if project.status == "sold" and sale and sale.sold_date:
                     end_date = sale.sold_date
 
                 delta = end_date.date() - start_date.date()
                 holding_days = max(delta.days, 0)
 
-            # 5. 计算年化收益率 (Annualized Return)
-            # 公式：(ROI / 占用天数) * 365
+            # 5. 计算年化收益率
             annualized_return = 0.0
             if holding_days > 0:
                 annualized_return = (roi / holding_days) * 365
@@ -205,7 +193,100 @@ class CashFlowService:
                 detail="计算现金流汇总失败"
             )
 
-    def _validate_cashflow_category(self, flow_type: CashFlowType, category: CashFlowCategory) -> None:
+    def sync_financials(self, project_id: str) -> None:
+        """
+        同步计算项目的财务数据，并更新到 Project 表的缓存字段中
+        """
+        # 1. 确认项目存在
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return
+
+        # 2. 聚合计算总收入
+        income_res = self.db.query(func.sum(FinanceRecord.amount)).filter(
+            FinanceRecord.project_id == project_id,
+            FinanceRecord.type == "income"
+        ).scalar()
+        total_income = income_res if income_res else Decimal(0)
+
+        # 3. 聚合计算总支出
+        expense_res = self.db.query(func.sum(FinanceRecord.amount)).filter(
+            FinanceRecord.project_id == project_id,
+            FinanceRecord.type == "expense"
+        ).scalar()
+        total_expense = expense_res if expense_res else Decimal(0)
+
+        # 4. 计算净利润
+        net_cash_flow = total_income - total_expense
+
+        # 5. 计算 ROI
+        roi = 0.0
+        if total_expense > 0:
+            roi = float((net_cash_flow / total_expense) * 100)
+
+        # 6. 更新并保存到项目缓存字段
+        project.total_income = total_income
+        project.total_expense = total_expense
+        project.net_cash_flow = net_cash_flow
+        project.roi = roi
+
+        self.db.add(project)
+        self.db.commit()
+
+    def get_report(self, project_id: str) -> Dict[str, Any]:
+        """获取项目财务报告"""
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="项目不存在"
+            )
+
+        # 从 ProjectContract 获取签约价格
+        contract = self.db.query(ProjectContract).filter(
+            ProjectContract.project_id == project_id
+        ).first()
+
+        # 从 ProjectSale 获取销售价格
+        sale = self.db.query(ProjectSale).filter(
+            ProjectSale.project_id == project_id
+        ).first()
+
+        # 实时计算财务数据
+        income_res = self.db.query(func.sum(FinanceRecord.amount)).filter(
+            FinanceRecord.project_id == project_id,
+            FinanceRecord.type == "income"
+        ).scalar()
+        total_income = float(income_res) if income_res else 0
+
+        expense_res = self.db.query(func.sum(FinanceRecord.amount)).filter(
+            FinanceRecord.project_id == project_id,
+            FinanceRecord.type == "expense"
+        ).scalar()
+        total_expense = float(expense_res) if expense_res else 0
+
+        net_profit = total_income - total_expense
+        roi = (net_profit / total_expense * 100) if total_expense > 0 else 0
+
+        return {
+            "project_id": project.id,
+            "community_name": project.community_name,
+            "status": project.status,
+            "address": project.address,
+            "signing_date": contract.signing_date if contract else None,
+            "renovation_start_date": project.updated_at if project.status == "renovating" else None,
+            "listing_date": sale.listing_date if sale else None,
+            "sold_date": sale.sold_date if sale else None,
+            "total_investment": total_expense,
+            "total_income": total_income,
+            "net_profit": net_profit,
+            "roi": roi,
+            "sale_price": float(sale.sold_price) if sale and sale.sold_price else None,
+            "list_price": float(sale.list_price) if sale and sale.list_price else None,
+            "signing_price": float(contract.signing_price) if contract and contract.signing_price else None,
+        }
+
+    def _validate_category(self, flow_type: CashFlowType, category: CashFlowCategory) -> None:
         """验证现金流类型和分类是否匹配"""
         expense_categories = {
             CashFlowCategory.PERFORMANCE_BOND,
@@ -236,3 +317,8 @@ class CashFlowService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"收入类型不能使用分类: {category.value}"
             )
+
+
+# 保持向后兼容的别名
+ProjectFinanceService = FinanceService
+CashFlowService = FinanceService

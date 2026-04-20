@@ -10,7 +10,7 @@ from models import Project
 from schemas.l4_marketing.import_schemas import L3ProjectBriefResponse
 
 
-class L4MarketingQueryService:
+class MarketingQueryService:
     """L4营销查询服务
     
     负责查询可用于关联的L3项目列表
@@ -111,3 +111,7 @@ class L4MarketingQueryService:
                 Project.is_deleted == False
             )
         ).first() is not None
+
+
+# 向后兼容的别名
+L4MarketingQueryService = MarketingQueryService

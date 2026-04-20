@@ -16,7 +16,7 @@ from sqlalchemy.orm import sessionmaker
 
 from models import Base, FailedRecord
 from schemas import PropertyIngestionModel, UploadResult
-from services.csv_batch_importer import CSVBatchImporter
+from services.market import CSVBatchImporter
 from exceptions import FileProcessingException, ResourceNotFoundException
 from dependencies.auth import get_current_operator_user, get_current_normal_user
 

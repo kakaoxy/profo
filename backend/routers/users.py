@@ -19,7 +19,7 @@ from schemas.user import (
 )
 from utils.auth import get_password_hash
 from dependencies.auth import get_current_admin_user, get_current_active_user, get_current_internal_user
-from services.user_service import user_service
+from services.system import user_service
 
 router = APIRouter()
 

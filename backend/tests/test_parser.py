@@ -3,7 +3,7 @@ Unit tests for FloorParser
 Tests requirements 9.1, 9.2, 9.3, 9.4, 9.5
 """
 import pytest
-from services.parser import FloorParser, FloorInfo
+from services.market import FloorParser, FloorInfo
 
 
 class TestFloorParserParsing:

@@ -18,7 +18,7 @@ from schemas.community import (
     CommunityMergeResponse,
     DictionaryResponse,
 )
-from services.merger import CommunityMerger
+from services.market import CommunityMerger
 from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSessionDep
 
 logger = logging.getLogger(__name__)

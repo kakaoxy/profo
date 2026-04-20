@@ -18,7 +18,7 @@ from utils.query_params import PropertyExportParams
 from schemas import PaginatedPropertyResponse, PropertyDetailResponse
 from dependencies.auth import get_current_internal_user
 from models.user import User
-from services.property_query_service import PropertyQueryService, get_property_query_service
+from services.market import PropertyQueryService, get_property_query_service
 
 
 logger = logging.getLogger(__name__)

@@ -10,8 +10,10 @@ import re
 
 from db import get_db
 from dependencies.auth import get_current_operator_user
-from services.l4_marketing_query import L4MarketingQueryService
-from services.l4_marketing_import import L4MarketingImportService
+from services.marketing import (
+    MarketingQueryService as L4MarketingQueryService,
+    MarketingImportService as L4MarketingImportService,
+)
 from schemas.l4_marketing.import_schemas import (
     L3ProjectListResponse,
     L3ProjectBriefResponse,

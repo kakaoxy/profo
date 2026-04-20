@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 import logging
 
 from schemas import PropertyIngestionModel, PushResult
-from services.importer import PropertyImporter
+from services.market import PropertyImporter
+from services.system import save_failed_record
 from exceptions import ValidationException, BusinessLogicException
 from utils.error_formatters import format_validation_error
-from services.error_service import save_failed_record
 from dependencies.auth import DbSessionDep
 
 

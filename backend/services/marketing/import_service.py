@@ -13,7 +13,7 @@ from schemas.l4_marketing.import_schemas import (
 )
 
 
-class L4MarketingImportService:
+class MarketingImportService:
     """L4营销导入服务
     
     负责从L3项目导入数据，实现写时复制(CoW)模式
@@ -192,3 +192,7 @@ class L4MarketingImportService:
                         continue
 
         return None
+
+
+# 向后兼容的别名
+L4MarketingImportService = MarketingImportService

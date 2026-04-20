@@ -21,7 +21,7 @@ from schemas.l4_marketing import (
 )
 
 
-class L4MarketingProjectService:
+class MarketingProjectService:
     """L4 营销项目服务"""
 
     def __init__(self, db: Session) -> None:
@@ -182,7 +182,7 @@ class L4MarketingProjectService:
         return True
 
 
-class L4MarketingMediaService:
+class MarketingMediaService:
     """L4 营销媒体服务"""
 
     def __init__(self, db: Session) -> None:
@@ -354,3 +354,8 @@ class L4MarketingMediaService:
             self.db.commit()
 
         return updated_count
+
+
+# 向后兼容的别名
+L4MarketingProjectService = MarketingProjectService
+L4MarketingMediaService = MarketingMediaService

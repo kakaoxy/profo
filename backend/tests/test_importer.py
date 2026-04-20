@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from models import Base, Community, CommunityAlias, PropertyCurrent, PropertyHistory, PropertyStatus, ChangeType
 from schemas import PropertyIngestionModel
-from services.importer import PropertyImporter
+from services.market import PropertyImporter
 
 
 @pytest.fixture

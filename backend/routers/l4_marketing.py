@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from dependencies.auth import get_current_operator_user
-from services.l4_marketing_service import (
-    L4MarketingProjectService,
-    L4MarketingMediaService,
+from services.marketing import (
+    MarketingProjectService as L4MarketingProjectService,
+    MarketingMediaService as L4MarketingMediaService,
 )
 from schemas.l4_marketing import (
     # Project schemas

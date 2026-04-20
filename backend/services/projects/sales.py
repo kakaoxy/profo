@@ -14,10 +14,12 @@ from models import Project, ProjectSale, ProjectInteraction, User
 from models.base import ProjectStatus
 from schemas.project.sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
 from schemas.project import ProjectResponse
-from services.builders import ProjectResponseBuilder
+from .internal import ProjectResponseBuilder
 
 
-class ProjectSalesService:
+class SalesService:
+    """项目销售服务"""
+
     def __init__(self, db: Session) -> None:
         self.db = db
         self.response_builder = ProjectResponseBuilder(db)
@@ -32,8 +34,6 @@ class ProjectSalesService:
             )
         return project
 
-    # ========== 销售团队管理 ==========
-
     def _validate_user_ids(self, sale: ProjectSale) -> None:
         """验证销售记录中的用户ID是否有效"""
         try:
@@ -44,8 +44,8 @@ class ProjectSalesService:
                 detail=str(e)
             )
 
-    def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
-        """更新销售角色 (渠道、讲房、谈判) - 使用用户ID"""
+    def update_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
+        """更新销售角色 (渠道、讲房、谈判)"""
         project = self._get_project(project_id)
 
         # 获取或创建销售记录
@@ -67,7 +67,6 @@ class ProjectSalesService:
         # 更新销售角色
         update_dict = roles_data.model_dump(exclude_unset=True, by_alias=False)
 
-        # 先更新字段
         for field, value in update_dict.items():
             if hasattr(sale, field):
                 setattr(sale, field, value)
@@ -80,7 +79,7 @@ class ProjectSalesService:
         self.db.refresh(project)
         self.db.refresh(sale)
 
-        # 手动构建响应字典，确保包含销售角色ID
+        # 手动构建响应字典
         response_data = {
             "id": project.id,
             "name": project.name,
@@ -94,7 +93,6 @@ class ProjectSalesService:
             "orientation": project.orientation,
             "is_deleted": project.is_deleted,
             "renovation_stage": project.renovation_stage,
-            # 销售信息
             "channel_manager_id": sale.channel_manager_id,
             "property_agent_id": sale.property_agent_id,
             "negotiator_id": sale.negotiator_id,
@@ -103,20 +101,18 @@ class ProjectSalesService:
 
         return ProjectResponse.model_validate(response_data)
 
-    # ========== 销售记录管理 (带看/出价/面谈) ==========
-
-    def create_sales_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
-        """创建销售记录（现在是互动记录）"""
+    def create_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
+        """创建销售记录（互动记录）"""
         project = self._get_project(project_id)
 
-        # 严格校验：非在售阶段通常不应该添加带看记录
+        # 严格校验
         if project.status != ProjectStatus.SELLING.value:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="只有在售阶段才能添加销售记录"
             )
 
-        # 创建互动记录（替换原来的 SalesRecord）
+        # 创建互动记录
         record = ProjectInteraction(
             id=str(uuid.uuid4()),
             project_id=project_id,
@@ -125,7 +121,7 @@ class ProjectSalesService:
             content=record_data.notes or "",
             interaction_at=record_data.record_date or datetime.utcnow(),
             operator_id=None,
-            price=record_data.price,  # 存储出价金额
+            price=record_data.price,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
@@ -134,8 +130,8 @@ class ProjectSalesService:
         self.db.refresh(record)
         return record
 
-    def get_sales_records(self, project_id: str, record_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        """获取销售记录列表（现在是互动记录）- 转换为前端兼容格式"""
+    def get_records(self, project_id: str, record_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """获取销售记录列表（互动记录）"""
         query = self.db.query(ProjectInteraction).filter(
             ProjectInteraction.project_id == project_id
         )
@@ -158,8 +154,8 @@ class ProjectSalesService:
             })
         return result
 
-    def delete_sales_record(self, project_id: str, record_id: str) -> None:
-        """删除销售记录（现在是互动记录）"""
+    def delete_record(self, project_id: str, record_id: str) -> None:
+        """删除销售记录（互动记录）"""
         self._get_project(project_id)
         record = self.db.query(ProjectInteraction).filter(
             ProjectInteraction.id == record_id,
@@ -174,8 +170,6 @@ class ProjectSalesService:
 
         self.db.delete(record)
         self.db.commit()
-
-    # ========== 成交逻辑 ==========
 
     def complete_project(self, project_id: str, complete_data: ProjectCompleteRequest) -> ProjectResponse:
         """确认成交 (标记为已售)"""
@@ -219,3 +213,7 @@ class ProjectSalesService:
         self.db.commit()
         self.db.refresh(project)
         return ProjectResponse.model_validate(self.response_builder.build(project))
+
+
+# 保持向后兼容的别名
+ProjectSalesService = SalesService

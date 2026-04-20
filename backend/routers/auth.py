@@ -20,7 +20,7 @@ from schemas.user import (
     WechatLoginRequest,
 )
 from dependencies.auth import get_current_active_user
-from services.auth_service import AuthService
+from services.system import AuthService
 from common import limiter
 
 

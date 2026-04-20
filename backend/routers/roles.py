@@ -12,7 +12,7 @@ from schemas.user import (
     RoleListResponse,
 )
 from dependencies.auth import DbSessionDep, CurrentAdminUserDep
-from services.role_service import role_service
+from services.system import role_service
 
 router = APIRouter()
 

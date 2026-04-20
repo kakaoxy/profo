@@ -16,7 +16,9 @@ from models.base import ProjectStatus
 from schemas.project.renovation import RenovationUpdate, RenovationContractUpdate
 
 
-class ProjectRenovationService:
+class RenovationService:
+    """项目装修服务"""
+
     def __init__(self, db: Session) -> None:
         self.db = db
 
@@ -47,11 +49,11 @@ class ProjectRenovationService:
 
         return renovation
 
-    def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
+    def update_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
         """更新改造阶段"""
         project = self._get_project(project_id)
 
-        # 验证当前状态：允许在改造、在售、已售阶段更新改造子阶段 (用于补录信息)
+        # 验证当前状态
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
             ProjectStatus.SELLING.value,
@@ -69,7 +71,6 @@ class ProjectRenovationService:
         # 记录当前阶段的完成时间
         current_stage = project.renovation_stage
         if current_stage and renovation_data.stage_completed_at:
-            # 更新装修记录的时间记录
             if not renovation.stage_completed_dates:
                 renovation.stage_completed_dates = {}
 
@@ -96,14 +97,14 @@ class ProjectRenovationService:
         self.db.refresh(project)
         return project
 
-    def get_renovation_info(self, project_id: str) -> Optional[ProjectRenovation]:
+    def get_info(self, project_id: str) -> Optional[ProjectRenovation]:
         """获取装修信息"""
         return self.db.query(ProjectRenovation).filter(
             ProjectRenovation.project_id == project_id,
             ProjectRenovation.is_deleted == False
         ).first()
 
-    def update_renovation_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectRenovation:
+    def update_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectRenovation:
         """更新装修信息"""
         project = self._get_project(project_id)
 
@@ -132,13 +133,17 @@ class ProjectRenovationService:
 
         return renovation
 
-    def add_renovation_photo(self, project_id: str, stage: str, url: str,
-                           filename: Optional[str] = None,
-                           description: Optional[str] = None) -> RenovationPhoto:
+    def add_photo(
+        self,
+        project_id: str,
+        stage: str,
+        url: str,
+        filename: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> RenovationPhoto:
         """添加改造阶段照片"""
         project = self._get_project(project_id)
 
-        # 同样允许后续阶段补传照片
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
             ProjectStatus.SELLING.value,
@@ -169,9 +174,8 @@ class ProjectRenovationService:
         self.db.refresh(photo)
         return photo
 
-    def get_renovation_photos(self, project_id: str, stage: Optional[str] = None) -> List[RenovationPhoto]:
+    def get_photos(self, project_id: str, stage: Optional[str] = None) -> List[RenovationPhoto]:
         """获取改造阶段照片"""
-        # 只查询未被软删除的照片
         query = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.project_id == project_id,
             RenovationPhoto.is_deleted == False
@@ -180,7 +184,7 @@ class ProjectRenovationService:
             query = query.filter(RenovationPhoto.stage == stage)
         return query.order_by(RenovationPhoto.created_at.desc()).all()
 
-    def delete_renovation_photo(self, project_id: str, photo_id: str) -> None:
+    def delete_photo(self, project_id: str, photo_id: str) -> None:
         """删除改造阶段照片 (软删除)"""
         photo = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.id == photo_id,
@@ -196,17 +200,21 @@ class ProjectRenovationService:
         photo.is_deleted = True
         self.db.commit()
 
-    def get_renovation_contract(self, project_id: str) -> ProjectRenovation:
+    def get_contract(self, project_id: str) -> ProjectRenovation:
         """获取装修合同信息"""
         project = self._get_project(project_id)
         renovation = self._get_or_create_renovation(project_id)
         return renovation
 
-    def update_renovation_contract(self, project_id: str, contract_data: RenovationContractUpdate) -> ProjectRenovation:
+    def update_contract(
+        self,
+        project_id: str,
+        contract_data: RenovationContractUpdate
+    ) -> ProjectRenovation:
         """更新装修合同信息"""
         project = self._get_project(project_id)
 
-        # 验证状态：允许在装修、在售、已售阶段更新合同信息
+        # 验证状态
         allowed_statuses = [
             ProjectStatus.RENOVATING.value,
             ProjectStatus.SELLING.value,
@@ -231,3 +239,7 @@ class ProjectRenovationService:
         self.db.refresh(renovation)
 
         return renovation
+
+
+# 保持向后兼容的别名
+ProjectRenovationService = RenovationService
