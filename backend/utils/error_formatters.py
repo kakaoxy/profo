@@ -94,8 +94,6 @@ def format_request_validation_error(error: RequestValidationError) -> str:
                 error_messages.append(f"参数 {field} 类型错误: {error_message}")
         elif 'value_error' in error_type:
             error_messages.append(f"参数 {field} 值无效")
-        elif 'list' in error_type:
-            error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
         elif 'greater_than' in error_type:
             error_messages.append(f"参数 {field} 必须大于 0")
         elif 'string_too_long' in error_type:

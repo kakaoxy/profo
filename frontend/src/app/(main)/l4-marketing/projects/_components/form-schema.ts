@@ -135,9 +135,9 @@ export function formValuesToCreateRequest(
     total_price: values.total_price,
     unit_price: unitPrice,
     title: values.title,
-    images: values.images.length > 0 ? values.images.join(",") : null,
+    images: values.images,
     sort_order: values.sort_order,
-    tags: values.tags.length > 0 ? values.tags : null,
+    tags: values.tags,
     decoration_style: values.decoration_style || null,
     publish_status: values.publish_status,
     project_status: values.project_status,
@@ -170,9 +170,9 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.area !== undefined) result.area = values.area;
   if (values.total_price !== undefined) result.total_price = values.total_price;
   if (values.title !== undefined) result.title = values.title;
-  if (values.images !== undefined) result.images = values.images.length > 0 ? values.images.join(",") : null;
+  if (values.images !== undefined) result.images = values.images;
   if (values.sort_order !== undefined) result.sort_order = values.sort_order;
-  if (values.tags !== undefined) result.tags = values.tags.length > 0 ? values.tags : null;
+  if (values.tags !== undefined) result.tags = values.tags;
   if (values.decoration_style !== undefined) result.decoration_style = values.decoration_style || null;
   if (values.publish_status !== undefined) result.publish_status = values.publish_status;
   if (values.project_status !== undefined) result.project_status = values.project_status;
