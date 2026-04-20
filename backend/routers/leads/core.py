@@ -1,16 +1,16 @@
 """
 线索核心 CRUD 路由
 """
-from typing import Annotated, Optional
 from datetime import datetime
+from typing import Annotated, Optional
 import uuid
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Path, Query, HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload, noload
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
-from models import User, Lead, LeadPriceHistory, LeadStatus
+from models import Lead, LeadPriceHistory, LeadStatus
 from schemas.lead import (
     LeadCreate,
     LeadUpdate,
@@ -121,7 +121,7 @@ def create_lead(
 def get_lead(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
 ):
     """获取单个线索详情"""
     lead = (
@@ -139,7 +139,7 @@ def get_lead(
 def update_lead(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
     lead_in: LeadUpdate,
 ):
     """更新线索"""
@@ -180,7 +180,7 @@ def update_lead(
 def delete_lead(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
 ):
     """删除线索"""
     lead = db.query(Lead).filter(Lead.id == lead_id).first()

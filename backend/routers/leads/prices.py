@@ -1,10 +1,10 @@
 """
 线索价格历史路由
 """
-from typing import Annotated, List
+from typing import Annotated
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Path, HTTPException
 from sqlalchemy import desc
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
@@ -14,11 +14,11 @@ from schemas.lead import PriceHistoryCreate, PriceHistoryResponse
 router = APIRouter()
 
 
-@router.get("/{lead_id}/prices", response_model=List[PriceHistoryResponse])
+@router.get("/{lead_id}/prices", response_model=list[PriceHistoryResponse])
 def get_price_history(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
 ):
     """获取线索价格历史记录"""
     history = (
@@ -34,7 +34,7 @@ def get_price_history(
 def add_price_record(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
     price_in: PriceHistoryCreate,
 ):
     """
