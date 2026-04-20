@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Lead, LeadStatus, FollowUpMethod } from "../types";
@@ -49,12 +49,22 @@ export function LeadsView({
   initialSelectedLeadId,
 }: LeadsViewProps) {
   const router = useRouter();
+  /**
+   * 使用重构后的 useLeadsFilter hook
+   * 现在 filteredLeads 已经包含了所有过滤逻辑（搜索、状态、创建者、户型、楼层）
+   * 不再需要 displayLeads 的双重过滤
+   */
   const {
     leads,
     setLeads,
     filteredLeads,
     isPending,
     refreshLeads,
+    // 使用重构后 hook 提供的向后兼容接口
+    activeTab,
+    setActiveTab,
+    searchQuery,
+    setSearchQuery,
   } = useLeadsFilter(initialLeads);
 
   const {
@@ -73,8 +83,12 @@ export function LeadsView({
   } = useLeadSelection({ initialSelectedLeadId, leads });
 
   const { viewMode, setViewMode } = useViewMode("table");
-  const [activeTab, setActiveTab] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
+
+  /**
+   * 移除了本地的 activeTab 和 searchQuery 状态
+   * 这些状态现在由 useLeadsFilter hook 统一管理
+   * 消除了状态管理混乱和双重过滤问题
+   */
 
   useEffect(() => {
     if (initialSelectedLeadId) {
@@ -82,18 +96,11 @@ export function LeadsView({
     }
   }, [initialSelectedLeadId, router]);
 
-  const displayLeads = useMemo(() => {
-    return filteredLeads.filter((lead) => {
-      const statusMatch = activeTab === "all" || lead.status === activeTab;
-      const searchLower = searchQuery.toLowerCase().trim();
-      const searchMatch =
-        !searchLower ||
-        lead.communityName?.toLowerCase().includes(searchLower) ||
-        lead.district?.toLowerCase().includes(searchLower) ||
-        lead.businessArea?.toLowerCase().includes(searchLower);
-      return statusMatch && searchMatch;
-    });
-  }, [filteredLeads, activeTab, searchQuery]);
+  /**
+   * 移除了 displayLeads 的双重过滤逻辑
+   * 现在直接使用 filteredLeads，它已经包含了所有过滤逻辑
+   * 消除了双重过滤的性能浪费
+   */
 
   const handleAudit = async (
     id: string,
@@ -188,7 +195,7 @@ export function LeadsView({
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
                     <LeadsTable
-                      leads={displayLeads}
+                      leads={filteredLeads}
                       onOpenDetail={openDetail}
                       onEdit={startEditLead}
                       onDelete={handleDeleteLead}
@@ -197,14 +204,14 @@ export function LeadsView({
                 </div>
               ) : (
                 <LeadsGrid
-                  leads={displayLeads}
+                  leads={filteredLeads}
                   onOpenDetail={openDetail}
                   onEdit={startEditLead}
                   onDelete={handleDeleteLead}
                 />
               )}
               <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                <span>显示 {displayLeads.length} 条记录 (共 {leads.length} 条)</span>
+                <span>显示 {filteredLeads.length} 条记录 (共 {leads.length} 条)</span>
               </div>
             </>
           )}

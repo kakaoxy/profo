@@ -11,7 +11,7 @@ interface LeadsToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   activeTab: string;
-  onTabChange: (value: string) => void;
+  onTabChange: (value: string | "all") => void;
   viewMode: "table" | "grid";
   onViewModeChange: (mode: "table" | "grid") => void;
   onAddLead: () => void;
