@@ -107,9 +107,18 @@ class MarketingProjectService:
         """
         # 提取媒体文件数据（如果有）
         media_files = data.media_files
-        
+
         # 创建项目对象（不包含 media_files）
         project_data = data.model_dump(exclude={'media_files'})
+
+        # 将列表字段转换为逗号分隔字符串
+        if isinstance(project_data.get('images'), list):
+            images_list = project_data['images']
+            project_data['images'] = ','.join(images_list) if images_list else None
+        if isinstance(project_data.get('tags'), list):
+            tags_list = project_data['tags']
+            project_data['tags'] = ','.join(tags_list) if tags_list else None
+
         db_obj = L4MarketingProject(**project_data)
         self.db.add(db_obj)
         self.db.commit()
@@ -155,6 +164,14 @@ class MarketingProjectService:
             return None
 
         update_data = data.model_dump(exclude_unset=True)
+
+        # 将列表字段转换为逗号分隔字符串
+        if 'images' in update_data and isinstance(update_data['images'], list):
+            images_list = update_data['images']
+            update_data['images'] = ','.join(images_list) if images_list else None
+        if 'tags' in update_data and isinstance(update_data['tags'], list):
+            tags_list = update_data['tags']
+            update_data['tags'] = ','.join(tags_list) if tags_list else None
 
         for field, value in update_data.items():
             setattr(db_obj, field, value)
