@@ -1,6 +1,6 @@
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -20,11 +20,13 @@ router = APIRouter(prefix="/monitor")
 community_router = APIRouter(prefix="/communities")
 
 DbSessionDep = Annotated[Session, Depends(get_db)]
+CommunityIdPath = Annotated[str, Path(description="小区ID")]
+CompetitorIdPath = Annotated[str, Path(description="竞品小区ID")]
 
 
 @router.get("/communities/{community_id}/sentiment", response_model=MarketSentimentResponse)
 def get_sentiment(
-    community_id: str,
+    community_id: CommunityIdPath,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> MarketSentimentResponse:
@@ -33,7 +35,7 @@ def get_sentiment(
 
 @router.get("/communities/{community_id}/trends", response_model=List[TrendData])
 def get_trends(
-    community_id: str,
+    community_id: CommunityIdPath,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     months: Annotated[int, Query(ge=1, le=24)] = 6,
@@ -52,7 +54,7 @@ def generate_strategy(
 
 @router.get("/communities/{community_id}/radar", response_model=NeighborhoodRadarResponse)
 def get_neighborhood_radar(
-    community_id: str,
+    community_id: CommunityIdPath,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> NeighborhoodRadarResponse:
@@ -65,7 +67,7 @@ def get_neighborhood_radar(
 
 @community_router.get("/{community_id}/competitors", response_model=List[CompetitorResponse])
 def get_competitors(
-    community_id: str,
+    community_id: CommunityIdPath,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> List[CompetitorResponse]:
@@ -74,18 +76,19 @@ def get_competitors(
 
 @community_router.post("/{community_id}/competitors", status_code=201)
 def add_competitor(
-    community_id: str,
+    community_id: CommunityIdPath,
     request: AddCompetitorRequest,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-) -> None:
+) -> dict:
     MonitorService.add_competitor(db, community_id, request.competitor_community_id)
+    return {"success": True, "message": "竞品添加成功"}
 
 
 @community_router.delete("/{community_id}/competitors/{competitor_id}", status_code=204)
 def remove_competitor(
-    community_id: str,
-    competitor_id: str,
+    community_id: CommunityIdPath,
+    competitor_id: CompetitorIdPath,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> None:
