@@ -81,7 +81,12 @@ class L4MarketingProjectUpdate(BaseModel):
     @field_validator('images', 'tags', mode='before')
     @classmethod
     def validate_json_array(cls, v: Any) -> list[str] | None:
-        """验证JSON数组格式字段，支持字符串JSON和列表"""
+        """验证JSON数组格式字段，支持字符串JSON和列表
+
+        - None: 表示不更新该字段（exclude_unset=True 时会排除）
+        - list: 正常列表值
+        - str: 尝试解析为JSON数组，解析失败返回空列表
+        """
         if v is None:
             return None
         if isinstance(v, list):
@@ -93,8 +98,8 @@ class L4MarketingProjectUpdate(BaseModel):
                     return parsed
                 return [parsed]
             except json.JSONDecodeError:
-                return None
-        return None
+                return []
+        return []
 
 
 class L4MarketingProjectResponse(BaseModel):
@@ -142,3 +147,21 @@ class L4MarketingProjectResponse(BaseModel):
 
     # 关联数据
     media_files: list[L4MarketingMediaResponse] = Field(default_factory=list)
+
+    @field_validator('images', 'tags', mode='before')
+    @classmethod
+    def validate_json_array(cls, v: Any) -> list[str]:
+        """验证JSON数组格式字段，将None转换为空列表"""
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                return [parsed]
+            except json.JSONDecodeError:
+                return []
+        return []
