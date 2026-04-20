@@ -44,80 +44,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/upload/csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Upload Csv
-         * @description 上传并处理 CSV 文件
-         *     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
-         */
-        post: operations["upload_csv_api_v1_upload_csv_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/upload/download/{filename}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Download Failed Records
-         * @description 下载失败记录文件
-         *     注意：使用 def 避免文件操作阻塞
-         */
-        get: operations["download_failed_records_api_v1_upload_download__filename__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/push": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Push Properties
-         * @description JSON 数据推送接口
-         *
-         *     接收 JSON 数组，批量导入房源数据
-         *
-         *     Args:
-         *         properties: 房源数据列表（原始字典）
-         *         db: 数据库会话
-         *
-         *     Returns:
-         *         PushResult: 推送结果统计
-         *
-         *     Raises:
-         *         HTTPException: 数据验证失败或处理失败
-         */
-        post: operations["push_properties_api_v1_push_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/properties/communities/search": {
         parameters: {
             query?: never;
@@ -262,6 +188,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leads
+         * @description 获取线索列表
+         *     使用手动序列化避免 ORM 关系遍历导致的性能问题
+         */
+        get: operations["get_leads_api_v1_leads__get"];
+        put?: never;
+        /** Create Lead */
+        post: operations["create_lead_api_v1_leads__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lead */
+        get: operations["get_lead_api_v1_leads__lead_id__get"];
+        /** Update Lead */
+        put: operations["update_lead_api_v1_leads__lead_id__put"];
+        post?: never;
+        /** Delete Lead */
+        delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}/follow-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Follow Ups */
+        get: operations["get_follow_ups_api_v1_leads__lead_id__follow_ups_get"];
+        put?: never;
+        /** Add Follow Up */
+        post: operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leads/{lead_id}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Price History */
+        get: operations["get_price_history_api_v1_leads__lead_id__prices_get"];
+        put?: never;
+        /**
+         * Add Price Record
+         * @description Explicitly add a price record (e.g. secondary authorization)
+         *     This also updates the main lead's total_price
+         */
+        post: operations["add_price_record_api_v1_leads__lead_id__prices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/renovation": {
         parameters: {
             query?: never;
@@ -272,7 +279,7 @@ export interface paths {
         get?: never;
         /**
          * Update Renovation Stage
-         * @description 更新改造阶段 (Sync)
+         * @description 更新改造阶段
          */
         put: operations["update_renovation_stage_api_v1_projects__project_id__renovation_put"];
         post?: never;
@@ -291,13 +298,13 @@ export interface paths {
         };
         /**
          * Get Renovation Photos
-         * @description 获取改造阶段照片 (Sync)
+         * @description 获取改造阶段照片
          */
         get: operations["get_renovation_photos_api_v1_projects__project_id__renovation_photos_get"];
         put?: never;
         /**
          * Upload Renovation Photo
-         * @description 上传改造阶段照片 (Sync)
+         * @description 上传改造阶段照片
          */
         post: operations["upload_renovation_photo_api_v1_projects__project_id__renovation_photos_post"];
         delete?: never;
@@ -318,7 +325,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Renovation Photo
-         * @description 删除改造阶段照片 (Sync)
+         * @description 删除改造阶段照片
          */
         delete: operations["delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete"];
         options?: never;
@@ -335,12 +342,12 @@ export interface paths {
         };
         /**
          * Get Renovation Contract
-         * @description 获取装修合同信息 (Sync)
+         * @description 获取装修合同信息
          */
         get: operations["get_renovation_contract_api_v1_projects__project_id__renovation_contract_get"];
         /**
          * Update Renovation Contract
-         * @description 更新装修合同信息 (Sync)
+         * @description 更新装修合同信息
          */
         put: operations["update_renovation_contract_api_v1_projects__project_id__renovation_contract_put"];
         post?: never;
@@ -360,7 +367,7 @@ export interface paths {
         get?: never;
         /**
          * Update Sales Roles
-         * @description 更新销售角色 (Sync)
+         * @description 更新销售角色
          */
         put: operations["update_sales_roles_api_v1_projects__project_id__selling_roles_put"];
         post?: never;
@@ -381,7 +388,7 @@ export interface paths {
         put?: never;
         /**
          * Create Viewing Record
-         * @description 创建带看记录 (Sync)
+         * @description 创建带看记录
          */
         post: operations["create_viewing_record_api_v1_projects__project_id__selling_viewings_post"];
         delete?: never;
@@ -401,7 +408,7 @@ export interface paths {
         put?: never;
         /**
          * Create Offer Record
-         * @description 创建出价记录 (Sync)
+         * @description 创建出价记录
          */
         post: operations["create_offer_record_api_v1_projects__project_id__selling_offers_post"];
         delete?: never;
@@ -421,7 +428,7 @@ export interface paths {
         put?: never;
         /**
          * Create Negotiation Record
-         * @description 创建面谈记录 (Sync)
+         * @description 创建面谈记录
          */
         post: operations["create_negotiation_record_api_v1_projects__project_id__selling_negotiations_post"];
         delete?: never;
@@ -439,7 +446,7 @@ export interface paths {
         };
         /**
          * Get Sales Records
-         * @description 获取销售记录 (Sync)
+         * @description 获取销售记录
          */
         get: operations["get_sales_records_api_v1_projects__project_id__selling_records_get"];
         put?: never;
@@ -462,7 +469,7 @@ export interface paths {
         post?: never;
         /**
          * Delete Sales Record
-         * @description 删除销售记录 (Sync)
+         * @description 删除销售记录
          */
         delete: operations["delete_sales_record_api_v1_projects__project_id__selling_records__record_id__delete"];
         options?: never;
@@ -506,6 +513,28 @@ export interface paths {
          * @description 获取项目统计
          */
         get: operations["get_project_stats_api_v1_projects_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Projects
+         * @description 导出项目数据为 CSV 文件
+         *
+         *     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
+         */
+        get: operations["export_projects_api_v1_projects_export_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -602,28 +631,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Export Projects
-         * @description 导出项目数据为 CSV 文件
-         *
-         *     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
-         */
-        get: operations["export_projects_api_v1_projects_export_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/projects/{project_id}/cashflow": {
         parameters: {
             query?: never;
@@ -668,7 +675,171 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/files/upload": {
+    "/api/v1/admin/l4-marketing/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取营销项目列表
+         * @description 获取营销项目列表 - 统一分页格式
+         */
+        get: operations["list_marketing_projects_api_v1_admin_l4_marketing_projects_get"];
+        put?: never;
+        /**
+         * 创建独立营销项目
+         * @description 创建独立营销项目 (不关联 L3 项目)
+         */
+        post: operations["create_marketing_project_api_v1_admin_l4_marketing_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取营销项目详情
+         * @description 获取营销项目详情
+         */
+        get: operations["get_marketing_project_api_v1_admin_l4_marketing_projects__project_id__get"];
+        /**
+         * 更新营销项目
+         * @description 更新营销项目
+         */
+        put: operations["update_marketing_project_api_v1_admin_l4_marketing_projects__project_id__put"];
+        post?: never;
+        /**
+         * 删除营销项目
+         * @description 逻辑删除营销项目
+         */
+        delete: operations["delete_marketing_project_api_v1_admin_l4_marketing_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/projects/{project_id}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取媒体列表
+         * @description 获取营销项目的媒体列表
+         */
+        get: operations["list_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_get"];
+        put?: never;
+        /**
+         * 添加媒体
+         * @description 为营销项目添加媒体
+         */
+        post: operations["create_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/media/{media_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 更新媒体
+         * @description 更新媒体信息
+         */
+        put: operations["update_marketing_media_api_v1_admin_l4_marketing_media__media_id__put"];
+        post?: never;
+        /**
+         * 删除媒体
+         * @description 逻辑删除媒体
+         */
+        delete: operations["delete_marketing_media_api_v1_admin_l4_marketing_media__media_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/projects/{project_id}/media/sort-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 批量更新媒体排序
+         * @description 批量更新媒体排序顺序
+         */
+        put: operations["update_media_sort_order_api_v1_admin_l4_marketing_projects__project_id__media_sort_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/available-projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取可关联的L3项目列表
+         * @description 获取可用于关联的L3项目列表
+         *
+         *     用于在创建营销房源时选择关联的L3项目
+         */
+        get: operations["list_available_projects_api_v1_admin_l4_marketing_available_projects_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/available-projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取L3项目详情
+         * @description 获取单个L3项目详情
+         *
+         *     用于项目选择器中预览项目信息
+         */
+        get: operations["get_l3_project_detail_api_v1_admin_l4_marketing_available_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/l4-marketing/projects/import-from-l3/{project_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -678,11 +849,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 上传文件
-         * @description Handle file upload (Sync - Run in threadpool by FastAPI)
-         *     Optimized to read only first 2KB for MIME check.
+         * 从L3项目导入数据
+         * @description 从L3项目导入数据
+         *
+         *     根据L3项目ID获取可导入的数据，用于创建营销房源
+         *     采用写时复制(CoW)模式，L4独立存储数据
          */
-        post: operations["upload_file_api_v1_files_upload_post"];
+        post: operations["import_from_l3_project_api_v1_admin_l4_marketing_projects_import_from_l3__project_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1037,6 +1210,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/upload/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Csv
+         * @description 上传并处理 CSV 文件
+         *     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
+         */
+        post: operations["upload_csv_api_v1_upload_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upload/download/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Failed Records
+         * @description 下载失败记录文件
+         *     注意：使用 def 避免文件操作阻塞
+         */
+        get: operations["download_failed_records_api_v1_upload_download__filename__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Push Properties
+         * @description JSON 数据推送接口
+         *
+         *     接收 JSON 数组，批量导入房源数据
+         *
+         *     Args:
+         *         properties: 房源数据列表（原始字典）
+         *         db: 数据库会话
+         *
+         *     Returns:
+         *         PushResult: 推送结果统计
+         *
+         *     Raises:
+         *         HTTPException: 数据验证失败或处理失败
+         */
+        post: operations["push_properties_api_v1_push_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/files/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上传文件
+         * @description Handle file upload (Sync - Run in threadpool by FastAPI)
+         *     Optimized to read only first 2KB for MIME check.
+         */
+        post: operations["upload_file_api_v1_files_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/monitor/communities/{community_id}/sentiment": {
         parameters: {
             query?: never;
@@ -1138,274 +1406,6 @@ export interface paths {
         post?: never;
         /** Remove Competitor */
         delete: operations["remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/leads/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Leads
-         * @description 获取线索列表
-         *     使用手动序列化避免 ORM 关系遍历导致的性能问题
-         */
-        get: operations["get_leads_api_v1_leads__get"];
-        put?: never;
-        /** Create Lead */
-        post: operations["create_lead_api_v1_leads__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/leads/{lead_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Lead */
-        get: operations["get_lead_api_v1_leads__lead_id__get"];
-        /** Update Lead */
-        put: operations["update_lead_api_v1_leads__lead_id__put"];
-        post?: never;
-        /** Delete Lead */
-        delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/leads/{lead_id}/follow-ups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Follow Ups */
-        get: operations["get_follow_ups_api_v1_leads__lead_id__follow_ups_get"];
-        put?: never;
-        /** Add Follow Up */
-        post: operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/leads/{lead_id}/prices": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Price History */
-        get: operations["get_price_history_api_v1_leads__lead_id__prices_get"];
-        put?: never;
-        /**
-         * Add Price Record
-         * @description Explicitly add a price record (e.g. secondary authorization)
-         *     This also updates the main lead's total_price
-         */
-        post: operations["add_price_record_api_v1_leads__lead_id__prices_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/projects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取营销项目列表
-         * @description 获取营销项目列表 - 统一分页格式
-         */
-        get: operations["list_marketing_projects_api_v1_admin_l4_marketing_projects_get"];
-        put?: never;
-        /**
-         * 创建独立营销项目
-         * @description 创建独立营销项目 (不关联 L3 项目)
-         */
-        post: operations["create_marketing_project_api_v1_admin_l4_marketing_projects_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取营销项目详情
-         * @description 获取营销项目详情
-         */
-        get: operations["get_marketing_project_api_v1_admin_l4_marketing_projects__project_id__get"];
-        /**
-         * 更新营销项目
-         * @description 更新营销项目
-         */
-        put: operations["update_marketing_project_api_v1_admin_l4_marketing_projects__project_id__put"];
-        post?: never;
-        /**
-         * 删除营销项目
-         * @description 逻辑删除营销项目
-         */
-        delete: operations["delete_marketing_project_api_v1_admin_l4_marketing_projects__project_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/projects/{project_id}/media": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取媒体列表
-         * @description 获取营销项目的媒体列表
-         */
-        get: operations["list_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_get"];
-        put?: never;
-        /**
-         * 添加媒体
-         * @description 为营销项目添加媒体
-         */
-        post: operations["create_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/media/{media_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * 更新媒体
-         * @description 更新媒体信息
-         */
-        put: operations["update_marketing_media_api_v1_admin_l4_marketing_media__media_id__put"];
-        post?: never;
-        /**
-         * 删除媒体
-         * @description 逻辑删除媒体
-         */
-        delete: operations["delete_marketing_media_api_v1_admin_l4_marketing_media__media_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/projects/{project_id}/media/sort-order": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * 批量更新媒体排序
-         * @description 批量更新媒体排序顺序
-         */
-        put: operations["update_media_sort_order_api_v1_admin_l4_marketing_projects__project_id__media_sort_order_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/available-projects": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取可关联的L3项目列表
-         * @description 获取可用于关联的L3项目列表
-         *
-         *     用于在创建营销房源时选择关联的L3项目
-         */
-        get: operations["list_available_projects_api_v1_admin_l4_marketing_available_projects_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/available-projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 获取L3项目详情
-         * @description 获取单个L3项目详情
-         *
-         *     用于项目选择器中预览项目信息
-         */
-        get: operations["get_l3_project_detail_api_v1_admin_l4_marketing_available_projects__project_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/l4-marketing/projects/import-from-l3/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 从L3项目导入数据
-         * @description 从L3项目导入数据
-         *
-         *     根据L3项目ID获取可导入的数据，用于创建营销房源
-         *     采用写时复制(CoW)模式，L4独立存储数据
-         */
-        post: operations["import_from_l3_project_api_v1_admin_l4_marketing_projects_import_from_l3__project_id__post"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1659,6 +1659,23 @@ export interface components {
             /** On Sale Count */
             on_sale_count: number;
         };
+        /**
+         * DictionaryResponse
+         * @description 字典响应模型
+         */
+        DictionaryResponse: {
+            /** Type */
+            type: string;
+            /** Items */
+            items: string[];
+        };
+        /** FileUploadResponse */
+        FileUploadResponse: {
+            /** Url */
+            url: string;
+            /** Filename */
+            filename: string;
+        };
         /** FloorStats */
         FloorStats: {
             /** Type */
@@ -1862,6 +1879,11 @@ export interface components {
              */
             decoration_style?: string | null;
             /**
+             * Status
+             * @description 项目状态
+             */
+            status?: string | null;
+            /**
              * Available Media
              * @description 可导入的媒体资源列表
              */
@@ -1896,11 +1918,10 @@ export interface components {
          */
         L4MarketingMediaCreate: {
             /**
-             * Media Type
              * @description 媒体类型: image/video
              * @default image
              */
-            media_type: string;
+            media_type: components["schemas"]["MediaType"];
             /**
              * @description 照片分类: marketing/renovation
              * @default marketing
@@ -1943,7 +1964,10 @@ export interface components {
          * @description 媒体列表响应 - 统一分页格式
          */
         L4MarketingMediaListResponse: {
-            /** Items */
+            /**
+             * Items
+             * @description 数据列表
+             */
             items: components["schemas"]["L4MarketingMediaResponse"][];
             /**
              * Total
@@ -1957,7 +1981,7 @@ export interface components {
             page: number;
             /**
              * Page Size
-             * @description 每页大小
+             * @description 每页数量
              */
             page_size: number;
         };
@@ -1967,11 +1991,10 @@ export interface components {
          */
         L4MarketingMediaResponse: {
             /**
-             * Media Type
              * @description 媒体类型: image/video
              * @default image
              */
-            media_type: string;
+            media_type: components["schemas"]["MediaType"];
             /**
              * @description 照片分类: marketing/renovation
              * @default marketing
@@ -2082,9 +2105,9 @@ export interface components {
             title: string;
             /**
              * Images
-             * @description 图片URL列表，多个用逗号分隔
+             * @description 图片URL列表
              */
-            images?: string | null;
+            images?: string[];
             /**
              * Sort Order
              * @description 排序权重，默认0
@@ -2093,26 +2116,24 @@ export interface components {
             sort_order: number;
             /**
              * Tags
-             * @description 标签，多个用逗号分隔
+             * @description 标签列表
              */
-            tags?: string | null;
+            tags?: string[];
             /**
              * Decoration Style
              * @description 装修风格，最大长度100
              */
             decoration_style?: string | null;
             /**
-             * Publish Status
              * @description 发布状态: 草稿/发布
              * @default 草稿
              */
-            publish_status: string;
+            publish_status: components["schemas"]["PublishStatus"];
             /**
-             * Project Status
              * @description 项目状态: 在途/在售/已售
              * @default 在途
              */
-            project_status: string;
+            project_status: components["schemas"]["MarketingProjectStatus"];
             /**
              * Project Id
              * @description 关联L3项目ID(软引用)，可为空，UUID字符串
@@ -2134,7 +2155,10 @@ export interface components {
          * @description 营销项目列表响应 - 统一分页格式
          */
         L4MarketingProjectListResponse: {
-            /** Items */
+            /**
+             * Items
+             * @description 数据列表
+             */
             items: components["schemas"]["L4MarketingProjectResponse"][];
             /**
              * Total
@@ -2148,13 +2172,16 @@ export interface components {
             page: number;
             /**
              * Page Size
-             * @description 每页大小
+             * @description 每页数量
              */
             page_size: number;
         };
         /**
          * L4MarketingProjectResponse
          * @description 营销项目响应模型
+         *
+         *     注意: images 和 tags 字段对外保持逗号分隔字符串格式以兼容前端
+         *     内部使用 list[str] 存储，通过序列化器/验证器自动转换
          */
         L4MarketingProjectResponse: {
             /** Id */
@@ -2185,10 +2212,8 @@ export interface components {
             tags?: string | null;
             /** Decoration Style */
             decoration_style?: string | null;
-            /** Publish Status */
-            publish_status: string;
-            /** Project Status */
-            project_status: string;
+            publish_status: components["schemas"]["PublishStatus"];
+            project_status: components["schemas"]["MarketingProjectStatus"];
             /** Project Id */
             project_id?: string | null;
             /** Consultant Id */
@@ -2238,24 +2263,24 @@ export interface components {
             total_price?: number | string | null;
             /** Title */
             title?: string | null;
-            /** Images */
-            images?: string | null;
+            /**
+             * Images
+             * @description 图片URL列表
+             */
+            images?: string[] | null;
             /** Sort Order */
             sort_order?: number | null;
-            /** Tags */
-            tags?: string | null;
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[] | null;
             /** Decoration Style */
             decoration_style?: string | null;
-            /**
-             * Publish Status
-             * @description 发布状态: 草稿/发布
-             */
-            publish_status?: string | null;
-            /**
-             * Project Status
-             * @description 项目状态: 在途/在售/已售
-             */
-            project_status?: string | null;
+            /** @description 发布状态: 草稿/发布 */
+            publish_status?: components["schemas"]["PublishStatus"] | null;
+            /** @description 项目状态: 在途/在售/已售 */
+            project_status?: components["schemas"]["MarketingProjectStatus"] | null;
             /**
              * Project Id
              * @description 关联L3项目ID(软引用)，UUID字符串
@@ -2509,6 +2534,12 @@ export interface components {
             inventory_months: number;
         };
         /**
+         * MarketingProjectStatus
+         * @description 营销项目状态枚举
+         * @enum {string}
+         */
+        MarketingProjectStatus: "在途" | "在售" | "已售";
+        /**
          * MediaSortOrderUpdate
          * @description 媒体排序更新项
          */
@@ -2524,6 +2555,12 @@ export interface components {
              */
             sort_order: number;
         };
+        /**
+         * MediaType
+         * @description 媒体类型
+         * @enum {string}
+         */
+        MediaType: "image" | "video";
         /**
          * NeighborhoodRadarItem
          * @description 周边竞品雷达单项数据
@@ -2580,17 +2617,42 @@ export interface components {
         };
         /**
          * PaginatedPropertyResponse
-         * @description 分页房源列表响应
+         * @description 分页房源列表响应 - 统一分页格式
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
          */
         PaginatedPropertyResponse: {
-            /** Total */
-            total: number;
-            /** Page */
-            page: number;
-            /** Page Size */
-            page_size: number;
-            /** Items */
+            /**
+             * Items
+             * @description 数据列表
+             */
             items: components["schemas"]["PropertyResponse"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
         };
         /** PaginatedResponse[ProjectResponse] */
         PaginatedResponse_ProjectResponse_: {
@@ -2610,10 +2672,10 @@ export interface components {
              */
             page: number;
             /**
-             * Size
+             * Page Size
              * @description 每页数量
              */
-            size: number;
+            page_size: number;
         };
         /**
          * PasswordChange
@@ -2767,7 +2829,7 @@ export interface components {
              * Signing Materials
              * @description 签约材料列表
              */
-            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
+            signing_materials?: unknown[] | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -2954,21 +3016,12 @@ export interface components {
              * @description 联卖谈判人ID
              */
             negotiator_id?: string | null;
-            /**
-             * Total Income
-             * @default 0
-             */
-            total_income: string | null;
-            /**
-             * Total Expense
-             * @default 0
-             */
-            total_expense: string | null;
-            /**
-             * Net Cash Flow
-             * @default 0
-             */
-            net_cash_flow: string | null;
+            /** Total Income */
+            total_income?: string | null;
+            /** Total Expense */
+            total_expense?: string | null;
+            /** Net Cash Flow */
+            net_cash_flow?: string | null;
             /**
              * Roi
              * @default 0
@@ -2978,17 +3031,17 @@ export interface components {
              * Signing Materials
              * @description 签约材料列表
              */
-            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
+            signing_materials?: unknown[] | null;
             /**
              * Sales Records
              * @description 销售活动记录列表
              */
-            sales_records?: components["schemas"]["SalesRecordResponse"][] | null;
+            sales_records?: unknown[] | null;
             /**
              * Renovation Photos
              * @description 装修阶段照片列表
              */
-            renovation_photos?: components["schemas"]["RenovationPhotoResponse"][] | null;
+            renovation_photos?: unknown[] | null;
             /**
              * Renovationstagedates
              * @description 各阶段日期映射
@@ -3054,7 +3107,7 @@ export interface components {
             /** Other Agreements */
             other_agreements?: string | null;
             /** Signing Materials */
-            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
+            signing_materials?: unknown[] | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
@@ -3237,6 +3290,12 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * PublishStatus
+         * @description 发布状态枚举
+         * @enum {string}
+         */
+        PublishStatus: "草稿" | "发布";
         /**
          * PushResult
          * @description JSON推送结果
@@ -3540,18 +3599,41 @@ export interface components {
         /**
          * RoleListResponse
          * @description 角色列表响应模型
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
          */
         RoleListResponse: {
             /**
+             * Items
+             * @description 数据列表
+             */
+            items: components["schemas"]["RoleResponse"][];
+            /**
              * Total
-             * @description 总数量
+             * @description 总记录数
              */
             total: number;
             /**
-             * Items
-             * @description 角色列表
+             * Page
+             * @description 当前页码
              */
-            items: components["schemas"]["RoleResponse"][];
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
         };
         /**
          * RoleResponse
@@ -3727,38 +3809,6 @@ export interface components {
              */
             negotiator_id?: string | null;
         };
-        /**
-         * SigningMaterial
-         * @description 签约材料附件
-         */
-        SigningMaterial: {
-            /**
-             * Filename
-             * @description 文件名
-             */
-            filename: string;
-            /**
-             * Url
-             * @description 文件URL
-             */
-            url: string;
-            /**
-             * Category
-             * @description 附件分类
-             */
-            category: string;
-            /**
-             * Filetype
-             * @description 文件类型
-             */
-            fileType: string;
-            /**
-             * Size
-             * @description 文件大小(字节)
-             * @default 0
-             */
-            size: number;
-        };
         /** StatusUpdate */
         StatusUpdate: {
             status: components["schemas"]["ProjectStatus"];
@@ -3877,18 +3927,41 @@ export interface components {
         /**
          * UserListResponse
          * @description 用户列表响应模型
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
          */
         UserListResponse: {
             /**
+             * Items
+             * @description 数据列表
+             */
+            items: components["schemas"]["UserResponse"][];
+            /**
              * Total
-             * @description 总数量
+             * @description 总记录数
              */
             total: number;
             /**
-             * Items
-             * @description 用户列表
+             * Page
+             * @description 当前页码
              */
-            items: components["schemas"]["UserResponse"][];
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
         };
         /**
          * UserResponse
@@ -3953,18 +4026,41 @@ export interface components {
         /**
          * UserSimpleListResponse
          * @description 简化用户列表响应模型
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
          */
         UserSimpleListResponse: {
             /**
+             * Items
+             * @description 数据列表
+             */
+            items: components["schemas"]["UserSimpleResponse"][];
+            /**
              * Total
-             * @description 总数量
+             * @description 总记录数
              */
             total: number;
             /**
-             * Items
-             * @description 用户列表
+             * Page
+             * @description 当前页码
              */
-            items: components["schemas"]["UserSimpleResponse"][];
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
         };
         /**
          * UserSimpleResponse
@@ -4087,108 +4183,10 @@ export interface operations {
             };
         };
     };
-    upload_csv_api_v1_upload_csv_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_csv_api_v1_upload_csv_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UploadResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_failed_records_api_v1_upload_download__filename__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                filename: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    push_properties_api_v1_push_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PushResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     search_communities_api_v1_properties_communities_search_get: {
         parameters: {
             query: {
+                /** @description 搜索关键词 */
                 q: string;
             };
             header?: never;
@@ -4203,7 +4201,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -4342,6 +4342,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 房源ID */
                 id: number;
             };
             cookie?: never;
@@ -4426,7 +4427,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DictionaryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -4461,6 +4462,369 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CommunityMergeResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leads_api_v1_leads__get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+                search?: string | null;
+                statuses?: components["schemas"]["LeadStatus"][] | null;
+                district?: string | null;
+                creator_id?: number | null;
+                layout?: string | null;
+                floor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLeadListResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_lead_api_v1_leads__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_api_v1_leads__lead_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_api_v1_leads__lead_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_lead_api_v1_leads__lead_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_follow_ups_api_v1_leads__lead_id__follow_ups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResponse"][];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_follow_up_api_v1_leads__lead_id__follow_ups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_price_history_api_v1_leads__lead_id__prices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceHistoryResponse"][];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_price_record_api_v1_leads__lead_id__prices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceHistoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceHistoryResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -4991,6 +5355,40 @@ export interface operations {
             };
         };
     };
+    export_projects_api_v1_projects_export_get: {
+        parameters: {
+            query?: {
+                /** @description 项目状态筛选 */
+                status?: string | null;
+                /** @description 小区名称筛选 */
+                community_name?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_project_api_v1_projects__project_id__get: {
         parameters: {
             query?: {
@@ -5196,40 +5594,6 @@ export interface operations {
             };
         };
     };
-    export_projects_api_v1_projects_export_get: {
-        parameters: {
-            query?: {
-                /** @description 项目状态筛选 */
-                status?: string | null;
-                /** @description 小区名称筛选 */
-                community_name?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_project_cashflow_api_v1_projects__project_id__cashflow_get: {
         parameters: {
             query?: never;
@@ -5314,1323 +5678,6 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    upload_file_api_v1_files_upload_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_files_upload_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_for_access_token_api_v1_auth_token_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_login_for_access_token_api_v1_auth_token_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_api_v1_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_access_token_api_v1_auth_refresh_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    wechat_authorize_api_v1_auth_wechat_authorize_get: {
-        parameters: {
-            query?: {
-                redirect_uri?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    wechat_callback_api_v1_auth_wechat_callback_get: {
-        parameters: {
-            query: {
-                code: string;
-                state: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    wechat_app_login_api_v1_auth_wechat_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WechatLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_current_user_info_api_v1_auth_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-        };
-    };
-    get_users_api_v1_users_users_get: {
-        parameters: {
-            query?: {
-                /** @description 用户名搜索 */
-                username?: string | null;
-                /** @description 昵称搜索 */
-                nickname?: string | null;
-                /** @description 角色ID筛选 */
-                role_id?: string | null;
-                /** @description 用户状态筛选 */
-                status?: string | null;
-                /** @description 页码 */
-                page?: number;
-                /** @description 每页数量 */
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_user_api_v1_users_users_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_users_simple_api_v1_users_simple_get: {
-        parameters: {
-            query?: {
-                /** @description 昵称搜索 */
-                nickname?: string | null;
-                /** @description 用户状态筛选 */
-                status?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserSimpleListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_current_user_api_v1_users_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-        };
-    };
-    get_user_api_v1_users_users__user_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_user_api_v1_users_users__user_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_user_api_v1_users_users__user_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reset_user_password_api_v1_users_users__user_id__reset_password_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordResetRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    change_password_api_v1_users_users_change_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordChange"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    init_system_data_api_v1_users_init_data_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_roles_api_v1_roles_get: {
-        parameters: {
-            query?: {
-                /** @description 角色名称搜索 */
-                name?: string | null;
-                /** @description 角色代码搜索 */
-                code?: string | null;
-                /** @description 是否激活筛选 */
-                is_active?: boolean | null;
-                /** @description 页码 */
-                page?: number;
-                /** @description 每页数量 */
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_role_api_v1_roles_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RoleCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_role_api_v1_roles__role_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                role_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_role_api_v1_roles__role_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                role_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RoleUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_role_api_v1_roles__role_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                role_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_sentiment_api_v1_monitor_communities__community_id__sentiment_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                community_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MarketSentimentResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_trends_api_v1_monitor_communities__community_id__trends_get: {
-        parameters: {
-            query?: {
-                months?: number;
-            };
-            header?: never;
-            path: {
-                community_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TrendData"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    generate_strategy_api_v1_monitor_ai_strategy_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AIStrategyRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AIStrategyResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_neighborhood_radar_api_v1_monitor_communities__community_id__radar_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                community_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NeighborhoodRadarResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_competitors_api_v1_communities__community_id__competitors_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                community_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CompetitorResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_competitor_api_v1_communities__community_id__competitors_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                community_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddCompetitorRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                community_id: number;
-                competitor_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_leads_api_v1_leads__get: {
-        parameters: {
-            query?: {
-                /** @description 页码 */
-                page?: number;
-                /** @description 每页数量 */
-                page_size?: number;
-                search?: string | null;
-                statuses?: components["schemas"]["LeadStatus"][] | null;
-                district?: string | null;
-                creator_id?: number | null;
-                layout?: string | null;
-                floor?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedLeadListResponse"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_lead_api_v1_leads__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LeadCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LeadResponse"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_lead_api_v1_leads__lead_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LeadResponse"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_lead_api_v1_leads__lead_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LeadUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LeadResponse"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_lead_api_v1_leads__lead_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_follow_ups_api_v1_leads__lead_id__follow_ups_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FollowUpResponse"][];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_follow_up_api_v1_leads__lead_id__follow_ups_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FollowUpCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FollowUpResponse"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_price_history_api_v1_leads__lead_id__prices_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PriceHistoryResponse"][];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_price_record_api_v1_leads__lead_id__prices_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                lead_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PriceHistoryCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PriceHistoryResponse"];
-                };
-            };
-            /** @description Not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7075,6 +6122,1063 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["L3ProjectImportResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_for_access_token_api_v1_auth_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_login_for_access_token_api_v1_auth_token_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_access_token_api_v1_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    wechat_authorize_api_v1_auth_wechat_authorize_get: {
+        parameters: {
+            query?: {
+                redirect_uri?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    wechat_callback_api_v1_auth_wechat_callback_get: {
+        parameters: {
+            query: {
+                /** @description 微信授权码 */
+                code: string;
+                /** @description 状态参数 */
+                state: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    wechat_app_login_api_v1_auth_wechat_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WechatLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_user_info_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    get_users_api_v1_users_users_get: {
+        parameters: {
+            query?: {
+                /** @description 用户名搜索 */
+                username?: string | null;
+                /** @description 昵称搜索 */
+                nickname?: string | null;
+                /** @description 角色ID筛选 */
+                role_id?: string | null;
+                /** @description 用户状态筛选 */
+                status?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_user_api_v1_users_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_users_simple_api_v1_users_simple_get: {
+        parameters: {
+            query?: {
+                /** @description 昵称搜索 */
+                nickname?: string | null;
+                /** @description 用户状态筛选 */
+                status?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSimpleListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_user_api_v1_users_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    get_user_api_v1_users_users__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_v1_users_users__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_api_v1_users_users__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_user_password_api_v1_users_users__user_id__reset_password_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_password_api_v1_users_users_change_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    init_system_data_api_v1_users_init_data_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_roles_api_v1_roles_get: {
+        parameters: {
+            query?: {
+                /** @description 角色名称搜索 */
+                name?: string | null;
+                /** @description 角色代码搜索 */
+                code?: string | null;
+                /** @description 是否激活筛选 */
+                is_active?: boolean | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_role_api_v1_roles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_role_api_v1_roles__role_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_role_api_v1_roles__role_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_role_api_v1_roles__role_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_csv_api_v1_upload_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_csv_api_v1_upload_csv_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_failed_records_api_v1_upload_download__filename__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_properties_api_v1_push_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_file_api_v1_files_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_files_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sentiment_api_v1_monitor_communities__community_id__sentiment_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketSentimentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trends_api_v1_monitor_communities__community_id__trends_get: {
+        parameters: {
+            query?: {
+                months?: number;
+            };
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendData"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_strategy_api_v1_monitor_ai_strategy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIStrategyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIStrategyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_neighborhood_radar_api_v1_monitor_communities__community_id__radar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeighborhoodRadarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_competitors_api_v1_communities__community_id__competitors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitorResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_competitor_api_v1_communities__community_id__competitors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCompetitorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: number;
+                competitor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
