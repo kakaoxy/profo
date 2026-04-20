@@ -33,7 +33,7 @@ class LeadFollowUpService:
         """
         self.db = db
 
-    def create(
+    def create_follow_up(
         self,
         lead_id: str,
         method: FollowUpMethod,
@@ -77,7 +77,7 @@ class LeadFollowUpService:
         self.db.refresh(db_follow)
         return db_follow
 
-    def get_by_lead(self, lead_id: str) -> List[LeadFollowUp]:
+    def get_follow_ups(self, lead_id: str) -> List[LeadFollowUp]:
         """
         获取线索的跟进记录列表
 
