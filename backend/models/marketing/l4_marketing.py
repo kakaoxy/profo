@@ -43,7 +43,7 @@ class L4MarketingProject(BaseModel):
     id = Column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
 
     # 小区ID - UUID字符串类型，非空，关联小区
-    community_id = Column(String(36), nullable=False, comment="关联小区ID（UUID字符串）")
+    community_id = Column(String(36), ForeignKey('communities.id'), nullable=False, comment="关联小区ID（UUID字符串）")
 
     # 小区名称 - 冗余存储，避免跨层级JOIN查询
     community_name = Column(String(200), nullable=True, comment="小区名称(冗余存储)")
