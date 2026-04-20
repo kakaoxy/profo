@@ -153,7 +153,7 @@ def test_competitors(client, monitor_data):
     
     # 2. Add
     resp = client.post(f"/api/communities/{c1_id}/competitors", json={"competitor_community_id": c3_id})
-    assert resp.status_code == 200
+    assert resp.status_code == 204
     
     resp = client.get(f"/api/communities/{c1_id}/competitors")
     assert len(resp.json()) == 2
