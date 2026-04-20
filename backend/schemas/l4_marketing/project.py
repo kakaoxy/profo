@@ -33,8 +33,8 @@ class L4MarketingProjectBase(BaseModel):
     decoration_style: str | None = Field(default=None, max_length=100, description="装修风格，最大长度100")
 
     # 状态
-    publish_status: str = Field(default=PublishStatus.DRAFT, description="发布状态: 草稿/发布")
-    project_status: str = Field(default=MarketingProjectStatus.IN_PROGRESS, description="项目状态: 在途/在售/已售")
+    publish_status: PublishStatus = Field(default=PublishStatus.DRAFT, description="发布状态: 草稿/发布")
+    project_status: MarketingProjectStatus = Field(default=MarketingProjectStatus.IN_PROGRESS, description="项目状态: 在途/在售/已售")
 
     # 关联
     project_id: str | None = Field(None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，可为空，UUID字符串")
@@ -69,8 +69,8 @@ class L4MarketingProjectUpdate(BaseModel):
     decoration_style: str | None = Field(default=None, max_length=100)
 
     # 状态
-    publish_status: str | None = Field(default=None, description="发布状态: 草稿/发布")
-    project_status: str | None = Field(default=None, description="项目状态: 在途/在售/已售")
+    publish_status: PublishStatus | None = Field(default=None, description="发布状态: 草稿/发布")
+    project_status: MarketingProjectStatus | None = Field(default=None, description="项目状态: 在途/在售/已售")
 
     # 关联
     project_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，UUID字符串")
@@ -109,8 +109,8 @@ class L4MarketingProjectResponse(BaseModel):
     decoration_style: str | None = None
 
     # 状态
-    publish_status: str
-    project_status: str
+    publish_status: PublishStatus
+    project_status: MarketingProjectStatus
 
     # 关联
     project_id: str | None = None
