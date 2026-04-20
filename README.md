@@ -364,16 +364,40 @@ from services.monitor import MonitorService
 
 ```
 
-├── models/               # 数据模型层
-│   ├── project.py             # 项目模型
-│   ├── user.py                # 用户模型
-│   ├── lead.py                # 线索模型
-│   ├── community.py           # 小区模型
-│   ├── property.py            # 房源模型
-│   ├── media.py               # 媒体模型
-│   ├── l4_marketing.py        # 营销模型
-│   ├── error.py               # 错误模型
-│   └── base.py                # 基础模型和枚举
+├── models/                    # 数据模型层（按业务领域模块化组织）
+│   ├── __init__.py            # 模型包统一入口，聚合导出所有模型
+│   ├── common/                # 基础模块
+│   │   ├── __init__.py        # 基础模块入口，导出Base、枚举类型
+│   │   └── base.py            # 基础模型和枚举定义（Base, BaseModel, PropertyStatus等）
+│   ├── lead/                  # 线索管理模块（L2）
+│   │   ├── __init__.py        # 线索模块入口
+│   │   └── lead.py            # 线索模型（Lead, LeadFollowUp, LeadPriceHistory）
+│   ├── marketing/             # 市场营销模块（L4）
+│   │   ├── __init__.py        # 营销模块入口
+│   │   └── l4_marketing.py    # 营销模型（L4MarketingProject, L4MarketingMedia等）
+│   ├── project/               # 项目管理模块（L3）
+│   │   ├── __init__.py        # 项目模块入口，聚合导出所有项目相关模型
+│   │   ├── project.py         # 项目主模型及统一导出
+│   │   ├── _project_base.py   # 项目基础模型（Project）
+│   │   ├── _project_contract.py   # 项目合同模型（ProjectContract）
+│   │   ├── _project_owner.py      # 项目业主模型（ProjectOwner）
+│   │   ├── _project_sale.py       # 项目销售模型（ProjectSale）
+│   │   ├── _project_followup.py   # 项目跟进模型（ProjectFollowUp）
+│   │   ├── _project_interaction.py    # 项目互动模型（ProjectInteraction, ProjectEvaluation）
+│   │   ├── _project_finance.py    # 项目财务模型（FinanceRecord）
+│   │   ├── _project_status_log.py # 项目状态日志模型（ProjectStatusLog）
+│   │   ├── _project_renovation.py # 项目装修模型（ProjectRenovation, RenovationPhoto）
+│   ├── property/              # 房源信息模块（L1）
+│   │   ├── __init__.py        # 房源模块入口
+│   │   ├── community.py       # 小区模型（Community, CommunityAlias, CommunityCompetitor）
+│   │   ├── property.py        # 房源模型（PropertyCurrent, PropertyHistory）
+│   │   └── media.py           # 房源媒体模型（PropertyMedia）
+│   ├── system/                # 系统模块
+│   │   ├── __init__.py        # 系统模块入口
+│   │   └── error.py           # 错误记录模型（FailedRecord）
+│   └── user/                  # 用户权限模块
+│       ├── __init__.py        # 用户模块入口
+│       └── user.py            # 用户模型（User, Role）
 ├── schemas/              # Pydantic模型
 │   ├── __init__.py            # Schema包入口
 │   ├── common.py              # 通用Schema (分页响应、楼层解析等)
