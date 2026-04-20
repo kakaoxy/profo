@@ -8,7 +8,7 @@ from typing import Dict, Any, List
 from decimal import Decimal
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from fastapi import HTTPException, status
 import logging
 
@@ -137,13 +137,13 @@ class FinanceService:
             # 2. 聚合计算收入支出
             result = self.db.query(
                 func.sum(
-                    func.case(
+                    case(
                         (FinanceRecord.type == "income", FinanceRecord.amount),
                         else_=0
                     )
                 ).label("total_income"),
                 func.sum(
-                    func.case(
+                    case(
                         (FinanceRecord.type == "expense", FinanceRecord.amount),
                         else_=0
                     )
@@ -317,6 +317,24 @@ class FinanceService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"收入类型不能使用分类: {category.value}"
             )
+
+
+    # 别名方法 - 与路由兼容
+    def get_cashflow_records(self, project_id: str) -> List[FinanceRecord]:
+        """获取项目现金流记录（路由兼容别名）"""
+        return self.get_records(project_id)
+
+    def get_cashflow_summary(self, project_id: str) -> Dict[str, Any]:
+        """获取现金流汇总（路由兼容别名）"""
+        return self.get_summary(project_id)
+
+    def create_cashflow_record(self, project_id: str, record_data) -> FinanceRecord:
+        """创建现金流记录（路由兼容别名）"""
+        return self.create_record(project_id, record_data)
+
+    def delete_cashflow_record(self, record_id: str, project_id: str) -> None:
+        """删除现金流记录（路由兼容别名）"""
+        return self.delete_record(record_id, project_id)
 
 
 # 保持向后兼容的别名
