@@ -138,9 +138,9 @@ app.include_router(marketing_projects_router, prefix=f"{API_V1_PREFIX}", tags=["
 app.include_router(marketing_import_router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing-import"])
 
 # ==================== 系统管理模块 (System) ====================
-app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
-app.include_router(users_router, prefix=f"{API_V1_PREFIX}/users", tags=["users"])
-app.include_router(roles_router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
+app.include_router(auth_router, prefix=API_V1_PREFIX)
+app.include_router(users_router, prefix=API_V1_PREFIX)
+app.include_router(roles_router, prefix=API_V1_PREFIX)
 
 # ==================== 通用功能模块 (Common) ====================
 app.include_router(upload_router, prefix=f"{API_V1_PREFIX}/upload", tags=["upload"])

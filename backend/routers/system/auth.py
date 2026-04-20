@@ -2,7 +2,7 @@
 认证相关路由
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
-from typing import Annotated, Optional
+from typing import Annotated
 from fastapi import APIRouter, Body, Depends, HTTPException, status, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -27,7 +27,7 @@ from common import limiter
 DBSessionDep = Annotated[Session, Depends(get_db)]
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # ==================== 速率限制依赖 ====================
@@ -111,7 +111,7 @@ def refresh_access_token(
 
 @router.get("/wechat/authorize")
 def wechat_authorize(
-    redirect_uri: Optional[str] = None
+    redirect_uri: Annotated[str | None, Query(description="重定向URL")] = None
 ):
     """
     生成微信登录授权URL
