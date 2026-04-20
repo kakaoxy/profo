@@ -52,12 +52,9 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
         // 获取第一张营销图片，优先使用 thumbnail_url
         const firstMedia = project.media_files[0];
         imageUrl = getFileUrl(firstMedia.thumbnail_url || firstMedia.file_url);
-      } else if (project.images) {
-        // 回退到 images 字段
-        const images = project.images.split(",").filter(Boolean);
-        if (images.length > 0) {
-          imageUrl = getFileUrl(images[0].trim());
-        }
+      } else if (Array.isArray(project.images) && project.images.length > 0) {
+        // 回退到 images 字段 - 后端直接返回数组
+        imageUrl = getFileUrl(project.images[0]);
       }
 
       const status = project.project_status || "在途";

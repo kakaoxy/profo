@@ -3,8 +3,7 @@ L4 市场营销层项目相关 Schema
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
-from pydantic import BaseModel, Field, ConfigDict, field_validator, field_serializer
+from pydantic import BaseModel, Field, ConfigDict
 
 from .enums import PublishStatus, MarketingProjectStatus
 from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
@@ -80,8 +79,7 @@ class L4MarketingProjectUpdate(BaseModel):
 class L4MarketingProjectResponse(BaseModel):
     """营销项目响应模型
 
-    注意: images 和 tags 字段对外保持逗号分隔字符串格式以兼容前端
-    内部使用 list[str] 存储，通过序列化器/验证器自动转换
+    数据库使用JSON存储images和tags，前后端统一使用list[str]格式
     """
     model_config = ConfigDict(from_attributes=True)
 
@@ -101,11 +99,11 @@ class L4MarketingProjectResponse(BaseModel):
     total_price: Decimal
     unit_price: Decimal
 
-    # 营销信息 - 对外保持字符串格式以兼容前端
+    # 营销信息 - JSON数组格式
     title: str
-    images: str | None = None  # 逗号分隔的图片URL字符串
+    images: list[str] = Field(default_factory=list, description="图片URL列表，JSON数组")
     sort_order: int
-    tags: str | None = None  # 逗号分隔的标签字符串
+    tags: list[str] = Field(default_factory=list, description="标签列表，JSON数组")
     decoration_style: str | None = None
 
     # 状态
@@ -123,27 +121,3 @@ class L4MarketingProjectResponse(BaseModel):
 
     # 关联数据
     media_files: list[L4MarketingMediaResponse] = Field(default_factory=list)
-
-    @field_validator("images", mode="before")
-    @classmethod
-    def validate_images(cls, v: Any) -> str | None:
-        """处理数据库值：list -> 逗号分隔字符串"""
-        if v is None:
-            return None
-        if isinstance(v, list):
-            return ",".join(v) if v else None
-        if isinstance(v, str):
-            return v if v else None
-        return None
-
-    @field_validator("tags", mode="before")
-    @classmethod
-    def validate_tags(cls, v: Any) -> str | None:
-        """处理数据库值：list -> 逗号分隔字符串"""
-        if v is None:
-            return None
-        if isinstance(v, list):
-            return ",".join(v) if v else None
-        if isinstance(v, str):
-            return v if v else None
-        return None

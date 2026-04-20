@@ -80,25 +80,23 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
     [project.id, project.images, marketingPhotosSignature]
   );
 
-  // 缓存标签渲染
+  // 缓存标签渲染 - 后端直接返回数组
   const tagsContent = useMemo(() => {
-    if (typeof project.tags === "string" && project.tags) {
-      const tags = project.tags.split(",").filter((t) => t.trim());
-      return (
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant="secondary"
-              className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 border-0"
-            >
-              {tag.trim()}
-            </Badge>
-          ))}
-        </div>
-      );
-    }
-    return null;
+    const tags = Array.isArray(project.tags) ? project.tags : [];
+    if (tags.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <Badge
+            key={tag}
+            variant="secondary"
+            className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 border-0"
+          >
+            {tag}
+          </Badge>
+        ))}
+      </div>
+    );
   }, [project.tags]);
 
   return (

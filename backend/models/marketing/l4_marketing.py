@@ -3,11 +3,11 @@ L4 市场营销层模型
 对应 mini_projects 小程序项目管理
 """
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, JSON
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 
 from ..common.base import BaseModel
 
@@ -60,9 +60,9 @@ class L4MarketingProject(BaseModel):
 
     # 营销信息
     title = Column(String(255), nullable=False, comment="标题，最大长度255")
-    images = Column(Text, nullable=True, comment="图片URL列表，多个用逗号分隔")
+    images = Column(JSON, default=list, comment="图片URL列表，JSON数组")
     sort_order = Column(Integer, nullable=False, default=0, comment="排序权重，默认0")
-    tags = Column(String(500), nullable=True, comment="标签，多个用逗号分隔")
+    tags = Column(JSON, default=list, comment="标签列表，JSON数组")
     decoration_style = Column(String(100), nullable=True, comment="装修风格，最大长度100")
 
     # 状态控制

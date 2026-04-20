@@ -2180,8 +2180,7 @@ export interface components {
          * L4MarketingProjectResponse
          * @description 营销项目响应模型
          *
-         *     注意: images 和 tags 字段对外保持逗号分隔字符串格式以兼容前端
-         *     内部使用 list[str] 存储，通过序列化器/验证器自动转换
+         *     数据库使用JSON存储images和tags，前后端统一使用list[str]格式
          */
         L4MarketingProjectResponse: {
             /** Id */
@@ -2204,12 +2203,18 @@ export interface components {
             unit_price: string;
             /** Title */
             title: string;
-            /** Images */
-            images?: string | null;
+            /**
+             * Images
+             * @description 图片URL列表，JSON数组
+             */
+            images?: string[];
             /** Sort Order */
             sort_order: number;
-            /** Tags */
-            tags?: string | null;
+            /**
+             * Tags
+             * @description 标签列表，JSON数组
+             */
+            tags?: string[];
             /** Decoration Style */
             decoration_style?: string | null;
             publish_status: components["schemas"]["PublishStatus"];

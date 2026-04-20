@@ -26,11 +26,13 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMi
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getDefaultValues(mode, project),
+    mode: "onSubmit",
   });
 
   const { formState } = form;
   const isSubmitting = formState.isSubmitting;
   const dirtyFields = formState.dirtyFields;
+  const errors = formState.errors;
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
@@ -83,6 +85,7 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMi
     form,
     onSubmit,
     isSubmitting,
+    errors,
   };
 }
 
