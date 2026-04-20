@@ -81,8 +81,8 @@ class CommunityMerger:
     def _validate_communities(self, primary_id: int, merge_ids: List[int], db: Session) -> Community:
         """验证主小区和待合并小区是否存在且有效"""
         primary = db.query(Community).filter(
-            Community.id == primary_id, 
-            Community.is_active == True
+            Community.id == primary_id,
+            Community.is_active.is_(True)
         ).first()
         
         if not primary:
@@ -91,7 +91,7 @@ class CommunityMerger:
         # 检查待合并小区是否存在
         existing_count = db.query(Community).filter(
             Community.id.in_(merge_ids),
-            Community.is_active == True
+            Community.is_active.is_(True)
         ).count()
         
         if existing_count != len(merge_ids):
@@ -104,7 +104,7 @@ class CommunityMerger:
         """统计将被迁移的房源数量"""
         return db.query(PropertyCurrent).filter(
             PropertyCurrent.community_id.in_(merge_ids),
-            PropertyCurrent.is_active == True
+            PropertyCurrent.is_active.is_(True)
         ).count()
 
     def _process_aliases(self, primary: Community, merge_communities: List[Community], db: Session):
@@ -167,7 +167,7 @@ class CommunityMerger:
         """批量更新房源的归属小区"""
         db.query(PropertyCurrent).filter(
             PropertyCurrent.community_id.in_(merge_ids),
-            PropertyCurrent.is_active == True
+            PropertyCurrent.is_active.is_(True)
         ).update(
             {PropertyCurrent.community_id: primary_id},
             synchronize_session=False
@@ -184,7 +184,7 @@ class CommunityMerger:
         """重新计算主小区的统计数据"""
         count = db.query(PropertyCurrent).filter(
             PropertyCurrent.community_id == primary.id,
-            PropertyCurrent.is_active == True
+            PropertyCurrent.is_active.is_(True)
         ).count()
         primary.total_properties = count
         primary.updated_at = datetime.now()
