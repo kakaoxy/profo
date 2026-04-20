@@ -40,8 +40,8 @@ export async function getL4MarketingProjectsAction(
   pageSize = 20,
   publishStatus?: string,
   projectStatus?: string,
-  consultantId?: number,
-  communityId?: number,
+  consultantId?: string,
+  communityId?: string,
 ): Promise<ActionResult<{ items: unknown[]; total: number; page: number; page_size: number }>> {
   try {
     const client = await fetchClient();

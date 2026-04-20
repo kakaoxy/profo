@@ -49,14 +49,14 @@ export function CompetitorManagerModal({
     currentCommunityId: communityId,
   });
 
-  const handleAdd = async (competitorId: number) => {
+  const handleAdd = async (competitorId: string) => {
     setIsAdding(true);
     await addCompetitor(competitorId);
     setSearchQuery("");
     setIsAdding(false);
   };
 
-  const handleRemove = async (competitorId: number) => {
+  const handleRemove = async (competitorId: string) => {
     await removeCompetitor(competitorId);
   };
 

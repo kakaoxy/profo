@@ -4,11 +4,11 @@ import { Search, Loader2 } from "lucide-react";
 
 interface SearchSectionProps {
   searchQuery: string;
-  searchResults: { id: number; name: string }[];
+  searchResults: { id: string; name: string }[];
   isSearching: boolean;
   isAdding: boolean;
   onSearchChange: (value: string) => void;
-  onAdd: (id: number) => void;
+  onAdd: (id: string) => void;
 }
 
 export function SearchSection({

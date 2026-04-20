@@ -1433,7 +1433,7 @@ export interface components {
         /** AddCompetitorRequest */
         AddCompetitorRequest: {
             /** Competitor Community Id */
-            competitor_community_id: number;
+            competitor_community_id: string;
         };
         /** Body_login_for_access_token_api_v1_auth_token_post */
         Body_login_for_access_token_api_v1_auth_token_post: {
@@ -1602,14 +1602,14 @@ export interface components {
         CommunityMergeRequest: {
             /**
              * Primary Id
-             * @description 主小区ID
+             * @description 主小区ID（UUID字符串）
              */
-            primary_id: number;
+            primary_id: string;
             /**
              * Merge Ids
-             * @description 要合并的小区ID列表
+             * @description 要合并的小区ID列表（UUID字符串）
              */
-            merge_ids: number[];
+            merge_ids: string[];
         };
         /**
          * CommunityMergeResponse
@@ -1629,7 +1629,7 @@ export interface components {
          */
         CommunityResponse: {
             /** Id */
-            id: number;
+            id: string;
             /** Name */
             name: string;
             /** City Id */
@@ -1651,7 +1651,7 @@ export interface components {
         /** CompetitorResponse */
         CompetitorResponse: {
             /** Community Id */
-            community_id: number;
+            community_id: string;
             /** Community Name */
             community_name: string;
             /** Avg Price */
@@ -1825,9 +1825,9 @@ export interface components {
             project_id: string;
             /**
              * Community Id
-             * @description 小区ID
+             * @description 小区ID（UUID字符串）
              */
-            community_id?: number | null;
+            community_id?: string | null;
             /**
              * Community Name
              * @description 小区名称
@@ -2065,9 +2065,9 @@ export interface components {
         L4MarketingProjectCreate: {
             /**
              * Community Id
-             * @description 关联小区ID
+             * @description 关联小区ID（UUID字符串）
              */
-            community_id: number;
+            community_id: string;
             /**
              * Community Name
              * @description 小区名称(冗余存储)
@@ -2186,7 +2186,7 @@ export interface components {
             /** Id */
             id: number;
             /** Community Id */
-            community_id: number;
+            community_id: string;
             /** Community Name */
             community_name?: string | null;
             /** Layout */
@@ -2248,9 +2248,9 @@ export interface components {
         L4MarketingProjectUpdate: {
             /**
              * Community Id
-             * @description 关联小区ID
+             * @description 关联小区ID（UUID字符串）
              */
-            community_id?: number | null;
+            community_id?: string | null;
             /**
              * Community Name
              * @description 小区名称(冗余存储)
@@ -2572,7 +2572,7 @@ export interface components {
          */
         NeighborhoodRadarItem: {
             /** Community Id */
-            community_id: number;
+            community_id: string;
             /** Community Name */
             community_name: string;
             /** Is Subject */
@@ -5711,9 +5711,9 @@ export interface operations {
                 /** @description 项目状态: 在途/在售/已售 */
                 project_status?: string | null;
                 /** @description 顾问ID */
-                consultant_id?: number | null;
+                consultant_id?: string | null;
                 /** @description 小区ID */
-                community_id?: number | null;
+                community_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -6977,7 +6977,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                community_id: number;
+                community_id: string;
             };
             cookie?: never;
         };
@@ -7010,7 +7010,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                community_id: number;
+                community_id: string;
             };
             cookie?: never;
         };
@@ -7074,7 +7074,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                community_id: number;
+                community_id: string;
             };
             cookie?: never;
         };
@@ -7105,7 +7105,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                community_id: number;
+                community_id: string;
             };
             cookie?: never;
         };
@@ -7136,7 +7136,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                community_id: number;
+                community_id: string;
             };
             cookie?: never;
         };
@@ -7171,8 +7171,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                community_id: number;
-                competitor_id: number;
+                community_id: string;
+                competitor_id: string;
             };
             cookie?: never;
         };

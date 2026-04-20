@@ -7,7 +7,7 @@ import { extractPaginatedData } from "@/lib/api-helpers";
  */
 export async function getCommunityIdFromProject(
   projectId: string,
-): Promise<number | null> {
+): Promise<string | null> {
   const projectResult = await getProjectDetailAction(projectId, false);
   if (!projectResult.success || !projectResult.data) return null;
 
@@ -22,7 +22,7 @@ export async function getCommunityIdFromProject(
 
   if (error) return null;
 
-  const { items } = extractPaginatedData<{ id: number }>(communitiesData);
+  const { items } = extractPaginatedData<{ id: string }>(communitiesData);
   return items?.[0]?.id || null;
 }
 
@@ -31,7 +31,7 @@ export async function getCommunityIdFromProject(
  */
 export async function getCommunityIdByName(
   communityName: string,
-): Promise<number | null> {
+): Promise<string | null> {
   const client = await fetchClient();
   const { data: communitiesData, error } = await client.GET(
     "/api/v1/admin/communities",
@@ -40,6 +40,6 @@ export async function getCommunityIdByName(
 
   if (error) return null;
 
-  const { items } = extractPaginatedData<{ id: number }>(communitiesData);
+  const { items } = extractPaginatedData<{ id: string }>(communitiesData);
   return items?.[0]?.id || null;
 }

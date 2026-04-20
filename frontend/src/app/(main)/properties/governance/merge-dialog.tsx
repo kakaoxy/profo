@@ -46,7 +46,7 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
   // 计算属性：即将被删除的小区列表
   const communitiesToDelete = useMemo(() => {
     if (!primaryId) return [];
-    return selectedCommunities.filter((c) => String(c.id) !== primaryId);
+    return selectedCommunities.filter((c) => c.id !== primaryId);
   }, [selectedCommunities, primaryId]);
 
   const handleMerge = async () => {
@@ -55,15 +55,14 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
       return;
     }
 
-    const pid = parseInt(primaryId);
     // 获取所有非主小区的 ID
     const mergeIds = selectedCommunities
-      .filter((c) => c.id !== pid)
+      .filter((c) => c.id !== primaryId)
       .map((c) => c.id);
 
     setIsMerging(true);
     try {
-      const result = await mergeCommunitiesAction(pid, mergeIds);
+      const result = await mergeCommunitiesAction(primaryId, mergeIds);
 
       if (result.success) {
         toast.success("合并成功", {

@@ -82,8 +82,8 @@ class MarketingImportService:
             available_media=available_media
         )
 
-    def _get_community_id(self, community_name: Optional[str]) -> Optional[int]:
-        """根据小区名称获取小区ID"""
+    def _get_community_id(self, community_name: Optional[str]) -> Optional[str]:
+        """根据小区名称获取小区ID（UUID字符串）"""
         if not community_name:
             return None
         community: Optional[Community] = self.db.query(Community).filter(

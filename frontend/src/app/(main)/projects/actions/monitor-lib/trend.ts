@@ -44,7 +44,7 @@ export async function getTrendPositioningAction(projectId: string) {
     }
 
     // 直接返回 CommunityListResponse 结构
-    const communities = (communitiesData as { items?: Array<{ id: number }> })?.items;
+    const communities = (communitiesData as { items?: Array<{ id: string }> })?.items;
     if (!communities || communities.length === 0) {
       return { success: false, message: `未找到小区: ${community_name}` };
     }
