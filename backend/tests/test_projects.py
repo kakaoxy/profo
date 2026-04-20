@@ -17,7 +17,7 @@ from main import app
 from db import get_db
 from models import Base
 from models import Project, CashFlowRecord
-from models.base import ProjectStatus, RenovationStage, CashFlowType, CashFlowCategory
+from models.common import ProjectStatus, RenovationStage, CashFlowType, CashFlowCategory
 
 
 # 测试数据库配置

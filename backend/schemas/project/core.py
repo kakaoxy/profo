@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
-from models.base import ProjectStatus
+from models.common import ProjectStatus
 
 if TYPE_CHECKING:
     from .sales import SalesRecordResponse

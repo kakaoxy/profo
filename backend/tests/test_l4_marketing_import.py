@@ -13,8 +13,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from models import Base, Project, ProjectContract, ProjectSale, RenovationPhoto
-from models.base import ProjectStatus
-from models.l4_marketing import L4MarketingProject
+from models.common import ProjectStatus
+from models.marketing import L4MarketingProject
 from services.l4_marketing_query import L4MarketingQueryService
 from services.l4_marketing_import import L4MarketingImportService
 

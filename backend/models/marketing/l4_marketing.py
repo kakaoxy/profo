@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class PublishStatus(str, Enum):

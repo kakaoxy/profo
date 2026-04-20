@@ -3,7 +3,7 @@
 """
 from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Index
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class ProjectStatusLog(BaseModel):

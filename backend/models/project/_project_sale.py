@@ -4,7 +4,7 @@
 from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey, Index
 from sqlalchemy.orm import relationship, Session
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class ProjectSale(BaseModel):
@@ -33,7 +33,7 @@ class ProjectSale(BaseModel):
 
     def validate_user_references(self, db: Session) -> None:
         """验证销售角色用户ID是否有效"""
-        from .user import User
+        from ..user.user import User
 
         user_fields = [
             ("channel_manager_id", self.channel_manager_id),

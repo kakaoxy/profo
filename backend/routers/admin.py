@@ -9,8 +9,7 @@ from sqlalchemy import func, distinct
 from typing import Annotated, Optional
 import logging
 
-from models.community import Community
-from models.property import PropertyCurrent
+from models.property import Community, PropertyCurrent
 from schemas.community import (
     CommunityListResponse,
     CommunityResponse,

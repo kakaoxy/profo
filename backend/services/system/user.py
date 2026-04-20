@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Optional, List
 
-from models.user import User
+from models import User
 from schemas.user import UserCreate, UserUpdate, PasswordResetRequest, PasswordChange
 from utils.auth import get_password_hash, verify_password, validate_password_strength
 

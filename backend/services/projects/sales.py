@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 import uuid
 
 from models import Project, ProjectSale, ProjectInteraction, User
-from models.base import ProjectStatus
+from models.common import ProjectStatus
 from schemas.project.sales import SalesRecordCreate, SalesRolesUpdate, ProjectCompleteRequest
 from schemas.project import ProjectResponse
 from .internal import ProjectResponseBuilder

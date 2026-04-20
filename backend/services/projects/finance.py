@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 import logging
 
 from models import FinanceRecord, Project, ProjectContract, ProjectSale
-from models.base import CashFlowType, CashFlowCategory
+from models.common import CashFlowType, CashFlowCategory
 
 logger = logging.getLogger(__name__)
 

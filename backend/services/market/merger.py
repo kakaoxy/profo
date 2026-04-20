@@ -8,8 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 
-from models.community import Community, CommunityAlias
-from models.property import PropertyCurrent
+from models.property import Community, CommunityAlias, PropertyCurrent
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ import httpx
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from models.user import User, Role
+from models import User, Role
 from schemas.user import TokenResponse
 from settings import settings
 from utils.auth import (

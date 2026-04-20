@@ -5,7 +5,7 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, Index, Enum as SQLEnum
 from sqlalchemy.orm import relationship
-from .base import Base, MediaType
+from ..common.base import Base, MediaType
 
 
 class PropertyMedia(Base):

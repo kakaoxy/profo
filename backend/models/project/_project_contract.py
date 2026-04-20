@@ -3,7 +3,7 @@
 """
 from sqlalchemy import Column, String, Integer, Numeric, DateTime, Text, Boolean, ForeignKey, Index, JSON
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class ProjectContract(BaseModel):

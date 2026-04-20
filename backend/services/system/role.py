@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import Optional, List
 
-from models.user import Role
+from models import Role
 from schemas.user import RoleCreate, RoleUpdate
 
 

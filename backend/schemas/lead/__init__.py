@@ -4,7 +4,7 @@ Leads Management Pydantic Schemas
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
-from models.base import LeadStatus, FollowUpMethod
+from models.common import LeadStatus, FollowUpMethod
 
 
 # ----------------------

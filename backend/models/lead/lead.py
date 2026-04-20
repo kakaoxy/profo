@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric, JSON
 from sqlalchemy.orm import relationship
 
-from .base import Base, LeadStatus, FollowUpMethod
+from ..common.base import Base, LeadStatus, FollowUpMethod
 
 class Lead(Base):
     """线索主表"""

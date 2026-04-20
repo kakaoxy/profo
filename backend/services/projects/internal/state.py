@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from models import Project
-from models.base import ProjectStatus
+from models.common import ProjectStatus
 from schemas.project import StatusUpdate
 
 
@@ -118,7 +118,7 @@ class ProjectStateManager:
             new_status: 新的项目状态
             status_update: 状态更新数据
         """
-        from models.project import ProjectSale
+        from models import ProjectSale
         from services.utils import parse_date_string
 
         if new_status == ProjectStatus.SELLING.value:
