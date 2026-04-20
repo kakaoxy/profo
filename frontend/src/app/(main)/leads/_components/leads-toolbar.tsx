@@ -7,7 +7,13 @@ import { Search, X, Download, List, LayoutGrid, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-import { LeadTabValue } from "../types";
+import { LeadTabValue, LeadStatus } from "../types";
+
+const VALID_TAB_VALUES: string[] = ["all", ...Object.values(LeadStatus)];
+
+function isValidTabValue(value: string): value is LeadTabValue {
+  return VALID_TAB_VALUES.includes(value);
+}
 
 interface LeadsToolbarProps {
   searchQuery: string;
@@ -54,7 +60,11 @@ export function LeadsToolbar({
         {/* Status Tabs */}
         <Tabs
           value={activeTab}
-          onValueChange={(value) => onTabChange(value as LeadTabValue)}
+          onValueChange={(value) => {
+            if (isValidTabValue(value)) {
+              onTabChange(value);
+            }
+          }}
           className="w-full sm:w-auto"
         >
           <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg flex-wrap">

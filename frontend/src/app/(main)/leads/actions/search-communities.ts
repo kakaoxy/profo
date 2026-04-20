@@ -16,7 +16,7 @@ export async function searchCommunitiesAction(query: string) {
     return [];
   }
 
-  return (data as unknown) as {
+  return data as unknown as {
     id: string;
     name: string;
     district: string;
