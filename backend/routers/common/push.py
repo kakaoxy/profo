@@ -141,7 +141,7 @@ class JSONBatchImporter:
         )
 
 
-@router.post("", response_model=PushResult)
+@router.post("/", response_model=PushResult)
 def push_properties(
     properties: Annotated[List[dict], Body()],
     db: DbSessionDep,
