@@ -71,7 +71,7 @@ export function BasicInfoTab({ form }: TabProps) {
         render={({ field }) => (
           <CommunitySelect
             value={field.value}
-            onChange={(value) => field.onChange(value)}
+            onChange={(value, _district, _businessArea) => field.onChange(value)}
           />
         )}
       />
