@@ -3,7 +3,7 @@
 处理房源数据查询的排序逻辑
 """
 from sqlalchemy.orm import Query
-from sqlalchemy import desc, asc, case
+from sqlalchemy import desc, asc, case, func
 
 from models import PropertyCurrent, PropertyStatus
 
@@ -37,8 +37,8 @@ def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
         ),
         "unit_price": case(
             (PropertyCurrent.status == PropertyStatus.FOR_SALE,
-             (PropertyCurrent.listed_price_wan * 10000) / PropertyCurrent.build_area),
-            else_=(PropertyCurrent.sold_price_wan * 10000) / PropertyCurrent.build_area
+             (PropertyCurrent.listed_price_wan * 10000) / func.nullif(PropertyCurrent.build_area, 0)),
+            else_=(PropertyCurrent.sold_price_wan * 10000) / func.nullif(PropertyCurrent.build_area, 0)
         ),
         "timeline": case(
             (PropertyCurrent.status == PropertyStatus.FOR_SALE, PropertyCurrent.listed_date),
