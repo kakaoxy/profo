@@ -338,8 +338,12 @@ backend/
 │   ├── evaluation.py          # 评估Schema
 │   ├── interaction.py         # 互动记录Schema
 │   ├── status_log.py          # 状态日志Schema
-│   ├── l4_marketing.py        # 营销Schema
-│   ├── l4_project_import.py   # L4项目导入Schema
+│   ├── l4_marketing/          # L4市场营销Schema包
+│   │   ├── project.py         # 营销项目Schema
+│   │   ├── media.py           # 营销媒体Schema
+│   │   ├── query.py           # 查询和响应Schema
+│   │   ├── import_schemas.py  # L3项目导入Schema
+│   │   └── enums.py           # 枚举定义
 │   ├── property.py            # 房源Schema
 │   ├── property_core.py       # 房源核心Schema
 │   ├── property_response.py   # 房源响应Schema

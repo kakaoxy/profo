@@ -22,6 +22,13 @@ from .query import (
     L4MarketingProjectListResponse,
     L4MarketingMediaListResponse,
 )
+from .import_schemas import (
+    L3ProjectBriefResponse,
+    L3ProjectListResponse,
+    ImportableMediaResponse,
+    L3ProjectImportResponse,
+    L3ProjectQueryParams,
+)
 
 __all__ = [
     # Enums
@@ -45,4 +52,10 @@ __all__ = [
     "L4RefreshResponse",
     "L4MarketingProjectListResponse",
     "L4MarketingMediaListResponse",
+    # Import Schemas
+    "L3ProjectBriefResponse",
+    "L3ProjectListResponse",
+    "ImportableMediaResponse",
+    "L3ProjectImportResponse",
+    "L3ProjectQueryParams",
 ]
