@@ -73,6 +73,26 @@ from .user import (
     WechatLoginRequest,
 )
 
+from .l4_marketing import (
+    PublishStatus,
+    MarketingProjectStatus,
+    MediaType,
+    PhotoCategory,
+    L4MarketingMediaBase,
+    L4MarketingMediaCreate,
+    L4MarketingMediaUpdate,
+    L4MarketingMediaResponse,
+    L4MarketingProjectBase,
+    L4MarketingProjectCreate,
+    L4MarketingProjectUpdate,
+    L4MarketingProjectResponse,
+    L4MarketingProjectQuery,
+    L4SyncResponse,
+    L4RefreshResponse,
+    L4MarketingProjectListResponse,
+    L4MarketingMediaListResponse,
+)
+
 
 __all__ = [
     # Enums
@@ -143,4 +163,23 @@ __all__ = [
     'TokenResponse',
     'RefreshTokenRequest',
     'WechatLoginRequest',
+
+    # L4 Marketing
+    'PublishStatus',
+    'MarketingProjectStatus',
+    'MediaType',
+    'PhotoCategory',
+    'L4MarketingMediaBase',
+    'L4MarketingMediaCreate',
+    'L4MarketingMediaUpdate',
+    'L4MarketingMediaResponse',
+    'L4MarketingProjectBase',
+    'L4MarketingProjectCreate',
+    'L4MarketingProjectUpdate',
+    'L4MarketingProjectResponse',
+    'L4MarketingProjectQuery',
+    'L4SyncResponse',
+    'L4RefreshResponse',
+    'L4MarketingProjectListResponse',
+    'L4MarketingMediaListResponse',
 ]
