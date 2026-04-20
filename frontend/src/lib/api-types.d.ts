@@ -1026,7 +1026,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/users": {
+    "/api/v1/users/": {
         parameters: {
             query?: never;
             header?: never;
@@ -1037,13 +1037,13 @@ export interface paths {
          * Get Users
          * @description 获取用户列表，支持搜索和筛选
          */
-        get: operations["get_users_api_v1_users_users_get"];
+        get: operations["get_users_api_v1_users__get"];
         put?: never;
         /**
          * Create User
          * @description 创建新用户
          */
-        post: operations["create_user_api_v1_users_users_post"];
+        post: operations["create_user_api_v1_users__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1090,7 +1090,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/users/{user_id}": {
+    "/api/v1/users/{user_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1101,24 +1101,24 @@ export interface paths {
          * Get User
          * @description 获取指定用户信息
          */
-        get: operations["get_user_api_v1_users_users__user_id__get"];
+        get: operations["get_user_api_v1_users__user_id__get"];
         /**
          * Update User
          * @description 更新用户信息
          */
-        put: operations["update_user_api_v1_users_users__user_id__put"];
+        put: operations["update_user_api_v1_users__user_id__put"];
         post?: never;
         /**
          * Delete User
          * @description 删除用户
          */
-        delete: operations["delete_user_api_v1_users_users__user_id__delete"];
+        delete: operations["delete_user_api_v1_users__user_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/users/{user_id}/reset-password": {
+    "/api/v1/users/{user_id}/reset-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -1130,7 +1130,7 @@ export interface paths {
          * Reset User Password
          * @description 重置用户密码
          */
-        put: operations["reset_user_password_api_v1_users_users__user_id__reset_password_put"];
+        put: operations["reset_user_password_api_v1_users__user_id__reset_password_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1138,7 +1138,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/users/change-password": {
+    "/api/v1/users/change-password": {
         parameters: {
             query?: never;
             header?: never;
@@ -1151,7 +1151,7 @@ export interface paths {
          * Change Password
          * @description 修改当前用户密码
          */
-        post: operations["change_password_api_v1_users_users_change_password_post"];
+        post: operations["change_password_api_v1_users_change_password_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1179,7 +1179,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/roles": {
+    "/api/v1/roles/": {
         parameters: {
             query?: never;
             header?: never;
@@ -1190,13 +1190,13 @@ export interface paths {
          * Get Roles
          * @description 获取角色列表，支持搜索和筛选
          */
-        get: operations["get_roles_api_v1_roles_get"];
+        get: operations["get_roles_api_v1_roles__get"];
         put?: never;
         /**
          * Create Role
          * @description 创建新角色
          */
-        post: operations["create_role_api_v1_roles_post"];
+        post: operations["create_role_api_v1_roles__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1462,10 +1462,7 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /**
-             * Password
-             * Format: password
-             */
+            /** Password */
             password: string;
             /**
              * Scope
@@ -1474,10 +1471,7 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /**
-             * Client Secret
-             * Format: password
-             */
+            /** Client Secret */
             client_secret?: string | null;
         };
         /** Body_upload_csv_api_v1_upload_csv_post */
@@ -3346,9 +3340,7 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: {
-                [key: string]: unknown;
-            }[];
+            errors?: Record<string, never>[];
         };
         /**
          * RecordType
@@ -3751,9 +3743,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -3788,9 +3778,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -4227,9 +4215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": Record<string, never>[];
                 };
             };
             /** @description Validation Error */
@@ -4926,9 +4912,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": Record<string, never>[];
                 };
             };
             /** @description Validation Error */
@@ -5248,9 +5232,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": Record<string, never>[];
                 };
             };
             /** @description Validation Error */
@@ -6278,6 +6260,7 @@ export interface operations {
     wechat_authorize_api_v1_auth_wechat_authorize_get: {
         parameters: {
             query?: {
+                /** @description 重定向URL */
                 redirect_uri?: string | null;
             };
             header?: never;
@@ -6393,7 +6376,7 @@ export interface operations {
             };
         };
     };
-    get_users_api_v1_users_users_get: {
+    get_users_api_v1_users__get: {
         parameters: {
             query?: {
                 /** @description 用户名搜索 */
@@ -6435,7 +6418,7 @@ export interface operations {
             };
         };
     };
-    create_user_api_v1_users_users_post: {
+    create_user_api_v1_users__post: {
         parameters: {
             query?: never;
             header?: never;
@@ -6526,7 +6509,7 @@ export interface operations {
             };
         };
     };
-    get_user_api_v1_users_users__user_id__get: {
+    get_user_api_v1_users__user_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -6557,7 +6540,7 @@ export interface operations {
             };
         };
     };
-    update_user_api_v1_users_users__user_id__put: {
+    update_user_api_v1_users__user_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -6592,7 +6575,7 @@ export interface operations {
             };
         };
     };
-    delete_user_api_v1_users_users__user_id__delete: {
+    delete_user_api_v1_users__user_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -6621,7 +6604,7 @@ export interface operations {
             };
         };
     };
-    reset_user_password_api_v1_users_users__user_id__reset_password_put: {
+    reset_user_password_api_v1_users__user_id__reset_password_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -6642,7 +6625,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -6656,7 +6639,7 @@ export interface operations {
             };
         };
     };
-    change_password_api_v1_users_users_change_password_post: {
+    change_password_api_v1_users_change_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -6675,7 +6658,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -6704,12 +6687,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": Record<string, never>;
                 };
             };
         };
     };
-    get_roles_api_v1_roles_get: {
+    get_roles_api_v1_roles__get: {
         parameters: {
             query?: {
                 /** @description 角色名称搜索 */
@@ -6749,7 +6732,7 @@ export interface operations {
             };
         };
     };
-    create_role_api_v1_roles_post: {
+    create_role_api_v1_roles__post: {
         parameters: {
             query?: never;
             header?: never;
@@ -6950,9 +6933,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
+                "application/json": Record<string, never>[];
             };
         };
         responses: {

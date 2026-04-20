@@ -16,7 +16,7 @@ export type PasswordChange = components["schemas"]["PasswordChange"];
 export async function getUserByIdAction(userId: string) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/v1/users/users/{user_id}", {
+    const { data, error } = await client.GET("/api/v1/users/{user_id}", {
       params: { path: { user_id: userId } },
     });
 
@@ -42,7 +42,7 @@ export async function getUsersAction(params: {
 }) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/v1/users/users", {
+    const { data, error } = await client.GET("/api/v1/users/", {
       params: { query: params },
     });
 
@@ -83,7 +83,7 @@ export async function getUsersSimpleAction(params?: {
 export async function createUserAction(data: UserCreate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.POST("/api/v1/users/users", { body: data });
+    const { error } = await client.POST("/api/v1/users/", { body: data });
 
     if (error) {
       const errorMsg = (error as { detail?: string }).detail || "创建用户失败";
@@ -101,7 +101,7 @@ export async function createUserAction(data: UserCreate) {
 export async function updateUserAction(userId: string, data: UserUpdate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.PUT("/api/v1/users/users/{user_id}", {
+    const { error } = await client.PUT("/api/v1/users/{user_id}", {
       params: { path: { user_id: userId } },
       body: data,
     });
@@ -122,7 +122,7 @@ export async function updateUserAction(userId: string, data: UserUpdate) {
 export async function deleteUserAction(userId: string) {
   try {
     const client = await fetchClient();
-    const { error } = await client.DELETE("/api/v1/users/users/{user_id}", {
+    const { error } = await client.DELETE("/api/v1/users/{user_id}", {
       params: { path: { user_id: userId } },
     });
 
@@ -142,7 +142,7 @@ export async function deleteUserAction(userId: string) {
 export async function resetUserPasswordAction(userId: string, data: PasswordResetRequest) {
   try {
     const client = await fetchClient();
-    const { error } = await client.PUT("/api/v1/users/users/{user_id}/reset-password", {
+    const { error } = await client.PUT("/api/v1/users/{user_id}/reset-password", {
       params: { path: { user_id: userId } },
       body: data,
     });
