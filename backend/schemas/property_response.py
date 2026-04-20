@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
+from .common import PaginatedResponse
+
 
 class PropertyResponse(BaseModel):
     """房源列表响应模型，包含计算字段"""
@@ -307,9 +309,6 @@ class PropertyDetailResponse(BaseModel):
         )
 
 
-class PaginatedPropertyResponse(BaseModel):
-    """分页房源列表响应"""
-    total: int
-    page: int
-    page_size: int
-    items: List[PropertyResponse]
+class PaginatedPropertyResponse(PaginatedResponse[PropertyResponse]):
+    """分页房源列表响应 - 统一分页格式"""
+    pass

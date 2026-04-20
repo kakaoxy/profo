@@ -1,11 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
 from models.base import ProjectStatus
-from .project_sales import SalesRecordResponse
-from .project_renovation import RenovationPhotoResponse
-from .contract import SigningMaterial
+
+if TYPE_CHECKING:
+    from .project_sales import SalesRecordResponse
+    from .project_renovation import RenovationPhotoResponse
+    from .contract import SigningMaterial
 
 
 def parse_date_string(value: Union[str, datetime, None]) -> Optional[datetime]:
@@ -76,7 +78,7 @@ class ProjectCreate(BaseModel):
     cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
     planned_handover_date: Optional[str] = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: Optional[str] = Field(None, description="其他约定")
-    signing_materials: Optional[List[SigningMaterial]] = Field(None, description="签约材料列表")
+    signing_materials: Optional[List[Any]] = Field(None, description="签约材料列表")
 
     # 业主相关（会创建到 project_owners 表）
     owner_name: Optional[str] = Field(None, max_length=100, description="业主姓名")
@@ -128,7 +130,7 @@ class ProjectUpdate(BaseModel):
         None,
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
-    signing_materials: Optional[List[SigningMaterial]] = Field(None)
+    signing_materials: Optional[List[Any]] = Field(None)
 
     # 业主相关（更新到 project_owners 表）
     owner_name: Optional[str] = Field(None, max_length=100)
@@ -203,13 +205,13 @@ class ProjectResponse(BaseModel):
     roi: Optional[float] = Field(default=0.0)
 
     # 签约材料附件
-    signing_materials: Optional[List[SigningMaterial]] = Field(None, description="签约材料列表")
+    signing_materials: Optional[List[Any]] = Field(None, description="签约材料列表")
 
     # 销售记录（来自 project_interactions 表）
-    sales_records: Optional[List[SalesRecordResponse]] = Field(None, description="销售活动记录列表")
+    sales_records: Optional[List[Any]] = Field(None, description="销售活动记录列表")
 
     # 装修照片（来自 project_renovation_photos 表）
-    renovation_photos: Optional[List[RenovationPhotoResponse]] = Field(None, description="装修阶段照片列表")
+    renovation_photos: Optional[List[Any]] = Field(None, description="装修阶段照片列表")
 
     # 阶段日期映射（用于蜕变影像展示）
     renovation_stage_dates: Optional[Dict[str, str]] = Field(
@@ -221,12 +223,14 @@ class ProjectResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProjectListResponse(BaseModel):
-    items: List[ProjectResponse]
-    total: int
-    page: int
-    page_size: int
-    model_config = ConfigDict(from_attributes=True)
+
+# 统一分页响应格式 - 继承自 PaginatedResponse
+from .common import PaginatedResponse
+
+class ProjectListResponse(PaginatedResponse[ProjectResponse]):
+    """项目列表响应 - 统一分页格式"""
+    pass
+
 
 class ProjectStatsResponse(BaseModel):
     signing: int
@@ -234,6 +238,7 @@ class ProjectStatsResponse(BaseModel):
     selling: int
     sold: int
     model_config = ConfigDict(from_attributes=True)
+
 
 class StatusUpdate(BaseModel):
     status: ProjectStatus
