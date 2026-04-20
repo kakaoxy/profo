@@ -1,22 +1,19 @@
 """
 线索核心 CRUD 路由
 """
-from datetime import datetime
 from typing import Annotated, Optional
-import uuid
 
-from fastapi import APIRouter, Path, Query, HTTPException
-from sqlalchemy import desc
-from sqlalchemy.orm import joinedload, noload
+from fastapi import APIRouter, Path, Query
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
-from models import Lead, LeadPriceHistory, LeadStatus
+from models.common import LeadStatus
 from schemas.lead import (
     LeadCreate,
     LeadUpdate,
     LeadResponse,
     PaginatedLeadListResponse,
 )
+from services.leads import LeadService
 from .utils import serialize_lead_for_list
 
 router = APIRouter()
@@ -39,47 +36,26 @@ def get_leads(
     获取线索列表
     使用手动序列化避免 ORM 关系遍历导致的性能问题
     """
-    # 构建查询，优化关系加载
-    query = db.query(Lead).options(
-        # 只加载 creator 关系用于获取 creator_name
-        joinedload(Lead.creator),
-        # 列表页不需要以下关联，完全禁止加载
-        noload(Lead.auditor),
-        noload(Lead.follow_ups),
-        noload(Lead.price_history),
-    )
-
-    # 应用过滤条件
-    if search:
-        query = query.filter(Lead.community_name.contains(search))
-    if statuses:
-        query = query.filter(Lead.status.in_(statuses))
-    if district:
-        query = query.filter(Lead.district.contains(district))
-    if creator_id:
-        query = query.filter(Lead.creator_id == creator_id)
-    if layout:
-        query = query.filter(Lead.layout.contains(layout))
-    if floor:
-        query = query.filter(Lead.floor_info.contains(floor))
-
-    # 计算总数和获取分页数据
-    total = query.count()
-    items = (
-        query.order_by(desc(Lead.created_at))
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
+    service = LeadService(db)
+    result = service.get_leads(
+        page=page,
+        page_size=page_size,
+        search=search,
+        statuses=statuses,
+        district=district,
+        creator_id=creator_id,
+        layout=layout,
+        floor=floor,
     )
 
     # 手动序列化，避免 Pydantic 遍历 ORM 关系
-    serialized_items = [serialize_lead_for_list(lead) for lead in items]
+    serialized_items = [serialize_lead_for_list(lead) for lead in result["items"]]
 
     return {
         "items": serialized_items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
+        "total": result["total"],
+        "page": result["page"],
+        "page_size": result["page_size"],
     }
 
 
@@ -90,27 +66,8 @@ def create_lead(
     lead_in: LeadCreate,
 ):
     """创建线索"""
-    db_lead = Lead(
-        **lead_in.model_dump(),
-        id=str(uuid.uuid4()),
-        creator_id=current_user.id,
-    )
-
-    db.add(db_lead)
-
-    if lead_in.total_price:
-        # 自动记录初始价格历史
-        price_rec = LeadPriceHistory(
-            id=str(uuid.uuid4()),
-            lead_id=db_lead.id,
-            price=lead_in.total_price,
-            remark="Initial Creation",
-            created_by_id=current_user.id,
-        )
-        db.add(price_rec)
-
-    db.commit()
-    db.refresh(db_lead)
+    service = LeadService(db)
+    db_lead = service.create_lead(lead_in, current_user.id)
 
     # 避免查询 for creator
     db_lead.creator = current_user
@@ -124,15 +81,8 @@ def get_lead(
     lead_id: Annotated[str, Path(description="线索ID")],
 ):
     """获取单个线索详情"""
-    lead = (
-        db.query(Lead)
-        .options(joinedload(Lead.creator))
-        .filter(Lead.id == lead_id)
-        .first()
-    )
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-    return lead
+    service = LeadService(db)
+    return service.get_lead_or_404(lead_id)
 
 
 @router.put("/{lead_id}", response_model=LeadResponse)
@@ -143,36 +93,12 @@ def update_lead(
     lead_in: LeadUpdate,
 ):
     """更新线索"""
-    lead = (
-        db.query(Lead)
-        .options(joinedload(Lead.creator))
-        .filter(Lead.id == lead_id)
-        .first()
-    )
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+    service = LeadService(db)
+    lead = service.update_lead(lead_id, lead_in, current_user.id)
 
-    update_data = lead_in.model_dump(exclude_unset=True)
-
-    # 价格更新时记录历史
-    new_price = update_data.get("total_price")
-    if new_price is not None and new_price != float(lead.total_price or 0):
-        price_rec = LeadPriceHistory(
-            id=str(uuid.uuid4()),
-            lead_id=lead.id,
-            price=new_price,
-            remark=update_data.get("remarks") or "Update Price",
-            created_by_id=current_user.id,
-        )
-        db.add(price_rec)
-
-    for field, value in update_data.items():
-        setattr(lead, field, value)
-
-    lead.updated_at = datetime.now()
-    db.add(lead)
-    db.commit()
-    db.refresh(lead)
+    # 确保 creator 关系已加载
+    if not lead.creator:
+        lead.creator = current_user
     return lead
 
 
@@ -183,10 +109,6 @@ def delete_lead(
     lead_id: Annotated[str, Path(description="线索ID")],
 ):
     """删除线索"""
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-
-    db.delete(lead)
-    db.commit()
+    service = LeadService(db)
+    service.delete_lead(lead_id)
     return None
