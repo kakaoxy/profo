@@ -83,7 +83,7 @@ async def list_available_projects(
     summary="获取L3项目详情"
 )
 async def get_l3_project_detail(
-    project_id: Annotated[str, Path(description="项目UUID")],
+    project_id: Annotated[str, Path(description="项目ID")],
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None
 ) -> L3ProjectBriefResponse:
     """获取单个L3项目详情
@@ -119,7 +119,7 @@ async def get_l3_project_detail(
     summary="从L3项目导入数据"
 )
 async def import_from_l3_project(
-    project_id: Annotated[str, Path(description="项目UUID")],
+    project_id: Annotated[str, Path(description="项目ID")],
     query_service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None,
     import_service: Annotated[L4MarketingImportService, Depends(get_import_service)] = None
 ) -> L3ProjectImportResponse:
