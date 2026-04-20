@@ -2,11 +2,12 @@
 用户管理相关路由
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
-from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy.orm import Session
+import secrets
+import string
+from typing import Annotated
 
-from db import get_db
+from fastapi import APIRouter, Query, HTTPException, status
+
 from models import User, Role
 from schemas.user import (
     UserCreate,
@@ -18,26 +19,31 @@ from schemas.user import (
     PasswordResetRequest,
 )
 from utils.auth import get_password_hash
-from dependencies.auth import get_current_admin_user, get_current_active_user, get_current_internal_user
+from dependencies.auth import (
+    DbSessionDep,
+    CurrentAdminUserDep,
+    CurrentActiveUserDep,
+    CurrentInternalUserDep,
+)
 from services.system import user_service
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 # ==================== 用户管理 ====================
 
 
-@router.get("/users", response_model=UserListResponse)
+@router.get("/", response_model=UserListResponse)
 def get_users(
-    username: Optional[str] = Query(None, description="用户名搜索"),
-    nickname: Optional[str] = Query(None, description="昵称搜索"),
-    role_id: Optional[str] = Query(None, description="角色ID筛选"),
-    status: Optional[str] = Query(None, description="用户状态筛选"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(50, ge=1, le=200, description="每页数量"),
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    username: Annotated[str | None, Query(description="用户名搜索")] = None,
+    nickname: Annotated[str | None, Query(description="昵称搜索")] = None,
+    role_id: Annotated[str | None, Query(description="角色ID筛选")] = None,
+    status: Annotated[str | None, Query(description="用户状态筛选")] = None,
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
+) -> UserListResponse:
     """
     获取用户列表，支持搜索和筛选
     """
@@ -55,13 +61,13 @@ def get_users(
 
 @router.get("/simple", response_model=UserSimpleListResponse)
 def get_users_simple(
-    nickname: Optional[str] = Query(None, description="昵称搜索"),
-    status: Optional[str] = Query("active", description="用户状态筛选"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(100, ge=1, le=500, description="每页数量"),
-    current_user: User = Depends(get_current_internal_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
+    nickname: Annotated[str | None, Query(description="昵称搜索")] = None,
+    status: Annotated[str | None, Query(description="用户状态筛选")] = "active",
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=500, description="每页数量")] = 100,
+) -> UserSimpleListResponse:
     """
     获取简化用户列表（仅包含ID和昵称），用于下拉选择
     """
@@ -97,63 +103,62 @@ def get_users_simple(
 
 @router.get("/me", response_model=UserResponse)
 def get_current_user(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentActiveUserDep,
+) -> UserResponse:
     """
     获取当前登录用户信息
     """
     return current_user
 
 
-@router.get("/users/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}", response_model=UserResponse)
 def get_user(
     user_id: str,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+) -> UserResponse:
     """
     获取指定用户信息
     """
     user = user_service.get_user_by_id(db, user_id)
     if not user:
-        from fastapi import HTTPException, status
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
     return user
 
 
-@router.post("/users", response_model=UserResponse, status_code=201)
+@router.post("/", response_model=UserResponse, status_code=201)
 def create_user(
     user_data: UserCreate,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+) -> UserResponse:
     """
     创建新用户
     """
     return user_service.create_user(db, user_data)
 
 
-@router.put("/users/{user_id}", response_model=UserResponse)
+@router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: str,
     user_data: UserUpdate,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+) -> UserResponse:
     """
     更新用户信息
     """
     return user_service.update_user(db, user_id, user_data)
 
 
-@router.put("/users/{user_id}/reset-password")
+@router.put("/{user_id}/reset-password")
 def reset_user_password(
     user_id: str,
     password_data: PasswordResetRequest,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+) -> dict:
     """
     重置用户密码
     """
@@ -161,25 +166,25 @@ def reset_user_password(
     return result
 
 
-@router.delete("/users/{user_id}", status_code=204)
+@router.delete("/{user_id}", status_code=204)
 def delete_user(
     user_id: str,
-    current_user: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+) -> None:
     """
     删除用户
     """
-    result = user_service.delete_user(db, user_id, current_user.id)
-    return result
+    user_service.delete_user(db, user_id, current_user.id)
+    return None
 
 
-@router.post("/users/change-password")
+@router.post("/change-password")
 def change_password(
     password_data: PasswordChange,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+    current_user: CurrentActiveUserDep,
+) -> dict:
     """
     修改当前用户密码
     """
@@ -191,8 +196,8 @@ def change_password(
 
 @router.post("/init-data")
 def init_system_data(
-    db: Session = Depends(get_db)
-):
+    db: DbSessionDep,
+) -> dict:
     """
     初始化系统数据，包括默认角色和管理员用户
     注意：使用 def 避免 sync DB 阻塞
@@ -236,8 +241,6 @@ def init_system_data(
     admin_role = next(r for r in roles if r.code == "admin")
 
     # 生成临时密码（符合强密码策略）
-    import secrets
-    import string
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
     temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
 

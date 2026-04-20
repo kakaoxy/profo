@@ -1,7 +1,7 @@
 """
 角色管理相关路由
 """
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -14,16 +14,16 @@ from schemas.user import (
 from dependencies.auth import DbSessionDep, CurrentAdminUserDep
 from services.system import role_service
 
-router = APIRouter()
+router = APIRouter(prefix="/roles", tags=["roles"])
 
 
-@router.get("/roles", response_model=RoleListResponse)
+@router.get("/", response_model=RoleListResponse)
 def get_roles(
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
-    name: Annotated[Optional[str], Query(description="角色名称搜索")] = None,
-    code: Annotated[Optional[str], Query(description="角色代码搜索")] = None,
-    is_active: Annotated[Optional[bool], Query(description="是否激活筛选")] = None,
+    name: Annotated[str | None, Query(description="角色名称搜索")] = None,
+    code: Annotated[str | None, Query(description="角色代码搜索")] = None,
+    is_active: Annotated[bool | None, Query(description="是否激活筛选")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ):
@@ -40,7 +40,7 @@ def get_roles(
     )
 
 
-@router.get("/roles/{role_id}", response_model=RoleResponse)
+@router.get("/{role_id}", response_model=RoleResponse)
 def get_role(
     role_id: str,
     db: DbSessionDep,
@@ -55,7 +55,7 @@ def get_role(
     return role
 
 
-@router.post("/roles", response_model=RoleResponse)
+@router.post("/", response_model=RoleResponse)
 def create_role(
     role_data: RoleCreate,
     db: DbSessionDep,
@@ -67,7 +67,7 @@ def create_role(
     return role_service.create_role(db, role_data)
 
 
-@router.put("/roles/{role_id}", response_model=RoleResponse)
+@router.put("/{role_id}", response_model=RoleResponse)
 def update_role(
     role_id: str,
     role_data: RoleUpdate,
@@ -80,7 +80,7 @@ def update_role(
     return role_service.update_role(db, role_id, role_data)
 
 
-@router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_role(
     role_id: str,
     db: DbSessionDep,
