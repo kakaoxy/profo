@@ -2,9 +2,9 @@
 L4 市场营销层路由
 符合项目指南的 API 设计规范
 """
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, Field
+from typing import Annotated, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -24,20 +24,11 @@ from schemas.l4_marketing import (
     L4MarketingMediaUpdate,
     L4MarketingMediaResponse,
     L4MarketingMediaListResponse,
+    MediaSortOrderUpdate,
     # Response schemas
     L4SyncResponse,
     L4RefreshResponse,
 )
-
-
-# ============================================================================
-# 批量排序更新 Schema
-# ============================================================================
-
-class MediaSortOrderUpdate(BaseModel):
-    """媒体排序更新项"""
-    media_id: int = Field(..., description="媒体ID")
-    sort_order: int = Field(..., ge=0, description="排序值")
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
@@ -47,14 +38,17 @@ router = APIRouter(
 
 
 # ============================================================================
-# 依赖注入函数
+# 依赖注入类型别名
 # ============================================================================
 
-def get_project_service(db: Session = Depends(get_db)) -> L4MarketingProjectService:
+DbSession = Annotated[Session, Depends(get_db)]
+
+
+def get_project_service(db: DbSession) -> L4MarketingProjectService:
     return L4MarketingProjectService(db)
 
 
-def get_media_service(db: Session = Depends(get_db)) -> L4MarketingMediaService:
+def get_media_service(db: DbSession) -> L4MarketingMediaService:
     return L4MarketingMediaService(db)
 
 
@@ -68,13 +62,13 @@ def get_media_service(db: Session = Depends(get_db)) -> L4MarketingMediaService:
     summary="获取营销项目列表"
 )
 async def list_marketing_projects(
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=200, description="每页大小"),
-    publish_status: Optional[str] = Query(None, description="发布状态: 草稿/发布"),
-    project_status: Optional[str] = Query(None, description="项目状态: 在途/在售/已售"),
-    consultant_id: Optional[str] = Query(None, description="顾问ID"),
-    community_id: Optional[str] = Query(None, description="小区ID"),
-    service: L4MarketingProjectService = Depends(get_project_service)
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 20,
+    publish_status: Annotated[Optional[str], Query(description="发布状态: 草稿/发布")] = None,
+    project_status: Annotated[Optional[str], Query(description="项目状态: 在途/在售/已售")] = None,
+    consultant_id: Annotated[Optional[str], Query(description="顾问ID")] = None,
+    community_id: Annotated[Optional[str], Query(description="小区ID")] = None,
+    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectListResponse:
     """获取营销项目列表 - 统一分页格式"""
     skip = (page - 1) * page_size
@@ -102,7 +96,7 @@ async def list_marketing_projects(
 )
 async def create_marketing_project(
     data: L4MarketingProjectCreate,
-    service: L4MarketingProjectService = Depends(get_project_service)
+    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目 (不关联 L3 项目)"""
     return service.create_project(data)
@@ -114,15 +108,15 @@ async def create_marketing_project(
     summary="获取营销项目详情"
 )
 async def get_marketing_project(
-    project_id: int,
-    service: L4MarketingProjectService = Depends(get_project_service)
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
+    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectResponse:
     """获取营销项目详情"""
     item = service.get_project(project_id)
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail="项目不存在"
         )
     return item
 
@@ -133,16 +127,16 @@ async def get_marketing_project(
     summary="更新营销项目"
 )
 async def update_marketing_project(
-    project_id: int,
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
-    service: L4MarketingProjectService = Depends(get_project_service)
+    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectResponse:
     """更新营销项目"""
     item = service.update_project(project_id, data)
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail="项目不存在"
         )
     return item
 
@@ -153,14 +147,14 @@ async def update_marketing_project(
     summary="删除营销项目"
 )
 async def delete_marketing_project(
-    project_id: int,
-    service: L4MarketingProjectService = Depends(get_project_service)
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
+    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> None:
     """逻辑删除营销项目"""
     if not service.delete_project(project_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
+            detail="项目不存在"
         )
 
 
@@ -174,10 +168,10 @@ async def delete_marketing_project(
     summary="获取媒体列表"
 )
 async def list_marketing_media(
-    project_id: int,
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(100, ge=1, le=200, description="每页大小"),
-    service: L4MarketingMediaService = Depends(get_media_service)
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 100,
+    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4MarketingMediaListResponse:
     """获取营销项目的媒体列表"""
     skip = (page - 1) * page_size
@@ -197,9 +191,9 @@ async def list_marketing_media(
     summary="添加媒体"
 )
 async def create_marketing_media(
-    project_id: int,
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingMediaCreate,
-    service: L4MarketingMediaService = Depends(get_media_service)
+    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4MarketingMediaResponse:
     """为营销项目添加媒体"""
     return service.create_media(data, project_id)
@@ -211,16 +205,16 @@ async def create_marketing_media(
     summary="更新媒体"
 )
 async def update_marketing_media(
-    media_id: int,
+    media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     data: L4MarketingMediaUpdate,
-    service: L4MarketingMediaService = Depends(get_media_service)
+    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4MarketingMediaResponse:
     """更新媒体信息"""
     item = service.update_media(media_id, data)
     if not item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Media not found"
+            detail="媒体不存在"
         )
     return item
 
@@ -231,14 +225,14 @@ async def update_marketing_media(
     summary="删除媒体"
 )
 async def delete_marketing_media(
-    media_id: int,
-    service: L4MarketingMediaService = Depends(get_media_service)
+    media_id: Annotated[int, Path(ge=1, description="媒体ID")],
+    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> None:
     """逻辑删除媒体"""
     if not service.delete_media(media_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Media not found"
+            detail="媒体不存在"
         )
 
 
@@ -248,9 +242,9 @@ async def delete_marketing_media(
     summary="批量更新媒体排序"
 )
 async def update_media_sort_order(
-    project_id: int,
+    project_id: Annotated[int, Path(ge=1, description="项目ID")],
     sort_updates: List[MediaSortOrderUpdate],
-    service: L4MarketingMediaService = Depends(get_media_service)
+    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4SyncResponse:
     """批量更新媒体排序顺序"""
     updates = [{"media_id": u.media_id, "sort_order": u.sort_order} for u in sort_updates]

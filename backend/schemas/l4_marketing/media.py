@@ -44,3 +44,9 @@ class L4MarketingMediaResponse(L4MarketingMediaBase):
     is_deleted: bool = False
     created_at: datetime
     updated_at: datetime
+
+
+class MediaSortOrderUpdate(BaseModel):
+    """媒体排序更新项"""
+    media_id: int = Field(..., description="媒体ID")
+    sort_order: int = Field(..., ge=0, description="排序值")
