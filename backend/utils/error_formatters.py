@@ -56,36 +56,55 @@ def format_validation_error(error: ValidationError) -> str:
 def format_request_validation_error(error: RequestValidationError) -> str:
     """
     格式化 FastAPI 请求验证错误为中文友好信息
-    
+
     Args:
         error: FastAPI 请求验证错误
-    
+
     Returns:
         str: 格式化的中文错误信息
     """
     error_messages = []
-    
+
     for err in error.errors():
         location = err.get('loc', [])
         error_message = err.get('msg', '')
         error_type = err.get('type', '')
-        
+
         # 提取字段名
         if len(location) > 1:
             field = location[-1]
         else:
             field = '未知字段'
-        
+
         # 转换为中文友好信息
         if 'missing' in error_type:
             error_messages.append(f"缺少必填参数: {field}")
         elif 'type_error' in error_type:
-            error_messages.append(f"参数 {field} 类型错误")
+            if 'list' in error_type or 'list' in error_message.lower():
+                error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
+            elif 'float' in error_type:
+                error_messages.append(f"参数 {field} 必须是数字")
+            elif 'int' in error_type:
+                error_messages.append(f"参数 {field} 必须是整数")
+            elif 'bool' in error_type:
+                error_messages.append(f"参数 {field} 必须是布尔值")
+            elif 'str' in error_type:
+                error_messages.append(f"参数 {field} 必须是字符串")
+            else:
+                error_messages.append(f"参数 {field} 类型错误: {error_message}")
         elif 'value_error' in error_type:
             error_messages.append(f"参数 {field} 值无效")
+        elif 'list' in error_type:
+            error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
+        elif 'greater_than' in error_type:
+            error_messages.append(f"参数 {field} 必须大于 0")
+        elif 'string_too_long' in error_type:
+            error_messages.append(f"参数 {field} 超过最大长度限制")
+        elif 'string_too_short' in error_type:
+            error_messages.append(f"参数 {field} 长度太短")
         else:
             error_messages.append(f"参数 {field}: {error_message}")
-    
+
     return "; ".join(error_messages) if error_messages else "请求参数验证失败"
 
 def format_database_error(error: SQLAlchemyError) -> str:
