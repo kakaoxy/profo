@@ -60,3 +60,10 @@ export interface FilterState {
   layouts: string[];      // New: ['1', '2', '3', '4', '4+']
   floors: string[];       // New: ['低', '中', '高']
 }
+
+/**
+ * Tab 值类型
+ * "all" 表示显示所有状态的线索
+ * LeadStatus 表示特定状态的线索
+ */
+export type LeadTabValue = "all" | LeadStatus;

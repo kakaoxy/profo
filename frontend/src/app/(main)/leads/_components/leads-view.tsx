@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Lead, LeadStatus, FollowUpMethod } from "../types";
+import { Lead, LeadStatus, FollowUpMethod, LeadTabValue } from "../types";
 import {
   updateLeadAction,
   addFollowUpAction,

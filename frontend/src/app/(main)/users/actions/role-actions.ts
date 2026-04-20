@@ -18,7 +18,7 @@ export async function getRolesAction(params: {
 }) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/v1/roles", {
+    const { data, error } = await client.GET("/api/v1/roles/", {
       params: { query: params },
     });
 
@@ -37,7 +37,7 @@ export async function getRolesAction(params: {
 export async function createRoleAction(data: RoleCreate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.POST("/api/v1/roles", { body: data });
+    const { error } = await client.POST("/api/v1/roles/", { body: data });
 
     if (error) {
       const errorMsg = (error as { detail?: string }).detail || "创建角色失败";

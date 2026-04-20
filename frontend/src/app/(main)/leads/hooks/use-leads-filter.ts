@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useTransition, useRef, useCallback } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { Lead, FilterState, LeadStatus } from "../types";
+import { Lead, FilterState, LeadStatus, LeadTabValue } from "../types";
 import { getLeadsAction } from "../actions";
 
 export function useLeadsFilter(initialLeads: Lead[]) {
@@ -113,9 +113,9 @@ export function useLeadsFilter(initialLeads: Lead[]) {
    * 设置活动 Tab（状态过滤）
    * 提供向后兼容的接口，将单选状态转换为多选状态数组
    */
-  const setActiveTab = useCallback((tabValue: string) => {
+  const setActiveTab = useCallback((tabValue: LeadTabValue) => {
     setFiltersState((prev) => {
-      const newStatuses = tabValue === "all" ? [] : [tabValue as LeadStatus];
+      const newStatuses = tabValue === "all" ? [] : [tabValue];
       const newFilters = { ...prev, statuses: newStatuses };
       
       // 检查是否需要触发服务端重新获取
@@ -133,7 +133,7 @@ export function useLeadsFilter(initialLeads: Lead[]) {
   /**
    * 获取当前活动 Tab 值
    */
-  const activeTab = useMemo(() => {
+  const activeTab: LeadTabValue = useMemo(() => {
     return filters.statuses.length === 0 ? "all" : filters.statuses[0];
   }, [filters.statuses]);
 

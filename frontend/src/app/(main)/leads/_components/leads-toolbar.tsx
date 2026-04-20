@@ -7,11 +7,13 @@ import { Search, X, Download, List, LayoutGrid, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+import { LeadTabValue } from "../types";
+
 interface LeadsToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  activeTab: string;
-  onTabChange: (value: string | "all") => void;
+  activeTab: LeadTabValue;
+  onTabChange: (value: LeadTabValue) => void;
   viewMode: "table" | "grid";
   onViewModeChange: (mode: "table" | "grid") => void;
   onAddLead: () => void;
@@ -52,7 +54,7 @@ export function LeadsToolbar({
         {/* Status Tabs */}
         <Tabs
           value={activeTab}
-          onValueChange={onTabChange}
+          onValueChange={(value) => onTabChange(value as LeadTabValue)}
           className="w-full sm:w-auto"
         >
           <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg flex-wrap">
