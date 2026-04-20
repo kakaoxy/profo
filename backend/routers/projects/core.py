@@ -13,8 +13,8 @@ from schemas.project import (
     ProjectResponse, ProjectStatsResponse, ProjectReportResponse
 )
 from schemas.common import PaginatedResponse
-from .projects_renovation import router as renovation_router
-from .projects_sales import router as sales_router
+from .renovation import router as renovation_router
+from .sales import router as sales_router
 import csv
 import io
 from datetime import datetime

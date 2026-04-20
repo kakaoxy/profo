@@ -25,7 +25,14 @@ logging.basicConfig(
 
 
 # ==================== 路由注册 ====================
-from routers import upload, push, properties, admin, projects_router, cashflow_router, files_router, auth, users, monitor, roles, leads, l4_marketing, l4_marketing_import
+# 按业务模块组织的路由导入
+from routers.market import properties_router, communities_router
+from routers.leads import leads_router
+from routers.projects import core_router, renovation_router, sales_router, cashflow_router as project_cashflow_router
+from routers.marketing import projects_router as marketing_projects_router, import_router as marketing_import_router
+from routers.system import auth_router, users_router, roles_router
+from routers.common import files_router, upload_router, push_router
+from routers.monitor import monitor_router, community_router
 
 
 @asynccontextmanager
@@ -115,21 +122,36 @@ async def health_check():
 # 统一使用 /api/v1 前缀，确保 OpenAPI 类型生成一致
 API_V1_PREFIX = f"{settings.api_prefix}/v1"
 
-app.include_router(upload.router, prefix=f"{API_V1_PREFIX}/upload", tags=["upload"])
-app.include_router(push.router, prefix=f"{API_V1_PREFIX}/push", tags=["push"])
-app.include_router(properties.router, prefix=f"{API_V1_PREFIX}/properties", tags=["properties"])
-app.include_router(admin.router, prefix=f"{API_V1_PREFIX}/admin", tags=["admin"])
-app.include_router(projects_router, prefix=f"{API_V1_PREFIX}", tags=["projects"])
-app.include_router(cashflow_router, prefix=f"{API_V1_PREFIX}", tags=["cashflow"])
+# ==================== 市场情报模块 (Market) ====================
+app.include_router(properties_router, prefix=f"{API_V1_PREFIX}/properties", tags=["properties"])
+app.include_router(communities_router, prefix=f"{API_V1_PREFIX}/admin", tags=["admin"])
+
+# ==================== 线索管理模块 (Leads) ====================
+app.include_router(leads_router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
+
+# ==================== 项目管理模块 (Projects) ====================
+app.include_router(core_router, prefix=f"{API_V1_PREFIX}", tags=["projects"])
+app.include_router(renovation_router, prefix=f"{API_V1_PREFIX}", tags=["renovation"])
+app.include_router(sales_router, prefix=f"{API_V1_PREFIX}", tags=["sales"])
+app.include_router(project_cashflow_router, prefix=f"{API_V1_PREFIX}", tags=["cashflow"])
+
+# ==================== 市场营销模块 (Marketing) ====================
+app.include_router(marketing_projects_router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing"])
+app.include_router(marketing_import_router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing-import"])
+
+# ==================== 系统管理模块 (System) ====================
+app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
+app.include_router(users_router, prefix=f"{API_V1_PREFIX}/users", tags=["users"])
+app.include_router(roles_router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
+
+# ==================== 通用功能模块 (Common) ====================
+app.include_router(upload_router, prefix=f"{API_V1_PREFIX}/upload", tags=["upload"])
+app.include_router(push_router, prefix=f"{API_V1_PREFIX}/push", tags=["push"])
 app.include_router(files_router, prefix=f"{API_V1_PREFIX}/files", tags=["files"])
-app.include_router(auth.router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
-app.include_router(users.router, prefix=f"{API_V1_PREFIX}/users", tags=["users"])
-app.include_router(roles.router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
-app.include_router(monitor.router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
-app.include_router(monitor.community_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
-app.include_router(leads.router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
-app.include_router(l4_marketing.router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing"])
-app.include_router(l4_marketing_import.router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing-import"])
+
+# ==================== 监控模块 (Monitor) ====================
+app.include_router(monitor_router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
+app.include_router(community_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
 
 
 # ==================== 全局异常处理 ====================
