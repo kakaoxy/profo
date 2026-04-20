@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { getUsersAction, getRolesAction } from "./actions/index";
+import { RoleListResponse } from "./actions/role-actions";
 import { UsersClient } from "./_components/users-client";
 
 export default async function UsersPage(props: {
@@ -39,7 +40,7 @@ export default async function UsersPage(props: {
       </div>
       
       <Suspense fallback={<div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-        <UsersClient initialData={usersResult.data} roles={rolesResult.data.items} />
+        <UsersClient initialData={usersResult.data} roles={(rolesResult.data as RoleListResponse).items} />
       </Suspense>
     </div>
   );
