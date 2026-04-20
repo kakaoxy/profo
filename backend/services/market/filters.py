@@ -2,12 +2,15 @@
 房源查询筛选条件构建器
 处理房源数据查询的各种筛选条件
 """
+import logging
 from typing import Optional, List
 
 from sqlalchemy.orm import Query
 from sqlalchemy import or_, and_
 
 from models import PropertyCurrent, Community, PropertyStatus
+
+logger = logging.getLogger(__name__)
 
 
 def apply_filters(
@@ -48,10 +51,14 @@ def apply_filters(
     """
     # 状态筛选
     if status:
-        if status == "在售":
-            query = query.filter(PropertyCurrent.status == PropertyStatus.FOR_SALE)
-        elif status == "成交":
-            query = query.filter(PropertyCurrent.status == PropertyStatus.SOLD)
+        valid_statuses = ["在售", "成交"]
+        if status in valid_statuses:
+            if status == "在售":
+                query = query.filter(PropertyCurrent.status == PropertyStatus.FOR_SALE)
+            elif status == "成交":
+                query = query.filter(PropertyCurrent.status == PropertyStatus.SOLD)
+        else:
+            logger.warning(f"未知状态筛选值: {status}，有效值为: {valid_statuses}")
 
     # 小区名称模糊搜索
     if community_name:
