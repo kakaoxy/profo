@@ -1,8 +1,9 @@
 "use client";
 
-import { UseFormReturn } from "react-hook-form";
+import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS } from "../schema";
 import { SimpleInputField } from "../form-components";
+import { CommunitySelect } from "../community-select";
 import {
   FormControl,
   FormField,
@@ -63,13 +64,16 @@ export function BasicInfoTab({ form }: TabProps) {
 
   return (
     <div className="space-y-5">
-      {/* 小区名称 */}
-      <SimpleInputField
+      {/* 小区名称 - 使用小区选择组件 */}
+      <Controller
         control={control}
         name="community_name"
-        label="小区名称"
-        placeholder="例如：中远两湾城"
-        required
+        render={({ field }) => (
+          <CommunitySelect
+            value={field.value}
+            onChange={(value) => field.onChange(value)}
+          />
+        )}
       />
 
       {/* 产证面积 */}
