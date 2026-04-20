@@ -321,38 +321,41 @@ backend/
 │   ├── error.py               # 错误模型
 │   └── base.py                # 基础模型和枚举
 ├── schemas/              # Pydantic模型
-│   ├── project.py             # 项目Schema
-│   ├── project_core.py        # 项目核心Schema
-│   ├── project_renovation.py  # 装修Schema
-│   ├── project_sales.py       # 销售Schema
-│   ├── project_finance.py     # 财务Schema
-│   ├── user.py                # 用户Schema
-│   ├── lead.py                # 线索Schema
-│   ├── community.py           # 小区Schema
-│   ├── contract.py            # 合同Schema
-│   ├── owner.py               # 业主Schema
-│   ├── finance.py             # 财务Schema
-│   ├── renovation.py          # 装修Schema
-│   ├── sale.py                # 销售Schema
-│   ├── followup.py            # 跟进记录Schema
-│   ├── evaluation.py          # 评估Schema
-│   ├── interaction.py         # 互动记录Schema
-│   ├── status_log.py          # 状态日志Schema
-│   ├── l4_marketing/          # L4市场营销Schema包
-│   │   ├── project.py         # 营销项目Schema
-│   │   ├── media.py           # 营销媒体Schema
-│   │   ├── query.py           # 查询和响应Schema
-│   │   ├── import_schemas.py  # L3项目导入Schema
-│   │   └── enums.py           # 枚举定义
-│   ├── property.py            # 房源Schema
-│   ├── property_core.py       # 房源核心Schema
-│   ├── property_response.py   # 房源响应Schema
-│   ├── monitor.py             # 监控Schema
-│   ├── upload.py              # 上传Schema
-│   ├── common.py              # 通用Schema
-│   ├── enums.py               # 枚举定义
-│   ├── response.py            # 响应Schema
-│   └── ...
+│   ├── __init__.py            # Schema包入口
+│   ├── common.py              # 通用Schema (分页响应、楼层解析等)
+│   ├── enums.py               # 枚举定义 (房源状态、媒体类型等)
+│   ├── response.py            # 统一API响应模型
+│   ├── upload.py              # 上传和导入相关Schema
+│   ├── project/               # 项目相关Schema包
+│   │   ├── __init__.py        # 聚合导出所有项目Schema
+│   │   ├── core.py            # 项目核心CRUD Schema
+│   │   ├── contract.py        # 合同Schema
+│   │   ├── owner.py           # 业主Schema
+│   │   ├── renovation.py      # 装修Schema
+│   │   ├── sales.py           # 销售Schema (含互动记录)
+│   │   ├── finance.py         # 财务Schema
+│   │   ├── followup.py        # 跟进记录Schema
+│   │   ├── evaluation.py      # 评估Schema
+│   │   └── status_log.py      # 状态日志Schema
+│   ├── property/              # 房源相关Schema包
+│   │   ├── __init__.py        # 聚合导出所有房源Schema
+│   │   ├── core.py            # 房源核心接收模型
+│   │   └── response.py        # 房源响应模型
+│   ├── lead/                  # 线索相关Schema包
+│   │   └── __init__.py        # 线索、跟进、价格历史Schema
+│   ├── user/                  # 用户相关Schema包
+│   │   └── __init__.py        # 用户、角色、认证Schema
+│   ├── community/             # 小区相关Schema包
+│   │   └── __init__.py        # 小区响应、合并、字典Schema
+│   ├── monitor/               # 监控相关Schema包
+│   │   └── __init__.py        # 市场情绪、趋势、竞品、AI策略Schema
+│   └── l4_marketing/          # L4市场营销Schema包
+│       ├── __init__.py        # 聚合导出所有L4 Schema
+│       ├── project.py         # 营销项目Schema
+│       ├── media.py           # 营销媒体Schema
+│       ├── query.py           # 查询和响应Schema
+│       ├── import_schemas.py  # L3项目导入Schema
+│       └── enums.py           # L4枚举定义 (发布状态、媒体类型等)
 ├── dependencies/         # 依赖注入
 │   ├── auth.py                # 认证依赖
 │   └── projects.py            # 项目依赖
