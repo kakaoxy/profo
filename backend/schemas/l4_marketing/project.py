@@ -1,9 +1,12 @@
 """
 L4 市场营销层项目相关 Schema
 """
+import json
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 from .enums import PublishStatus, MarketingProjectStatus
 from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
@@ -74,6 +77,24 @@ class L4MarketingProjectUpdate(BaseModel):
     # 关联
     project_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，UUID字符串")
     consultant_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
+
+    @field_validator('images', 'tags', mode='before')
+    @classmethod
+    def validate_json_array(cls, v: Any) -> list[str] | None:
+        """验证JSON数组格式字段，支持字符串JSON和列表"""
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                return [parsed]
+            except json.JSONDecodeError:
+                return None
+        return None
 
 
 class L4MarketingProjectResponse(BaseModel):
