@@ -72,7 +72,7 @@ export function CommunitySelect({ value, onChange }: CommunitySelectProps) {
   // 使用新名称创建
   const handleCreateNew = () => {
     if (!query) return;
-    onChange(query);
+    onChange(query, undefined);
     setOpen(false);
     setQuery("");
   };

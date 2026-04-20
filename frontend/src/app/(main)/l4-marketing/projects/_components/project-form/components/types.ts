@@ -10,7 +10,7 @@ import type { UserSimpleResponse } from "@/app/(main)/users/actions";
  * 小区数据结构
  */
 export interface Community {
-  id: number;
+  id: string;
   name: string;
   district?: string;
   business_circle?: string;
@@ -23,7 +23,7 @@ export interface CommunitySelectProps {
   /** 当前选中的小区名称 */
   value: string;
   /** 选择回调，返回小区名称和ID */
-  onChange: (value: string, id?: number) => void;
+  onChange: (value: string, id?: string) => void;
 }
 
 /**

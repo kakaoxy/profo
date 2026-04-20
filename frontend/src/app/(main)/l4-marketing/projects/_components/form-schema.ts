@@ -11,7 +11,7 @@ export const publishStatusSchema = z.enum(["草稿", "发布"]);
 // 前端表单使用的Schema - 所有字段都是必填的
 export const formSchema = z.object({
   // 小区信息
-  community_id: z.number().int().min(1, "请选择小区"),
+  community_id: z.string().min(1, "请选择小区"),
   community_name: z.string().trim().optional(),
 
   // 户型信息
@@ -48,7 +48,7 @@ export type FormValues = z.infer<typeof formSchema>;
 // 后端已支持数组格式，前端直接发送数组
 export const createSchema = z.object({
   // 必填字段 - 小区信息
-  community_id: z.number().int().positive("小区ID必须大于0"),
+  community_id: z.string().min(1, "请选择小区"),
 
   // 必填字段 - 户型信息
   layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符"),
@@ -79,7 +79,7 @@ export const createSchema = z.object({
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
 // 后端已支持数组格式，前端直接发送数组
 export const updateSchema = z.object({
-  community_id: z.number().int().positive("小区ID必须大于0").optional(),
+  community_id: z.string().min(1, "请选择小区").optional(),
   community_name: z.string().trim().max(200, "小区名称最多200个字符").nullable().optional(),
   layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符").optional(),
   orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符").optional(),
@@ -195,7 +195,7 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
 // 将API响应转换为表单值
 export function projectToFormValues(project: Record<string, unknown>): FormValues {
   return {
-    community_id: (project.community_id as number) || 0,
+    community_id: (project.community_id as string) || "",
     community_name: (project.community_name as string) || "",
     layout: (project.layout as string) || "",
     orientation: (project.orientation as string) || "",
@@ -245,7 +245,7 @@ export function importDataToFormValues(data: Record<string, unknown>): Partial<F
 
   return {
     project_id: projectId,
-    community_id: (data.community_id as number) || 0,
+    community_id: (data.community_id as string) || "",
     community_name: (data.community_name as string) || "",
     layout: (data.layout as string) || "",
     orientation: (data.orientation as string) || "",
