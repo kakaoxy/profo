@@ -17,7 +17,7 @@ import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 
 from sqlalchemy.orm import Session
-from models.user import User, Role
+from models import User, Role
 from db import SessionLocal, init_db
 from utils.auth import get_password_hash
 

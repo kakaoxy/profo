@@ -11,7 +11,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from db import get_db
-from models.user import User
+from models import User
 from schemas.user import (
     LoginRequest,
     TokenResponse,

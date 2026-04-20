@@ -21,7 +21,7 @@ os.environ["DATABASE_URL"] = "sqlite:///./test_settings.db"  # Prevent touching 
 from main import app
 from db import get_db, init_db
 from models import Base, User
-from models.lead import LeadStatus
+from models.common import LeadStatus
 import main # Import module to patch
 from dependencies.auth import get_current_user
 

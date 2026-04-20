@@ -3,7 +3,7 @@
 """
 from sqlalchemy import Column, String, Numeric, DateTime, Text, ForeignKey, Index
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class ProjectFollowUp(BaseModel):

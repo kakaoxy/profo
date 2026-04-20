@@ -4,7 +4,7 @@
 from sqlalchemy import Column, String, Text, Boolean, ForeignKey, Index
 from sqlalchemy.orm import relationship
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class ProjectOwner(BaseModel):

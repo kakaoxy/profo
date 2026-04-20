@@ -9,7 +9,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict, computed_field
-from models.base import CashFlowType, CashFlowCategory
+from models.common import CashFlowType, CashFlowCategory
 
 
 # ========== 现金流记录 (来自 project_finance.py) ==========

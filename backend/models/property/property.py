@@ -9,7 +9,7 @@ from sqlalchemy import (
     ForeignKey, Index, UniqueConstraint, Enum as SQLEnum, Numeric
 )
 from sqlalchemy.orm import relationship
-from .base import Base, PropertyStatus, ChangeType
+from ..common.base import Base, PropertyStatus, ChangeType
 
 
 class PropertyCurrent(Base):

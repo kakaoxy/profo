@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from dependencies.auth import CurrentInternalUserDep
-from models.user import User
+from models import User
 from services import CashFlowService
 from schemas.project import (
     CashFlowRecordCreate, CashFlowRecordResponse,

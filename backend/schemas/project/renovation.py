@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
-from models.base import RenovationStage
+from models.common import RenovationStage
 
 
 # ========== 装修阶段更新 (来自 project_renovation.py) ==========

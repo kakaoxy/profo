@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
-from models.error import FailedRecord
+from models.system import FailedRecord
 from db import engine
 from sqlalchemy.orm import sessionmaker
 

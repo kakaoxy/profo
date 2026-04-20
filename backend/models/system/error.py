@@ -7,7 +7,7 @@ from typing import Optional
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Index
 
-from .base import Base
+from ..common.base import Base
 
 
 class FailedRecord(Base):

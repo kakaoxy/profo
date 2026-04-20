@@ -17,7 +17,7 @@ from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
 from schemas import PaginatedPropertyResponse, PropertyDetailResponse
 from dependencies.auth import get_current_internal_user
-from models.user import User
+from models import User
 from services.market import PropertyQueryService, get_property_query_service
 
 

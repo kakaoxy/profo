@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Numeric, Boolean, Enum as SQLEnum, Index,
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 
-from .base import BaseModel, ProjectStatus, RenovationStage
+from ..common.base import BaseModel, ProjectStatus, RenovationStage
 
 
 class Project(BaseModel):

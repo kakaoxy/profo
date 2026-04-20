@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Integer, Text, ForeignKey, Boolean, DateT
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from .base import BaseModel
+from ..common.base import BaseModel
 
 
 class Role(BaseModel):

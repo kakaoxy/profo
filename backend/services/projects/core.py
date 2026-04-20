@@ -15,7 +15,7 @@ from fastapi import HTTPException
 import uuid
 
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
-from models.base import ProjectStatus
+from models.common import ProjectStatus
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
 from services.utils import parse_date_string
 from .internal import ProjectQueryService, ProjectResponseBuilder, ProjectStateManager

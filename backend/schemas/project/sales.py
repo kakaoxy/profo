@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
-from models.base import RecordType
+from models.common import RecordType
 
 
 # ========== 销售角色更新 (来自 project_sales.py) ==========

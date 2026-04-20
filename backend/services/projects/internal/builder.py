@@ -9,7 +9,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from models import FinanceRecord
-from models.base import CashFlowType
+from models.common import CashFlowType
 
 if TYPE_CHECKING:
     from models import Project
@@ -85,7 +85,7 @@ class ProjectResponseBuilder:
 
     def _build_contract_info(self, project_id: str) -> Dict[str, Any]:
         """构建合同信息"""
-        from models.project import ProjectContract
+        from models import ProjectContract
 
         contract = self.db.query(ProjectContract).filter(
             ProjectContract.project_id == project_id,
@@ -111,7 +111,7 @@ class ProjectResponseBuilder:
 
     def _build_owner_info(self, project_id: str) -> Dict[str, Any]:
         """构建业主信息"""
-        from models.project import ProjectOwner
+        from models import ProjectOwner
 
         owner = self.db.query(ProjectOwner).filter(
             ProjectOwner.project_id == project_id,
@@ -130,7 +130,7 @@ class ProjectResponseBuilder:
 
     def _build_sale_info(self, project_id: str) -> Dict[str, Any]:
         """构建销售信息"""
-        from models.project import ProjectSale
+        from models import ProjectSale
 
         sale = self.db.query(ProjectSale).filter(
             ProjectSale.project_id == project_id,
@@ -178,7 +178,7 @@ class ProjectResponseBuilder:
 
     def _build_interactions(self, project_id: str) -> Dict[str, Any]:
         """构建互动记录（销售记录）"""
-        from models.project import ProjectInteraction
+        from models import ProjectInteraction
 
         interactions = self.db.query(ProjectInteraction).filter(
             ProjectInteraction.project_id == project_id
@@ -223,7 +223,7 @@ class ProjectResponseBuilder:
 
     def _build_stage_dates(self, project_id: str) -> Dict[str, Any]:
         """构建阶段日期映射（用于蜕变影像展示）"""
-        from models.project import ProjectRenovation
+        from models import ProjectRenovation
         from datetime import datetime
 
         renovation = self.db.query(ProjectRenovation).filter(

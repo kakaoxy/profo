@@ -5,7 +5,7 @@ from typing import List, Callable, Optional
 from fastapi import Depends, HTTPException, status
 from functools import wraps
 
-from models.user import User
+from models import User
 
 
 def check_permissions(

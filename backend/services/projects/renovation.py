@@ -12,7 +12,7 @@ from fastapi import HTTPException, status
 import uuid
 
 from models import Project, ProjectRenovation, RenovationPhoto
-from models.base import ProjectStatus
+from models.common import ProjectStatus
 from schemas.project.renovation import RenovationUpdate, RenovationContractUpdate
 
 

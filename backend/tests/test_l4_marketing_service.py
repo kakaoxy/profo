@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
 from models import Base
-from models.l4_marketing import (
+from models.marketing import (
     L4MarketingProject,
     L4MarketingMedia,
     PublishStatus,

@@ -1,17 +1,38 @@
 """
 数据库模型模块
-按功能拆分的SQLAlchemy模型
+按业务功能组织的SQLAlchemy模型
 """
 
-from .base import (
-    Base, PropertyStatus, ChangeType, MediaType,
-    ProjectStatus, RenovationStage, CashFlowType, CashFlowCategory, RecordType,
-    LeadStatus, FollowUpMethod
+# 基础模块
+from .common import (
+    Base,
+    BaseModel,
+    PropertyStatus,
+    ChangeType,
+    MediaType,
+    ProjectStatus,
+    RenovationStage,
+    CashFlowType,
+    CashFlowCategory,
+    RecordType,
+    LeadStatus,
+    FollowUpMethod,
 )
-from .community import Community, CommunityAlias, CommunityCompetitor
-from .property import PropertyCurrent, PropertyHistory
-from .media import PropertyMedia
-from .error import FailedRecord
+
+# 房源信息模块
+from .property import (
+    Community,
+    CommunityAlias,
+    CommunityCompetitor,
+    PropertyCurrent,
+    PropertyHistory,
+    PropertyMedia,
+)
+
+# 系统模块
+from .system import FailedRecord
+
+# 项目管理模块
 from .project import (
     Project,
     ProjectContract,
@@ -25,11 +46,15 @@ from .project import (
     ProjectRenovation,
     RenovationPhoto,
 )
+
+# 用户权限模块
 from .user import User, Role
+
+# 线索管理模块
 from .lead import Lead, LeadFollowUp, LeadPriceHistory
 
-# L4 市场营销层模型
-from .l4_marketing import (
+# L4 市场营销模块
+from .marketing import (
     L4MarketingProject,
     L4MarketingMedia,
     PublishStatus,
@@ -37,7 +62,9 @@ from .l4_marketing import (
 )
 
 __all__ = [
+    # 基础
     'Base',
+    'BaseModel',
     'PropertyStatus',
     'ChangeType',
     'MediaType',
@@ -48,13 +75,16 @@ __all__ = [
     'RecordType',
     'LeadStatus',
     'FollowUpMethod',
+    # 房源
     'Community',
     'CommunityAlias',
     'CommunityCompetitor',
     'PropertyCurrent',
     'PropertyHistory',
     'PropertyMedia',
+    # 系统
     'FailedRecord',
+    # 项目
     'Project',
     'ProjectContract',
     'ProjectOwner',
@@ -66,12 +96,14 @@ __all__ = [
     'ProjectStatusLog',
     'ProjectRenovation',
     'RenovationPhoto',
+    # 用户
     'User',
     'Role',
+    # 线索
     'Lead',
     'LeadFollowUp',
     'LeadPriceHistory',
-    # L4 市场营销模型
+    # L4 市场营销
     'L4MarketingProject',
     'L4MarketingMedia',
     'PublishStatus',
