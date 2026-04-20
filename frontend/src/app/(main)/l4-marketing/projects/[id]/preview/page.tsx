@@ -57,7 +57,8 @@ export default async function ProjectPreviewPage({
   })) as L4MarketingMedia[];
 
   // Get images from project.images or photos
-  const projectImages = project.images?.split(",").filter(Boolean) || [];
+  // 后端直接返回数组，无需 split
+  const projectImages = Array.isArray(project.images) ? project.images : [];
   const photoUrls =
     photos.length > 0
       ? photos.map((p) => p.file_path).filter((path): path is string => !!path)
@@ -66,8 +67,8 @@ export default async function ProjectPreviewPage({
   const mainImage = photoUrls[0] || "";
   const secondaryImages = photoUrls.slice(1, 3).filter((path): path is string => !!path);
 
-  // Parse tags - 处理 null、undefined 和空字符串
-  const tags = project.tags?.split(",").filter((tag) => tag.trim() !== "") || [];
+  // Parse tags - 后端直接返回数组，直接使用
+  const tags = Array.isArray(project.tags) ? project.tags : [];
 
   return (
     <div className="min-h-screen bg-slate-50/50">

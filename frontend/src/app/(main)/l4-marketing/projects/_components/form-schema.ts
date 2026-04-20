@@ -193,10 +193,11 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
 }
 
 // 将API响应转换为表单值
+// 注意：后端现在直接返回数组格式，无需再进行 split 转换
 export function projectToFormValues(project: Record<string, unknown>): FormValues {
   return {
     community_id: (project.community_id as string) || "",
-    community_name: (project.community_name as string) || "",
+    community_name: (project.community_name as string) || undefined,
     layout: (project.layout as string) || "",
     orientation: (project.orientation as string) || "",
     floor_info: (project.floor_info as string) || "",
@@ -204,10 +205,12 @@ export function projectToFormValues(project: Record<string, unknown>): FormValue
     total_price: typeof project.total_price === "string" ? parseFloat(project.total_price) : (project.total_price as number) || 0,
     unit_price: typeof project.unit_price === "string" ? parseFloat(project.unit_price) : (project.unit_price as number) || undefined,
     title: (project.title as string) || "",
-    images: (project.images as string)?.split(",").filter(Boolean) || [],
+    // 后端直接返回数组，直接使用
+    images: Array.isArray(project.images) ? project.images as string[] : [],
     sort_order: (project.sort_order as number) || 0,
-    tags: (project.tags as string)?.split(",").filter(Boolean) || [],
-    decoration_style: (project.decoration_style as string) || "",
+    // 后端直接返回数组，直接使用
+    tags: Array.isArray(project.tags) ? project.tags as string[] : [],
+    decoration_style: (project.decoration_style as string) || undefined,
     publish_status: (project.publish_status as "草稿" | "发布") || "草稿",
     project_status: (project.project_status as "在途" | "在售" | "已售") || "在途",
     consultant_id: (project.consultant_id as string) || undefined,
@@ -239,6 +242,7 @@ function mapL3StatusToL4(status?: string): "在途" | "在售" | "已售" {
 }
 
 // 将导入数据转换为表单值
+// 注意：后端现在直接返回数组格式，无需再进行 split 转换
 export function importDataToFormValues(data: Record<string, unknown>): Partial<FormValues> {
   // project_id 保持字符串类型（后端返回的是UUID字符串）
   const projectId = (data.project_id as string) || undefined;
@@ -254,7 +258,8 @@ export function importDataToFormValues(data: Record<string, unknown>): Partial<F
     total_price: typeof data.total_price === "string" ? parseFloat(data.total_price) : (data.total_price as number) || 0,
     unit_price: typeof data.unit_price === "string" ? parseFloat(data.unit_price) : (data.unit_price as number) || undefined,
     title: (data.title as string) || "",
-    tags: (data.tags as string)?.split(",").filter(Boolean) || [],
+    // 后端直接返回数组，直接使用
+    tags: Array.isArray(data.tags) ? data.tags as string[] : [],
     decoration_style: (data.decoration_style as string) || "",
     project_status: mapL3StatusToL4(data.status as string),
   };

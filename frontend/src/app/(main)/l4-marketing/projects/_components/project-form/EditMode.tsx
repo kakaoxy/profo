@@ -61,7 +61,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     return undefined;
   }, [mode, localPhotos]);
 
-  const { form, onSubmit, isSubmitting } = useMiniProjectForm({
+  const { form, onSubmit, isSubmitting, errors } = useMiniProjectForm({
     mode,
     project,
     actions,
@@ -106,6 +106,17 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     <>
       <Form {...form}>
         <form onSubmit={onSubmit} className="space-y-6">
+          {/* 表单错误提示 */}
+          {Object.keys(errors).length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <h4 className="text-red-800 font-medium text-sm mb-2">表单验证失败，请检查以下字段：</h4>
+              <ul className="list-disc list-inside text-red-600 text-sm space-y-1">
+                {Object.entries(errors).map(([field, error]) => (
+                  <li key={field}>{field}: {error?.message || '验证失败'}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* 左侧：主要信息和照片 */}
             <div className="lg:col-span-8 space-y-6">

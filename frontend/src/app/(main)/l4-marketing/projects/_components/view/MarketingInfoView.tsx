@@ -39,15 +39,15 @@ export function MarketingInfoView({ project }: MarketingInfoViewProps) {
         <DisplayRow
           label="标签"
           value={
-            typeof project?.tags === "string" && project?.tags ? (
+            Array.isArray(project?.tags) && project.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {project.tags.split(",").map((tag) => (
+                {project.tags.map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
                     className="bg-slate-100 text-slate-700"
                   >
-                    {tag.trim()}
+                    {tag}
                   </Badge>
                 ))}
               </div>

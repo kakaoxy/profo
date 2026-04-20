@@ -181,15 +181,15 @@ class TestL4MarketingProjectFields:
         assert title_col['type'].__class__.__name__ in ['VARCHAR', 'String']
         assert title_col['nullable'] == False
 
-    def test_images_field_is_string_nullable(self, db):
-        """测试images字段为字符串类型、允许为空"""
+    def test_images_field_is_json(self, db):
+        """测试images字段为JSON类型"""
         inspector = inspect(engine)
         columns = {col['name']: col for col in inspector.get_columns('l4_marketing_projects')}
-        
+
         assert 'images' in columns
         images_col = columns['images']
-        assert images_col['type'].__class__.__name__ in ['VARCHAR', 'String', 'TEXT', 'Text']
-        assert images_col['nullable'] == True
+        assert images_col['type'].__class__.__name__ == 'JSON'
+        # JSON字段在SQLite中可以存储NULL，但默认我们使用空列表
 
     def test_sort_order_field_is_integer_not_null_default_0(self, db):
         """测试sort_order字段为整数类型、非空、默认值0"""
@@ -201,15 +201,15 @@ class TestL4MarketingProjectFields:
         assert sort_col['type'].__class__.__name__ in ['INTEGER', 'Integer']
         assert sort_col['nullable'] == False
 
-    def test_tags_field_is_string_nullable(self, db):
-        """测试tags字段为字符串类型、允许为空"""
+    def test_tags_field_is_json(self, db):
+        """测试tags字段为JSON类型"""
         inspector = inspect(engine)
         columns = {col['name']: col for col in inspector.get_columns('l4_marketing_projects')}
-        
+
         assert 'tags' in columns
         tags_col = columns['tags']
-        assert tags_col['type'].__class__.__name__ in ['VARCHAR', 'String', 'TEXT', 'Text']
-        assert tags_col['nullable'] == True
+        assert tags_col['type'].__class__.__name__ == 'JSON'
+        # JSON字段在SQLite中可以存储NULL，但默认我们使用空列表
 
     def test_decoration_style_field_is_string_nullable_max_100(self, db):
         """测试decoration_style字段为字符串类型、允许为空、最大长度100"""
