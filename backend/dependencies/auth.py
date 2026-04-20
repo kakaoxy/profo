@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from db import get_db
 from models import User
@@ -53,8 +53,8 @@ async def get_current_user(
     if not isinstance(user_id, str):
         raise credentials_exception
 
-    # 从数据库获取用户
-    user = db.query(User).filter(User.id == user_id).first()
+    # 从数据库获取用户，预加载角色关系
+    user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
     if user is None:
         raise credentials_exception
 
@@ -103,7 +103,7 @@ def require_roles(required_roles: list[str]):
     Returns:
         依赖函数，用于检查用户角色
     """
-    async def role_checker(user: CurrentActiveUserDep) -> User:
+    def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role.code not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
