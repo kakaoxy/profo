@@ -16,7 +16,6 @@ from schemas import PaginatedPropertyResponse, PropertyDetailResponse
 from dependencies.auth import (
     DbSessionDep,
     CurrentInternalUserDep,
-    get_current_internal_user,
 )
 from services.market import PropertyQueryService, get_property_query_service
 from models import PropertyCurrent, Community, PropertyMedia
