@@ -8,6 +8,7 @@ from .media import (
     L4MarketingMediaCreate,
     L4MarketingMediaUpdate,
     L4MarketingMediaResponse,
+    MediaSortOrderUpdate,
 )
 from .project import (
     L4MarketingProjectBase,
@@ -41,6 +42,7 @@ __all__ = [
     "L4MarketingMediaCreate",
     "L4MarketingMediaUpdate",
     "L4MarketingMediaResponse",
+    "MediaSortOrderUpdate",
     # Project
     "L4MarketingProjectBase",
     "L4MarketingProjectCreate",

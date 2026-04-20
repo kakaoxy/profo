@@ -2,11 +2,11 @@
 L4 市场营销层导入路由
 负责从L3项目导入数据相关API
 """
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import Field
+from typing import Annotated, Optional
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
-import re
 
 from db import get_db
 from dependencies.auth import get_current_operator_user
@@ -28,14 +28,19 @@ router = APIRouter(
 
 
 # ============================================================================
-# 依赖注入函数
+# 依赖注入类型别名
 # ============================================================================
 
-def get_query_service(db: Session = Depends(get_db)) -> L4MarketingQueryService:
+DbSession = Annotated[Session, Depends(get_db)]
+QueryServiceDep = Annotated[L4MarketingQueryService, Depends(lambda db: L4MarketingQueryService(db))]
+ImportServiceDep = Annotated[L4MarketingImportService, Depends(lambda db: L4MarketingImportService(db))]
+
+
+def get_query_service(db: DbSession) -> L4MarketingQueryService:
     return L4MarketingQueryService(db)
 
 
-def get_import_service(db: Session = Depends(get_db)) -> L4MarketingImportService:
+def get_import_service(db: DbSession) -> L4MarketingImportService:
     return L4MarketingImportService(db)
 
 
@@ -49,11 +54,11 @@ def get_import_service(db: Session = Depends(get_db)) -> L4MarketingImportServic
     summary="获取可关联的L3项目列表"
 )
 async def list_available_projects(
-    community_name: Optional[str] = Query(None, description="小区名称筛选"),
-    status: Optional[str] = Query(None, description="项目状态筛选"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=200, description="每页大小"),
-    service: L4MarketingQueryService = Depends(get_query_service)
+    community_name: Annotated[Optional[str], Query(description="小区名称筛选")] = None,
+    status: Annotated[Optional[str], Query(description="项目状态筛选")] = None,
+    page: Annotated[int, Query(ge=1, description="页码")] = 1,
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 20,
+    service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None
 ) -> L3ProjectListResponse:
     """获取可用于关联的L3项目列表
     
@@ -79,14 +84,14 @@ async def list_available_projects(
     summary="获取L3项目详情"
 )
 async def get_l3_project_detail(
-    project_id: str,
-    service: L4MarketingQueryService = Depends(get_query_service)
+    project_id: Annotated[UUID, Path(description="项目UUID")],
+    service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None
 ) -> L3ProjectBriefResponse:
     """获取单个L3项目详情
 
     用于项目选择器中预览项目信息
     """
-    project = service.get_l3_project_for_import(project_id)
+    project = service.get_l3_project_for_import(str(project_id))
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -109,44 +114,32 @@ async def get_l3_project_detail(
 # L3 项目导入 API
 # ============================================================================
 
-def validate_uuid(project_id: str) -> str:
-    """验证UUID格式"""
-    uuid_pattern = re.compile(
-        r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$',
-        re.IGNORECASE
-    )
-    if not uuid_pattern.match(project_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="项目ID格式无效，应为UUID格式"
-        )
-    return project_id
-
-
 @router.post(
     "/projects/import-from-l3/{project_id}",
     response_model=L3ProjectImportResponse,
     summary="从L3项目导入数据"
 )
 async def import_from_l3_project(
-    project_id: str = Depends(validate_uuid),
-    query_service: L4MarketingQueryService = Depends(get_query_service),
-    import_service: L4MarketingImportService = Depends(get_import_service)
+    project_id: Annotated[UUID, Path(description="项目UUID")],
+    query_service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None,
+    import_service: Annotated[L4MarketingImportService, Depends(get_import_service)] = None
 ) -> L3ProjectImportResponse:
     """从L3项目导入数据
 
     根据L3项目ID获取可导入的数据，用于创建营销房源
     采用写时复制(CoW)模式，L4独立存储数据
     """
+    project_id_str = str(project_id)
+    
     # 先检查项目是否存在
-    if not query_service.check_project_exists(project_id):
+    if not query_service.check_project_exists(project_id_str):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="项目不存在或已删除"
         )
 
     # 导入数据
-    result = import_service.import_from_l3_project(project_id)
+    result = import_service.import_from_l3_project(project_id_str)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
