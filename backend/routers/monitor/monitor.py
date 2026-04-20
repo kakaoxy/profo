@@ -74,15 +74,14 @@ def get_competitors(
     return MonitorService.get_competitors(db, community_id)
 
 
-@community_router.post("/{community_id}/competitors", status_code=201)
+@community_router.post("/{community_id}/competitors", status_code=204)
 def add_competitor(
     community_id: CommunityIdPath,
     request: AddCompetitorRequest,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-) -> dict:
+) -> None:
     MonitorService.add_competitor(db, community_id, request.competitor_community_id)
-    return {"success": True, "message": "竞品添加成功"}
 
 
 @community_router.delete("/{community_id}/competitors/{competitor_id}", status_code=204)
