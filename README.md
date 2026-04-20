@@ -261,6 +261,8 @@ graph LR
 
 #### 服务分层架构
 
+服务层按业务领域模块化组织，每个领域（Domain）包含独立的业务逻辑：
+
 ```
 backend/
 ├── routers/              # API路由层
@@ -280,36 +282,88 @@ backend/
 │   ├── admin.py               # 管理后台路由
 │   ├── monitor.py             # 监控路由
 │   └── push.py                # 推送路由
-├── services/             # 业务逻辑层
-│   ├── project_service.py     # 项目服务
-│   ├── project_core.py        # 项目核心服务
-│   ├── project_renovation.py  # 装修服务
-│   ├── project_sales.py       # 销售服务
-│   ├── project_finance.py     # 财务服务
-│   ├── l4_marketing_service.py # 营销服务
-│   ├── l4_marketing_query.py  # 营销查询服务
-│   ├── l4_marketing_import.py # 营销导入服务
-│   ├── auth_service.py        # 认证服务
-│   ├── user_service.py        # 用户服务
-│   ├── role_service.py        # 角色服务
-│   ├── cashflow_service.py    # 现金流服务
-│   ├── monitor_service.py     # 监控服务
-│   ├── property_query_service.py # 房源查询服务
-│   ├── merger.py              # 数据合并服务
-│   ├── parser.py              # 解析服务
-│   ├── importer.py            # 导入服务
-│   ├── csv_batch_importer.py   # CSV批量导入
-│   ├── error_service.py       # 错误处理服务
-│   ├── builders/              # 响应构建器
-│   │   └── project_response_builder.py
-│   ├── core/                  # 核心业务
-│   │   └── project_core_service.py
-│   ├── queries/               # 查询逻辑
-│   │   └── project_query.py
-│   ├── state/                 # 状态管理
-│   │   └── project_state_manager.py
-│   └── utils/                 # 服务工具
-│       └── date_parser.py
+├── services/             # 业务逻辑层（按领域模块化）
+│   ├── __init__.py           # 服务层统一入口，聚合导出所有服务
+│   ├── market/               # 市场情报服务（原L1）
+│   │   ├── query.py              # 房源查询服务
+│   │   ├── importer.py           # 数据导入服务
+│   │   ├── batch_importer.py     # CSV批量导入
+│   │   ├── merger.py             # 小区合并服务
+│   │   └── parser.py             # 楼层解析工具
+│   ├── leads/                # 线索管理服务（原L2，预留）
+│   ├── projects/             # 项目管理服务（原L3）
+│   │   ├── facade.py             # 外观服务（向后兼容）
+│   │   ├── core.py               # 项目核心服务
+│   │   ├── renovation.py         # 装修阶段服务
+│   │   ├── sales.py              # 销售跟进服务
+│   │   ├── finance.py            # 财务管理服务
+│   │   └── internal/             # 内部组件
+│   │       ├── query.py          # 项目查询逻辑
+│   │       ├── builder.py        # 响应构建器
+│   │       └── state.py          # 状态管理器
+│   ├── marketing/            # 市场营销服务（原L4）
+│   │   ├── project.py            # 营销项目管理
+│   │   ├── import_service.py     # L3项目导入
+│   │   └── query.py              # 营销查询服务
+│   ├── monitor/              # 市场监控服务
+│   │   └── service.py            # 监控服务
+│   ├── system/               # 系统服务
+│   │   ├── auth.py               # 认证服务
+│   │   ├── user.py               # 用户服务
+│   │   ├── role.py               # 角色服务
+│   │   └── error.py              # 错误记录服务
+│   └── utils/                # 服务工具
+│       └── date_parser.py        # 日期解析工具
+
+##### 服务使用方式
+
+```python
+# 方式1：统一入口导入（推荐）
+from services import (
+    # Market 模块
+    PropertyQueryService,
+    PropertyImporter,
+    CommunityMerger,
+    FloorParser,
+    # Projects 模块
+    ProjectService,          # Facade聚合服务
+    ProjectCoreService,
+    RenovationService,
+    SalesService,
+    FinanceService,
+    CashFlowService,
+    # Marketing 模块
+    MarketingProjectService,
+    MarketingImportService,
+    # System 模块
+    AuthService,
+    UserService,
+    RoleService,
+    # Monitor 模块
+    MonitorService,
+)
+
+# 方式2：按需从子模块导入
+from services.market import PropertyQueryService, PropertyImporter
+from services.projects import ProjectService, ProjectCoreService
+from services.marketing import MarketingProjectService
+from services.system import AuthService, UserService
+from services.monitor import MonitorService
+```
+
+##### 服务模块职责说明
+
+| 模块 | 业务层级 | 职责描述 | 主要服务 |
+|------|----------|----------|----------|
+| `market` | L1 | 市场情报管理 | 房源查询、数据导入、小区合并、楼层解析 |
+| `leads` | L2 | 线索管理（预留） | 线索创建、跟进、评估与筛选 |
+| `projects` | L3 | 项目核心ERP | 项目管理、装修管控、销售跟进、财务记录 |
+| `marketing` | L4 | 营销展示 | 营销项目、媒体管理、作品集展示 |
+| `monitor` | - | 市场监控 | 竞品分析、趋势监控 |
+| `system` | - | 系统服务 | 认证授权、用户管理、角色权限、错误记录 |
+
+```
+
 ├── models/               # 数据模型层
 │   ├── project.py             # 项目模型
 │   ├── user.py                # 用户模型
@@ -1704,12 +1758,15 @@ ProFo/
 │
 ├── backend/                     # 后端项目
 │   ├── routers/                # API路由层
-│   ├── services/               # 业务逻辑层
-│   │   ├── builders/          # 响应构建器
-│   │   ├── core/              # 核心业务
-│   │   ├── queries/           # 查询逻辑
-│   │   ├── state/             # 状态管理
-│   │   └── utils/             # 服务工具
+│   ├── services/               # 业务逻辑层（按领域模块化）
+│   │   ├── __init__.py         # 服务层统一入口
+│   │   ├── market/             # 市场情报服务（L1）
+│   │   ├── leads/              # 线索管理服务（L2，预留）
+│   │   ├── projects/           # 项目管理服务（L3）
+│   │   ├── marketing/          # 市场营销服务（L4）
+│   │   ├── monitor/            # 市场监控服务
+│   │   ├── system/             # 系统服务（认证、用户、角色）
+│   │   └── utils/              # 服务工具
 │   ├── models/                 # 数据模型层
 │   ├── schemas/                # Pydantic模型
 │   ├── dependencies/           # 依赖注入
