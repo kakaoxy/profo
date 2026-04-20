@@ -13,6 +13,8 @@ from .importer import PropertyImporter
 from .merger import CommunityMerger, MergeResult
 from .parser import FloorParser, FloorInfo
 from .batch_importer import CSVBatchImporter
+from .filters import apply_filters
+from .sorting import apply_sorting
 
 __all__ = [
     # 查询服务
@@ -27,4 +29,7 @@ __all__ = [
     # 解析工具
     "FloorParser",
     "FloorInfo",
+    # 筛选排序工具
+    "apply_filters",
+    "apply_sorting",
 ]

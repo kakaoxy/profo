@@ -84,8 +84,8 @@ class PropertyImporter:
             
         return None
 
-    def _update_community_info_if_needed(self, community: Community, 
-                                       data: PropertyIngestionModel, db: Session):
+    def _update_community_info_if_needed(self, community: Community,
+                                       data: PropertyIngestionModel, db: Session) -> None:
         """如果信息缺失，更新小区补充信息"""
         updated = False
         
@@ -130,7 +130,7 @@ class PropertyImporter:
         ).first()
 
     def _handle_update(self, existing: PropertyCurrent, data: PropertyIngestionModel,
-                       community_id: int, db: Session):
+                       community_id: int, db: Session) -> None:
         """处理更新逻辑：快照 + 更新当前表"""
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
@@ -151,7 +151,7 @@ class PropertyImporter:
         self._save_property_media(data, db)
         return new_property
 
-    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: int):
+    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: int) -> None:
         """
         统一的数据映射方法
         同时用于 Create 和 Update，消除代码重复
@@ -186,8 +186,8 @@ class PropertyImporter:
         prop.listing_remarks = data.listing_remarks
         prop.updated_at = datetime.now()
 
-    def _create_history_snapshot(self, property_obj: PropertyCurrent, 
-                                 change_type: ChangeType, db: Session):
+    def _create_history_snapshot(self, property_obj: PropertyCurrent,
+                                 change_type: ChangeType, db: Session) -> None:
         """创建历史快照"""
         history = PropertyHistory(
             data_source=property_obj.data_source,
@@ -251,7 +251,7 @@ class PropertyImporter:
             error=error_msg
         )
 
-    def _save_property_media(self, data: PropertyIngestionModel, db: Session):
+    def _save_property_media(self, data: PropertyIngestionModel, db: Session) -> None:
         """保存房源图片链接到 property_media 表"""
         if not data.image_urls:
             logger.debug(f"房源 {data.source_property_id} 没有图片链接，跳过媒体资源保存")
