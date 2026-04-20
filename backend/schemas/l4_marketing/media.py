@@ -4,12 +4,12 @@ L4 市场营销层媒体相关 Schema
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
-from .enums import PhotoCategory
+from .enums import PhotoCategory, MediaType
 
 
 class L4MarketingMediaBase(BaseModel):
     """营销媒体基础模型"""
-    media_type: str = Field(default="image", description="媒体类型: image/video")
+    media_type: MediaType = Field(default=MediaType.IMAGE, description="媒体类型: image/video")
     photo_category: PhotoCategory = Field(default=PhotoCategory.MARKETING, description="照片分类: marketing/renovation")
     renovation_stage: str | None = Field(default=None, max_length=50, description="装修阶段(仅改造照片)")
     description: str | None = Field(default=None, description="描述")
