@@ -1,13 +1,12 @@
 """
 线索跟进记录路由
 """
-from typing import Annotated, List
 from datetime import datetime
+from typing import Annotated
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Path, HTTPException
 from sqlalchemy import desc
-from sqlalchemy.orm import joinedload
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from models import Lead, LeadFollowUp
@@ -20,7 +19,7 @@ router = APIRouter()
 def add_follow_up(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
     follow_up_in: FollowUpCreate,
 ):
     """添加跟进记录"""
@@ -45,11 +44,11 @@ def add_follow_up(
     return db_follow
 
 
-@router.get("/{lead_id}/follow-ups", response_model=List[FollowUpResponse])
+@router.get("/{lead_id}/follow-ups", response_model=list[FollowUpResponse])
 def get_follow_ups(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-    lead_id: str,
+    lead_id: Annotated[str, Path(description="线索ID")],
 ):
     """获取线索的跟进记录列表"""
     follow_ups = (
