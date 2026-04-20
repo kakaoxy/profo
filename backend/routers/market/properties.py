@@ -6,36 +6,35 @@ from datetime import datetime as dt
 from typing import Optional, List, Annotated
 from fastapi import APIRouter, Depends, Query, Path, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
 import logging
 import csv
 import io
 
-from db import get_db
-from models import PropertyCurrent, Community, PropertyMedia
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
 from schemas import PaginatedPropertyResponse, PropertyDetailResponse
-from dependencies.auth import get_current_internal_user
-from models import User
+from dependencies.auth import (
+    DbSessionDep,
+    CurrentInternalUserDep,
+    get_current_internal_user,
+)
 from services.market import PropertyQueryService, get_property_query_service
+from models import PropertyCurrent, Community, PropertyMedia
 
 
 logger = logging.getLogger(__name__)
 
-# 定义共享依赖类型别名
-SessionDep = Annotated[Session, Depends(get_db)]
-CurrentUserDep = Annotated[User, Depends(get_current_internal_user)]
+# 定义服务依赖类型别名
 PropertyServiceDep = Annotated[PropertyQueryService, Depends(get_property_query_service)]
 
-router = APIRouter()
+router = APIRouter(tags=["市场情报-房源查询"])
 
 
 @router.get("/communities/search")
 def search_communities(
     q: Annotated[str, Query(min_length=1, description="搜索关键词")],
-    db: SessionDep,
-    current_user: CurrentUserDep
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
 ) -> List[dict]:
     """Search communities by name"""
     results = db.query(Community).filter(Community.name.contains(q)).limit(20).all()
@@ -52,8 +51,8 @@ def search_communities(
 
 @router.get("", response_model=PaginatedPropertyResponse)
 def get_properties(
-    db: SessionDep,
-    current_user: CurrentUserDep,
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
     status: Annotated[Optional[str], Query(description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[Optional[str], Query(description="小区名称（模糊搜索）")] = None,
@@ -113,8 +112,8 @@ def get_properties(
 # 静态路径必须在动态路径之前定义
 @router.get("/export")
 def export_properties(
-    db: SessionDep,
-    current_user: CurrentUserDep,
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
     status: Annotated[Optional[str], Query(description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[Optional[str], Query(description="小区名称（模糊搜索）")] = None,
@@ -175,8 +174,8 @@ def export_properties(
 @router.get("/{id}", response_model=PropertyDetailResponse)
 def get_property_detail(
     id: Annotated[int, Path(ge=1, description="房源ID")],
-    db: SessionDep,
-    current_user: CurrentUserDep
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
 ) -> PropertyDetailResponse:
     """获取房源详情"""
     property_obj = db.query(PropertyCurrent).filter(

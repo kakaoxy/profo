@@ -22,7 +22,7 @@ from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSes
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["管理员"])
+router = APIRouter(tags=["L1-小区管理"])
 
 class CommunityQueryService:
     """
