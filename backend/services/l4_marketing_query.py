@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, and_, desc
 
 from models import Project
-from schemas.l4_project_import import L3ProjectBriefResponse
+from schemas.l4_marketing.import_schemas import L3ProjectBriefResponse
 
 
 class L4MarketingQueryService:

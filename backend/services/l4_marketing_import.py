@@ -7,7 +7,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from models import Project, RenovationPhoto, Community
-from schemas.l4_project_import import (
+from schemas.l4_marketing.import_schemas import (
     L3ProjectImportResponse,
     ImportableMediaResponse
 )
