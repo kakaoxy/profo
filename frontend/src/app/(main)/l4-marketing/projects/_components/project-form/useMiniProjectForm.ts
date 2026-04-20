@@ -95,7 +95,7 @@ function getDefaultValues(
 ): FormValues {
   if (mode === "create") {
     return {
-      community_id: 0,
+      community_id: "",
       layout: "",
       orientation: "",
       floor_info: "",
@@ -115,7 +115,7 @@ function getDefaultValues(
   // 编辑模式：从项目数据初始化
   if (!project) {
     return {
-      community_id: 0,
+      community_id: "",
       layout: "",
       orientation: "",
       floor_info: "",

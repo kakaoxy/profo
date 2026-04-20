@@ -10,7 +10,7 @@ import {
 import { searchCommunitiesAction } from '../../actions';
 
 interface Community {
-  id: number;
+  id: string;
   name: string;
   district?: string;
   businessCircle?: string;
@@ -65,7 +65,7 @@ export const CommunitySelect: React.FC<Props> = ({ value, onChange }) => {
 
   const handleCreateNew = () => {
     if (!query) return;
-    onChange(query);
+    onChange(query, undefined, undefined);
     setOpen(false);
     setQuery('');
   };
