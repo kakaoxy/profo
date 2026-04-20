@@ -31,7 +31,7 @@ class LeadPriceService:
         """
         self.db = db
 
-    def get_by_lead(self, lead_id: str) -> List[LeadPriceHistory]:
+    def get_price_history(self, lead_id: str) -> List[LeadPriceHistory]:
         """
         获取线索价格历史记录
 
@@ -48,7 +48,7 @@ class LeadPriceService:
             .all()
         )
 
-    def add_record(
+    def add_price_record(
         self,
         lead_id: str,
         price: float,
