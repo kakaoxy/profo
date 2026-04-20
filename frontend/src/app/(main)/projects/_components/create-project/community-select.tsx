@@ -12,7 +12,7 @@ import {
 import { searchCommunitiesAction } from "@/app/(main)/leads/actions/search-communities";
 
 interface Community {
-  id: number;
+  id: string;
   name: string;
   district?: string;
   businessCircle?: string;
@@ -69,7 +69,7 @@ export const CommunitySelect: React.FC<CommunitySelectProps> = ({
 
   const handleCreateNew = () => {
     if (!query) return;
-    onChange(query);
+    onChange(query, undefined, undefined);
     setOpen(false);
     setQuery("");
   };

@@ -17,7 +17,7 @@ export async function searchCommunitiesAction(query: string) {
   }
 
   return data as {
-    id: number;
+    id: string;
     name: string;
     district: string;
     businessCircle: string;
