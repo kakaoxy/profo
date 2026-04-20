@@ -202,7 +202,10 @@ export interface paths {
          */
         get: operations["get_leads_api_v1_leads__get"];
         put?: never;
-        /** Create Lead */
+        /**
+         * Create Lead
+         * @description 创建线索
+         */
         post: operations["create_lead_api_v1_leads__post"];
         delete?: never;
         options?: never;
@@ -217,12 +220,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Lead */
+        /**
+         * Get Lead
+         * @description 获取单个线索详情
+         */
         get: operations["get_lead_api_v1_leads__lead_id__get"];
-        /** Update Lead */
+        /**
+         * Update Lead
+         * @description 更新线索
+         */
         put: operations["update_lead_api_v1_leads__lead_id__put"];
         post?: never;
-        /** Delete Lead */
+        /**
+         * Delete Lead
+         * @description 删除线索
+         */
         delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
         options?: never;
         head?: never;
@@ -236,10 +248,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Follow Ups */
+        /**
+         * Get Follow Ups
+         * @description 获取线索的跟进记录列表
+         */
         get: operations["get_follow_ups_api_v1_leads__lead_id__follow_ups_get"];
         put?: never;
-        /** Add Follow Up */
+        /**
+         * Add Follow Up
+         * @description 添加跟进记录
+         */
         post: operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"];
         delete?: never;
         options?: never;
@@ -254,13 +272,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Price History */
+        /**
+         * Get Price History
+         * @description 获取线索价格历史记录
+         */
         get: operations["get_price_history_api_v1_leads__lead_id__prices_get"];
         put?: never;
         /**
          * Add Price Record
-         * @description Explicitly add a price record (e.g. secondary authorization)
-         *     This also updates the main lead's total_price
+         * @description 添加价格记录（如二次授权）
+         *     同时更新线索的当前总价
          */
         post: operations["add_price_record_api_v1_leads__lead_id__prices_post"];
         delete?: never;
@@ -4486,11 +4507,17 @@ export interface operations {
                 page?: number;
                 /** @description 每页数量 */
                 page_size?: number;
+                /** @description 小区名称搜索 */
                 search?: string | null;
+                /** @description 状态筛选 */
                 statuses?: components["schemas"]["LeadStatus"][] | null;
+                /** @description 行政区筛选 */
                 district?: string | null;
-                creator_id?: number | null;
+                /** @description 创建人筛选 */
+                creator_id?: string | null;
+                /** @description 户型筛选 */
                 layout?: string | null;
+                /** @description 楼层筛选 */
                 floor?: string | null;
             };
             header?: never;
@@ -5779,6 +5806,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: number;
             };
             cookie?: never;
@@ -5810,6 +5838,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: number;
             };
             cookie?: never;
@@ -5845,6 +5874,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: number;
             };
             cookie?: never;
@@ -5879,6 +5909,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: number;
             };
             cookie?: never;
@@ -5910,6 +5941,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: number;
             };
             cookie?: never;
@@ -5945,6 +5977,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 媒体ID */
                 media_id: number;
             };
             cookie?: never;
@@ -5980,6 +6013,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 媒体ID */
                 media_id: number;
             };
             cookie?: never;
@@ -6009,6 +6043,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: number;
             };
             cookie?: never;
@@ -6082,6 +6117,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: string;
             };
             cookie?: never;
@@ -6113,6 +6149,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 项目ID */
                 project_id: string;
             };
             cookie?: never;
@@ -6977,6 +7014,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 小区ID */
                 community_id: string;
             };
             cookie?: never;
@@ -7010,6 +7048,7 @@ export interface operations {
             };
             header?: never;
             path: {
+                /** @description 小区ID */
                 community_id: string;
             };
             cookie?: never;
@@ -7074,6 +7113,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 小区ID */
                 community_id: string;
             };
             cookie?: never;
@@ -7105,6 +7145,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 小区ID */
                 community_id: string;
             };
             cookie?: never;
@@ -7136,6 +7177,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 小区ID */
                 community_id: string;
             };
             cookie?: never;
@@ -7147,13 +7189,11 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": unknown;
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -7171,7 +7211,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 小区ID */
                 community_id: string;
+                /** @description 竞品小区ID */
                 competitor_id: string;
             };
             cookie?: never;
