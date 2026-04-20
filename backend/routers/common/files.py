@@ -74,7 +74,5 @@ def upload_file(
 
         return FileUploadResponse(url=url, filename=filename)
 
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"文件上传失败: {str(e)}")

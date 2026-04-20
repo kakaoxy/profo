@@ -2,17 +2,18 @@
 CSV 文件上传路由
 处理 CSV 文件的上传、解析和批量导入
 """
-from fastapi import APIRouter, UploadFile, File, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
 import os
 import logging
 
-from db import get_db
 from schemas import UploadResult
 from exceptions import FileProcessingException, ResourceNotFoundException
-from dependencies.auth import get_current_internal_user
+from dependencies.auth import DbSessionDep, CurrentInternalUserDep
 from services.market import CSVBatchImporter
+from models import User
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,10 @@ router = APIRouter()
 
 @router.post("/csv", response_model=UploadResult)
 def upload_csv(
-    file: UploadFile = File(..., description="CSV 文件"),
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_internal_user)
-):
+    file: Annotated[UploadFile, File(description="CSV 文件")],
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
+) -> UploadResult:
     """
     上传并处理 CSV 文件
     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
@@ -45,8 +46,8 @@ def upload_csv(
 @router.get("/download/{filename}")
 def download_failed_records(
     filename: str,
-    current_user = Depends(get_current_internal_user)
-):
+    current_user: CurrentInternalUserDep,
+) -> FileResponse:
     """
     下载失败记录文件
     注意：使用 def 避免文件操作阻塞
