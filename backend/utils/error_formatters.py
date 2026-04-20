@@ -109,6 +109,30 @@ def format_database_error(error: SQLAlchemyError) -> str:
                 return "小区名称已存在"
             elif 'uq_alias_source' in error_str:
                 return "小区别名已存在"
+            elif 'uq_community_competitor' in error_str:
+                return "竞品关联已存在"
+            elif 'uq_property_media_url' in error_str:
+                return "媒体资源已存在"
+            elif 'project_contracts.contract_no' in error_str:
+                return "合同编号已存在"
+            elif 'project_contracts.project_id' in error_str:
+                return "该项目已存在合同记录"
+            elif 'project_sales.project_id' in error_str:
+                return "该项目已存在销售记录"
+            elif 'project_renovations.project_id' in error_str:
+                return "该项目已存在装修记录"
+            elif 'roles.name' in error_str:
+                return "角色名称已存在"
+            elif 'roles.code' in error_str:
+                return "角色代码已存在"
+            elif 'users.username' in error_str:
+                return "用户名已存在"
+            elif 'users.phone' in error_str:
+                return "手机号已存在"
+            elif 'users.wechat_openid' in error_str:
+                return "微信账号已绑定"
+            elif 'users.wechat_unionid' in error_str:
+                return "微信账号已绑定"
             else:
                 return "数据重复，违反唯一性约束"
         elif 'FOREIGN KEY constraint failed' in error_str:
