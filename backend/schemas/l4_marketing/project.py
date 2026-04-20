@@ -165,3 +165,15 @@ class L4MarketingProjectResponse(BaseModel):
             except json.JSONDecodeError:
                 return []
         return []
+
+    @field_validator('community_id', 'project_id', 'consultant_id', mode='before')
+    @classmethod
+    def validate_id_fields(cls, v: Any) -> str | None:
+        """验证ID字段，支持int和str类型，统一转换为str"""
+        if v is None:
+            return None
+        if isinstance(v, int):
+            return str(v)
+        if isinstance(v, str):
+            return v
+        return str(v)
