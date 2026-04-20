@@ -3,7 +3,6 @@ L4 市场营销层导入路由
 负责从L3项目导入数据相关API
 """
 from typing import Annotated, Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
@@ -84,14 +83,14 @@ async def list_available_projects(
     summary="获取L3项目详情"
 )
 async def get_l3_project_detail(
-    project_id: Annotated[UUID, Path(description="项目UUID")],
+    project_id: Annotated[str, Path(description="项目UUID")],
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None
 ) -> L3ProjectBriefResponse:
     """获取单个L3项目详情
 
     用于项目选择器中预览项目信息
     """
-    project = service.get_l3_project_for_import(str(project_id))
+    project = service.get_l3_project_for_import(project_id)
     if not project:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -120,7 +119,7 @@ async def get_l3_project_detail(
     summary="从L3项目导入数据"
 )
 async def import_from_l3_project(
-    project_id: Annotated[UUID, Path(description="项目UUID")],
+    project_id: Annotated[str, Path(description="项目UUID")],
     query_service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None,
     import_service: Annotated[L4MarketingImportService, Depends(get_import_service)] = None
 ) -> L3ProjectImportResponse:
@@ -129,17 +128,15 @@ async def import_from_l3_project(
     根据L3项目ID获取可导入的数据，用于创建营销房源
     采用写时复制(CoW)模式，L4独立存储数据
     """
-    project_id_str = str(project_id)
-    
     # 先检查项目是否存在
-    if not query_service.check_project_exists(project_id_str):
+    if not query_service.check_project_exists(project_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="项目不存在或已删除"
         )
 
     # 导入数据
-    result = import_service.import_from_l3_project(project_id_str)
+    result = import_service.import_from_l3_project(project_id)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
