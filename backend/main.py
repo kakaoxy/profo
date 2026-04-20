@@ -124,7 +124,7 @@ API_V1_PREFIX = f"{settings.api_prefix}/v1"
 
 # ==================== 市场情报模块 (Market) ====================
 app.include_router(properties_router, prefix=f"{API_V1_PREFIX}/properties", tags=["properties"])
-app.include_router(communities_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
+app.include_router(communities_router, prefix=f"{API_V1_PREFIX}/admin", tags=["communities"])
 
 # ==================== 线索管理模块 (Leads) ====================
 app.include_router(leads_router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
@@ -139,7 +139,7 @@ app.include_router(marketing_import_router, prefix=f"{API_V1_PREFIX}", tags=["l4
 
 # ==================== 系统管理模块 (System) ====================
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
-app.include_router(users_router, prefix=f"{API_V1_PREFIX}", tags=["users"])
+app.include_router(users_router, prefix=f"{API_V1_PREFIX}/users", tags=["users"])
 app.include_router(roles_router, prefix=f"{API_V1_PREFIX}", tags=["roles"])
 
 # ==================== 通用功能模块 (Common) ====================

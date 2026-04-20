@@ -12,7 +12,7 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from models import User, Role
 from schemas.user import TokenResponse
@@ -40,9 +40,9 @@ class AuthService:
     def authenticate_user(db: Session, username: str, password: str) -> User:
         """
         验证用户名密码 (Sync - Blocking)
-        包含 bcrypt 验证（CPU 密集型）
+        包含 bcrypt 验证（CPU密集型）
         """
-        user = db.query(User).filter(User.username == username).first()
+        user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
         if not user or not verify_password(password, user.password):
             return None
         return user
