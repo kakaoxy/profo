@@ -26,9 +26,10 @@ function getMarketingMainImage(project: any, photos: L4MarketingMedia[]): string
     return getFileUrl(renovationPhoto.file_url || renovationPhoto.thumbnail_url);
   }
 
-  // 最后使用 project.images
+  // 最后使用 project.images (后端返回的是数组)
   if (project.images) {
-    const firstImage = project.images.split(",")[0];
+    const imagesArray = Array.isArray(project.images) ? project.images : project.images.split(",");
+    const firstImage = imagesArray[0];
     if (firstImage) return getFileUrl(firstImage.trim());
   }
   return null;
