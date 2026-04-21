@@ -83,7 +83,7 @@ export const PhotosSection = memo(function PhotosSection({
     uploadCategory,
     uploadStage,
     photos,
-    onPhotosChange: () => {}, // Handled by parent
+    onPhotosChange: handlePhotosAdded,
   });
 
   const handleOpenPicker = useCallback(() => {
