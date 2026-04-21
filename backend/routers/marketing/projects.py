@@ -247,6 +247,5 @@ async def update_media_sort_order(
     service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4SyncResponse:
     """批量更新媒体排序顺序"""
-    updates = [{"media_id": u.media_id, "sort_order": u.sort_order} for u in sort_updates]
-    updated_count = service.batch_update_sort_order(project_id, updates)
+    updated_count = service.batch_update_sort_order(project_id, sort_updates)
     return L4SyncResponse(total_synced=updated_count)

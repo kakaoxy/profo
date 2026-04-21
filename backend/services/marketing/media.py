@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, asc, desc
 
 from models import L4MarketingMedia
-from schemas.l4_marketing import L4MarketingMediaCreate, L4MarketingMediaUpdate
+from schemas.l4_marketing import L4MarketingMediaCreate, L4MarketingMediaUpdate, MediaSortOrderUpdate
 
 
 class MarketingMediaService:
@@ -142,14 +142,14 @@ class MarketingMediaService:
     def batch_update_sort_order(
         self,
         project_id: int,
-        sort_updates: List[dict]
+        sort_updates: List[MediaSortOrderUpdate]
     ) -> int:
         """
         批量更新媒体排序
 
         Args:
             project_id: 营销项目ID
-            sort_updates: 排序更新列表，每项包含 media_id 和 sort_order
+            sort_updates: 排序更新列表，每项为 MediaSortOrderUpdate 模型
 
         Returns:
             更新成功的记录数
@@ -157,14 +157,7 @@ class MarketingMediaService:
         if not sort_updates:
             return 0
 
-        update_map = {
-            u.get("media_id"): u.get("sort_order")
-            for u in sort_updates
-            if u.get("media_id") is not None and u.get("sort_order") is not None
-        }
-
-        if not update_map:
-            return 0
+        update_map = {u.media_id: u.sort_order for u in sort_updates}
 
         media_ids = list(update_map.keys())
         media_list = self.db.query(L4MarketingMedia).filter(
