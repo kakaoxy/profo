@@ -21,6 +21,7 @@ from schemas.user import (
 )
 from dependencies.auth import get_current_active_user
 from services.system import AuthService
+from services.system.exceptions import AuthenticationError
 from common import limiter
 
 
@@ -47,17 +48,18 @@ def login_for_access_token(
     OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
     速率限制：5次/分钟
     """
-    user = AuthService.authenticate_user(db, form_data.username, form_data.password)
-    if not user:
+    try:
+        user = AuthService.authenticate_user(db, form_data.username, form_data.password)
+    except AuthenticationError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误",
+            detail=e.message,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # 生成 Token (包含强制修改密码逻辑)
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
-    
+
     # 如果需要强制修改密码
     if result.get("require_password_change"):
         raise HTTPException(
@@ -69,7 +71,7 @@ def login_for_access_token(
             },
             headers={"X-Must-Change-Password": "true"}
         )
-        
+
     return result
 
 
@@ -84,14 +86,15 @@ def login(
     用户名密码登录 (Sync - Run in threadpool by FastAPI)
     速率限制：5次/分钟
     """
-    user = AuthService.authenticate_user(db, login_data.username, login_data.password)
-    if not user:
+    try:
+        user = AuthService.authenticate_user(db, login_data.username, login_data.password)
+    except AuthenticationError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误",
+            detail=e.message,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # 普通登录接口暂时不强制检查密码修改，或者也可以加上
     # 这里保持原有逻辑，原有逻辑没有抛出 403，只更新了 login time
     # 但 Service 统一处理了。如果原有逻辑没加 force_check，这里可以传 False

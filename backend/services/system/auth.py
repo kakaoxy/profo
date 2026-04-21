@@ -35,14 +35,17 @@ class AuthService:
     """
 
     @staticmethod
-    def authenticate_user(db: Session, username: str, password: str) -> User | None:
+    def authenticate_user(db: Session, username: str, password: str) -> User:
         """
         验证用户名密码 (Sync - Blocking)
         包含 bcrypt 验证（CPU密集型）
+
+        Raises:
+            AuthenticationError: 用户名或密码错误
         """
         user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
         if not user or not verify_password(password, user.password):
-            return None
+            raise AuthenticationError("用户名或密码错误")
         return user
 
     @staticmethod
