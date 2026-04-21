@@ -13,7 +13,7 @@ from settings import settings
 from utils.auth import validate_token
 
 # OAuth2密码承载器，用于从请求头中获取token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_prefix}/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_prefix}/v1/auth/token")
 
 # 类型别名定义
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
