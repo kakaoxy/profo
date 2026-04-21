@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useCallback, Suspense } from "react";
+import React, { memo, useState, useCallback, Suspense, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,12 +79,31 @@ export const PhotosSection = memo(function PhotosSection({
     initialPhotos,
   });
 
+  // 使用 ref 跟踪当前照片列表，用于计算新增照片
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+
+  // 适配器：将完整列表转换为新增照片数组
+  const handlePhotosChange = useCallback(
+    (allPhotos: typeof photos) => {
+      const currentPhotos = photosRef.current;
+      // 找出新添加的照片（在当前列表中不存在的）
+      const addedPhotos = allPhotos.filter(
+        (p) => !currentPhotos.some((cp) => cp.id === p.id)
+      );
+      if (addedPhotos.length > 0) {
+        handlePhotosAdded(addedPhotos);
+      }
+    },
+    [handlePhotosAdded]
+  );
+
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     projectId: effectiveProjectId,
     uploadCategory,
     uploadStage,
     photos,
-    onPhotosChange: handlePhotosAdded,
+    onPhotosChange: handlePhotosChange,
   });
 
   const handleOpenPicker = useCallback(() => {
