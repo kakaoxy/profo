@@ -3,19 +3,16 @@
 """
 import re
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Any, Dict, Tuple, Literal
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from settings import settings
 
 
 # 配置日志记录
 logger = logging.getLogger(__name__)
-
-# 密码上下文，用于密码哈希和验证
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def validate_password_strength(password: str) -> Tuple[bool, str]:
@@ -69,46 +66,60 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: 密码是否匹配
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def _truncate_password_safely(password: str, max_bytes: int = 72) -> str:
     """
-    安全截断密码，确保不破坏 UTF-8 编码
-    
+    安全截断密码，确保不破坏 UTF-8 编码，并保证截断后的字节长度不超过限制。
+
+    bcrypt 底层限制为 72 字节。某些 bcrypt 后端在初始化时会用固定长度的测试密码
+    做功能检测；如果截断逻辑仅按字符截断但字节长度仍超过 72，检测阶段就会抛出
+    ValueError。因此本函数必须保证返回值的字节长度严格 <= max_bytes。
+
     Args:
         password: 原始密码
         max_bytes: 最大字节数（bcrypt 限制为 72）
-        
+
     Returns:
-        str: 截断后的密码
+        str: 截断后的密码，其 UTF-8 字节长度一定不超过 max_bytes
     """
     password_bytes = password.encode('utf-8')
-    
+
     if len(password_bytes) <= max_bytes:
         return password
-    
+
     # 从 max_bytes 位置向前查找有效的 UTF-8 边界
     truncated_bytes = password_bytes[:max_bytes]
-    
+
     # 尝试直接解码
     try:
-        return truncated_bytes.decode('utf-8')
+        decoded = truncated_bytes.decode('utf-8')
+        # 再次确认编码后不会超出限制（防御性检查）
+        if len(decoded.encode('utf-8')) <= max_bytes:
+            return decoded
     except UnicodeDecodeError:
         pass
-    
+
     # 向前查找有效的 UTF-8 字符边界（UTF-8 最多 4 字节）
     for i in range(max_bytes - 1, max_bytes - 4, -1):
+        if i < 0:
+            break
         try:
-            result = password_bytes[:i].decode('utf-8')
-            logger.warning(f"密码长度超过{max_bytes}字节限制，已安全截断至{i}字节")
-            return result
+            decoded = password_bytes[:i].decode('utf-8')
+            if len(decoded.encode('utf-8')) <= max_bytes:
+                logger.warning(f"密码长度超过{max_bytes}字节限制，已安全截断至{i}字节")
+                return decoded
         except UnicodeDecodeError:
             continue
-    
-    # 最后的回退：使用 errors='ignore' 模式
+
+    # 最后的回退：使用 errors='ignore' 模式，并再次确认长度
     logger.warning(f"密码截断时遇到编码问题，使用忽略模式处理")
-    return truncated_bytes.decode('utf-8', 'ignore')
+    result = truncated_bytes.decode('utf-8', 'ignore')
+    # 确保最终字节长度不超过限制
+    while len(result.encode('utf-8')) > max_bytes and result:
+        result = result[:-1]
+    return result
 
 
 def get_password_hash(password: str) -> str:
@@ -134,14 +145,12 @@ def get_password_hash(password: str) -> str:
     password = _truncate_password_safely(password)
     
     try:
-        return pwd_context.hash(password)
-    except ValueError as e:
-        error_msg = str(e)
-        logger.error(f"密码哈希生成失败：{error_msg}")
-        raise ValueError(f"密码哈希生成失败：{error_msg}")
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        return hashed.decode('utf-8')
     except Exception as e:
-        logger.critical(f"密码哈希生成过程中发生严重错误：{str(e)}")
-        raise RuntimeError(f"密码哈希生成失败，请联系系统管理员。错误详情：{str(e)}")
+        error_msg = str(e)
+        logger.critical(f"密码哈希生成过程中发生严重错误：{error_msg}")
+        raise RuntimeError(f"密码哈希生成失败，请联系系统管理员。错误详情：{error_msg}")
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
@@ -157,9 +166,9 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     """
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.jwt_access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
     
     to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(
@@ -183,9 +192,9 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
     """
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(days=settings.jwt_refresh_token_expire_days)
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_token_expire_days)
     
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(
@@ -265,4 +274,3 @@ def get_user_id_from_token(token: str) -> Optional[str]:
     if payload:
         return payload.get("sub")
     return None
-

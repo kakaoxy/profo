@@ -5,8 +5,6 @@
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-
 from models.system import FailedRecord
 from db import engine
 from sqlalchemy.orm import sessionmaker
@@ -19,12 +17,15 @@ ErrorSessionLocal = sessionmaker(
     bind=engine
 )
 
+# 数据来源字段的备选键名（按优先级排序）
+_DATA_SOURCE_KEYS = ["data_source", "source", "数据来源"]
+
 
 def save_failed_record(
-    data: Dict[str, Any],
+    data: dict[str, object],
     error_message: str,
     failure_type: str = "validation_error",
-    data_source: Optional[str] = None
+    data_source: str | None = None
 ) -> bool:
     """
     保存失败记录到数据库（使用独立连接避免事务冲突）
@@ -43,7 +44,10 @@ def save_failed_record(
         db = ErrorSessionLocal()
 
         if not data_source:
-            data_source = data.get('数据源') or data.get('data_source')
+            for key in _DATA_SOURCE_KEYS:
+                if key in data:
+                    data_source = data[key]
+                    break
 
         failed_record = FailedRecord(
             data_source=data_source,

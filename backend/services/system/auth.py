@@ -6,16 +6,13 @@
 - 外部 API 调用 (Async) -> 供 async 路由调用
 """
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from models import User, Role
-from schemas.user import TokenResponse
 from settings import settings
 from utils.auth import (
     verify_password,
@@ -24,6 +21,7 @@ from utils.auth import (
     validate_token,
     get_password_hash,
 )
+from .exceptions import AuthenticationError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +35,7 @@ class AuthService:
     """
 
     @staticmethod
-    def authenticate_user(db: Session, username: str, password: str) -> User:
+    def authenticate_user(db: Session, username: str, password: str) -> User | None:
         """
         验证用户名密码 (Sync - Blocking)
         包含 bcrypt 验证（CPU密集型）
@@ -53,7 +51,7 @@ class AuthService:
         user: User,
         force_temp_token: bool = False,
         update_login_time: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, object]:
         """
         为用户生成令牌 (Sync)
         处理登录后更新时间、生成 Token 的逻辑
@@ -79,7 +77,7 @@ class AuthService:
 
         # 更新最后登录时间（仅在登录时更新，刷新token时不更新）
         if update_login_time:
-            user.last_login_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(user)
 
@@ -106,7 +104,7 @@ class AuthService:
         }
 
     @staticmethod
-    def refresh_user_token(db: Session, refresh_token: str) -> Dict[str, Any]:
+    def refresh_user_token(db: Session, refresh_token: str) -> dict[str, object]:
         """
         刷新 Token (Sync)
 
@@ -114,33 +112,21 @@ class AuthService:
         """
         payload = validate_token(refresh_token, token_type="refresh")
         if not payload:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="刷新令牌无效",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise AuthenticationError("刷新令牌无效")
 
         user_id: str = payload.get("sub")
         if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="刷新令牌无效",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise AuthenticationError("刷新令牌无效")
 
         user = db.query(User).filter(User.id == user_id).first()
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户不存在",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise AuthenticationError("用户不存在")
 
         # 刷新token时不更新登录时间，避免事务冲突
         return AuthService.create_tokens_for_user(db, user, update_login_time=False)
 
     @staticmethod
-    def generate_wechat_auth_url(redirect_uri: Optional[str] = None) -> str:
+    def generate_wechat_auth_url(redirect_uri: str | None = None) -> str:
         """生成微信授权 URL"""
         callback_url = redirect_uri or settings.wechat_redirect_uri
         params = {
@@ -154,7 +140,7 @@ class AuthService:
         return settings.wechat_auth_url_base + "?" + urlencode(params) + "#wechat_redirect"
 
     @staticmethod
-    async def fetch_wechat_access_token(code: str) -> Dict[str, Any]:
+    async def fetch_wechat_access_token(code: str) -> dict[str, object]:
         """
         获取微信 Access Token (Async - IO Bound)
         """
@@ -169,14 +155,11 @@ class AuthService:
             data = response.json()
         
         if "errcode" in data:
-             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"微信授权失败: {data.get('errmsg')}"
-            )
+             raise ValidationError(f"微信授权失败: {data.get('errmsg')}")
         return data
 
     @staticmethod
-    async def fetch_wechat_user_info(access_token: str, openid: str) -> Dict[str, Any]:
+    async def fetch_wechat_user_info(access_token: str, openid: str) -> dict[str, object]:
         """
         获取微信用户信息 (Async - IO Bound)
         """
@@ -190,14 +173,11 @@ class AuthService:
             data = response.json()
             
         if "errcode" in data:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"获取微信用户信息失败: {data.get('errmsg')}"
-            )
+            raise ValidationError(f"获取微信用户信息失败: {data.get('errmsg')}")
         return data
     
     @staticmethod
-    async def fetch_wechat_miniapp_session(code: str) -> Dict[str, Any]:
+    async def fetch_wechat_miniapp_session(code: str) -> dict[str, object]:
         """
         获取微信小程序 Session (Async - IO Bound)
         """
@@ -212,19 +192,16 @@ class AuthService:
             data = response.json()
 
         if "errcode" in data and data["errcode"] != 0:
-             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"微信登录失败: {data.get('errmsg')}"
-            )
+             raise ValidationError(f"微信登录失败: {data.get('errmsg')}")
         return data
 
     @staticmethod
     def login_or_register_wechat_user(
         db: Session, 
         openid: str, 
-        unionid: Optional[str], 
-        user_info: Dict[str, Any] = None,
-        session_key: Optional[str] = None
+        unionid: str | None, 
+        user_info: dict[str, object] | None = None,
+        session_key: str | None = None
     ) -> User:
         """
         处理微信用户登录/注册 (Sync - Blocking DB)
@@ -272,7 +249,7 @@ class AuthService:
             if session_key:
                 user.wechat_session_key = session_key
                 
-            user.last_login_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(user)
             
