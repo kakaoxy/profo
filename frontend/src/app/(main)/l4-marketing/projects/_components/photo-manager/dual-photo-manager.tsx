@@ -40,9 +40,13 @@ export function DualPhotoManager({
   const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
   const [uploadStage, setUploadStage] = useState("other");
 
+  // 统一项目ID解析逻辑：l3ProjectId需为有效正整数
+  const parsedL3Id = l3ProjectId ? parseInt(l3ProjectId) : NaN;
+  const effectiveProjectId = l4ProjectId ?? (parsedL3Id > 0 ? parsedL3Id : undefined);
+
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
-    projectId: l4ProjectId ?? (l3ProjectId ? parseInt(l3ProjectId) : undefined),
+    projectId: effectiveProjectId,
     uploadCategory,
     uploadStage,
     photos,
@@ -69,7 +73,7 @@ export function DualPhotoManager({
     handleDragEnd,
   } = usePhotoDragAndDrop({
     // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
-    projectId: l4ProjectId ?? (l3ProjectId ? parseInt(l3ProjectId) : undefined),
+    projectId: effectiveProjectId,
     photos,
     onPhotosChange,
     marketingPhotos,
@@ -80,16 +84,15 @@ export function DualPhotoManager({
     if (!confirm("确定删除这张照片吗？")) return;
 
     // 如果没有项目ID（创建模式），直接更新本地状态
-    const parsedL3Id = l3ProjectId ? parseInt(l3ProjectId) : NaN;
-    const effectiveProjectId = l4ProjectId ?? (parsedL3Id > 0 ? parsedL3Id : 0);
-    if (!effectiveProjectId) {
+    const deleteProjectId = effectiveProjectId ?? 0;
+    if (!deleteProjectId) {
       onPhotosChange(photos.filter((p) => p.id !== photoId));
       toast.success("照片已删除");
       return;
     }
 
     try {
-      const result = await deleteL4MarketingMediaAction(photoId, effectiveProjectId);
+      const result = await deleteL4MarketingMediaAction(photoId, deleteProjectId);
       if (result.success) {
         onPhotosChange(photos.filter((p) => p.id !== photoId));
         toast.success("照片已删除");
@@ -99,7 +102,7 @@ export function DualPhotoManager({
     } catch {
       toast.error("删除照片失败");
     }
-  }, [photos, onPhotosChange, l3ProjectId, l4ProjectId]);
+  }, [photos, onPhotosChange, effectiveProjectId]);
 
   return (
     <>

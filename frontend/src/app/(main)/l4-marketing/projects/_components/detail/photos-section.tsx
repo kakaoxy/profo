@@ -76,7 +76,7 @@ export const PhotosSection = memo(function PhotosSection({
   });
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
-    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
+    projectId: l4ProjectId,
     uploadCategory,
     uploadStage,
     photos,
