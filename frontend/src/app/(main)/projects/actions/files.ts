@@ -1,21 +1,36 @@
 "use server";
 
 import { API_BASE_URL } from "@/lib/config";
+import { getValidAccessToken } from "@/lib/token-refresh-server";
 
 /**
  * 通用文件上传 Action
+ * 使用 httpOnly cookie 中的 token 进行认证，避免在客户端暴露 token
  */
 export async function uploadFileAction(formData: FormData) {
   try {
+    // 从服务端获取有效的 access_token（自动处理刷新）
+    const token = await getValidAccessToken();
+
+    if (!token) {
+      return { success: false, message: "登录已过期，请重新登录" };
+    }
+
     const apiBase = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
     const uploadUrl = `${apiBase}/api/v1/files/upload`;
 
     const res = await fetch(uploadUrl, {
       method: "POST",
       body: formData,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
     });
 
     if (!res.ok) {
+      if (res.status === 401) {
+        return { success: false, message: "登录已过期，请重新登录" };
+      }
       if (res.status === 413) {
         return { success: false, message: "文件大小超过服务器限制 (10MB)" };
       }

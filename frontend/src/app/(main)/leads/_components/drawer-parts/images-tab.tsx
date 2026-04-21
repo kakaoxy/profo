@@ -4,7 +4,7 @@ import React, { useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { Eye, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '@/lib/config';
+import { uploadFileAction } from '@/app/(main)/projects/actions/files';
 
 interface Props {
   images: string[];
@@ -20,20 +20,6 @@ export const ImagesTab: React.FC<Props> = ({ images, onImagesChange }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  const tryRefreshToken = async (): Promise<string | null> => {
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      return data.access_token || null;
-    } catch {
-      return null;
-    }
-  };
-
   const uploadFile = useCallback(async (file: File): Promise<string | null> => {
     if (!file.type.startsWith('image/')) {
       toast.error(`${file.name}: 不是有效的图片文件`);
@@ -46,36 +32,18 @@ export const ImagesTab: React.FC<Props> = ({ images, onImagesChange }) => {
     }
 
     try {
-      let token = localStorage.getItem('access_token') || localStorage.getItem('token');
-      if (!token) {
-        token = await tryRefreshToken();
-      }
-      if (!token) {
-        toast.error('登录已过期，请重新登录');
-        return null;
-      }
-
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/files/upload`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const result = await uploadFileAction(formData);
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.detail || `上传失败: ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.message || '上传失败');
       }
 
-      const result = await response.json();
-      const imageUrl = result.data?.url || result.url || result.file_url || result.path;
+      const imageUrl = result.data?.url || result.data?.file_url || result.data?.path;
       if (imageUrl) {
-        return imageUrl.startsWith('/') ? `${API_BASE_URL}${imageUrl}` : imageUrl;
+        return imageUrl;
       }
       return null;
     } catch (error) {
