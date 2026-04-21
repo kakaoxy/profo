@@ -41,7 +41,8 @@ export const ImagesTab: React.FC<Props> = ({ images, onImagesChange }) => {
         throw new Error(result.message || '上传失败');
       }
 
-      const imageUrl = result.data?.url || result.data?.file_url || result.data?.path;
+      // 后端返回格式: { url: string, filename: string }
+      const imageUrl = result.data?.url;
       if (imageUrl) {
         return imageUrl;
       }
