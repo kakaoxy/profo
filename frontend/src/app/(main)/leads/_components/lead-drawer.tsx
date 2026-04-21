@@ -16,23 +16,28 @@ interface Props {
   onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
   onAddFollowUp: (leadId: string, method: FollowUpMethod, content: string) => void;
   onViewMonitor: (lead: Lead) => void;
+  onImagesUpdate?: (leadId: string, images: string[]) => void;
 }
 
-export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, onAddFollowUp, onViewMonitor }) => {
+export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, onAddFollowUp, onViewMonitor, onImagesUpdate }) => {
   const [activeTab, setActiveTab] = useState<TabId>('info');
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
 
-  // Fetch data when lead changes or drawer opens
   useEffect(() => {
     if (lead && isOpen) {
        getLeadFollowUpsAction(lead.id).then(setFollowUps);
-       // Price history unused in new design, removed to fix unused-vars
     }
   }, [isOpen, lead]);
 
   const handleClose = () => {
     setActiveTab('info');
     onClose();
+  };
+
+  const handleImagesChange = (images: string[]) => {
+    if (lead && onImagesUpdate) {
+      onImagesUpdate(lead.id, images);
+    }
   };
 
   if (!lead) return null;
@@ -54,15 +59,13 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
         
         <TabsNav activeTab={activeTab} onTabChange={setActiveTab} imagesCount={lead.images.length} />
 
-        {/* Content Area */}
-        {/* Using key={lead.id} resets state (active inputs) when switching leads */}
         <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-slate-50/30">
           {activeTab === 'info' && (
             <InfoTab lead={lead} onAudit={onAudit} onViewMonitor={onViewMonitor} />
           )}
 
           {activeTab === 'images' && (
-            <ImagesTab images={lead.images} />
+            <ImagesTab images={lead.images} onImagesChange={onImagesUpdate ? handleImagesChange : undefined} />
           )}
 
           {activeTab === 'followup' && (

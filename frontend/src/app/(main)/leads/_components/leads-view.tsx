@@ -49,18 +49,12 @@ export function LeadsView({
   initialSelectedLeadId,
 }: LeadsViewProps) {
   const router = useRouter();
-  /**
-   * 使用重构后的 useLeadsFilter hook
-   * 现在 filteredLeads 已经包含了所有过滤逻辑（搜索、状态、创建者、户型、楼层）
-   * 不再需要 displayLeads 的双重过滤
-   */
   const {
     leads,
     setLeads,
     filteredLeads,
     isPending,
     refreshLeads,
-    // 使用重构后 hook 提供的向后兼容接口
     activeTab,
     setActiveTab,
     searchQuery,
@@ -84,23 +78,11 @@ export function LeadsView({
 
   const { viewMode, setViewMode } = useViewMode("table");
 
-  /**
-   * 移除了本地的 activeTab 和 searchQuery 状态
-   * 这些状态现在由 useLeadsFilter hook 统一管理
-   * 消除了状态管理混乱和双重过滤问题
-   */
-
   useEffect(() => {
     if (initialSelectedLeadId) {
       router.replace("/leads", { scroll: false });
     }
   }, [initialSelectedLeadId, router]);
-
-  /**
-   * 移除了 displayLeads 的双重过滤逻辑
-   * 现在直接使用 filteredLeads，它已经包含了所有过滤逻辑
-   * 消除了双重过滤的性能浪费
-   */
 
   const handleAudit = async (
     id: string,
@@ -125,6 +107,16 @@ export function LeadsView({
       handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);
     } else {
       handleError(result.error, "handleAddFollowUp", { fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED });
+    }
+  };
+
+  const handleImagesUpdate = async (id: string, images: string[]) => {
+    const result = await updateLeadAction(id, { images });
+    if (result.success) {
+      setLeads((prev) => prev.map((l) => (l.id === id ? result.data : l)));
+      handleSuccess(SUCCESS_MESSAGES.LEAD_UPDATED);
+    } else {
+      handleError(result.error, "handleImagesUpdate", { fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED });
     }
   };
 
@@ -224,6 +216,7 @@ export function LeadsView({
           onAudit={handleAudit}
           onAddFollowUp={handleAddFollowUp}
           onViewMonitor={openMonitor}
+          onImagesUpdate={handleImagesUpdate}
         />
 
         {monitoringLead && (
