@@ -22,6 +22,7 @@ const PhotoLibraryPicker = lazy(() => import("./photo-library-picker").then(mod 
 
 interface DualPhotoManagerProps {
   l3ProjectId?: string | null;
+  l4ProjectId?: number;
   photos: L4MarketingMedia[];
   onPhotosChange: (photos: L4MarketingMedia[]) => void;
 }
@@ -30,6 +31,7 @@ type UploadTab = "sync" | "upload";
 
 export function DualPhotoManager({
   l3ProjectId,
+  l4ProjectId,
   photos,
   onPhotosChange,
 }: DualPhotoManagerProps) {
@@ -39,7 +41,8 @@ export function DualPhotoManager({
   const [uploadStage, setUploadStage] = useState("other");
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
-    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
+    // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
+    projectId: l4ProjectId ?? (l3ProjectId ? parseInt(l3ProjectId) : undefined),
     uploadCategory,
     uploadStage,
     photos,
@@ -65,7 +68,8 @@ export function DualPhotoManager({
     handleDragStart,
     handleDragEnd,
   } = usePhotoDragAndDrop({
-    projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
+    // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
+    projectId: l4ProjectId ?? (l3ProjectId ? parseInt(l3ProjectId) : undefined),
     photos,
     onPhotosChange,
     marketingPhotos,
@@ -75,15 +79,16 @@ export function DualPhotoManager({
   const handleDeletePhoto = useCallback(async (photoId: number) => {
     if (!confirm("确定删除这张照片吗？")) return;
 
-    if (!l3ProjectId) {
+    // 如果没有项目ID（创建模式），直接更新本地状态
+    const effectiveProjectId = l4ProjectId ?? (l3ProjectId ? parseInt(l3ProjectId) : 0);
+    if (!effectiveProjectId) {
       onPhotosChange(photos.filter((p) => p.id !== photoId));
       toast.success("照片已删除");
       return;
     }
 
     try {
-      const projectId = l3ProjectId ? parseInt(l3ProjectId) : 0;
-      const result = await deleteL4MarketingMediaAction(photoId, projectId);
+      const result = await deleteL4MarketingMediaAction(photoId, effectiveProjectId);
       if (result.success) {
         onPhotosChange(photos.filter((p) => p.id !== photoId));
         toast.success("照片已删除");
@@ -93,7 +98,7 @@ export function DualPhotoManager({
     } catch {
       toast.error("删除照片失败");
     }
-  }, [photos, onPhotosChange, l3ProjectId]);
+  }, [photos, onPhotosChange, l3ProjectId, l4ProjectId]);
 
   return (
     <>

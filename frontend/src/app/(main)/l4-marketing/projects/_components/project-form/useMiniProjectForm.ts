@@ -18,9 +18,10 @@ interface UseMiniProjectFormProps {
   project?: L4MarketingProject;
   actions: MiniProjectFormActions;
   mediaFiles?: MediaFile[];
+  hasPhotoChanges?: boolean;
 }
 
-export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMiniProjectFormProps) {
+export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhotoChanges }: UseMiniProjectFormProps) {
   const router = useRouter();
 
   const form = useForm<FormValues>({
@@ -64,18 +65,27 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles }: UseMi
         Object.assign(patch, updateData);
       });
 
-      if (Object.keys(patch).length === 0) {
+      // 检查是否有表单字段变更或照片变更
+      const hasFormChanges = Object.keys(patch).length > 0;
+      if (!hasFormChanges && !hasPhotoChanges) {
         toast("没有需要保存的变更");
         return;
       }
 
-      const result = await actions.updateL4MarketingProject(project.id, patch);
-      if (result.success) {
-        toast.success("项目更新成功");
+      // 如果有表单字段变更，则更新项目；如果只上传了照片，也给用户成功提示
+      if (hasFormChanges) {
+        const result = await actions.updateL4MarketingProject(project.id, patch);
+        if (result.success) {
+          toast.success("项目更新成功");
+          router.push("/l4-marketing/projects");
+          return;
+        }
+        toast.error(result.error || "更新失败");
+      } else if (hasPhotoChanges) {
+        // 只有照片变更时，照片已经通过独立API保存，直接提示成功
+        toast.success("照片已保存");
         router.push("/l4-marketing/projects");
-        return;
       }
-      toast.error(result.error || "更新失败");
     } catch {
       toast.error(mode === "create" ? "创建失败" : "更新失败");
     }
