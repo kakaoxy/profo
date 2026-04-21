@@ -155,8 +155,10 @@ app.include_router(monitor_router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
 from fastapi.exceptions import RequestValidationError, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from exceptions import ProfoException
+from services.system.exceptions import ServiceException
 from error_handlers import (
     profo_exception_handler,
+    service_exception_handler,
     validation_exception_handler,
     sqlalchemy_exception_handler,
     http_exception_handler,
@@ -166,6 +168,7 @@ from slowapi.errors import RateLimitExceeded
 
 # 注册异常处理器
 app.add_exception_handler(ProfoException, profo_exception_handler)
+app.add_exception_handler(ServiceException, service_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)

@@ -3,25 +3,24 @@
 处理角色管理的业务逻辑
 """
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
-from typing import Optional, List
 
 from models import Role
 from schemas.user import RoleCreate, RoleUpdate
+from .exceptions import ResourceNotFoundError, ConflictError
 
 
 class RoleService:
     """角色服务"""
 
     def get_roles(
-        self, 
-        db: Session, 
-        name: Optional[str] = None,
-        code: Optional[str] = None,
-        is_active: Optional[bool] = None,
+        self,
+        db: Session,
+        name: str | None = None,
+        code: str | None = None,
+        is_active: bool | None = None,
         page: int = 1,
         page_size: int = 50
-    ) -> tuple[int, List[Role]]:
+    ) -> tuple[int, list[Role]]:
         """获取角色列表"""
         query = db.query(Role)
         
@@ -38,7 +37,7 @@ class RoleService:
         
         return total, roles
 
-    def get_role_by_id(self, db: Session, role_id: str) -> Optional[Role]:
+    def get_role_by_id(self, db: Session, role_id: str) -> Role | None:
         """根据ID获取角色"""
         return db.query(Role).filter(Role.id == role_id).first()
 
@@ -47,18 +46,12 @@ class RoleService:
         # Check name existence
         existing_name = db.query(Role).filter(Role.name == role_data.name).first()
         if existing_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="角色名称已存在"
-            )
+            raise ConflictError("角色名称已存在")
         
         # Check code existence
         existing_code = db.query(Role).filter(Role.code == role_data.code).first()
         if existing_code:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="角色代码已存在"
-            )
+            raise ConflictError("角色代码已存在")
         
         db_role = Role(**role_data.model_dump())
         db.add(db_role)
@@ -70,10 +63,7 @@ class RoleService:
         """更新角色"""
         role = self.get_role_by_id(db, role_id)
         if not role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="角色不存在"
-            )
+            raise ResourceNotFoundError("角色不存在")
         
         # Check name uniqueness
         if role_data.name and role_data.name != role.name:
@@ -82,10 +72,7 @@ class RoleService:
                 Role.id != role_id
             ).first()
             if existing_name:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="角色名称已存在"
-                )
+                raise ConflictError("角色名称已存在")
         
         # Check code uniqueness
         if role_data.code and role_data.code != role.code:
@@ -94,10 +81,7 @@ class RoleService:
                 Role.id != role_id
             ).first()
             if existing_code:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="角色代码已存在"
-                )
+                raise ConflictError("角色代码已存在")
         
         update_data = role_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -111,16 +95,10 @@ class RoleService:
         """删除角色"""
         role = self.get_role_by_id(db, role_id)
         if not role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="角色不存在"
-            )
+            raise ResourceNotFoundError("角色不存在")
         
         if role.users:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="角色下存在用户，无法删除"
-            )
+            raise ConflictError("角色下存在用户，无法删除")
         
         db.delete(role)
         db.commit()

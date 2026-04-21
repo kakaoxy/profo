@@ -18,10 +18,24 @@ from starlette.concurrency import run_in_threadpool
 from exceptions import ProfoException
 from utils.error_formatters import format_request_validation_error, format_database_error
 from services.system import save_failed_record
+from services.system.exceptions import ServiceException
 
 logger = logging.getLogger(__name__)
 
 # ==================== 异常处理器函数 ====================
+
+async def service_exception_handler(request: Request, exc: ServiceException) -> JSONResponse:
+    """
+    处理服务层业务异常
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    """
+    logger.warning(f"服务层业务异常: {exc.status_code} - {exc.message}")
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.message}
+    )
+
 
 async def profo_exception_handler(request: Request, exc: ProfoException) -> JSONResponse:
     """

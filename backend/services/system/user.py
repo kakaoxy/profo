@@ -3,27 +3,26 @@
 处理用户管理的业务逻辑
 """
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
-from typing import Optional, List
 
 from models import User
 from schemas.user import UserCreate, UserUpdate, PasswordResetRequest, PasswordChange
 from utils.auth import get_password_hash, verify_password, validate_password_strength
+from .exceptions import ResourceNotFoundError, ConflictError, ValidationError
 
 
 class UserService:
     """用户服务"""
 
     def get_users(
-        self, 
-        db: Session, 
-        username: Optional[str] = None,
-        nickname: Optional[str] = None,
-        role_id: Optional[str] = None,
-        user_status: Optional[str] = None,
+        self,
+        db: Session,
+        username: str | None = None,
+        nickname: str | None = None,
+        role_id: str | None = None,
+        user_status: str | None = None,
         page: int = 1,
         page_size: int = 50
-    ) -> tuple[int, List[User]]:
+    ) -> tuple[int, list[User]]:
         """获取用户列表"""
         query = db.query(User)
         
@@ -42,7 +41,7 @@ class UserService:
         
         return total, users
 
-    def get_user_by_id(self, db: Session, user_id: str) -> Optional[User]:
+    def get_user_by_id(self, db: Session, user_id: str) -> User | None:
         """根据ID获取用户"""
         return db.query(User).filter(User.id == user_id).first()
 
@@ -51,27 +50,18 @@ class UserService:
         # Check username existence
         existing_user = db.query(User).filter(User.username == user_data.username).first()
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户名已存在"
-            )
+            raise ConflictError("用户名已存在")
         
         # Check phone existence
         if user_data.phone:
             existing_phone = db.query(User).filter(User.phone == user_data.phone).first()
             if existing_phone:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="手机号已被使用"
-                )
+                raise ConflictError("手机号已被使用")
         
         # Validate password strength
         is_valid, error_msg = validate_password_strength(user_data.password)
         if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_msg
-            )
+            raise ValidationError(error_msg)
         
         # Create user
         db_user = User(
@@ -88,10 +78,7 @@ class UserService:
         """更新用户"""
         user = self.get_user_by_id(db, user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="用户不存在"
-            )
+            raise ResourceNotFoundError("用户不存在")
         
         # Check phone uniqueness
         if user_data.phone and user_data.phone != user.phone:
@@ -100,10 +87,7 @@ class UserService:
                 User.id != user_id
             ).first()
             if existing_phone:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="手机号已被使用"
-                )
+                raise ConflictError("手机号已被使用")
         
         update_data = user_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -117,17 +101,11 @@ class UserService:
         """重置密码"""
         user = self.get_user_by_id(db, user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="用户不存在"
-            )
+            raise ResourceNotFoundError("用户不存在")
         
         is_valid, error_msg = validate_password_strength(password_data.password)
         if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_msg
-            )
+            raise ValidationError(error_msg)
         
         user.password = get_password_hash(password_data.password)
         db.commit()
@@ -136,17 +114,11 @@ class UserService:
     def delete_user(self, db: Session, user_id: str, current_user_id: str) -> dict:
         """删除用户"""
         if user_id == current_user_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="不能删除自己"
-            )
+            raise ValidationError("不能删除自己")
         
         user = self.get_user_by_id(db, user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="用户不存在"
-            )
+            raise ResourceNotFoundError("用户不存在")
         
         db.delete(user)
         db.commit()
@@ -155,17 +127,11 @@ class UserService:
     def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict:
         """修改密码"""
         if not verify_password(password_data.current_password, current_user.password):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="当前密码错误"
-            )
+            raise ValidationError("当前密码错误")
         
         is_valid, error_msg = validate_password_strength(password_data.new_password)
         if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_msg
-            )
+            raise ValidationError(error_msg)
         
         current_user.password = get_password_hash(password_data.new_password)
         current_user.must_change_password = False
