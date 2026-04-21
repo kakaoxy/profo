@@ -32,7 +32,7 @@ from routers.projects import core_router, renovation_router, sales_router, cashf
 from routers.marketing import projects_router as marketing_projects_router, import_router as marketing_import_router
 from routers.system import auth_router, users_router, roles_router
 from routers.common import files_router, upload_router, push_router
-from routers.monitor import monitor_router, community_router
+from routers.monitor import monitor_router
 
 
 @asynccontextmanager
@@ -149,7 +149,6 @@ app.include_router(files_router, prefix=f"{API_V1_PREFIX}/files", tags=["files"]
 
 # ==================== 监控模块 (Monitor) ====================
 app.include_router(monitor_router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
-app.include_router(community_router, prefix=f"{API_V1_PREFIX}", tags=["communities"])
 
 
 # ==================== 全局异常处理 ====================
