@@ -9,7 +9,8 @@
     from services.marketing import MarketingImportService, MarketingQueryService
 """
 
-from .project import MarketingProjectService, MarketingMediaService
+from .project import MarketingProjectService
+from .media import MarketingMediaService
 from .import_service import MarketingImportService
 from .query import MarketingQueryService
 

@@ -48,5 +48,5 @@ class L4MarketingMediaResponse(L4MarketingMediaBase):
 
 class MediaSortOrderUpdate(BaseModel):
     """媒体排序更新项"""
-    media_id: int = Field(..., description="媒体ID")
-    sort_order: int = Field(..., ge=0, description="排序值")
+    media_id: int = Field(description="媒体ID")
+    sort_order: int = Field(ge=0, description="排序值")
