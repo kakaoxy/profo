@@ -74,7 +74,8 @@ export const PhotosSection = memo(function PhotosSection({
     handleDeletePhoto,
     handlePhotosAdded,
   } = usePhotoSorting({
-    projectId: effectiveProjectId ?? l4ProjectId,
+    // l4ProjectId 来自 project.id，应始终存在
+    projectId: effectiveProjectId ?? l4ProjectId ?? 0,
     initialPhotos,
   });
 
