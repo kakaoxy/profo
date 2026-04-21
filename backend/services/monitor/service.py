@@ -3,14 +3,14 @@
 提供市场分析、竞品监控、趋势数据等功能
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, and_, desc, extract
-from typing import List, Dict, Optional
+from sqlalchemy import func, case, and_, desc, extract, distinct, tuple_
+from typing import List, Optional
 from datetime import datetime, timedelta
 
 from models import PropertyCurrent, PropertyHistory, Community, CommunityCompetitor, PropertyStatus, Project
 from schemas.monitor import (
     FloorStats, TrendData, CompetitorResponse, RiskPoints, AIStrategyResponse,
-    NeighborhoodRadarItem, NeighborhoodRadarResponse
+    NeighborhoodRadarItem, NeighborhoodRadarResponse, MarketSentimentResponse
 )
 
 
@@ -18,13 +18,12 @@ class MonitorService:
     """市场监控服务"""
 
     @staticmethod
-    def get_market_sentiment(db: Session, community_id: str) -> Dict:
+    def get_market_sentiment(db: Session, community_id: str) -> MarketSentimentResponse:
         """Calculate market sentiment (floor stats and inventory months)
         
         去重逻辑: 相同 build_area + floor_level + price 的房源视为同一套房
         """
         # 1. 查询当前挂牌房源 - 使用子查询去重
-        from sqlalchemy import distinct, tuple_
         
         # 获取去重后的挂牌房源统计
         current_subquery = db.query(
@@ -94,10 +93,10 @@ class MonitorService:
         monthly_avg_deals = total_deals_last_year / 12.0 if total_deals_last_year > 0 else 0
         inventory_months = total_inventory / monthly_avg_deals if monthly_avg_deals > 0 else 99.9
         
-        return {
-            "floor_stats": stats,
-            "inventory_months": round(inventory_months, 1)
-        }
+        return MarketSentimentResponse(
+            floor_stats=stats,
+            inventory_months=round(inventory_months, 1)
+        )
 
 
 
@@ -164,7 +163,8 @@ class MonitorService:
         return results
 
     @staticmethod
-    def add_competitor(db: Session, community_id: str, competitor_id: str):
+    def add_competitor(db: Session, community_id: str, competitor_id: str) -> bool:
+        """添加竞品小区，返回是否成功添加"""
         exists = db.query(CommunityCompetitor).filter(
             CommunityCompetitor.community_id == community_id,
             CommunityCompetitor.competitor_community_id == competitor_id
@@ -172,15 +172,17 @@ class MonitorService:
         if not exists:
             new_comp = CommunityCompetitor(community_id=community_id, competitor_community_id=competitor_id)
             db.add(new_comp)
-            db.commit()
+            return True
+        return False
 
     @staticmethod
-    def remove_competitor(db: Session, community_id: str, competitor_id: str):
-        db.query(CommunityCompetitor).filter(
+    def remove_competitor(db: Session, community_id: str, competitor_id: str) -> bool:
+        """移除竞品小区，返回是否成功移除"""
+        result = db.query(CommunityCompetitor).filter(
             CommunityCompetitor.community_id == community_id,
             CommunityCompetitor.competitor_community_id == competitor_id
         ).delete(synchronize_session=False)
-        db.commit()
+        return result > 0
 
     @staticmethod
     def generate_ai_strategy(db: Session, project_id: str, context: str) -> AIStrategyResponse:
