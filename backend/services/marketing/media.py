@@ -157,7 +157,14 @@ class MarketingMediaService:
         if not sort_updates:
             return 0
 
-        update_map = {u.media_id: u.sort_order for u in sort_updates}
+        update_map = {
+            u.media_id: u.sort_order
+            for u in sort_updates
+            if u.media_id is not None and u.sort_order is not None
+        }
+
+        if not update_map:
+            return 0
 
         media_ids = list(update_map.keys())
         media_list = self.db.query(L4MarketingMedia).filter(
