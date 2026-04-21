@@ -150,15 +150,45 @@ class MonitorService:
             CommunityCompetitor.community_id == community_id
         ).all()
 
+        # 收集所有竞品小区ID
+        competitor_ids = [comp.competitor_community_id for comp in comps]
+        if not competitor_ids:
+            return []
+
+        # 批量查询小区基本信息
+        communities = db.query(Community).filter(Community.id.in_(competitor_ids)).all()
+        community_map = {c.id: c for c in communities}
+
+        # 实时计算每个小区的挂牌统计数据
+        listing_stats = db.query(
+            PropertyCurrent.community_id,
+            func.count().label("count"),
+            func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_price")
+        ).filter(
+            PropertyCurrent.community_id.in_(competitor_ids),
+            PropertyCurrent.status == PropertyStatus.FOR_SALE,
+            PropertyCurrent.build_area > 0
+        ).group_by(PropertyCurrent.community_id).all()
+
+        # 构建统计映射
+        stats_map = {
+            row.community_id: {
+                "count": row.count,
+                "avg_price": round(row.avg_price, 0) if row.avg_price else 0
+            }
+            for row in listing_stats
+        }
+
         results = []
         for comp in comps:
-            c = db.query(Community).filter(Community.id == comp.competitor_community_id).first()
+            c = community_map.get(comp.competitor_community_id)
             if c:
+                stats = stats_map.get(c.id, {"count": 0, "avg_price": 0})
                 results.append(CompetitorResponse(
                     community_id=c.id,
                     community_name=c.name,
-                    avg_price=c.avg_price_wan * 10000 if c.avg_price_wan else 0,
-                    on_sale_count=c.total_properties
+                    avg_price=stats["avg_price"],
+                    on_sale_count=stats["count"]
                 ))
         return results
 
