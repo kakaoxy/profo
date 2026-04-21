@@ -5,9 +5,7 @@ import os
 import sys
 import secrets
 from typing import Optional
-import sys
-import os
-import secrets
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def validate_jwt_secret_key() -> bool:

@@ -2,6 +2,7 @@
 工具函数模块
 """
 from .auth import (
+    validate_password_strength,
     verify_password,
     get_password_hash,
     create_access_token,
@@ -26,7 +27,8 @@ from .permission import (
 )
 
 __all__ = [
-    # auth.py
+    # auth
+    'validate_password_strength',
     'verify_password',
     'get_password_hash',
     'create_access_token',

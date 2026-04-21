@@ -1,17 +1,13 @@
 """
-认证相关工具函数
+密码相关工具函数
 """
 import re
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Any, Dict, Tuple, Literal
-from jose import JWTError, jwt
+from typing import Tuple
+
 import bcrypt
 
-from settings import settings
 
-
-# 配置日志记录
 logger = logging.getLogger(__name__)
 
 
@@ -89,19 +85,15 @@ def _truncate_password_safely(password: str, max_bytes: int = 72) -> str:
     if len(password_bytes) <= max_bytes:
         return password
 
-    # 从 max_bytes 位置向前查找有效的 UTF-8 边界
     truncated_bytes = password_bytes[:max_bytes]
 
-    # 尝试直接解码
     try:
         decoded = truncated_bytes.decode('utf-8')
-        # 再次确认编码后不会超出限制（防御性检查）
         if len(decoded.encode('utf-8')) <= max_bytes:
             return decoded
     except UnicodeDecodeError:
         pass
 
-    # 向前查找有效的 UTF-8 字符边界（UTF-8 最多 4 字节）
     for i in range(max_bytes - 1, max_bytes - 4, -1):
         if i < 0:
             break
@@ -113,10 +105,8 @@ def _truncate_password_safely(password: str, max_bytes: int = 72) -> str:
         except UnicodeDecodeError:
             continue
 
-    # 最后的回退：使用 errors='ignore' 模式，并再次确认长度
     logger.warning(f"密码截断时遇到编码问题，使用忽略模式处理")
     result = truncated_bytes.decode('utf-8', 'ignore')
-    # 确保最终字节长度不超过限制
     while len(result.encode('utf-8')) > max_bytes and result:
         result = result[:-1]
     return result
@@ -141,7 +131,6 @@ def get_password_hash(password: str) -> str:
     if not isinstance(password, str):
         raise ValueError("密码必须是字符串类型")
     
-    # 安全截断超长密码（bcrypt 72 字节限制）
     password = _truncate_password_safely(password)
     
     try:
@@ -151,126 +140,3 @@ def get_password_hash(password: str) -> str:
         error_msg = str(e)
         logger.critical(f"密码哈希生成过程中发生严重错误：{error_msg}")
         raise RuntimeError(f"密码哈希生成失败，请联系系统管理员。错误详情：{error_msg}")
-
-
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """
-    创建访问令牌
-    
-    Args:
-        data: 要存储在令牌中的数据
-        expires_delta: 过期时间增量
-        
-    Returns:
-        str: JWT访问令牌
-    """
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
-    
-    to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(
-        to_encode, 
-        settings.jwt_secret_key, 
-        algorithm=settings.jwt_algorithm
-    )
-    return encoded_jwt
-
-
-def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """
-    创建刷新令牌
-    
-    Args:
-        data: 要存储在令牌中的数据
-        expires_delta: 过期时间增量
-        
-    Returns:
-        str: JWT刷新令牌
-    """
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_token_expire_days)
-    
-    to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(
-        to_encode, 
-        settings.jwt_secret_key, 
-        algorithm=settings.jwt_algorithm
-    )
-    return encoded_jwt
-
-
-def decode_token(token: str) -> Optional[Dict[str, Any]]:
-    """
-    解码JWT令牌（支持密钥轮换）
-    
-    Args:
-        token: JWT令牌
-        
-    Returns:
-        Optional[Dict[str, Any]]: 令牌负载数据，如果解码失败则返回None
-    """
-    # 首先尝试使用当前密钥解码
-    try:
-        payload = jwt.decode(
-            token,
-            settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm]
-        )
-        return payload
-    except JWTError:
-        pass
-    
-    # 如果启用了密钥轮换且旧密钥存在，尝试使用旧密钥解码
-    if settings.jwt_key_rotation_enabled and settings.jwt_secret_key_old:
-        try:
-            payload = jwt.decode(
-                token,
-                settings.jwt_secret_key_old,
-                algorithms=[settings.jwt_algorithm]
-            )
-            # 记录使用旧密钥成功解码的日志（可用于监控密钥轮换进度）
-            logger.info("使用旧JWT密钥成功解码令牌")
-            return payload
-        except JWTError:
-            pass
-    
-    return None
-
-
-def validate_token(token: str, token_type: Literal["access", "refresh"] = "access") -> Optional[Dict[str, Any]]:
-    """
-    验证JWT令牌并检查令牌类型
-    
-    Args:
-        token: JWT令牌
-        token_type: 令牌类型，仅接受 "access" 或 "refresh"
-        
-    Returns:
-        Optional[Dict[str, Any]]: 令牌负载数据，如果验证失败则返回None
-    """
-    payload = decode_token(token)
-    if payload and payload.get("type") == token_type:
-        return payload
-    return None
-
-
-def get_user_id_from_token(token: str) -> Optional[str]:
-    """
-    从令牌中获取用户ID
-    
-    Args:
-        token: JWT令牌
-        
-    Returns:
-        Optional[str]: 用户ID，如果令牌无效则返回None
-    """
-    payload = validate_token(token)
-    if payload:
-        return payload.get("sub")
-    return None
