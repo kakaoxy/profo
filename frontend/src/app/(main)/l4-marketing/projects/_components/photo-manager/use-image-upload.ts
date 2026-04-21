@@ -20,7 +20,8 @@ interface UseImageUploadOptions {
   uploadCategory: PhotoCategory;
   uploadStage: string;
   photos: L4MarketingMedia[];
-  onPhotosChange: (photos: L4MarketingMedia[]) => void;
+  /** 回调函数，接收新添加的照片数组（不是完整列表），由调用方追加到现有列表 */
+  onPhotosChange: (addedPhotos: L4MarketingMedia[]) => void;
 }
 
 interface UseImageUploadReturn {
@@ -158,7 +159,8 @@ export function useImageUpload({
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 } as L4MarketingMedia;
-                currentOnPhotosChange([...currentPhotos, tempMedia]);
+                // 只传递新添加的照片，由调用方追加到列表
+                currentOnPhotosChange([tempMedia]);
                 toast.success(`${file.name}: 上传成功`);
                 resolve(true);
                 return;
@@ -173,7 +175,8 @@ export function useImageUpload({
                 sort_order: nextSortOrder,
               } as any).then((createResult) => {
                 if (createResult.success && createResult.data) {
-                  currentOnPhotosChange([...currentPhotos, createResult.data as L4MarketingMedia]);
+                  // 只传递新添加的照片，由调用方追加到列表
+                  currentOnPhotosChange([createResult.data as L4MarketingMedia]);
                   toast.success(`${file.name}: 上传成功`);
                   resolve(true);
                 } else {
