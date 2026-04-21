@@ -42,11 +42,38 @@ class AuthService:
 
         Raises:
             AuthenticationError: 用户名或密码错误
+
+        Note:
+            从返回 User | None 改为抛出异常，保持与服务层其他方法的一致性。
+            如需旧行为（返回 None），请使用 try_authenticate_user。
         """
         user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
         if not user or not verify_password(password, user.password):
             raise AuthenticationError("用户名或密码错误")
         return user
+
+    @staticmethod
+    def try_authenticate_user(db: Session, username: str, password: str) -> User | None:
+        """
+        尝试验证用户名密码，失败返回 None 而非抛出异常 (Sync - Blocking)
+
+        向后兼容方法，适用于需要手动处理认证失败的场景。
+        新代码推荐使用 authenticate_user 配合 try-except 处理异常。
+
+        Returns:
+            User: 验证成功返回用户对象
+            None: 验证失败返回 None
+
+        Example:
+            user = AuthService.try_authenticate_user(db, username, password)
+            if user is None:
+                # 处理认证失败
+                pass
+        """
+        try:
+            return AuthService.authenticate_user(db, username, password)
+        except AuthenticationError:
+            return None
 
     @staticmethod
     def create_tokens_for_user(
