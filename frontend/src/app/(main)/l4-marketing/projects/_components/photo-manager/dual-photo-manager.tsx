@@ -81,7 +81,7 @@ export function DualPhotoManager({
 
     // 如果没有项目ID（创建模式），直接更新本地状态
     const parsedL3Id = l3ProjectId ? parseInt(l3ProjectId) : NaN;
-    const effectiveProjectId = l4ProjectId ?? (!isNaN(parsedL3Id) ? parsedL3Id : 0);
+    const effectiveProjectId = l4ProjectId ?? (parsedL3Id > 0 ? parsedL3Id : 0);
     if (!effectiveProjectId) {
       onPhotosChange(photos.filter((p) => p.id !== photoId));
       toast.success("照片已删除");
