@@ -147,6 +147,7 @@ class MarketingProjectService:
             'sort_order', 'tags', 'decoration_style', 'publish_status',
             'project_status', 'project_id', 'consultant_id'
         }
+        # unit_price 由 area 和 total_price 自动计算，不允许直接修改
 
         for field, value in update_data.items():
             if field in allowed_fields:
