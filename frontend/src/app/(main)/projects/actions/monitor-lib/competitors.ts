@@ -17,7 +17,7 @@ export async function getCompetitorsAction(projectId: string) {
 
     const client = await fetchClient();
     const { data, error } = await client.GET(
-      "/api/v1/communities/{community_id}/competitors",
+      "/api/v1/monitor/communities/{community_id}/competitors",
       {
         params: { path: { community_id: communityId } },
       },
@@ -49,7 +49,7 @@ export async function getCompetitorsByCommunityAction(communityName: string) {
 
     const client = await fetchClient();
     const { data, error } = await client.GET(
-      "/api/v1/communities/{community_id}/competitors",
+      "/api/v1/monitor/communities/{community_id}/competitors",
       {
         params: { path: { community_id: communityId } },
       },
@@ -104,7 +104,7 @@ export async function addCompetitorAction(
   try {
     const client = await fetchClient();
     const { error } = await client.POST(
-      "/api/v1/communities/{community_id}/competitors",
+      "/api/v1/monitor/communities/{community_id}/competitors",
       {
         params: { path: { community_id: communityId } },
         body: { competitor_community_id: competitorId },
@@ -132,7 +132,7 @@ export async function removeCompetitorAction(
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
-      "/api/v1/communities/{community_id}/competitors/{competitor_id}",
+      "/api/v1/monitor/communities/{community_id}/competitors/{competitor_id}",
       {
         params: {
           path: { community_id: communityId, competitor_id: competitorId },

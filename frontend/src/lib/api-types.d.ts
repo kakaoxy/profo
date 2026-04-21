@@ -1397,7 +1397,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/communities/{community_id}/competitors": {
+    "/api/v1/monitor/communities/{community_id}/competitors": {
         parameters: {
             query?: never;
             header?: never;
@@ -1405,17 +1405,17 @@ export interface paths {
             cookie?: never;
         };
         /** Get Competitors */
-        get: operations["get_competitors_api_v1_communities__community_id__competitors_get"];
+        get: operations["get_competitors_api_v1_monitor_communities__community_id__competitors_get"];
         put?: never;
         /** Add Competitor */
-        post: operations["add_competitor_api_v1_communities__community_id__competitors_post"];
+        post: operations["add_competitor_api_v1_monitor_communities__community_id__competitors_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/communities/{community_id}/competitors/{competitor_id}": {
+    "/api/v1/monitor/communities/{community_id}/competitors/{competitor_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1426,7 +1426,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Remove Competitor */
-        delete: operations["remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete"];
+        delete: operations["remove_competitor_api_v1_monitor_communities__community_id__competitors__competitor_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1462,7 +1462,10 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /** Password */
+            /**
+             * Password
+             * Format: password
+             */
             password: string;
             /**
              * Scope
@@ -1471,7 +1474,10 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * Format: password
+             */
             client_secret?: string | null;
         };
         /** Body_upload_csv_api_v1_upload_csv_post */
@@ -3340,7 +3346,9 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: Record<string, never>[];
+            errors?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * RecordType
@@ -3743,7 +3751,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -3778,7 +3788,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -4215,7 +4227,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -4584,6 +4598,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4622,6 +4637,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4664,6 +4680,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4700,6 +4717,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4738,6 +4756,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4780,6 +4799,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4818,6 +4838,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description 线索ID */
                 lead_id: string;
             };
             cookie?: never;
@@ -4912,7 +4933,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -5232,7 +5255,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -6625,7 +6650,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -6658,7 +6685,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -6687,7 +6716,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -6933,7 +6964,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>[];
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
             };
         };
         responses: {
@@ -7121,7 +7154,7 @@ export interface operations {
             };
         };
     };
-    get_competitors_api_v1_communities__community_id__competitors_get: {
+    get_competitors_api_v1_monitor_communities__community_id__competitors_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7153,7 +7186,7 @@ export interface operations {
             };
         };
     };
-    add_competitor_api_v1_communities__community_id__competitors_post: {
+    add_competitor_api_v1_monitor_communities__community_id__competitors_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -7170,11 +7203,13 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {
@@ -7187,7 +7222,7 @@ export interface operations {
             };
         };
     };
-    remove_competitor_api_v1_communities__community_id__competitors__competitor_id__delete: {
+    remove_competitor_api_v1_monitor_communities__community_id__competitors__competitor_id__delete: {
         parameters: {
             query?: never;
             header?: never;
