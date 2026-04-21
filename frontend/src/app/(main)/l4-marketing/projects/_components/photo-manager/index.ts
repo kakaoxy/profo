@@ -25,6 +25,7 @@ export { PickerFooter } from "./picker-footer";
 // Hooks
 export { useImageUpload, type UploadProgress } from "./use-image-upload";
 export { usePhotoDragAndDrop } from "./use-photo-drag-and-drop";
+export { useProjectId } from "./use-project-id";
 
 // 类型
 export type { RenovationPhoto, StageOption } from "./types";
