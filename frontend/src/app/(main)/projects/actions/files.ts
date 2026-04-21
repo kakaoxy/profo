@@ -49,12 +49,10 @@ export async function uploadFileAction(formData: FormData) {
       }
     }
 
+    // HTTP 2xx 表示成功，直接解析响应体
+    // 后端成功响应格式: { "url": "...", "filename": "..." }
     const json = await res.json();
-    if (json.code !== 200) {
-      return { success: false, message: json.msg || "上传被后端拒绝" };
-    }
-
-    return { success: true, data: json.data };
+    return { success: true, data: json };
   } catch (e) {
     console.error("文件上传网络异常:", e);
     return { success: false, message: "网络连接错误，请检查后端服务是否启动" };
