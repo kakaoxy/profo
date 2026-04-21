@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { usePhotoDragAndDrop } from "./use-photo-drag-and-drop";
 import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
+import { useProjectId } from "./use-project-id";
 
 const PhotoLibraryPicker = lazy(() => import("./photo-library-picker").then(mod => ({ default: mod.PhotoLibraryPicker })));
 
@@ -40,9 +41,7 @@ export function DualPhotoManager({
   const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
   const [uploadStage, setUploadStage] = useState("other");
 
-  // 统一项目ID解析逻辑：l3ProjectId需为有效正整数
-  const parsedL3Id = l3ProjectId ? parseInt(l3ProjectId) : NaN;
-  const effectiveProjectId = l4ProjectId ?? (parsedL3Id > 0 ? parsedL3Id : undefined);
+  const { effectiveProjectId } = useProjectId({ l4ProjectId, l3ProjectId });
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId

@@ -21,6 +21,7 @@ import type { PhotosSectionProps } from "./types";
 
 import { ImageUploader } from "../photo-manager/image-uploader";
 import { useImageUpload } from "../photo-manager/use-image-upload";
+import { useProjectId } from "../photo-manager/use-project-id";
 import { PhotoCategorySelector } from "../photo-manager/photo-category-selector";
 import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
@@ -57,6 +58,8 @@ export const PhotosSection = memo(function PhotosSection({
   const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
   const [uploadStage, setUploadStage] = useState("other");
 
+  const { effectiveProjectId } = useProjectId({ l4ProjectId, l3ProjectId });
+
   const {
     photos,
     activeId,
@@ -71,12 +74,12 @@ export const PhotosSection = memo(function PhotosSection({
     handleDeletePhoto,
     handlePhotosAdded,
   } = usePhotoSorting({
-    projectId: l4ProjectId,
+    projectId: effectiveProjectId ?? l4ProjectId,
     initialPhotos,
   });
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
-    projectId: l4ProjectId,
+    projectId: effectiveProjectId,
     uploadCategory,
     uploadStage,
     photos,
