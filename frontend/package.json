@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0",
-    "gen-api": "openapi-typescript openapi.json -o src/lib/api-types.d.ts",
+    "gen-api": "openapi-typescript http://127.0.0.1:8000/openapi.json -o src/lib/api-types.d.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
