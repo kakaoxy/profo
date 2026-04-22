@@ -8,6 +8,7 @@ from sqlalchemy import and_, desc
 
 from models import L4MarketingProject, L4MarketingMedia
 from schemas.l4_marketing import L4MarketingProjectCreate, L4MarketingProjectUpdate, L4MarketingProjectSummary
+from schemas.l4_marketing.enums import PublishStatus, MarketingProjectStatus
 
 
 class MarketingProjectService:
@@ -121,23 +122,23 @@ class MarketingProjectService:
         total: int = query.count()
 
         published: int = query.filter(
-            L4MarketingProject.publish_status == "发布"
+            L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value
         ).count()
 
         draft: int = query.filter(
-            L4MarketingProject.publish_status == "草稿"
+            L4MarketingProject.publish_status == PublishStatus.DRAFT.value
         ).count()
 
         for_sale: int = query.filter(
-            L4MarketingProject.project_status == "在售"
+            L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value
         ).count()
 
         sold: int = query.filter(
-            L4MarketingProject.project_status == "已售"
+            L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value
         ).count()
 
         in_progress: int = query.filter(
-            L4MarketingProject.project_status == "在途"
+            L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value
         ).count()
 
         return L4MarketingProjectSummary(
