@@ -205,12 +205,12 @@ export function usePhotoDragAndDrop({
           photo_category: updatedPhoto.photo_category,
           renovation_stage: updatedPhoto.renovation_stage,
           sort_order: newSortOrder,
-        } as any
+        }
       );
 
       if (updateResult.success && updateResult.data) {
         // 使用API返回的完整数据更新本地状态，确保数据一致性
-        const updatedPhotoFromAPI = updateResult.data as L4MarketingMedia;
+        const updatedPhotoFromAPI = updateResult.data;
         const newPhotosWithAPIUpdate = photos.map((p) =>
           p.id === updatedPhotoFromAPI.id ? updatedPhotoFromAPI : p
         );

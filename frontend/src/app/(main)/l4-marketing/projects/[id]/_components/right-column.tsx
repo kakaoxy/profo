@@ -21,11 +21,7 @@ import { FormValues } from "../schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image as ImageIcon, UploadCloud } from "lucide-react";
 
-interface RightColumnProps {
-  // 顾问功能已移除，此组件不再需要顾问列表
-}
-
-export function RightColumn({}: RightColumnProps) {
+export function RightColumn() {
   const form = useFormContext<FormValues>();
 
   return (

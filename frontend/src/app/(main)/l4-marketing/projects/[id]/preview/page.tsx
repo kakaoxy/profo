@@ -2,6 +2,7 @@ import React from "react";
 import { fetchClient } from "@/lib/api-server";
 import { z } from "zod";
 import type { L4MarketingProject, L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
+import type { components } from "@/lib/api-types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HeroGallery } from "./_components/hero-gallery";
@@ -51,7 +52,7 @@ export default async function ProjectPreviewPage({
 
   const project = projectRes.data as L4MarketingProject;
   // 为 API 返回的数据添加默认的 photo_category 字段
-  const photos: L4MarketingMedia[] = (photosRes.data?.items || []).map((item: any) => ({
+  const photos: L4MarketingMedia[] = (photosRes.data?.items || []).map((item: components["schemas"]["L4MarketingMediaResponse"]) => ({
     ...item,
     photo_category: item.photo_category || "marketing",
   })) as L4MarketingMedia[];

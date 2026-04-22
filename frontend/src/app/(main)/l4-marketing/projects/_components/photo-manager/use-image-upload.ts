@@ -5,7 +5,7 @@
  * 基于通用上传系统，保留业务逻辑（创建模式/编辑模式、分类处理）
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useUpload } from "@/components/common/upload";
 import { createL4MarketingMediaAction } from "../../actions";
@@ -50,9 +50,14 @@ export function useImageUpload({
   const photosRef = useRef(photos);
   const onPhotosChangeRef = useRef(onPhotosChange);
 
-  // 同步 ref 值
-  photosRef.current = photos;
-  onPhotosChangeRef.current = onPhotosChange;
+  // 使用 useEffect 同步 ref 值，避免在渲染期间更新
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
+  useEffect(() => {
+    onPhotosChangeRef.current = onPhotosChange;
+  }, [onPhotosChange]);
 
   const { isUploading, uploadSingle } = useUpload({
     maxSize: MAX_FILE_SIZE,
@@ -110,13 +115,13 @@ export function useImageUpload({
         const createResult = await createL4MarketingMediaAction(projectId, {
           file_url: fileUrl,
           media_type: "image",
-          photo_category: uploadCategory as any,
+          photo_category: uploadCategory,
           renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
           sort_order: nextSortOrder,
-        } as any);
+        });
 
         if (createResult.success && createResult.data) {
-          currentOnPhotosChange([...currentPhotos, createResult.data as L4MarketingMedia]);
+          currentOnPhotosChange([...currentPhotos, createResult.data]);
           toast.success(`${file.name}: 上传成功`);
         } else {
           toast.error(createResult.error || `${file.name}: 保存记录失败`);

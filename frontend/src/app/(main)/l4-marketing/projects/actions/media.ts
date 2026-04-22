@@ -166,11 +166,11 @@ export async function batchAddL4PhotosAction(
     const result = await createL4MarketingMediaAction(projectId, {
       file_url: "",
       media_type: "image",
-      photo_category: "marketing" as any,
+      photo_category: "marketing",
       origin_media_id: photoId,
       renovation_stage: "other",
       sort_order: sortOrder,
-    } as any);
+    });
 
     if (result.success && result.data) {
       results.push(result.data);
@@ -204,11 +204,13 @@ export async function batchUpdateMediaSortOrderAction(
   try {
     const client = await fetchClient();
     // 使用类型断言绕过 OpenAPI 类型检查
-    const { data, error } = await client.PUT(
-      "/api/v1/admin/l4-marketing/projects/{project_id}/media/sort-order" as any,
+    const { data, error } = await (client as unknown as {
+      PUT: (path: string, options: { params: { path: { project_id: number } }; body: unknown }) => Promise<{ data: unknown; error: unknown }>;
+    }).PUT(
+      "/api/v1/admin/l4-marketing/projects/{project_id}/media/sort-order",
       {
         params: { path: { project_id: projectId } },
-        body: sortUpdates as any,
+        body: sortUpdates,
       },
     );
 

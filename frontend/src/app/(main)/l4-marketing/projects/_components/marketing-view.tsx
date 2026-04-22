@@ -74,7 +74,6 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [layoutFilter, setLayoutFilter] = useState(initialLayout);
   const [isPending, startTransition] = useTransition();
-  const [isPageLoading, setIsPageLoading] = useState(false);
 
   const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -90,10 +89,6 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   }, [data, layoutFilterFn, searchFilterFn]);
 
   const totalPages = Math.ceil(total / pageSize);
-
-  useEffect(() => {
-    setIsPageLoading(false);
-  }, [currentPage]);
 
   const updateUrlParams = useCallback((updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -115,7 +110,6 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   const handlePageChange = useCallback((page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
 
-    setIsPageLoading(true);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", page.toString());
     router.push(`/l4-marketing/projects?${params.toString()}`);
