@@ -30,10 +30,23 @@ class L4RefreshResponse(BaseModel):
     success: bool
 
 
+class L4MarketingProjectSummary(BaseModel):
+    """营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响"""
+    total: int = Field(default=0, ge=0, description="项目总数")
+    published: int = Field(default=0, ge=0, description="已发布项目数")
+    draft: int = Field(default=0, ge=0, description="草稿项目数")
+    for_sale: int = Field(default=0, ge=0, description="在售项目数")
+    sold: int = Field(default=0, ge=0, description="已售项目数")
+    in_progress: int = Field(default=0, ge=0, description="在途项目数")
+
+
 # 统一分页响应格式 - 继承自 PaginatedResponse
 class L4MarketingProjectListResponse(PaginatedResponse[L4MarketingProjectResponse]):
     """营销项目列表响应 - 统一分页格式"""
-    pass
+    summary: L4MarketingProjectSummary = Field(
+        default_factory=L4MarketingProjectSummary,
+        description="摘要统计 - 基于当前筛选条件的全量统计，不受分页影响"
+    )
 
 
 class L4MarketingMediaListResponse(PaginatedResponse[L4MarketingMediaResponse]):

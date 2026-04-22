@@ -70,7 +70,16 @@ async def list_marketing_projects(
     community_id: Annotated[Optional[str], Query(description="小区ID")] = None,
     service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectListResponse:
-    """获取营销项目列表 - 统一分页格式"""
+    """获取营销项目列表 - 统一分页格式，包含摘要统计"""
+    # 摘要统计：基于筛选条件的全量统计，不受分页影响
+    summary = service.get_projects_summary(
+        publish_status=publish_status,
+        project_status=project_status,
+        consultant_id=consultant_id,
+        community_id=community_id,
+    )
+
+    # 列表数据：受分页影响
     skip = (page - 1) * page_size
     items, total = service.get_projects(
         skip=skip,
@@ -80,11 +89,13 @@ async def list_marketing_projects(
         consultant_id=consultant_id,
         community_id=community_id,
     )
+
     return L4MarketingProjectListResponse(
         items=items,
         total=total,
         page=page,
-        page_size=page_size
+        page_size=page_size,
+        summary=summary,
     )
 
 

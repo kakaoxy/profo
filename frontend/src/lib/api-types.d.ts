@@ -705,7 +705,7 @@ export interface paths {
         };
         /**
          * 获取营销项目列表
-         * @description 获取营销项目列表 - 统一分页格式
+         * @description 获取营销项目列表 - 统一分页格式，包含摘要统计
          */
         get: operations["list_marketing_projects_api_v1_admin_l4_marketing_projects_get"];
         put?: never;
@@ -2196,6 +2196,8 @@ export interface components {
              * @description 每页数量
              */
             page_size: number;
+            /** @description 摘要统计 - 基于当前筛选条件的全量统计，不受分页影响 */
+            summary?: components["schemas"]["L4MarketingProjectSummary"];
         };
         /**
          * L4MarketingProjectResponse
@@ -2261,6 +2263,48 @@ export interface components {
             updated_at: string;
             /** Media Files */
             media_files?: components["schemas"]["L4MarketingMediaResponse"][];
+        };
+        /**
+         * L4MarketingProjectSummary
+         * @description 营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响
+         */
+        L4MarketingProjectSummary: {
+            /**
+             * Total
+             * @description 项目总数
+             * @default 0
+             */
+            total: number;
+            /**
+             * Published
+             * @description 已发布项目数
+             * @default 0
+             */
+            published: number;
+            /**
+             * Draft
+             * @description 草稿项目数
+             * @default 0
+             */
+            draft: number;
+            /**
+             * For Sale
+             * @description 在售项目数
+             * @default 0
+             */
+            for_sale: number;
+            /**
+             * Sold
+             * @description 已售项目数
+             * @default 0
+             */
+            sold: number;
+            /**
+             * In Progress
+             * @description 在途项目数
+             * @default 0
+             */
+            in_progress: number;
         };
         /**
          * L4MarketingProjectUpdate
