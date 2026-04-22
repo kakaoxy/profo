@@ -23,6 +23,34 @@ from utils.security_logger import safe_log_request_body, safe_log_dict
 
 logger = logging.getLogger(__name__)
 
+# ==================== 公共函数 ====================
+
+async def save_failed_record_safely(
+    request: Request,
+    error_message: str,
+    failure_type: str
+) -> None:
+    """
+    安全地保存失败记录
+    统一处理请求体解析和脱敏逻辑，避免代码重复
+    """
+    try:
+        if request.method in ["POST", "PUT", "PATCH"]:
+            body = await request.body()
+            if body:
+                safe_body = safe_log_request_body(body)
+                if safe_body:
+                    # 使用 run_in_threadpool 异步执行同步的数据库操作
+                    await run_in_threadpool(
+                        save_failed_record,
+                        data=safe_body,
+                        error_message=error_message,
+                        failure_type=failure_type
+                    )
+    except Exception:
+        pass  # 忽略保存失败
+
+
 # ==================== 异常处理器函数 ====================
 
 async def service_exception_handler(request: Request, exc: ServiceException) -> JSONResponse:
@@ -95,17 +123,11 @@ async def validation_exception_handler(
         logger.warning(f"请求验证失败: {error_message}")
 
     # 尝试保存失败记录（使用脱敏后的数据）
-    try:
-        if request.method in ["POST", "PUT", "PATCH"] and safe_body:
-            # 使用 run_in_threadpool 异步执行同步的数据库操作
-            await run_in_threadpool(
-                save_failed_record,
-                data=safe_body,
-                error_message=error_message,
-                failure_type="request_validation_error"
-            )
-    except Exception:
-        pass  # 忽略保存失败
+    await save_failed_record_safely(
+        request=request,
+        error_message=error_message,
+        failure_type="request_validation_error"
+    )
 
     # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     return JSONResponse(
@@ -168,22 +190,11 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     logger.error(f"未处理的异常: {str(exc)}\n{error_traceback}")
 
     # 尝试保存失败记录（使用脱敏后的数据）
-    safe_body = None
-    try:
-        if request.method in ["POST", "PUT", "PATCH"]:
-            body = await request.body()
-            if body:
-                safe_body = safe_log_request_body(body)
-                if safe_body:
-                    # 使用 run_in_threadpool 异步执行同步的数据库操作
-                    await run_in_threadpool(
-                        save_failed_record,
-                        data=safe_body,
-                        error_message=str(exc),
-                        failure_type="system_error"
-                    )
-    except Exception:
-        pass
+    await save_failed_record_safely(
+        request=request,
+        error_message=str(exc),
+        failure_type="system_error"
+    )
 
     # 根据 debug 模式决定是否返回详细错误信息
     from settings import settings
