@@ -28,7 +28,8 @@ logger = logging.getLogger(__name__)
 async def save_failed_record_safely(
     request: Request,
     error_message: str,
-    failure_type: str
+    failure_type: str,
+    data_source: str | None = None
 ) -> None:
     """
     安全地保存失败记录
@@ -45,10 +46,11 @@ async def save_failed_record_safely(
                         save_failed_record,
                         data=safe_body,
                         error_message=error_message,
-                        failure_type=failure_type
+                        failure_type=failure_type,
+                        data_source=data_source
                     )
-    except Exception:
-        pass  # 忽略保存失败
+    except Exception as e:
+        logger.warning(f"保存失败记录时出错: {str(e)}")
 
 
 # ==================== 异常处理器函数 ====================
