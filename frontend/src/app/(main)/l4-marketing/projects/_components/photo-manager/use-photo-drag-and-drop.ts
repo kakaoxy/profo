@@ -208,7 +208,13 @@ export function usePhotoDragAndDrop({
         } as any
       );
 
-      if (updateResult.success) {
+      if (updateResult.success && updateResult.data) {
+        // 使用API返回的完整数据更新本地状态，确保数据一致性
+        const updatedPhotoFromAPI = updateResult.data as L4MarketingMedia;
+        const newPhotosWithAPIUpdate = photos.map((p) =>
+          p.id === updatedPhotoFromAPI.id ? updatedPhotoFromAPI : p
+        );
+        onPhotosChange(newPhotosWithAPIUpdate);
         toast.success(
           `已移动到${isMovingToMarketing ? "营销照片" : targetStage + "阶段"}`
         );

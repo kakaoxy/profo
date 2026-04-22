@@ -19,6 +19,7 @@ import {
   ALLOWED_EXTENSIONS,
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
+  getFileType,
   type Attachment,
   type AttachmentCategory,
 } from "../attachment-types";
@@ -97,22 +98,4 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
   );
 }
 
-/**
- * 根据文件名判断文件类型
- */
-function getFileType(filename: string): "excel" | "image" | "pdf" | "word" | null {
-  const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
-  const extensions: Record<string, string[]> = {
-    excel: [".xlsx", ".xls"],
-    image: [".jpg", ".jpeg", ".png", ".gif", ".webp"],
-    pdf: [".pdf"],
-    word: [".doc", ".docx"],
-  };
 
-  for (const [type, exts] of Object.entries(extensions)) {
-    if (exts.includes(ext)) {
-      return type as "excel" | "image" | "pdf" | "word";
-    }
-  }
-  return null;
-}
