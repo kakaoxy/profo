@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends, Request
 from sqlalchemy.orm import Session
 import os
 import shutil
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from settings import settings
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
+from common import limiter
 
 router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
@@ -23,7 +24,9 @@ class FileUploadResponse(BaseModel):
 
 
 @router.post("/upload", summary="上传文件", response_model=FileUploadResponse)
+@limiter.limit("50/hour")
 def upload_file(
+    request: Request,
     current_user: CurrentOperatorUserDep,
     file: Annotated[UploadFile, File()],
     db: Session = Depends(get_db),
@@ -31,6 +34,7 @@ def upload_file(
     """
     Handle file upload (Sync - Run in threadpool by FastAPI)
     Optimized to read only first 2KB for MIME check.
+    速率限制：50次/小时（防止资源耗尽攻击）
     """
     try:
         ext = os.path.splitext(file.filename)[1].lower()
