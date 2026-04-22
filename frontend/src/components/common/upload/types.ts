@@ -35,7 +35,7 @@ export interface UploadResponse {
   /** MIME类型 */
   mimeType?: string;
   /** 原始响应 */
-  raw?: any;
+  raw?: Record<string, unknown>;
 }
 
 /** 上传进度信息 */

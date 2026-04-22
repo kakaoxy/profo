@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useCallback, Suspense, useRef } from "react";
+import React, { memo, useState, useCallback, Suspense, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,11 @@ export const PhotosSection = memo(function PhotosSection({
 
   // 使用 ref 跟踪当前照片列表，用于计算新增照片
   const photosRef = useRef(photos);
-  photosRef.current = photos;
+
+  // 使用 useEffect 同步 ref，避免在渲染期间更新
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
 
   // 适配器：将完整列表转换为新增照片数组
   const handlePhotosChange = useCallback(

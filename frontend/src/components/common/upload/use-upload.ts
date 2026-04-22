@@ -5,7 +5,7 @@
  * 整合6个上传模块的共同逻辑
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import type {
   UploadFile,
@@ -40,8 +40,10 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const filesRef = useRef(files);
 
-  // 同步 ref，避免闭包问题
-  filesRef.current = files;
+  // 使用 useEffect 同步 ref，避免在渲染期间更新
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
 
   const isUploading = files.some((f) => f.status === "uploading");
 

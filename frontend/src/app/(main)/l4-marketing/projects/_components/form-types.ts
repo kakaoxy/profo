@@ -51,10 +51,12 @@ export interface PhotoGalleryProps {
   photos: L4MarketingMedia[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MarketingInfoFieldsProps {
   // Form field props will be passed via react-hook-form context
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BasicConfigFieldsProps {
   // Form field props will be passed via react-hook-form context
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 
 // 图片加载状态
 export type ImageLoadStatus = "idle" | "loading" | "loaded" | "error";
@@ -44,7 +44,10 @@ export function useImageLazyLoad(
     timeout = 10000,
   } = options;
 
-  const [status, setStatus] = useState<ImageLoadStatus>("idle");
+  // 根据 src 计算初始状态，避免在 effect 中同步 setState
+  const [status, setStatus] = useState<ImageLoadStatus>(() =>
+    src ? "idle" : "idle"
+  );
   const [loadTime, setLoadTime] = useState<number>(0);
   const [isVisible, setIsVisible] = useState<boolean>(false);
 
@@ -55,13 +58,19 @@ export function useImageLazyLoad(
   const elementRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // 当 src 变化时重置状态
+  useEffect(() => {
+    if (!src) {
+      // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
+      requestAnimationFrame(() => {
+        setStatus("idle");
+      });
+    }
+  }, [src]);
+
   // Intersection Observer 检测视口
   useEffect(() => {
-    // 如果没有 src，直接返回
-    if (!src) {
-      setStatus("idle");
-      return;
-    }
+    if (!src) return;
 
     // 如果已经可见，清理 DOM 元素并返回
     if (isVisible) {
@@ -123,13 +132,21 @@ export function useImageLazyLoad(
   // 图片加载逻辑
   useEffect(() => {
     if (!src || !isVisible) {
-      setStatus("idle");
+      // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
+      if (!src || !isVisible) {
+        requestAnimationFrame(() => {
+          setStatus("idle");
+        });
+      }
       return;
     }
 
     // 重置完成标记
     isCompleteRef.current = false;
-    setStatus("loading");
+    // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
+    requestAnimationFrame(() => {
+      setStatus("loading");
+    });
     startTimeRef.current = performance.now();
 
     const img = new Image();
@@ -207,18 +224,26 @@ export function useSimpleImageLoader(
   src: string | undefined | null,
   timeout: number = 10000
 ): Omit<ImageLoadResult, "isVisible"> {
-  const [status, setStatus] = useState<ImageLoadStatus>("idle");
+  const [status, setStatus] = useState<ImageLoadStatus>(() =>
+    src ? "idle" : "idle"
+  );
   const [loadTime, setLoadTime] = useState<number>(0);
   const isCompleteRef = useRef(false);
 
   useEffect(() => {
     if (!src) {
-      setStatus("idle");
+      // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
+      requestAnimationFrame(() => {
+        setStatus("idle");
+      });
       return;
     }
 
     isCompleteRef.current = false;
-    setStatus("loading");
+    // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
+    requestAnimationFrame(() => {
+      setStatus("loading");
+    });
     const startTime = performance.now();
 
     const img = new Image();

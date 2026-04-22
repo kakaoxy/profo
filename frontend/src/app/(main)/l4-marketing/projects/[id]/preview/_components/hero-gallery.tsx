@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { getFileUrl } from "@/lib/config";
-import { useRef, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 
 // 判断是否为开发环境
@@ -86,32 +86,30 @@ export function HeroGallery({
         ? "bg-slate-400"
         : "bg-blue-500";
 
-  // 使用 ref 追踪图片加载错误状态，避免触发重新渲染
-  const mainImageErrorRef = useRef(false);
-  const secondaryImageErrorsRef = useRef<boolean[]>([false, false]);
-  const [renderKey, setRenderKey] = useState(0);
+  // 使用 state 追踪图片加载错误状态
+  const [mainImageError, setMainImageError] = useState(false);
+  const [secondaryImageErrors, setSecondaryImageErrors] = useState<boolean[]>([false, false]);
 
   const handleMainImageError = useCallback(() => {
-    if (!mainImageErrorRef.current) {
-      mainImageErrorRef.current = true;
-      setRenderKey((k) => k + 1);
-    }
+    setMainImageError(true);
   }, []);
 
   const handleSecondaryImageError = useCallback((index: number) => {
-    if (!secondaryImageErrorsRef.current[index]) {
-      secondaryImageErrorsRef.current[index] = true;
-      setRenderKey((k) => k + 1);
-    }
+    setSecondaryImageErrors((prev) => {
+      if (prev[index]) return prev;
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
   }, []);
 
   // 检查是否应该显示占位符
-  const shouldShowMainPlaceholder = !mainImage || mainImageErrorRef.current;
-  const shouldShowSecondaryPlaceholder0 = !secondaryImages[0] || secondaryImageErrorsRef.current[0];
-  const shouldShowSecondaryPlaceholder1 = !secondaryImages[1] || secondaryImageErrorsRef.current[1];
+  const shouldShowMainPlaceholder = !mainImage || mainImageError;
+  const shouldShowSecondaryPlaceholder0 = !secondaryImages[0] || secondaryImageErrors[0];
+  const shouldShowSecondaryPlaceholder1 = !secondaryImages[1] || secondaryImageErrors[1];
 
   return (
-    <section className="mt-4 grid grid-cols-12 gap-4 h-[500px]" key={renderKey}>
+    <section className="mt-4 grid grid-cols-12 gap-4 h-[500px]">
       <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-xl group">
         {!shouldShowMainPlaceholder ? (
           isDev ? (

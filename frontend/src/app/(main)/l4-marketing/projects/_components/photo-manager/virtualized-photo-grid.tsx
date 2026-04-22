@@ -30,8 +30,8 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
 }: VirtualizedPhotoGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
   const [scrollTop, setScrollTop] = useState(0);
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 });
 
   // 计算列数
   const columnCount = useMemo(() => {
@@ -55,27 +55,28 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setContainerWidth(entry.contentRect.width - 48); // 减去padding
+        setContainerHeight(entry.contentRect.height);
       }
     });
 
     resizeObserver.observe(containerRef.current);
     setContainerWidth(containerRef.current.clientWidth - 48);
+    setContainerHeight(containerRef.current.clientHeight);
 
     return () => resizeObserver.disconnect();
   }, []);
 
-  // 计算可见范围
-  useEffect(() => {
-    const containerHeight = containerRef.current?.clientHeight || 600;
+  // 使用 useMemo 计算可见范围，避免在 effect 中调用 setState
+  const visibleRange = useMemo(() => {
     const startRow = Math.max(0, Math.floor(scrollTop / (GRID_CONFIG.rowHeight + GRID_CONFIG.gap)) - GRID_CONFIG.overscan);
     const visibleRowCount = Math.ceil(containerHeight / (GRID_CONFIG.rowHeight + GRID_CONFIG.gap));
     const endRow = Math.min(rowCount, startRow + visibleRowCount + GRID_CONFIG.overscan * 2);
 
-    setVisibleRange({
+    return {
       start: startRow * columnCount,
       end: Math.min(photos.length, endRow * columnCount),
-    });
-  }, [scrollTop, rowCount, columnCount, photos.length]);
+    };
+  }, [scrollTop, rowCount, columnCount, photos.length, containerHeight]);
 
   // 滚动处理 - 使用requestAnimationFrame节流
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {

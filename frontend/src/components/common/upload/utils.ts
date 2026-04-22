@@ -124,27 +124,30 @@ export function validateFile(
 /**
  * 解析上传响应，提取 URL
  */
-export function parseUploadResponse(response: any): UploadResponse | null {
+export function parseUploadResponse(response: Record<string, unknown>): UploadResponse | null {
   if (!response) return null;
+
+  // 安全地获取 data 对象
+  const data = response.data as Record<string, unknown> | undefined;
 
   // 尝试从不同格式的响应中提取 URL
   const url =
-    response.data?.url ||
+    data?.url ||
     response.url ||
     response.file_url ||
     response.path ||
-    response.data?.file_url;
+    data?.file_url;
 
-  if (!url) return null;
+  if (!url || typeof url !== 'string') return null;
 
   // 确保 URL 是完整的
   const fullUrl = getFileUrl(url);
 
   return {
     url: fullUrl,
-    filename: response.filename || response.data?.filename,
-    size: response.size || response.data?.size,
-    mimeType: response.mime_type || response.data?.mime_type,
+    filename: (response.filename as string | undefined) ?? (data?.filename as string | undefined),
+    size: (response.size as number | undefined) ?? (data?.size as number | undefined),
+    mimeType: (response.mime_type as string | undefined) ?? (data?.mime_type as string | undefined),
     raw: response,
   };
 }

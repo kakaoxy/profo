@@ -6,10 +6,10 @@ import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
 import { getFileUrl } from "./utils";
 import type { MarketingInfoSectionProps } from "./types";
-import type { L4MarketingMedia } from "@/app/(main)/l4-marketing/projects/types";
+import type { L4MarketingMedia, L4MarketingProject } from "@/app/(main)/l4-marketing/projects/types";
 
 // 获取营销主图（MARKETING分类首图，无营销照片时使用改造照片第一张）
-function getMarketingMainImage(project: any, photos: L4MarketingMedia[]): string | null {
+function getMarketingMainImage(project: L4MarketingProject, photos: L4MarketingMedia[]): string | null {
   // 优先从 photos 中找 marketing 分类的第一张
   const marketingPhoto = photos
     .filter((p) => p.photo_category === "marketing")
@@ -26,11 +26,9 @@ function getMarketingMainImage(project: any, photos: L4MarketingMedia[]): string
     return getFileUrl(renovationPhoto.file_url || renovationPhoto.thumbnail_url);
   }
 
-  // 最后使用 project.images (后端返回的是数组)
-  if (project.images) {
-    const imagesArray = Array.isArray(project.images) ? project.images : project.images.split(",");
-    const firstImage = imagesArray[0];
-    if (firstImage) return getFileUrl(firstImage.trim());
+  // 最后使用 project.images (后端直接返回数组)
+  if (project.images && project.images.length > 0) {
+    return getFileUrl(project.images[0]);
   }
   return null;
 }
@@ -65,20 +63,9 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   project,
   photos = [],
 }: MarketingInfoSectionProps & { photos?: L4MarketingMedia[] }) {
-  // 生成营销照片依赖签名：只包含影响主图选择的关键信息（ID和排序）
-  // URL变化时不需要触发重计算，getMarketingMainImage会直接从photos读取最新URL
-  const marketingPhotosSignature = useMemo(() => {
-    if (!photos || photos.length === 0) return "";
-    return photos
-      .filter((p) => p.photo_category === "marketing")
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-      .map((p) => `${p.id}:${p.sort_order ?? 0}`)
-      .join("|");
-  }, [photos]);
-
   const mainImage = useMemo(
     () => getMarketingMainImage(project, photos),
-    [project.id, project.images, marketingPhotosSignature]
+    [project, photos]
   );
 
   // 缓存标签渲染 - 后端直接返回数组

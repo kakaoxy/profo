@@ -2,6 +2,16 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 
+// Performance Observer entry types
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+}
+
 // 性能指标接口
 export interface PerformanceMetrics {
   /** 加载时间 */
@@ -56,7 +66,11 @@ export function usePerformanceMonitor(
 
   // 使用 ref 存储配置，避免依赖变化导致重渲染
   const configRef = useRef({ componentName, logToConsole, thresholds });
-  configRef.current = { componentName, logToConsole, thresholds };
+
+  // 使用 useEffect 同步 ref，避免在渲染期间更新
+  useEffect(() => {
+    configRef.current = { componentName, logToConsole, thresholds };
+  }, [componentName, logToConsole, thresholds]);
 
   const metricsRef = useRef<Partial<PerformanceMetrics>>({});
   const fpsRef = useRef({ frames: 0, lastTime: performance.now() });
@@ -164,8 +178,9 @@ export function usePerformanceMonitor(
       let clsValue = 0;
       const clsObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const layoutShiftEntry = entry as LayoutShiftEntry;
+          if (!layoutShiftEntry.hadRecentInput) {
+            clsValue += layoutShiftEntry.value;
           }
         }
         metricsRef.current.cls = clsValue;
@@ -180,7 +195,7 @@ export function usePerformanceMonitor(
 
       // 获取内存使用
       if ("memory" in performance) {
-        const memory = (performance as any).memory;
+        const memory = (performance as unknown as { memory?: PerformanceMemory }).memory;
         if (memory) {
           const usedMB = Math.round(memory.usedJSHeapSize / 1048576);
           metricsRef.current.memory = usedMB;
@@ -203,7 +218,7 @@ export function usePerformanceMonitor(
       window.addEventListener("load", measureLoadPerformance);
       return () => window.removeEventListener("load", measureLoadPerformance);
     }
-  }, []); // 空依赖数组，只在挂载时执行
+  }, [logMetric]); // 添加 logMetric 依赖
 
   // 启动 FPS 监控
   useEffect(() => {
@@ -220,7 +235,7 @@ export function usePerformanceMonitor(
 
   // 测量渲染时间
   const measureRenderTime = useCallback(
-    <T extends (...args: any[]) => any>(fn: T, ...args: Parameters<T>): ReturnType<T> => {
+    <T extends (...args: unknown[]) => unknown>(fn: T, ...args: Parameters<T>): ReturnType<T> => {
       const start = performance.now();
       const result = fn(...args);
       const duration = performance.now() - start;
@@ -231,7 +246,7 @@ export function usePerformanceMonitor(
         );
       }
 
-      return result;
+      return result as ReturnType<T>;
     },
     []
   );
@@ -285,7 +300,11 @@ export function useVirtualListMonitor(listName: string) {
   const renderCountRef = useRef(0);
   const itemRenderTimesRef = useRef<Map<string, number>>(new Map());
   const listNameRef = useRef(listName);
-  listNameRef.current = listName;
+
+  // 使用 useEffect 同步 ref，避免在渲染期间更新
+  useEffect(() => {
+    listNameRef.current = listName;
+  }, [listName]);
 
   const recordItemRender = useCallback((itemId: string, duration: number) => {
     itemRenderTimesRef.current.set(itemId, duration);
