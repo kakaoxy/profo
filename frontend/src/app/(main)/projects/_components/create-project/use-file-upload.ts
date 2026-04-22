@@ -49,7 +49,7 @@ export function useFileUpload({
     },
     onSuccess: (response, file) => {
       // 创建附件对象
-      const attachment = createAttachment(file, response.raw, category);
+      const attachment = createAttachment(file, response, category);
       if (attachment) {
         onUploadComplete(attachment);
       }
