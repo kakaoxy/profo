@@ -2,7 +2,7 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { cookies } from "next/headers";
-import { API_BASE_URL } from "./config";
+import { getApiUrl } from "./config";
 import { getValidAccessToken, clearTokenCache } from "./token-refresh-server";
 
 /**
@@ -81,7 +81,7 @@ export async function fetchClient() {
   };
 
   return createClient<paths>({
-    baseUrl: API_BASE_URL,
+    baseUrl: getApiUrl(""),
     // 使用我们的自定义 fetch，在 fetch 中统一处理 Authorization header
     fetch: fetchWithAutoRefresh,
   });

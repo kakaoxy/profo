@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { API_BASE_URL } from "@/lib/config";
+import { apiPaths, getApiUrl } from "@/lib/config";
 
 // 定义登录接口返回的结构
 interface LoginResponse {
@@ -29,7 +29,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
     return { error: "请输入账号和密码" };
   }
 
-  const apiUrl = `${API_BASE_URL}/api/v1/auth/token`; 
+  const apiUrl = getApiUrl(apiPaths.auth.token); 
 
   try {
     const response = await fetch(apiUrl, {
@@ -134,7 +134,7 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
   }
 
   // 注意：这里调用的是修改密码接口
-  const apiUrl = `${API_BASE_URL}/api/v1/users/change-password`; 
+  const apiUrl = getApiUrl(apiPaths.users.changePassword); 
 
   try {
     // 这里有个策略问题：如果没有 Token，我们如何调用这个接口？

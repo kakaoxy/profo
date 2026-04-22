@@ -40,6 +40,8 @@ export interface UploadResponse {
 
 /** 上传进度信息 */
 export interface UploadProgress {
+  /** 唯一标识 */
+  id: string;
   /** 文件名 */
   filename: string;
   /** 进度百分比 */

@@ -1,6 +1,6 @@
 "use server";
 
-import { API_BASE_URL } from "@/lib/config";
+import { apiPaths, getApiUrl } from "@/lib/config";
 import { getValidAccessToken } from "@/lib/token-refresh-server";
 
 export interface FileUploadResponse {
@@ -34,8 +34,7 @@ export async function uploadFileAction(formData: FormData) {
       return { success: false, message: "登录已过期，请重新登录" };
     }
 
-    const apiBase = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
-    const uploadUrl = `${apiBase}/api/v1/files/upload`;
+    const uploadUrl = getApiUrl(apiPaths.files.upload);
 
     const res = await fetch(uploadUrl, {
       method: "POST",

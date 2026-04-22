@@ -3,7 +3,6 @@
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
-import { API_BASE_URL } from "@/lib/config";
 
 interface UserSimple {
   id: string;
