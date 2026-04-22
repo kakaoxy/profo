@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { X, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '@/lib/config';
+import { useUpload, formatFileSize } from '@/components/common/upload';
 
 interface Props {
   images: string[];
@@ -12,8 +12,6 @@ interface Props {
   maxImages?: number;
   maxFileSize?: number; // in MB
 }
-
-// API_BASE_URL is imported from @/lib/config
 
 /**
  * 检查是否为本地开发环境的 URL（私有 IP）
@@ -24,12 +22,12 @@ const isLocalDevUrl = (url: string): boolean => {
 };
 
 /**
- * 图片上传组件 - 符合 Next.js 最佳实践
+ * 图片上传组件 - 基于通用上传系统重构
  * 
  * 特性：
+ * - 使用通用 useUpload hook 处理上传逻辑
  * - 使用 next/image 进行图片优化
  * - 对本地开发环境使用 unoptimized 避免私有 IP 限制
- * - 使用服务器端上传而非 base64 存储
  * - 支持多图片上传和删除
  */
 export const ImageUpload: React.FC<Props> = ({ 
@@ -39,82 +37,26 @@ export const ImageUpload: React.FC<Props> = ({
   maxFileSize = 10, // 默认 10MB
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
-  // 尝试刷新 token
-  const tryRefreshToken = async (): Promise<string | null> => {
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        return null;
+  const { isUploading, upload, uploadingFiles } = useUpload({
+    maxSize: maxFileSize * 1024 * 1024,
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+    multiple: true,
+    maxCount: maxImages,
+    onSuccess: (response) => {
+      if (response.url) {
+        onChange([...images, response.url]);
       }
+    },
+    onError: (error, file) => {
+      toast.error(`${file.name}: ${error.message}`);
+    },
+  });
 
-      const data = await response.json();
-      return data.access_token || null;
-    } catch {
-      return null;
-    }
-  };
-
-  const uploadFile = useCallback(async (file: File): Promise<string | null> => {
-    // 验证文件类型
-    if (!file.type.startsWith('image/')) {
-      toast.error(`${file.name}: 不是有效的图片文件`);
-      return null;
-    }
-
-    // 验证文件大小
-    if (file.size > maxFileSize * 1024 * 1024) {
-      toast.error(`${file.name}: 文件过大，最大支持 ${maxFileSize}MB`);
-      return null;
-    }
-
-    try {
-      // 获取 token - 优先从 localStorage，否则尝试刷新
-      let token = localStorage.getItem('access_token') || localStorage.getItem('token');
-      if (!token) {
-        token = await tryRefreshToken();
-      }
-      if (!token) {
-        toast.error('登录已过期，请重新登录');
-        return null;
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${API_BASE_URL}/api/v1/files/upload`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.detail || `上传失败: ${response.status}`);
-      }
-
-      const result = await response.json();
-      // 后端返回的 URL 可能是相对路径，需要拼接完整 URL
-      const imageUrl = result.data?.url || result.url || result.file_url || result.path;
-      if (imageUrl) {
-        return imageUrl.startsWith('/') ? `${API_BASE_URL}${imageUrl}` : imageUrl;
-      }
-      return null;
-    } catch (error) {
-      console.error('Image upload error:', error);
-      toast.error(`${file.name}: ${error instanceof Error ? error.message : '上传失败'}`);
-      return null;
-    }
-  }, [maxFileSize]);
+  // 计算总进度
+  const totalProgress = uploadingFiles.length > 0
+    ? Math.round(uploadingFiles.reduce((sum, f) => sum + f.progress, 0) / uploadingFiles.length)
+    : 0;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -128,27 +70,9 @@ export const ImageUpload: React.FC<Props> = ({
     
     const filesToUpload = Array.from(files).slice(0, remainingSlots);
     
-    setUploading(true);
-    setUploadProgress(0);
-    
-    const newImages: string[] = [];
-    
-    for (let i = 0; i < filesToUpload.length; i++) {
-      const file = filesToUpload[i];
-      setUploadProgress(Math.round((i / filesToUpload.length) * 100));
-      
-      const url = await uploadFile(file);
-      if (url) {
-        newImages.push(url);
-      }
-    }
-    
-    setUploadProgress(100);
-    setUploading(false);
-    
-    if (newImages.length > 0) {
-      onChange([...images, ...newImages]);
-      toast.success(`成功上传 ${newImages.length} 张图片`);
+    if (filesToUpload.length > 0) {
+      await upload(filesToUpload);
+      toast.success(`上传完成`);
     }
     
     // 清空 input 以允许重复上传同一文件
@@ -206,16 +130,16 @@ export const ImageUpload: React.FC<Props> = ({
         {canAddMore && (
           <button 
             type="button" 
-            onClick={() => !uploading && fileInputRef.current?.click()}
-            disabled={uploading}
+            onClick={() => !isUploading && fileInputRef.current?.click()}
+            disabled={isUploading}
             className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-primary hover:border-primary/40 transition-all bg-slate-50/50 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="添加图片"
           >
-            {uploading ? (
+            {isUploading ? (
               <div className="flex flex-col items-center gap-1">
                 <Loader2 className="h-6 w-6 animate-spin" />
                 <span className="text-[8px] font-black uppercase tracking-widest">
-                  {uploadProgress}%
+                  {totalProgress}%
                 </span>
               </div>
             ) : (
@@ -242,7 +166,7 @@ export const ImageUpload: React.FC<Props> = ({
         multiple 
         className="hidden" 
         onChange={handleImageUpload} 
-        disabled={uploading}
+        disabled={isUploading}
       />
     </div>
   );
