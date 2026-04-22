@@ -6,7 +6,7 @@ import secrets
 import string
 from typing import Annotated
 
-from fastapi import APIRouter, Query, HTTPException, status
+from fastapi import APIRouter, Query, HTTPException, status, Request
 
 from models import User, Role
 from schemas.user import (
@@ -26,6 +26,7 @@ from dependencies.auth import (
     CurrentInternalUserDep,
 )
 from services.system import user_service
+from common import limiter
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -128,13 +129,16 @@ def get_user(
 
 
 @router.post("/", response_model=UserResponse, status_code=201)
+@limiter.limit("10/hour")
 def create_user(
+    request: Request,
     user_data: UserCreate,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
 ) -> UserResponse:
     """
     创建新用户
+    速率限制：10次/小时（防止批量创建用户攻击）
     """
     return user_service.create_user(db, user_data)
 
@@ -153,7 +157,9 @@ def update_user(
 
 
 @router.put("/{user_id}/reset-password")
+@limiter.limit("5/hour")
 def reset_user_password(
+    request: Request,
     user_id: str,
     password_data: PasswordResetRequest,
     db: DbSessionDep,
@@ -161,6 +167,7 @@ def reset_user_password(
 ) -> dict:
     """
     重置用户密码
+    速率限制：5次/小时（防止密码重置滥用）
     """
     result = user_service.reset_password(db, user_id, password_data)
     return result
@@ -180,13 +187,16 @@ def delete_user(
 
 
 @router.post("/change-password")
+@limiter.limit("3/minute")
 def change_password(
+    request: Request,
     password_data: PasswordChange,
     db: DbSessionDep,
     current_user: CurrentActiveUserDep,
 ) -> dict:
     """
     修改当前用户密码
+    速率限制：3次/分钟（防止暴力破解密码）
     """
     result = user_service.change_password(db, current_user, password_data)
     return result

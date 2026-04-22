@@ -19,6 +19,7 @@ from exceptions import ProfoException
 from utils.error_formatters import format_request_validation_error, format_database_error
 from services.system import save_failed_record
 from services.system.exceptions import ServiceException
+from utils.security_logger import safe_log_request_body, safe_log_dict
 
 logger = logging.getLogger(__name__)
 
@@ -74,28 +75,36 @@ async def validation_exception_handler(
     """
     处理请求验证错误
     符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    已修复：使用安全日志记录，脱敏敏感信息
     """
     error_message = format_request_validation_error(exc)
 
-    logger.warning(f"请求验证失败: {error_message}")
-
-    # 尝试保存失败记录（如果请求体包含数据）
+    # 使用安全日志记录请求体（脱敏敏感字段）
+    safe_body = None
     try:
         if request.method in ["POST", "PUT", "PATCH"]:
             body = await request.body()
             if body:
-                try:
-                    data = json.loads(body)
-                    # 使用 run_in_threadpool 异步执行同步的数据库操作
-                    await run_in_threadpool(
-                        save_failed_record,
-                        data=data if isinstance(data, dict) else {"data": data},
-                        error_message=error_message,
-                        failure_type="request_validation_error"
-                    )
-                except:
-                    pass  # 忽略保存失败
-    except:
+                safe_body = safe_log_request_body(body)
+    except Exception:
+        pass
+
+    if safe_body:
+        logger.warning(f"请求验证失败: {error_message}, 请求体: {json.dumps(safe_body, ensure_ascii=False)}")
+    else:
+        logger.warning(f"请求验证失败: {error_message}")
+
+    # 尝试保存失败记录（使用脱敏后的数据）
+    try:
+        if request.method in ["POST", "PUT", "PATCH"] and safe_body:
+            # 使用 run_in_threadpool 异步执行同步的数据库操作
+            await run_in_threadpool(
+                save_failed_record,
+                data=safe_body,
+                error_message=error_message,
+                failure_type="request_validation_error"
+            )
+    except Exception:
         pass  # 忽略保存失败
 
     # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
@@ -152,28 +161,28 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     """
     处理通用异常（兜底处理）
     符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    已修复：使用安全日志记录请求体，脱敏敏感信息
     """
     # 记录完整的错误堆栈
     error_traceback = traceback.format_exc()
     logger.error(f"未处理的异常: {str(exc)}\n{error_traceback}")
 
-    # 尝试保存失败记录
+    # 尝试保存失败记录（使用脱敏后的数据）
+    safe_body = None
     try:
         if request.method in ["POST", "PUT", "PATCH"]:
             body = await request.body()
             if body:
-                try:
-                    data = json.loads(body)
+                safe_body = safe_log_request_body(body)
+                if safe_body:
                     # 使用 run_in_threadpool 异步执行同步的数据库操作
                     await run_in_threadpool(
                         save_failed_record,
-                        data=data if isinstance(data, dict) else {"data": data},
+                        data=safe_body,
                         error_message=str(exc),
                         failure_type="system_error"
                     )
-                except:
-                    pass
-    except:
+    except Exception:
         pass
 
     # 根据 debug 模式决定是否返回详细错误信息
