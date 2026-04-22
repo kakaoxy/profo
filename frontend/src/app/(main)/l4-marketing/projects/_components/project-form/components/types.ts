@@ -26,15 +26,8 @@ export interface CommunitySelectProps {
   onChange: (value: string, id?: string) => void;
 }
 
-/**
- * 户型输入组件Props
- */
-export interface LayoutInputsProps {
-  /** 当前户型值，格式如："3室2厅1卫" */
-  value: string;
-  /** 变更回调 */
-  onChange: (value: string) => void;
-}
+// 户型输入组件Props（从通用组件库重新导出）
+export type { LayoutInputsProps } from "@/components/common/layout-inputs";
 
 /**
  * 楼层输入组件Props
