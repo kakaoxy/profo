@@ -13,7 +13,7 @@ export interface Community {
   id: string;
   name: string;
   district?: string;
-  business_circle?: string;
+  businessCircle?: string;
 }
 
 /**
