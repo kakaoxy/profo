@@ -7,6 +7,7 @@ import {
   type Attachment,
   type AttachmentCategory,
 } from "./attachment-types";
+import type { UploadResponse } from "@/components/common/upload";
 
 export interface UploadProgress {
   filename: string;
@@ -71,12 +72,19 @@ export async function getValidToken(): Promise<string | null> {
 /**
  * 解析上传响应中的文件 URL
  */
-export function parseFileUrl(result: Record<string, unknown>): string | null {
+export function parseFileUrl(result: UploadResponse | Record<string, unknown>): string | null {
+  // 处理 UploadResponse 类型
+  if ("url" in result && typeof result.url === "string") {
+    return getFileUrl(result.url);
+  }
+
+  // 处理 Record<string, unknown> 类型（向后兼容）
+  const recordResult = result as Record<string, unknown>;
   const relativeUrl =
-    (result.data as Record<string, string>)?.url ||
-    (result.url as string) ||
-    (result.file_url as string) ||
-    (result.path as string);
+    (recordResult.data as Record<string, string>)?.url ||
+    (recordResult.url as string) ||
+    (recordResult.file_url as string) ||
+    (recordResult.path as string);
 
   return getFileUrl(relativeUrl);
 }
@@ -86,7 +94,7 @@ export function parseFileUrl(result: Record<string, unknown>): string | null {
  */
 export function createAttachment(
   file: File,
-  result: Record<string, unknown>,
+  result: UploadResponse | Record<string, unknown>,
   category: AttachmentCategory
 ): Attachment | null {
   const fileType = getFileType(file.name);
