@@ -522,6 +522,56 @@ engine = create_engine(
 | Python | >= 3.10 | 后端运行环境 |
 | SQLite | - | 默认数据库 |
 
+### 一键初始化（推荐）
+
+我们提供了跨平台的一键初始化脚本，自动完成环境配置、依赖安装和数据库初始化：
+
+**Windows:**
+```powershell
+# 使用 PowerShell 或 CMD 执行
+.\init.bat
+```
+
+**macOS/Linux:**
+```bash
+# 添加执行权限并运行
+chmod +x init.sh
+./init.sh
+```
+
+**初始化脚本将自动完成以下步骤：**
+
+1. ✅ 检查 Python 版本 (>= 3.10)
+2. ✅ 安装/检查 uv 包管理器
+3. ✅ 安装/检查 pnpm 包管理器
+4. ✅ 创建后端 `.env` 配置文件（自动生成 JWT 密钥）
+5. ✅ 创建前端 `.env.local` 配置文件
+6. ✅ 安装后端 Python 依赖
+7. ✅ 安装前端 Node.js 依赖
+8. ✅ 初始化数据库表结构
+9. ✅ 创建默认管理员账号
+
+**初始化完成后：**
+
+```bash
+# 1. 启动后端服务
+cd backend && uv run uvicorn main:app --reload
+
+# 2. 启动前端服务（新终端）
+cd frontend && pnpm dev
+```
+
+**默认管理员账号：**
+- 用户名: `admin`
+- 密码: `admin123`
+- 角色: 管理员
+
+---
+
+### 手动安装步骤
+
+如果一键初始化不适合你的环境，可以按以下步骤手动安装：
+
 ### 前端启动步骤
 
 ```bash
@@ -1757,6 +1807,8 @@ const HeavyComponent = dynamic(
 
 ```
 ProFo/
+├── init.sh                      # Linux/macOS 一键初始化脚本
+├── init.bat                     # Windows 一键初始化脚本
 ├── frontend/                    # 前端项目
 │   ├── src/
 │   │   ├── app/                # Next.js App Router
