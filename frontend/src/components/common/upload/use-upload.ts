@@ -47,7 +47,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
   const uploadingFiles: UploadProgress[] = files
     .filter((f) => f.status === "uploading")
-    .map((f) => ({ filename: f.file.name, progress: f.progress }));
+    .map((f) => ({ id: f.id, filename: f.file.name, progress: f.progress }));
 
   /**
    * 上传单个文件 (核心方法)
@@ -115,7 +115,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 f.id === fileId ? { ...f, progress: percent } : f
               )
             );
-            onProgress?.({ filename: processedFile.name, progress: percent });
+            onProgress?.({ id: fileId, filename: processedFile.name, progress: percent });
           }
         };
 

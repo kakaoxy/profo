@@ -79,9 +79,9 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
       }
 
       // 动态导入避免循环依赖
-      const { API_BASE_URL } = await import("./config");
+      const { apiPaths, getApiUrl } = await import("./config");
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+      const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),

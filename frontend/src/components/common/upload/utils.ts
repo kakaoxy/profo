@@ -5,9 +5,8 @@
  */
 
 import { toast } from "sonner";
+import { apiPaths, getApiUrl, getFileUrl } from "@/lib/config";
 import type { UploadResponse } from "./types";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
  * 尝试刷新 access token
@@ -63,8 +62,7 @@ export function isTokenExpired(token: string): boolean {
  * 获取带完整路径的上传 URL
  */
 export function getUploadUrl(): string {
-  const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
-  return `${base}/api/v1/files/upload`;
+  return getApiUrl(apiPaths.files.upload);
 }
 
 /**
@@ -140,9 +138,7 @@ export function parseUploadResponse(response: any): UploadResponse | null {
   if (!url) return null;
 
   // 确保 URL 是完整的
-  // 处理相对路径：去掉 /api/v1 后缀后拼接
-  const base = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
-  const fullUrl = url.startsWith("/") ? `${base}${url}` : url;
+  const fullUrl = getFileUrl(url);
 
   return {
     url: fullUrl,

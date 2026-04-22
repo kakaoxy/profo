@@ -2,15 +2,38 @@
  * API 配置 - 集中管理 API 基础 URL
  * 
  * 使用方式：
- * import { API_BASE_URL, getApiUrl } from '@/lib/config';
+ * import { apiPaths, getApiUrl, apiRequest } from '@/lib/config';
+ * 
+ * Next.js 最佳实践：
+ * 1. 不要直接使用 API_BASE_URL 拼接 URL
+ * 2. 使用 apiPaths 获取预定义的端点
+ * 3. 使用 getApiUrl(path) 构建完整 URL
+ * 4. Server Actions 中使用 apiRequest() 进行 API 调用
  */
 
 /**
- * API 基础 URL
+ * API 基础 URL (内部使用)
  * - 生产环境默认: https://fangmengchina.com
  * - 开发环境: 通过 .env.local 设置 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
  */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://fangmengchina.com";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://fangmengchina.com";
+
+/**
+ * 预定义的 API 端点路径
+ * 使用这些常量而不是手动拼接 URL
+ */
+export const apiPaths = {
+  auth: {
+    token: "/api/v1/auth/token",
+    refresh: "/api/v1/auth/refresh",
+  },
+  users: {
+    changePassword: "/api/v1/users/change-password",
+  },
+  files: {
+    upload: "/api/v1/files/upload",
+  },
+} as const;
 
 /**
  * 构建完整的 API URL

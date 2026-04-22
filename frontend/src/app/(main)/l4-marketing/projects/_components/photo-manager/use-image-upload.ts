@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { API_BASE_URL } from "@/lib/config";
+import { apiPaths, getApiUrl } from "@/lib/config";
 import { createL4MarketingMediaAction } from "../../actions";
 import type { L4MarketingMedia, PhotoCategory } from "../../types";
 
@@ -101,7 +101,7 @@ export function useImageUpload({
         formData.append("file", file);
 
         const xhr = new XMLHttpRequest();
-        const uploadUrl = `${API_BASE_URL}/api/v1/files/upload`;
+        const uploadUrl = getApiUrl(apiPaths.files.upload);
 
         xhr.open("POST", uploadUrl);
         xhr.withCredentials = true;

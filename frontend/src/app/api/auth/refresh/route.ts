@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { API_BASE_URL } from "@/lib/config";
+import { apiPaths, getApiUrl } from "@/lib/config";
 
 interface RefreshResponse {
   access_token: string;
@@ -32,7 +32,7 @@ export async function POST() {
   try {
     console.log("🔁 [API Route] 向后端请求刷新 token...");
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+    const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),

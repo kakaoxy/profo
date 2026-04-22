@@ -1,6 +1,6 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./api-types";
-import { API_BASE_URL } from "./config";
+import { getApiUrl } from "./config";
 
 // 防止并发刷新
 let isRefreshing = false;
@@ -101,7 +101,7 @@ const authMiddleware: Middleware = {
         const requestUrl = new URL(request.url);
         
         // 提取路径部分（去掉 baseUrl）
-        const baseUrl = new URL(API_BASE_URL);
+        const baseUrl = new URL(getApiUrl(""));
         let path = requestUrl.pathname;
         if (path.startsWith(baseUrl.pathname)) {
           path = path.slice(baseUrl.pathname.length);
@@ -148,7 +148,7 @@ const authMiddleware: Middleware = {
  * [安全修复] 配置 credentials: 'include' 确保自动携带 httpOnly Cookie
  */
 export const client = createClient<paths>({
-  baseUrl: API_BASE_URL,
+  baseUrl: getApiUrl(""),
 });
 
 // 注册中间件：credentials 中间件必须先注册，确保所有请求携带 cookie

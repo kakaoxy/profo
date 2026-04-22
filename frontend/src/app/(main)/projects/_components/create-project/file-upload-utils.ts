@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { API_BASE_URL } from "@/lib/config";
+import { getFileUrl } from "@/lib/config";
 import {
   getFileType,
   type Attachment,
@@ -78,10 +78,7 @@ export function parseFileUrl(result: Record<string, unknown>): string | null {
     (result.file_url as string) ||
     (result.path as string);
 
-  if (relativeUrl?.startsWith("/")) {
-    return `${API_BASE_URL}${relativeUrl}`;
-  }
-  return relativeUrl || null;
+  return getFileUrl(relativeUrl);
 }
 
 /**

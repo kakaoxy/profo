@@ -1,5 +1,5 @@
 import { components } from "@/lib/api-types";
-import { API_BASE_URL } from "@/lib/config";
+import { getApiUrl } from "@/lib/config";
 
 export type UploadResult = components["schemas"]["UploadResult"];
 
@@ -14,7 +14,7 @@ export const uploadCSV = (
 
     const xhr = new XMLHttpRequest();
     // 使用集中的 API 配置
-    xhr.open("POST", `${API_BASE_URL}/api/v1/upload/csv`);
+    xhr.open("POST", getApiUrl("/api/v1/upload/csv"));
 
     // 2. 关键修复：允许发送 Cookie (解决 401 的核心)
     // 即使我们手动加了 Header，加上这个也能确保浏览器的 HttpOnly Cookie 被后端接收作为双重保障
