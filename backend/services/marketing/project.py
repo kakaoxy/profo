@@ -121,25 +121,33 @@ class MarketingProjectService:
 
         total: int = query.count()
 
-        published: int = query.filter(
-            L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value
-        ).count()
+        # 仅在未指定发布状态筛选时，分别统计各发布状态数量
+        if publish_status is None:
+            published: int = query.filter(
+                L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value
+            ).count()
+            draft: int = query.filter(
+                L4MarketingProject.publish_status == PublishStatus.DRAFT.value
+            ).count()
+        else:
+            published = total if publish_status == PublishStatus.PUBLISHED else 0
+            draft = total if publish_status == PublishStatus.DRAFT else 0
 
-        draft: int = query.filter(
-            L4MarketingProject.publish_status == PublishStatus.DRAFT.value
-        ).count()
-
-        for_sale: int = query.filter(
-            L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value
-        ).count()
-
-        sold: int = query.filter(
-            L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value
-        ).count()
-
-        in_progress: int = query.filter(
-            L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value
-        ).count()
+        # 仅在未指定项目状态筛选时，分别统计各项目状态数量
+        if project_status is None:
+            for_sale: int = query.filter(
+                L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value
+            ).count()
+            sold: int = query.filter(
+                L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value
+            ).count()
+            in_progress: int = query.filter(
+                L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value
+            ).count()
+        else:
+            for_sale = total if project_status == MarketingProjectStatus.FOR_SALE else 0
+            sold = total if project_status == MarketingProjectStatus.SOLD else 0
+            in_progress = total if project_status == MarketingProjectStatus.IN_PROGRESS else 0
 
         return L4MarketingProjectSummary(
             total=total,
