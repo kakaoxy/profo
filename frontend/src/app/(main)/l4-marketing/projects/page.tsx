@@ -2,11 +2,7 @@ import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
 import { MarketingStats } from "./_components/marketing-stats";
 import { MarketingView } from "./_components/marketing-view";
-import type { L4MarketingProject } from "./types";
 import type { operations } from "@/lib/api-types";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const dynamic = "force-dynamic";
@@ -161,17 +157,18 @@ async function ProjectsDataFetcher({
     return <ErrorState message={message} statusCode={statusCode} />;
   }
 
-  const items: L4MarketingProject[] = data.items || [];
+  const items = data.items || [];
   const total = data.total || 0;
 
-  // 计算统计数据
+  // 使用服务端返回的摘要统计 - 基于筛选条件的全量统计，不受分页影响
+  const summary = data.summary;
   const stats = {
-    total: total,
-    published: items.filter((p) => p.publish_status === "发布").length,
-    draft: items.filter((p) => p.publish_status === "草稿").length,
-    for_sale: items.filter((p) => p.project_status === "在售").length,
-    sold: items.filter((p) => p.project_status === "已售").length,
-    in_progress: items.filter((p) => p.project_status === "在途").length,
+    total: summary?.total ?? total,
+    published: summary?.published ?? 0,
+    draft: summary?.draft ?? 0,
+    for_sale: summary?.for_sale ?? 0,
+    sold: summary?.sold ?? 0,
+    in_progress: summary?.in_progress ?? 0,
   };
 
   return (

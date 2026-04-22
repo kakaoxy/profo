@@ -22,6 +22,7 @@ from .query import (
     L4RefreshResponse,
     L4MarketingProjectListResponse,
     L4MarketingMediaListResponse,
+    L4MarketingProjectSummary,
 )
 from .import_schemas import (
     L3ProjectBriefResponse,
@@ -54,6 +55,7 @@ __all__ = [
     "L4RefreshResponse",
     "L4MarketingProjectListResponse",
     "L4MarketingMediaListResponse",
+    "L4MarketingProjectSummary",
     # Import Schemas
     "L3ProjectBriefResponse",
     "L3ProjectListResponse",

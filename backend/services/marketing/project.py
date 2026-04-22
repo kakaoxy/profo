@@ -3,11 +3,11 @@ L4 市场营销层项目服务
 职责: 营销项目管理
 """
 from typing import List, Tuple, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from sqlalchemy import and_, desc
 
 from models import L4MarketingProject, L4MarketingMedia
-from schemas.l4_marketing import L4MarketingProjectCreate, L4MarketingProjectUpdate
+from schemas.l4_marketing import L4MarketingProjectCreate, L4MarketingProjectUpdate, L4MarketingProjectSummary
 
 
 class MarketingProjectService:
@@ -15,6 +15,43 @@ class MarketingProjectService:
 
     def __init__(self, db: Session) -> None:
         self.db: Session = db
+
+    def _build_base_query(
+        self,
+        publish_status: Optional[str] = None,
+        project_status: Optional[str] = None,
+        consultant_id: Optional[str] = None,
+        community_id: Optional[str] = None,
+    ) -> Query:
+        """
+        构建基础查询 - 抽离复用的筛选逻辑
+
+        Args:
+            publish_status: 发布状态筛选
+            project_status: 项目状态筛选
+            consultant_id: 顾问ID筛选
+            community_id: 小区ID筛选
+
+        Returns:
+            基础查询对象
+        """
+        query = self.db.query(L4MarketingProject).filter(
+            L4MarketingProject.is_deleted == False
+        )
+
+        if publish_status is not None:
+            query = query.filter(L4MarketingProject.publish_status == publish_status)
+
+        if project_status is not None:
+            query = query.filter(L4MarketingProject.project_status == project_status)
+
+        if consultant_id is not None:
+            query = query.filter(L4MarketingProject.consultant_id == consultant_id)
+
+        if community_id is not None:
+            query = query.filter(L4MarketingProject.community_id == community_id)
+
+        return query
 
     def get_projects(
         self,
@@ -39,21 +76,12 @@ class MarketingProjectService:
         Returns:
             (项目列表, 总记录数)
         """
-        query = self.db.query(L4MarketingProject).filter(
-            L4MarketingProject.is_deleted == False
+        query = self._build_base_query(
+            publish_status=publish_status,
+            project_status=project_status,
+            consultant_id=consultant_id,
+            community_id=community_id,
         )
-
-        if publish_status is not None:
-            query = query.filter(L4MarketingProject.publish_status == publish_status)
-
-        if project_status is not None:
-            query = query.filter(L4MarketingProject.project_status == project_status)
-
-        if consultant_id is not None:
-            query = query.filter(L4MarketingProject.consultant_id == consultant_id)
-
-        if community_id is not None:
-            query = query.filter(L4MarketingProject.community_id == community_id)
 
         total: int = query.count()
 
@@ -63,6 +91,63 @@ class MarketingProjectService:
         ).offset(skip).limit(limit).all()
 
         return items, total
+
+    def get_projects_summary(
+        self,
+        publish_status: Optional[str] = None,
+        project_status: Optional[str] = None,
+        consultant_id: Optional[str] = None,
+        community_id: Optional[str] = None,
+    ) -> L4MarketingProjectSummary:
+        """
+        获取营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响
+
+        Args:
+            publish_status: 发布状态筛选
+            project_status: 项目状态筛选
+            consultant_id: 顾问ID筛选
+            community_id: 小区ID筛选
+
+        Returns:
+            摘要统计对象
+        """
+        query = self._build_base_query(
+            publish_status=publish_status,
+            project_status=project_status,
+            consultant_id=consultant_id,
+            community_id=community_id,
+        )
+
+        total: int = query.count()
+
+        published: int = query.filter(
+            L4MarketingProject.publish_status == "发布"
+        ).count()
+
+        draft: int = query.filter(
+            L4MarketingProject.publish_status == "草稿"
+        ).count()
+
+        for_sale: int = query.filter(
+            L4MarketingProject.project_status == "在售"
+        ).count()
+
+        sold: int = query.filter(
+            L4MarketingProject.project_status == "已售"
+        ).count()
+
+        in_progress: int = query.filter(
+            L4MarketingProject.project_status == "在途"
+        ).count()
+
+        return L4MarketingProjectSummary(
+            total=total,
+            published=published,
+            draft=draft,
+            for_sale=for_sale,
+            sold=sold,
+            in_progress=in_progress,
+        )
 
     def get_project(self, project_id: int) -> Optional[L4MarketingProject]:
         """
