@@ -20,7 +20,6 @@ export interface Community {
   name: string;
   district?: string;
   businessCircle?: string;
-  business_circle?: string;
 }
 
 /**
@@ -258,8 +257,7 @@ export function CommunitySelect({
                     <span className={s.resultName}>{community.name}</span>
                     <span className={s.resultMeta}>
                       {community.district}{" "}
-                      {(community.businessCircle || community.business_circle) &&
-                        `· ${community.businessCircle || community.business_circle}`}
+                      {community.businessCircle && `· ${community.businessCircle}`}
                     </span>
                   </div>
                   {value === community.name && <Check className="h-4 w-4" />}
