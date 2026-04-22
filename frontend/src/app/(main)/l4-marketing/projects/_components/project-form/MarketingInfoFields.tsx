@@ -79,12 +79,13 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
               <FormItem className="space-y-0">
                 <FormControl>
                   <CommunitySelect
-                    value={field.value || ""}
-                    onChange={(name, id) => {
-                      field.onChange(name);
-                      if (id) setValue("community_id", id);
-                    }}
-                  />
+                  value={field.value || ""}
+                  variant="marketing"
+                  onChange={(community) => {
+                    field.onChange(community.name);
+                    if (community.id) setValue("community_id", community.id);
+                  }}
+                />
                 </FormControl>
                 <FormMessage />
               </FormItem>

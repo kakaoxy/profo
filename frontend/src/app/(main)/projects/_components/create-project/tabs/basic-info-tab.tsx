@@ -3,7 +3,7 @@
 import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS } from "../schema";
 import { SimpleInputField } from "../form-components";
-import { CommunitySelect } from "../community-select";
+import { CommunitySelect } from "@/components/common/community-select";
 import {
   FormControl,
   FormField,
@@ -71,7 +71,7 @@ export function BasicInfoTab({ form }: TabProps) {
         render={({ field }) => (
           <CommunitySelect
             value={field.value}
-            onChange={(value, _district, _businessArea) => field.onChange(value)}
+            onChange={(community) => field.onChange(community.name)}
           />
         )}
       />
