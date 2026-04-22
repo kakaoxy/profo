@@ -1,47 +1,17 @@
 "use client";
 
+/**
+ * 装修照片上传 Hook
+ * 流程特殊（上传→入库→刷新），保留原有结构，仅复用通用工具函数
+ */
+
 import { useState } from "react";
 import { toast } from "sonner";
+import { tryRefreshToken, isTokenExpired } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
 import { UploadingPhoto } from "./photo-grid";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-// 尝试刷新 token
-// 注意：调用 Next.js API 路由 /api/auth/refresh，它会从 httpOnly cookie 中读取 refresh_token
-async function tryRefreshToken(): Promise<string | null> {
-  try {
-    // 调用 Next.js API 路由（不是直接调用后端）
-    // 因为 refresh_token 存储在 httpOnly cookie 中，前端无法直接读取
-    const response = await fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-
-    // 返回新的 access_token
-    return data.access_token || null;
-  } catch {
-    return null;
-  }
-}
-
-// 检查 token 是否过期
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const exp = payload.exp;
-    const now = Math.floor(Date.now() / 1000);
-    return exp < now;
-  } catch {
-    return true;
-  }
-}
 
 interface UseRenovationUploadProps {
   projectId: string;
