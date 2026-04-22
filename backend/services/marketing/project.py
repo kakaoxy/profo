@@ -19,8 +19,8 @@ class MarketingProjectService:
 
     def _build_base_query(
         self,
-        publish_status: Optional[str] = None,
-        project_status: Optional[str] = None,
+        publish_status: Optional[PublishStatus] = None,
+        project_status: Optional[MarketingProjectStatus] = None,
         consultant_id: Optional[str] = None,
         community_id: Optional[str] = None,
     ) -> Query:
@@ -41,10 +41,10 @@ class MarketingProjectService:
         )
 
         if publish_status is not None:
-            query = query.filter(L4MarketingProject.publish_status == publish_status)
+            query = query.filter(L4MarketingProject.publish_status == publish_status.value)
 
         if project_status is not None:
-            query = query.filter(L4MarketingProject.project_status == project_status)
+            query = query.filter(L4MarketingProject.project_status == project_status.value)
 
         if consultant_id is not None:
             query = query.filter(L4MarketingProject.consultant_id == consultant_id)
@@ -58,8 +58,8 @@ class MarketingProjectService:
         self,
         skip: int = 0,
         limit: int = 20,
-        publish_status: Optional[str] = None,
-        project_status: Optional[str] = None,
+        publish_status: Optional[PublishStatus] = None,
+        project_status: Optional[MarketingProjectStatus] = None,
         consultant_id: Optional[str] = None,
         community_id: Optional[str] = None,
     ) -> Tuple[List[L4MarketingProject], int]:
@@ -95,8 +95,8 @@ class MarketingProjectService:
 
     def get_projects_summary(
         self,
-        publish_status: Optional[str] = None,
-        project_status: Optional[str] = None,
+        publish_status: Optional[PublishStatus] = None,
+        project_status: Optional[MarketingProjectStatus] = None,
         consultant_id: Optional[str] = None,
         community_id: Optional[str] = None,
     ) -> L4MarketingProjectSummary:
