@@ -3,7 +3,7 @@ import { Lead, LeadStatus } from '../types';
 import { Button } from '@/components/ui/button';
 import { X, Ruler, MapPin } from 'lucide-react';
 import { CommunitySelect } from '@/components/common/community-select';
-import { LayoutInputs } from './add-lead-parts/layout-inputs';
+import { LayoutInputs } from '@/components/common/layout-inputs';
 import { ImageUpload } from './add-lead-parts/image-upload';
 
 interface Props {

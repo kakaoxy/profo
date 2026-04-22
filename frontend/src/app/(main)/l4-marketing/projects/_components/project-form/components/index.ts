@@ -11,8 +11,8 @@ export * from "./types";
 // 小区选择组件（从通用组件库导出）
 export { CommunitySelect } from "@/components/common/community-select";
 
-// 户型输入组件
-export { LayoutInputs } from "./LayoutInputs";
+// 户型输入组件（从通用组件库导出）
+export { LayoutInputs } from "@/components/common/layout-inputs";
 
 // 楼层输入组件
 export { FloorInput } from "./FloorInput";
