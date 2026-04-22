@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Lead, LeadStatus } from '../types';
 import { Button } from '@/components/ui/button';
 import { X, Ruler, MapPin } from 'lucide-react';
-import { CommunitySelect } from './add-lead-parts/community-select';
+import { CommunitySelect } from '@/components/common/community-select';
 import { LayoutInputs } from './add-lead-parts/layout-inputs';
 import { ImageUpload } from './add-lead-parts/image-upload';
 
@@ -139,14 +139,18 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
           <div className="space-y-6">
-            <CommunitySelect 
-                value={formData.communityName} 
-                onChange={(name, dist, biz) => setFormData(prev => ({
-                    ...prev, 
-                    communityName: name,
-                    district: dist || prev.district,
-                    businessArea: biz || prev.businessArea
-                }))} 
+            <CommunitySelect
+                value={formData.communityName}
+                label="房源名称"
+                onChange={(community) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    communityName: community.name,
+                    district: community.district || prev.district,
+                    businessArea:
+                      community.businessCircle || prev.businessArea,
+                  }))
+                }
             />
 
             <div className="grid grid-cols-2 gap-4">

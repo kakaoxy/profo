@@ -8,8 +8,8 @@
 // 类型定义
 export * from "./types";
 
-// 小区选择组件
-export { CommunitySelect } from "./CommunitySelect";
+// 小区选择组件（从通用组件库导出）
+export { CommunitySelect } from "@/components/common/community-select";
 
 // 户型输入组件
 export { LayoutInputs } from "./LayoutInputs";
