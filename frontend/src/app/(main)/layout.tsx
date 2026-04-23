@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -23,9 +22,6 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  // 默认展开，只有明确设置为 false 时才折叠
-  const defaultOpen = cookieStore.get("sidebar:state")?.value !== "false";
   const user = await getUser();
 
   if (!user) {
@@ -33,7 +29,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider defaultOpen={true}>
       {/* 1. 侧边栏 */}
       <AppSidebar user={user} />
       
