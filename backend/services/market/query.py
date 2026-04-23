@@ -129,17 +129,20 @@ class PropertyQueryService:
         self,
         db: Session,
         params: PropertyExportParams
-    ) -> List[PropertyResponse]:
+    ) -> List[tuple[PropertyCurrent, Community]]:
         """
         查询房源数据用于导出（无分页限制）
+        返回原始对象以便导出函数可以访问所有字段
 
         Args:
             db: 数据库会话
             params: PropertyExportParams 导出参数对象
 
         Returns:
-            List[PropertyResponse]: 房源数据列表
+            List[tuple[PropertyCurrent, Community]]: 房源和社区原始对象列表
         """
+        from typing import Tuple
+
         # 构建基础查询
         query = db.query(PropertyCurrent, Community).join(
             Community,
@@ -172,19 +175,10 @@ class PropertyQueryService:
         query = apply_sorting(query, params.sort_by, params.sort_order)
 
         # 执行查询（无分页限制）
-        results = query.all()
+        results: List[tuple[PropertyCurrent, Community]] = query.all()
 
-        # 转换为响应模型
-        items = []
-        for property_obj, community in results:
-            item = PropertyResponse.from_orm_with_calculations(
-                property_obj, community,
-                property_obj.property_media  # 传递预加载的图片
-            )
-            items.append(item)
-
-        logger.info(f"导出查询完成: 总数={len(items)}")
-        return items
+        logger.info(f"导出查询完成: 总数={len(results)}")
+        return results
 
 
 # 依赖注入工厂函数
