@@ -217,16 +217,18 @@ class CSVBatchImporter:
 
                 try:
                     db.commit()
+                    logger.info(f"批次 {batch_start}-{batch_end} 提交成功")
                 except Exception as e:
                     db.rollback()
-                    logger.error(f"数据库提交失败: {e}")
+                    logger.error(f"数据库提交失败 (批次 {batch_start}-{batch_end}): {e}", exc_info=True)
                     # 将整批数据标记为失败（整个批次实际都未成功提交）
                     # 先计算批次中之前被计为成功的记录数
                     batch_success_count = sum(
                         1 for global_index, _, _ in validated_batch
                         if not any(r['row_number'] == global_index for r in failed_records)
                     )
-                    success -= batch_success_count  # 回退所有成功计数
+                    # 安全地回退成功计数
+                    success = max(0, success - batch_success_count)
                     for global_index, validated_data, original_row in validated_batch:
                         if not any(r['row_number'] == global_index for r in failed_records):
                             failed += 1
@@ -236,9 +238,19 @@ class CSVBatchImporter:
                                 'data': original_row,
                                 'error': error_msg
                             })
-                            self._save_failed_record(original_row, error_msg, db)
+                            try:
+                                self._save_failed_record(original_row, error_msg, db)
+                            except Exception as save_err:
+                                logger.warning(f"保存失败记录时出错: {save_err}")
 
-            failed_file_url = self._generate_failed_csv(failed_records, original_headers) if failed_records else None
+            # 生成失败记录文件
+            failed_file_url = None
+            if failed_records:
+                try:
+                    failed_file_url = self._generate_failed_csv(failed_records, original_headers)
+                    logger.info(f"失败记录文件已生成: {failed_file_url}")
+                except Exception as gen_err:
+                    logger.error(f"生成失败记录文件失败: {gen_err}", exc_info=True)
 
             logger.info(f"CSV 处理完成: 总数={total}, 成功={success}, 失败={failed}")
             return UploadResult(
@@ -258,9 +270,11 @@ class CSVBatchImporter:
             if failed_records:
                 try:
                     failed_file_url = self._generate_failed_csv(failed_records, original_headers)
+                    logger.info(f"全局异常后，失败记录文件已生成: {failed_file_url}")
                 except Exception as gen_err:
-                    logger.error(f"生成失败记录文件失败: {gen_err}")
+                    logger.error(f"全局异常后，生成失败记录文件失败: {gen_err}")
 
+            # 确保返回有效的 UploadResult，而不是抛出异常
             return UploadResult(
                 total=total,
                 success=success,
