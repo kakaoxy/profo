@@ -141,8 +141,6 @@ class PropertyQueryService:
         Returns:
             List[tuple[PropertyCurrent, Community]]: 房源和社区原始对象列表
         """
-        from typing import Tuple
-
         # 构建基础查询
         query = db.query(PropertyCurrent, Community).join(
             Community,
