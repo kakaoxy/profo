@@ -297,6 +297,8 @@ def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> 
     writer.writerow(headers)
 
     for prop, community in results:
+        # 处理朝向字段：如果为空则输出"未知"，避免导入验证失败
+        orientation = prop.orientation if prop.orientation and str(prop.orientation).strip() else "未知"
         row = [
             prop.data_source,
             prop.source_property_id,
@@ -305,7 +307,7 @@ def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> 
             prop.rooms,
             prop.halls or 0,
             prop.baths or 0,
-            prop.orientation,
+            orientation,
             prop.floor_original,
             prop.build_area,
             prop.inner_area if prop.inner_area else "",
