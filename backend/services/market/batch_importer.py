@@ -220,6 +220,18 @@ class CSVBatchImporter:
                 except Exception as e:
                     db.rollback()
                     logger.error(f"数据库提交失败: {e}")
+                    # 将整批数据标记为失败
+                    for global_index, validated_data, original_row in validated_batch:
+                        if not any(r['row_number'] == global_index for r in failed_records):
+                            failed += 1
+                            success -= 1  # 回退成功计数
+                            error_msg = f"数据库提交失败: {str(e)}"
+                            failed_records.append({
+                                'row_number': global_index,
+                                'data': original_row,
+                                'error': error_msg
+                            })
+                            self._save_failed_record(original_row, error_msg, db)
 
             failed_file_url = self._generate_failed_csv(failed_records, original_headers) if failed_records else None
 
@@ -231,11 +243,24 @@ class CSVBatchImporter:
                 failed_file_url=failed_file_url
             )
 
+        except FileProcessingException:
+            # 重新抛出文件处理异常（如空文件、格式错误等）
+            raise
         except Exception as e:
             logger.error(f"CSV 文件处理失败: {e}", exc_info=True)
-            raise FileProcessingException(
-                message=f"CSV 文件处理失败: {str(e)}",
-                details={"filename": getattr(file, 'filename', 'unknown')}
+            # 即使发生全局异常，也尝试生成失败文件并返回结果
+            failed_file_url = None
+            if failed_records:
+                try:
+                    failed_file_url = self._generate_failed_csv(failed_records, original_headers)
+                except Exception as gen_err:
+                    logger.error(f"生成失败记录文件失败: {gen_err}")
+
+            return UploadResult(
+                total=total,
+                success=success,
+                failed=failed,
+                failed_file_url=failed_file_url
             )
 
     def _format_validation_error(self, error: ValidationError) -> str:
