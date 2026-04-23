@@ -68,6 +68,14 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     total_expense: toNumber(item.total_expense),
     net_cash_flow: toNumber(item.net_cash_flow),
     roi: item.roi ?? undefined,
+    project_manager: item.project_manager
+      ? {
+          id: item.project_manager.id,
+          nickname: item.project_manager.nickname ?? undefined,
+          username: item.project_manager.username ?? undefined,
+          avatar: item.project_manager.avatar ?? undefined,
+        }
+      : undefined,
   };
 }
 
