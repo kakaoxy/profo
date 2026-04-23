@@ -1,6 +1,13 @@
 /**
  * 项目选择器 API 客户端
  * 使用 Server Actions 进行 API 调用，支持自动认证
+ *
+ * 空值检查说明：
+ * 使用 `value != null ? Type(value) : undefined` 而非 `value ? Type(value) : undefined`，
+ * 原因是：
+ * 1. 空字符串 `""` 和数字 `0` 是合法值，不应被转换为 undefined
+ * 2. 只有 `null` 和 `undefined` 才应被视为"无值"状态
+ * 3. `!= null` 同时检查 null 和 undefined（== null 也同理）
  */
 import {
   getAvailableL3ProjectsAction,
@@ -21,6 +28,22 @@ import type {
 } from "./types";
 
 /**
+ * 将值转换为可选字符串
+ * 仅在值为 null/undefined 时返回 undefined，保留空字符串等合法值
+ */
+function toOptionalString(value: unknown): string | undefined {
+  return value != null ? String(value) : undefined;
+}
+
+/**
+ * 将值转换为可选数字
+ * 仅在值为 null/undefined 时返回 undefined，保留 0 等合法值
+ */
+function toOptionalNumber(value: unknown): number | undefined {
+  return value != null ? Number(value) : undefined;
+}
+
+/**
  * 转换并验证原始项目数据为L3ProjectBrief格式
  * 处理后端返回的类型不匹配问题（如area字段为字符串而非数字）
  * 使用Zod Schema进行运行时验证，确保数据完整性
@@ -32,9 +55,9 @@ function transformProjectData(rawData: Record<string, unknown>): L3ProjectBrief 
     name: String(rawData.name || ""),
     community_name: String(rawData.community_name || ""),
     address: String(rawData.address || ""),
-    area: rawData.area != null ? Number(rawData.area) : undefined,
-    layout: rawData.layout != null ? String(rawData.layout) : undefined,
-    orientation: rawData.orientation != null ? String(rawData.orientation) : undefined,
+    area: toOptionalNumber(rawData.area),
+    layout: toOptionalString(rawData.layout),
+    orientation: toOptionalString(rawData.orientation),
     status: String(rawData.status || ""),
   };
 
@@ -105,31 +128,25 @@ export async function fetchImportData(
 
   const transformedData = {
     project_id: String(rawData.project_id || ""),
-    community_id: rawData.community_id != null ? String(rawData.community_id) : undefined,
+    community_id: toOptionalString(rawData.community_id),
     community_name: String(rawData.community_name || ""),
-    layout: rawData.layout != null ? String(rawData.layout) : undefined,
-    orientation: rawData.orientation != null ? String(rawData.orientation) : undefined,
-    floor_info: rawData.floor_info != null ? String(rawData.floor_info) : undefined,
-    area: rawData.area != null ? Number(rawData.area) : undefined,
-    total_price: rawData.total_price != null ? Number(rawData.total_price) : undefined,
-    unit_price: rawData.unit_price != null ? Number(rawData.unit_price) : undefined,
+    layout: toOptionalString(rawData.layout),
+    orientation: toOptionalString(rawData.orientation),
+    floor_info: toOptionalString(rawData.floor_info),
+    area: toOptionalNumber(rawData.area),
+    total_price: toOptionalNumber(rawData.total_price),
+    unit_price: toOptionalNumber(rawData.unit_price),
     title: String(rawData.title || ""),
-    tags: rawData.tags != null ? String(rawData.tags) : undefined,
-    decoration_style: rawData.decoration_style != null
-      ? String(rawData.decoration_style)
-      : undefined,
-    status: rawData.status != null ? String(rawData.status) : undefined,
+    tags: toOptionalString(rawData.tags),
+    decoration_style: toOptionalString(rawData.decoration_style),
+    status: toOptionalString(rawData.status),
     available_media: rawMedia.map((media) => ({
       id: String(media.id || ""),
       file_url: String(media.file_url || ""),
-      thumbnail_url: media.thumbnail_url != null
-        ? String(media.thumbnail_url)
-        : undefined,
+      thumbnail_url: toOptionalString(media.thumbnail_url),
       photo_category: String(media.photo_category || "renovation"),
-      renovation_stage: media.renovation_stage != null
-        ? String(media.renovation_stage)
-        : undefined,
-      description: media.description != null ? String(media.description) : undefined,
+      renovation_stage: toOptionalString(media.renovation_stage),
+      description: toOptionalString(media.description),
       sort_order: Number(media.sort_order || 0),
       media_type: detectMediaType(String(media.file_url || "")),
     })),
