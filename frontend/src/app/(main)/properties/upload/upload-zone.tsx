@@ -1,66 +1,74 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Download, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  UploadCloud,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Download,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress"; // 现在这个应该能找到了
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-// 1. 修改引入：不再使用 useToast，而是直接引入 toast 函数
-import { toast } from "sonner"; 
+import { toast } from "sonner";
 import { downloadCsvTemplate } from "@/lib/file-utils";
 import { uploadCSV, type UploadResult } from "@/lib/api-upload";
 import { cn } from "@/lib/utils";
 
-interface UploadZoneProps {
-  accessToken: string;
-}
+const getCookieValue = (name: string): string | undefined => {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match?.[2];
+};
 
-export function UploadZone({ accessToken }: UploadZoneProps) {
-  // 2. 删除 const { toast } = useToast(); 这一行，不需要了
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+export function UploadZone() {
+  const [accessToken, setAccessToken] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
 
-  // --- 业务逻辑 ---
+  useEffect(() => {
+    const token = getCookieValue("access_token") || "";
+    setAccessToken(token);
+  }, []);
 
-  const startUpload = async (file: File) => {
+  const startUpload = useCallback(async (file: File, token: string) => {
     setIsUploading(true);
     setProgress(0);
     setResult(null);
 
     try {
-      const res = await uploadCSV(file, accessToken, (p) => setProgress(p));
+      const res = await uploadCSV(file, token, (p) => setProgress(p));
       setResult(res);
-      
+
       if (res.failed === 0) {
-        // 3. Sonner 写法：toast.success(标题, { description: 描述 })
-        toast.success("上传成功", { 
-          description: `成功导入 ${res.success} 条数据` 
+        toast.success("上传成功", {
+          description: `成功导入 ${res.success} 条数据`
         });
       } else {
-        // Sonner 写法：toast.warning 或 toast(标题, ...)
-        toast.warning("上传完成但有错误", { 
-          description: `成功 ${res.success} 条，失败 ${res.failed} 条` 
+        toast.warning("上传完成但有错误", {
+          description: `成功 ${res.success} 条，失败 ${res.failed} 条`
         });
       }
     } catch (error) {
       console.error(error);
-      // Sonner 写法：toast.error
       toast.error("上传失败", {
         description: error instanceof Error ? error.message : "未知错误",
       });
-      setCurrentFile(null); 
+      setCurrentFile(null);
     } finally {
       setIsUploading(false);
     }
-  };
+  }, []);
 
-  const validateAndUpload = (file: File) => {
+  const validateAndUpload = useCallback((file: File) => {
     if (!file.name.toLowerCase().endsWith(".csv")) {
       toast.error("文件格式错误", {
         description: "请上传 .csv 格式的文件",
@@ -68,7 +76,7 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > MAX_FILE_SIZE) {
       toast.error("文件过大", {
         description: "文件大小不能超过 10MB",
       });
@@ -76,36 +84,56 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
     }
 
     setCurrentFile(file);
-    startUpload(file);
-  };
+    const token = getCookieValue("access_token") || "";
+    if (token) {
+      startUpload(file, token);
+    } else {
+      toast.error("未登录", { description: "请先登录后再上传" });
+    }
+  }, [startUpload]);
 
-  // --- 事件处理 ---
-
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (!isUploading) setIsDragging(true);
-  };
+    setIsDragging((prev) => {
+      if (!prev) return true;
+      return prev;
+    });
+  }, []);
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (isUploading) return;
 
     const files = e.dataTransfer.files;
-    if (files?.length) validateAndUpload(files[0]);
-  };
+    if (files?.length && !isUploading) {
+      validateAndUpload(files[0]);
+    }
+  }, [isUploading, validateAndUpload]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       validateAndUpload(e.target.files[0]);
     }
     e.target.value = "";
-  };
+  }, [validateAndUpload]);
+
+  const handleDownloadTemplate = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    downloadCsvTemplate();
+  }, []);
+
+  const handleClearResult = useCallback(() => {
+    setResult(null);
+  }, []);
+
+  const handleOpenFailedFile = useCallback((url: string) => {
+    window.open(url, '_blank');
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -113,8 +141,8 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
       <div
         className={cn(
           "relative border-2 border-dashed rounded-xl p-10 transition-all duration-200 ease-in-out flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[300px]",
-          isDragging 
-            ? "border-primary bg-primary/5 scale-[1.01]" 
+          isDragging
+            ? "border-primary bg-primary/5 scale-[1.01]"
             : "border-muted-foreground/25 hover:border-primary/50 hover:bg-slate-50",
           isUploading && "pointer-events-none opacity-60"
         )}
@@ -153,10 +181,7 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
                 支持批量导入房源数据，单次最大 10MB
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={(e) => {
-              e.stopPropagation(); 
-              downloadCsvTemplate();
-            }}>
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               下载数据模板
             </Button>
@@ -178,7 +203,7 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
                   <AlertCircle className="h-6 w-6 text-orange-600" />
                 </div>
               )}
-              
+
               <div className="flex-1 space-y-1">
                 <h4 className="font-semibold text-base">
                   {result.failed === 0 ? "全部导入成功" : "导入完成，存在部分失败"}
@@ -188,13 +213,13 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
                   <span className="text-green-600">成功: {result.success}</span>
                   <span className="text-red-600">失败: {result.failed}</span>
                 </div>
-                
+
                 {result.failed > 0 && result.failed_file_url && (
                   <div className="pt-2">
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={() => window.open(result.failed_file_url!, '_blank')}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleOpenFailedFile(result.failed_file_url!)}
                     >
                       <Download className="mr-2 h-4 w-4" />
                       下载失败记录 (CSV)
@@ -206,7 +231,7 @@ export function UploadZone({ accessToken }: UploadZoneProps) {
                 )}
               </div>
 
-              <Button variant="ghost" size="icon" onClick={() => setResult(null)}>
+              <Button variant="ghost" size="icon" onClick={handleClearResult}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
