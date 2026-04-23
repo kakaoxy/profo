@@ -13,11 +13,12 @@ from fastapi import UploadFile
 
 from models import PropertyImportTask, ImportTaskStatus
 from exceptions import FileProcessingException
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
-# 存储上传文件的目录
-UPLOAD_DIR = os.path.join(os.getcwd(), "temp", "uploads")
+# 存储上传文件的目录，从配置读取
+UPLOAD_DIR = os.path.join(os.getcwd(), settings.import_upload_dir)
 
 
 class ImportTaskService:
