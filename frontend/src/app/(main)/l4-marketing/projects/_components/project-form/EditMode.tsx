@@ -17,10 +17,18 @@ import type { L4MarketingMedia } from "../../types";
 import type { MediaFile } from "../form-schema";
 import type { ImportableMedia } from "../project-selector/types";
 
+/**
+ * 验证媒体项是否有有效的 file_url
+ * 用于过滤无效的媒体数据，避免传递到后端导致验证失败
+ */
+function hasValidFileUrl<T extends { file_url?: string | null }>(item: T): boolean {
+  return !!item.file_url && item.file_url.trim().length > 0;
+}
+
 // 将 L4MarketingMedia 转换为 MediaFile
 function convertToMediaFiles(photos: L4MarketingMedia[]): MediaFile[] {
   return photos
-    .filter((photo) => photo.file_url && photo.file_url.trim().length > 0)
+    .filter(hasValidFileUrl)
     .map((photo) => ({
       file_url: photo.file_url,
       thumbnail_url: photo.thumbnail_url || undefined,
@@ -35,7 +43,7 @@ function convertToMediaFiles(photos: L4MarketingMedia[]): MediaFile[] {
 // 将 ImportableMedia 转换为 L4MarketingMedia
 function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[] {
   return media
-    .filter((item) => item.file_url && item.file_url.trim().length > 0)
+    .filter(hasValidFileUrl)
     .map((item, index) => ({
       id: Number(item.id) || -Date.now() - index, // 临时ID，负数表示未保存
       file_url: item.file_url,
