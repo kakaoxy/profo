@@ -19,8 +19,10 @@ import { uploadCSV, type UploadResult } from "@/lib/api-upload";
 import { cn } from "@/lib/utils";
 
 const getCookieValue = (name: string): string | undefined => {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match?.[2];
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return undefined;
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -85,11 +87,11 @@ export function UploadZone() {
 
     setCurrentFile(file);
     const token = getCookieValue("access_token") || "";
-    if (token) {
-      startUpload(file, token);
-    } else {
+    if (!token) {
       toast.error("未登录", { description: "请先登录后再上传" });
+      return;
     }
+    startUpload(file, token);
   }, [startUpload]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
