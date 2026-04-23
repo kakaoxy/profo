@@ -220,11 +220,11 @@ def _format_datetime(value) -> str:
 
 
 def _format_bool(value) -> str:
-    """格式化布尔值为中文字符串"""
+    """格式化布尔值为大写英文字符串"""
     if value is True:
-        return "是"
+        return "TRUE"
     if value is False:
-        return "否"
+        return "FALSE"
     return ""
 
 
