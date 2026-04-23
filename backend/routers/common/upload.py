@@ -29,8 +29,10 @@ from services.market import (
     start_import_task
 )
 from models import User, PropertyImportTask, ImportTaskStatus
+from sqlalchemy.orm import Session
 from utils.file_security import get_safe_file_path, is_safe_path
 from common import limiter
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +69,24 @@ async def create_import_task(
     # 创建导入任务
     task_service = get_import_task_service()
     task = await task_service.create_task(file, current_user.id, db)
-    
-    # 启动后台处理任务
-    start_import_task(task.id)
-    
-    logger.info(f"导入任务已创建并启动: {task.id}")
+
+    # 启动后台处理任务，添加错误处理避免任务永久等待
+    try:
+        start_import_task(task.id)
+        logger.info(f"导入任务已创建并启动: {task.id}")
+    except Exception as e:
+        logger.error(f"启动导入任务失败: {task.id}, 错误: {e}")
+        # 更新任务状态为失败，避免任务处于永久等待状态
+        task_service.update_task_status(
+            task.id,
+            ImportTaskStatus.FAILED,
+            db,
+            error_message=f"启动后台处理任务失败: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="导入任务启动失败，请稍后重试"
+        )
     
     return ImportTaskCreateResponse(
         task_id=task.id,
@@ -194,8 +209,8 @@ def download_failed_file(
     注意：使用 def 避免文件操作阻塞
     已修复：使用安全的文件路径验证，防止目录遍历攻击
     """
-    # 使用安全的临时目录
-    temp_dir = os.path.join(os.getcwd(), 'temp', 'uploads')
+    # 使用配置中的上传目录
+    temp_dir = os.path.join(os.getcwd(), settings.import_upload_dir)
     os.makedirs(temp_dir, exist_ok=True)
 
     try:

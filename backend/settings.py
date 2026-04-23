@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     
     # 数据导入配置
     batch_commit_size: int = 1000  # 批量提交大小
+    import_upload_dir: str = "temp/uploads"  # CSV导入任务文件存储目录
     
     # JWT配置
     jwt_secret_key: str  # 强制从环境变量读取，不再提供默认值
