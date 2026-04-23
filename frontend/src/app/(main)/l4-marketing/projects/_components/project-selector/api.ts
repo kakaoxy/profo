@@ -32,9 +32,9 @@ function transformProjectData(rawData: Record<string, unknown>): L3ProjectBrief 
     name: String(rawData.name || ""),
     community_name: String(rawData.community_name || ""),
     address: String(rawData.address || ""),
-    area: rawData.area ? Number(rawData.area) : undefined,
-    layout: rawData.layout ? String(rawData.layout) : undefined,
-    orientation: rawData.orientation ? String(rawData.orientation) : undefined,
+    area: rawData.area != null ? Number(rawData.area) : undefined,
+    layout: rawData.layout != null ? String(rawData.layout) : undefined,
+    orientation: rawData.orientation != null ? String(rawData.orientation) : undefined,
     status: String(rawData.status || ""),
   };
 
@@ -107,29 +107,29 @@ export async function fetchImportData(
     project_id: String(rawData.project_id || ""),
     community_id: rawData.community_id != null ? String(rawData.community_id) : undefined,
     community_name: String(rawData.community_name || ""),
-    layout: rawData.layout ? String(rawData.layout) : undefined,
-    orientation: rawData.orientation ? String(rawData.orientation) : undefined,
-    floor_info: rawData.floor_info ? String(rawData.floor_info) : undefined,
-    area: rawData.area ? Number(rawData.area) : undefined,
-    total_price: rawData.total_price ? Number(rawData.total_price) : undefined,
-    unit_price: rawData.unit_price ? Number(rawData.unit_price) : undefined,
+    layout: rawData.layout != null ? String(rawData.layout) : undefined,
+    orientation: rawData.orientation != null ? String(rawData.orientation) : undefined,
+    floor_info: rawData.floor_info != null ? String(rawData.floor_info) : undefined,
+    area: rawData.area != null ? Number(rawData.area) : undefined,
+    total_price: rawData.total_price != null ? Number(rawData.total_price) : undefined,
+    unit_price: rawData.unit_price != null ? Number(rawData.unit_price) : undefined,
     title: String(rawData.title || ""),
-    tags: rawData.tags ? String(rawData.tags) : undefined,
-    decoration_style: rawData.decoration_style
+    tags: rawData.tags != null ? String(rawData.tags) : undefined,
+    decoration_style: rawData.decoration_style != null
       ? String(rawData.decoration_style)
       : undefined,
-    status: rawData.status ? String(rawData.status) : undefined,
+    status: rawData.status != null ? String(rawData.status) : undefined,
     available_media: rawMedia.map((media) => ({
       id: String(media.id || ""),
       file_url: String(media.file_url || ""),
-      thumbnail_url: media.thumbnail_url
+      thumbnail_url: media.thumbnail_url != null
         ? String(media.thumbnail_url)
         : undefined,
       photo_category: String(media.photo_category || "renovation"),
-      renovation_stage: media.renovation_stage
+      renovation_stage: media.renovation_stage != null
         ? String(media.renovation_stage)
         : undefined,
-      description: media.description ? String(media.description) : undefined,
+      description: media.description != null ? String(media.description) : undefined,
       sort_order: Number(media.sort_order || 0),
       media_type: detectMediaType(String(media.file_url || "")),
     })),
