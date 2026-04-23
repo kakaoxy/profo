@@ -77,9 +77,6 @@
 1. 后端新增创建接口（例如 `POST /api/v1/admin/communities` 或 `POST /api/v1/properties/communities`），在服务层复用/抽取 `PropertyImporter._create_community()` 的创建逻辑（注意处理 `name` 唯一约束与并发）。
 2. 前端在 `CommunitySelect` 的 `handleCreateNew()` 分支（或调用方 `onChange` 的 `isNew=true` 分支）调用该创建接口，成功后回填真实 `community.id`。
 
-**方案 B：收敛交互，避免“伪创建”**
-1. 如果业务上不允许从筛选器创建标准小区：禁用 `allowCreate` 或移除“使用新名称”入口；
-2. 或将文案调整为“按该名称继续填写/保存”，明确不会进入小区库。
 
 ### BUG-0002：户型输入框默认显示 0/0/0，导致输入体验异常（例如输入 2 变成 02）
 
@@ -128,11 +125,7 @@
 - 修改 `parseLayout()`：当 `layout` 为空或解析失败时，返回 `{ rooms: undefined, halls: undefined, bathrooms: undefined }`
 - 保留 `getDefaultValues()` 逻辑（或将默认值也改为 `undefined`，让 placeholder 负责提示）
 
-**方案 B：保持 parseLayout 返回 0，但修正默认值兜底逻辑**
-- 将 `getDefaultValues()` 中的 `??` 改为 `||`（或显式判断 `> 0`），例如：
-  - `rooms: layoutData.rooms || 2`
-  - `halls: layoutData.halls || 1`
-  - `bathrooms: layoutData.bathrooms || 1`
+
 
 ### BUG-0003：项目编辑表单未正确加载业主信息（详情有值但编辑弹窗为空）
 
@@ -204,8 +197,6 @@
 - 在 `useCreateProject` 增加参数接收 `open`（受控值）并作为 `useFormInit/useDraft` 的 open 依据；
 - 或在 `CreateProjectDialog` 内把受控 open 同步回 `useCreateProject.setOpen`，确保二者一致。
 
-**方案 B：移除 useFormInit 对 open 的依赖，改为监听 project 变化**
-- 在编辑模式下，只要 `project` 变化就执行一次 `form.reset(...)`（注意避免覆盖用户正在编辑的输入，可在 `open===true` 时才 reset）。
 
 ### BUG-0004：项目详情页附件图片“缩略图可见但预览失败”
 
@@ -260,11 +251,7 @@
 #### 修复建议（可选方案）
 **方案 A（推荐）：预览大图也使用 `unoptimized`，与缩略图策略保持一致**
 - 在 `project-detail/index.tsx` 的预览 `<Image />` 增加 `unoptimized`；
-- 或改用原生 `<img src=...>`（参考：`frontend/src/app/(main)/projects/_components/create-project/tabs/file-preview.tsx` 中的图片预览实现）。
 
-**方案 B：统一使用 Next Image 优化器，但补齐域名/URL 规范化**
-- 确保 `attachment.url` 为可被 Next Image 允许的绝对 URL，并将对应域名加入 `frontend/next.config.ts -> images.remotePatterns`；
-- 若 `attachment.url` 可能为相对路径，建议在预览与缩略图处统一使用 `getFileUrl()` 做拼接规范化（参考装修照片组件已使用 `getFileUrl(photo.url)`）。
 
 ### BUG-0005：装修阶段合同信息的费用汇总未保留两位小数
 
@@ -308,11 +295,7 @@
 **方案 A（推荐）：费用汇总统一保留两位小数**
 - 将 `formatAmount()` 改为：
   - `toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`
-  - 或 `amount.toFixed(2)`（注意千分位需求）
 
-**方案 B：抽取通用金额格式化工具，按场景控制精度**
-- 在项目详情 `utils.ts` 或共享工具中提供 `formatCurrency(amount, digits=2)`；
-- 对“费用汇总/金额”使用 2 位小数；对“比例/计数”等保持 0 位或按需求。
 
 ### BUG-0006：市场情报批量上传失败记录下载 404，且后端触发 PropertyResponse 类型校验崩溃
 
@@ -383,18 +366,3 @@
 1) `failed_file_url` 拼接逻辑写死为 `/api/upload/...`，遗漏 `/v1` 前缀（且与后端 router 挂载路径不一致），导致前端点击后命中错误路由从而 404。
 2) 后端从“整数型小区 ID”迁移到“UUID 字符串小区 ID”后，`PropertyResponse` 仍保留 `community_id: int`，导致一旦走到房源响应构建，就会出现 Pydantic 校验错误并可能导致服务异常退出。
 
-#### 修复建议（可选方案）
-**方案 A（推荐）：修正失败记录下载 URL**
-- 将 `backend/services/market/batch_importer.py` 的返回值改为：
-  - `return f"/api/v1/upload/download/{filename}"`
-- 或更稳妥：通过配置的 `api_prefix` 统一生成（避免未来改前缀再次出错）。
-
-**方案 B（推荐）：统一 community_id 类型为 UUID 字符串**
-- 修改 `backend/schemas/property/response.py`：
-  - `PropertyResponse.community_id: str`
-  - `PropertyDetailResponse.community_id: str`
-- 同步检查所有引用 `community_id` 的 schema/前端类型，确保一致。
-
-**方案 C：增加兜底错误处理避免“导入后崩溃”**
-- 对触发 `PropertyResponse` 构建的接口增加异常捕获与标准错误返回（避免直接导致进程退出）；
-- 在导入完成页面的后续请求（如果有刷新列表）失败时提示“后端服务异常”。

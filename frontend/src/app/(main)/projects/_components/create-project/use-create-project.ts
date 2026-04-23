@@ -14,15 +14,25 @@ import { useFormInit, getDefaultValues, getFormResolver } from "./use-form-init"
 interface UseCreateProjectProps {
   project?: Project;
   onSuccess?: () => void;
+  /** 受控模式下的open状态 */
+  open?: boolean;
+  /** 受控模式下的onOpenChange回调 */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const useCreateProject = ({
   project,
   onSuccess,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: UseCreateProjectProps = {}) => {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
+
+  // 支持受控和非受控模式
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
 
   const isEditMode = !!project;
 
@@ -31,7 +41,7 @@ export const useCreateProject = ({
     defaultValues: getDefaultValues(project, isEditMode),
   });
 
-  // 初始化表单（编辑模式）
+  // 初始化表单（编辑模式）- 使用实际的open状态
   useFormInit({ form, project, open, isEditMode });
 
   // 草稿管理

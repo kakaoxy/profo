@@ -45,19 +45,20 @@ export function CreateProjectDialog({
 }: CreateProjectDialogProps = {}) {
   const {
     form,
-    open: internalOpen,
-    setOpen: setInternalOpen,
+    open,
+    setOpen,
     loading,
     activeTab,
     setActiveTab,
     clearDraft,
     onSubmit,
     isEditMode,
-  } = useCreateProject({ project, onSuccess });
-
-  // 支持受控和非受控模式
-  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
-  const setOpen = controlledOnOpenChange || setInternalOpen;
+  } = useCreateProject({
+    project,
+    onSuccess,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
+  });
 
   // 使用 useMemo 缓存错误列表，避免每次渲染重新计算
   const errorEntries = useMemo(

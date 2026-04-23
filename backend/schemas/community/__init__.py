@@ -57,10 +57,18 @@ class DictionaryResponse(BaseModel):
     items: list[str]
 
 
+class CommunityCreateRequest(BaseModel):
+    """创建小区请求"""
+    name: str = Field(min_length=1, max_length=200, description="小区名称")
+    district: str | None = Field(default=None, max_length=100, description="行政区")
+    business_circle: str | None = Field(default=None, max_length=100, description="商圈")
+
+
 __all__ = [
     "CommunityResponse",
     "CommunityListResponse",
     "CommunityMergeRequest",
     "CommunityMergeResponse",
     "DictionaryResponse",
+    "CommunityCreateRequest",
 ]

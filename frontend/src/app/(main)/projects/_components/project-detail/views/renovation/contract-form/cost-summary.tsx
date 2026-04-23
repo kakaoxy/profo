@@ -7,10 +7,10 @@ interface CostSummaryProps {
   values: RenovationContractFormValues;
 }
 
-// 格式化金额显示（紧凑格式，无小数）
+// 格式化金额显示（保留两位小数）
 function formatAmount(amount: number | undefined | null): string {
   if (amount === undefined || amount === null || isNaN(amount)) return "-";
-  return `¥${amount.toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `¥${amount.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // 费用汇总
