@@ -46,6 +46,7 @@ from .community import (
     CommunityListResponse,
     CommunityMergeRequest,
     CommunityMergeResponse,
+    CommunitySearchResponse,
 )
 
 # 5. Upload (上传导入)
@@ -171,6 +172,7 @@ __all__ = [
     'CommunityListResponse',
     'CommunityMergeRequest',
     'CommunityMergeResponse',
+    'CommunitySearchResponse',
 
     # Upload
     'UploadResult',

@@ -91,6 +91,7 @@ class ProjectCoreService:
             area=project_data.area,
             layout=project_data.layout,
             orientation=project_data.orientation,
+            project_manager_id=project_data.project_manager_id,
             status=ProjectStatus.SIGNING.value,
             is_deleted=False,
             created_at=now,
@@ -267,7 +268,7 @@ class ProjectCoreService:
         """更新项目基础字段"""
         project_fields = [
             'community_name', 'address', 'area', 'orientation', 'layout',
-            'renovation_stage', 'status', 'tags'
+            'renovation_stage', 'status', 'tags', 'project_manager_id'
         ]
 
         for field in project_fields:

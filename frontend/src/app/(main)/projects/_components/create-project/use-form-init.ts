@@ -28,6 +28,7 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         community_name: project.community_name || "",
         address: project.address || "",
         area: project.area,
+        project_manager_id: project.project_manager?.id || undefined,
         rooms: editLayoutData.rooms,
         halls: editLayoutData.halls,
         bathrooms: editLayoutData.bathrooms,
@@ -68,6 +69,7 @@ export function getDefaultValues(
     community_name: project?.community_name || "",
     address: project?.address || "",
     area: project?.area,
+    project_manager_id: project?.project_manager?.id || undefined,
     // 修复：户型字段无值时返回undefined，让placeholder生效
     rooms: layoutData.rooms,
     halls: layoutData.halls,

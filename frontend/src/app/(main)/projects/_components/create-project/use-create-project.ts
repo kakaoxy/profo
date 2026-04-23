@@ -63,6 +63,7 @@ export const useCreateProject = ({
         area: values.area ?? null,
         layout: layoutString || null,
         orientation: values.orientation || null,
+        project_manager_id: values.project_manager_id || null,
         owner_name: values.owner_name || null,
         owner_phone: values.owner_phone || null,
         owner_id_card: values.owner_id_card || null,

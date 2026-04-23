@@ -12,7 +12,7 @@ import io
 
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
-from schemas import PaginatedPropertyResponse, PropertyDetailResponse
+from schemas import PaginatedPropertyResponse, PropertyDetailResponse, CommunitySearchResponse
 from dependencies.auth import (
     DbSessionDep,
     CurrentInternalUserDep,
@@ -29,21 +29,21 @@ PropertyServiceDep = Annotated[PropertyQueryService, Depends(get_property_query_
 router = APIRouter(tags=["市场情报-房源查询"])
 
 
-@router.get("/communities/search")
+@router.get("/communities/search", response_model=list[CommunitySearchResponse])
 def search_communities(
     q: Annotated[str, Query(min_length=1, description="搜索关键词")],
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
-) -> List[dict]:
+) -> list[CommunitySearchResponse]:
     """Search communities by name"""
     results = db.query(Community).filter(Community.name.contains(q)).limit(20).all()
     return [
-        {
-            "id": c.id,
-            "name": c.name,
-            "district": c.district,
-            "business_circle": c.business_circle
-        }
+        CommunitySearchResponse(
+            id=c.id,
+            name=c.name,
+            district=c.district,
+            business_circle=c.business_circle
+        )
         for c in results
     ]
 

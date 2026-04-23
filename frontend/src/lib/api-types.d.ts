@@ -1474,10 +1474,7 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /**
-             * Password
-             * Format: password
-             */
+            /** Password */
             password: string;
             /**
              * Scope
@@ -1486,10 +1483,7 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /**
-             * Client Secret
-             * Format: password
-             */
+            /** Client Secret */
             client_secret?: string | null;
         };
         /** Body_upload_csv_api_v1_upload_csv_post */
@@ -2884,6 +2878,11 @@ export interface components {
              */
             orientation?: string | null;
             /**
+             * Project Manager Id
+             * @description 项目负责人ID
+             */
+            project_manager_id?: string | null;
+            /**
              * Contract No
              * @description 合同编号
              */
@@ -3152,6 +3151,8 @@ export interface components {
             renovationStageDates?: {
                 [key: string]: string;
             } | null;
+            /** @description 项目负责人 */
+            project_manager?: components["schemas"]["UserBrief"] | null;
         };
         /** ProjectStatsResponse */
         ProjectStatsResponse: {
@@ -3185,6 +3186,11 @@ export interface components {
             layout?: string | null;
             /** Orientation */
             orientation?: string | null;
+            /**
+             * Project Manager Id
+             * @description 项目负责人ID
+             */
+            project_manager_id?: string | null;
             /** Contract No */
             contract_no?: string | null;
             /** Signing Price */
@@ -3423,9 +3429,7 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: {
-                [key: string]: unknown;
-            }[];
+            errors?: Record<string, never>[];
         };
         /**
          * RecordType
@@ -3625,6 +3629,16 @@ export interface components {
             other_fee_reason?: string | null;
         };
         /**
+         * RenovationPhotoListResponse
+         * @description 照片列表响应
+         */
+        RenovationPhotoListResponse: {
+            /** Items */
+            items: components["schemas"]["RenovationPhotoResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
          * RenovationPhotoResponse
          * @description 照片响应
          */
@@ -3633,6 +3647,8 @@ export interface components {
             id: string;
             /** Project Id */
             project_id: string;
+            /** Renovation Id */
+            renovation_id?: string | null;
             /** Stage */
             stage: string;
             /** Url */
@@ -3646,6 +3662,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /**
          * RenovationStage
@@ -3828,9 +3846,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -3850,6 +3866,16 @@ export interface components {
             related_agent?: string | null;
         };
         /**
+         * SalesRecordListResponse
+         * @description 销售记录列表响应
+         */
+        SalesRecordListResponse: {
+            /** Items */
+            items: components["schemas"]["SalesRecordResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
          * SalesRecordResponse
          * @description 销售记录响应 - 兼容 ProjectInteraction 模型字段映射
          */
@@ -3865,9 +3891,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -3990,6 +4014,32 @@ export interface components {
              * @description 失败记录CSV下载链接
              */
             failed_file_url?: string | null;
+        };
+        /**
+         * UserBrief
+         * @description 用户简要信息 - 用于关联对象展示
+         */
+        UserBrief: {
+            /**
+             * Id
+             * @description 用户ID
+             */
+            id: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname?: string | null;
+            /**
+             * Avatar
+             * @description 头像
+             */
+            avatar?: string | null;
+            /**
+             * Username
+             * @description 用户名
+             */
+            username?: string | null;
         };
         /**
          * UserCreate
@@ -4304,9 +4354,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": Record<string, never>[];
                 };
             };
             /** @description Validation Error */
@@ -5043,9 +5091,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["RenovationPhotoListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -5365,9 +5411,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["SalesRecordListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6760,9 +6804,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -6795,9 +6837,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -6826,9 +6866,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
         };
@@ -7074,9 +7112,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
+                "application/json": Record<string, never>[];
             };
         };
         responses: {

@@ -136,13 +136,17 @@ export const columns: ColumnDef<Project>[] = [
     header: () => (
       <div className="hidden xl:block text-slate-500 font-medium">负责人</div>
     ),
-    cell: ({ row }) => (
-      <div className="hidden xl:flex items-center gap-2">
-        <span className="text-sm text-slate-600 font-medium bg-slate-50 px-2 py-1 rounded-md">
-          {row.original.manager || "-"}
-        </span>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const manager = row.original.project_manager;
+      const displayName = manager?.nickname || manager?.username || "-";
+      return (
+        <div className="hidden xl:flex items-center gap-2">
+          <span className="text-sm text-slate-600 font-medium bg-slate-50 px-2 py-1 rounded-md">
+            {displayName}
+          </span>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "net_cash_flow",

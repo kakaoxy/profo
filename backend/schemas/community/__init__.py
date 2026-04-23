@@ -64,6 +64,18 @@ class CommunityCreateRequest(BaseModel):
     business_circle: str | None = Field(default=None, max_length=100, description="商圈")
 
 
+class CommunitySearchResponse(BaseModel):
+    """小区搜索响应模型 - 精简字段用于搜索建议"""
+    id: str
+    name: str
+    district: str | None = None
+    business_circle: str | None = None
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
 __all__ = [
     "CommunityResponse",
     "CommunityListResponse",
@@ -71,4 +83,5 @@ __all__ = [
     "CommunityMergeResponse",
     "DictionaryResponse",
     "CommunityCreateRequest",
+    "CommunitySearchResponse",
 ]
