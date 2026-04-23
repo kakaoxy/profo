@@ -39,7 +39,7 @@ export const ImportableMediaSchema = z.object({
 /** 导入预览数据Schema */
 export const ImportPreviewDataSchema = z.object({
   project_id: z.string(),
-  community_id: z.number().optional(),
+  community_id: z.string().optional(),
   community_name: z.string(),
   layout: z.string().optional(),
   orientation: z.string().optional(),

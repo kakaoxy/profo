@@ -67,7 +67,7 @@ export interface ImportPreviewData {
   /** L3项目ID */
   project_id: string;
   /** 小区ID */
-  community_id?: number;
+  community_id?: string;
   /** 小区名称 */
   community_name: string;
   /** 户型 */
