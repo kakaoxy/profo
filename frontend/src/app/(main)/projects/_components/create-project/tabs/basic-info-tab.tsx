@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS } from "../schema";
 import { SimpleInputField } from "../form-components";
 import { CommunitySelect } from "@/components/common/community-select";
+import { getUsersSimpleAction } from "../../../actions/sales";
 import {
   FormControl,
   FormField,
@@ -13,9 +15,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TabProps {
   form: UseFormReturn<FormValues>;
+}
+
+interface UserOption {
+  id: string;
+  nickname: string | null;
+  username: string;
 }
 
 // 户型数字输入框组件
@@ -61,6 +76,24 @@ function RoomNumberField({
 
 export function BasicInfoTab({ form }: TabProps) {
   const { control } = form;
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+  // 加载用户列表
+  useEffect(() => {
+    let mounted = true;
+    getUsersSimpleAction().then((result) => {
+      if (mounted) {
+        if (result.success && result.data) {
+          setUsers(result.data);
+        }
+        setIsLoadingUsers(false);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -154,6 +187,40 @@ export function BasicInfoTab({ form }: TabProps) {
         label="详细地址"
         placeholder="街道/楼栋/门牌号"
         required
+      />
+
+      {/* 负责人选择 */}
+      <FormField
+        control={control}
+        name="project_manager_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>项目负责人</FormLabel>
+            <Select
+              value={field.value || "__empty__"}
+              onValueChange={(value) => {
+                const newValue = value === "__empty__" ? undefined : value;
+                field.onChange(newValue);
+              }}
+              disabled={isLoadingUsers}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择项目负责人" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="__empty__">未选择</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
       />
     </div>
   );

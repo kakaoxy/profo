@@ -61,6 +61,7 @@ class ProjectQueryService:
                 selectinload(Project.interactions),
                 selectinload(Project.finance_records),
                 selectinload(Project.status_logs),
+                selectinload(Project.project_manager),
             )
         else:
             # 简化加载：只加载必要的关系
@@ -68,6 +69,7 @@ class ProjectQueryService:
                 selectinload(Project.contract),
                 selectinload(Project.owners),
                 selectinload(Project.sale),
+                selectinload(Project.project_manager),
             )
 
         project = query.first()
@@ -126,6 +128,7 @@ class ProjectQueryService:
             selectinload(Project.contract),
             selectinload(Project.owners),
             selectinload(Project.sale),
+            selectinload(Project.project_manager),
         )
 
         total = query.count()

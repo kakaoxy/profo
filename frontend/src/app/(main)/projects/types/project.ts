@@ -118,6 +118,13 @@ export interface ProjectRenovation {
   updated_at: string;
 }
 
+export interface ProjectManager {
+  id: string;
+  nickname?: string;
+  avatar?: string;
+  username?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -135,6 +142,7 @@ export interface Project {
   orientation?: string;
 
   manager?: string;
+  project_manager?: ProjectManager;
   owner_name?: string;
   owner_phone?: string;
   owner_id_card?: string;

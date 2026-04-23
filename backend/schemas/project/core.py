@@ -59,6 +59,16 @@ class ProjectBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserBrief(BaseModel):
+    """用户简要信息 - 用于关联对象展示"""
+    id: str = Field(..., description="用户ID")
+    nickname: Optional[str] = Field(None, description="昵称")
+    avatar: Optional[str] = Field(None, description="头像")
+    username: Optional[str] = Field(None, description="用户名")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProjectCreate(BaseModel):
     """创建项目请求模型 - 已适配规范化表结构"""
     # 基础信息 (projects 表)
@@ -67,6 +77,7 @@ class ProjectCreate(BaseModel):
     area: Optional[Decimal] = Field(None, description="产证面积(m²)")
     layout: Optional[str] = Field(None, max_length=50, description="户型")
     orientation: Optional[str] = Field(None, max_length=50, description="朝向")
+    project_manager_id: Optional[str] = Field(None, description="项目负责人ID")
 
     # 签约相关（会创建到 project_contracts 表）
     contract_no: str = Field(..., max_length=100, description="合同编号")
@@ -102,6 +113,7 @@ class ProjectUpdate(BaseModel):
     area: Optional[Decimal] = Field(None)
     layout: Optional[str] = Field(None, max_length=50)
     orientation: Optional[str] = Field(None, max_length=50)
+    project_manager_id: Optional[str] = Field(None, description="项目负责人ID")
 
     # 签约相关（更新到 project_contracts 表）
     contract_no: Optional[str] = Field(
@@ -220,6 +232,9 @@ class ProjectResponse(BaseModel):
         validation_alias=AliasChoices("renovation_stage_dates", "renovationStageDates"),
         serialization_alias="renovationStageDates"
     )
+
+    # 项目负责人信息
+    project_manager: Optional[UserBrief] = Field(None, description="项目负责人")
 
     model_config = ConfigDict(from_attributes=True)
 

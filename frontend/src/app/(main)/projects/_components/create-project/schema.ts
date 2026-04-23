@@ -77,6 +77,7 @@ export const formSchema = z
     community_name: z.string().min(1, "小区名称不能为空").max(200),
     address: z.string().min(1, "物业地址不能为空").max(500),
     area: optionalNumber,
+    project_manager_id: z.string().optional(),
 
     // 户型 - 三个独立输入框
     rooms: roomNumberSchema,

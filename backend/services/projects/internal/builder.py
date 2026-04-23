@@ -68,7 +68,7 @@ class ProjectResponseBuilder:
 
     def _build_base_info(self, project: "Project") -> Dict[str, Any]:
         """构建项目基础信息"""
-        return {
+        result = {
             "id": project.id,
             "name": project.name or project.generate_name(),
             "community_name": project.community_name,
@@ -82,6 +82,19 @@ class ProjectResponseBuilder:
             "created_at": project.created_at.isoformat() if project.created_at else None,
             "updated_at": project.updated_at.isoformat() if project.updated_at else None,
         }
+
+        # 添加项目负责人信息
+        if project.project_manager:
+            result["project_manager"] = {
+                "id": project.project_manager.id,
+                "nickname": project.project_manager.nickname,
+                "avatar": project.project_manager.avatar,
+                "username": project.project_manager.username,
+            }
+        else:
+            result["project_manager"] = None
+
+        return result
 
     def _build_contract_info(self, project_id: str) -> Dict[str, Any]:
         """构建合同信息"""
