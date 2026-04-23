@@ -1696,6 +1696,20 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * CommunitySearchResponse
+         * @description 小区搜索响应模型 - 精简字段用于搜索建议
+         */
+        CommunitySearchResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** District */
+            district?: string | null;
+            /** Business Circle */
+            business_circle?: string | null;
+        };
         /** CompetitorResponse */
         CompetitorResponse: {
             /** Community Id */
@@ -4354,7 +4368,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": components["schemas"]["CommunitySearchResponse"][];
                 };
             };
             /** @description Validation Error */
