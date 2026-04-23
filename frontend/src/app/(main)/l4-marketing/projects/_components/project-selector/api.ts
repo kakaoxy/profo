@@ -105,7 +105,7 @@ export async function fetchImportData(
 
   const transformedData = {
     project_id: String(rawData.project_id || ""),
-    community_id: rawData.community_id ? String(rawData.community_id) : undefined,
+    community_id: rawData.community_id != null ? String(rawData.community_id) : undefined,
     community_name: String(rawData.community_name || ""),
     layout: rawData.layout ? String(rawData.layout) : undefined,
     orientation: rawData.orientation ? String(rawData.orientation) : undefined,
