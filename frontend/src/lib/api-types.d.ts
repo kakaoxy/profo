@@ -1474,7 +1474,10 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /** Password */
+            /**
+             * Password
+             * Format: password
+             */
             password: string;
             /**
              * Scope
@@ -1483,7 +1486,10 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * Format: password
+             */
             client_secret?: string | null;
         };
         /** Body_upload_csv_api_v1_upload_csv_post */
@@ -3443,7 +3449,9 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: Record<string, never>[];
+            errors?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * RecordType
@@ -3860,7 +3868,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -3905,7 +3915,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -6818,7 +6830,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -6851,7 +6865,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -6880,7 +6896,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -7126,7 +7144,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>[];
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
             };
         };
         responses: {

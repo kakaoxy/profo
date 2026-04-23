@@ -209,69 +209,122 @@ def _parse_rooms_param(rooms: Optional[str]) -> Optional[List[int]]:
         return None
 
 
-def _generate_csv_response(properties) -> StreamingResponse:
-    """生成 CSV 文件流响应"""
-    # 创建 CSV 内容
+def _format_datetime(value) -> str:
+    """格式化日期时间为字符串"""
+    if value is None:
+        return ""
+    if isinstance(value, dt):
+        return value.strftime("%Y-%m-%d")
+    return str(value)
+
+
+def _format_bool(value) -> str:
+    """格式化布尔值为中文字符串"""
+    if value is True:
+        return "是"
+    if value is False:
+        return "否"
+    return ""
+
+
+def _format_list(value) -> str:
+    """格式化列表为逗号分隔的字符串"""
+    if not value:
+        return ""
+    if isinstance(value, list):
+        return ",".join(str(v) for v in value)
+    return str(value)
+
+
+def _generate_csv_response(results) -> StreamingResponse:
+    """
+    生成 CSV 文件流响应
+    格式与批量上传模板保持一致，参考 PropertyIngestionModel 的字段别名
+    """
     output = io.StringIO()
     writer = csv.writer(output)
-    
-    # 写入表头
+
+    # 表头与 PropertyIngestionModel 的 alias 保持一致
     headers = [
-        "ID", "数据源", "房源ID", "状态", "小区名", 
-        "室", "厅", "卫", "朝向", "楼层", "楼层级别",
-        "建筑面积(㎡)", "套内面积(㎡)", "总价(万)", "单价(元/㎡)",
-        "上架时间", "成交时间", "成交周期(天)",
-        "物业类型", "建筑年代", "装修情况", "电梯",
-        "创建时间", "更新时间"
+        "数据源",
+        "房源ID",
+        "状态",
+        "小区名",
+        "室",
+        "厅",
+        "卫",
+        "朝向",
+        "楼层",
+        "面积",
+        "套内面积",
+        "挂牌价",
+        "上架时间",
+        "成交价",
+        "成交时间",
+        "物业类型",
+        "建筑年代",
+        "建筑结构",
+        "装修情况",
+        "电梯",
+        "产权性质",
+        "产权年限",
+        "上次交易",
+        "供暖方式",
+        "房源描述",
+        "图片链接",
+        "城市ID",
+        "行政区",
+        "商圈",
     ]
     writer.writerow(headers)
-    
-    # 写入数据行
-    for prop in properties:
+
+    for prop, community in results:
         row = [
-            prop.id,
             prop.data_source,
             prop.source_property_id,
-            prop.status,
-            prop.community_name,
+            prop.status.value if hasattr(prop.status, "value") else prop.status,
+            community.name if community else (prop.community_name if hasattr(prop, "community_name") else ""),
             prop.rooms,
-            prop.halls,
-            prop.baths,
+            prop.halls or 0,
+            prop.baths or 0,
             prop.orientation,
-            prop.floor_display,
-            prop.floor_level or "",
+            prop.floor_original,
             prop.build_area,
-            prop.inner_area or "",
-            prop.total_price,
-            prop.unit_price,
-            prop.listed_date.strftime("%Y-%m-%d %H:%M:%S") if prop.listed_date else "",
-            prop.sold_date.strftime("%Y-%m-%d %H:%M:%S") if prop.sold_date else "",
-            prop.transaction_duration_days or "",
-            prop.property_type or "",
-            prop.build_year or "",
-            prop.decoration or "",
-            "是" if prop.elevator else ("否" if prop.elevator is False else ""),
-            prop.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            prop.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            prop.inner_area if prop.inner_area else "",
+            prop.listed_price_wan if prop.listed_price_wan else "",
+            _format_datetime(prop.listed_date),
+            prop.sold_price_wan if prop.sold_price_wan else "",
+            _format_datetime(prop.sold_date),
+            prop.property_type if prop.property_type else "",
+            prop.build_year if prop.build_year else "",
+            prop.building_structure if prop.building_structure else "",
+            prop.decoration if prop.decoration else "",
+            _format_bool(prop.elevator),
+            prop.ownership_type if prop.ownership_type else "",
+            prop.ownership_years if prop.ownership_years else "",
+            prop.last_transaction if prop.last_transaction else "",
+            prop.heating_method if prop.heating_method else "",
+            prop.listing_remarks if prop.listing_remarks else "",
+            _format_list(getattr(prop, "picture_links", None) or getattr(prop, "image_urls", None)),
+            community.city_id if community and hasattr(community, "city_id") else "",
+            community.district if community else "",
+            community.business_circle if community else "",
         ]
         writer.writerow(row)
-    
-    # 获取 CSV 内容
+
     csv_content = output.getvalue()
     output.close()
-    
-    # 生成文件名（包含时间戳）
+
     timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
     filename = f"properties_export_{timestamp}.csv"
-    
-    logger.info(f"导出完成: {len(properties)} 条记录, 文件名: {filename}")
-    
-    # 返回 CSV 文件流
+
+    logger.info(f"导出完成: {len(results)} 条记录, 文件名: {filename}")
+
     return StreamingResponse(
-        iter([csv_content.encode('utf-8-sig')]),  # 使用 utf-8-sig 以支持 Excel 正确显示中文
+        iter([csv_content.encode("utf-8-sig")]),
         media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename={filename}",
-            "Content-Type": "text/csv; charset=utf-8"
-        }
+            "Content-Type": "text/csv; charset=utf-8",
+        },
     )
