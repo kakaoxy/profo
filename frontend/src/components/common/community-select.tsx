@@ -9,7 +9,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { searchCommunitiesAction } from "@/app/(main)/leads/actions";
+import { searchCommunitiesAction, createCommunityAction } from "@/app/(main)/leads/actions";
+import { toast } from "sonner";
 
 /**
  * 社区数据结构
@@ -132,13 +133,36 @@ export function CommunitySelect({
   };
 
   // 使用新名称创建
-  const handleCreateNew = () => {
+  const handleCreateNew = async () => {
     if (!query) return;
-    const newCommunity: Community = {
-      id: "",
+
+    // 调用后端接口创建小区
+    const result = await createCommunityAction({
       name: query,
-    };
-    onChange(newCommunity, true);
+      district: null,
+      business_circle: null,
+    });
+
+    if (result) {
+      // 创建成功，返回真实的小区数据
+      const newCommunity: Community = {
+        id: result.id,
+        name: result.name,
+        district: result.district || undefined,
+        businessCircle: result.business_circle || undefined,
+      };
+      onChange(newCommunity, true);
+      toast.success(`小区"${result.name}"已创建`);
+    } else {
+      toast.error("创建小区失败，请重试");
+      // 即使创建失败，也允许前端继续使用输入的名称
+      const fallbackCommunity: Community = {
+        id: "",
+        name: query,
+      };
+      onChange(fallbackCommunity, true);
+    }
+
     setOpen(false);
     setQuery("");
   };

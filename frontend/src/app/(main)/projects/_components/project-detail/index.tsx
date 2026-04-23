@@ -138,6 +138,7 @@ export function ProjectDetailSheet({
                 className="object-contain rounded-lg"
                 sizes="(max-width: 896px) 100vw, 896px"
                 priority
+                unoptimized
               />
             )}
           </div>

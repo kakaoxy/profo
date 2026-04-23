@@ -16,9 +16,12 @@ from schemas.community import (
     CommunityMergeRequest,
     CommunityMergeResponse,
     DictionaryResponse,
+    CommunityCreateRequest,
 )
 from services.market import CommunityMerger
 from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSessionDep
+from datetime import datetime, timezone
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -206,3 +209,92 @@ def merge_communities(
     except Exception as e:
         logger.error(f"小区合并发生未知错误: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
+
+
+@router.post("/communities", response_model=CommunityResponse)
+def create_community(
+    request: CommunityCreateRequest,
+    db: DbSessionDep,
+    current_user: CurrentOperatorUserDep,
+) -> CommunityResponse:
+    """
+    创建新小区
+    
+    如果小区名称已存在，则返回已存在的小区
+    """
+    from sqlalchemy.exc import IntegrityError
+    
+    # 1. 检查是否已存在同名小区（不区分大小写）
+    existing = db.query(Community).filter(
+        Community.name.ilike(request.name),
+        Community.is_active.is_(True)
+    ).first()
+    
+    if existing:
+        logger.info(f"小区已存在，直接返回: {existing.name} (ID: {existing.id})")
+        return CommunityResponse(
+            id=existing.id,
+            name=existing.name,
+            city_id=existing.city_id,
+            district=existing.district,
+            business_circle=existing.business_circle,
+            avg_price_wan=existing.avg_price_wan,
+            total_properties=existing.total_properties,
+            created_at=existing.created_at
+        )
+    
+    # 2. 创建新小区
+    new_community = Community(
+        id=str(uuid.uuid4()),
+        name=request.name.strip(),
+        district=request.district,
+        business_circle=request.business_circle,
+        city_id=None,
+        avg_price_wan=None,
+        total_properties=0,
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    db.add(new_community)
+    
+    try:
+        db.commit()
+        db.refresh(new_community)
+        logger.info(f"创建新小区成功: {new_community.name} (ID: {new_community.id})")
+    except IntegrityError as e:
+        db.rollback()
+        logger.warning(f"创建小区时发生唯一约束冲突: {request.name}, 错误: {str(e)}")
+        # 并发情况下可能另一个请求已创建，再次尝试查找
+        existing = db.query(Community).filter(
+            Community.name.ilike(request.name),
+            Community.is_active.is_(True)
+        ).first()
+        if existing:
+            return CommunityResponse(
+                id=existing.id,
+                name=existing.name,
+                city_id=existing.city_id,
+                district=existing.district,
+                business_circle=existing.business_circle,
+                avg_price_wan=existing.avg_price_wan,
+                total_properties=existing.total_properties,
+                created_at=existing.created_at
+            )
+        raise HTTPException(status_code=500, detail="创建小区失败")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"创建小区失败: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="创建小区失败")
+    
+    return CommunityResponse(
+        id=new_community.id,
+        name=new_community.name,
+        city_id=new_community.city_id,
+        district=new_community.district,
+        business_circle=new_community.business_circle,
+        avg_price_wan=new_community.avg_price_wan,
+        total_properties=new_community.total_properties,
+        created_at=new_community.created_at
+    )
