@@ -1,9 +1,9 @@
-from typing import Annotated, Optional, List, Any, Dict
+from typing import Annotated, Optional, List
 from fastapi import APIRouter, Path, Query
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import RenovationUpdate, RenovationPhotoResponse, ProjectResponse
-from schemas.project.renovation import RenovationContractUpdate, RenovationContractResponse
+from schemas.project.renovation import RenovationContractUpdate, RenovationContractResponse, RenovationPhotoListResponse
 
 router = APIRouter()
 
@@ -35,30 +35,30 @@ def upload_renovation_photo(
     return photo
 
 
-@router.get("/{project_id}/renovation/photos", response_model=List[Dict[str, Any]])
+@router.get("/{project_id}/renovation/photos", response_model=RenovationPhotoListResponse)
 def get_renovation_photos(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
     stage: Annotated[Optional[str], Query(description="改造阶段筛选")] = None,
-):
+) -> RenovationPhotoListResponse:
     """获取改造阶段照片"""
     photos = service.get_renovation_photos(project_id, stage)
-    photos_dict = [
-        {
-            "id": photo.id,
-            "project_id": photo.project_id,
-            "renovation_id": photo.renovation_id,
-            "stage": photo.stage,
-            "url": photo.url,
-            "filename": photo.filename,
-            "description": photo.description,
-            "created_at": photo.created_at,
-            "updated_at": photo.updated_at,
-        }
+    items = [
+        RenovationPhotoResponse(
+            id=photo.id,
+            project_id=photo.project_id,
+            renovation_id=photo.renovation_id,
+            stage=photo.stage,
+            url=photo.url,
+            filename=photo.filename,
+            description=photo.description,
+            created_at=photo.created_at,
+            updated_at=photo.updated_at,
+        )
         for photo in photos
     ]
-    return photos_dict
+    return RenovationPhotoListResponse(items=items, total=len(items))
 
 
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)

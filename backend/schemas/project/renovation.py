@@ -33,12 +33,20 @@ class RenovationPhotoResponse(BaseModel):
     """照片响应"""
     id: str
     project_id: str
+    renovation_id: Optional[str] = None
     stage: str
     url: str
     filename: Optional[str] = None
     description: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
+
+class RenovationPhotoListResponse(BaseModel):
+    """照片列表响应"""
+    items: List[RenovationPhotoResponse]
+    total: int
 
 
 # ========== 装修合同信息 (来自 project_renovation.py) ==========

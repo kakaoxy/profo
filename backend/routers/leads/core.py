@@ -12,11 +12,48 @@ from schemas.lead import (
     LeadUpdate,
     LeadResponse,
     PaginatedLeadListResponse,
+    LeadListItem,
 )
 from services.leads import LeadService
-from .utils import serialize_lead_for_list
 
 router = APIRouter()
+
+
+def _lead_to_list_item(lead) -> LeadListItem:
+    """将 Lead ORM 对象转换为 LeadListItem"""
+    # 过滤错误存储的大型数据（如 base64 图片），只保留正常的 URL（通常 < 500 字符）
+    safe_images = []
+    if lead.images:
+        for img in lead.images:
+            if isinstance(img, str) and len(img) < 500:
+                safe_images.append(img)
+
+    return LeadListItem(
+        id=lead.id,
+        community_name=lead.community_name,
+        is_hot=lead.is_hot or 0,
+        layout=lead.layout,
+        orientation=lead.orientation,
+        floor_info=lead.floor_info,
+        area=float(lead.area) if lead.area else None,
+        total_price=float(lead.total_price) if lead.total_price else None,
+        unit_price=float(lead.unit_price) if lead.unit_price else None,
+        eval_price=float(lead.eval_price) if lead.eval_price else None,
+        status=lead.status,
+        audit_reason=lead.audit_reason,
+        auditor_id=lead.auditor_id,
+        audit_time=lead.audit_time,
+        images=safe_images,
+        district=lead.district,
+        business_area=lead.business_area,
+        remarks=lead.remarks,
+        creator_id=lead.creator_id,
+        creator_name=lead.creator.nickname if lead.creator else None,
+        source_property_id=lead.source_property_id,
+        last_follow_up_at=lead.last_follow_up_at,
+        created_at=lead.created_at,
+        updated_at=lead.updated_at,
+    )
 
 
 @router.get("/", response_model=PaginatedLeadListResponse)
@@ -31,7 +68,7 @@ def get_leads(
     creator_id: Annotated[Optional[str], Query(description="创建人筛选")] = None,
     layout: Annotated[Optional[str], Query(description="户型筛选")] = None,
     floor: Annotated[Optional[str], Query(description="楼层筛选")] = None,
-):
+) -> PaginatedLeadListResponse:
     """
     获取线索列表
     使用手动序列化避免 ORM 关系遍历导致的性能问题
@@ -48,15 +85,15 @@ def get_leads(
         floor=floor,
     )
 
-    # 手动序列化，避免 Pydantic 遍历 ORM 关系
-    serialized_items = [serialize_lead_for_list(lead) for lead in result["items"]]
+    # 手动序列化为 Pydantic 模型，避免 ORM 关系遍历
+    items = [_lead_to_list_item(lead) for lead in result["items"]]
 
-    return {
-        "items": serialized_items,
-        "total": result["total"],
-        "page": result["page"],
-        "page_size": result["page_size"],
-    }
+    return PaginatedLeadListResponse(
+        items=items,
+        total=result["total"],
+        page=result["page"],
+        page_size=result["page_size"],
+    )
 
 
 @router.post("/", response_model=LeadResponse)

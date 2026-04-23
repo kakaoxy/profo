@@ -75,6 +75,12 @@ class SalesRecordResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
+class SalesRecordListResponse(BaseModel):
+    """销售记录列表响应"""
+    items: List[SalesRecordResponse]
+    total: int
+
+
 class ProjectCompleteRequest(BaseModel):
     """确认成交请求"""
     sold_price: Decimal = Field(
