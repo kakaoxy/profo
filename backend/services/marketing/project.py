@@ -196,6 +196,9 @@ class MarketingProjectService:
         db_obj = L4MarketingProject(**project_data)
         self.db.add(db_obj)
 
+        # 先 flush 获取项目ID，再创建媒体记录
+        self.db.flush()
+
         if media_files:
             for idx, media_data in enumerate(media_files):
                 media_obj = L4MarketingMedia(
