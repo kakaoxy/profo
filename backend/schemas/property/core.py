@@ -73,6 +73,22 @@ class PropertyIngestionModel(BaseModel):
             return v.strip()
         return v
     
+    @field_validator('elevator', mode='before')
+    @classmethod
+    def parse_elevator(cls, v):
+        """解析电梯字段，支持中文"是"/"否"和布尔值"""
+        if v is None or v == '':
+            return None
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            v = v.strip().lower()
+            if v in ('是', '有', 'yes', 'true', '1'):
+                return True
+            if v in ('否', '无', 'no', 'false', '0'):
+                return False
+        return None
+
     @field_validator('image_urls', mode='before')
     @classmethod
     def validate_image_urls(cls, v):
