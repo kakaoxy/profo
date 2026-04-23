@@ -409,7 +409,7 @@ export const columns: ColumnDef<Property>[] = [
       // 移动端显示 MM/DD，桌面端显示完整日期
       return (
         <span className="text-xs whitespace-nowrap">
-          <span className="hidden sm:inline">{date.toLocaleDateString()}</span>
+          <span className="hidden sm:inline">{date.toLocaleDateString('zh-CN')}</span>
           <span className="sm:hidden">
             {date.getMonth() + 1}/{date.getDate()}
           </span>
