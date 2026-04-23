@@ -211,6 +211,23 @@ def merge_communities(
         raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
 
 
+def _find_existing_community_by_name(db: Session, name: str) -> Community | None:
+    """
+    根据名称查找已存在的小区（不区分大小写）
+    
+    Args:
+        db: 数据库会话
+        name: 小区名称
+        
+    Returns:
+        找到的小区对象，不存在则返回 None
+    """
+    return db.query(Community).filter(
+        Community.name.ilike(name),
+        Community.is_active.is_(True)
+    ).first()
+
+
 @router.post("/communities", response_model=CommunityResponse)
 def create_community(
     request: CommunityCreateRequest,
@@ -225,10 +242,7 @@ def create_community(
     from sqlalchemy.exc import IntegrityError
     
     # 1. 检查是否已存在同名小区（不区分大小写）
-    existing = db.query(Community).filter(
-        Community.name.ilike(request.name),
-        Community.is_active.is_(True)
-    ).first()
+    existing = _find_existing_community_by_name(db, request.name)
     
     if existing:
         logger.info(f"小区已存在，直接返回: {existing.name} (ID: {existing.id})")
@@ -267,10 +281,7 @@ def create_community(
         db.rollback()
         logger.warning(f"创建小区时发生唯一约束冲突: {request.name}, 错误: {str(e)}")
         # 并发情况下可能另一个请求已创建，再次尝试查找
-        existing = db.query(Community).filter(
-            Community.name.ilike(request.name),
-            Community.is_active.is_(True)
-        ).first()
+        existing = _find_existing_community_by_name(db, request.name)
         if existing:
             return CommunityResponse(
                 id=existing.id,

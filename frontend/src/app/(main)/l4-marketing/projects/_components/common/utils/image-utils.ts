@@ -1,5 +1,7 @@
 "use client";
 
+import { getFileUrl as getConfigFileUrl } from "@/lib/config";
+
 // 图片优化选项
 export interface ImageOptimizationOptions {
   width?: number;
@@ -10,24 +12,9 @@ export interface ImageOptimizationOptions {
 }
 
 // 获取文件URL
+// 复用 config.ts 中的实现，保持行为一致
 export function getFileUrl(url: string | undefined | null): string {
-  if (!url) return "";
-
-  // 如果已经是完整的 URL (http/https) 或者是本地预览的 Blob URL，直接返回
-  if (
-    url.startsWith("blob:") ||
-    url.startsWith("http") ||
-    url.startsWith("https") ||
-    url.startsWith("data:")
-  ) {
-    return url;
-  }
-
-  // 如果是相对路径，拼接后端 Base URL
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const serverRoot = apiBase.replace(/\/api\/v1\/?$/, "");
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
-  return `${serverRoot}${cleanPath}`;
+  return getConfigFileUrl(url);
 }
 
 // 获取优化后的图片 URL
