@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  // [修复] API 代理重写规则 - 解决跨域 Cookie 问题
+  // 开发环境下将 /api/* 请求代理到后端，使前后端同域，Cookie 可正常发送
+  async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiUrl}/api/:path*`,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

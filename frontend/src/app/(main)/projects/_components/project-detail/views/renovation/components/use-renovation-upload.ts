@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiPaths, getApiUrl } from "@/lib/config";
+import { apiPaths, getClientApiUrl } from "@/lib/config";
 import { tryRefreshToken, isTokenExpired } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
 import { UploadingPhoto } from "./photo-grid";
@@ -40,7 +40,7 @@ export function useRenovationUpload({
     const formData = new FormData();
     formData.append("file", item.file);
 
-    const uploadUrl = getApiUrl(apiPaths.files.upload);
+    const uploadUrl = getClientApiUrl(apiPaths.files.upload);
 
     // 获取并检查 token
     let token = localStorage.getItem("access_token") || localStorage.getItem("token");

@@ -42,13 +42,36 @@ export const apiPaths = {
 } as const;
 
 /**
- * 构建完整的 API URL
+ * 构建完整的 API URL（用于 Server Actions）
  * @param path - API 路径，例如 "/api/v1/auth/login"
  * @returns 完整的 API URL
+ * 
+ * 注意：Server Actions 中的 fetch 需要完整的绝对 URL
  */
 export function getApiUrl(path: string): string {
   // 确保 path 以 / 开头
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
+/**
+ * 构建 API URL（用于客户端组件）
+ * @param path - API 路径，例如 "/api/v1/upload/csv"
+ * @returns 开发环境下返回相对路径（通过 Next.js rewrite 代理），生产环境返回完整 URL
+ * 
+ * [修复] 开发环境使用相对路径配合 Next.js rewrite 规则代理到后端
+ * 这样可以解决跨域 Cookie 问题，确保 httpOnly Cookie 能正确发送
+ */
+export function getClientApiUrl(path: string): string {
+  // 确保 path 以 / 开头
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  
+  // 开发环境：使用相对路径，通过 Next.js rewrite 代理到后端
+  // 这样浏览器发送请求时会带上同域的 Cookie
+  if (!isProduction) {
+    return normalizedPath;
+  }
+  
   return `${API_BASE_URL}${normalizedPath}`;
 }
 

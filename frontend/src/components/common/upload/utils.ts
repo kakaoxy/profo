@@ -5,7 +5,7 @@
  */
 
 import { toast } from "sonner";
-import { apiPaths, getApiUrl, getFileUrl } from "@/lib/config";
+import { apiPaths, getClientApiUrl, getFileUrl } from "@/lib/config";
 import type { UploadResponse } from "./types";
 
 /**
@@ -62,7 +62,7 @@ export function isTokenExpired(token: string): boolean {
  * 获取带完整路径的上传 URL
  */
 export function getUploadUrl(): string {
-  return getApiUrl(apiPaths.files.upload);
+  return getClientApiUrl(apiPaths.files.upload);
 }
 
 /**
