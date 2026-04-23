@@ -6,6 +6,7 @@ import { FormValues, ORIENTATION_OPTIONS } from "../schema";
 import { SimpleInputField } from "../form-components";
 import { CommunitySelect } from "@/components/common/community-select";
 import { getUsersSimpleAction } from "../../../actions/sales";
+import { toast } from "sonner";
 import {
   FormControl,
   FormField,
@@ -86,6 +87,9 @@ export function BasicInfoTab({ form }: TabProps) {
       if (mounted) {
         if (result.success && result.data) {
           setUsers(result.data);
+        } else if (!result.success) {
+          console.error("加载用户列表失败:", result.message);
+          toast.error(result.message || "加载用户列表失败");
         }
         setIsLoadingUsers(false);
       }
