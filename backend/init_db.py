@@ -19,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from db import engine
-from models import Base, Community, CommunityAlias, CommunityCompetitor, PropertyCurrent, PropertyHistory, PropertyMedia, FailedRecord
+from models import Base, Community, CommunityAlias, CommunityCompetitor, PropertyCurrent, PropertyHistory, PropertyMedia, FailedRecord, PropertyImportTask
 
 
 def init_database():
@@ -42,6 +42,7 @@ def init_database():
         print("  4. property_history     - 房源历史快照")
         print("  5. property_media       - 房源媒体资源")
         print("  6. failed_records       - 失败记录收容所")
+        print("  7. property_import_tasks - 房源批量导入任务")
         
         # 显示数据库文件位置
         from settings import settings

@@ -30,7 +30,7 @@ from .property import (
 )
 
 # 系统模块
-from .system import FailedRecord
+from .system import FailedRecord, PropertyImportTask, ImportTaskStatus
 
 # 项目管理模块
 from .project import (
@@ -84,6 +84,8 @@ __all__ = [
     'PropertyMedia',
     # 系统
     'FailedRecord',
+    'PropertyImportTask',
+    'ImportTaskStatus',
     # 项目
     'Project',
     'ProjectContract',

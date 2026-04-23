@@ -1250,12 +1250,84 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Upload Csv
-         * @description 上传并处理 CSV 文件
-         *     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
-         *     速率限制：30次/小时（防止资源耗尽攻击）
+         * Create Import Task
+         * @description 上传 CSV 文件并创建异步导入任务
+         *
+         *     流程：
+         *     1. 验证文件格式和大小
+         *     2. 保存文件并创建导入任务记录
+         *     3. 启动后台任务处理导入
+         *     4. 立即返回任务ID，前端可通过 /tasks/{task_id} 查询进度
+         *
+         *     速率限制：30次/小时
          */
-        post: operations["upload_csv_api_v1_upload_csv_post"];
+        post: operations["create_import_task_api_v1_upload_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upload/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Task Status
+         * @description 查询导入任务状态和进度
+         *
+         *     前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次
+         */
+        get: operations["get_task_status_api_v1_upload_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upload/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tasks
+         * @description 获取当前用户的导入任务列表
+         *
+         *     默认返回最近 10 条任务，按创建时间倒序排列
+         */
+        get: operations["list_tasks_api_v1_upload_tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/upload/tasks/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Task
+         * @description 取消导入任务
+         *
+         *     只能取消 pending 或 processing 状态的任务
+         */
+        post: operations["cancel_task_api_v1_upload_tasks__task_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1270,12 +1342,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Download Failed Records
+         * Download Failed File
          * @description 下载失败记录文件
          *     注意：使用 def 避免文件操作阻塞
          *     已修复：使用安全的文件路径验证，防止目录遍历攻击
          */
-        get: operations["download_failed_records_api_v1_upload_download__filename__get"];
+        get: operations["download_failed_file_api_v1_upload_download__filename__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1468,6 +1540,15 @@ export interface components {
             /** Competitor Community Id */
             competitor_community_id: string;
         };
+        /** Body_create_import_task_api_v1_upload_csv_post */
+        Body_create_import_task_api_v1_upload_csv_post: {
+            /**
+             * File
+             * Format: binary
+             * @description CSV 文件
+             */
+            file: string;
+        };
         /** Body_login_for_access_token_api_v1_auth_token_post */
         Body_login_for_access_token_api_v1_auth_token_post: {
             /** Grant Type */
@@ -1492,15 +1573,6 @@ export interface components {
              */
             client_secret?: string | null;
         };
-        /** Body_upload_csv_api_v1_upload_csv_post */
-        Body_upload_csv_api_v1_upload_csv_post: {
-            /**
-             * File
-             * Format: binary
-             * @description CSV 文件
-             */
-            file: string;
-        };
         /** Body_upload_file_api_v1_files_upload_post */
         Body_upload_file_api_v1_files_upload_post: {
             /**
@@ -1508,6 +1580,16 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /**
+         * CancelTaskResponse
+         * @description 取消任务响应
+         */
+        CancelTaskResponse: {
+            /** Message */
+            message: string;
+            /** Task Id */
+            task_id: string;
         };
         /**
          * CashFlowCategory
@@ -1792,6 +1874,110 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * ImportTaskCreateResponse
+         * @description 导入任务创建响应
+         */
+        ImportTaskCreateResponse: {
+            /**
+             * Task Id
+             * @description 任务ID
+             */
+            task_id: string;
+            /**
+             * Status
+             * @description 任务状态
+             */
+            status: string;
+            /**
+             * Message
+             * @description 提示信息
+             * @default 导入任务已创建
+             */
+            message: string;
+        };
+        /**
+         * ImportTaskStatusResponse
+         * @description 导入任务状态响应
+         */
+        ImportTaskStatusResponse: {
+            /**
+             * Task Id
+             * @description 任务ID
+             */
+            task_id: string;
+            /**
+             * Status
+             * @description 任务状态: pending/processing/completed/failed/cancelled
+             */
+            status: string;
+            /**
+             * Filename
+             * @description 原始文件名
+             */
+            filename: string;
+            /**
+             * Total Records
+             * @description 总记录数
+             * @default 0
+             */
+            total_records: number;
+            /**
+             * Processed Records
+             * @description 已处理记录数
+             * @default 0
+             */
+            processed_records: number;
+            /**
+             * Success Count
+             * @description 成功导入数
+             * @default 0
+             */
+            success_count: number;
+            /**
+             * Failed Count
+             * @description 失败记录数
+             * @default 0
+             */
+            failed_count: number;
+            /**
+             * Progress Percent
+             * @description 进度百分比(0-100)
+             * @default 0
+             */
+            progress_percent: number;
+            /**
+             * Failed File Url
+             * @description 失败记录文件URL
+             */
+            failed_file_url?: string | null;
+            /**
+             * Error Message
+             * @description 错误信息
+             */
+            error_message?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Started At
+             * @description 开始处理时间
+             */
+            started_at?: string | null;
+            /**
+             * Completed At
+             * @description 完成时间
+             */
+            completed_at?: string | null;
+            /**
+             * Processing Duration
+             * @description 处理时长(秒)
+             */
+            processing_duration?: number | null;
         };
         /**
          * ImportableMediaResponse
@@ -4014,32 +4200,6 @@ export interface components {
             deal_price: number;
             /** Volume */
             volume: number;
-        };
-        /**
-         * UploadResult
-         * @description CSV上传结果
-         */
-        UploadResult: {
-            /**
-             * Total
-             * @description 总记录数
-             */
-            total: number;
-            /**
-             * Success
-             * @description 成功导入数
-             */
-            success: number;
-            /**
-             * Failed
-             * @description 失败记录数
-             */
-            failed: number;
-            /**
-             * Failed File Url
-             * @description 失败记录CSV下载链接
-             */
-            failed_file_url?: string | null;
         };
         /**
          * UserBrief
@@ -7071,7 +7231,7 @@ export interface operations {
             };
         };
     };
-    upload_csv_api_v1_upload_csv_post: {
+    create_import_task_api_v1_upload_csv_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -7080,7 +7240,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_csv_api_v1_upload_csv_post"];
+                "multipart/form-data": components["schemas"]["Body_create_import_task_api_v1_upload_csv_post"];
             };
         };
         responses: {
@@ -7090,7 +7250,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UploadResult"];
+                    "application/json": components["schemas"]["ImportTaskCreateResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7104,7 +7264,103 @@ export interface operations {
             };
         };
     };
-    download_failed_records_api_v1_upload_download__filename__get: {
+    get_task_status_api_v1_upload_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportTaskStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_api_v1_upload_tasks_get: {
+        parameters: {
+            query?: {
+                /** @description 按状态筛选: pending/processing/completed/failed/cancelled */
+                status?: string | null;
+                /** @description 返回数量限制 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportTaskStatusResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_task_api_v1_upload_tasks__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelTaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_failed_file_api_v1_upload_download__filename__get: {
         parameters: {
             query?: never;
             header?: never;

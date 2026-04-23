@@ -19,8 +19,8 @@ export default function UploadPage() {
       <div className="bg-slate-50 rounded-lg p-6 border text-sm text-muted-foreground space-y-4">
         <h4 className="font-semibold text-slate-900">注意事项：</h4>
         <ul className="list-disc pl-4 space-y-1">
-          <li>请务必使用"下载数据模板"功能获取最新的 CSV 模板。</li>
-          <li>标有"必填"的字段不能为空，否则会导致该行数据导入失败。</li>
+          <li>请务必使用&quot;下载数据模板&quot;功能获取最新的 CSV 模板。</li>
+          <li>标有&quot;必填&quot;的字段不能为空，否则会导致该行数据导入失败。</li>
           <li>如果在售/成交状态填写错误，系统会根据验证规则拒绝导入。</li>
           <li>单次上传建议不超过 1000 条数据，以免处理时间过长。</li>
         </ul>
