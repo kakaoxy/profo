@@ -220,11 +220,16 @@ class CSVBatchImporter:
                 except Exception as e:
                     db.rollback()
                     logger.error(f"数据库提交失败: {e}")
-                    # 将整批数据标记为失败
+                    # 将整批数据标记为失败（整个批次实际都未成功提交）
+                    # 先计算批次中之前被计为成功的记录数
+                    batch_success_count = sum(
+                        1 for global_index, _, _ in validated_batch
+                        if not any(r['row_number'] == global_index for r in failed_records)
+                    )
+                    success -= batch_success_count  # 回退所有成功计数
                     for global_index, validated_data, original_row in validated_batch:
                         if not any(r['row_number'] == global_index for r in failed_records):
                             failed += 1
-                            success -= 1  # 回退成功计数
                             error_msg = f"数据库提交失败: {str(e)}"
                             failed_records.append({
                                 'row_number': global_index,
