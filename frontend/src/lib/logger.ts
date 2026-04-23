@@ -7,6 +7,8 @@
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
+const VALID_LOG_LEVELS: LogLevel[] = ["debug", "info", "warn", "error"];
+
 interface LogConfig {
   level: LogLevel;
   isDevelopment: boolean;
@@ -18,6 +20,20 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   warn: 2,
   error: 3,
 };
+
+/**
+ * 获取有效的日志级别
+ * 优先使用服务端环境变量 LOG_LEVEL，无效值时使用默认值 "info"
+ */
+function getLogLevel(): LogLevel {
+  const envLevel = process.env.LOG_LEVEL;
+
+  if (envLevel && VALID_LOG_LEVELS.includes(envLevel as LogLevel)) {
+    return envLevel as LogLevel;
+  }
+
+  return "info";
+}
 
 // 敏感字段列表，这些字段在日志中会被脱敏
 const SENSITIVE_FIELDS = [
@@ -88,7 +104,7 @@ class Logger {
 
   constructor() {
     this.config = {
-      level: (process.env.NEXT_PUBLIC_LOG_LEVEL as LogLevel) || "info",
+      level: getLogLevel(),
       isDevelopment: process.env.NODE_ENV === "development",
     };
   }
