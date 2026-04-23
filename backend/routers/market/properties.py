@@ -3,7 +3,7 @@
 处理房源数据的查询、筛选、排序和分页
 """
 from datetime import datetime as dt
-from typing import Optional, List, Annotated
+from typing import Optional, List, Annotated, Tuple
 from fastapi import APIRouter, Depends, Query, Path, HTTPException
 from fastapi.responses import StreamingResponse
 import logging
@@ -19,6 +19,7 @@ from dependencies.auth import (
 )
 from services.market import PropertyQueryService, get_property_query_service
 from models import PropertyCurrent, Community, PropertyMedia
+from models.common.base import MediaType
 
 
 logger = logging.getLogger(__name__)
@@ -240,21 +241,20 @@ def _get_image_urls(prop) -> str:
     """从 property_media 关系中获取图片URL列表"""
     if not hasattr(prop, "property_media") or not prop.property_media:
         return ""
-    
-    # 定义图片类型的枚举值
-    IMAGE_TYPES = {"interior", "exterior", "floor_plan", "other"}
-    
+
+    IMAGE_TYPES = {MediaType.INTERIOR.value, MediaType.EXTERIOR.value, MediaType.FLOOR_PLAN.value, MediaType.OTHER.value}
+
     urls = []
     for media in prop.property_media:
         if hasattr(media, "media_type"):
             media_type_value = media.media_type.value if hasattr(media.media_type, "value") else str(media.media_type)
             if media_type_value in IMAGE_TYPES and media.url:
                 urls.append(media.url)
-    
+
     return ",".join(urls) if urls else ""
 
 
-def _generate_csv_response(results: List[tuple[PropertyCurrent, Community]]) -> StreamingResponse:
+def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> StreamingResponse:
     """
     生成 CSV 文件流响应
     格式与批量上传模板保持一致，参考 PropertyIngestionModel 的字段别名
