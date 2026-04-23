@@ -53,7 +53,7 @@ class PropertyImporter:
         
         return ImportResult(success=True, property_id=property_id, error=None)
 
-    def find_or_create_community(self, data: PropertyIngestionModel, db: Session) -> int:
+    def find_or_create_community(self, data: PropertyIngestionModel, db: Session) -> str:
         """查找或创建小区"""
         name = data.community_name.strip()
         
@@ -106,7 +106,7 @@ class PropertyImporter:
             # flush 不是必须的，commit 会处理，但在长事务中 flush 可以保持状态一致
             db.flush() 
 
-    def _create_community(self, name: str, data: PropertyIngestionModel, db: Session) -> int:
+    def _create_community(self, name: str, data: PropertyIngestionModel, db: Session) -> str:
         """创建新的小区记录"""
         new_community = Community(
             name=name,
@@ -130,14 +130,14 @@ class PropertyImporter:
         ).first()
 
     def _handle_update(self, existing: PropertyCurrent, data: PropertyIngestionModel,
-                       community_id: int, db: Session) -> None:
+                       community_id: str, db: Session) -> None:
         """处理更新逻辑：快照 + 更新当前表"""
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
         self._map_data_to_property(existing, data, community_id)
         self._save_property_media(data, db)
 
-    def _handle_creation(self, data: PropertyIngestionModel, community_id: int, db: Session) -> PropertyCurrent:
+    def _handle_creation(self, data: PropertyIngestionModel, community_id: str, db: Session) -> PropertyCurrent:
         """处理创建逻辑"""
         new_property = PropertyCurrent(
             data_source=data.data_source,
@@ -151,7 +151,7 @@ class PropertyImporter:
         self._save_property_media(data, db)
         return new_property
 
-    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: int) -> None:
+    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: str) -> None:
         """
         统一的数据映射方法
         同时用于 Create 和 Update，消除代码重复

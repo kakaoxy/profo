@@ -141,7 +141,13 @@ export interface paths {
          */
         get: operations["get_communities_api_v1_admin_communities_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Community
+         * @description 创建新小区
+         *
+         *     如果小区名称已存在，则返回已存在的小区
+         */
+        post: operations["create_community_api_v1_admin_communities_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1042,6 +1048,7 @@ export interface paths {
         /**
          * Create User
          * @description 创建新用户
+         *     速率限制：10次/小时（防止批量创建用户攻击）
          */
         post: operations["create_user_api_v1_users__post"];
         delete?: never;
@@ -1129,6 +1136,7 @@ export interface paths {
         /**
          * Reset User Password
          * @description 重置用户密码
+         *     速率限制：5次/小时（防止密码重置滥用）
          */
         put: operations["reset_user_password_api_v1_users__user_id__reset_password_put"];
         post?: never;
@@ -1150,6 +1158,7 @@ export interface paths {
         /**
          * Change Password
          * @description 修改当前用户密码
+         *     速率限制：3次/分钟（防止暴力破解密码）
          */
         post: operations["change_password_api_v1_users_change_password_post"];
         delete?: never;
@@ -1244,6 +1253,7 @@ export interface paths {
          * Upload Csv
          * @description 上传并处理 CSV 文件
          *     注意：使用 def 而非 async def，以便在线程池中运行，避免阻塞主循环
+         *     速率限制：30次/小时（防止资源耗尽攻击）
          */
         post: operations["upload_csv_api_v1_upload_csv_post"];
         delete?: never;
@@ -1263,6 +1273,7 @@ export interface paths {
          * Download Failed Records
          * @description 下载失败记录文件
          *     注意：使用 def 避免文件操作阻塞
+         *     已修复：使用安全的文件路径验证，防止目录遍历攻击
          */
         get: operations["download_failed_records_api_v1_upload_download__filename__get"];
         put?: never;
@@ -1318,6 +1329,7 @@ export interface paths {
          * 上传文件
          * @description Handle file upload (Sync - Run in threadpool by FastAPI)
          *     Optimized to read only first 2KB for MIME check.
+         *     速率限制：50次/小时（防止资源耗尽攻击）
          */
         post: operations["upload_file_api_v1_files_upload_post"];
         delete?: never;
@@ -1606,6 +1618,27 @@ export interface components {
          * @enum {string}
          */
         CashFlowType: "income" | "expense";
+        /**
+         * CommunityCreateRequest
+         * @description 创建小区请求
+         */
+        CommunityCreateRequest: {
+            /**
+             * Name
+             * @description 小区名称
+             */
+            name: string;
+            /**
+             * District
+             * @description 行政区
+             */
+            district?: string | null;
+            /**
+             * Business Circle
+             * @description 商圈
+             */
+            business_circle?: string | null;
+        };
         /**
          * CommunityListResponse
          * @description 小区列表响应
@@ -3210,7 +3243,7 @@ export interface components {
             /** Status */
             status: string;
             /** Community Id */
-            community_id: number;
+            community_id: string;
             /** Community Name */
             community_name: string;
             /** District */
@@ -3304,7 +3337,7 @@ export interface components {
             /** Status */
             status: string;
             /** Community Id */
-            community_id: number;
+            community_id: string;
             /** Community Name */
             community_name: string;
             /** District */
@@ -4462,6 +4495,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_community_api_v1_admin_communities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityResponse"];
                 };
             };
             /** @description Validation Error */

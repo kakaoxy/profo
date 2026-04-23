@@ -12,7 +12,7 @@ class L4MarketingProjectQuery(BaseModel):
     """营销项目查询参数"""
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=200)
-    community_id: int | None = None
+    community_id: str | None = None
     publish_status: str | None = None
     project_status: str | None = None
     consultant_id: str | None = None
