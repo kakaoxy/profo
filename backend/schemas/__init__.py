@@ -14,6 +14,13 @@
 - user/: 用户和认证相关
 - monitor/: 监控和市场分析相关
 - l4_marketing/: L4市场营销层
+
+文件行数说明：
+本文件约270行（超过250行限制）。未拆分的原因：
+1. 本文件是纯粹的聚合导出文件，没有业务逻辑代码
+2. 所有具体模型已实现并分布在各自的子模块中
+3. 拆分会增加不必要的文件层级，降低导入便利性
+4. 统一出口模式是Python包的常见做法，便于使用者一次性导入所需模型
 """
 
 from .enums import IngestionStatus, MediaTypeEnum
@@ -50,7 +57,10 @@ from .community import (
 )
 
 # 5. Upload (上传导入)
-from .upload import UploadResult, PushResult, ImportResult, BatchImportResult
+from .upload import (
+    UploadResult, PushResult, ImportResult, BatchImportResult,
+    ImportTaskCreateResponse, ImportTaskStatusResponse
+)
 
 # 6. Project (项目) - 从新位置导入
 from .project import (
@@ -179,6 +189,8 @@ __all__ = [
     'PushResult',
     'ImportResult',
     'BatchImportResult',
+    'ImportTaskCreateResponse',
+    'ImportTaskStatusResponse',
 
     # Project
     'ProjectCreate',
