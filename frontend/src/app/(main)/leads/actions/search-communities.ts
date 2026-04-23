@@ -17,10 +17,5 @@ export async function searchCommunitiesAction(query: string) {
     return [];
   }
 
-  return transformCommunitySearch(data as Array<{
-    id: string;
-    name: string;
-    district?: string;
-    business_circle?: string;
-  }>);
+  return transformCommunitySearch(data);
 }
