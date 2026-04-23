@@ -122,7 +122,7 @@ class CommunityMerger:
             # 逻辑 B: 转移该小区已有的别名
             self._transfer_existing_aliases(db, target.id, primary_id)
 
-    def _ensure_alias_exists(self, db: Session, community_id: int, alias_name: str, source: str):
+    def _ensure_alias_exists(self, db: Session, community_id: str, alias_name: str, source: str):
         """确保别名存在，不存在则创建"""
         exists = db.query(CommunityAlias).filter(
             CommunityAlias.alias_name == alias_name,
@@ -138,7 +138,7 @@ class CommunityMerger:
             )
             db.add(new_alias)
 
-    def _transfer_existing_aliases(self, db: Session, old_community_id: int, new_community_id: int):
+    def _transfer_existing_aliases(self, db: Session, old_community_id: str, new_community_id: str):
         """
         转移旧小区的别名到新小区。
         注意：需要处理唯一性约束冲突（如果目标小区已有同名别名，则直接删除旧记录或跳过更新）。

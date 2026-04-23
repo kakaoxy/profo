@@ -17,7 +17,7 @@ class PropertyResponse(BaseModel):
     status: str
     
     # 小区信息
-    community_id: int
+    community_id: str
     community_name: str
     district: Optional[str] = None
     business_circle: Optional[str] = None
@@ -173,29 +173,29 @@ class PropertyDetailResponse(BaseModel):
     status: str
     
     # 小区信息
-    community_id: int
+    community_id: str
     community_name: str
     district: Optional[str] = None
     business_circle: Optional[str] = None
-    
+
     # 户型信息
     rooms: int
     halls: int
     baths: int
     layout_display: str
     orientation: str
-    
+
     # 楼层信息
     floor_original: str
     floor_display: str
     floor_number: Optional[int] = None
     total_floors: Optional[int] = None
     floor_level: Optional[str] = None
-    
+
     # 面积信息
     build_area: float
     inner_area: Optional[float] = None
-    
+
     # 价格信息
     listed_price_wan: Optional[float] = None
     sold_price_wan: Optional[float] = None

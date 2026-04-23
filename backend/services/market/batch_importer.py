@@ -289,7 +289,7 @@ class CSVBatchImporter:
                         out_row[k] = record['data'].get(k, '')
                     writer.writerow(out_row)
 
-            return f"/api/upload/download/{filename}"
+            return f"/api/v1/upload/download/{filename}"
 
         except Exception as e:
             logger.error(f"生成失败 CSV 出错: {e}")
