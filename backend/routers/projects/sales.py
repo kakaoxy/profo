@@ -1,8 +1,9 @@
-from typing import Annotated, Optional, List, Any, Dict
+from typing import Annotated, Optional, List
 from fastapi import APIRouter, Path, Query
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import SalesRolesUpdate, SalesRecordCreate, SalesRecordResponse, ProjectResponse
+from schemas.project.sales import SalesRecordListResponse
 
 router = APIRouter()
 
@@ -55,16 +56,18 @@ def create_negotiation_record(
     return record
 
 
-@router.get("/{project_id}/selling/records", response_model=List[Dict[str, Any]])
+@router.get("/{project_id}/selling/records", response_model=SalesRecordListResponse)
 def get_sales_records(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
     record_type: Annotated[Optional[str], Query(description="记录类型筛选")] = None,
-):
+) -> SalesRecordListResponse:
     """获取销售记录"""
     records = service.get_sales_records(project_id, record_type)
-    return records
+    # 将字典列表转换为 Pydantic 模型
+    items = [SalesRecordResponse.model_validate(r) for r in records]
+    return SalesRecordListResponse(items=items, total=len(items))
 
 
 @router.delete("/{project_id}/selling/records/{record_id}", status_code=204)

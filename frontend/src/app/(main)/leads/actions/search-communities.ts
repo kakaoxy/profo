@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
+import { transformCommunitySearch } from "@/lib/api-transforms";
 
 export async function searchCommunitiesAction(query: string) {
   const client = await fetchClient();
@@ -16,10 +17,10 @@ export async function searchCommunitiesAction(query: string) {
     return [];
   }
 
-  return data as unknown as {
+  return transformCommunitySearch(data as Array<{
     id: string;
     name: string;
-    district: string;
-    businessCircle: string;
-  }[];
+    district?: string;
+    business_circle?: string;
+  }>);
 }
