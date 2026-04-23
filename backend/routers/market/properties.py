@@ -247,7 +247,7 @@ def _get_image_urls(prop) -> str:
     urls = []
     for media in prop.property_media:
         if hasattr(media, "media_type"):
-            media_type_value = media.media_type.value if hasattr(media.media_type, "value") else str(media.media_type)
+            media_type_value = media.media_type.value
             if media_type_value in IMAGE_TYPES and media.url:
                 urls.append(media.url)
 
