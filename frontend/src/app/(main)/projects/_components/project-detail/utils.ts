@@ -2,6 +2,8 @@
  * 项目详情相关工具函数
  */
 
+import { getFileUrl as getConfigFileUrl } from "@/lib/config";
+
 // 格式化日期
 export function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "-";
@@ -54,28 +56,8 @@ export function getStatusColor(status: string): string {
   return colors[status] || "bg-gray-500";
 }
 
-export function getFileUrl(url: string | undefined | null) {
-  if (!url) return "";
-
-  // 1. 如果已经是完整的 URL (http/https) 或者是本地预览的 Blob URL，直接返回
-  if (
-    url.startsWith("blob:") ||
-    url.startsWith("http") ||
-    url.startsWith("https")
-  ) {
-    return url;
-  }
-
-  // 2. 如果是相对路径，我们需要拼接后端的 Base URL
-  // 环境变量通常是 http://localhost:8000/api/v1，我们需要去掉后面的 /api/v1
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  // 简单的正则替换：去掉结尾的 /api/v1 (如果有的话)，得到 http://localhost:8000
-  const serverRoot = apiBase.replace(/\/api\/v1\/?$/, "");
-
-  // 确保 url 以 / 开头
-  const cleanPath = url.startsWith("/") ? url : `/${url}`;
-
-  // 拼接：http://localhost:8000 + /static/uploads/xxx.jpg
-  return `${serverRoot}${cleanPath}`;
+// 获取文件URL
+// 复用 config.ts 中的实现，保持行为一致
+export function getFileUrl(url: string | undefined | null): string {
+  return getConfigFileUrl(url);
 }

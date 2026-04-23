@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { apiPaths, getApiUrl } from "@/lib/config";
 
 export interface CreateCommunityRequest {
   name: string;
@@ -26,17 +27,14 @@ export async function createCommunityAction(
     const cookieStore = await cookies();
     const token = cookieStore.get("access_token")?.value;
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/v1/admin/communities`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(data),
-      }
-    );
+    const response = await fetch(getApiUrl(apiPaths.communities.base), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
 
     if (!response.ok) {
       console.error("Create community error:", response.statusText);

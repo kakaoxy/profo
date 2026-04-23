@@ -33,6 +33,12 @@ export const apiPaths = {
   files: {
     upload: "/api/v1/files/upload",
   },
+  communities: {
+    base: "/api/v1/admin/communities",
+  },
+  properties: {
+    export: "/api/v1/properties/export",
+  },
 } as const;
 
 /**
