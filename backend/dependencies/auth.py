@@ -1,9 +1,9 @@
 """
 认证相关依赖注入函数
 """
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 
@@ -13,23 +13,28 @@ from settings import settings
 from utils.auth import validate_token
 
 # OAuth2密码承载器，用于从请求头中获取token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_prefix}/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.api_prefix}/v1/auth/token",
+    auto_error=False,  # 允许token缺失，以便我们从cookie中读取
+)
 
 # 类型别名定义
-TokenDep = Annotated[str, Depends(oauth2_scheme)]
 DbSessionDep = Annotated[Session, Depends(get_db)]
 
 
 async def get_current_user(
-    token: TokenDep,
+    request: Request,
     db: DbSessionDep,
+    token_from_header: Optional[str] = Depends(oauth2_scheme),
 ) -> User:
     """
     获取当前用户
+    支持从Authorization Header或access_token cookie获取token
 
     Args:
-        token: JWT令牌
+        request: FastAPI请求对象
         db: 数据库会话
+        token_from_header: 从Authorization Header获取的token
 
     Returns:
         User: 当前用户对象
@@ -42,6 +47,17 @@ async def get_current_user(
         detail="无法验证凭据",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    # 优先从Header获取token
+    token = token_from_header
+    
+    # 如果Header没有，从cookie中获取
+    if token is None:
+        token = request.cookies.get("access_token")
+    
+    # 检查token是否存在
+    if token is None:
+        raise credentials_exception
 
     # 验证令牌
     payload = validate_token(token)
@@ -199,7 +215,6 @@ def get_current_internal_user(
 
 __all__ = [
     # 类型别名
-    "TokenDep",
     "DbSessionDep",
     "CurrentUserDep",
     "CurrentActiveUserDep",

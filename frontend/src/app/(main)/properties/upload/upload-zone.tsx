@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   UploadCloud,
   FileSpreadsheet,
@@ -18,17 +18,9 @@ import { downloadCsvTemplate } from "@/lib/file-utils";
 import { uploadCSV, type UploadResult } from "@/lib/api-upload";
 import { cn } from "@/lib/utils";
 
-const getCookieValue = (name: string): string | undefined => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-  return undefined;
-};
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function UploadZone() {
-  const [accessToken, setAccessToken] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -36,18 +28,13 @@ export function UploadZone() {
   const [result, setResult] = useState<UploadResult | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    const token = getCookieValue("access_token") || "";
-    setAccessToken(token);
-  }, []);
-
-  const startUpload = useCallback(async (file: File, token: string) => {
+  const startUpload = useCallback(async (file: File) => {
     setIsUploading(true);
     setProgress(0);
     setResult(null);
 
     try {
-      const res = await uploadCSV(file, token, (p) => setProgress(p));
+      const res = await uploadCSV(file, (p) => setProgress(p));
       setResult(res);
 
       if (res.failed === 0) {
@@ -86,12 +73,7 @@ export function UploadZone() {
     }
 
     setCurrentFile(file);
-    const token = getCookieValue("access_token") || "";
-    if (!token) {
-      toast.error("未登录", { description: "请先登录后再上传" });
-      return;
-    }
-    startUpload(file, token);
+    startUpload(file);
   }, [startUpload]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
