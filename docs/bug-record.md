@@ -313,3 +313,88 @@
 **方案 B：抽取通用金额格式化工具，按场景控制精度**
 - 在项目详情 `utils.ts` 或共享工具中提供 `formatCurrency(amount, digits=2)`；
 - 对“费用汇总/金额”使用 2 位小数；对“比例/计数”等保持 0 位或按需求。
+
+### BUG-0006：市场情报批量上传失败记录下载 404，且后端触发 PropertyResponse 类型校验崩溃
+
+- **标题**：市场情报批量上传提示“部分失败”后，下载失败记录跳转 404；后端日志出现 PropertyResponse.community_id 类型错误并崩溃
+- **严重程度**：高
+- **优先级**：P1
+- **状态**：未修复
+- **模块**：市场情报 / 房源批量上传（CSV 导入）/ 失败记录下载 / 房源查询
+- **发现时间**：2026-04-23
+
+#### 现象
+1) 在“市场情报-批量上传”上传 CSV 后，页面提示“导入完成，存在部分失败”，点击“下载失败记录(CSV)”会打开一个新页面，但页面显示 **404**（`This page could not be found.`）。
+
+2) 同时（或随后）后端进程崩溃，日志提示：
+`pydantic_core._pydantic_core.ValidationError: 1 validation error for PropertyResponse`
+`community_id Input should be a valid integer, unable to parse string as an integer ... input_value='fe560835-...'`
+
+#### 复现步骤
+1. 进入前端页面：市场情报 → 房源批量上传
+2. 上传一份包含部分错误数据的 CSV
+3. 页面出现提示：“导入完成，存在部分失败”，并显示“下载失败记录(CSV)”按钮
+4. 点击“下载失败记录(CSV)”
+5. 观察：新标签页/窗口打开 404 页面
+6. 查看后端日志：出现 `PropertyResponse.community_id` 类型校验错误并导致服务异常
+
+#### 预期结果
+- 失败记录下载按钮应直接下载失败 CSV（HTTP 200 FileResponse），不应跳转到前端 404 页面；
+- 后端不应因响应模型类型不一致而崩溃，导入/查询流程应可稳定运行。
+
+#### 实际结果
+- `failed_file_url` 指向错误路径，导致点击下载时命中前端路由/错误的 API 路径而返回 404；
+- 后端存在 `community_id` 类型定义与数据库/模型不一致的问题，触发 `PropertyResponse` 校验失败并导致服务崩溃。
+
+#### 涉及前端代码位置（关键点）
+- 上传页与“下载失败记录”按钮：
+  - `frontend/src/app/(main)/properties/upload/upload-zone.tsx`
+    - 点击下载：`window.open(result.failed_file_url, "_blank")`
+- 上传 API 调用：
+  - `frontend/src/lib/api-upload.ts`
+    - 上传接口：`POST getApiUrl("/api/v1/upload/csv")`
+
+#### 涉及后端代码位置（关键点）
+**A. 失败记录下载 URL 生成与下载路由不一致（导致 404）**
+- 失败 CSV 生成并返回下载 URL：
+  - `backend/services/market/batch_importer.py`
+    - `_generate_failed_csv()` 返回：`return f"/api/upload/download/{filename}"`
+- 实际下载路由：
+  - `backend/routers/common/upload.py`
+    - `@router.get("/download/{filename}")`
+- 路由挂载前缀：
+  - `backend/main.py`
+    - `app.include_router(upload_router, prefix=f"{API_V1_PREFIX}/upload", ...)`
+    - 即实际下载地址应为：`/api/v1/upload/download/{filename}`
+
+**B. community_id 类型不一致（导致 PropertyResponse 校验失败/崩溃）**
+- 数据库模型：小区 ID 为 UUID 字符串
+  - `backend/models/property/community.py`：`Community.id = Column(String(36), ...)`
+  - `backend/models/property/property.py`：`PropertyCurrent.community_id = Column(String(36), ForeignKey("communities.id"), ...)`
+- 但房源响应模型要求整数：
+  - `backend/schemas/property/response.py`
+    - `class PropertyResponse`: `community_id: int`
+    - `class PropertyDetailResponse`: `community_id: int`
+    - 且在 `from_orm_with_calculations()` 中传入：`community_id=property_obj.community_id`（UUID 字符串）
+- 触发点（示例）：房源查询服务构建返回值
+  - `backend/services/market/query.py` → `PropertyResponse.from_orm_with_calculations(...)`
+
+#### 可能原因（代码级结论）
+1) `failed_file_url` 拼接逻辑写死为 `/api/upload/...`，遗漏 `/v1` 前缀（且与后端 router 挂载路径不一致），导致前端点击后命中错误路由从而 404。
+2) 后端从“整数型小区 ID”迁移到“UUID 字符串小区 ID”后，`PropertyResponse` 仍保留 `community_id: int`，导致一旦走到房源响应构建，就会出现 Pydantic 校验错误并可能导致服务异常退出。
+
+#### 修复建议（可选方案）
+**方案 A（推荐）：修正失败记录下载 URL**
+- 将 `backend/services/market/batch_importer.py` 的返回值改为：
+  - `return f"/api/v1/upload/download/{filename}"`
+- 或更稳妥：通过配置的 `api_prefix` 统一生成（避免未来改前缀再次出错）。
+
+**方案 B（推荐）：统一 community_id 类型为 UUID 字符串**
+- 修改 `backend/schemas/property/response.py`：
+  - `PropertyResponse.community_id: str`
+  - `PropertyDetailResponse.community_id: str`
+- 同步检查所有引用 `community_id` 的 schema/前端类型，确保一致。
+
+**方案 C：增加兜底错误处理避免“导入后崩溃”**
+- 对触发 `PropertyResponse` 构建的接口增加异常捕获与标准错误返回（避免直接导致进程退出）；
+- 在导入完成页面的后续请求（如果有刷新列表）失败时提示“后端服务异常”。
