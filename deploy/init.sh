@@ -56,7 +56,7 @@ check_python_version() {
         exit 1
     fi
 
-    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | sed -E 's/Python ([0-9]+\.[0-9]+)\.?[0-9]*/\1/' | head -1)
+    PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
     MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
     MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
 
