@@ -52,37 +52,40 @@ class ApiKeyService:
         Raises:
             ConflictError: 用户已有有效 Key
         """
-        # 检查是否已有有效 Key
-        existing_key = db.query(ApiKey).filter(
-            ApiKey.user_id == user_id,
-            ApiKey.status == "active",
-            ApiKey.deleted_at.is_(None)
-        ).first()
+        key_string: str = ""
+        api_key: ApiKey | None = None
 
-        if existing_key:
-            # 撤销旧 Key
-            existing_key.revoke()
+        with db.begin():
+            # 检查是否已有有效 Key
+            existing_key = db.query(ApiKey).filter(
+                ApiKey.user_id == user_id,
+                ApiKey.status == "active",
+                ApiKey.deleted_at.is_(None)
+            ).first()
 
-        # 生成新 Key
-        key_string, prefix = ApiKeyService._generate_key_string()
-        key_hash = ApiKeyService._hash_key(key_string)
+            if existing_key:
+                # 撤销旧 Key
+                existing_key.revoke()
 
-        # 计算过期时间
-        expires_at = None
-        if expires_days:
-            expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+            # 生成新 Key
+            key_string, prefix = ApiKeyService._generate_key_string()
+            key_hash = ApiKeyService._hash_key(key_string)
 
-        # 创建 Key 记录
-        api_key = ApiKey(
-            user_id=user_id,
-            key_prefix=prefix,
-            key_hash=key_hash,
-            status="active",
-            expires_at=expires_at
-        )
+            # 计算过期时间
+            expires_at = None
+            if expires_days:
+                expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
-        db.add(api_key)
-        db.flush()  #  flush 以获取生成的 ID
+            # 创建 Key 记录
+            api_key = ApiKey(
+                user_id=user_id,
+                key_prefix=prefix,
+                key_hash=key_hash,
+                status="active",
+                expires_at=expires_at
+            )
+
+            db.add(api_key)
 
         return key_string, api_key
 
