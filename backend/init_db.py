@@ -19,7 +19,24 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from db import engine
-from models import Base, Community, CommunityAlias, CommunityCompetitor, PropertyCurrent, PropertyHistory, PropertyMedia, FailedRecord, PropertyImportTask
+from models import Base
+# 导入所有模型以确保注册到 metadata
+from models import (
+    # 房源相关
+    Community, CommunityAlias, CommunityCompetitor, PropertyCurrent, PropertyHistory, PropertyMedia,
+    # 系统相关
+    FailedRecord, PropertyImportTask,
+    # 用户相关
+    User, Role, ApiKey,
+    # 项目相关
+    Project, ProjectContract, ProjectOwner, ProjectSale, ProjectFollowUp,
+    ProjectEvaluation, ProjectInteraction, FinanceRecord, ProjectStatusLog,
+    ProjectRenovation, RenovationPhoto,
+    # 线索相关
+    Lead, LeadFollowUp, LeadPriceHistory,
+    # 市场营销
+    L4MarketingProject, L4MarketingMedia,
+)
 
 
 def init_database():
@@ -27,22 +44,22 @@ def init_database():
     print("=" * 60)
     print("🚀 开始初始化 Profo 房产数据中心数据库...")
     print("=" * 60)
-    
+
     try:
         # 创建所有表
         print("\n📋 正在创建数据库表...")
         Base.metadata.create_all(bind=engine)
-        
+
         # 验证表是否创建成功
         print("\n✅ 数据库表创建成功！")
         print("\n已创建的表:")
-        print("  1. communities          - 小区字典")
-        print("  2. community_aliases    - 小区别名映射")
-        print("  3. property_current     - 房源当前状态")
-        print("  4. property_history     - 房源历史快照")
-        print("  5. property_media       - 房源媒体资源")
-        print("  6. failed_records       - 失败记录收容所")
-        print("  7. property_import_tasks - 房源批量导入任务")
+        print("  - communities, community_aliases, community_competitors")
+        print("  - property_current, property_history, property_media")
+        print("  - failed_records, property_import_tasks")
+        print("  - users, roles, api_keys")
+        print("  - projects, project_contracts, project_owners, project_sales")
+        print("  - leads, lead_followups, lead_price_histories")
+        print("  - l4_marketing_projects, l4_marketing_media")
         
         # 显示数据库文件位置
         from settings import settings

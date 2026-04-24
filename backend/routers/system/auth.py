@@ -217,6 +217,8 @@ def create_api_key(
     Key 仅显示一次，请妥善保存
     """
     key_string, api_key = ApiKeyService.generate_api_key(db, str(current_user.id))
+    db.commit()  # 提交事务
+    db.refresh(api_key)  # 刷新以获取生成的字段
     return ApiKeyCreateResponse(
         api_key=key_string,
         prefix=api_key.key_prefix,
@@ -258,6 +260,7 @@ def delete_api_key(
     """
     try:
         ApiKeyService.revoke_api_key(db, str(current_user.id))
+        db.commit()  # 提交事务
     except ResourceNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
