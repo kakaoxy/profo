@@ -52,35 +52,39 @@ class ApiKeyService:
         Raises:
             ConflictError: 用户已有有效 Key
         """
-        existing_key = db.query(ApiKey).filter(
-            ApiKey.user_id == user_id,
-            ApiKey.status == "active",
-            ApiKey.deleted_at.is_(None)
-        ).first()
+        try:
+            existing_key = db.query(ApiKey).filter(
+                ApiKey.user_id == user_id,
+                ApiKey.status == "active",
+                ApiKey.deleted_at.is_(None)
+            ).first()
 
-        if existing_key:
-            existing_key.revoke()
+            if existing_key:
+                existing_key.revoke()
 
-        key_string, prefix = ApiKeyService._generate_key_string()
-        key_hash = ApiKeyService._hash_key(key_string)
+            key_string, prefix = ApiKeyService._generate_key_string()
+            key_hash = ApiKeyService._hash_key(key_string)
 
-        expires_at = None
-        if expires_days:
-            expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+            expires_at = None
+            if expires_days:
+                expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
-        api_key = ApiKey(
-            user_id=user_id,
-            key_prefix=prefix,
-            key_hash=key_hash,
-            status="active",
-            expires_at=expires_at
-        )
+            api_key = ApiKey(
+                user_id=user_id,
+                key_prefix=prefix,
+                key_hash=key_hash,
+                status="active",
+                expires_at=expires_at
+            )
 
-        db.add(api_key)
-        db.commit()
-        db.refresh(api_key)
+            db.add(api_key)
+            db.commit()
+            db.refresh(api_key)
 
-        return key_string, api_key
+            return key_string, api_key
+        except Exception:
+            db.rollback()
+            raise
 
     @staticmethod
     def get_api_key_info(db: Session, user_id: str) -> ApiKey | None:
