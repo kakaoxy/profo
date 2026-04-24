@@ -41,8 +41,6 @@ class ApiKeyService:
         为用户生成新的 API Key
         每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
 
-        注意：此方法使用保存点确保原子性，调用方需要负责最终的事务提交
-
         Args:
             db: 数据库会话
             user_id: 用户ID
@@ -54,45 +52,33 @@ class ApiKeyService:
         Raises:
             ConflictError: 用户已有有效 Key
         """
-        # 使用保存点确保撤销旧Key和创建新Key的原子性
-        # 如果外部已有事务，使用 begin_nested() 创建保存点
-        # 如果外部没有事务，使用 begin() 创建新事务
-        if db.in_transaction():
-            context = db.begin_nested()
-        else:
-            context = db.begin()
+        existing_key = db.query(ApiKey).filter(
+            ApiKey.user_id == user_id,
+            ApiKey.status == "active",
+            ApiKey.deleted_at.is_(None)
+        ).first()
 
-        with context:
-            # 检查是否已有有效 Key
-            existing_key = db.query(ApiKey).filter(
-                ApiKey.user_id == user_id,
-                ApiKey.status == "active",
-                ApiKey.deleted_at.is_(None)
-            ).first()
+        if existing_key:
+            existing_key.revoke()
 
-            if existing_key:
-                # 撤销旧 Key
-                existing_key.revoke()
+        key_string, prefix = ApiKeyService._generate_key_string()
+        key_hash = ApiKeyService._hash_key(key_string)
 
-            # 生成新 Key
-            key_string, prefix = ApiKeyService._generate_key_string()
-            key_hash = ApiKeyService._hash_key(key_string)
+        expires_at = None
+        if expires_days:
+            expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
-            # 计算过期时间
-            expires_at = None
-            if expires_days:
-                expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+        api_key = ApiKey(
+            user_id=user_id,
+            key_prefix=prefix,
+            key_hash=key_hash,
+            status="active",
+            expires_at=expires_at
+        )
 
-            # 创建 Key 记录
-            api_key = ApiKey(
-                user_id=user_id,
-                key_prefix=prefix,
-                key_hash=key_hash,
-                status="active",
-                expires_at=expires_at
-            )
-
-            db.add(api_key)
+        db.add(api_key)
+        db.commit()
+        db.refresh(api_key)
 
         return key_string, api_key
 
