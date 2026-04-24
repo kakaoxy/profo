@@ -127,8 +127,7 @@ export const useCreateProject = ({
     setActiveTab,
     clearDraft,
     onSubmit: form.handleSubmit(onSubmit, (errors) => {
-      const errorFields = Object.keys(errors);
-      if (errorFields.length === 0) {
+      if (Object.keys(errors).length === 0) {
         console.error("[CreateProject] Form validation failed but no specific field errors found");
       } else {
         console.error("[CreateProject] Form validation errors:", errors);
