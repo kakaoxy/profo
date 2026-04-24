@@ -1032,6 +1032,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Api Key Info
+         * @description 获取当前用户的 API Key 信息
+         *     不返回完整的 Key，只返回前缀和状态信息
+         */
+        get: operations["get_api_key_info_api_v1_auth_api_key_get"];
+        put?: never;
+        /**
+         * Create Api Key
+         * @description 生成新的 API Key
+         *     每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
+         *     Key 仅显示一次，请妥善保存
+         */
+        post: operations["create_api_key_api_v1_auth_api_key_post"];
+        /**
+         * Delete Api Key
+         * @description 撤销当前用户的 API Key
+         */
+        delete: operations["delete_api_key_api_v1_auth_api_key_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/": {
         parameters: {
             query?: never;
@@ -1539,6 +1570,70 @@ export interface components {
         AddCompetitorRequest: {
             /** Competitor Community Id */
             competitor_community_id: string;
+        };
+        /**
+         * ApiKeyCreateResponse
+         * @description API Key 创建响应模型
+         */
+        ApiKeyCreateResponse: {
+            /**
+             * Api Key
+             * @description 完整的 API Key（仅显示一次）
+             */
+            api_key: string;
+            /**
+             * Prefix
+             * @description Key 前缀
+             */
+            prefix: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Expires At
+             * @description 过期时间
+             */
+            expires_at?: string | null;
+        };
+        /**
+         * ApiKeyInfoResponse
+         * @description API Key 信息响应模型
+         */
+        ApiKeyInfoResponse: {
+            /**
+             * Id
+             * @description Key ID
+             */
+            id: string;
+            /**
+             * Prefix
+             * @description Key 前缀
+             */
+            prefix: string;
+            /**
+             * Status
+             * @description Key 状态
+             */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Last Used At
+             * @description 最后使用时间
+             */
+            last_used_at?: string | null;
+            /**
+             * Expires At
+             * @description 过期时间
+             */
+            expires_at?: string | null;
         };
         /** Body_create_import_task_api_v1_upload_csv_post */
         Body_create_import_task_api_v1_upload_csv_post: {
@@ -4463,6 +4558,17 @@ export interface components {
             type: string;
         };
         /**
+         * WechatAuthUrlResponse
+         * @description 微信授权 URL 响应模型
+         */
+        WechatAuthUrlResponse: {
+            /**
+             * Auth Url
+             * @description 微信授权URL
+             */
+            auth_url: string;
+        };
+        /**
          * WechatLoginRequest
          * @description 微信登录请求模型
          */
@@ -6640,7 +6746,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["WechatAuthUrlResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6738,6 +6844,64 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
                 };
+            };
+        };
+    };
+    get_api_key_info_api_v1_auth_api_key_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyInfoResponse"] | null;
+                };
+            };
+        };
+    };
+    create_api_key_api_v1_auth_api_key_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
+                };
+            };
+        };
+    };
+    delete_api_key_api_v1_auth_api_key_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
