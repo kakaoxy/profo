@@ -4,5 +4,6 @@
 """
 
 from .user import User, Role
+from .api_key import ApiKey
 
-__all__ = ['User', 'Role']
+__all__ = ['User', 'Role', 'ApiKey']

@@ -48,7 +48,7 @@ from .project import (
 )
 
 # 用户权限模块
-from .user import User, Role
+from .user import User, Role, ApiKey
 
 # 线索管理模块
 from .lead import Lead, LeadFollowUp, LeadPriceHistory
@@ -101,6 +101,7 @@ __all__ = [
     # 用户
     'User',
     'Role',
+    'ApiKey',
     # 线索
     'Lead',
     'LeadFollowUp',
