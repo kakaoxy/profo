@@ -13,6 +13,7 @@ import {
   ChevronRight,
   MoreHorizontal,
   Smartphone,
+  Settings,
   LucideIcon,
 } from "lucide-react";
 import {
@@ -108,6 +109,14 @@ const data: { navMain: NavItem[] } = {
       items: [
         { title: "用户列表", url: "/users" },
         { title: "权限管理", url: "/users/roles" },
+      ],
+    },
+    {
+      title: "设置",
+      url: "#",
+      icon: Settings,
+      items: [
+        { title: "API Key", url: "/settings/api-key" },
       ],
     },
   ],

@@ -218,7 +218,8 @@ def create_api_key(
     Key 仅显示一次，请妥善保存
     """
     key_string, api_key = ApiKeyService.generate_api_key(db, str(current_user.id))
-    db.refresh(api_key)  # 刷新以获取生成的字段（事务已由 Service 层提交）
+    db.commit()  # 提交事务
+    db.refresh(api_key)  # 刷新以获取生成的字段
     return ApiKeyCreateResponse(
         api_key=key_string,
         prefix=api_key.key_prefix,
