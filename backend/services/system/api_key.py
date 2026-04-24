@@ -87,7 +87,8 @@ class ApiKeyService:
         except SQLAlchemyError as e:
             db.rollback()
             if settings.debug:
-                raise ServiceException(f"数据库操作失败: {str(e)}") from e
+                logger.error(f"API Key生成失败: {str(e)}")
+                raise ServiceException("API Key生成失败，请稍后重试") from e
             else:
                 raise ServiceException("API Key生成失败，请稍后重试") from e
 
