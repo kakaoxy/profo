@@ -83,10 +83,6 @@ async def get_current_user(
         try:
             # 使用run_in_threadpool调用同步的数据库操作
             user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
-            # 预加载角色关系
-            user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
-            if user is None:
-                raise credentials_exception
             return user
         except Exception:
             raise credentials_exception
