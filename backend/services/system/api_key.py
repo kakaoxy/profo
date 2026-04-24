@@ -3,6 +3,7 @@ API Key 服务层
 处理 API Key 的生成、验证和管理
 """
 import hashlib
+import logging
 import secrets
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session, joinedload
@@ -11,6 +12,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from models import ApiKey, User
 from settings import settings
 from .exceptions import ResourceNotFoundError, ConflictError, AuthenticationError, ServiceException
+
+logger = logging.getLogger(__name__)
 
 
 class ApiKeyService:
