@@ -52,40 +52,37 @@ class ApiKeyService:
         Raises:
             ConflictError: 用户已有有效 Key
         """
-        # 使用事务包装整个操作，确保数据一致性
-        with db.begin():
-            # 检查是否已有有效 Key
-            existing_key = db.query(ApiKey).filter(
-                ApiKey.user_id == user_id,
-                ApiKey.status == "active",
-                ApiKey.deleted_at.is_(None)
-            ).first()
+        # 检查是否已有有效 Key
+        existing_key = db.query(ApiKey).filter(
+            ApiKey.user_id == user_id,
+            ApiKey.status == "active",
+            ApiKey.deleted_at.is_(None)
+        ).first()
 
-            if existing_key:
-                # 撤销旧 Key
-                existing_key.revoke()
+        if existing_key:
+            # 撤销旧 Key
+            existing_key.revoke()
 
-            # 生成新 Key
-            key_string, prefix = ApiKeyService._generate_key_string()
-            key_hash = ApiKeyService._hash_key(key_string)
+        # 生成新 Key
+        key_string, prefix = ApiKeyService._generate_key_string()
+        key_hash = ApiKeyService._hash_key(key_string)
 
-            # 计算过期时间
-            expires_at = None
-            if expires_days:
-                expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+        # 计算过期时间
+        expires_at = None
+        if expires_days:
+            expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
-            # 创建 Key 记录
-            api_key = ApiKey(
-                user_id=user_id,
-                key_prefix=prefix,
-                key_hash=key_hash,
-                status="active",
-                expires_at=expires_at
-            )
+        # 创建 Key 记录
+        api_key = ApiKey(
+            user_id=user_id,
+            key_prefix=prefix,
+            key_hash=key_hash,
+            status="active",
+            expires_at=expires_at
+        )
 
-            db.add(api_key)
-
-        db.refresh(api_key)
+        db.add(api_key)
+        db.flush()  #  flush 以获取生成的 ID
 
         return key_string, api_key
 
@@ -111,6 +108,7 @@ class ApiKeyService:
     def revoke_api_key(db: Session, user_id: str) -> None:
         """
         撤销用户的 API Key（软删除）
+        注意：调用方需要自行提交事务
 
         Args:
             db: 数据库会话
@@ -129,12 +127,13 @@ class ApiKeyService:
             raise ResourceNotFoundError("没有找到有效的 API Key")
 
         api_key.revoke()
-        db.commit()
+        # 注意：事务由调用方（Router）管理
 
     @staticmethod
     def authenticate_by_api_key(db: Session, api_key: str) -> User:
         """
         通过 API Key 认证用户
+        注意：调用方需要自行提交事务以更新最后使用时间
 
         Args:
             db: 数据库会话
@@ -169,9 +168,8 @@ class ApiKeyService:
         if key_record.expires_at and key_record.expires_at < datetime.now(timezone.utc):
             raise AuthenticationError("API Key 已过期")
 
-        # 更新最后使用时间
+        # 更新最后使用时间（不提交，由调用方管理事务）
         key_record.mark_used()
-        db.commit()
 
         # 获取用户，预加载角色关系
         user = db.query(User).options(joinedload(User.role)).filter(
@@ -188,15 +186,16 @@ class ApiKeyService:
     def update_last_used(db: Session, api_key_id: str) -> None:
         """
         更新 API Key 的最后使用时间
+        使用事务上下文确保数据一致性
 
         Args:
             db: 数据库会话
             api_key_id: API Key ID
         """
-        api_key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()
-        if api_key:
-            api_key.mark_used()
-            db.commit()
+        with db.begin():
+            api_key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()
+            if api_key:
+                api_key.mark_used()
 
 
 # 全局服务实例
