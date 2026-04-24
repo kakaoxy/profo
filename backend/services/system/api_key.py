@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 
 from models import ApiKey, User
+from settings import settings
 from .exceptions import ResourceNotFoundError, ConflictError, AuthenticationError, ServiceException
 
 
@@ -85,7 +86,10 @@ class ApiKeyService:
             return key_string, api_key
         except SQLAlchemyError as e:
             db.rollback()
-            raise ServiceException("API Key生成失败，请稍后重试") from e
+            if settings.debug:
+                raise ServiceException(f"数据库操作失败: {str(e)}") from e
+            else:
+                raise ServiceException("API Key生成失败，请稍后重试") from e
 
     @staticmethod
     def get_api_key_info(db: Session, user_id: str) -> ApiKey | None:
