@@ -5,7 +5,7 @@ API Key 服务层
 import hashlib
 import secrets
 from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from models import ApiKey, User
 from .exceptions import ResourceNotFoundError, ConflictError, AuthenticationError
@@ -52,38 +52,39 @@ class ApiKeyService:
         Raises:
             ConflictError: 用户已有有效 Key
         """
-        # 检查是否已有有效 Key
-        existing_key = db.query(ApiKey).filter(
-            ApiKey.user_id == user_id,
-            ApiKey.status == "active",
-            ApiKey.deleted_at.is_(None)
-        ).first()
+        # 使用事务包装整个操作，确保数据一致性
+        with db.begin():
+            # 检查是否已有有效 Key
+            existing_key = db.query(ApiKey).filter(
+                ApiKey.user_id == user_id,
+                ApiKey.status == "active",
+                ApiKey.deleted_at.is_(None)
+            ).first()
 
-        if existing_key:
-            # 撤销旧 Key
-            existing_key.revoke()
-            db.commit()
+            if existing_key:
+                # 撤销旧 Key
+                existing_key.revoke()
 
-        # 生成新 Key
-        key_string, prefix = ApiKeyService._generate_key_string()
-        key_hash = ApiKeyService._hash_key(key_string)
+            # 生成新 Key
+            key_string, prefix = ApiKeyService._generate_key_string()
+            key_hash = ApiKeyService._hash_key(key_string)
 
-        # 计算过期时间
-        expires_at = None
-        if expires_days:
-            expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+            # 计算过期时间
+            expires_at = None
+            if expires_days:
+                expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
 
-        # 创建 Key 记录
-        api_key = ApiKey(
-            user_id=user_id,
-            key_prefix=prefix,
-            key_hash=key_hash,
-            status="active",
-            expires_at=expires_at
-        )
+            # 创建 Key 记录
+            api_key = ApiKey(
+                user_id=user_id,
+                key_prefix=prefix,
+                key_hash=key_hash,
+                status="active",
+                expires_at=expires_at
+            )
 
-        db.add(api_key)
-        db.commit()
+            db.add(api_key)
+
         db.refresh(api_key)
 
         return key_string, api_key
@@ -172,8 +173,8 @@ class ApiKeyService:
         key_record.mark_used()
         db.commit()
 
-        # 获取用户
-        user = db.query(User).filter(
+        # 获取用户，预加载角色关系
+        user = db.query(User).options(joinedload(User.role)).filter(
             User.id == key_record.user_id,
             User.status == "active"
         ).first()
