@@ -148,6 +148,31 @@ class RoleListResponse(PaginatedResponse[RoleResponse]):
     pass
 
 
+# =======================================
+# API Key 模型
+# =======================================
+class ApiKeyCreateResponse(BaseModel):
+    """API Key 创建响应模型"""
+    api_key: str = Field(description="完整的 API Key（仅显示一次）")
+    prefix: str = Field(description="Key 前缀")
+    created_at: datetime = Field(description="创建时间")
+    expires_at: Optional[datetime] = Field(None, description="过期时间")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApiKeyInfoResponse(BaseModel):
+    """API Key 信息响应模型"""
+    id: str = Field(description="Key ID")
+    prefix: str = Field(description="Key 前缀")
+    status: str = Field(description="Key 状态")
+    created_at: datetime = Field(description="创建时间")
+    last_used_at: Optional[datetime] = Field(None, description="最后使用时间")
+    expires_at: Optional[datetime] = Field(None, description="过期时间")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 TokenResponse.model_rebuild()
 
 
@@ -168,4 +193,6 @@ __all__ = [
     'TokenResponse',
     'RefreshTokenRequest',
     'WechatLoginRequest',
+    'ApiKeyCreateResponse',
+    'ApiKeyInfoResponse',
 ]

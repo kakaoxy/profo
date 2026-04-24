@@ -18,10 +18,12 @@ from schemas.user import (
     RefreshTokenRequest,
     UserResponse,
     WechatLoginRequest,
+    ApiKeyCreateResponse,
+    ApiKeyInfoResponse,
 )
 from dependencies.auth import get_current_active_user
-from services.system import AuthService
-from services.system.exceptions import AuthenticationError
+from services.system import AuthService, ApiKeyService
+from services.system.exceptions import AuthenticationError, ResourceNotFoundError
 from common import limiter
 
 
@@ -200,3 +202,64 @@ async def get_current_user_info(
     获取当前用户信息
     """
     return current_user
+
+
+# ==================== API Key 管理 ====================
+
+@router.post("/api-key", response_model=ApiKeyCreateResponse)
+def create_api_key(
+    current_user: CurrentUserDep,
+    db: DBSessionDep
+) -> ApiKeyCreateResponse:
+    """
+    生成新的 API Key
+    每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
+    Key 仅显示一次，请妥善保存
+    """
+    key_string, api_key = ApiKeyService.generate_api_key(db, str(current_user.id))
+    return ApiKeyCreateResponse(
+        api_key=key_string,
+        prefix=api_key.key_prefix,
+        created_at=api_key.created_at,
+        expires_at=api_key.expires_at
+    )
+
+
+@router.get("/api-key", response_model=ApiKeyInfoResponse | None)
+def get_api_key_info(
+    current_user: CurrentUserDep,
+    db: DBSessionDep
+) -> ApiKeyInfoResponse | None:
+    """
+    获取当前用户的 API Key 信息
+    不返回完整的 Key，只返回前缀和状态信息
+    """
+    api_key = ApiKeyService.get_api_key_info(db, str(current_user.id))
+    if not api_key:
+        return None
+
+    return ApiKeyInfoResponse(
+        id=api_key.id,
+        prefix=api_key.key_prefix,
+        status=api_key.status,
+        created_at=api_key.created_at,
+        last_used_at=api_key.last_used_at,
+        expires_at=api_key.expires_at
+    )
+
+
+@router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
+def delete_api_key(
+    current_user: CurrentUserDep,
+    db: DBSessionDep
+) -> None:
+    """
+    撤销当前用户的 API Key
+    """
+    try:
+        ApiKeyService.revoke_api_key(db, str(current_user.id))
+    except ResourceNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message
+        )

@@ -5,12 +5,14 @@ from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session, joinedload
 
 from db import get_db
 from models import User
 from settings import settings
 from utils.auth import validate_token
+from services.system import ApiKeyService
 
 # OAuth2密码承载器，用于从请求头中获取token
 oauth2_scheme = OAuth2PasswordBearer(
@@ -29,7 +31,9 @@ async def get_current_user(
 ) -> User:
     """
     获取当前用户
-    支持从Authorization Header或access_token cookie获取token
+    支持多种认证方式（按优先级）：
+    1. JWT Token (Authorization Header Bearer 或 access_token cookie)
+    2. API Key (X-API-Key Header)
 
     Args:
         request: FastAPI请求对象
@@ -48,33 +52,47 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # 优先从Header获取token
+    # 优先从Header获取JWT token
     token = token_from_header
-    
+
     # 如果Header没有，从cookie中获取
     if token is None:
         token = request.cookies.get("access_token")
-    
-    # 检查token是否存在
-    if token is None:
-        raise credentials_exception
 
-    # 验证令牌
-    payload = validate_token(token)
-    if not payload:
-        raise credentials_exception
+    # 如果存在JWT token，使用JWT认证
+    if token is not None:
+        payload = validate_token(token)
+        if not payload:
+            raise credentials_exception
 
-    # 获取用户ID
-    user_id = payload.get("sub")
-    if not isinstance(user_id, str):
-        raise credentials_exception
+        # 获取用户ID
+        user_id = payload.get("sub")
+        if not isinstance(user_id, str):
+            raise credentials_exception
 
-    # 从数据库获取用户，预加载角色关系
-    user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
-    if user is None:
-        raise credentials_exception
+        # 从数据库获取用户，预加载角色关系
+        user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
+        if user is None:
+            raise credentials_exception
 
-    return user
+        return user
+
+    # 如果没有JWT token，尝试从X-API-Key Header获取API Key
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        try:
+            # 使用run_in_threadpool调用同步的数据库操作
+            user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+            # 预加载角色关系
+            user = db.query(User).options(joinedload(User.role)).filter(User.id == user.id).first()
+            if user is None:
+                raise credentials_exception
+            return user
+        except Exception:
+            raise credentials_exception
+
+    # 没有任何认证信息
+    raise credentials_exception
 
 
 # 当前用户依赖类型
