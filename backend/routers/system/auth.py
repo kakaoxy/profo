@@ -18,6 +18,7 @@ from schemas.user import (
     RefreshTokenRequest,
     UserResponse,
     WechatLoginRequest,
+    WechatAuthUrlResponse,
     ApiKeyCreateResponse,
     ApiKeyInfoResponse,
 )
@@ -114,16 +115,16 @@ def refresh_access_token(
     return AuthService.refresh_user_token(db, refresh_data.refresh_token)
 
 
-@router.get("/wechat/authorize")
+@router.get("/wechat/authorize", response_model=WechatAuthUrlResponse)
 def wechat_authorize(
     redirect_uri: Annotated[str | None, Query(description="重定向URL")] = None
-):
+) -> WechatAuthUrlResponse:
     """
     生成微信登录授权URL
     """
     # 纯逻辑计算，无阻塞，sync 即可
     auth_url = AuthService.generate_wechat_auth_url(redirect_uri)
-    return {"auth_url": auth_url}
+    return WechatAuthUrlResponse(auth_url=auth_url)
 
 
 @router.get("/wechat/callback")
@@ -217,8 +218,7 @@ def create_api_key(
     Key 仅显示一次，请妥善保存
     """
     key_string, api_key = ApiKeyService.generate_api_key(db, str(current_user.id))
-    db.commit()  # 提交事务
-    db.refresh(api_key)  # 刷新以获取生成的字段
+    db.refresh(api_key)  # 刷新以获取生成的字段（事务已由 Service 层提交）
     return ApiKeyCreateResponse(
         api_key=key_string,
         prefix=api_key.key_prefix,

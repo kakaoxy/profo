@@ -98,6 +98,11 @@ class WechatLoginRequest(BaseModel):
     code: str = Field(description="微信授权码")
 
 
+class WechatAuthUrlResponse(BaseModel):
+    """微信授权 URL 响应模型"""
+    auth_url: str = Field(description="微信授权URL")
+
+
 # =======================================
 # 响应模型
 # =======================================
@@ -193,6 +198,7 @@ __all__ = [
     'TokenResponse',
     'RefreshTokenRequest',
     'WechatLoginRequest',
+    'WechatAuthUrlResponse',
     'ApiKeyCreateResponse',
     'ApiKeyInfoResponse',
 ]
