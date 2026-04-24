@@ -6,9 +6,10 @@ import hashlib
 import secrets
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import SQLAlchemyError
 
 from models import ApiKey, User
-from .exceptions import ResourceNotFoundError, ConflictError, AuthenticationError
+from .exceptions import ResourceNotFoundError, ConflictError, AuthenticationError, ServiceException
 
 
 class ApiKeyService:
@@ -82,9 +83,9 @@ class ApiKeyService:
             db.refresh(api_key)
 
             return key_string, api_key
-        except Exception:
+        except SQLAlchemyError as e:
             db.rollback()
-            raise
+            raise ServiceException(f"数据库操作失败: {str(e)}") from e
 
     @staticmethod
     def get_api_key_info(db: Session, user_id: str) -> ApiKey | None:
