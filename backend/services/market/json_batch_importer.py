@@ -66,7 +66,7 @@ class JSONBatchImporter:
                     })
 
                     # 记录到 failed_records 表
-                    self._save_failed_record_raw(raw_data, result.error, db)
+                    self._save_failed_record_raw(raw_data, result.error)
 
             except ValidationError as e:
                 failed += 1
@@ -78,7 +78,7 @@ class JSONBatchImporter:
                 })
 
                 # 记录到 failed_records 表
-                self._save_failed_record_raw(raw_data, error_msg, db)
+                self._save_failed_record_raw(raw_data, error_msg)
 
                 logger.warning(f"第 {index} 条记录验证失败: {error_msg}")
 
@@ -92,7 +92,7 @@ class JSONBatchImporter:
                 })
 
                 # 记录到 failed_records 表
-                self._save_failed_record_raw(raw_data, error_msg, db)
+                self._save_failed_record_raw(raw_data, error_msg)
 
                 logger.error(f"第 {index} 条记录处理失败: {error_msg}")
 
@@ -117,14 +117,13 @@ class JSONBatchImporter:
         """
         return format_validation_error(error)
 
-    def _save_failed_record_raw(self, raw_data: dict, error: str, db: Session) -> None:
+    def _save_failed_record_raw(self, raw_data: dict, error: str) -> None:
         """
         保存失败记录到数据库（使用统一的错误处理器）
 
         Args:
             raw_data: 原始数据字典
             error: 错误信息
-            db: 数据库会话
         """
         # 使用统一的错误处理器保存失败记录
         save_failed_record(
