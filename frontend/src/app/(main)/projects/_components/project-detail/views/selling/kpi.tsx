@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Eye,
@@ -27,6 +27,13 @@ interface ListingKPIsProps {
 }
 
 export function ListingKPIs({ project }: ListingKPIsProps) {
+  // 使用 state 存储 now，避免 SSR 和客户端时间不一致导致的 hydration 错误
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
+
   const stats = useMemo(() => {
     const records: SalesRecord[] = project.sales_records || [];
 
@@ -36,11 +43,12 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
     const talks = records.filter((r) => r.record_type === "negotiation");
 
     // 2. Time Range Definition (Week starts on Monday)
-    const now = new Date();
-    const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
-    const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-    const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+    // 如果 now 还未设置，使用一个固定日期避免计算错误
+    const currentNow = now || new Date("2025-01-01");
+    const thisWeekStart = startOfWeek(currentNow, { weekStartsOn: 1 });
+    const thisWeekEnd = endOfWeek(currentNow, { weekStartsOn: 1 });
+    const lastWeekStart = startOfWeek(subWeeks(currentNow, 1), { weekStartsOn: 1 });
+    const lastWeekEnd = endOfWeek(subWeeks(currentNow, 1), { weekStartsOn: 1 });
 
     // 3. Viewings Calculation
     let thisWeekViewingsCount = 0;
@@ -108,7 +116,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
 
     if (latestTalk) {
       const date = parseISO(latestTalk.record_date);
-      if (isSameWeek(date, now, { weekStartsOn: 1 })) {
+      if (isSameWeek(date, currentNow, { weekStartsOn: 1 })) {
         latestTalkText = "本周";
       } else {
         // Format as MM-dd

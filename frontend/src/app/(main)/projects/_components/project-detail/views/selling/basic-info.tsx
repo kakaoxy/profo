@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { format, addDays, differenceInDays } from "date-fns";
 import { Project } from "../../../../types";
-import { 
-  Clock, 
-  Share2, 
-  Ruler, 
-  Coins, 
-  TrendingUp, 
+import {
+  Clock,
+  Share2,
+  Ruler,
+  Coins,
+  TrendingUp,
   CalendarDays,
   Hourglass
 } from "lucide-react";
@@ -20,33 +20,39 @@ interface SellingBasicInfoProps {
 }
 
 export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
+  // 使用 state 存储 today，避免 SSR 和客户端时间不一致导致的 hydration 错误
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setToday(new Date());
+  }, []);
+
   // 1. 计算倒计时
   // 公式：交房日期 + 签约周期(天) + 延长期(月*30) - 今天
   const { daysLeft, deadlineDate } = useMemo(() => {
-    if (!project.planned_handover_date) {
+    if (!project.planned_handover_date || !today) {
       return { daysLeft: 0, deadlineDate: null };
     }
 
     const handoverDate = new Date(project.planned_handover_date);
-    
+
     // 加上签约周期 (天)
     const signingPeriodDays = project.signing_period || 0;
-    
+
     // 加上延长期 (月 -> 天，按30天/月计算)
     const extensionMonths = project.extension_period || 0;
     const extensionDays = extensionMonths * 30;
 
     const totalDaysToAdd = signingPeriodDays + extensionDays;
     const finalDeadline = addDays(handoverDate, totalDaysToAdd);
-    
-    const today = new Date();
+
     const diff = differenceInDays(finalDeadline, today);
 
-    return { 
-      daysLeft: diff, 
-      deadlineDate: finalDeadline 
+    return {
+      daysLeft: diff,
+      deadlineDate: finalDeadline
     };
-  }, [project.planned_handover_date, project.signing_period, project.extension_period]);
+  }, [project.planned_handover_date, project.signing_period, project.extension_period, today]);
 
   // 2. 计算单价 (元/平米)
   // list_price 单位是 "万元"，area 单位是 "平米"
