@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     
     # 应用基础配置
     app_name: str = "Profo 房产数据中心"
-    app_version: str = "0.1.0"
+    app_version: str = "0.9.0"
     debug: bool = True
     
     # 数据库配置
