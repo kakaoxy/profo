@@ -2,12 +2,12 @@
 JSON 推送 API 路由
 处理 JSON 数组的批量房源数据推送
 """
+import logging
 from typing import Annotated, List
 
 from fastapi import APIRouter, Body, Depends
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
-import logging
 
 from schemas import PushResult
 from exceptions import ValidationException, BusinessLogicException
