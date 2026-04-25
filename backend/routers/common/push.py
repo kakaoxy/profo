@@ -7,7 +7,6 @@ from typing import Annotated, List
 
 from fastapi import APIRouter, Body, Depends
 from fastapi.concurrency import run_in_threadpool
-from sqlalchemy.orm import Session
 
 from schemas import PushResult
 from exceptions import ValidationException, BusinessLogicException
@@ -23,7 +22,7 @@ router = APIRouter()
 @router.post("", response_model=PushResult)
 async def push_properties(
     properties: Annotated[List[dict], Body()],
-    db: Annotated[Session, Depends(DbSessionDep)],
+    db: DbSessionDep,
     current_user: Annotated[User, Depends(require_api_key)],
 ) -> PushResult:
     """
