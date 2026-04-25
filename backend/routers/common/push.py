@@ -5,6 +5,7 @@ JSON 推送 API 路由
 from typing import Annotated, List
 
 from fastapi import APIRouter, Body, Depends
+from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 import logging
@@ -181,10 +182,10 @@ async def push_properties(
     logger.info(f"接收到 JSON 推送请求，包含 {len(properties)} 条记录")
     
     try:
-        # 处理推送
+        # 处理推送（使用线程池避免阻塞事件循环）
         importer = JSONBatchImporter()
-        result = importer.batch_import_json(properties, db)
-        
+        result = await run_in_threadpool(importer.batch_import_json, properties, db)
+
         return result
     
     except Exception as e:
