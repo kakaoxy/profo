@@ -1400,16 +1400,19 @@ export interface paths {
          * Push Properties
          * @description JSON 数据推送接口
          *
-         *     接收 JSON 数组，批量导入房源数据
+         *     接收 JSON 数组，批量导入房源数据。
+         *     **需要通过 X-API-Key Header 进行认证。**
          *
          *     Args:
          *         properties: 房源数据列表（原始字典）
          *         db: 数据库会话
+         *         current_user: 当前认证用户（通过 API Key）
          *
          *     Returns:
          *         PushResult: 推送结果统计
          *
          *     Raises:
+         *         HTTPException: 401 Unauthorized - API Key 无效或缺失
          *         HTTPException: 数据验证失败或处理失败
          */
         post: operations["push_properties_api_v1_push_post"];
