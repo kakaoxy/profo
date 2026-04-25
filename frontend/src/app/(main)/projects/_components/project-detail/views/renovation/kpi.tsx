@@ -136,7 +136,8 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
             </div>
             <Progress
               value={progressValue}
-              className="h-2 bg-slate-100 [&>*]:bg-orange-500"
+              className="h-2 bg-slate-100"
+              indicatorClassName="bg-orange-500"
             />
           </div>
         </CardContent>

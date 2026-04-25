@@ -4,7 +4,7 @@ JSON 推送 API 路由
 """
 from typing import Annotated, List
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 import logging
@@ -14,7 +14,8 @@ from services.market import PropertyImporter
 from services.system import save_failed_record
 from exceptions import ValidationException, BusinessLogicException
 from utils.error_formatters import format_validation_error
-from dependencies.auth import DbSessionDep
+from dependencies.auth import DbSessionDep, require_api_key
+from models import User
 
 
 logger = logging.getLogger(__name__)
@@ -142,23 +143,27 @@ class JSONBatchImporter:
 
 
 @router.post("", response_model=PushResult)
-def push_properties(
+async def push_properties(
     properties: Annotated[List[dict], Body()],
     db: DbSessionDep,
+    current_user: Annotated[User, Depends(require_api_key)],
 ) -> PushResult:
     """
     JSON 数据推送接口
-    
-    接收 JSON 数组，批量导入房源数据
-    
+
+    接收 JSON 数组，批量导入房源数据。
+    **需要通过 X-API-Key Header 进行认证。**
+
     Args:
         properties: 房源数据列表（原始字典）
         db: 数据库会话
-    
+        current_user: 当前认证用户（通过 API Key）
+
     Returns:
         PushResult: 推送结果统计
-    
+
     Raises:
+        HTTPException: 401 Unauthorized - API Key 无效或缺失
         HTTPException: 数据验证失败或处理失败
     """
     if not properties:

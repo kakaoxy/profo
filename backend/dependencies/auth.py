@@ -24,6 +24,47 @@ oauth2_scheme = OAuth2PasswordBearer(
 DbSessionDep = Annotated[Session, Depends(get_db)]
 
 
+async def require_api_key(
+    request: Request,
+    db: DbSessionDep,
+) -> User:
+    """
+    仅通过 API Key 认证用户
+    不接受 JWT Token，专用于机器对机器的 API 调用
+
+    Args:
+        request: FastAPI请求对象
+        db: 数据库会话
+
+    Returns:
+        User: 当前用户对象
+
+    Raises:
+        HTTPException: 401 Unauthorized - API Key 无效或缺失
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="需要提供有效的 API Key",
+        headers={"WWW-Authenticate": "ApiKey"},
+    )
+
+    # 只接受 X-API-Key Header
+    api_key = request.headers.get("X-API-Key")
+    if not api_key:
+        raise credentials_exception
+
+    try:
+        # 使用run_in_threadpool调用同步的数据库操作
+        user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+        return user
+    except Exception:
+        raise credentials_exception
+
+
+# API Key 认证依赖类型
+ApiKeyAuthDep = Annotated[User, Depends(require_api_key)]
+
+
 async def get_current_user(
     request: Request,
     db: DbSessionDep,
@@ -236,10 +277,12 @@ __all__ = [
     "CurrentOperatorUserDep",
     "CurrentNormalUserDep",
     "CurrentInternalUserDep",
+    "ApiKeyAuthDep",
     # 依赖函数
     "get_current_user",
     "get_current_active_user",
     "require_roles",
+    "require_api_key",
     # 向后兼容的函数
     "get_current_admin_user",
     "get_current_operator_user",
