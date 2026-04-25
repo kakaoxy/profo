@@ -23,7 +23,7 @@ router = APIRouter()
 @router.post("", response_model=PushResult)
 async def push_properties(
     properties: Annotated[List[dict], Body()],
-    db: DbSessionDep,
+    db: Annotated[Session, Depends(DbSessionDep)],
     current_user: Annotated[User, Depends(require_api_key)],
 ) -> PushResult:
     """
