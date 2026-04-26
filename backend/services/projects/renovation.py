@@ -23,7 +23,7 @@ class RenovationService:
         self.db = db
 
     def _get_project(self, project_id: str) -> Project:
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             raise HTTPException(status_code=404, detail="项目不存在")
         return project

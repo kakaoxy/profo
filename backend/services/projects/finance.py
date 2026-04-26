@@ -29,7 +29,7 @@ class FinanceService:
         logger.info(f"Creating cashflow record for project {project_id}")
 
         # 验证项目存在且状态有效
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             logger.error(f"Project not found: {project_id}")
             raise HTTPException(
@@ -120,7 +120,7 @@ class FinanceService:
 
         try:
             # 1. 获取项目基本信息用于日期计算
-            project = self.db.query(Project).filter(Project.id == project_id).first()
+            project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
             if not project:
                 raise HTTPException(status_code=404, detail="项目不存在")
 
@@ -198,7 +198,7 @@ class FinanceService:
         同步计算项目的财务数据，并更新到 Project 表的缓存字段中
         """
         # 1. 确认项目存在
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             return
 
@@ -235,7 +235,7 @@ class FinanceService:
 
     def get_report(self, project_id: str) -> Dict[str, Any]:
         """获取项目财务报告"""
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

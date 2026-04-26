@@ -15,6 +15,7 @@ import uuid
 
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.common import ProjectStatus
+from sqlalchemy import and_
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
 from services.utils import parse_date_string
 from services.system.exceptions import ResourceNotFoundError, ValidationError
@@ -289,7 +290,7 @@ class ProjectCoreService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
         """
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             raise ResourceNotFoundError("项目不存在")
 
@@ -493,7 +494,7 @@ class ProjectCoreService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
         """
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             raise ResourceNotFoundError("项目不存在")
 
@@ -516,7 +517,7 @@ class ProjectCoreService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
         """
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
 
         if not project:
             raise ResourceNotFoundError("项目不存在")

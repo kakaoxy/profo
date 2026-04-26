@@ -26,7 +26,7 @@ class SalesService:
 
     def _get_project(self, project_id: str) -> Project:
         """内部辅助：获取项目实例"""
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
