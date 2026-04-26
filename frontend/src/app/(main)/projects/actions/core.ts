@@ -152,3 +152,22 @@ export async function getProjectDetailAction(
     return { success: false, message: "网络错误" };
   }
 }
+
+/**
+ * 获取下一个合同编号 (Server Action)
+ */
+export async function getNextContractNoAction(): Promise<{ success: boolean; data?: string; message?: string }> {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET("/api/v1/projects/contract-no/next");
+
+    if (error) {
+      return { success: false, message: "获取合同编号失败" };
+    }
+
+    return { success: true, data: data as string };
+  } catch (e) {
+    console.error("获取合同编号异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}

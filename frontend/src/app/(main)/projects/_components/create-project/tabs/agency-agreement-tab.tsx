@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { UseFormReturn, useWatch } from "react-hook-form";
 import { FormValues } from "../schema";
 import { SimpleInputField, SimpleTextareaField } from "../form-components";
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
-import { client } from "@/lib/api-client";
 
 const COST_ASSUMPTION_OPTIONS = [
   { value: "meifangbao", label: "美房宝承担" },
@@ -23,26 +21,13 @@ const COST_ASSUMPTION_OPTIONS = [
 ] as const;
 
 export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }) {
-  const { control, setValue } = form;
-  const [isContractNoSet, setIsContractNoSet] = useState(false);
-  
+  const { control } = form;
+
   // 监听税费承担方类型
   const costAssumptionType = useWatch({
     control,
     name: "cost_assumption_type",
   });
-
-  // 从后端获取合同编号（仅新建时）
-  useEffect(() => {
-    if (!isContractNoSet) {
-      client.GET("/api/v1/projects/contract-no/next").then(({ data, error }) => {
-        if (data && !error) {
-          setValue("contract_no", data);
-          setIsContractNoSet(true);
-        }
-      });
-    }
-  }, [isContractNoSet, setValue]);
 
   return (
     <div className="space-y-5">
