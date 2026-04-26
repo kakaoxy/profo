@@ -7,11 +7,11 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
 
 from models import Project
 from models.common import ProjectStatus
 from schemas.project import StatusUpdate
+from services.system.exceptions import ValidationError
 
 
 class ProjectStateManager:
@@ -47,16 +47,13 @@ class ProjectStateManager:
             new_status: 目标项目状态
 
         Raises:
-            HTTPException: 状态流转不合法时抛出400错误
+            ValidationError: 状态流转不合法时抛出400错误
         """
         # 特殊规则：只限制除了在售状态外，其他状态不能切换到已售状态
         if (new_status == ProjectStatus.SOLD.value and
             current_status != ProjectStatus.SELLING.value and
             current_status != ProjectStatus.SOLD.value):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="只有在售或已售状态才能切换到已售状态"
-            )
+            raise ValidationError("只有在售或已售状态才能切换到已售状态")
 
     def update_status(
         self,

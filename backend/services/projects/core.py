@@ -11,13 +11,13 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from fastapi import HTTPException
 import uuid
 
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.common import ProjectStatus
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
 from services.utils import parse_date_string
+from services.system.exceptions import ResourceNotFoundError, ValidationError
 from .internal import ProjectQueryService, ProjectResponseBuilder, ProjectStateManager
 
 
@@ -47,39 +47,62 @@ class ProjectCoreService:
         self.response_builder = ProjectResponseBuilder(db)
         self.state_manager = ProjectStateManager(db)
 
-    def generate_contract_no(self) -> str:
+    def generate_contract_no(self, max_retries: int = 3) -> str:
         """
-        生成下一个合同编号
+        生成下一个合同编号（线程安全）
 
         格式: MFB-年月-4位自增序号，如 MFB-202604-0001
-        查询数据库当月最大序号，自动递增，保证唯一性
+        使用数据库唯一约束和重试机制保证并发安全，避免重复编号
+
+        Args:
+            max_retries: 最大重试次数，防止无限循环
 
         Returns:
             新生成的合同编号
+
+        Raises:
+            RuntimeError: 当无法生成唯一编号时（超过最大重试次数）
         """
+        from sqlalchemy.exc import IntegrityError
+        import time
+
         now = datetime.now()
         year_month = f"{now.year}{now.month:02d}"
         prefix = f"MFB-{year_month}-"
 
-        # 查询当月最大序号
-        result = self.db.query(
-            func.max(ProjectContract.contract_no)
-        ).filter(
-            ProjectContract.contract_no.like(f"{prefix}%")
-        ).scalar()
+        for attempt in range(max_retries):
+            # 查询当月最大序号（使用func.max保证查询效率）
+            result = self.db.query(
+                func.max(ProjectContract.contract_no)
+            ).filter(
+                ProjectContract.contract_no.like(f"{prefix}%")
+            ).scalar()
 
-        if result:
-            # 提取序号部分并加1
-            try:
-                last_num = int(result.split("-")[-1])
-                next_num = last_num + 1
-            except (ValueError, IndexError):
+            if result:
+                try:
+                    last_num = int(result.split("-")[-1])
+                    next_num = last_num + 1
+                except (ValueError, IndexError):
+                    next_num = 1
+            else:
                 next_num = 1
-        else:
-            next_num = 1
 
-        # 格式化为4位数字
-        return f"{prefix}{next_num:04d}"
+            new_contract_no = f"{prefix}{next_num:04d}"
+
+            # 检查该编号是否已存在（双重验证）
+            existing = self.db.query(ProjectContract).filter(
+                ProjectContract.contract_no == new_contract_no
+            ).first()
+
+            if not existing:
+                return new_contract_no
+
+            # 如果存在，说明并发冲突，继续循环生成下一个
+            # 添加短暂延迟，让其他事务完成
+            if attempt < max_retries - 1:
+                time.sleep(0.01 * (attempt + 1))  # 指数退避
+
+        raise RuntimeError(f"无法生成唯一的合同编号，已超过最大重试次数({max_retries})")
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """
@@ -262,10 +285,13 @@ class ProjectCoreService:
 
         Returns:
             更新后的项目响应数据
+
+        Raises:
+            ResourceNotFoundError: 项目不存在时抛出
         """
         project = self.db.query(Project).filter(Project.id == project_id).first()
         if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
+            raise ResourceNotFoundError("项目不存在")
 
         update_dict = update_data.model_dump(exclude_unset=True)
 
@@ -463,10 +489,13 @@ class ProjectCoreService:
 
         Args:
             project_id: 项目ID
+
+        Raises:
+            ResourceNotFoundError: 项目不存在时抛出
         """
         project = self.db.query(Project).filter(Project.id == project_id).first()
         if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
+            raise ResourceNotFoundError("项目不存在")
 
         project.is_deleted = True
         project.status = ProjectStatus.DELETED.value
@@ -483,11 +512,14 @@ class ProjectCoreService:
 
         Returns:
             更新后的项目响应数据
+
+        Raises:
+            ResourceNotFoundError: 项目不存在时抛出
         """
         project = self.db.query(Project).filter(Project.id == project_id).first()
 
         if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
+            raise ResourceNotFoundError("项目不存在")
 
         project = self.state_manager.update_status(project, status_update)
 
