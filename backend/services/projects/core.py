@@ -11,20 +11,24 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-import uuid
 
-from models import Project, ProjectContract, ProjectOwner, ProjectSale
+from models import Project
 from models.common import ProjectStatus
-from sqlalchemy import and_
 from schemas.project import ProjectCreate, ProjectUpdate, StatusUpdate, ProjectResponse
-from services.utils import parse_date_string
-from services.system.exceptions import ResourceNotFoundError, ValidationError
-from .internal import ProjectQueryService, ProjectResponseBuilder, ProjectStateManager
+from services.system.exceptions import ResourceNotFoundError
+from .internal import (
+    ProjectQueryService,
+    ProjectResponseBuilder,
+    ProjectStateManager,
+    ProjectCreator,
+    ProjectUpdater,
+    ContractNumberGenerator,
+)
 
 
 class ProjectCoreService:
     """
-    项目核心业务服务
+    项目核心业务服务 (Facade 模式)
 
     负责项目的全生命周期管理，包括创建、查询、更新、删除和状态流转。
     采用组件化设计，内部通过组合方式使用各子服务模块。
@@ -34,6 +38,9 @@ class ProjectCoreService:
         query_service: 项目查询服务
         response_builder: 响应数据构建器
         state_manager: 状态管理器
+        creator: 项目创建服务
+        updater: 项目更新服务
+        contract_generator: 合同编号生成器
     """
 
     def __init__(self, db: Session):
@@ -47,70 +54,33 @@ class ProjectCoreService:
         self.query_service = ProjectQueryService(db)
         self.response_builder = ProjectResponseBuilder(db)
         self.state_manager = ProjectStateManager(db)
+        self.creator = ProjectCreator(db)
+        self.updater = ProjectUpdater(db)
+        self.contract_generator = ContractNumberGenerator(db)
 
     def generate_contract_no(self, max_retries: int = 3) -> str:
         """
         生成下一个合同编号（线程安全）
 
         格式: MFB-年月-4位自增序号，如 MFB-202604-0001
-        使用数据库唯一约束和重试机制保证并发安全，避免重复编号
 
         Args:
             max_retries: 最大重试次数，防止无限循环
 
         Returns:
             新生成的合同编号
-
-        Raises:
-            RuntimeError: 当无法生成唯一编号时（超过最大重试次数）
         """
-        from sqlalchemy.exc import IntegrityError
-        import time
-
-        now = datetime.now()
-        year_month = f"{now.year}{now.month:02d}"
-        prefix = f"MFB-{year_month}-"
-
-        for attempt in range(max_retries):
-            # 查询当月最大序号（使用func.max保证查询效率）
-            result = self.db.query(
-                func.max(ProjectContract.contract_no)
-            ).filter(
-                ProjectContract.contract_no.like(f"{prefix}%")
-            ).scalar()
-
-            if result:
-                try:
-                    last_num = int(result.split("-")[-1])
-                    next_num = last_num + 1
-                except (ValueError, IndexError):
-                    next_num = 1
-            else:
-                next_num = 1
-
-            new_contract_no = f"{prefix}{next_num:04d}"
-
-            # 检查该编号是否已存在（双重验证）
-            existing = self.db.query(ProjectContract).filter(
-                ProjectContract.contract_no == new_contract_no
-            ).first()
-
-            if not existing:
-                return new_contract_no
-
-            # 如果存在，说明并发冲突，继续循环生成下一个
-            # 添加短暂延迟，让其他事务完成
-            if attempt < max_retries - 1:
-                time.sleep(0.01 * (attempt + 1))  # 指数退避
-
-        raise RuntimeError(f"无法生成唯一的合同编号，已超过最大重试次数({max_retries})")
+        # 临时更新最大重试次数
+        original_retries = self.contract_generator.max_retries
+        self.contract_generator.max_retries = max_retries
+        try:
+            return self.contract_generator.generate()
+        finally:
+            self.contract_generator.max_retries = original_retries
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """
         创建项目
-
-        同时创建项目基础记录、合同记录和业主记录（如提供）。
-        项目创建后状态默认为"签约中"。
 
         Args:
             project_data: 项目创建数据
@@ -118,108 +88,8 @@ class ProjectCoreService:
         Returns:
             创建成功的项目响应数据
         """
-        project_id = str(uuid.uuid4())
-        now = datetime.utcnow()
-
-        # 1. 创建项目基础记录
-        project = self._create_base_project(project_id, project_data, now)
-
-        # 2. 创建合同记录
-        self._create_contract_record(project_id, project_data, now)
-
-        # 3. 创建业主记录（如果提供了业主信息）
-        self._create_owner_record(project_id, project_data, now)
-
-        self.db.commit()
-        self.db.refresh(project)
-
+        project = self.creator.create(project_data)
         return ProjectResponse.model_validate(self.response_builder.build(project))
-
-    def _create_base_project(
-        self,
-        project_id: str,
-        project_data: ProjectCreate,
-        now: datetime
-    ) -> Project:
-        """创建项目基础记录"""
-        project = Project(
-            id=project_id,
-            community_name=project_data.community_name,
-            address=project_data.address,
-            area=project_data.area,
-            layout=project_data.layout,
-            orientation=project_data.orientation,
-            project_manager_id=project_data.project_manager_id,
-            status=ProjectStatus.SIGNING.value,
-            is_deleted=False,
-            created_at=now,
-            updated_at=now,
-        )
-        project.name = project.generate_name()
-        self.db.add(project)
-        return project
-
-    def _create_contract_record(
-        self,
-        project_id: str,
-        project_data: ProjectCreate,
-        now: datetime
-    ) -> None:
-        """创建合同记录"""
-        signing_date = parse_date_string(project_data.signing_date)
-        planned_handover_date = parse_date_string(project_data.planned_handover_date)
-
-        # Convert signing_materials Pydantic models to dicts for JSON serialization
-        signing_materials = None
-        if project_data.signing_materials:
-            signing_materials = [m.model_dump() for m in project_data.signing_materials]
-
-        contract = ProjectContract(
-            id=str(uuid.uuid4()),
-            project_id=project_id,
-            contract_no=project_data.contract_no,
-            signing_price=project_data.signing_price,
-            signing_date=signing_date,
-            signing_period=project_data.signing_period,
-            extension_period=project_data.extension_period,
-            extension_rent=project_data.extension_rent,
-            cost_assumption_type=project_data.cost_assumption_type,
-            cost_assumption_other=project_data.cost_assumption_other,
-            planned_handover_date=planned_handover_date,
-            other_agreements=project_data.other_agreements,
-            signing_materials=signing_materials,
-            contract_status="生效" if signing_date else "未生效",
-            is_deleted=False,
-            created_at=now,
-            updated_at=now,
-        )
-        self.db.add(contract)
-
-    def _create_owner_record(
-        self,
-        project_id: str,
-        project_data: ProjectCreate,
-        now: datetime
-    ) -> None:
-        """创建业主记录（如果提供了业主信息）"""
-        if any([
-            project_data.owner_name,
-            project_data.owner_phone,
-            project_data.owner_id_card,
-        ]):
-            owner = ProjectOwner(
-                id=str(uuid.uuid4()),
-                project_id=project_id,
-                owner_name=project_data.owner_name,
-                owner_phone=project_data.owner_phone,
-                owner_id_card=project_data.owner_id_card,
-                relation_type="业主",
-                owner_info=project_data.notes,
-                is_deleted=False,
-                created_at=now,
-                updated_at=now,
-            )
-            self.db.add(owner)
 
     def get_project(self, project_id: str, include_all: bool = False) -> Optional[ProjectResponse]:
         """
@@ -277,9 +147,6 @@ class ProjectCoreService:
         """
         更新项目信息
 
-        支持更新项目基础字段、合同信息、业主信息和销售信息。
-        已售状态下只允许修改特定字段。
-
         Args:
             project_id: 项目ID
             update_data: 更新数据
@@ -290,199 +157,18 @@ class ProjectCoreService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
         """
-        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
+        project = self.db.query(Project).filter(
+            Project.id == project_id,
+            Project.is_deleted == False
+        ).first()
+
         if not project:
             raise ResourceNotFoundError("项目不存在")
 
         update_dict = update_data.model_dump(exclude_unset=True)
-
-        # 已售状态限制可修改字段
-        if project.status == ProjectStatus.SOLD.value:
-            update_dict = self._filter_allowed_fields(update_dict)
-
-        # 更新各模块数据
-        self._update_project_fields(project, update_dict)
-        self._update_contract_fields(project_id, update_dict)
-        self._update_owner_fields(project_id, update_dict)
-        self._update_sale_fields(project_id, update_dict)
-        self._update_remaining_fields(project, update_dict)
-
-        project.updated_at = datetime.utcnow()
-        self.db.commit()
-        self.db.refresh(project)
+        project = self.updater.update(project, update_dict)
 
         return ProjectResponse.model_validate(self.response_builder.build(project))
-
-    def _filter_allowed_fields(self, update_dict: Dict[str, Any]) -> Dict[str, Any]:
-        """过滤已售状态下允许修改的字段"""
-        allowed_fields = {
-            'community_name', 'address', 'area', 'orientation', 'layout',
-            'renovation_stage', 'notes', 'tags',
-            'owner_name', 'owner_phone', 'owner_id_card', 'owner_info'
-        }
-        return {k: v for k, v in update_dict.items() if k in allowed_fields}
-
-    def _update_project_fields(
-        self,
-        project: Project,
-        update_dict: Dict[str, Any]
-    ) -> None:
-        """更新项目基础字段"""
-        project_fields = [
-            'community_name', 'address', 'area', 'orientation', 'layout',
-            'renovation_stage', 'status', 'tags', 'project_manager_id'
-        ]
-
-        for field in project_fields:
-            if field in update_dict:
-                setattr(project, field, update_dict.pop(field))
-
-        # 如果小区名称或地址发生变化，重新生成项目名称
-        if 'community_name' in project_fields or 'address' in project_fields:
-            project.name = project.generate_name()
-
-    def _update_contract_fields(
-        self,
-        project_id: str,
-        update_dict: Dict[str, Any]
-    ) -> None:
-        """更新合同相关字段"""
-        contract_fields = [
-            'contract_no', 'signing_price', 'signing_date', 'signing_period',
-            'extension_period', 'extension_rent', 'cost_assumption_type',
-            'cost_assumption_other', 'planned_handover_date', 'other_agreements', 'signing_materials'
-        ]
-
-        contract_updates = {
-            k: update_dict.pop(k)
-            for k in list(contract_fields)
-            if k in update_dict
-        }
-
-        # 解析日期字段
-        if 'signing_date' in contract_updates:
-            contract_updates['signing_date'] = parse_date_string(contract_updates['signing_date'])
-        if 'planned_handover_date' in contract_updates:
-            contract_updates['planned_handover_date'] = parse_date_string(contract_updates['planned_handover_date'])
-
-        # Convert signing_materials Pydantic models to dicts for JSON serialization
-        if 'signing_materials' in contract_updates and contract_updates['signing_materials']:
-            materials = contract_updates['signing_materials']
-            if isinstance(materials, list):
-                contract_updates['signing_materials'] = [
-                    m.model_dump() if hasattr(m, 'model_dump') else m
-                    for m in materials
-                ]
-
-        if not contract_updates:
-            return
-
-        contract = self.db.query(ProjectContract).filter(
-            ProjectContract.project_id == project_id
-        ).first()
-
-        if contract:
-            for field, value in contract_updates.items():
-                setattr(contract, field, value)
-        else:
-            contract = ProjectContract(
-                id=str(uuid.uuid4()),
-                project_id=project_id,
-                is_deleted=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                **contract_updates
-            )
-            self.db.add(contract)
-
-    def _update_owner_fields(
-        self,
-        project_id: str,
-        update_dict: Dict[str, Any]
-    ) -> None:
-        """更新业主相关字段"""
-        owner_fields = ['owner_name', 'owner_phone', 'owner_id_card']
-        owner_updates = {
-            k: update_dict.pop(k)
-            for k in list(owner_fields)
-            if k in update_dict
-        }
-
-        if 'notes' in update_dict:
-            owner_updates['owner_info'] = update_dict.pop('notes')
-
-        if not owner_updates:
-            return
-
-        owner = self.db.query(ProjectOwner).filter(
-            ProjectOwner.project_id == project_id
-        ).first()
-
-        if owner:
-            for field, value in owner_updates.items():
-                setattr(owner, field, value)
-        else:
-            owner = ProjectOwner(
-                id=str(uuid.uuid4()),
-                project_id=project_id,
-                relation_type="业主",
-                is_deleted=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                **owner_updates
-            )
-            self.db.add(owner)
-
-    def _update_sale_fields(
-        self,
-        project_id: str,
-        update_dict: Dict[str, Any]
-    ) -> None:
-        """更新销售相关字段"""
-        sale_fields = ['listing_date', 'list_price', 'sold_date', 'sold_price']
-        sale_updates = {
-            k: update_dict.pop(k)
-            for k in list(sale_fields)
-            if k in update_dict
-        }
-
-        # 解析日期字段
-        if 'listing_date' in sale_updates:
-            sale_updates['listing_date'] = parse_date_string(sale_updates['listing_date'])
-        if 'sold_date' in sale_updates:
-            sale_updates['sold_date'] = parse_date_string(sale_updates['sold_date'])
-
-        if not sale_updates:
-            return
-
-        sale = self.db.query(ProjectSale).filter(
-            ProjectSale.project_id == project_id
-        ).first()
-
-        if sale:
-            for field, value in sale_updates.items():
-                setattr(sale, field, value)
-        else:
-            sale = ProjectSale(
-                id=str(uuid.uuid4()),
-                project_id=project_id,
-                transaction_status="在售",
-                is_deleted=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                **sale_updates
-            )
-            self.db.add(sale)
-
-    def _update_remaining_fields(
-        self,
-        project: Project,
-        update_dict: Dict[str, Any]
-    ) -> None:
-        """更新项目主表的剩余字段"""
-        for field, value in update_dict.items():
-            if hasattr(project, field):
-                setattr(project, field, value)
 
     def delete_project(self, project_id: str) -> None:
         """
@@ -494,7 +180,11 @@ class ProjectCoreService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
         """
-        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
+        project = self.db.query(Project).filter(
+            Project.id == project_id,
+            Project.is_deleted == False
+        ).first()
+
         if not project:
             raise ResourceNotFoundError("项目不存在")
 
@@ -517,7 +207,10 @@ class ProjectCoreService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出
         """
-        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
+        project = self.db.query(Project).filter(
+            Project.id == project_id,
+            Project.is_deleted == False
+        ).first()
 
         if not project:
             raise ResourceNotFoundError("项目不存在")
