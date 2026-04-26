@@ -47,6 +47,40 @@ class ProjectCoreService:
         self.response_builder = ProjectResponseBuilder(db)
         self.state_manager = ProjectStateManager(db)
 
+    def generate_contract_no(self) -> str:
+        """
+        生成下一个合同编号
+
+        格式: MFB-年月-4位自增序号，如 MFB-202604-0001
+        查询数据库当月最大序号，自动递增，保证唯一性
+
+        Returns:
+            新生成的合同编号
+        """
+        now = datetime.now()
+        year_month = f"{now.year}{now.month:02d}"
+        prefix = f"MFB-{year_month}-"
+
+        # 查询当月最大序号
+        result = self.db.query(
+            func.max(ProjectContract.contract_no)
+        ).filter(
+            ProjectContract.contract_no.like(f"{prefix}%")
+        ).scalar()
+
+        if result:
+            # 提取序号部分并加1
+            try:
+                last_num = int(result.split("-")[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+
+        # 格式化为4位数字
+        return f"{prefix}{next_num:04d}"
+
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """
         创建项目

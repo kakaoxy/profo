@@ -25,6 +25,20 @@ router.include_router(renovation_router, tags=["renovation"])
 router.include_router(sales_router, tags=["sales"])
 
 
+@router.get("/contract-no/next", response_model=str)
+def get_next_contract_no(
+    service: ProjectServiceDep,
+    current_user: CurrentInternalUserDep,
+):
+    """
+    获取下一个合同编号
+
+    格式: MFB-年月-4位自增序号，如 MFB-202604-0001
+    后端生成保证唯一性，避免前端竞态条件
+    """
+    return service.generate_contract_no()
+
+
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 def create_project(
     project_data: ProjectCreate,
