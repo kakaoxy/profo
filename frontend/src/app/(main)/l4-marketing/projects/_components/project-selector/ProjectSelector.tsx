@@ -187,7 +187,7 @@ export function ProjectSelector({
               "请选择项目"
             )}
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={onClose} size="sm">
               取消
             </Button>
