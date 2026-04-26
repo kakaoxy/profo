@@ -4,6 +4,9 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
 import { ErrorBoundary } from "@/components/error-boundary";
 
+// 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
+export const dynamic = 'force-dynamic';
+
 async function getUser() {
   try {
     const client = await fetchClient();

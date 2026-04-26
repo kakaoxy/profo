@@ -5,8 +5,6 @@ import { MarketingView } from "./_components/marketing-view";
 import type { operations } from "@/lib/api-types";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const dynamic = "force-dynamic";
-
 type L4MarketingProjectsQuery =
   operations["list_marketing_projects_api_v1_admin_l4_marketing_projects_get"]["parameters"]["query"] & {
     search?: string;
