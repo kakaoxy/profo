@@ -171,8 +171,29 @@ const MenuButton = React.forwardRef<
 MenuButton.displayName = "MenuButton";
 
 export function AppSidebar({ user }: { user: User | null }) {
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpen } = useSidebar();
   const pathname = usePathname();
+
+  // 进入非首页的功能页面时自动折叠侧边栏
+  React.useEffect(() => {
+    // 定义需要自动折叠的页面路径
+    const autoCollapsePaths = [
+      "/properties",
+      "/leads",
+      "/projects",
+      "/l4-marketing",
+      "/users",
+      "/settings",
+    ];
+
+    // 检查当前路径是否匹配需要折叠的页面（首页除外）
+    const shouldCollapse = pathname !== "/" &&
+      autoCollapsePaths.some(path => pathname.startsWith(path));
+
+    if (shouldCollapse && !isMobile) {
+      setOpen(false);
+    }
+  }, [pathname, setOpen, isMobile]);
 
   return (
     <Sidebar
