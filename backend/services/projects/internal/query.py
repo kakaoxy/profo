@@ -6,9 +6,9 @@
 from typing import Optional
 
 from sqlalchemy.orm import Session, selectinload
-from fastapi import HTTPException, status
 
 from models import Project
+from services.system.exceptions import ResourceNotFoundError
 
 
 class ProjectQueryService:
@@ -47,9 +47,9 @@ class ProjectQueryService:
             Project模型实例
 
         Raises:
-            HTTPException: 项目不存在时抛出404错误
+            ResourceNotFoundError: 项目不存在时抛出404错误
         """
-        query = self.db.query(Project).filter(Project.id == project_id)
+        query = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False)
 
         if include_all:
             # 完整加载：预加载所有关联关系
@@ -75,10 +75,7 @@ class ProjectQueryService:
         project = query.first()
 
         if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="项目不存在"
-            )
+            raise ResourceNotFoundError("项目不存在")
 
         return project
 
