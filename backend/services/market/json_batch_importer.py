@@ -22,7 +22,7 @@ class JSONBatchImporter:
     def __init__(self):
         self.importer = PropertyImporter()
 
-    def batch_import_json(self, properties: List[dict], db: Session) -> PushResult:
+    def batch_import_json(self, properties: List[dict], db: Session, user_id: str) -> PushResult:
         """
         批量导入 JSON 数组
 
@@ -35,6 +35,7 @@ class JSONBatchImporter:
         Args:
             properties: 原始房源数据字典列表
             db: 数据库会话
+            user_id: 推送用户的ID，将保存到房源的owner_id字段
 
         Returns:
             PushResult: 推送结果统计
@@ -52,8 +53,8 @@ class JSONBatchImporter:
                 # 验证数据
                 validated_data = PropertyIngestionModel(**raw_data)
 
-                # 导入数据
-                result = self.importer.import_property(validated_data, db)
+                # 导入数据，传递用户ID
+                result = self.importer.import_property(validated_data, db, user_id)
 
                 if result.success:
                     success += 1

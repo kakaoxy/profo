@@ -70,7 +70,7 @@ class PropertyCurrent(Base):
     listing_remarks = Column(Text, nullable=True, comment="房源描述")
     
     # 元数据
-    owner_id = Column(Integer, nullable=True, comment="所有者ID(预留)")
+    owner_id = Column(String(36), nullable=True, comment="推送用户ID")
     visibility = Column(String(20), default="private", comment="可见性(预留)")
     is_active = Column(Boolean, default=True, comment="是否激活")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")

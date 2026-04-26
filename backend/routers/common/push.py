@@ -60,7 +60,12 @@ async def push_properties(
     try:
         # 处理推送（使用线程池避免阻塞事件循环）
         importer = JSONBatchImporter()
-        result = await run_in_threadpool(importer.batch_import_json, properties, db)
+        result = await run_in_threadpool(
+            importer.batch_import_json,
+            properties,
+            db,
+            current_user.id
+        )
 
         return result
 
