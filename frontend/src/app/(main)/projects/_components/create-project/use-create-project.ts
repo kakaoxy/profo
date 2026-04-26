@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { createProjectAction, updateProjectAction } from "../../actions/core";
+import { createProjectAction, updateProjectAction, getNextContractNoAction } from "../../actions/core";
 import { FormValues, ProjectCreateReq, ProjectUpdateReq } from "./schema";
 import { Project } from "../../types";
 import { buildLayout, toDateStr } from "./utils";
@@ -46,6 +46,28 @@ export const useCreateProject = ({
 
   // 草稿管理
   const { clearDraft } = useDraft({ form, open, isEditMode });
+
+  // 获取合同编号（新建模式且表单中无值时）
+  useEffect(() => {
+    if (!open || isEditMode) return;
+
+    const currentContractNo = form.getValues("contract_no");
+    // 如果表单中已有合同编号（如从草稿恢复），则不再获取
+    if (currentContractNo) return;
+
+    // 使用 Server Action 获取合同编号，避免客户端 Token 刷新问题
+    getNextContractNoAction()
+      .then((result) => {
+        if (result.success && result.data) {
+          form.setValue("contract_no", result.data);
+        } else {
+          console.error("[CreateProject] 获取合同编号失败:", result.message);
+        }
+      })
+      .catch((err: unknown) => {
+        console.error("[CreateProject] 获取合同编号异常:", err);
+      });
+  }, [open, isEditMode, form]);
 
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
