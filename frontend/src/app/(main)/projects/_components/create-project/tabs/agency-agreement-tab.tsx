@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import { client } from "@/lib/api-client";
 
 const COST_ASSUMPTION_OPTIONS = [
   { value: "meifangbao", label: "美房宝承担" },
@@ -20,22 +21,6 @@ const COST_ASSUMPTION_OPTIONS = [
   { value: "respective", label: "各自承担" },
   { value: "other", label: "其他" },
 ] as const;
-
-// 生成合同编号: MFB-年月+时间戳+随机数
-// 使用时间戳+随机数避免多标签页竞态条件，不依赖 localStorage
-function generateContractNo(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const seconds = String(now.getSeconds()).padStart(2, "0");
-  const ms = String(now.getMilliseconds()).padStart(3, "0");
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-
-  return `MFB-${year}${month}${day}${hours}${minutes}${seconds}${ms}${random}`;
-}
 
 export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }) {
   const { control, setValue } = form;
@@ -47,12 +32,15 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
     name: "cost_assumption_type",
   });
 
-  // 自动生成合同编号（仅新建时）
+  // 从后端获取合同编号（仅新建时）
   useEffect(() => {
     if (!isContractNoSet) {
-      const contractNo = generateContractNo();
-      setValue("contract_no", contractNo);
-      setIsContractNoSet(true);
+      client.GET("/api/v1/projects/contract-no/next").then(({ data, error }) => {
+        if (data && !error) {
+          setValue("contract_no", data);
+          setIsContractNoSet(true);
+        }
+      });
     }
   }, [isContractNoSet, setValue]);
 

@@ -504,6 +504,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/contract-no/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Next Contract No
+         * @description 获取下一个合同编号
+         *
+         *     格式: MFB-年月-4位自增序号，如 MFB-202604-0001
+         *     后端生成保证唯一性，避免前端竞态条件
+         */
+        get: operations["get_next_contract_no_api_v1_projects_contract_no_next_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects": {
         parameters: {
             query?: never;
@@ -5757,6 +5780,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_next_contract_no_api_v1_projects_contract_no_next_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
                 };
             };
         };

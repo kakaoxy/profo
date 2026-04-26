@@ -76,6 +76,9 @@ class ProjectService:
     def get_project_stats(self) -> Dict[str, int]:
         return self._core_service.get_project_stats()
 
+    def generate_contract_no(self) -> str:
+        return self._core_service.generate_contract_no()
+
     # ========== RenovationService 方法委托 ==========
 
     def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> ProjectResponse:
