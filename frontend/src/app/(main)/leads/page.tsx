@@ -4,8 +4,6 @@ import type { Lead } from "./types";
 import type { operations } from "@/lib/api-types";
 import { mapBackendToFrontend } from "./lib/utils";
 
-export const dynamic = "force-dynamic";
-
 interface PageProps {
   searchParams: Promise<{
     search?: string;

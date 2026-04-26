@@ -8,8 +8,6 @@ import Link from "next/link";
 import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const dynamic = "force-dynamic";
-
 // 路由参数验证 schema
 const paramsSchema = z.object({
   id: z.string().min(1).regex(/^\d+$/, "ID 必须是数字"),

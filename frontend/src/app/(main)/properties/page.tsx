@@ -5,7 +5,7 @@ import { PropertyFilters } from "./_components/property-filters";
 import { PropertyFilterSheet } from "./_components/property-filter-sheet";
 import { ExportButton } from "./_components/export-button";
 import { searchParamsCache } from "./search-params";
-import { PropertyPagination } from "./_components/property-pagination"; // 引入分页组件
+import { PropertyPagination } from "./_components/property-pagination";
 import { PropertyDetailSheet } from "./_components/property-detail-sheet";
 
 // 1. 修改类型定义：searchParams 是一个 Promise

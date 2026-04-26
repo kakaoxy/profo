@@ -3,9 +3,6 @@ import { extractPaginatedData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
 import { GovernanceView } from "./governance-view";
 
-// 强制动态渲染，确保每次进来数据都是新的
-export const dynamic = "force-dynamic";
-
 interface GovernancePageProps {
   searchParams: Promise<{
     page?: string;

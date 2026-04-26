@@ -7,8 +7,6 @@ import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet
 import { MonitorSheet } from "./_components/monitor/monitor-sheet";
 import type { paths, components } from "@/lib/api-types";
 
-export const dynamic = "force-dynamic";
-
 interface PageProps {
   searchParams: Promise<{
     status?: string;

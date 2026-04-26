@@ -12,8 +12,6 @@ import { PriceSidebar } from "./_components/price-sidebar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 // 路由参数验证 schema
 const paramsSchema = z.object({
   id: z.string().min(1).regex(/^\d+$/, "ID 必须是数字"),
