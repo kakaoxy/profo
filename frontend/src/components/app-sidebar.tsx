@@ -205,7 +205,7 @@ export function AppSidebar({ user }: { user: User | null }) {
         <div className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}>
           {state === "expanded" ? (
             <div className="flex items-center gap-2.5 transition-all">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 font-bold text-xs shadow-sm">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 font-bold text-xs shadow-sm">
                 P
               </div>
               <span className="truncate font-semibold text-[15px] text-slate-800 dark:text-white tracking-tight">
@@ -213,7 +213,7 @@ export function AppSidebar({ user }: { user: User | null }) {
               </span>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 font-bold text-xs shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 font-bold text-xs shadow-sm">
               P
             </div>
           )}
@@ -242,7 +242,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <HoverCardContent
                           side="right"
                           align="start"
-                          className="min-w-52 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl rounded-xl z-[100]"
+                          className="min-w-52 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl rounded-xl z-100"
                         >
                           <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                             {item.title}
@@ -340,12 +340,12 @@ export function AppSidebar({ user }: { user: User | null }) {
               <button
                 className={`flex items-center rounded-xl py-2 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
               >
-                <Avatar className="h-8 w-8 rounded-full ring-2 ring-slate-200/60 dark:ring-slate-700/60 flex-shrink-0">
+                <Avatar className="h-8 w-8 rounded-full ring-2 ring-slate-200/60 dark:ring-slate-700/60 shrink-0">
                   <AvatarImage
                     src={user?.avatar || ""}
                     alt={user?.username}
                   />
-                  <AvatarFallback className="rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium">
+                  <AvatarFallback className="rounded-full bg-linear-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium">
                     {user?.username?.slice(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
