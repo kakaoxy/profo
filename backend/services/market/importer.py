@@ -26,31 +26,31 @@ class PropertyImporter:
     def __init__(self):
         self.floor_parser = FloorParser()
     
-    def import_property(self, data: PropertyIngestionModel, db: Session) -> ImportResult:
+    def import_property(self, data: PropertyIngestionModel, db: Session, user_id: str) -> ImportResult:
         """导入单条房源数据的入口方法"""
         try:
-            return self._process_import_transaction(data, db)
+            return self._process_import_transaction(data, db, user_id)
         except Exception as e:
             return self._handle_import_error(e, data, db)
 
-    def _process_import_transaction(self, data: PropertyIngestionModel, db: Session) -> ImportResult:
+    def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str) -> ImportResult:
         """处理核心导入逻辑（事务内）"""
         community_id = self.find_or_create_community(data, db)
-        
+
         existing_property = self._get_existing_property(data, db)
-        
+
         if existing_property:
-            self._handle_update(existing_property, data, community_id, db)
+            self._handle_update(existing_property, data, community_id, db, user_id)
             property_id = existing_property.id
             action = "更新"
         else:
-            new_property = self._handle_creation(data, community_id, db)
+            new_property = self._handle_creation(data, community_id, db, user_id)
             property_id = new_property.id
             action = "创建"
-            
+
         db.commit()
-        logger.info(f"{action}房源: {data.source_property_id} (ID: {property_id})")
-        
+        logger.info(f"{action}房源: {data.source_property_id} (ID: {property_id}, 用户ID: {user_id})")
+
         return ImportResult(success=True, property_id=property_id, error=None)
 
     def find_or_create_community(self, data: PropertyIngestionModel, db: Session) -> str:
@@ -130,14 +130,14 @@ class PropertyImporter:
         ).first()
 
     def _handle_update(self, existing: PropertyCurrent, data: PropertyIngestionModel,
-                       community_id: str, db: Session) -> None:
+                       community_id: str, db: Session, user_id: str) -> None:
         """处理更新逻辑：快照 + 更新当前表"""
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
-        self._map_data_to_property(existing, data, community_id)
+        self._map_data_to_property(existing, data, community_id, user_id)
         self._save_property_media(data, db)
 
-    def _handle_creation(self, data: PropertyIngestionModel, community_id: str, db: Session) -> PropertyCurrent:
+    def _handle_creation(self, data: PropertyIngestionModel, community_id: str, db: Session, user_id: str) -> PropertyCurrent:
         """处理创建逻辑"""
         new_property = PropertyCurrent(
             data_source=data.data_source,
@@ -145,19 +145,19 @@ class PropertyImporter:
             created_at=datetime.now(),
             is_active=True
         )
-        self._map_data_to_property(new_property, data, community_id)
+        self._map_data_to_property(new_property, data, community_id, user_id)
         db.add(new_property)
         db.flush() # 确保获取ID，方便后续日志或返回
         self._save_property_media(data, db)
         return new_property
 
-    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: str) -> None:
+    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: str, user_id: str) -> None:
         """
         统一的数据映射方法
         同时用于 Create 和 Update，消除代码重复
         """
         floor_info = self.floor_parser.parse_floor(data.floor_original)
-        
+
         prop.community_id = community_id
         prop.status = PropertyStatus(data.status.value)
         prop.property_type = data.property_type
@@ -184,6 +184,7 @@ class PropertyImporter:
         prop.last_transaction = data.last_transaction
         prop.heating_method = data.heating_method
         prop.listing_remarks = data.listing_remarks
+        prop.owner_id = user_id
         prop.updated_at = datetime.now()
 
     def _create_history_snapshot(self, property_obj: PropertyCurrent,
