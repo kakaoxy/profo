@@ -27,6 +27,11 @@ export function CashFlowSheet() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const projectId = searchParams.get("cashflow_id");
   const rawCommunityName = searchParams.get("community_name");
@@ -34,7 +39,7 @@ export function CashFlowSheet() {
   const communityName = rawCommunityName ? decodeURIComponent(rawCommunityName) : "";
   const address = rawAddress ? decodeURIComponent(rawAddress) : "";
   // 组合显示：小区名 + 地址
-  const projectDisplayName = communityName && address 
+  const projectDisplayName = communityName && address
     ? `${communityName} · ${address}`
     : communityName || address || "项目详情";
   const isOpen = !!projectId;
@@ -86,9 +91,14 @@ export function CashFlowSheet() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  // 避免 hydration 不匹配：服务端渲染空内容，客户端再渲染实际内容
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent className="w-full sm:max-w-2xl md:max-w-[800px] bg-slate-50 p-0 flex flex-col h-full border-l border-slate-200 shadow-2xl">
+      <SheetContent className="w-full sm:max-w-2xl md:max-w-3xl bg-slate-50 p-0 flex flex-col h-full border-l border-slate-200 shadow-2xl">
         <div className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
           <div>
             {/* 标题区域：显示小区名+地址 */}
@@ -98,7 +108,7 @@ export function CashFlowSheet() {
                 <>
                   <span className="text-slate-300 font-light">/</span>
                   <span
-                    className="text-base font-medium text-slate-600 truncate max-w-[300px]"
+                    className="text-base font-medium text-slate-600 truncate max-w-xs"
                     title={projectDisplayName}
                   >
                     {projectDisplayName}
@@ -115,7 +125,7 @@ export function CashFlowSheet() {
         {/* 内容滚动区域 */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {isLoading || !data ? (
-            <div className="flex h-full items-center justify-center min-h-[400px]">
+            <div className="flex h-full items-center justify-center min-h-96">
               <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
             </div>
           ) : (

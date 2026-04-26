@@ -74,7 +74,8 @@ export const useCreateProject = ({
         signing_period: values.signing_period ?? null,
         extension_period: values.extension_period ?? null,
         extension_rent: values.extension_rent ?? null,
-        cost_assumption: values.cost_assumption || null,
+        cost_assumption_type: values.cost_assumption_type,
+        cost_assumption_other: values.cost_assumption_type === "other" ? values.cost_assumption_other || null : null,
         planned_handover_date: toDateStr(values.planned_handover_date),
         other_agreements: values.other_agreements || null,
         signing_materials: values.attachments?.length

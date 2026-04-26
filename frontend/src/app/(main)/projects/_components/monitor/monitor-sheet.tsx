@@ -4,35 +4,36 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useEffect, useState } from "react";
 
 const HeroSection = dynamic(
   () => import("./hero-section").then((m) => m.HeroSection),
-  { ssr: false, loading: () => <div className="p-6 h-[220px] bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-56 bg-white" /> },
 );
 
 const MarketSentiment = dynamic(
   () => import("./market-sentiment").then((m) => m.MarketSentiment),
-  { ssr: false, loading: () => <div className="p-6 h-[280px] bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-72 bg-white" /> },
 );
 
 const NeighborhoodRadar = dynamic(
   () => import("./neighborhood-radar").then((m) => m.NeighborhoodRadar),
-  { ssr: false, loading: () => <div className="p-6 h-[320px] bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-80 bg-white" /> },
 );
 
 const TrendPositioning = dynamic(
   () => import("./trend-positioning").then((m) => m.TrendPositioning),
-  { ssr: false, loading: () => <div className="p-6 h-[520px] bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-128 bg-white" /> },
 );
 
 const CompetitorsBrawl = dynamic(
   () => import("./competitors-brawl").then((m) => m.CompetitorsBrawl),
-  { ssr: false, loading: () => <div className="p-6 h-[420px] bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-96 bg-white" /> },
 );
 
 const AIStrategy = dynamic(
   () => import("./ai-strategy").then((m) => m.AIStrategy),
-  { ssr: false, loading: () => <div className="p-6 h-[320px] bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-80 bg-white" /> },
 );
 
 // 新增：一个简单的包装组件，专门解决“糊在一起”的问题
@@ -47,6 +48,11 @@ export function MonitorSheet() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const monitorId = searchParams.get("monitor_id");
   const rawProjectName = searchParams.get("project_name");
@@ -60,7 +66,8 @@ export function MonitorSheet() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  if (!isOpen) return null;
+  // 避免 hydration 不匹配：服务端始终渲染 null，客户端再根据状态渲染
+  if (!mounted || !isOpen) return null;
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>

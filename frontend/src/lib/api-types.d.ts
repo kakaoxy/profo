@@ -3217,10 +3217,15 @@ export interface components {
              */
             extension_rent?: number | string | null;
             /**
-             * Cost Assumption
-             * @description 税费及佣金承担
+             * Cost Assumption Type
+             * @description 税费及佣金承担方类型: meifangbao/owner/respective/other
              */
-            cost_assumption?: string | null;
+            cost_assumption_type?: string | null;
+            /**
+             * Cost Assumption Other
+             * @description 税费及佣金承担方其他说明
+             */
+            cost_assumption_other?: string | null;
             /**
              * Planned Handover Date
              * @description 计划交房时间 (YYYY-MM-DD 格式)
@@ -3378,8 +3383,10 @@ export interface components {
             extension_period?: number | null;
             /** Extension Rent */
             extension_rent?: string | null;
-            /** Cost Assumption */
-            cost_assumption?: string | null;
+            /** Cost Assumption Type */
+            cost_assumption_type?: string | null;
+            /** Cost Assumption Other */
+            cost_assumption_other?: string | null;
             /** Planned Handover Date */
             planned_handover_date?: string | null;
             /** Other Agreements */
@@ -3510,8 +3517,10 @@ export interface components {
             extension_period?: number | null;
             /** Extension Rent */
             extension_rent?: number | string | null;
-            /** Cost Assumption */
-            cost_assumption?: string | null;
+            /** Cost Assumption Type */
+            cost_assumption_type?: string | null;
+            /** Cost Assumption Other */
+            cost_assumption_other?: string | null;
             /**
              * Planned Handover Date
              * @description 计划交房时间 (YYYY-MM-DD 格式)

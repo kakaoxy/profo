@@ -35,6 +35,22 @@ export function InfoTab({ project }: InfoTabProps) {
     return layout;
   };
 
+  // 格式化税费承担方显示
+  const formatCostAssumption = (project: Project): string | undefined => {
+    const typeMap: Record<string, string> = {
+      meifangbao: "美房宝承担",
+      owner: "业主承担",
+      respective: "各自承担",
+      other: "其他",
+    };
+    if (!project.cost_assumption_type) return undefined;
+    const typeLabel = typeMap[project.cost_assumption_type] || project.cost_assumption_type;
+    if (project.cost_assumption_type === "other" && project.cost_assumption_other) {
+      return `${typeLabel} (${project.cost_assumption_other})`;
+    }
+    return typeLabel;
+  };
+
   return (
     <div className="space-y-4">
       {/* --- 基础信息 --- */}
@@ -132,7 +148,7 @@ export function InfoTab({ project }: InfoTabProps) {
         {/* 税费及佣金承担方 */}
         <InfoItem
           label="税费及佣金承担方"
-          value={project.cost_assumption}
+          value={formatCostAssumption(project)}
           className="sm:col-span-2"
         />
 

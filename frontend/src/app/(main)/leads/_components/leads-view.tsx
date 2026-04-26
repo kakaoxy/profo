@@ -155,7 +155,7 @@ export function LeadsView({
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">线索管理</h1>
           <p className="text-sm text-slate-500">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>

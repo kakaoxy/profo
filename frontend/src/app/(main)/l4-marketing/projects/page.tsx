@@ -193,7 +193,7 @@ export default async function MarketingProjectsPage({
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         {/* Header - 立即渲染 */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">

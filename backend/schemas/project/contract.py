@@ -24,7 +24,8 @@ class ContractBase(BaseModel):
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
     extension_period: Optional[int] = Field(None, description="顺延期(天)")
     extension_rent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
-    cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担方")
+    cost_assumption_type: Optional[str] = Field(None, max_length=20, description="税费及佣金承担方类型: meifangbao/owner/respective/other")
+    cost_assumption_other: Optional[str] = Field(None, max_length=50, description="税费及佣金承担方其他说明")
     planned_handover_date: Optional[datetime] = Field(None, description="业主交房时间")
     other_agreements: Optional[str] = Field(None, description="其他约定条款")
     signing_materials: Optional[List[SigningMaterial]] = Field(None, description="合同附件列表")
@@ -46,7 +47,8 @@ class ContractUpdate(BaseModel):
     signing_period: Optional[int] = None
     extension_period: Optional[int] = None
     extension_rent: Optional[Decimal] = None
-    cost_assumption: Optional[str] = None
+    cost_assumption_type: Optional[str] = None
+    cost_assumption_other: Optional[str] = None
     planned_handover_date: Optional[datetime] = None
     other_agreements: Optional[str] = None
     signing_materials: Optional[List[SigningMaterial]] = None
