@@ -21,22 +21,20 @@ const COST_ASSUMPTION_OPTIONS = [
   { value: "other", label: "其他" },
 ] as const;
 
-// 生成合同编号: MFB-年月+自增序号
+// 生成合同编号: MFB-年月+时间戳+随机数
+// 使用时间戳+随机数避免多标签页竞态条件，不依赖 localStorage
 function generateContractNo(): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
-  const prefix = `MFB-${year}${month}`;
-  
-  // 从 localStorage 获取当前月份的序号
-  const storageKey = `contract_no_counter_${year}${month}`;
-  let counter = parseInt(localStorage.getItem(storageKey) || "0", 10);
-  counter += 1;
-  localStorage.setItem(storageKey, String(counter));
-  
-  // 格式化为4位数字
-  const serial = String(counter).padStart(4, "0");
-  return `${prefix}${serial}`;
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+
+  return `MFB-${year}${month}${day}${hours}${minutes}${seconds}${ms}${random}`;
 }
 
 export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }) {
