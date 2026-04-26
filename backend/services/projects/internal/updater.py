@@ -4,6 +4,7 @@
 负责项目信息的更新，包括基础字段、合同信息、业主信息和销售信息。
 """
 
+import uuid
 from datetime import datetime
 from typing import Dict, Any, TYPE_CHECKING
 
@@ -140,7 +141,7 @@ class ProjectUpdater:
                 setattr(contract, field, value)
         else:
             contract = ProjectContract(
-                id=str(__import__('uuid').uuid4()),
+                id=str(uuid.uuid4()),
                 project_id=project_id,
                 is_deleted=False,
                 created_at=datetime.utcnow(),
@@ -177,7 +178,7 @@ class ProjectUpdater:
                 setattr(owner, field, value)
         else:
             owner = ProjectOwner(
-                id=str(__import__('uuid').uuid4()),
+                id=str(uuid.uuid4()),
                 project_id=project_id,
                 relation_type="业主",
                 is_deleted=False,
@@ -218,7 +219,7 @@ class ProjectUpdater:
                 setattr(sale, field, value)
         else:
             sale = ProjectSale(
-                id=str(__import__('uuid').uuid4()),
+                id=str(uuid.uuid4()),
                 project_id=project_id,
                 transaction_status="在售",
                 is_deleted=False,

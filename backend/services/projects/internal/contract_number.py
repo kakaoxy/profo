@@ -5,10 +5,12 @@
 格式: MFB-年月-4位自增序号，如 MFB-202604-0001
 """
 
+import time
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -49,8 +51,6 @@ class ContractNumberGenerator:
         Raises:
             RuntimeError: 当无法生成唯一编号时（超过最大重试次数）
         """
-        import time
-        from sqlalchemy.exc import IntegrityError
         from models import ProjectContract
 
         now = datetime.now()
