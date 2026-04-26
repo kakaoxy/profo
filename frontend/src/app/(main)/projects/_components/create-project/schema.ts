@@ -94,7 +94,9 @@ export const formSchema = z
     signing_period: optionalNumber,
     extension_period: optionalNumber,
     extension_rent: optionalNumber,
-    cost_assumption: z.string().max(50).optional(),
+    // 税费及佣金承担方 - 单选框+其他手动填写
+    cost_assumption_type: z.enum(["meifangbao", "owner", "respective", "other"]).default("meifangbao"),
+    cost_assumption_other: z.string().max(50).optional(),
     planned_handover_date: z.date().optional(),
     other_agreements: z.string().optional(),
 

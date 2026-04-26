@@ -86,7 +86,8 @@ class ProjectCreate(BaseModel):
     signing_period: Optional[int] = Field(None, description="合同周期(天)")
     extension_period: Optional[int] = Field(None, description="顺延期(天)")
     extension_rent: Optional[Decimal] = Field(None, description="顺延期租金(元/月)")
-    cost_assumption: Optional[str] = Field(None, max_length=50, description="税费及佣金承担")
+    cost_assumption_type: Optional[str] = Field(None, max_length=20, description="税费及佣金承担方类型: meifangbao/owner/respective/other")
+    cost_assumption_other: Optional[str] = Field(None, max_length=50, description="税费及佣金承担方其他说明")
     planned_handover_date: Optional[str] = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: Optional[str] = Field(None, description="其他约定")
     signing_materials: Optional[List[Any]] = Field(None, description="签约材料列表")
@@ -132,9 +133,14 @@ class ProjectUpdate(BaseModel):
         None,
         validation_alias=AliasChoices("extension_rent", "extensionRent"),
     )
-    cost_assumption: Optional[str] = Field(
+    cost_assumption_type: Optional[str] = Field(
         None,
-        validation_alias=AliasChoices("cost_assumption", "costAssumption"),
+        validation_alias=AliasChoices("cost_assumption_type", "costAssumptionType"),
+        max_length=20,
+    )
+    cost_assumption_other: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices("cost_assumption_other", "costAssumptionOther"),
         max_length=50,
     )
     planned_handover_date: Optional[str] = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
@@ -187,7 +193,8 @@ class ProjectResponse(BaseModel):
     signing_period: Optional[int] = None
     extension_period: Optional[int] = None
     extension_rent: Optional[Decimal] = None
-    cost_assumption: Optional[str] = None
+    cost_assumption_type: Optional[str] = None
+    cost_assumption_other: Optional[str] = None
     planned_handover_date: Optional[str] = None  # YYYY-MM-DD 格式
     other_agreements: Optional[str] = None
     contract_status: Optional[str] = None

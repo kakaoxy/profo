@@ -55,7 +55,8 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     signing_period: item.signing_period ?? undefined,
     extension_period: item.extension_period ?? undefined,
     extension_rent: toNumber(item.extension_rent),
-    cost_assumption: item.cost_assumption ?? undefined,
+    cost_assumption_type: item.cost_assumption_type ?? undefined,
+    cost_assumption_other: item.cost_assumption_other ?? undefined,
     planned_handover_date: item.planned_handover_date ?? undefined,
     other_agreements: item.other_agreements ?? undefined,
     renovation_stage: item.renovation_stage ?? undefined,
@@ -113,7 +114,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             项目管理

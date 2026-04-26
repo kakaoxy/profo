@@ -23,7 +23,7 @@ export function FormHeader({
 
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="w-full max-w-[1600px] mx-auto flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 h-14">
+      <div className="w-full max-w-400 mx-auto flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 h-14">
         <div className="flex items-center gap-3 min-w-0">
           <Button
             type="button"

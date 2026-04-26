@@ -125,7 +125,8 @@ class ProjectCoreService:
             signing_period=project_data.signing_period,
             extension_period=project_data.extension_period,
             extension_rent=project_data.extension_rent,
-            cost_assumption=project_data.cost_assumption,
+            cost_assumption_type=project_data.cost_assumption_type,
+            cost_assumption_other=project_data.cost_assumption_other,
             planned_handover_date=planned_handover_date,
             other_agreements=project_data.other_agreements,
             signing_materials=signing_materials,
@@ -287,8 +288,8 @@ class ProjectCoreService:
         """更新合同相关字段"""
         contract_fields = [
             'contract_no', 'signing_price', 'signing_date', 'signing_period',
-            'extension_period', 'extension_rent', 'cost_assumption',
-            'planned_handover_date', 'other_agreements', 'signing_materials'
+            'extension_period', 'extension_rent', 'cost_assumption_type',
+            'cost_assumption_other', 'planned_handover_date', 'other_agreements', 'signing_materials'
         ]
 
         contract_updates = {

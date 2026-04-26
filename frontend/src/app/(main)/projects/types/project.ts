@@ -162,7 +162,8 @@ export interface Project {
   signing_period?: number;
   extension_period?: number;
   extension_rent?: number;
-  cost_assumption?: string;
+  cost_assumption_type?: string;
+  cost_assumption_other?: string;
   other_agreements?: string;
   signing_materials?: string[] | { attachments?: AttachmentInfo[] } | null;
 
