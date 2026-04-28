@@ -43,7 +43,7 @@ export function useMarketData(communityId: string | null | undefined) {
         }
       } catch (error) {
         if (!isMounted) return;
-        if (error instanceof Error && error.name === "AbortError") {
+        if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
         console.error("Failed to fetch market data:", error instanceof Error ? error.message : String(error));
@@ -58,7 +58,7 @@ export function useMarketData(communityId: string | null | undefined) {
 
     return () => {
       isMounted = false;
-      abortController.abort();
+      abortController.abort(new DOMException("Component unmounted", "AbortError"));
     };
   }, [communityId]);
 
