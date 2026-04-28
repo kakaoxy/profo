@@ -10,8 +10,20 @@ export const dynamic = 'force-dynamic';
 async function getUser() {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/v1/auth/me");
-    if (error) return null;
+    const { data, error, response } = await client.GET("/api/v1/auth/me");
+    // [修复] 区分 401 错误和其他错误
+    // 401 错误会在 fetchClient 中自动处理刷新，如果刷新失败才会返回 error
+    // 其他错误（如网络错误）才返回 null
+    if (error) {
+      const status = (response as Response | undefined)?.status;
+      console.error("获取用户信息失败:", error, "状态码:", status);
+      // 如果是 401，说明 token 刷新也失败了，返回 null 让页面重定向
+      if (status === 401) {
+        return null;
+      }
+      // 其他错误（如 403, 500 等），尝试返回 data（可能部分数据可用）
+      return data;
+    }
     return data;
   } catch (e) {
     // 捕获网络错误 (例如后端没启动)，返回 null 防止页面崩溃

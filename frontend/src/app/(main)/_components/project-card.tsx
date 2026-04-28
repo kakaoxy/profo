@@ -27,11 +27,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // 用于防止竞态条件和重复设置状态
+    let isMounted = true;
     const abortController = new AbortController();
-    
+
     const fetchMarketData = async () => {
       if (!project.community_id) return;
-      
+
       setIsLoading(true);
       try {
         const { data, error, response } = await client.GET("/api/v1/monitor/communities/{community_id}/market-stats", {
@@ -40,6 +42,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
           },
           signal: abortController.signal,
         });
+
+        // 组件已卸载，不更新状态
+        if (!isMounted) return;
+
         if (error) {
           // 优先使用 response 状态信息，error 对象可能为空
           const errorInfo = {
@@ -52,26 +58,26 @@ export function ProjectCard({ project }: ProjectCardProps) {
           setMarketData(data);
         }
       } catch (error) {
+        // 组件已卸载，忽略所有错误
+        if (!isMounted) return;
+
         // 忽略 AbortError，这是正常的取消行为
-        // 注意：不同浏览器/环境下，中止请求的错误表现不同
-        // Firefox: "The operation was aborted" (DOMException with name "AbortError")
-        if (error instanceof Error) {
-          const isAbortError =
-            error.name === "AbortError" ||
-            error.message?.toLowerCase().includes("aborted");
-          if (isAbortError) {
-            return;
-          }
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
         }
         console.error("Failed to fetch market data:", error instanceof Error ? error.message : String(error));
       } finally {
-        setIsLoading(false);
+        // 组件已卸载，不更新状态
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchMarketData();
-    
+
     return () => {
+      isMounted = false;
       abortController.abort();
     };
   }, [project.community_id]);
