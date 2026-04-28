@@ -92,30 +92,18 @@ const authMiddleware: Middleware = {
 
       if (refreshed) {
         // 刷新成功，重试原始请求
-        // [修复] 重新构造请求，确保使用新的cookie
         console.log("🔁 [Client] Token 刷新成功，重试原始请求...");
 
-        // [关键修复] 使用 client 重新发起请求，而不是直接使用 fetch
-        // 这样可以确保请求经过完整的中间件链
-        const method = request.method.toUpperCase();
-        const requestUrl = new URL(request.url);
-        
-        // 提取路径部分（去掉 baseUrl）
-        const baseUrl = new URL(getApiUrl(""));
-        let path = requestUrl.pathname;
-        if (path.startsWith(baseUrl.pathname)) {
-          path = path.slice(baseUrl.pathname.length);
-        }
-        
-        // 重新使用 client 发起请求
-        // 注意：这里我们直接使用 fetch 但确保携带 credentials
-        // 由于 token 已经刷新，cookie 中已经包含新的 access_token
+        // [关键修复] 添加短暂延迟确保 cookie 已更新
+        // 浏览器写入 cookie 可能有极短的延迟
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // 重新构造请求，确保携带最新的 cookie
         const retryResponse = await fetch(request.url, {
-          method: method,
+          method: request.method,
           headers: request.headers,
           body: request.body,
           credentials: "include",
-          // 保持相同的 mode 和 cache 设置
           mode: request.mode,
           cache: request.cache,
         });
