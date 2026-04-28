@@ -71,6 +71,7 @@ class ProjectResponseBuilder:
         result = {
             "id": project.id,
             "name": project.name or project.generate_name(),
+            "community_id": project.community_id,
             "community_name": project.community_name,
             "address": project.address,
             "area": str(project.area) if project.area else None,
