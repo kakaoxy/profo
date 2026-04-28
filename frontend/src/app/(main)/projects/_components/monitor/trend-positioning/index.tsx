@@ -9,18 +9,18 @@ import { PriceChart } from "./price-chart";
 
 interface TrendPositioningProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
   myOverridePrice?: number;
 }
 
 export function TrendPositioning({
   projectId,
-  communityName,
+  communityId,
   myOverridePrice,
 }: TrendPositioningProps) {
   const { data, myPricing, loading, error } = useTrendData({
     projectId,
-    communityName,
+    communityId,
     myOverridePrice,
   });
 

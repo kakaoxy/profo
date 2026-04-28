@@ -21,13 +21,13 @@ const ReactMarkdown = dynamic(() => import("react-markdown"), {
 
 interface AIStrategyProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
-export function AIStrategy({ projectId, communityName }: AIStrategyProps) {
+export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
   // Use projectId to satisfy linter
   if (projectId) console.log(`AI Strategy for project: ${projectId}`);
-  if (communityName) console.log(`AI Strategy for community: ${communityName}`);
+  if (communityId) console.log(`AI Strategy for community: ${communityId}`);
 
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -131,7 +131,7 @@ export function AIStrategy({ projectId, communityName }: AIStrategyProps) {
             </div>
 
             <div className="space-y-4">
-              <div className="bg-gradient-to-br from-indigo-50 to-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
+              <div className="bg-linear-to-br from-indigo-50 to-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
                 <h3 className="text-indigo-800 font-bold mb-4 flex items-center gap-2 text-sm uppercase">
                   <ShieldAlert className="w-4 h-4" />
                   风控核心提醒

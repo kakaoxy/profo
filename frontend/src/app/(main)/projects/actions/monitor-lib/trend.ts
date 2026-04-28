@@ -6,6 +6,7 @@ import { TrendData } from "./types";
 
 /**
  * 获取价格走势数据
+ * 流程: projectId → community_id → trends API
  */
 export async function getTrendPositioningAction(projectId: string) {
   try {
@@ -15,7 +16,7 @@ export async function getTrendPositioningAction(projectId: string) {
       return { success: false, message: "获取项目信息失败" };
     }
 
-    const { community_name, list_price, signing_price, area } = projectResult.data;
+    const { community_id, list_price, signing_price, area } = projectResult.data;
     
     // 计算我的单价 (优先使用挂牌价，其次使用签约价)
     let myPrice = 0;
@@ -26,35 +27,16 @@ export async function getTrendPositioningAction(projectId: string) {
       myPrice = Math.round((Number(price) * 10000) / Number(area));
     }
 
-    if (!community_name) {
+    if (!community_id) {
       return { success: false, message: "项目未关联小区" };
     }
 
-    // 2. 获取 community_id
+    // 2. 调用 Trend API (使用 openapi-fetch client)
     const client = await fetchClient();
-    const { data: communitiesData, error: communitiesError } = await client.GET(
-      "/api/v1/admin/communities",
-      {
-        params: { query: { search: community_name, page_size: 1 } },
-      }
-    );
-
-    if (communitiesError || !communitiesData) {
-      return { success: false, message: "搜索小区信息失败" };
-    }
-
-    // 直接返回 CommunityListResponse 结构
-    const communities = (communitiesData as { items?: Array<{ id: string }> })?.items;
-    if (!communities || communities.length === 0) {
-      return { success: false, message: `未找到小区: ${community_name}` };
-    }
-    const communityId = communities[0].id;
-
-    // 3. 调用 Trend API (使用 openapi-fetch client)
     const { data: trendData, error: trendError } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/trends",
       {
-        params: { path: { community_id: communityId } },
+        params: { path: { community_id: community_id } },
       }
     );
 
@@ -70,15 +52,8 @@ export async function getTrendPositioningAction(projectId: string) {
   }
 }
 
-import { getCommunityIdByName } from "./utils";
-
-export async function getTrendPositioningByCommunityAction(communityName: string, myPrice: number) {
+export async function getTrendPositioningByCommunityAction(communityId: string, myPrice: number) {
   try {
-    const communityId = await getCommunityIdByName(communityName);
-    if (!communityId) {
-      return { success: false, message: `未找到小区: ${communityName}` };
-    }
-
     const client = await fetchClient();
     const { data: trendData, error: trendError } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/trends",

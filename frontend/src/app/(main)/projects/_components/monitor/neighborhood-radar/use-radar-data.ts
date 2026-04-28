@@ -9,7 +9,7 @@ import type { NeighborhoodRadarItem } from "../../../actions/monitor-lib/types";
 
 interface UseRadarDataProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
 interface UseRadarDataReturn {
@@ -21,7 +21,7 @@ interface UseRadarDataReturn {
 
 export function useRadarData({
   projectId,
-  communityName,
+  communityId,
 }: UseRadarDataProps): UseRadarDataReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +37,8 @@ export function useRadarData({
 
       const result = projectId
         ? await getNeighborhoodRadarAction(projectId)
-        : communityName
-          ? await getNeighborhoodRadarByCommunityAction(communityName)
+        : communityId
+          ? await getNeighborhoodRadarByCommunityAction(communityId)
           : { success: false, message: "缺少参数" };
 
       if (isMounted) {
@@ -55,7 +55,7 @@ export function useRadarData({
     return () => {
       isMounted = false;
     };
-  }, [projectId, communityName, refreshKey]);
+  }, [projectId, communityId, refreshKey]);
 
   const refresh = () => setRefreshKey((k) => k + 1);
 

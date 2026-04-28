@@ -10,7 +10,7 @@ import { CompetitorList } from "./competitor-list";
 
 interface CompetitorManagerModalProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
@@ -18,7 +18,7 @@ interface CompetitorManagerModalProps {
 
 export function CompetitorManagerModal({
   projectId,
-  communityName,
+  communityId: initialCommunityId,
   isOpen,
   onClose,
   onUpdate,
@@ -35,7 +35,7 @@ export function CompetitorManagerModal({
     removeCompetitor,
   } = useCompetitors({
     projectId,
-    communityName,
+    communityId: initialCommunityId,
     isOpen,
   });
 

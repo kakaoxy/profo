@@ -6,16 +6,16 @@ import { useSentimentData } from "./use-sentiment-data";
 
 interface MarketSentimentProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
 export function MarketSentiment({
   projectId,
-  communityName,
+  communityId,
 }: MarketSentimentProps) {
   const { floorStats, inventoryMonths, loading, error } = useSentimentData({
     projectId,
-    communityName,
+    communityId,
   });
 
   const pressureLabel =
