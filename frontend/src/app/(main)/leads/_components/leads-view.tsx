@@ -154,11 +154,11 @@ export function LeadsView({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">线索管理</h1>
-          <p className="text-sm text-muted-foreground">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">线索管理</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>
         </div>
 
         <LeadsStats leads={leads} />
@@ -177,14 +177,14 @@ export function LeadsView({
           {isPending && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="ml-2 text-sm text-muted-foreground">{LOADING_TEXT.LOADING}</span>
+              <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">{LOADING_TEXT.LOADING}</span>
             </div>
           )}
 
           {!isPending && (
             <>
               {viewMode === "table" ? (
-                <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
                     <LeadsTable
                       leads={filteredLeads}
@@ -202,7 +202,7 @@ export function LeadsView({
                   onDelete={handleDeleteLead}
                 />
               )}
-              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
                 <span>显示 {filteredLeads.length} 条记录 (共 {leads.length} 条)</span>
               </div>
             </>

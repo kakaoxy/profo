@@ -28,31 +28,31 @@ export function LeadsStats({ leads }: LeadsStatsProps) {
       label: "待评估",
       value: stats.pendingAssessment,
       icon: ClipboardList,
-      color: "bg-blue-500",
+      color: "bg-primary",
     },
     {
       label: "待看房",
       value: stats.pendingVisit,
       icon: CalendarClock,
-      color: "bg-orange-500",
+      color: "bg-tertiary",
     },
     {
       label: "已看房",
       value: stats.visited,
       icon: Eye,
-      color: "bg-emerald-500",
+      color: "bg-on-surface",
     },
     {
       label: "已签约",
       value: stats.signed,
       icon: CheckCircle2,
-      color: "bg-indigo-500",
+      color: "bg-primary",
     },
     {
       label: "已驳回",
       value: stats.rejected,
       icon: XCircle,
-      color: "bg-slate-400",
+      color: "bg-error",
     },
   ];
 
@@ -63,16 +63,16 @@ export function LeadsStats({ leads }: LeadsStatsProps) {
         return (
           <Card
             key={index}
-            className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+            className="p-4 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer shadow-sm"
             role="button"
             aria-label={`${item.label} ${item.value}`}
           >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-500">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   {item.label}
                 </p>
-                <p className="text-2xl font-bold text-slate-800 tabular-nums">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                   {item.value}
                 </p>
               </div>
