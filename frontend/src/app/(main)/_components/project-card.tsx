@@ -1,14 +1,77 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Eye, Wallet, MoreHorizontal } from "lucide-react";
-import type { Project } from "../types";
+import { Eye, Wallet, MoreHorizontal, MapPin, Home, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import type { components } from "@/lib/api-types";
+
+type ProjectResponse = components["schemas"]["ProjectResponse"];
+type SalesRecord = {
+  id: string;
+  record_type: string;
+  price?: string | null;
+  record_date: string;
+  customer_name?: string | null;
+  notes?: string | null;
+};
 
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectResponse;
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const contractNo = project.contract_no || "N/A";
+  const communityName = project.community_name || "未命名项目";
+  const address = project.address || "地址未填写";
+  const layout = project.layout || "-";
+  const area = project.area ? `${project.area}㎡` : "-";
+
+  const listPrice = project.list_price ? `${project.list_price}万` : "未定价";
+  const soldPrice = project.sold_price ? `${project.sold_price}万` : "-";
+
+  const statusMap: Record<string, { label: string; color: string }> = {
+    signing: { label: "已签约", color: "bg-blue-100 text-blue-700" },
+    renovating: { label: "装修中", color: "bg-yellow-100 text-yellow-700" },
+    selling: { label: "在售中", color: "bg-green-100 text-green-700" },
+    sold: { label: "已成交", color: "bg-purple-100 text-purple-700" },
+  };
+  const statusInfo = statusMap[project.status] || { label: project.status, color: "bg-gray-100 text-gray-700" };
+
+  const salesRecords = (project.sales_records || []) as SalesRecord[];
+
+  const viewingRecords = salesRecords.filter(r => r.record_type === "viewing");
+  const offerRecords = salesRecords.filter(r => r.record_type === "offer");
+
+  const viewTotal = viewingRecords.length;
+
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  const currentWeekViews = viewingRecords.filter(r => new Date(r.record_date) >= oneWeekAgo).length;
+  const lastWeekViews = viewingRecords.filter(r => {
+    const d = new Date(r.record_date);
+    return d >= twoWeeksAgo && d < oneWeekAgo;
+  }).length;
+
+  const viewTrendIsUp = currentWeekViews >= lastWeekViews;
+
+  const offerCount = offerRecords.length;
+
+  const offerPrices = offerRecords
+    .map(r => r.price ? parseFloat(r.price) : null)
+    .filter((p): p is number => p !== null && !isNaN(p));
+
+  const maxOffer = offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
+  const lastOffer = offerPrices.length > 0 ? offerPrices[offerPrices.length - 1] : 0;
+
+  const marketData = {
+    onSale: 12,
+    avgPrice: "6.8万/㎡",
+    volume30d: 4,
+    priceTrend30d: "-1.2%",
+    isPriceUp: false as boolean | null,
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -19,15 +82,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className="p-4 border-b border-slate-100 bg-slate-50/50">
         <div className="flex justify-between items-start mb-1">
           <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">
-            #{project.code}
+            #{contractNo}
           </span>
           <MoreHorizontal className="w-4 h-4 text-slate-300 group-hover:text-primary cursor-pointer transition-colors" />
         </div>
         <h4 className="text-lg font-semibold text-on-surface truncate">
-          {project.name}
+          {communityName}
         </h4>
-        <p className="text-xs text-slate-400">
-          {project.location} · {project.specs}
+        <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+          <MapPin className="w-3 h-3" />
+          {address}
+        </p>
+        <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+          <Home className="w-3 h-3" />
+          {layout} · {area}
         </p>
       </div>
 
@@ -43,19 +111,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <span className="text-sm text-slate-600">带看总量</span>
               </div>
               <span className="text-sm font-bold">
-                {project.stats.viewTotal} 次
+                {viewTotal} 次
               </span>
             </div>
             <div className="flex justify-between items-center">
               <div className="text-xs text-slate-500 ml-6">本周/上周</div>
               <div
                 className={`text-xs font-semibold ${
-                  project.stats.viewTrend.isUp ? "text-tertiary" : "text-error"
+                  viewTrendIsUp ? "text-tertiary" : "text-error"
                 }`}
               >
-                {project.stats.viewTrend.current} / {project.stats.viewTrend.last}
+                {currentWeekViews} / {lastWeekViews}
                 <span className="ml-1">
-                  {project.stats.viewTrend.isUp ? "↑" : "↓"}
+                  {viewTrendIsUp ? "↑" : "↓"}
                 </span>
               </div>
             </div>
@@ -65,23 +133,23 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 <span className="text-sm text-slate-600">收到出价</span>
               </div>
               <span className="text-sm font-bold">
-                {project.stats.offerCount} 个
+                {offerCount} 个
               </span>
             </div>
 
             <div className="bg-slate-50 p-2 rounded-lg space-y-1 h-12 flex flex-col justify-center">
-              {project.stats.offerCount > 0 ? (
+              {offerCount > 0 ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-[10px] text-slate-400">最高出价 Max</span>
                     <span className="text-[10px] font-bold text-primary">
-                      ¥ {project.stats.maxOffer}万
+                      ¥ {maxOffer}万
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[10px] text-slate-400">最后出价 Last</span>
                     <span className="text-[10px] font-bold text-on-surface">
-                      ¥ {project.stats.lastOffer}万
+                      ¥ {lastOffer}万
                     </span>
                   </div>
                 </>
@@ -105,28 +173,35 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="grid grid-cols-2 gap-3 min-h-[70px]">
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">竞品在售</p>
-              <p className="text-sm font-bold">{project.market.onSale} 套</p>
+              <p className="text-sm font-bold">{marketData.onSale} 套</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">成交均价</p>
-              <p className="text-sm font-bold">{project.market.avgPrice}</p>
+              <p className="text-sm font-bold">{marketData.avgPrice}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">30日成交</p>
-              <p className="text-sm font-bold">{project.market.volume30d} 套</p>
+              <p className="text-sm font-bold">{marketData.volume30d} 套</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">30日趋势</p>
               <p
-                className={`text-sm font-bold ${
-                  project.market.isPriceUp === true
+                className={`text-sm font-bold flex items-center gap-1 ${
+                  marketData.isPriceUp === true
                     ? "text-primary"
-                    : project.market.isPriceUp === false
+                    : marketData.isPriceUp === false
                     ? "text-error"
                     : "text-slate-400"
                 }`}
               >
-                {project.market.priceTrend30d}
+                {marketData.isPriceUp === true ? (
+                  <TrendingUp className="w-3 h-3" />
+                ) : marketData.isPriceUp === false ? (
+                  <TrendingDown className="w-3 h-3" />
+                ) : (
+                  <Minus className="w-3 h-3" />
+                )}
+                {marketData.priceTrend30d}
               </p>
             </div>
           </div>
