@@ -12,6 +12,7 @@ from schemas.monitor import (
     MarketSentimentResponse,
     NeighborhoodRadarResponse,
     TrendData,
+    CommunityMarketStatsResponse,
 )
 from services.monitor import MonitorService
 
@@ -104,3 +105,21 @@ def remove_competitor(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="竞品小区不存在"
         )
+
+
+@router.get("/communities/{community_id}/market-stats", response_model=CommunityMarketStatsResponse)
+def get_community_market_stats(
+    community_id: CommunityIdPath,
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
+) -> CommunityMarketStatsResponse:
+    """获取小区市场统计数据
+
+    用于项目卡片展示的市场数据:
+    - on_sale: 竞品在售数量
+    - avg_price: 成交均价(元/㎡)
+    - volume_30d: 30日成交量
+    - price_trend_30d: 30日价格趋势百分比
+    - is_price_up: 价格趋势方向
+    """
+    return MonitorService.get_community_market_stats(db, community_id)

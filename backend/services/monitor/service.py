@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from models import PropertyCurrent, PropertyHistory, Community, CommunityCompetitor, PropertyStatus, Project
 from schemas.monitor import (
     FloorStats, TrendData, CompetitorResponse, RiskPoints, AIStrategyResponse,
-    NeighborhoodRadarItem, NeighborhoodRadarResponse, MarketSentimentResponse
+    NeighborhoodRadarItem, NeighborhoodRadarResponse, MarketSentimentResponse,
+    CommunityMarketStatsResponse
 )
 
 
@@ -369,3 +370,87 @@ class MonitorService:
         items.sort(key=lambda x: (x.is_subject, x.community_name))
         
         return NeighborhoodRadarResponse(items=items)
+
+    @staticmethod
+    def get_community_market_stats(db: Session, community_id: str) -> CommunityMarketStatsResponse:
+        """获取小区市场统计数据
+        
+        用于项目卡片展示:
+        - 竞品在售数量 (该小区的在售房源数)
+        - 成交均价 (元/㎡)
+        - 30日成交量
+        - 30日价格趋势
+        """
+        from datetime import timedelta
+        
+        now = datetime.now()
+        thirty_days_ago = now - timedelta(days=30)
+        sixty_days_ago = now - timedelta(days=60)
+        
+        # 1. 查询当前在售数量
+        on_sale_count = db.query(func.count(PropertyCurrent.id)).filter(
+            PropertyCurrent.community_id == community_id,
+            PropertyCurrent.status == PropertyStatus.FOR_SALE
+        ).scalar() or 0
+        
+        # 2. 查询成交均价 (最近30天)
+        avg_price_result = db.query(
+            func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000)
+        ).filter(
+            PropertyCurrent.community_id == community_id,
+            PropertyCurrent.status == PropertyStatus.SOLD,
+            PropertyCurrent.sold_date >= thirty_days_ago,
+            PropertyCurrent.build_area > 0
+        ).scalar()
+        avg_price = float(avg_price_result) if avg_price_result else 0.0
+        
+        # 3. 查询30日成交量
+        volume_30d = db.query(func.count(PropertyCurrent.id)).filter(
+            PropertyCurrent.community_id == community_id,
+            PropertyCurrent.status == PropertyStatus.SOLD,
+            PropertyCurrent.sold_date >= thirty_days_ago
+        ).scalar() or 0
+        
+        # 4. 计算30日价格趋势 (比较最近30天 vs 前30天)
+        # 最近30天成交均价
+        recent_avg_result = db.query(
+            func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000)
+        ).filter(
+            PropertyCurrent.community_id == community_id,
+            PropertyCurrent.status == PropertyStatus.SOLD,
+            PropertyCurrent.sold_date >= thirty_days_ago,
+            PropertyCurrent.build_area > 0
+        ).scalar()
+        recent_avg = float(recent_avg_result) if recent_avg_result else 0.0
+        
+        # 前30天成交均价 (30-60天前)
+        previous_avg_result = db.query(
+            func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000)
+        ).filter(
+            PropertyCurrent.community_id == community_id,
+            PropertyCurrent.status == PropertyStatus.SOLD,
+            PropertyCurrent.sold_date >= sixty_days_ago,
+            PropertyCurrent.sold_date < thirty_days_ago,
+            PropertyCurrent.build_area > 0
+        ).scalar()
+        previous_avg = float(previous_avg_result) if previous_avg_result else 0.0
+        
+        # 计算趋势百分比
+        if previous_avg > 0 and recent_avg > 0:
+            price_trend_30d = ((recent_avg - previous_avg) / previous_avg) * 100
+            is_price_up = price_trend_30d > 0
+        elif recent_avg > 0 and previous_avg == 0:
+            # 前30天无成交，最近30天有成交，视为上涨
+            price_trend_30d = 0.0
+            is_price_up = None  # 数据不足，无法判断趋势
+        else:
+            price_trend_30d = 0.0
+            is_price_up = None
+        
+        return CommunityMarketStatsResponse(
+            on_sale=int(on_sale_count),
+            avg_price=round(avg_price, 0),
+            volume_30d=int(volume_30d),
+            price_trend_30d=round(price_trend_30d, 2),
+            is_price_up=is_price_up
+        )
