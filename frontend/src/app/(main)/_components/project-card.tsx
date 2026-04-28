@@ -47,13 +47,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
         if (!isMounted) return;
 
         if (error) {
-          // 优先使用 response 状态信息，error 对象可能为空
-          const errorInfo = {
-            status: response?.status,
-            statusText: response?.statusText,
-            error: error,
-          };
-          console.error("Failed to fetch market data:", JSON.stringify(errorInfo, null, 2));
+          // 404 是预期内的错误（该小区暂无市场数据），不打印错误日志
+          if (response?.status === 404) {
+            console.log(`[ProjectCard] 小区 ${project.community_id} 暂无市场数据`);
+          } else {
+            // 其他错误打印警告级别日志
+            console.warn("[ProjectCard] 获取市场数据失败:", {
+              status: response?.status,
+              statusText: response?.statusText,
+              communityId: project.community_id,
+            });
+          }
         } else if (data) {
           setMarketData(data);
         }
