@@ -1,5 +1,4 @@
 import { fetchClient } from "@/lib/api-server";
-import Link from "next/link";
 import { LayoutDashboard, Plus, Filter, SortAsc } from "lucide-react";
 import {
   ProjectCard,
@@ -8,6 +7,7 @@ import {
   AlertCard,
   DashboardLeadsTable,
 } from "./_components";
+import { CreateProjectDialog } from "./projects/_components/create-project";
 import type { components } from "@/lib/api-types";
 import type { FunnelData, DashboardLead } from "./types";
 
@@ -163,20 +163,21 @@ export default async function DashboardPage() {
             </div>
           ))}
 
-          <Link
-            href="/projects/new"
-            className="w-[320px] shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-8 text-center group cursor-pointer hover:bg-white dark:hover:bg-slate-800 hover:border-primary/40 transition-all min-h-[440px]"
-          >
-            <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 mb-5 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-              <Plus className="w-8 h-8" />
-            </div>
-            <h4 className="text-lg font-bold text-slate-500 group-hover:text-primary dark:text-slate-400 dark:group-hover:text-primary">
-              添加新项目
-            </h4>
-            <p className="text-xs text-slate-400 mt-2 max-w-[140px]">
-              快速录入房源或新建开发项目
-            </p>
-          </Link>
+          <CreateProjectDialog
+            trigger={
+              <div className="w-[320px] shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-8 text-center group cursor-pointer hover:bg-white dark:hover:bg-slate-800 hover:border-primary/40 transition-all min-h-[440px]">
+                <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 mb-5 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                  <Plus className="w-8 h-8" />
+                </div>
+                <h4 className="text-lg font-bold text-slate-500 group-hover:text-primary dark:text-slate-400 dark:group-hover:text-primary">
+                  添加新项目
+                </h4>
+                <p className="text-xs text-slate-400 mt-2 max-w-[140px]">
+                  快速录入房源或新建开发项目
+                </p>
+              </div>
+            }
+          />
         </div>
       </section>
 
