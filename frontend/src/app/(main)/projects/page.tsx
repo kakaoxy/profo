@@ -6,6 +6,7 @@ import { Project } from "./types";
 import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet";
 import { MonitorSheet } from "./_components/monitor/monitor-sheet";
 import type { paths, components } from "@/lib/api-types";
+import { toNumber } from "@/lib/number-utils";
 
 interface PageProps {
   searchParams: Promise<{
@@ -27,14 +28,6 @@ type ProjectStatsResponse =
   paths["/api/v1/projects/stats"]["get"]["responses"][200]["content"]["application/json"];
 
 type ApiProjectItem = components["schemas"]["ProjectResponse"];
-
-function toNumber(value: string | null | undefined): number | undefined {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-  const num = Number(value);
-  return isNaN(num) ? undefined : num;
-}
 
 function mapProjectResponse(item: ApiProjectItem): Project {
   return {
