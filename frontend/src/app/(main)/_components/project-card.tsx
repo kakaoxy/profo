@@ -8,17 +8,9 @@ import { MarketDataSection } from "./market-data-section";
 import { ProjectDetailSheet } from "../projects/_components/project-detail-sheet";
 import { ProjectStatsSection } from "./project-stats-section";
 import { useMarketData } from "./use-market-data";
-import { mapProjectResponseToProject, statusMap } from "./project-card-utils";
+import { mapProjectResponseToProject, statusMap, type ApiSalesRecord } from "./project-card-utils";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
-type ApiSalesRecord = {
-  id: string;
-  record_type: string;
-  price?: string | null;
-  record_date: string;
-  customer_name?: string | null;
-  notes?: string | null;
-};
 
 interface ProjectCardProps {
   project: ProjectResponse;

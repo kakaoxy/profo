@@ -1,24 +1,22 @@
 "use client";
 
+import { useMemo } from "react";
 import { Eye, Wallet } from "lucide-react";
-import { getWeekViewStats, getOfferStats } from "./project-card-utils";
-
-type ApiSalesRecord = {
-  id: string;
-  record_type: string;
-  price?: string | null;
-  record_date: string;
-  customer_name?: string | null;
-  notes?: string | null;
-};
+import { getWeekViewStats, getOfferStats, type ApiSalesRecord } from "./project-card-utils";
 
 interface ProjectStatsSectionProps {
   salesRecords: ApiSalesRecord[];
 }
 
 export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) {
-  const viewingRecords = salesRecords.filter(r => r.record_type === "viewing");
-  const offerRecords = salesRecords.filter(r => r.record_type === "offer");
+  const viewingRecords = useMemo(
+    () => salesRecords.filter(r => r.record_type === "viewing"),
+    [salesRecords]
+  );
+  const offerRecords = useMemo(
+    () => salesRecords.filter(r => r.record_type === "offer"),
+    [salesRecords]
+  );
 
   const viewTotal = viewingRecords.length;
   const { currentWeekViews, lastWeekViews } = getWeekViewStats(viewingRecords);

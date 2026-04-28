@@ -1,14 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import type { Lead } from "../leads/types";
+import { formatCurrency, formatRelativeTime } from "../_lib";
 
 interface LeadsTableProps {
   leads: Lead[];
-  formatCurrency: (amount?: number | string) => string;
-  formatRelativeTime: (dateStr: string) => string;
 }
 
-export function LeadsTable({ leads, formatCurrency, formatRelativeTime }: LeadsTableProps) {
+export function LeadsTable({ leads }: LeadsTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
