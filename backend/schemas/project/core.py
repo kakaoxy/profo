@@ -178,6 +178,7 @@ class ProjectResponse(BaseModel):
     updated_at: datetime
 
     # 基础信息
+    community_id: Optional[str] = Field(None, description="小区ID")
     community_name: Optional[str] = None
     address: Optional[str] = None
     area: Optional[Decimal] = None

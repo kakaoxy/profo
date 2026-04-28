@@ -2,6 +2,7 @@
 监控和市场分析相关Schema
 """
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -100,6 +101,27 @@ class NeighborhoodRadarResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Community Market Stats ---
+
+class CommunityMarketStatsResponse(BaseModel):
+    """小区市场统计数据响应
+    
+    用于项目卡片展示的市场数据:
+    - on_sale: 竞品在售数量
+    - avg_price: 成交均价(元/㎡)
+    - volume_30d: 30日成交量
+    - price_trend_30d: 30日价格趋势百分比
+    - is_price_up: 价格趋势方向 (true=上涨, false=下跌, null=持平)
+    """
+    on_sale: int = Field(0, description="竞品在售数量")
+    avg_price: float = Field(0.0, description="成交均价(元/㎡)")
+    volume_30d: int = Field(0, description="30日成交量")
+    price_trend_30d: float = Field(0.0, description="30日价格趋势百分比")
+    is_price_up: Optional[bool] = Field(None, description="价格趋势方向: true=上涨, false=下跌, null=持平")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 __all__ = [
     # Market Sentiment
     "FloorStats",
@@ -117,4 +139,6 @@ __all__ = [
     # Neighborhood Radar
     "NeighborhoodRadarItem",
     "NeighborhoodRadarResponse",
+    # Community Market Stats
+    "CommunityMarketStatsResponse",
 ]

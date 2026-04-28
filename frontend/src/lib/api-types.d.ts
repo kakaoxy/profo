@@ -1593,6 +1593,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/monitor/communities/{community_id}/market-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Community Market Stats
+         * @description 获取小区市场统计数据
+         *
+         *     用于项目卡片展示的市场数据:
+         *     - on_sale: 竞品在售数量
+         *     - avg_price: 成交均价(元/㎡)
+         *     - volume_30d: 30日成交量
+         *     - price_trend_30d: 30日价格趋势百分比
+         *     - is_price_up: 价格趋势方向
+         */
+        get: operations["get_community_market_stats_api_v1_monitor_communities__community_id__market_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1871,6 +1898,48 @@ export interface components {
             total: number;
             /** Items */
             items: components["schemas"]["CommunityResponse"][];
+        };
+        /**
+         * CommunityMarketStatsResponse
+         * @description 小区市场统计数据响应
+         *
+         *     用于项目卡片展示的市场数据:
+         *     - on_sale: 竞品在售数量
+         *     - avg_price: 成交均价(元/㎡)
+         *     - volume_30d: 30日成交量
+         *     - price_trend_30d: 30日价格趋势百分比
+         *     - is_price_up: 价格趋势方向 (true=上涨, false=下跌, null=持平)
+         */
+        CommunityMarketStatsResponse: {
+            /**
+             * On Sale
+             * @description 竞品在售数量
+             * @default 0
+             */
+            on_sale: number;
+            /**
+             * Avg Price
+             * @description 成交均价(元/㎡)
+             * @default 0
+             */
+            avg_price: number;
+            /**
+             * Volume 30D
+             * @description 30日成交量
+             * @default 0
+             */
+            volume_30d: number;
+            /**
+             * Price Trend 30D
+             * @description 30日价格趋势百分比
+             * @default 0
+             */
+            price_trend_30d: number;
+            /**
+             * Is Price Up
+             * @description 价格趋势方向: true=上涨, false=下跌, null=持平
+             */
+            is_price_up?: boolean | null;
         };
         /**
          * CommunityMergeRequest
@@ -3427,6 +3496,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Community Id
+             * @description 小区ID
+             */
+            community_id?: string | null;
             /** Community Name */
             community_name?: string | null;
             /** Address */
@@ -7985,6 +8059,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_community_market_stats_api_v1_monitor_communities__community_id__market_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityMarketStatsResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

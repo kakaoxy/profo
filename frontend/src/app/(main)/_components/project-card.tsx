@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, Wallet, MoreHorizontal, MapPin, Home, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { components } from "@/lib/api-types";
+import { client } from "@/lib/api-client";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
+type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
 type SalesRecord = {
   id: string;
   record_type: string;
@@ -19,6 +22,35 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const [marketData, setMarketData] = useState<CommunityMarketStatsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      if (!project.community_id) return;
+      
+      setIsLoading(true);
+      try {
+        const { data, error } = await client.GET("/api/v1/monitor/communities/{community_id}/market-stats", {
+          params: {
+            path: { community_id: project.community_id },
+          },
+        });
+        if (error) {
+          console.error("Failed to fetch market data:", error);
+        } else if (data) {
+          setMarketData(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch market data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMarketData();
+  }, [project.community_id]);
+
   const contractNo = project.contract_no || "N/A";
   const communityName = project.community_name || "未命名项目";
   const address = project.address || "地址未填写";
@@ -64,13 +96,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const maxOffer = offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
   const lastOffer = offerPrices.length > 0 ? offerPrices[offerPrices.length - 1] : 0;
 
-  const marketData = {
-    onSale: 12,
-    avgPrice: "6.8万/㎡",
-    volume30d: 4,
-    priceTrend30d: "-1.2%",
-    isPriceUp: false as boolean | null,
-  };
+  // 格式化市场数据
+  const onSaleCount = marketData?.on_sale ?? 0;
+  const avgPriceWan = marketData?.avg_price ? (marketData.avg_price / 10000).toFixed(1) : "-";
+  const volume30d = marketData?.volume_30d ?? 0;
+  const priceTrend30d = marketData?.price_trend_30d ?? 0;
+  const isPriceUp = marketData?.is_price_up ?? null;
+  const priceTrendText = priceTrend30d > 0 ? `+${priceTrend30d.toFixed(1)}%` : `${priceTrend30d.toFixed(1)}%`;
 
   return (
     <motion.div
@@ -173,35 +205,41 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <div className="grid grid-cols-2 gap-3 min-h-[70px]">
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">竞品在售</p>
-              <p className="text-sm font-bold">{marketData.onSale} 套</p>
+              <p className="text-sm font-bold">
+                {isLoading ? "-" : `${onSaleCount} 套`}
+              </p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">成交均价</p>
-              <p className="text-sm font-bold">{marketData.avgPrice}</p>
+              <p className="text-sm font-bold">
+                {isLoading ? "-" : `${avgPriceWan}万/㎡`}
+              </p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">30日成交</p>
-              <p className="text-sm font-bold">{marketData.volume30d} 套</p>
+              <p className="text-sm font-bold">
+                {isLoading ? "-" : `${volume30d} 套`}
+              </p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-slate-400">30日趋势</p>
               <p
                 className={`text-sm font-bold flex items-center gap-1 ${
-                  marketData.isPriceUp === true
+                  isPriceUp === true
                     ? "text-primary"
-                    : marketData.isPriceUp === false
+                    : isPriceUp === false
                     ? "text-error"
                     : "text-slate-400"
                 }`}
               >
-                {marketData.isPriceUp === true ? (
+                {isPriceUp === true ? (
                   <TrendingUp className="w-3 h-3" />
-                ) : marketData.isPriceUp === false ? (
+                ) : isPriceUp === false ? (
                   <TrendingDown className="w-3 h-3" />
                 ) : (
                   <Minus className="w-3 h-3" />
                 )}
-                {marketData.priceTrend30d}
+                {isLoading ? "-" : priceTrendText}
               </p>
             </div>
           </div>
