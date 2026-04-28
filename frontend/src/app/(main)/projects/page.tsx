@@ -68,6 +68,10 @@ function mapProjectResponse(item: ApiProjectItem): Project {
           avatar: item.project_manager.avatar ?? undefined,
         }
       : undefined,
+    // 销售团队角色ID
+    channel_manager_id: item.channel_manager_id ?? undefined,
+    property_agent_id: item.property_agent_id ?? undefined,
+    negotiator_id: item.negotiator_id ?? undefined,
   };
 }
 
