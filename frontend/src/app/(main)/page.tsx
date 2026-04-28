@@ -8,6 +8,7 @@ import {
   DashboardLeadsTable,
 } from "./_components";
 import { CreateProjectDialog } from "./projects/_components/create-project";
+import { sortProjects } from "@/lib/project-sort";
 import type { components } from "@/lib/api-types";
 import type { FunnelData, DashboardLead } from "./types";
 
@@ -105,6 +106,10 @@ export default async function DashboardPage() {
     leads,
   } = await getDashboardData();
 
+  // 对项目进行排序：在售 → 装修 → 签约 → 已售
+  // 在售项目按到期时间升序排列（越临近到期越靠前）
+  const sortedProjects = sortProjects(projects);
+
   const stats = projectStats as ProjectStatsResponse;
   const signingCount = stats?.signing ?? 0;
   const renovatingCount = stats?.renovating ?? 0;
@@ -157,7 +162,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar">
-          {projects.map((project) => (
+          {sortedProjects.map((project) => (
             <div key={project.id} className="w-[280px] shrink-0">
               <ProjectCard project={project} />
             </div>
