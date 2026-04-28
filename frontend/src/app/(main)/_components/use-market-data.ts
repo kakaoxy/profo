@@ -14,6 +14,10 @@ export function useMarketData(communityId: string | null | undefined) {
     let isMounted = true;
     const abortController = new AbortController();
 
+    // 重置状态，避免显示上一个小区的数据
+    setMarketData(null);
+    setIsLoading(false);
+
     const fetchMarketData = async () => {
       if (!communityId) return;
 
