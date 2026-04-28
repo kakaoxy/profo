@@ -42,7 +42,7 @@ export default async function DashboardLayout({
         <header className="flex md:hidden items-center h-14 px-4 border-b bg-white/80 backdrop-blur-xl sticky top-0 z-40">
           <SidebarTrigger className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg" />
           <div className="ml-3 flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-slate-800 to-slate-600 text-white font-bold text-[10px]">
+            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-linear-to-br from-slate-800 to-slate-600 text-white font-bold text-[10px]">
               P
             </div>
             <span className="font-semibold text-sm text-slate-800">Profo</span>
