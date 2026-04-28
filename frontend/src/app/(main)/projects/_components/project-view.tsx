@@ -55,17 +55,17 @@ export function ProjectView({ data, total }: ProjectViewProps) {
         <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
           {/* Search Input */}
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="搜索小区名称..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-blue-600"
+              className="pl-9 pr-9 bg-card border-border focus-visible:ring-primary"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -78,33 +78,31 @@ export function ProjectView({ data, total }: ProjectViewProps) {
             onValueChange={setActiveTab}
             className="w-full sm:w-auto"
           >
-            <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg">
+            <TabsList className="h-10 bg-muted p-1 rounded-lg">
               <TabsTrigger value="all" className="text-xs px-3">
                 全部
               </TabsTrigger>
               <TabsTrigger
                 value="signing"
-                className="text-xs px-3 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"
+                className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
                 签约
               </TabsTrigger>
               <TabsTrigger
                 value="renovating"
-                className="text-xs px-3 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800"
+                className="text-xs px-3 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-800"
               >
                 装修
               </TabsTrigger>
               <TabsTrigger
                 value="selling"
-                // [修改] 在售改为 Emerald (翠绿)，与详情页保持一致
                 className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
               >
                 在售
               </TabsTrigger>
               <TabsTrigger
                 value="sold"
-                // [修改] 已售改为 Slate (灰色)，代表归档/终态
-                className="text-xs px-3 data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800"
+                className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
               >
                 已售
               </TabsTrigger>
@@ -116,7 +114,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
         <div className="flex w-full lg:w-auto gap-3">
           <Button
             variant="outline"
-            className="flex-1 lg:flex-none bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
             onClick={() => toast.success("正在生成报表...")}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -130,7 +128,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
       </div>
 
       {/* --- Table Area --- */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <DataTable
             columns={columns}
@@ -141,7 +139,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
       </div>
 
       {/* Footer Info */}
-      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
         <span>
           显示 {filteredData.length} 条记录 (共 {total} 条)
         </span>

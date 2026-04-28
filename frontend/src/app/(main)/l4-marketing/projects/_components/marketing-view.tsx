@@ -167,17 +167,17 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
         <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
           {/* Search Input */}
           <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="搜索房源名称..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-blue-600"
+              className="pl-9 pr-9 bg-card border-border focus-visible:ring-primary"
             />
             {searchQuery ? (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -185,15 +185,15 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
           </div>
 
           {/* Layout Tabs */}
-          <div className="flex p-1 bg-slate-100/50 rounded-lg">
+          <div className="flex p-1 bg-muted rounded-lg">
             {layoutTabs.map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => handleLayoutChange(tab.value)}
                 className={`py-1.5 px-3 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
                   layoutFilter === tab.value
-                    ? "bg-white text-slate-800 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab.label}
@@ -207,13 +207,13 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
             onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTER_MAP)}
             className="w-full sm:w-auto"
           >
-            <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg">
+            <TabsList className="h-10 bg-muted p-1 rounded-lg">
               <TabsTrigger value="all" className="text-xs px-3">
                 全部
               </TabsTrigger>
               <TabsTrigger
                 value="in_progress"
-                className="text-xs px-3 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"
+                className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               >
                 在途
               </TabsTrigger>
@@ -225,7 +225,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
               </TabsTrigger>
               <TabsTrigger
                 value="sold"
-                className="text-xs px-3 data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800"
+                className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
               >
                 已售
               </TabsTrigger>
@@ -237,7 +237,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
         <div className="flex w-full lg:w-auto gap-3">
           <Button
             variant="outline"
-            className="flex-1 lg:flex-none bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
             onClick={() => toast.success("正在生成报表...")}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -247,7 +247,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
           <div className="flex-1 lg:flex-none">
             <Link
               href="/l4-marketing/projects/new"
-              className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700"
+              className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             >
               <Plus className="mr-2 h-4 w-4" />
               新建房源
@@ -257,7 +257,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
       </div>
 
       {/* --- Table Area --- */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <DataTable
             columns={columns}
@@ -268,7 +268,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
       </div>
 
       {/* Footer Info */}
-      <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
         <span>
           显示 {filteredData.length} 条记录 (共 {total} 条)
         </span>
