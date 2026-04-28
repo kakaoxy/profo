@@ -58,7 +58,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                 <td className="pl-8 pr-4 py-5">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black text-xs border border-primary/10">
-                      {lead.community[0]}
+                      {lead.community?.[0] ?? '?'}
                     </div>
                     <span className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
                       {lead.community}
