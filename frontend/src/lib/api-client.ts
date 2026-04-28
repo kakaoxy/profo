@@ -143,25 +143,12 @@ const authMiddleware: Middleware = {
 };
 
 /**
- * 自定义 fetch 函数：确保所有请求携带 credentials
- *
- * [安全修复] 配置 credentials: 'include' 确保自动携带 httpOnly Cookie
- */
-const customFetch: typeof fetch = (input, init) => {
-  return fetch(input, {
-    ...init,
-    credentials: "include",
-  });
-};
-
-/**
  * 场景 A: 客户端组件 (Client Components) 使用
  *
- * [安全修复] 配置 credentials: 'include' 确保自动携带 httpOnly Cookie
+ * [安全修复] 通过 credentialsMiddleware 确保所有请求携带 httpOnly Cookie
  */
 export const client = createClient<paths>({
   baseUrl: getApiUrl(""),
-  fetch: customFetch,
 });
 
 // 注册中间件：credentials 中间件必须先注册，确保所有请求携带 cookie
