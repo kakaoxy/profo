@@ -80,6 +80,7 @@ export const useCreateProject = ({
       );
 
       const basePayload = {
+        community_id: values.community_id || null,
         community_name: values.community_name,
         address: values.address,
         area: values.area ?? null,

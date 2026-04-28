@@ -107,6 +107,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const lastOffer = offerPrices.length > 0 ? offerPrices[offerPrices.length - 1] : 0;
 
   // 格式化市场数据
+  const hasCommunityId = !!project.community_id;
   const onSaleCount = marketData?.on_sale ?? 0;
   const avgPriceWan = marketData?.avg_price ? (marketData.avg_price / 10000).toFixed(1) : "-";
   const volume30d = marketData?.volume_30d ?? 0;
@@ -212,47 +213,53 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">
             市场数据 MARKET
           </span>
-          <div className="grid grid-cols-2 gap-3 min-h-[70px]">
-            <div className="space-y-0.5">
-              <p className="text-[10px] text-slate-400">竞品在售</p>
-              <p className="text-sm font-bold">
-                {isLoading ? "-" : `${onSaleCount} 套`}
-              </p>
+          {!hasCommunityId ? (
+            <div className="flex items-center justify-center min-h-[70px] text-xs text-slate-400 bg-slate-50 rounded-lg">
+              未关联小区，暂无数据
             </div>
-            <div className="space-y-0.5">
-              <p className="text-[10px] text-slate-400">成交均价</p>
-              <p className="text-sm font-bold">
-                {isLoading ? "-" : `${avgPriceWan}万/㎡`}
-              </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 min-h-[70px]">
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-slate-400">竞品在售</p>
+                <p className="text-sm font-bold">
+                  {isLoading ? "-" : `${onSaleCount} 套`}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-slate-400">成交均价</p>
+                <p className="text-sm font-bold">
+                  {isLoading ? "-" : `${avgPriceWan}万/㎡`}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-slate-400">30日成交</p>
+                <p className="text-sm font-bold">
+                  {isLoading ? "-" : `${volume30d} 套`}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-slate-400">30日趋势</p>
+                <p
+                  className={`text-sm font-bold flex items-center gap-1 ${
+                    isPriceUp === true
+                      ? "text-primary"
+                      : isPriceUp === false
+                      ? "text-error"
+                      : "text-slate-400"
+                  }`}
+                >
+                  {isPriceUp === true ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : isPriceUp === false ? (
+                    <TrendingDown className="w-3 h-3" />
+                  ) : (
+                    <Minus className="w-3 h-3" />
+                  )}
+                  {isLoading ? "-" : priceTrendText}
+                </p>
+              </div>
             </div>
-            <div className="space-y-0.5">
-              <p className="text-[10px] text-slate-400">30日成交</p>
-              <p className="text-sm font-bold">
-                {isLoading ? "-" : `${volume30d} 套`}
-              </p>
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-[10px] text-slate-400">30日趋势</p>
-              <p
-                className={`text-sm font-bold flex items-center gap-1 ${
-                  isPriceUp === true
-                    ? "text-primary"
-                    : isPriceUp === false
-                    ? "text-error"
-                    : "text-slate-400"
-                }`}
-              >
-                {isPriceUp === true ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : isPriceUp === false ? (
-                  <TrendingDown className="w-3 h-3" />
-                ) : (
-                  <Minus className="w-3 h-3" />
-                )}
-                {isLoading ? "-" : priceTrendText}
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </motion.div>
