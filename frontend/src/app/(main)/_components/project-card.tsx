@@ -46,7 +46,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
           setMarketData(data);
         }
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
+        // 忽略 AbortError，这是正常的取消行为
+        if (
+          error instanceof Error && 
+          (error.name === "AbortError" || error.message?.includes("aborted"))
+        ) {
           return;
         }
         console.error("Failed to fetch market data:", error);
