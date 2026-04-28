@@ -200,7 +200,7 @@ class CSVBatchImporter:
                         try:
                             # 注意：由于 PropertyImporter 不再内部调用 commit，
                             # 这里需要传递 user_id。如果未提供则使用默认值
-                            effective_user_id = user_id if user_id else "system"
+                            effective_user_id = user_id or "system"
                             result = self.importer.import_property(validated_data, db, effective_user_id)
                             if result.success:
                                 batch_success_count += 1
