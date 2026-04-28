@@ -9,7 +9,7 @@ import type { FloorStats } from "../../../actions/monitor-lib/types";
 
 interface UseSentimentDataProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
 interface UseSentimentDataReturn {
@@ -21,7 +21,7 @@ interface UseSentimentDataReturn {
 
 export function useSentimentData({
   projectId,
-  communityName,
+  communityId,
 }: UseSentimentDataProps): UseSentimentDataReturn {
   const [floorStats, setFloorStats] = useState<FloorStats[]>([]);
   const [inventoryMonths, setInventoryMonths] = useState<number>(0);
@@ -36,8 +36,8 @@ export function useSentimentData({
 
         const result = projectId
           ? await getMarketSentimentAction(projectId)
-          : communityName
-            ? await getMarketSentimentByCommunityAction(communityName)
+          : communityId
+            ? await getMarketSentimentByCommunityAction(communityId)
             : { success: false, message: "缺少参数" };
 
         if (!result.success) {
@@ -55,10 +55,10 @@ export function useSentimentData({
       }
     }
 
-    if (projectId || communityName) {
+    if (projectId || communityId) {
       fetchData();
     }
-  }, [projectId, communityName]);
+  }, [projectId, communityId]);
 
   return { floorStats, inventoryMonths, loading, error };
 }

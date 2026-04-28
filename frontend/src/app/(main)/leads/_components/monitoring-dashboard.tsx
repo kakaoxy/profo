@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Lead } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Activity, Share2, Loader2 } from "lucide-react";
 import { ProjectData } from "../../projects/_components/monitor/types";
+import { getCommunityIdByName } from "../../projects/actions/monitor-lib/utils";
 
 // [性能优化] 使用动态导入延迟加载重型 Monitor 组件
 // 这些组件只有在用户打开 Dashboard 时才会加载
@@ -82,6 +83,22 @@ const CardWrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
+  // 通过 communityName 查询 communityId
+  const [communityId, setCommunityId] = useState<string | undefined>(undefined);
+  const [isLoadingCommunityId, setIsLoadingCommunityId] = useState(true);
+
+  useEffect(() => {
+    async function fetchCommunityId() {
+      if (lead.communityName) {
+        setIsLoadingCommunityId(true);
+        const id = await getCommunityIdByName(lead.communityName);
+        setCommunityId(id || undefined);
+        setIsLoadingCommunityId(false);
+      }
+    }
+    fetchCommunityId();
+  }, [lead.communityName]);
+
   // Construct ProjectData from Lead to override HeroSection fetching
   const overrideData: ProjectData = {
     address: lead.communityName,
@@ -146,26 +163,42 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
           </CardWrapper>
 
           <CardWrapper>
-            <MarketSentiment communityName={lead.communityName} />
+            {isLoadingCommunityId ? (
+              <ComponentSkeleton height="300px" />
+            ) : (
+              <MarketSentiment communityId={communityId} />
+            )}
           </CardWrapper>
 
           <CardWrapper>
-            <NeighborhoodRadar communityName={lead.communityName} />
+            {isLoadingCommunityId ? (
+              <ComponentSkeleton height="350px" />
+            ) : (
+              <NeighborhoodRadar communityId={communityId} />
+            )}
           </CardWrapper>
 
           <CardWrapper>
-            <TrendPositioning
-              communityName={lead.communityName}
-              myOverridePrice={myOverridePrice}
-            />
+            {isLoadingCommunityId ? (
+              <ComponentSkeleton height="400px" />
+            ) : (
+              <TrendPositioning
+                communityId={communityId}
+                myOverridePrice={myOverridePrice}
+              />
+            )}
           </CardWrapper>
 
           <CardWrapper>
-            <CompetitorsBrawl communityName={lead.communityName} />
+            {isLoadingCommunityId ? (
+              <ComponentSkeleton height="500px" />
+            ) : (
+              <CompetitorsBrawl communityId={communityId} />
+            )}
           </CardWrapper>
 
           <CardWrapper>
-            <AIStrategy communityName={lead.communityName} />
+            <AIStrategy communityId={communityId} />
           </CardWrapper>
         </div>
       </main>

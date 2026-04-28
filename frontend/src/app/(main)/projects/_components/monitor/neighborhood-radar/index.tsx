@@ -12,17 +12,17 @@ import { RadarCards } from "./radar-cards";
 
 interface NeighborhoodRadarProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
 export function NeighborhoodRadar({
   projectId,
-  communityName,
+  communityId,
 }: NeighborhoodRadarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { competitors, loading, error, refresh } = useRadarData({
     projectId,
-    communityName,
+    communityId,
   });
 
   return (
@@ -32,7 +32,7 @@ export function NeighborhoodRadar({
         title="周边竞品雷达"
         subtitle="Neighborhood Radar"
         action={
-          projectId || communityName ? (
+          projectId || communityId ? (
             <Button
               variant="outline"
               size="sm"
@@ -70,10 +70,10 @@ export function NeighborhoodRadar({
         </Card>
       </div>
 
-      {isModalOpen && (projectId || communityName) && (
+      {isModalOpen && (projectId || communityId) && (
         <CompetitorManagerModal
           projectId={projectId}
-          communityName={communityName}
+          communityId={communityId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onUpdate={refresh}

@@ -94,6 +94,64 @@ async function fetchCommunityData(
   return { items, countOnSale, countSold };
 }
 
+/**
+ * 通过 community_id 获取小区数据
+ */
+async function fetchCommunityDataById(
+  client: Awaited<ReturnType<typeof fetchClient>>,
+  communityId: string,
+): Promise<CommunityDataResult> {
+  const [onSaleRes, soldRes] = await Promise.all([
+    client.GET("/api/v1/properties", {
+      params: {
+        query: {
+          community_id: communityId,
+          status: "在售",
+          page_size: 10,
+          sort_by: "listed_date",
+          sort_order: "desc",
+        },
+      },
+    }),
+    client.GET("/api/v1/properties", {
+      params: {
+        query: {
+          community_id: communityId,
+          status: "成交",
+          page_size: 10,
+          sort_by: "sold_date",
+          sort_order: "desc",
+        },
+      },
+    }),
+  ]);
+
+  const onSaleData = extractPaginatedData<PropertyItem>(onSaleRes.data);
+  const soldData = extractPaginatedData<PropertyItem>(soldRes.data);
+
+  const items: BrawlItem[] = [];
+  let countOnSale = 0;
+  let countSold = 0;
+
+  if (onSaleData) {
+    countOnSale = onSaleData.total || 0;
+    items.push(
+      ...(onSaleData.items || []).map((p) =>
+        mapPropertyToBrawlItem(p, "on_sale"),
+      ),
+    );
+  }
+
+  if (soldData) {
+    countSold = soldData.total || 0;
+    items.push(
+      ...(soldData.items || []).map((p) => mapPropertyToBrawlItem(p, "sold")),
+    );
+  }
+
+  return { items, countOnSale, countSold };
+}
+
 export async function getCompetitorsBrawlAction(projectId: string) {
   try {
     const [projectResult, competitorsResult] = await Promise.all([
@@ -184,13 +242,13 @@ export async function getCompetitorsBrawlAction(projectId: string) {
 }
 
 export async function getCompetitorsBrawlByCommunityAction(
-  communityName: string,
+  communityId: string,
 ) {
   try {
     const client = await fetchClient();
-    const { items, countOnSale, countSold } = await fetchCommunityData(
+    const { items, countOnSale, countSold } = await fetchCommunityDataById(
       client,
-      communityName,
+      communityId,
     );
 
     items.sort(

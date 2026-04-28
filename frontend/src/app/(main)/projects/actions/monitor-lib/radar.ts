@@ -6,43 +6,23 @@ import { NeighborhoodRadarData } from "./types";
 
 /**
  * 获取周边竞品雷达数据
- * 流程: projectId → community_name → community_id → radar API
+ * 流程: projectId → community_id → radar API
  */
 export async function getNeighborhoodRadarAction(projectId: string) {
   try {
-    // 1. 获取项目详情，提取 community_name
+    // 1. 获取项目详情，提取 community_id
     const projectResult = await getProjectDetailAction(projectId, false);
     if (!projectResult.success || !projectResult.data) {
       return { success: false, message: "获取项目信息失败" };
     }
 
-    const communityName = projectResult.data.community_name;
-    if (!communityName) {
+    const communityId = projectResult.data.community_id;
+    if (!communityId) {
       return { success: false, message: "项目未关联小区" };
     }
 
-    // 2. 通过小区名称搜索获取 community_id
+    // 2. 调用雷达 API (使用 openapi-fetch client)
     const client = await fetchClient();
-    const { data: communitiesData, error: communitiesError } = await client.GET(
-      "/api/v1/admin/communities",
-      {
-        params: { query: { search: communityName, page_size: 1 } },
-      },
-    );
-
-    if (communitiesError || !communitiesData) {
-      return { success: false, message: "搜索小区信息失败" };
-    }
-
-    // 直接返回 CommunityListResponse 结构
-    const communities = (communitiesData as { items?: Array<{ id: string }> })?.items;
-    if (!communities || communities.length === 0) {
-      return { success: false, message: `未找到小区: ${communityName}` };
-    }
-
-    const communityId = communities[0].id;
-
-    // 3. 调用雷达 API (使用 openapi-fetch client)
     const { data: radarData, error: radarError } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/radar",
       {
@@ -65,17 +45,10 @@ export async function getNeighborhoodRadarAction(projectId: string) {
   }
 }
 
-import { getCommunityIdByName } from "./utils";
-
 export async function getNeighborhoodRadarByCommunityAction(
-  communityName: string,
+  communityId: string,
 ) {
   try {
-    const communityId = await getCommunityIdByName(communityName);
-    if (!communityId) {
-      return { success: false, message: `未找到小区: ${communityName}` };
-    }
-
     const client = await fetchClient();
     const { data: radarData, error: radarError } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/radar",

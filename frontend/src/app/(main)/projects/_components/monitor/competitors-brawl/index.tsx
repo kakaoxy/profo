@@ -12,7 +12,7 @@ import type { SortConfig } from "./types";
 
 interface CompetitorsBrawlProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
 function useIsMobile() {
@@ -33,7 +33,7 @@ function useIsMobile() {
 
 export function CompetitorsBrawl({
   projectId,
-  communityName,
+  communityId,
 }: CompetitorsBrawlProps) {
   const isMobile = useIsMobile();
   const [statusFilters, setStatusFilters] = useState<("on_sale" | "sold")[]>([
@@ -48,7 +48,7 @@ export function CompetitorsBrawl({
 
   const { allItems, counts, loading, error } = useCompetitors({
     projectId,
-    communityName,
+    communityId,
   });
 
   const filteredItems = useFilteredItems({

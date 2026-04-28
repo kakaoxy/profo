@@ -10,7 +10,7 @@ import type { SortConfig } from "./types";
 
 interface UseCompetitorsProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
 }
 
 interface UseCompetitorsReturn {
@@ -22,7 +22,7 @@ interface UseCompetitorsReturn {
 
 export function useCompetitors({
   projectId,
-  communityName,
+  communityId,
 }: UseCompetitorsProps): UseCompetitorsReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +37,8 @@ export function useCompetitors({
 
         const res = projectId
           ? await getCompetitorsBrawlAction(projectId)
-          : communityName
-            ? await getCompetitorsBrawlByCommunityAction(communityName)
+          : communityId
+            ? await getCompetitorsBrawlByCommunityAction(communityId)
             : { success: false, message: "缺少参数" };
 
         if (res.success && res.data) {
@@ -55,7 +55,7 @@ export function useCompetitors({
       }
     }
     loadData();
-  }, [projectId, communityName]);
+  }, [projectId, communityId]);
 
   return { allItems, counts, loading, error };
 }

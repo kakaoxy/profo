@@ -9,7 +9,7 @@ import type { TrendData } from "../../../actions/monitor-lib/types";
 
 interface UseTrendDataProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
   myOverridePrice?: number;
 }
 
@@ -22,7 +22,7 @@ interface UseTrendDataReturn {
 
 export function useTrendData({
   projectId,
-  communityName,
+  communityId,
   myOverridePrice,
 }: UseTrendDataProps): UseTrendDataReturn {
   const [data, setData] = useState<TrendData[]>([]);
@@ -38,9 +38,9 @@ export function useTrendData({
 
         const res = projectId
           ? await getTrendPositioningAction(projectId)
-          : communityName
+          : communityId
             ? await getTrendPositioningByCommunityAction(
-                communityName,
+                communityId,
                 myOverridePrice || 0,
               )
             : { success: false, message: "缺少参数" };
@@ -63,7 +63,7 @@ export function useTrendData({
       }
     }
     loadData();
-  }, [projectId, communityName, myOverridePrice]);
+  }, [projectId, communityId, myOverridePrice]);
 
   return { data, myPricing, loading, error };
 }

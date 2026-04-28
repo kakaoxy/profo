@@ -2,19 +2,27 @@
 
 import { fetchClient } from "@/lib/api-server";
 import { CompetitorItem } from "./types";
-import { getCommunityIdFromProject } from "./utils";
+import { getProjectDetailAction } from "../core";
 import { extractApiData, extractPaginatedData } from "@/lib/api-helpers";
 
 /**
  * 获取当前小区的竞品列表
+ * 流程: projectId → community_id → competitors API
  */
 export async function getCompetitorsAction(projectId: string) {
   try {
-    const communityId = await getCommunityIdFromProject(projectId);
-    if (!communityId) {
-      return { success: false, message: "获取小区信息失败" };
+    // 1. 获取项目详情，提取 community_id
+    const projectResult = await getProjectDetailAction(projectId, false);
+    if (!projectResult.success || !projectResult.data) {
+      return { success: false, message: "获取项目信息失败" };
     }
 
+    const communityId = projectResult.data.community_id;
+    if (!communityId) {
+      return { success: false, message: "项目未关联小区" };
+    }
+
+    // 2. 调用竞品 API
     const client = await fetchClient();
     const { data, error } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/competitors",
@@ -36,17 +44,10 @@ export async function getCompetitorsAction(projectId: string) {
 }
 
 /**
- * 获取当前小区的竞品列表 (By Community Name)
+ * 获取当前小区的竞品列表 (By Community ID)
  */
-export async function getCompetitorsByCommunityAction(communityName: string) {
+export async function getCompetitorsByCommunityAction(communityId: string) {
   try {
-    const { getCommunityIdByName } = await import("./utils");
-    const communityId = await getCommunityIdByName(communityName);
-
-    if (!communityId) {
-      return { success: false, message: "未找到该小区信息" };
-    }
-
     const client = await fetchClient();
     const { data, error } = await client.GET(
       "/api/v1/monitor/communities/{community_id}/competitors",

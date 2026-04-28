@@ -12,7 +12,7 @@ import type { CompetitorItem } from "../../../actions/monitor-lib/types";
 
 interface UseCompetitorsProps {
   projectId?: string;
-  communityName?: string;
+  communityId?: string;
   isOpen: boolean;
 }
 
@@ -28,11 +28,11 @@ interface UseCompetitorsReturn {
 
 export function useCompetitors({
   projectId,
-  communityName,
+  communityId: initialCommunityId,
   isOpen,
 }: UseCompetitorsProps): UseCompetitorsReturn {
   const [competitors, setCompetitors] = useState<CompetitorItem[]>([]);
-  const [communityId, setCommunityId] = useState<string | null>(null);
+  const [communityId, setCommunityId] = useState<string | null>(initialCommunityId ?? null);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -46,13 +46,13 @@ export function useCompetitors({
 
       const result = projectId
         ? await getCompetitorsAction(projectId)
-        : communityName
-          ? await getCompetitorsByCommunityAction(communityName)
+        : initialCommunityId
+          ? await getCompetitorsByCommunityAction(initialCommunityId)
           : { success: false, message: "缺少参数" };
 
       if (isMounted && result.success && result.data) {
         setCompetitors(result.data);
-        setCommunityId(result.communityId ?? null);
+        setCommunityId(result.communityId ?? initialCommunityId ?? null);
       }
       if (isMounted) setIsLoading(false);
     };
@@ -62,7 +62,7 @@ export function useCompetitors({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, projectId, communityName, refreshKey]);
+  }, [isOpen, projectId, initialCommunityId, refreshKey]);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
