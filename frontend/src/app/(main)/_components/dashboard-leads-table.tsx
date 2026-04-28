@@ -1,4 +1,4 @@
-import { ClipboardCheck, UserCircle2 } from "lucide-react";
+import { ClipboardCheck, UserCircle2, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import type { DashboardLead } from "../types";
 
@@ -6,7 +6,26 @@ interface DashboardLeadsTableProps {
   leads: DashboardLead[];
 }
 
+/**
+ * 获取状态对应的样式类名
+ */
+function getStatusClassName(status: string): string {
+  const statusMap: Record<string, string> = {
+    "待评估": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    "待看房": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    "已驳回": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    "已看房": "bg-primary/10 text-primary",
+    "已签约": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  };
+  return (
+    statusMap[status] ||
+    "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+  );
+}
+
 export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
+  const isEmpty = leads.length === 0;
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-card p-8">
       <div className="flex items-center justify-between mb-8">
@@ -50,65 +69,75 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-            {leads.map((lead) => (
-              <tr
-                key={lead.id}
-                className="hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors cursor-pointer group"
-              >
-                <td className="pl-8 pr-4 py-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black text-xs border border-primary/10">
-                      {lead.community?.[0] ?? '?'}
+            {isEmpty ? (
+              <tr>
+                <td colSpan={10} className="px-8 py-16 text-center">
+                  <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                    <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                      <ClipboardList className="w-8 h-8 opacity-50" />
                     </div>
-                    <span className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                      {lead.community}
-                    </span>
+                    <p className="text-sm font-medium">暂无线索数据</p>
+                    <p className="text-xs mt-1 opacity-70">
+                      当前没有符合条件的线索记录
+                    </p>
                   </div>
-                </td>
-                <td className="px-4 py-5 text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {lead.unitType}
-                </td>
-                <td className="px-4 py-5 text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {lead.area}
-                </td>
-                <td className="px-4 py-5 text-sm font-medium text-slate-500 dark:text-slate-500">
-                  {lead.floor}
-                </td>
-                <td className="px-4 py-5 text-sm font-black text-primary">
-                  {lead.totalPrice}
-                </td>
-                <td className="px-4 py-5 text-xs font-semibold text-slate-500 dark:text-slate-500">
-                  {lead.unitPrice}
-                </td>
-                <td className="px-4 py-5">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      lead.status === "已出价"
-                        ? "bg-tertiary/10 text-tertiary"
-                        : lead.status === "带看中"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
-                    }`}
-                  >
-                    {lead.status}
-                  </span>
-                </td>
-                <td className="px-4 py-5 text-sm font-medium text-slate-600 dark:text-slate-400">
-                  {lead.region}
-                </td>
-                <td className="px-4 py-5">
-                  <div className="flex items-center gap-2">
-                    <UserCircle2 className="w-4 h-4 text-slate-300 dark:text-slate-600" />
-                    <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                      {lead.creator}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 py-5 pr-8 text-xs text-slate-400 text-right font-medium italic">
-                  {lead.updatedTime}
                 </td>
               </tr>
-            ))}
+            ) : (
+              leads.map((lead) => (
+                <tr
+                  key={lead.id}
+                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors cursor-pointer group"
+                >
+                  <td className="pl-8 pr-4 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-primary/5 text-primary flex items-center justify-center font-black text-xs border border-primary/10">
+                        {lead.community?.[0] ?? "?"}
+                      </div>
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
+                        {lead.community}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5 text-sm font-medium text-slate-600 dark:text-slate-400">
+                    {lead.unitType}
+                  </td>
+                  <td className="px-4 py-5 text-sm font-medium text-slate-600 dark:text-slate-400">
+                    {lead.area}
+                  </td>
+                  <td className="px-4 py-5 text-sm font-medium text-slate-500 dark:text-slate-500">
+                    {lead.floor}
+                  </td>
+                  <td className="px-4 py-5 text-sm font-black text-primary">
+                    {lead.totalPrice}
+                  </td>
+                  <td className="px-4 py-5 text-xs font-semibold text-slate-500 dark:text-slate-500">
+                    {lead.unitPrice}
+                  </td>
+                  <td className="px-4 py-5">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${getStatusClassName(lead.status)}`}
+                    >
+                      {lead.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-5 text-sm font-medium text-slate-600 dark:text-slate-400">
+                    {lead.region}
+                  </td>
+                  <td className="px-4 py-5">
+                    <div className="flex items-center gap-2">
+                      <UserCircle2 className="w-4 h-4 text-slate-300 dark:text-slate-600" />
+                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                        {lead.creator}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-5 pr-8 text-xs text-slate-400 text-right font-medium italic">
+                    {lead.updatedTime}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
