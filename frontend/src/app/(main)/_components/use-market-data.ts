@@ -24,7 +24,8 @@ export function useMarketData(communityId: string | null | undefined) {
       return;
     }
 
-    let cancelled = false;
+    // 创建 AbortController 用于取消请求
+    const abortController = new AbortController();
 
     const fetchMarketData = async () => {
       setIsLoading(true);
@@ -36,11 +37,12 @@ export function useMarketData(communityId: string | null | undefined) {
             params: {
               path: { community_id: communityId },
             },
+            signal: abortController.signal,
           }
         );
 
-        // 如果请求被取消或已过期，丢弃结果
-        if (cancelled || currentRequestId !== requestIdRef.current) {
+        // 如果请求已过期，丢弃结果
+        if (currentRequestId !== requestIdRef.current) {
           return;
         }
 
@@ -61,7 +63,7 @@ export function useMarketData(communityId: string | null | undefined) {
         setMarketData(data || null);
       } catch (error) {
         // 如果请求被取消或已过期，忽略错误
-        if (cancelled || currentRequestId !== requestIdRef.current) {
+        if (abortController.signal.aborted || currentRequestId !== requestIdRef.current) {
           return;
         }
 
@@ -72,7 +74,7 @@ export function useMarketData(communityId: string | null | undefined) {
         setMarketData(null);
       } finally {
         // 只有当前请求是最新的才更新 loading 状态
-        if (!cancelled && currentRequestId === requestIdRef.current) {
+        if (!abortController.signal.aborted && currentRequestId === requestIdRef.current) {
           setIsLoading(false);
         }
       }
@@ -81,7 +83,7 @@ export function useMarketData(communityId: string | null | undefined) {
     fetchMarketData();
 
     return () => {
-      cancelled = true;
+      abortController.abort();
     };
   }, [communityId]);
 
