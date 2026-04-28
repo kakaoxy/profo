@@ -8,16 +8,17 @@ import {
   AlertCard,
   DashboardLeadsTable,
 } from "./_components";
-import { MOCK_PROJECTS, MOCK_LEADS } from "./_lib/dashboard-data";
+import { MOCK_LEADS } from "./_lib/dashboard-data";
 import type { components } from "@/lib/api-types";
 import type { FunnelData } from "./types";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
+type ProjectResponse = components["schemas"]["ProjectResponse"];
 
 async function getDashboardData() {
   const client = await fetchClient();
 
-  const [projectsStatsRes, pendingLeadsRes, funnelRes] =
+  const [projectsStatsRes, pendingLeadsRes, funnelRes, projectsRes] =
     await Promise.all([
       client.GET("/api/v1/projects/stats", {}),
       client.GET("/api/v1/leads/", {
@@ -26,6 +27,11 @@ async function getDashboardData() {
         },
       }),
       client.GET("/api/v1/leads/stats/funnel", {}),
+      client.GET("/api/v1/projects", {
+        params: {
+          query: { page: 1, page_size: 10 },
+        },
+      }),
     ]);
 
   const funnelData: FunnelData = funnelRes.data
@@ -36,6 +42,7 @@ async function getDashboardData() {
     projectStats: projectsStatsRes.data || {},
     pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
     funnelData,
+    projects: (projectsRes.data?.items || []) as ProjectResponse[],
   };
 }
 
@@ -44,6 +51,7 @@ export default async function DashboardPage() {
     projectStats,
     pendingLeadsTotal,
     funnelData,
+    projects,
   } = await getDashboardData();
 
   const stats = projectStats as ProjectStatsResponse;
@@ -98,7 +106,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex gap-6 overflow-x-auto pb-6 pt-2 -mx-4 px-4 custom-scrollbar">
-          {MOCK_PROJECTS.map((project) => (
+          {projects.map((project) => (
             <div key={project.id} className="w-[320px] shrink-0">
               <ProjectCard project={project} />
             </div>
