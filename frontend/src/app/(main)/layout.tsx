@@ -49,7 +49,7 @@ export default async function DashboardLayout({
       <AppSidebar user={user} />
       
       {/* 2. 主体区域 (移除了 Header) */}
-      <SidebarInset className="bg-white">
+      <SidebarInset className="bg-white min-w-0">
         {/* 移动端顶部导航栏 */}
         <header className="flex md:hidden items-center h-14 px-4 border-b bg-white/80 backdrop-blur-xl sticky top-0 z-40">
           <SidebarTrigger className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg" />
