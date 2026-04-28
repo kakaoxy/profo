@@ -1,11 +1,10 @@
-"use client";
-
 import type { components } from "@/lib/api-types";
 import type { Project } from "../projects/types/project";
 import { toNumber } from "@/lib/number-utils";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
-type ApiSalesRecord = {
+
+export type ApiSalesRecord = {
   id: string;
   record_type: string;
   price?: string | null;

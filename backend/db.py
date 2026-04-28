@@ -3,13 +3,13 @@
 """
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import QueuePool
 from typing import Generator
 from settings import settings
 
 
 # 创建数据库引擎（优化版本）
-# 对于 SQLite，使用 StaticPool 以支持多线程访问
+# 使用 QueuePool 替代 StaticPool 以支持更好的并发访问
 # 添加性能优化配置
 
 
@@ -24,12 +24,13 @@ engine = create_engine(
     settings.database_url,
     echo=settings.database_echo,
     connect_args={
-        "check_same_thread": False,  # SQLite 特定配置
+        "check_same_thread": False,  # SQLite 特定配置，允许多线程访问
         # SQLite 性能优化参数
         "timeout": 30,  # 增加超时时间到30秒
     },
-    poolclass=StaticPool,  # 使用静态连接池
-    # 连接池优化配置
+    poolclass=QueuePool,  # 使用队列连接池支持并发
+    pool_size=10,  # 连接池大小
+    max_overflow=20,  # 最大溢出连接数
     pool_pre_ping=True,  # 在使用连接前检查连接是否有效
     pool_recycle=3600,  # 每小时回收连接，防止连接过期
     # 查询优化

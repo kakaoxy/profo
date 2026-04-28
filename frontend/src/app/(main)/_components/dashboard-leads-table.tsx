@@ -6,21 +6,23 @@ interface DashboardLeadsTableProps {
   leads: DashboardLead[];
 }
 
+// 状态样式映射 - 移到组件外部避免每次渲染重新创建
+const STATUS_MAP: Record<string, string> = {
+  "待评估": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  "待看房": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  "已驳回": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  "已看房": "bg-primary/10 text-primary",
+  "已签约": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+};
+
+const DEFAULT_STATUS_CLASS =
+  "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400";
+
 /**
  * 获取状态对应的样式类名
  */
 function getStatusClassName(status: string): string {
-  const statusMap: Record<string, string> = {
-    "待评估": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    "待看房": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    "已驳回": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    "已看房": "bg-primary/10 text-primary",
-    "已签约": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  };
-  return (
-    statusMap[status] ||
-    "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
-  );
+  return STATUS_MAP[status] || DEFAULT_STATUS_CLASS;
 }
 
 export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
@@ -87,7 +89,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
               leads.map((lead) => (
                 <tr
                   key={lead.id}
-                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors cursor-pointer group"
+                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors group"
                 >
                   <td className="pl-8 pr-4 py-5">
                     <div className="flex items-center gap-3">
