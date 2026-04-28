@@ -45,6 +45,7 @@ export interface DashboardLead {
 export interface FunnelData {
   total: number;
   evaluating: number;
+  rejected: number;
   visiting: number;
   signed: number;
 }

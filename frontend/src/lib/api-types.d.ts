@@ -2802,6 +2802,11 @@ export interface components {
              */
             evaluating: number;
             /**
+             * Rejected
+             * @description 已驳回数量
+             */
+            rejected: number;
+            /**
              * Visiting
              * @description 带看中数量
              */

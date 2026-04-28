@@ -126,6 +126,11 @@ class LeadQueryService:
             Lead.status.in_([LeadStatus.PENDING_ASSESSMENT, LeadStatus.PENDING_VISIT])
         ).count()
 
+        # 已驳回
+        rejected = self.db.query(Lead).filter(
+            Lead.status == LeadStatus.REJECTED
+        ).count()
+
         # 带看中：已看房
         visiting = self.db.query(Lead).filter(
             Lead.status == LeadStatus.VISITED
@@ -139,6 +144,7 @@ class LeadQueryService:
         return {
             "total": total,
             "evaluating": evaluating,
+            "rejected": rejected,
             "visiting": visiting,
             "signed": signed,
         }

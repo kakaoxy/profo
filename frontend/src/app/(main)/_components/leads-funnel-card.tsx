@@ -26,6 +26,13 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
           评估 {funnelData.evaluating}
         </div>
         <div
+          className="bg-red-400 flex items-center justify-center text-[10px] text-white font-bold"
+          style={{ flex: 2 }}
+          title="Rejected"
+        >
+          驳回 {funnelData.rejected}
+        </div>
+        <div
           className="bg-primary/60 flex items-center justify-center text-[10px] text-white font-bold"
           style={{ flex: 2 }}
           title="Visit"
