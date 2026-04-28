@@ -69,14 +69,10 @@ export function getClientApiUrl(path: string): string {
   // 开发环境：使用相对路径，通过 Next.js rewrite 代理到后端
   // 这样浏览器发送请求时会带上同域的 Cookie
   if (!isProduction) {
-    const result = normalizedPath;
-    console.log("[getClientApiUrl] 开发环境 - 输入:", path, "输出:", result);
-    return result;
+    return normalizedPath;
   }
 
-  const result = `${API_BASE_URL}${normalizedPath}`;
-  console.log("[getClientApiUrl] 生产环境 - 输入:", path, "输出:", result);
-  return result;
+  return `${API_BASE_URL}${normalizedPath}`;
 }
 
 /**
@@ -84,10 +80,7 @@ export function getClientApiUrl(path: string): string {
  */
 export const isProduction = process.env.NODE_ENV === "production";
 
-// 调试：记录环境信息
-if (typeof window !== "undefined") {
-  console.log("[Config Debug] NODE_ENV:", process.env.NODE_ENV, "isProduction:", isProduction);
-}
+
 
 /**
  * 检查是否配置了生产 API URL
