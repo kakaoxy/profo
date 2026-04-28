@@ -44,11 +44,11 @@ function getSearchParam(
 // 静态错误状态组件 - 提取到组件外部避免重复创建
 function ErrorState({ message, statusCode }: { message: string; statusCode?: number }) {
   return (
-    <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
-        <div className="text-sm font-semibold text-red-600">{message}</div>
+        <div className="text-sm font-semibold text-destructive">{message}</div>
         {statusCode ? (
-          <div className="mt-2 text-xs text-slate-500">
+          <div className="mt-2 text-xs text-muted-foreground">
             状态码: {statusCode}
           </div>
         ) : null}
@@ -72,7 +72,7 @@ function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-white rounded-lg border border-slate-200 p-4">
+        <div key={i} className="bg-card rounded-lg border border-border p-4">
           <Skeleton className="h-4 w-16 mb-2" />
           <Skeleton className="h-8 w-12" />
         </div>
@@ -99,10 +99,10 @@ function ContentSkeleton() {
       </div>
 
       {/* Table Skeleton */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="p-4">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 py-4 border-b border-slate-100 last:border-0">
+            <div key={i} className="flex items-center gap-4 py-4 border-b border-border last:border-0">
               <Skeleton className="h-12 w-12 rounded-lg" />
               <div className="flex-1">
                 <Skeleton className="h-4 w-48 mb-2" />
@@ -190,14 +190,14 @@ export default async function MarketingProjectsPage({
   const params = await searchParams;
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-background">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         {/* Header - 立即渲染 */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             营销项目管理
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             管理房源营销信息，发布和编辑房源展示内容。
           </p>
         </div>

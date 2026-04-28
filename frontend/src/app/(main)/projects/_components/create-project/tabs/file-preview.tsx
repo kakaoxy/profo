@@ -81,7 +81,7 @@ export function FilePreview({ attachment, onRemove }: FilePreviewProps) {
         <CardContent className="p-3">
           <div className="flex items-start gap-3">
             {/* 文件图标或缩略图 */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               {fileType === "image" ? (
                 <div className="relative h-14 w-14 overflow-hidden rounded-md border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -114,7 +114,7 @@ export function FilePreview({ attachment, onRemove }: FilePreviewProps) {
             </div>
 
             {/* 操作按钮 */}
-            <div className="flex flex-shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {(fileType === "image" || fileType === "pdf") && (
                 <Button
                   variant="ghost"
