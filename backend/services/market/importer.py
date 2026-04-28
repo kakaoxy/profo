@@ -3,7 +3,7 @@
 处理房源数据的导入、更新和历史快照记录
 """
 from datetime import datetime
-from typing import Optional, Tuple, Any, List
+from typing import Optional, Tuple, Any, List, Union
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import logging
@@ -26,15 +26,23 @@ class PropertyImporter:
     def __init__(self):
         self.floor_parser = FloorParser()
     
-    def import_property(self, data: PropertyIngestionModel, db: Session, user_id: str) -> ImportResult:
-        """导入单条房源数据的入口方法"""
+    def import_property(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
+        """导入单条房源数据的入口方法
+        
+        Args:
+            data: 房源数据
+            db: 数据库会话
+            user_id: 用户ID（可选，默认为空字符串）
+            
+        Note: 此方法不再内部调用 db.commit()，事务管理由调用方负责
+        """
         try:
             return self._process_import_transaction(data, db, user_id)
         except Exception as e:
             return self._handle_import_error(e, data, db)
 
-    def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str) -> ImportResult:
-        """处理核心导入逻辑（事务内）"""
+    def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
+        """处理核心导入逻辑（不包含事务提交，由调用方管理事务）"""
         community_id = self.find_or_create_community(data, db)
 
         existing_property = self._get_existing_property(data, db)
@@ -48,14 +56,39 @@ class PropertyImporter:
             property_id = new_property.id
             action = "创建"
 
-        db.commit()
+        # 注意：移除了 db.commit()，事务提交由外层调用方管理
+        # 这样可以确保批次级别的原子性
         logger.info(f"{action}房源: {data.source_property_id} (ID: {property_id}, 用户ID: {user_id})")
 
         return ImportResult(success=True, property_id=property_id, error=None)
 
-    def find_or_create_community(self, data: PropertyIngestionModel, db: Session) -> str:
-        """查找或创建小区"""
-        name = data.community_name.strip()
+    def find_or_create_community(self, data: Union[PropertyIngestionModel, str], db: Session,
+                                  city_id: int = None, district: str = None, business_circle: str = None) -> str:
+        """查找或创建小区
+        
+        Args:
+            data: PropertyIngestionModel 对象或小区名称字符串（向后兼容）
+            db: 数据库会话
+            city_id: 城市ID（可选，用于向后兼容）
+            district: 行政区（可选，用于向后兼容）
+            business_circle: 商圈（可选，用于向后兼容）
+            
+        Returns:
+            小区ID
+        """
+        # 处理向后兼容：支持直接传入小区名称字符串
+        if isinstance(data, str):
+            name = data.strip()
+            # 创建简单的数据对象用于兼容
+            class SimpleData:
+                def __init__(self, name, city_id=None, district=None, business_circle=None):
+                    self.community_name = name
+                    self.city_id = city_id
+                    self.district = district
+                    self.business_circle = business_circle
+            data = SimpleData(name, city_id, district, business_circle)
+        else:
+            name = data.community_name.strip()
         
         # 1. 尝试查找 (名称匹配或别名匹配)
         community = self._find_community_by_name_or_alias(name, db)
@@ -85,7 +118,7 @@ class PropertyImporter:
         return None
 
     def _update_community_info_if_needed(self, community: Community,
-                                       data: PropertyIngestionModel, db: Session) -> None:
+                                       data: Union[PropertyIngestionModel, Any], db: Session) -> None:
         """如果信息缺失，更新小区补充信息"""
         updated = False
         
@@ -106,7 +139,7 @@ class PropertyImporter:
             # flush 不是必须的，commit 会处理，但在长事务中 flush 可以保持状态一致
             db.flush() 
 
-    def _create_community(self, name: str, data: PropertyIngestionModel, db: Session) -> str:
+    def _create_community(self, name: str, data: Union[PropertyIngestionModel, Any], db: Session) -> str:
         """创建新的小区记录"""
         new_community = Community(
             name=name,
@@ -187,9 +220,17 @@ class PropertyImporter:
         prop.owner_id = user_id
         prop.updated_at = datetime.now()
 
+    def create_history_snapshot(self, property_obj: PropertyCurrent,
+                                 change_type: ChangeType, db: Session) -> None:
+        """创建历史快照（公有方法，向后兼容）
+        
+        Note: 此方法不再内部调用 db.commit()，事务管理由调用方负责
+        """
+        self._create_history_snapshot(property_obj, change_type, db)
+
     def _create_history_snapshot(self, property_obj: PropertyCurrent,
                                  change_type: ChangeType, db: Session) -> None:
-        """创建历史快照"""
+        """创建历史快照（内部实现）"""
         history = PropertyHistory(
             data_source=property_obj.data_source,
             source_property_id=property_obj.source_property_id,

@@ -47,57 +47,76 @@ class JSONBatchImporter:
 
         logger.info(f"开始处理 JSON 推送，共 {total} 条记录")
 
-        # 逐条处理
-        for index, raw_data in enumerate(properties):
-            try:
-                # 验证数据
-                validated_data = PropertyIngestionModel(**raw_data)
+        # 批次级别事务管理
+        try:
+            # 逐条处理（在同一事务中）
+            for index, raw_data in enumerate(properties):
+                try:
+                    # 验证数据
+                    validated_data = PropertyIngestionModel(**raw_data)
 
-                # 导入数据，传递用户ID
-                result = self.importer.import_property(validated_data, db, user_id)
+                    # 导入数据，传递用户ID
+                    # 注意：PropertyImporter 不再内部调用 commit，事务由本方法统一管理
+                    result = self.importer.import_property(validated_data, db, user_id)
 
-                if result.success:
-                    success += 1
-                else:
+                    if result.success:
+                        success += 1
+                    else:
+                        failed += 1
+                        errors.append({
+                            'index': index,
+                            'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
+                            'reason': result.error
+                        })
+
+                        # 记录到 failed_records 表
+                        self._save_failed_record_raw(raw_data, result.error)
+
+                except ValidationError as e:
                     failed += 1
+                    error_msg = self._format_validation_error(e)
                     errors.append({
                         'index': index,
                         'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
-                        'reason': result.error
+                        'reason': error_msg
                     })
 
                     # 记录到 failed_records 表
-                    self._save_failed_record_raw(raw_data, result.error)
+                    self._save_failed_record_raw(raw_data, error_msg)
 
-            except ValidationError as e:
-                failed += 1
-                error_msg = self._format_validation_error(e)
-                errors.append({
-                    'index': index,
-                    'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
-                    'reason': error_msg
-                })
+                    logger.warning(f"第 {index} 条记录验证失败: {error_msg}")
 
-                # 记录到 failed_records 表
-                self._save_failed_record_raw(raw_data, error_msg)
+                except Exception as e:
+                    failed += 1
+                    error_msg = f"处理失败: {str(e)}"
+                    errors.append({
+                        'index': index,
+                        'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
+                        'reason': error_msg
+                    })
 
-                logger.warning(f"第 {index} 条记录验证失败: {error_msg}")
+                    # 记录到 failed_records 表
+                    self._save_failed_record_raw(raw_data, error_msg)
 
-            except Exception as e:
-                failed += 1
-                error_msg = f"处理失败: {str(e)}"
-                errors.append({
-                    'index': index,
-                    'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
-                    'reason': error_msg
-                })
+                    logger.error(f"第 {index} 条记录处理失败: {error_msg}")
 
-                # 记录到 failed_records 表
-                self._save_failed_record_raw(raw_data, error_msg)
+            # 统一提交整个批次
+            db.commit()
+            logger.info(f"JSON 推送处理完成并已提交: 总数={total}, 成功={success}, 失败={failed}")
 
-                logger.error(f"第 {index} 条记录处理失败: {error_msg}")
-
-        logger.info(f"JSON 推送处理完成: 总数={total}, 成功={success}, 失败={failed}")
+        except Exception as e:
+            # 统一回滚
+            db.rollback()
+            logger.error(f"JSON 推送处理失败，已回滚: {e}", exc_info=True)
+            
+            # 将所有记录标记为失败
+            failed = total
+            success = 0
+            errors = [{
+                'index': idx,
+                'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
+                'reason': f"批次处理失败: {str(e)}"
+            } for idx, raw_data in enumerate(properties)]
 
         return PushResult(
             total=total,
