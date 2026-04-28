@@ -58,13 +58,13 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
             <tr className="text-[10px] text-slate-400 uppercase tracking-widest border-y border-slate-100 dark:border-slate-700">
               <th className="pl-0 pr-2 py-3 font-black">小区</th>
               <th className="px-2 py-3 font-black hidden md:table-cell">户型</th>
-              <th className="px-2 py-3 font-black hidden lg:table-cell">面积</th>
-              <th className="px-2 py-3 font-black hidden lg:table-cell">楼层</th>
+              <th className="px-2 py-3 font-black hidden md:table-cell">面积</th>
+              <th className="px-2 py-3 font-black hidden md:table-cell">楼层</th>
               <th className="px-2 py-3 font-black">总价</th>
-              <th className="px-2 py-3 font-black hidden sm:table-cell">单价</th>
+              <th className="px-2 py-3 font-black hidden md:table-cell">单价</th>
               <th className="px-2 py-3 font-black">状态</th>
-              <th className="px-2 py-3 font-black hidden xl:table-cell">区域</th>
-              <th className="px-2 py-3 font-black hidden xl:table-cell">录入人</th>
+              <th className="px-2 py-3 font-black hidden md:table-cell">区域</th>
+              <th className="px-2 py-3 font-black hidden md:table-cell">录入人</th>
               <th className="pl-2 pr-0 py-3 font-black text-right">更新时间</th>
             </tr>
           </thead>
@@ -102,16 +102,16 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                   <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:table-cell">
                     {lead.unitType}
                   </td>
-                  <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden lg:table-cell">
+                  <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:table-cell">
                     {lead.area}
                   </td>
-                  <td className="px-2 py-4 text-sm font-medium text-slate-500 dark:text-slate-500 hidden lg:table-cell">
+                  <td className="px-2 py-4 text-sm font-medium text-slate-500 dark:text-slate-500 hidden md:table-cell">
                     {lead.floor}
                   </td>
                   <td className="px-2 py-4 text-sm font-black text-primary">
                     {lead.totalPrice}
                   </td>
-                  <td className="px-2 py-4 text-xs font-semibold text-slate-500 dark:text-slate-500 hidden sm:table-cell">
+                  <td className="px-2 py-4 text-xs font-semibold text-slate-500 dark:text-slate-500 hidden md:table-cell">
                     {lead.unitPrice}
                   </td>
                   <td className="px-2 py-4">
@@ -121,10 +121,10 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                       {lead.status}
                     </span>
                   </td>
-                  <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden xl:table-cell">
+                  <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:table-cell">
                     {lead.region}
                   </td>
-                  <td className="px-2 py-4 hidden xl:table-cell">
+                  <td className="px-2 py-4 hidden md:table-cell">
                     <div className="flex items-center gap-2">
                       <UserCircle2 className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
                       <span className="text-sm font-medium text-slate-600 dark:text-slate-400 truncate">
