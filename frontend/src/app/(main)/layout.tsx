@@ -44,7 +44,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={false}>
       {/* 1. 侧边栏 */}
       <AppSidebar user={user} />
       
