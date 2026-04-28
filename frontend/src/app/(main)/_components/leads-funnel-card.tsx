@@ -37,7 +37,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
           style={{ flex: 2 }}
           title="Visit"
         >
-          带看 {funnelData.visiting}
+          看房 {funnelData.visiting}
         </div>
         <div
           className="bg-primary/40 flex items-center justify-center text-[10px] text-white font-bold"

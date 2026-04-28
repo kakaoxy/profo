@@ -8,15 +8,20 @@ import {
   AlertCard,
   DashboardLeadsTable,
 } from "./_components";
-import { MOCK_PROJECTS, MOCK_LEADS } from "./_lib/dashboard-data";
+import { MOCK_LEADS } from "./_lib/dashboard-data";
 import type { components } from "@/lib/api-types";
+import type { Project } from "./types";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
+type ProjectResponse = components["schemas"]["ProjectResponse"];
+type SalesRecordResponse = components["schemas"]["SalesRecordResponse"];
+type CompetitorResponse = components["schemas"]["CompetitorResponse"];
+type MarketSentimentResponse = components["schemas"]["MarketSentimentResponse"];
 
 async function getDashboardData() {
   const client = await fetchClient();
 
-  const [propertiesRes, projectsStatsRes, pendingLeadsRes, funnelRes] =
+  const [propertiesRes, projectsStatsRes, pendingLeadsRes, funnelRes, projectsRes] =
     await Promise.all([
       client.GET("/api/v1/properties", {
         params: { query: { page: 1, page_size: 1 } },
@@ -28,13 +33,187 @@ async function getDashboardData() {
         },
       }),
       client.GET("/api/v1/leads/stats/funnel", {}),
+      client.GET("/api/v1/projects", {
+        params: { query: { page: 1, page_size: 10 } },
+      }),
     ]);
 
   return {
     projectStats: projectsStatsRes.data || {},
     pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
     funnelData: funnelRes.data || { total: 0, evaluating: 0, rejected: 0, visiting: 0, signed: 0 },
+    projectsData: projectsRes.data,
   };
+}
+
+async function getProjectDetails(projectId: string, communityName: string | null | undefined) {
+  const client = await fetchClient();
+
+  const safeCommunityName = communityName ?? null;
+
+  const [salesRecordsRes, marketSentimentRes, competitorsRes] = await Promise.all([
+    client.GET("/api/v1/projects/{project_id}/selling/records", {
+      params: { path: { project_id: projectId } },
+    }),
+    safeCommunityName
+      ? client.GET("/api/v1/monitor/communities/{community_id}/sentiment", {
+          params: { path: { community_id: safeCommunityName } },
+        })
+      : Promise.resolve({ data: null }),
+    safeCommunityName
+      ? client.GET("/api/v1/monitor/communities/{community_id}/competitors", {
+          params: { path: { community_id: safeCommunityName } },
+        })
+      : Promise.resolve({ data: null }),
+  ]);
+
+  return {
+    salesRecords: salesRecordsRes.data?.items || [],
+    marketSentiment: marketSentimentRes.data ?? null,
+    competitors: competitorsRes.data || [],
+  };
+}
+
+function calculateWeeklyViewTrend(records: SalesRecordResponse[]) {
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  const currentWeekCount = records.filter((r) => {
+    if (r.record_type !== "viewing") return false;
+    const date = new Date(r.record_date);
+    return date >= oneWeekAgo;
+  }).length;
+
+  const lastWeekCount = records.filter((r) => {
+    if (r.record_type !== "viewing") return false;
+    const date = new Date(r.record_date);
+    return date >= twoWeeksAgo && date < oneWeekAgo;
+  }).length;
+
+  return {
+    current: currentWeekCount,
+    last: lastWeekCount,
+    isUp: currentWeekCount >= lastWeekCount,
+  };
+}
+
+function calculateOfferStats(records: SalesRecordResponse[]) {
+  const offers = records.filter((r) => r.record_type === "offer" && r.price);
+  const offerCount = offers.length;
+
+  let maxOffer = 0;
+  let lastOffer = 0;
+
+  if (offerCount > 0) {
+    const prices = offers
+      .map((o) => (o.price ? parseFloat(o.price) : 0))
+      .filter((p) => p > 0);
+    maxOffer = prices.length > 0 ? Math.max(...prices) : 0;
+
+    const sortedByDate = [...offers].sort(
+      (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
+    );
+    lastOffer = sortedByDate[0]?.price ? parseFloat(sortedByDate[0].price) : 0;
+  }
+
+  return { offerCount, maxOffer, lastOffer };
+}
+
+function calculateMarketData(
+  sentiment: MarketSentimentResponse | null,
+  competitors: CompetitorResponse[],
+  projectArea: string | null | undefined
+) {
+  const onSale = sentiment?.floor_stats?.reduce((sum, s) => sum + (s.current_count || 0), 0) || 0;
+
+  const totalDealPrice = sentiment?.floor_stats?.reduce(
+    (sum, s) => sum + (s.deal_avg_price || 0) * (s.deals_count || 0),
+    0
+  ) || 0;
+  const totalDeals = sentiment?.floor_stats?.reduce((sum, s) => sum + (s.deals_count || 0), 0) || 0;
+  const avgPriceNum = totalDeals > 0 ? totalDealPrice / totalDeals : 0;
+
+  let avgPrice = "--";
+  if (avgPriceNum > 0) {
+    const area = projectArea ? parseFloat(projectArea) : 100;
+    avgPrice = `${(avgPriceNum / 10000 / area).toFixed(1)}万/㎡`;
+  }
+
+  const volume30d = sentiment?.floor_stats?.reduce((sum, s) => sum + (s.deals_count || 0), 0) || 0;
+
+  let priceTrend30d = "持平";
+  let isPriceUp: boolean | null = null;
+  if (sentiment?.floor_stats && sentiment.floor_stats.length >= 2) {
+    const midStats = sentiment.floor_stats.find((s) => s.type === "mid");
+    if (midStats) {
+      const trend = midStats.current_avg_price - midStats.deal_avg_price;
+      if (Math.abs(trend) > 1000) {
+        const percent = ((trend / midStats.deal_avg_price) * 100).toFixed(1);
+        isPriceUp = trend > 0;
+        priceTrend30d = `${isPriceUp ? "+" : ""}${percent}% ${isPriceUp ? "↑" : "↓"}`;
+      }
+    }
+  }
+
+  return {
+    onSale,
+    avgPrice,
+    volume30d,
+    priceTrend30d,
+    isPriceUp,
+  };
+}
+
+async function transformProjectToCardFormat(
+  project: ProjectResponse,
+  salesRecords: SalesRecordResponse[],
+  sentiment: MarketSentimentResponse | null,
+  competitors: CompetitorResponse[]
+): Promise<Project> {
+  const viewTotal = salesRecords.filter((r) => r.record_type === "viewing").length;
+  const viewTrend = calculateWeeklyViewTrend(salesRecords);
+  const { offerCount, maxOffer, lastOffer } = calculateOfferStats(salesRecords);
+  const market = calculateMarketData(sentiment, competitors, project.area);
+
+  return {
+    id: project.id,
+    code: project.contract_no || project.id.slice(-4).toUpperCase(),
+    name: project.name || project.community_name || "未命名项目",
+    location: project.address?.split("区")[0] + "区" || "未知区域",
+    specs: `${project.area || "--"}㎡ · ${project.layout || "--"}`,
+    stats: {
+      viewTotal,
+      viewTrend,
+      offerCount,
+      maxOffer,
+      lastOffer,
+    },
+    market,
+  };
+}
+
+async function getMonitorProjects(projectsData: { items?: ProjectResponse[] } | null): Promise<Project[]> {
+  if (!projectsData?.items || projectsData.items.length === 0) {
+    return [];
+  }
+
+  const projects = projectsData.items.slice(0, 5);
+
+  const projectDetailsPromises = projects.map(async (project) => {
+    try {
+      const { salesRecords, marketSentiment, competitors } = await getProjectDetails(
+        project.id,
+        project.community_name
+      );
+      return transformProjectToCardFormat(project, salesRecords, marketSentiment, competitors);
+    } catch (error) {
+      console.error(`获取项目 ${project.id} 详情失败:`, error);
+      return transformProjectToCardFormat(project, [], null, []);
+    }
+  });
+
+  return Promise.all(projectDetailsPromises);
 }
 
 export default async function DashboardPage() {
@@ -42,6 +221,7 @@ export default async function DashboardPage() {
     projectStats,
     pendingLeadsTotal,
     funnelData,
+    projectsData,
   } = await getDashboardData();
 
   const stats = projectStats as ProjectStatsResponse;
@@ -49,6 +229,8 @@ export default async function DashboardPage() {
   const renovatingCount = stats?.renovating ?? 0;
   const sellingCount = stats?.selling ?? 0;
   const soldCount = stats?.sold ?? 0;
+
+  const monitorProjects = await getMonitorProjects(projectsData as { items?: ProjectResponse[] } | null);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8">
@@ -96,11 +278,17 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex gap-6 overflow-x-auto pb-6 pt-2 -mx-4 px-4 custom-scrollbar">
-          {MOCK_PROJECTS.map((project) => (
-            <div key={project.id} className="w-[320px] shrink-0">
-              <ProjectCard project={project} />
+          {monitorProjects.length > 0 ? (
+            monitorProjects.map((project) => (
+              <div key={project.id} className="w-[320px] shrink-0">
+                <ProjectCard project={project} />
+              </div>
+            ))
+          ) : (
+            <div className="w-full text-center py-8 text-slate-400">
+              暂无在售项目
             </div>
-          ))}
+          )}
 
           <Link
             href="/projects/new"
