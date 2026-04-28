@@ -112,7 +112,7 @@ export default async function DashboardPage() {
   const soldCount = stats?.sold ?? 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8 min-w-0 overflow-x-hidden">
       {/* Header */}
       <div className="mb-8 flex items-center gap-3">
         <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Top Row - Three Column Layout */}
-      <div className="grid grid-cols-12 gap-6 mb-8">
+      <div className="grid grid-cols-12 gap-4 lg:gap-6 mb-8 min-w-0">
         <ProjectOverviewCard
           signingCount={signingCount}
           renovatingCount={renovatingCount}
@@ -156,16 +156,16 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex gap-6 overflow-x-auto pb-6 pt-2 -mx-4 px-4 custom-scrollbar">
+        <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar">
           {projects.map((project) => (
-            <div key={project.id} className="w-[320px] shrink-0">
+            <div key={project.id} className="w-[280px] shrink-0">
               <ProjectCard project={project} />
             </div>
           ))}
 
           <CreateProjectDialog
             trigger={
-              <div className="w-[320px] shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-8 text-center group cursor-pointer hover:bg-white dark:hover:bg-slate-800 hover:border-primary/40 transition-all min-h-[440px]">
+              <div className="w-[280px] shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-white dark:hover:bg-slate-800 hover:border-primary/40 transition-all min-h-[400px]">
                 <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 mb-5 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                   <Plus className="w-8 h-8" />
                 </div>
