@@ -8,17 +8,58 @@ import {
   AlertCard,
   DashboardLeadsTable,
 } from "./_components";
-import { MOCK_LEADS } from "./_lib/dashboard-data";
 import type { components } from "@/lib/api-types";
-import type { FunnelData } from "./types";
+import type { FunnelData, DashboardLead } from "./types";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
+type LeadListItem = components["schemas"]["LeadListItem"];
+type LeadStatus = components["schemas"]["LeadStatus"];
+
+/**
+ * 将 LeadStatus 转换为中文显示文本
+ */
+function getStatusText(status: LeadStatus): string {
+  const statusMap: Record<string, string> = {
+    pending_assessment: "待评估",
+    pending_visit: "待看房",
+    rejected: "已驳回",
+    visited: "已看房",
+    signed: "已签约",
+  };
+  return statusMap[status] || status;
+}
+
+/**
+ * 将 API 返回的 LeadListItem 转换为 DashboardLead 格式
+ */
+function transformLeadToDashboard(lead: LeadListItem): DashboardLead {
+  return {
+    id: lead.id,
+    community: lead.community_name,
+    unitType: lead.layout || "-",
+    area: lead.area ? `${lead.area}㎡` : "-",
+    floor: lead.floor_info || "-",
+    totalPrice: lead.total_price ? `${lead.total_price}万` : "-",
+    unitPrice: lead.unit_price ? `${lead.unit_price}万/㎡` : "-",
+    status: getStatusText(lead.status),
+    region: lead.district || lead.business_area || "-",
+    creator: lead.creator_name || "-",
+    updatedTime: lead.updated_at
+      ? new Date(lead.updated_at).toLocaleString("zh-CN", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "-",
+  };
+}
 
 async function getDashboardData() {
   const client = await fetchClient();
 
-  const [projectsStatsRes, pendingLeadsRes, funnelRes, projectsRes] =
+  const [projectsStatsRes, pendingLeadsRes, funnelRes, projectsRes, leadsRes] =
     await Promise.all([
       client.GET("/api/v1/projects/stats", {}),
       client.GET("/api/v1/leads/", {
@@ -32,17 +73,26 @@ async function getDashboardData() {
           query: { page: 1, page_size: 10 },
         },
       }),
+      client.GET("/api/v1/leads/", {
+        params: {
+          query: { page: 1, page_size: 10 },
+        },
+      }),
     ]);
 
   const funnelData: FunnelData = funnelRes.data
     ? (funnelRes.data as FunnelData)
     : { total: 0, evaluating: 0, rejected: 0, visiting: 0, signed: 0 };
 
+  const leads = (leadsRes.data?.items || []) as LeadListItem[];
+  const dashboardLeads = leads.map(transformLeadToDashboard);
+
   return {
     projectStats: projectsStatsRes.data || {},
     pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
     funnelData,
     projects: (projectsRes.data?.items || []) as ProjectResponse[],
+    leads: dashboardLeads,
   };
 }
 
@@ -52,6 +102,7 @@ export default async function DashboardPage() {
     pendingLeadsTotal,
     funnelData,
     projects,
+    leads,
   } = await getDashboardData();
 
   const stats = projectStats as ProjectStatsResponse;
@@ -130,7 +181,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* Leads Table Section */}
-      <DashboardLeadsTable leads={MOCK_LEADS} />
+      <DashboardLeadsTable leads={leads} />
     </div>
   );
 }
