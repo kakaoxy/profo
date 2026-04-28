@@ -54,13 +54,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
       } catch (error) {
         // 忽略 AbortError，这是正常的取消行为
         // 注意：不同浏览器/环境下，中止请求的错误表现不同
-        // Chrome: "Failed to fetch" (TypeError)
         // Firefox: "The operation was aborted" (DOMException with name "AbortError")
         if (error instanceof Error) {
-          const isAbortError = 
+          const isAbortError =
             error.name === "AbortError" ||
-            error.message?.toLowerCase().includes("aborted") ||
-            error.message?.toLowerCase().includes("failed to fetch");
+            error.message?.toLowerCase().includes("aborted");
           if (isAbortError) {
             return;
           }
