@@ -67,13 +67,17 @@ export function mapProjectResponseToProject(project: ProjectResponse): Project {
           project_id: project.id,
           record_type: r.record_type as "viewing" | "offer" | "negotiation" | "sold",
           customer_name: r.customer_name ?? undefined,
-          price: r.price ? parseFloat(r.price) : undefined,
+          price: toNumber(r.price),
           record_date: r.record_date,
           notes: r.notes ?? undefined,
         }))
       : undefined,
     created_at: project.created_at ?? "",
     updated_at: project.updated_at ?? "",
+    // 销售团队角色ID
+    channel_manager_id: project.channel_manager_id ?? undefined,
+    property_agent_id: project.property_agent_id ?? undefined,
+    negotiator_id: project.negotiator_id ?? undefined,
   };
 }
 
@@ -112,8 +116,8 @@ export function getOfferStats(offerRecords: ApiSalesRecord[]) {
   const offerCount = offerRecords.length;
 
   const offerPrices = offerRecords
-    .map(r => r.price ? parseFloat(r.price) : null)
-    .filter((p): p is number => p !== null && !isNaN(p));
+    .map(r => toNumber(r.price))
+    .filter((p): p is number => p !== undefined);
 
   const maxOffer = offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
   const lastOffer = offerPrices.length > 0 ? offerPrices[offerPrices.length - 1] : 0;
