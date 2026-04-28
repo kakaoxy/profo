@@ -247,6 +247,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/stats/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leads Funnel
+         * @description 获取线索漏斗统计数据
+         */
+        get: operations["get_leads_funnel_api_v1_leads_stats_funnel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/leads/{lead_id}/follow-ups": {
         parameters: {
             query?: never;
@@ -2767,6 +2787,32 @@ export interface components {
             images: string[];
         };
         /**
+         * LeadFunnelResponse
+         * @description 线索漏斗统计响应
+         */
+        LeadFunnelResponse: {
+            /**
+             * Total
+             * @description 线索总数
+             */
+            total: number;
+            /**
+             * Evaluating
+             * @description 评估中数量
+             */
+            evaluating: number;
+            /**
+             * Visiting
+             * @description 带看中数量
+             */
+            visiting: number;
+            /**
+             * Signed
+             * @description 已签约数量
+             */
+            signed: number;
+        };
+        /**
          * LeadListItem
          * @description 列表展示专用 Schema
          *     不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题
@@ -5194,6 +5240,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    get_leads_funnel_api_v1_leads_stats_funnel_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadFunnelResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

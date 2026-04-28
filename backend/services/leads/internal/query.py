@@ -5,7 +5,7 @@
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy.orm import Session, joinedload, noload
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from models.lead import Lead
 from models.common import LeadStatus
@@ -109,4 +109,36 @@ class LeadQueryService:
             "total": total,
             "page": page,
             "page_size": page_size,
+        }
+
+    def get_funnel_stats(self) -> Dict[str, int]:
+        """
+        获取线索漏斗统计数据
+
+        Returns:
+            包含各阶段数量的字典
+        """
+        # 获取总数
+        total = self.db.query(Lead).count()
+
+        # 评估中：待评估 + 待看房
+        evaluating = self.db.query(Lead).filter(
+            Lead.status.in_([LeadStatus.PENDING_ASSESSMENT, LeadStatus.PENDING_VISIT])
+        ).count()
+
+        # 带看中：已看房
+        visiting = self.db.query(Lead).filter(
+            Lead.status == LeadStatus.VISITED
+        ).count()
+
+        # 已签约
+        signed = self.db.query(Lead).filter(
+            Lead.status == LeadStatus.SIGNED
+        ).count()
+
+        return {
+            "total": total,
+            "evaluating": evaluating,
+            "visiting": visiting,
+            "signed": signed,
         }

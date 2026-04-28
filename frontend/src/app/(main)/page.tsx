@@ -9,16 +9,14 @@ import {
   DashboardLeadsTable,
 } from "./_components";
 import { MOCK_PROJECTS, MOCK_LEADS } from "./_lib/dashboard-data";
-import { mapBackendToFrontend } from "./leads/lib/utils";
 import type { components } from "@/lib/api-types";
-import type { FunnelData } from "./types";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
 
 async function getDashboardData() {
   const client = await fetchClient();
 
-  const [propertiesRes, projectsStatsRes, pendingLeadsRes, signedLeadsRes] =
+  const [propertiesRes, projectsStatsRes, pendingLeadsRes, funnelRes] =
     await Promise.all([
       client.GET("/api/v1/properties", {
         params: { query: { page: 1, page_size: 1 } },
@@ -29,20 +27,13 @@ async function getDashboardData() {
           query: { page: 1, page_size: 5, statuses: ["pending_assessment"] },
         },
       }),
-      client.GET("/api/v1/leads/", {
-        params: { query: { page: 1, page_size: 1, statuses: ["signed"] } },
-      }),
+      client.GET("/api/v1/leads/stats/funnel", {}),
     ]);
 
-  const backendLeads = pendingLeadsRes.data?.items || [];
-  const leads = backendLeads.map(mapBackendToFrontend);
-
   return {
-    propertiesTotal: propertiesRes.data?.total || 0,
     projectStats: projectsStatsRes.data || {},
-    leads,
     pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
-    signedLeadsTotal: signedLeadsRes.data?.total || 0,
+    funnelData: funnelRes.data || { total: 0, evaluating: 0, visiting: 0, signed: 0 },
   };
 }
 
@@ -50,7 +41,7 @@ export default async function DashboardPage() {
   const {
     projectStats,
     pendingLeadsTotal,
-    signedLeadsTotal,
+    funnelData,
   } = await getDashboardData();
 
   const stats = projectStats as ProjectStatsResponse;
@@ -58,13 +49,6 @@ export default async function DashboardPage() {
   const renovatingCount = stats?.renovating ?? 0;
   const sellingCount = stats?.selling ?? 0;
   const soldCount = stats?.sold ?? 0;
-
-  const funnelData: FunnelData = {
-    total: pendingLeadsTotal + signedLeadsTotal,
-    evaluating: Math.round((pendingLeadsTotal + signedLeadsTotal) * 0.5),
-    visiting: Math.round((pendingLeadsTotal + signedLeadsTotal) * 0.25),
-    signed: signedLeadsTotal,
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8">

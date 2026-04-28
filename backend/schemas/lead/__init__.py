@@ -167,6 +167,17 @@ class PaginatedLeadListResponse(BaseModel):
     page_size: int
 
 
+# ----------------------
+# 漏斗统计 Schema
+# ----------------------
+class LeadFunnelResponse(BaseModel):
+    """线索漏斗统计响应"""
+    total: int = Field(..., description="线索总数")
+    evaluating: int = Field(..., description="评估中数量")
+    visiting: int = Field(..., description="带看中数量")
+    signed: int = Field(..., description="已签约数量")
+
+
 __all__ = [
     # Follow Up
     "FollowUpBase",
@@ -184,4 +195,6 @@ __all__ = [
     "PaginatedLeadResponse",
     "LeadListItem",
     "PaginatedLeadListResponse",
+    # Funnel
+    "LeadFunnelResponse",
 ]

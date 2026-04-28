@@ -13,6 +13,7 @@ from schemas.lead import (
     LeadResponse,
     PaginatedLeadListResponse,
     LeadListItem,
+    LeadFunnelResponse,
 )
 from services.leads import LeadService
 
@@ -149,3 +150,16 @@ def delete_lead(
     service = LeadService(db)
     service.delete_lead(lead_id)
     return None
+
+
+@router.get("/stats/funnel", response_model=LeadFunnelResponse)
+def get_leads_funnel(
+    db: DbSessionDep,
+    current_user: CurrentInternalUserDep,
+) -> LeadFunnelResponse:
+    """
+    获取线索漏斗统计数据
+    """
+    service = LeadService(db)
+    stats = service.query_service.get_funnel_stats()
+    return LeadFunnelResponse(**stats)
