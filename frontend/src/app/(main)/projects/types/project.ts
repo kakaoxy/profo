@@ -128,6 +128,7 @@ export interface ProjectManager {
 export interface Project {
   id: string;
   name: string;
+  community_id?: string;
   community_name?: string;
   status: string;
 

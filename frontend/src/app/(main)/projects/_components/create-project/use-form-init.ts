@@ -25,6 +25,7 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
     if (open && isEditMode && project) {
       const editLayoutData = parseLayout(project.layout);
       form.reset({
+        community_id: project.community_id || undefined,
         community_name: project.community_name || "",
         address: project.address || "",
         area: project.area,
@@ -67,6 +68,7 @@ export function getDefaultValues(
   const layoutData = parseLayout(project?.layout);
 
   return {
+    community_id: project?.community_id || undefined,
     community_name: project?.community_name || "",
     address: project?.address || "",
     area: project?.area,
