@@ -106,24 +106,10 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
 
       refreshState.lastResult = result;
 
-      // [关键修复] 更新 cookies，确保客户端能获取新的 token
-      cookieStore.set("access_token", data.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: data.expires_in || 36000,
-        sameSite: "lax",
-      });
-
-      cookieStore.set("refresh_token", data.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        sameSite: "lax",
-      });
-
-      console.log("✅ [Server] 成功刷新并更新 cookies");
+      // [修复] 不再直接设置 cookies，避免客户端/服务端状态不一致
+      // Cookie 更新统一通过 /api/auth/refresh 路由处理
+      // 服务端仅缓存 token 供 Server Component 使用
+      console.log("✅ [Server] 成功刷新 token（仅缓存，不设置 cookie）");
       return result;
     } catch (error) {
       console.error("🔁 [Server] 刷新 Token 时发生网络错误:", error);
