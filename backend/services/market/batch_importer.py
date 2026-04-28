@@ -140,7 +140,7 @@ class CSVBatchImporter:
                 details={"error": str(e)}
             )
 
-    def batch_import_csv(self, file: UploadFile, db: Session) -> UploadResult:
+    def batch_import_csv(self, file: UploadFile, db: Session, user_id: str = "") -> UploadResult:
         total = 0
         success = 0
         failed = 0
@@ -199,8 +199,9 @@ class CSVBatchImporter:
                     for global_index, validated_data, original_row in validated_batch:
                         try:
                             # 注意：由于 PropertyImporter 不再内部调用 commit，
-                            # 这里需要传递 user_id。从上下文中获取或设置默认值
-                            result = self.importer.import_property(validated_data, db, "csv_import_system")
+                            # 这里需要传递 user_id。如果未提供则使用默认值
+                            effective_user_id = user_id if user_id else "system"
+                            result = self.importer.import_property(validated_data, db, effective_user_id)
                             if result.success:
                                 batch_success_count += 1
                             else:
