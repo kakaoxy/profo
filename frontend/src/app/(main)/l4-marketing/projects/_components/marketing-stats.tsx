@@ -23,25 +23,25 @@ export function MarketingStats({ stats }: MarketingStatsProps) {
       label: "全部项目",
       value: stats.total || 0,
       icon: FileText,
-      color: "bg-slate-500",
+      color: "bg-on-surface",
     },
     {
       label: "已发布",
       value: stats.published || 0,
       icon: Globe,
-      color: "bg-emerald-500",
+      color: "bg-primary",
     },
     {
       label: "草稿",
       value: stats.draft || 0,
       icon: Eye,
-      color: "bg-amber-500",
+      color: "bg-tertiary",
     },
     {
       label: "在售",
       value: stats.for_sale || 0,
       icon: CheckCircle,
-      color: "bg-blue-500",
+      color: "bg-primary",
     },
   ];
 
@@ -52,16 +52,16 @@ export function MarketingStats({ stats }: MarketingStatsProps) {
         return (
           <Card
             key={index}
-            className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+            className="p-4 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer shadow-sm"
             role="button"
             aria-label={`${item.label} ${item.value}`}
           >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-500">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   {item.label}
                 </p>
-                <p className="text-2xl font-bold text-slate-800 tabular-nums">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                   {item.value}
                 </p>
               </div>

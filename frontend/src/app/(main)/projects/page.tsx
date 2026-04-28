@@ -111,13 +111,13 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   const stats = (statsRes.data as ProjectStatsResponse | null) ?? { signing: 0, renovating: 0, selling: 0, sold: 0 };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="w-full max-w-400 mx-auto flex flex-col gap-8 py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
             项目管理
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             全生命周期管理您的房源资产，从签约到售出的每一分钱。
           </p>
         </div>
