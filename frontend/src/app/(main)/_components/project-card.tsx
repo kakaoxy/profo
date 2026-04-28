@@ -34,26 +34,38 @@ export function ProjectCard({ project }: ProjectCardProps) {
       
       setIsLoading(true);
       try {
-        const { data, error } = await client.GET("/api/v1/monitor/communities/{community_id}/market-stats", {
+        const { data, error, response } = await client.GET("/api/v1/monitor/communities/{community_id}/market-stats", {
           params: {
             path: { community_id: project.community_id },
           },
           signal: abortController.signal,
         });
         if (error) {
-          console.error("Failed to fetch market data:", JSON.stringify(error, null, 2));
+          // 优先使用 response 状态信息，error 对象可能为空
+          const errorInfo = {
+            status: response?.status,
+            statusText: response?.statusText,
+            error: error,
+          };
+          console.error("Failed to fetch market data:", JSON.stringify(errorInfo, null, 2));
         } else if (data) {
           setMarketData(data);
         }
       } catch (error) {
         // 忽略 AbortError，这是正常的取消行为
-        if (
-          error instanceof Error && 
-          (error.name === "AbortError" || error.message?.includes("aborted"))
-        ) {
-          return;
+        // 注意：不同浏览器/环境下，中止请求的错误表现不同
+        // Chrome: "Failed to fetch" (TypeError)
+        // Firefox: "The operation was aborted" (DOMException with name "AbortError")
+        if (error instanceof Error) {
+          const isAbortError = 
+            error.name === "AbortError" ||
+            error.message?.toLowerCase().includes("aborted") ||
+            error.message?.toLowerCase().includes("failed to fetch");
+          if (isAbortError) {
+            return;
+          }
         }
-        console.error("Failed to fetch market data:", JSON.stringify(error, null, 2));
+        console.error("Failed to fetch market data:", error instanceof Error ? error.message : String(error));
       } finally {
         setIsLoading(false);
       }
