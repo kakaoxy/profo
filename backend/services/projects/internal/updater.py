@@ -71,7 +71,7 @@ class ProjectUpdater:
     def _filter_allowed_fields(self, update_dict: Dict[str, Any]) -> Dict[str, Any]:
         """过滤已售状态下允许修改的字段"""
         allowed_fields = {
-            'community_name', 'address', 'area', 'orientation', 'layout',
+            'community_id', 'community_name', 'address', 'area', 'orientation', 'layout',
             'renovation_stage', 'notes', 'tags',
             'owner_name', 'owner_phone', 'owner_id_card', 'owner_info'
         }
@@ -84,7 +84,7 @@ class ProjectUpdater:
     ) -> None:
         """更新项目基础字段"""
         project_fields = [
-            'community_name', 'address', 'area', 'orientation', 'layout',
+            'community_id', 'community_name', 'address', 'area', 'orientation', 'layout',
             'renovation_stage', 'status', 'tags', 'project_manager_id'
         ]
 

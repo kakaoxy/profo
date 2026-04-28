@@ -13,6 +13,7 @@ class Project(BaseModel):
     __tablename__ = "projects"
 
     name = Column(String(700), nullable=False, comment="项目名称(自动生成:小区名称+地址)")
+    community_id = Column(String(36), ForeignKey("communities.id"), nullable=True, comment="小区ID")
     community_name = Column(String(200), nullable=False, comment="小区名称")
     address = Column(String(500), nullable=False, comment="物业地址")
 
@@ -31,6 +32,7 @@ class Project(BaseModel):
         Index("idx_project_status", "status"),
         Index("idx_project_deleted", "is_deleted"),
         Index("idx_project_manager", "project_manager_id"),
+        Index("idx_project_community", "community_id"),
     )
 
     def __init__(self, **kwargs):

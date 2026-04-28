@@ -72,6 +72,7 @@ class UserBrief(BaseModel):
 class ProjectCreate(BaseModel):
     """创建项目请求模型 - 已适配规范化表结构"""
     # 基础信息 (projects 表)
+    community_id: Optional[str] = Field(None, max_length=36, description="小区ID")
     community_name: str = Field(..., max_length=200, description="小区名称")
     address: str = Field(..., max_length=500, description="物业地址")
     area: Optional[Decimal] = Field(None, description="产证面积(m²)")
@@ -109,6 +110,7 @@ class ProjectCreate(BaseModel):
 class ProjectUpdate(BaseModel):
     """更新项目请求模型 (所有字段可选) - 已适配规范化表结构"""
     # 基础信息
+    community_id: Optional[str] = Field(None, max_length=36, description="小区ID")
     community_name: Optional[str] = Field(None, max_length=200)
     address: Optional[str] = Field(None, max_length=500)
     area: Optional[Decimal] = Field(None)
