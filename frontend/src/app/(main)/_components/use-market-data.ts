@@ -7,7 +7,16 @@ import { client } from "@/lib/api-client";
 type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
 
 // 全局请求缓存，避免重复请求相同小区
-const requestCache = new Map<string, Promise<CommunityMarketStatsResponse | null>>();
+// 使用对象包装 Promise 和时间戳，用于控制缓存过期
+interface CacheEntry {
+  promise: Promise<CommunityMarketStatsResponse | null>;
+  timestamp: number;
+}
+
+const requestCache = new Map<string, CacheEntry>();
+
+// 缓存有效期：5秒
+const CACHE_TTL = 5000;
 
 export function useMarketData(communityId: string | null | undefined) {
   const [marketData, setMarketData] = useState<CommunityMarketStatsResponse | null>(null);
@@ -35,7 +44,14 @@ export function useMarketData(communityId: string | null | undefined) {
 
       try {
         // 检查是否有正在进行的相同请求，避免重复请求
-        let requestPromise = requestCache.get(communityId);
+        const now = Date.now();
+        const cacheEntry = requestCache.get(communityId);
+        let requestPromise: Promise<CommunityMarketStatsResponse | null> | undefined;
+        
+        // 如果缓存存在且未过期，复用缓存的 Promise
+        if (cacheEntry && now - cacheEntry.timestamp < CACHE_TTL) {
+          requestPromise = cacheEntry.promise;
+        }
         
         if (!requestPromise) {
           // 创建新请求
@@ -66,12 +82,19 @@ export function useMarketData(communityId: string | null | undefined) {
               
               return data || null;
             } finally {
-              // 请求完成后从缓存中移除
-              requestCache.delete(communityId);
+              // 延迟删除缓存，避免竞态：让后续相同请求有机会复用缓存
+              // 缓存会在 TTL 后自然过期，或者在下一次请求时检查时间戳后替换
+              setTimeout(() => {
+                const entry = requestCache.get(communityId);
+                // 只有时间戳匹配时才删除（确保删除的是自己创建的缓存）
+                if (entry && now === entry.timestamp) {
+                  requestCache.delete(communityId);
+                }
+              }, CACHE_TTL);
             }
           })();
           
-          requestCache.set(communityId, requestPromise);
+          requestCache.set(communityId, { promise: requestPromise, timestamp: now });
         }
 
         const data = await requestPromise;
