@@ -41,7 +41,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           signal: abortController.signal,
         });
         if (error) {
-          console.error("Failed to fetch market data:", error);
+          console.error("Failed to fetch market data:", JSON.stringify(error, null, 2));
         } else if (data) {
           setMarketData(data);
         }
@@ -53,7 +53,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         ) {
           return;
         }
-        console.error("Failed to fetch market data:", error);
+        console.error("Failed to fetch market data:", JSON.stringify(error, null, 2));
       } finally {
         setIsLoading(false);
       }
