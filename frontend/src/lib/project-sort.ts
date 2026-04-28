@@ -33,7 +33,8 @@ function calculateExpirationTime(project: ProjectResponse): number {
     return Infinity;
   }
 
-  const startDate = new Date(signingDate);
+  // 明确使用 UTC 时间解析日期字符串，避免时区问题
+  const startDate = new Date(signingDate + "T00:00:00Z");
   if (isNaN(startDate.getTime())) {
     return Infinity;
   }
