@@ -26,6 +26,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    
     const fetchMarketData = async () => {
       if (!project.community_id) return;
       
@@ -35,6 +37,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           params: {
             path: { community_id: project.community_id },
           },
+          signal: abortController.signal,
         });
         if (error) {
           console.error("Failed to fetch market data:", error);
@@ -42,6 +45,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
           setMarketData(data);
         }
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         console.error("Failed to fetch market data:", error);
       } finally {
         setIsLoading(false);
@@ -49,6 +55,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
     };
 
     fetchMarketData();
+    
+    return () => {
+      abortController.abort();
+    };
   }, [project.community_id]);
 
   const contractNo = project.contract_no || "N/A";

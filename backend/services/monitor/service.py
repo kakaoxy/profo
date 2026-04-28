@@ -393,15 +393,16 @@ class MonitorService:
             PropertyCurrent.status == PropertyStatus.FOR_SALE
         ).scalar() or 0
         
-        # 2. 查询成交均价 (最近30天)
-        avg_price_result = db.query(
+        # 2. 查询最近30天成交均价（同时用于显示和趋势计算）
+        avg_price_query = db.query(
             func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000)
         ).filter(
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.SOLD,
             PropertyCurrent.sold_date >= thirty_days_ago,
             PropertyCurrent.build_area > 0
-        ).scalar()
+        )
+        avg_price_result = avg_price_query.scalar()
         avg_price = float(avg_price_result) if avg_price_result else 0.0
         
         # 3. 查询30日成交量
@@ -412,16 +413,8 @@ class MonitorService:
         ).scalar() or 0
         
         # 4. 计算30日价格趋势 (比较最近30天 vs 前30天)
-        # 最近30天成交均价
-        recent_avg_result = db.query(
-            func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000)
-        ).filter(
-            PropertyCurrent.community_id == community_id,
-            PropertyCurrent.status == PropertyStatus.SOLD,
-            PropertyCurrent.sold_date >= thirty_days_ago,
-            PropertyCurrent.build_area > 0
-        ).scalar()
-        recent_avg = float(recent_avg_result) if recent_avg_result else 0.0
+        # 复用第2步的查询结果
+        recent_avg = avg_price
         
         # 前30天成交均价 (30-60天前)
         previous_avg_result = db.query(
