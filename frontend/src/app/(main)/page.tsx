@@ -33,7 +33,7 @@ async function getDashboardData() {
   return {
     projectStats: projectsStatsRes.data || {},
     pendingLeadsTotal: pendingLeadsRes.data?.total || 0,
-    funnelData: funnelRes.data || { total: 0, evaluating: 0, visiting: 0, signed: 0 },
+    funnelData: funnelRes.data || { total: 0, evaluating: 0, rejected: 0, visiting: 0, signed: 0 },
   };
 }
 

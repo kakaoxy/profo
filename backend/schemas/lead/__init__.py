@@ -174,6 +174,7 @@ class LeadFunnelResponse(BaseModel):
     """线索漏斗统计响应"""
     total: int = Field(..., description="线索总数")
     evaluating: int = Field(..., description="评估中数量")
+    rejected: int = Field(..., description="已驳回数量")
     visiting: int = Field(..., description="带看中数量")
     signed: int = Field(..., description="已签约数量")
 
