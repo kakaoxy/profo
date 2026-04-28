@@ -190,58 +190,68 @@ class CSVBatchImporter:
                         self._save_failed_record(row, error_msg, db)
                         logger.error(f"第 {global_index} 行验证异常: {error_msg}")
 
-                # 导入验证通过的数据
-                for global_index, validated_data, original_row in validated_batch:
-                    try:
-                        result = self.importer.import_property(validated_data, db)
-                        if result.success:
-                            success += 1
-                        else:
-                            failed += 1
-                            failed_records.append({
+                # 导入验证通过的数据（批次级别事务管理）
+                batch_success_count = 0
+                batch_failed_count = 0
+                batch_failed_records = []
+                
+                try:
+                    for global_index, validated_data, original_row in validated_batch:
+                        try:
+                            # 注意：由于 PropertyImporter 不再内部调用 commit，
+                            # 这里需要传递 user_id。从上下文中获取或设置默认值
+                            result = self.importer.import_property(validated_data, db, "csv_import_system")
+                            if result.success:
+                                batch_success_count += 1
+                            else:
+                                batch_failed_count += 1
+                                batch_failed_records.append({
+                                    'row_number': global_index,
+                                    'data': original_row,
+                                    'error': result.error
+                                })
+                        except Exception as e:
+                            batch_failed_count += 1
+                            error_msg = f"导入异常: {str(e)}"
+                            batch_failed_records.append({
                                 'row_number': global_index,
                                 'data': original_row,
-                                'error': result.error
+                                'error': error_msg
                             })
-                            self._save_failed_record(original_row, result.error, db)
-                    except Exception as e:
-                        failed += 1
-                        error_msg = f"导入异常: {str(e)}"
+                            logger.error(f"第 {global_index} 行导入异常: {error_msg}")
+                    
+                    # 批次级别统一提交
+                    db.commit()
+                    logger.info(f"批次 {batch_start}-{batch_end} 提交成功: 成功={batch_success_count}, 失败={batch_failed_count}")
+                    
+                    # 提交成功后，更新总计数和保存失败记录
+                    success += batch_success_count
+                    failed += batch_failed_count
+                    for failed_record in batch_failed_records:
+                        failed_records.append(failed_record)
+                        self._save_failed_record(failed_record['data'], failed_record['error'], db)
+                        
+                except Exception as e:
+                    # 批次级别回滚
+                    db.rollback()
+                    logger.error(f"批次 {batch_start}-{batch_end} 处理失败，已回滚: {e}", exc_info=True)
+                    
+                    # 将整个批次标记为失败
+                    failed += batch_success_count + batch_failed_count
+                    success = max(0, success - batch_success_count)  # 回退之前统计的成功数
+                    
+                    # 添加批次失败记录
+                    for global_index, validated_data, original_row in validated_batch:
+                        error_msg = f"批次处理失败: {str(e)}"
                         failed_records.append({
                             'row_number': global_index,
                             'data': original_row,
                             'error': error_msg
                         })
-                        self._save_failed_record(original_row, error_msg, db)
-                        logger.error(f"第 {global_index} 行导入异常: {error_msg}")
-
-                try:
-                    db.commit()
-                    logger.info(f"批次 {batch_start}-{batch_end} 提交成功")
-                except Exception as e:
-                    db.rollback()
-                    logger.error(f"数据库提交失败 (批次 {batch_start}-{batch_end}): {e}", exc_info=True)
-                    # 将整批数据标记为失败（整个批次实际都未成功提交）
-                    # 先计算批次中之前被计为成功的记录数
-                    batch_success_count = sum(
-                        1 for global_index, _, _ in validated_batch
-                        if not any(r['row_number'] == global_index for r in failed_records)
-                    )
-                    # 安全地回退成功计数
-                    success = max(0, success - batch_success_count)
-                    for global_index, validated_data, original_row in validated_batch:
-                        if not any(r['row_number'] == global_index for r in failed_records):
-                            failed += 1
-                            error_msg = f"数据库提交失败: {str(e)}"
-                            failed_records.append({
-                                'row_number': global_index,
-                                'data': original_row,
-                                'error': error_msg
-                            })
-                            try:
-                                self._save_failed_record(original_row, error_msg, db)
-                            except Exception as save_err:
-                                logger.warning(f"保存失败记录时出错: {save_err}")
+                        try:
+                            self._save_failed_record(original_row, error_msg, db)
+                        except Exception as save_err:
+                            logger.warning(f"保存失败记录时出错: {save_err}")
 
             # 生成失败记录文件
             failed_file_url = None
