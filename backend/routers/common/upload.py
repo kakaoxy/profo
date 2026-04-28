@@ -273,5 +273,5 @@ def upload_csv_sync_legacy(
     logger.info(f"[同步模式] 接收到 CSV 文件: {file.filename}")
 
     importer = CSVBatchImporter()
-    result = importer.batch_import_csv(file, db)
+    result = importer.batch_import_csv(file, db, str(current_user.id))
     return result

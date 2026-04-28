@@ -257,13 +257,13 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.total == 1
             assert result.success == 1
             assert result.failed == 0
             assert result.failed_file_url is None
-        
+
         def test_import_multiple_records_success(self, csv_importer, db_session, mock_upload_file):
             """Test successful import of multiple records"""
             csv_content = create_valid_csv_content([
@@ -273,12 +273,12 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.total == 3
             assert result.success == 3
             assert result.failed == 0
-        
+
         def test_import_partial_success(self, csv_importer, db_session, mock_upload_file):
             """Test partial success with mixed valid and invalid data"""
             csv_content = create_valid_csv_content([
@@ -288,13 +288,13 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.total == 3
             assert result.success == 2
             assert result.failed == 1
             assert result.failed_file_url is not None
-        
+
         def test_import_data_validation_failure(self, csv_importer, db_session, mock_upload_file):
             """Test data validation failure handling"""
             csv_content = create_valid_csv_content([
@@ -302,18 +302,18 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.total == 1
             # Should fail validation due to invalid price
             assert result.failed == 1
-        
+
         def test_import_empty_file(self, csv_importer, db_session, mock_upload_file):
             """Test empty file handling"""
             file = mock_upload_file(b"", "empty.csv")
             
             with pytest.raises(FileProcessingException) as exc_info:
-                csv_importer.batch_import_csv(file, db_session)
+                csv_importer.batch_import_csv(file, db_session, user_id="test_user")
             assert "CSV 文件为空" in str(exc_info.value)
         
         def test_import_batch_processing(self, csv_importer, db_session, mock_upload_file):
@@ -326,12 +326,12 @@ class TestCSVBatchImporter:
             csv_content = create_valid_csv_content(rows)
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.total == 150
             assert result.success == 150
             assert result.failed == 0
-        
+
         def test_import_for_sale_property(self, csv_importer, db_session, mock_upload_file):
             """Test importing for-sale property creates PropertyCurrent record"""
             csv_content = create_valid_csv_content([
@@ -339,15 +339,15 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.success == 1
             # Verify property was created with correct status
             from models import PropertyCurrent, PropertyStatus
             property_obj = db_session.query(PropertyCurrent).filter_by(source_property_id="TEST009").first()
             assert property_obj is not None
             assert property_obj.status == PropertyStatus.FOR_SALE
-        
+
         def test_import_sold_property(self, csv_importer, db_session, mock_upload_file):
             """Test importing sold property creates PropertyCurrent record with SOLD status"""
             csv_content = create_valid_csv_content([
@@ -355,15 +355,15 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
-            
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
             assert result.success == 1
             # Verify property was created with SOLD status
             from models import PropertyCurrent, PropertyStatus
             property_obj = db_session.query(PropertyCurrent).filter_by(source_property_id="TEST010").first()
             assert property_obj is not None
             assert property_obj.status == PropertyStatus.SOLD
-        
+
         def test_import_update_existing_property(self, csv_importer, db_session, mock_upload_file):
             """Test updating existing property creates history snapshot"""
             # First import
@@ -371,14 +371,14 @@ class TestCSVBatchImporter:
                 ["链家", "TEST011", "在售", "测试小区K", "3", "2", "2", "南", "15/28", "120.5", "800", "2024-01-01"]
             ])
             file1 = mock_upload_file(create_csv_bytes(csv_content1))
-            csv_importer.batch_import_csv(file1, db_session)
-            
+            csv_importer.batch_import_csv(file1, db_session, user_id="test_user")
+
             # Update import
             csv_content2 = create_valid_csv_content([
                 ["链家", "TEST011", "在售", "测试小区K", "3", "2", "2", "南", "15/28", "120.5", "750", "2024-01-01"]  # Price changed
             ])
             file2 = mock_upload_file(create_csv_bytes(csv_content2))
-            result = csv_importer.batch_import_csv(file2, db_session)
+            result = csv_importer.batch_import_csv(file2, db_session, user_id="test_user")
             
             assert result.success == 1
             # Verify history was created
@@ -393,7 +393,7 @@ class TestCSVBatchImporter:
             ])
             file = mock_upload_file(create_csv_bytes(csv_content))
             
-            result = csv_importer.batch_import_csv(file, db_session)
+            result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
             
             assert result.success == 1
             # Verify community was created
@@ -643,11 +643,11 @@ class TestEdgeCasesAndErrorHandling:
         ])
         file = mock_upload_file(create_csv_bytes(csv_content))
         
-        result = csv_importer.batch_import_csv(file, db_session)
-        
+        result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
         assert result.success == 1
         # Should not throw exception with special characters
-    
+
     def test_large_dataset_handling(self, csv_importer, db_session, mock_upload_file):
         """Test handling of large dataset (1000+ records)"""
         # Create 1000 records
@@ -658,13 +658,13 @@ class TestEdgeCasesAndErrorHandling:
         csv_content = create_valid_csv_content(rows)
         file = mock_upload_file(create_csv_bytes(csv_content))
         
-        result = csv_importer.batch_import_csv(file, db_session)
-        
+        result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+
         assert result.total == 1000
         assert result.success == 1000
         assert result.failed == 0
         # Should not cause memory overflow
-    
+
     def test_concurrent_upload_simulation(self, csv_importer, db_session, mock_upload_file):
         """Test simulated concurrent uploads (data consistency)"""
         # This is a simplified simulation - in real scenarios would use threading/multiprocessing
@@ -674,8 +674,8 @@ class TestEdgeCasesAndErrorHandling:
         file = mock_upload_file(create_csv_bytes(csv_content))
         
         # Simulate multiple uploads of same data
-        result1 = csv_importer.batch_import_csv(file, db_session)
-        result2 = csv_importer.batch_import_csv(file, db_session)
+        result1 = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
+        result2 = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
         
         # Second upload should update the existing record
         assert result1.success == 1
@@ -699,7 +699,7 @@ class TestEdgeCasesAndErrorHandling:
         
         # The batch_import_csv method catches exceptions and continues,
         # so we expect it to complete but with failed records
-        result = csv_importer.batch_import_csv(file, db_session)
+        result = csv_importer.batch_import_csv(file, db_session, user_id="test_user")
         
         # Restore original commit
         db_session.commit = original_commit
