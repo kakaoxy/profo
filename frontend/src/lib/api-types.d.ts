@@ -3231,6 +3231,11 @@ export interface components {
          */
         ProjectCreate: {
             /**
+             * Community Id
+             * @description 小区ID
+             */
+            community_id?: string | null;
+            /**
              * Community Name
              * @description 小区名称
              */
@@ -3561,6 +3566,11 @@ export interface components {
          * @description 更新项目请求模型 (所有字段可选) - 已适配规范化表结构
          */
         ProjectUpdate: {
+            /**
+             * Community Id
+             * @description 小区ID
+             */
+            community_id?: string | null;
             /** Community Name */
             community_name?: string | null;
             /** Address */

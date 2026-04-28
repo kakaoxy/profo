@@ -74,6 +74,7 @@ export const orientationEnum = z.enum(["南北", "南", "东", "西", "北"]);
 export const formSchema = z
   .object({
     // 基础信息 - 重构后：移除 name, manager, tags 字段
+    community_id: z.string().optional(),
     community_name: z.string().min(1, "小区名称不能为空").max(200),
     address: z.string().min(1, "物业地址不能为空").max(500),
     area: optionalNumber,

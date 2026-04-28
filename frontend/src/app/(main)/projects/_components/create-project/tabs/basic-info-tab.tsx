@@ -106,7 +106,11 @@ export function BasicInfoTab({ form }: TabProps) {
           render={({ field }) => (
             <CommunitySelect
               value={field.value}
-              onChange={(community) => field.onChange(community.name)}
+              onChange={(community) => {
+                field.onChange(community.name);
+                // 同时保存小区ID用于市场监控数据关联
+                form.setValue("community_id", community.id || undefined);
+              }}
             />
           )}
         />

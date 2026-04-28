@@ -78,6 +78,7 @@ class ProjectCreator:
         """创建项目基础记录"""
         project = Project(
             id=project_id,
+            community_id=project_data.community_id,
             community_name=project_data.community_name,
             address=project_data.address,
             area=project_data.area,
