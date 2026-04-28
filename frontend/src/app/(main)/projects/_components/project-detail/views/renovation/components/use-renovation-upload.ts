@@ -27,13 +27,13 @@ export function useRenovationUpload({
 }: UseRenovationUploadProps) {
   const [uploadQueue, setUploadQueue] = useState<UploadingPhoto[]>([]);
 
-  const handleUploadError = (itemId: string) => {
+  const handleUploadError = (itemId: string, message?: string) => {
     setUploadQueue((prev) =>
       prev.map((p) =>
         p.id === itemId ? { ...p, status: "error", progress: 0 } : p
       )
     );
-    toast.error("部分图片上传失败");
+    toast.error(message || "部分图片上传失败");
   };
 
   const uploadSingleFile = async (item: UploadingPhoto) => {
@@ -50,7 +50,6 @@ export function useRenovationUpload({
     if (!token || tokenExpired) {
       const newToken = await tryRefreshToken();
       if (newToken) {
-        // 刷新成功，使用新 token
         token = newToken;
       } else {
         toast.error("登录已过期，请重新登录");
@@ -72,7 +71,8 @@ export function useRenovationUpload({
       };
 
       xhr.onload = async () => {
-        if (xhr.status === 200) {
+        // 检查 2xx 状态码（修复：原代码只检查 200）
+        if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const json = JSON.parse(xhr.responseText);
             if (json.url) {
@@ -90,18 +90,32 @@ export function useRenovationUpload({
                 onPhotoUploaded();
                 resolve();
                 return;
+              } else {
+                handleUploadError(item.id, `保存照片记录失败: ${dbRes.message}`);
               }
+            } else {
+              console.error("[Renovation Upload] 响应中没有 url 字段:", json);
+              handleUploadError(item.id, "服务器返回的数据格式无效");
             }
           } catch (e) {
-            console.error("解析响应失败", e);
+            console.error("[Renovation Upload] 解析响应失败", e);
+            handleUploadError(item.id, "解析服务器响应失败");
+          }
+        } else {
+          // 处理非 2xx 状态码
+          try {
+            const errorJson = JSON.parse(xhr.responseText);
+            const errorMsg = errorJson.detail || `上传失败 (${xhr.status})`;
+            handleUploadError(item.id, errorMsg);
+          } catch {
+            handleUploadError(item.id, `上传失败 (${xhr.status})`);
           }
         }
-        handleUploadError(item.id);
         resolve();
       };
 
       xhr.onerror = () => {
-        handleUploadError(item.id);
+        handleUploadError(item.id, "网络错误，请检查网络连接");
         resolve();
       };
 
