@@ -43,7 +43,7 @@ export function useMarketData(communityId: string | null | undefined) {
         }
       } catch (error) {
         if (!isMounted) return;
-        if (error instanceof Error && (error.name === "AbortError" || (error instanceof DOMException && error.name === "AbortError"))) {
+        if (error instanceof Error && error.name === "AbortError") {
           return;
         }
         console.error("Failed to fetch market data:", error instanceof Error ? error.message : String(error));
