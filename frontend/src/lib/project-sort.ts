@@ -41,12 +41,12 @@ function calculateExpirationTime(project: ProjectResponse): number {
 
   // 计算到期日期：签约日期 + 签约期限（月）
   const expirationDate = new Date(startDate);
-  expirationDate.setMonth(expirationDate.getMonth() + signingPeriod);
+  expirationDate.setUTCMonth(expirationDate.getUTCMonth() + signingPeriod);
 
   // 如果有延长期限，加上延长期限
   const extensionPeriod = project.extension_period;
   if (extensionPeriod && extensionPeriod > 0) {
-    expirationDate.setMonth(expirationDate.getMonth() + extensionPeriod);
+    expirationDate.setUTCMonth(expirationDate.getUTCMonth() + extensionPeriod);
   }
 
   return expirationDate.getTime();
