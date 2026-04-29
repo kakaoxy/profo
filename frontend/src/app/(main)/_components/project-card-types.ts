@@ -5,7 +5,7 @@
 export type ApiSalesRecord = {
   id: string;
   record_type: string;
-  price?: string | null;
+  price?: string | number | null;
   record_date: string;
   customer_name?: string | null;
   notes?: string | null;

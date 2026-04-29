@@ -69,7 +69,7 @@ export function validateSalesRecords(data: unknown): ApiSalesRecord[] {
     result.push({
       id: record.id,
       record_type: record.record_type,
-      price: typeof record.price === "string" || record.price === null ? record.price : undefined,
+      price: typeof record.price === "string" || typeof record.price === "number" || record.price === null ? record.price : undefined,
       record_date: record.record_date,
       customer_name: typeof record.customer_name === "string" || record.customer_name === null ? record.customer_name : undefined,
       notes: typeof record.notes === "string" || record.notes === null ? record.notes : undefined,
