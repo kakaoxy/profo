@@ -33,6 +33,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -118,6 +119,7 @@
   --success-container: #ecfdf5;
   --error: #ef4444;
   --error-container: #fef2f2;
+  --primary-container: #e6f0f7;
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
   /* Status Colors - Light Mode */
@@ -186,6 +188,7 @@
   --success-container: oklch(0.279 0.041 150.031);
   --error: oklch(0.704 0.191 22.216);
   --error-container: oklch(0.279 0.041 260.031);
+  --primary-container: oklch(0.279 0.041 260.031);
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
 
   /* Status Colors - Dark Mode */
