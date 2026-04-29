@@ -131,7 +131,7 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
             </div>
 
             <div className="space-y-4">
-              <div className="bg-linear-to-br from-primary/5 to-card p-6 rounded-2xl border border-primary/20 shadow-sm">
+              <div className="bg-gradient-to-br from-primary/5 to-card p-6 rounded-2xl border border-primary/20 shadow-sm">
                 <h3 className="text-foreground font-bold mb-4 flex items-center gap-2 text-sm uppercase">
                   <ShieldAlert className="w-4 h-4" />
                   风控核心提醒
