@@ -21,7 +21,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
     total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
-    <div className="col-span-12 lg:col-span-6 bg-white rounded-xl border border-slate-200 shadow-card p-5 h-40 flex flex-col min-w-0">
+    <div className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card p-5 h-40 flex flex-col min-w-0">
       <span className="text-xs text-slate-400 font-black uppercase tracking-widest block mb-2">
         线索漏斗
       </span>

@@ -66,6 +66,17 @@ function validateProjectResponseList(data: unknown): ProjectResponse[] {
   });
 }
 
+function validateProjectStats(data: unknown): ProjectStatsResponse | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  // 检查必需的数字字段
+  const requiredNumberFields = ["total", "signing", "renovating", "selling", "sold"];
+  for (const field of requiredNumberFields) {
+    if (typeof d[field] !== "number") return null;
+  }
+  return data as ProjectStatsResponse;
+}
+
 export function getStatusText(status: LeadStatus): string {
   return getStatusLabel(status);
 }
@@ -115,7 +126,7 @@ export async function getDashboardData(): Promise<DashboardDataResult> {
 
   const projectStats =
     projectStatsRes.status === "fulfilled" && projectStatsRes.value.data
-      ? (projectStatsRes.value.data as ProjectStatsResponse)
+      ? validateProjectStats(projectStatsRes.value.data)
       : null;
   if (projectStatsRes.status === "rejected") {
     errors.projectStats = "获取项目统计失败";

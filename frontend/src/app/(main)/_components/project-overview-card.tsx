@@ -14,16 +14,16 @@ export function ProjectOverviewCard({
   soldCount,
 }: ProjectOverviewCardProps) {
   return (
-    <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-card p-4 lg:p-6 flex flex-col justify-between h-40 min-w-0">
+    <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card p-4 lg:p-6 flex flex-col justify-between h-40 min-w-0">
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs text-slate-400 font-black uppercase tracking-widest">
-          项目总览 Overview
+          项目总览
         </span>
         <Link
           href="/projects"
           className="text-primary text-xs font-bold hover:underline"
         >
-          详情 View Details
+          详情
         </Link>
       </div>
       <div className="flex justify-between items-end">

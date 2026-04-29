@@ -11,6 +11,7 @@ import {
   mapProjectResponseToProject,
   statusMap,
   type ApiSalesRecord,
+  validateSalesRecords,
 } from "./project-card-utils";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -40,7 +41,7 @@ export function ProjectCardClient({
   };
   const hasCommunityId = !!project.community_id;
 
-  const salesRecords = (project.sales_records || []) as ApiSalesRecord[];
+  const salesRecords = validateSalesRecords(project.sales_records);
   const projectData = mapProjectResponseToProject(project);
 
   return (
