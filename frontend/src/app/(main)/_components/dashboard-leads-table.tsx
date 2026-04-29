@@ -1,18 +1,26 @@
 import { ClipboardCheck, UserCircle2, ClipboardList } from "lucide-react";
 import Link from "next/link";
-import type { DashboardLead } from "../types";
+import type { RawDashboardLead } from "../types";
 
 interface DashboardLeadsTableProps {
-  leads: DashboardLead[];
+  leads: RawDashboardLead[];
 }
 
 // 状态样式映射 - 移到组件外部避免每次渲染重新创建
 const STATUS_MAP: Record<string, string> = {
-  "待评估": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  "待看房": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  "已驳回": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  "已看房": "bg-primary/10 text-primary",
-  "已签约": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  pending_assessment: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  pending_visit: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  visited: "bg-primary/10 text-primary",
+  signed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+};
+
+const STATUS_TEXT_MAP: Record<string, string> = {
+  pending_assessment: "待评估",
+  pending_visit: "待看房",
+  rejected: "已驳回",
+  visited: "已看房",
+  signed: "已签约",
 };
 
 const DEFAULT_STATUS_CLASS =
@@ -23,6 +31,32 @@ const DEFAULT_STATUS_CLASS =
  */
 function getStatusClassName(status: string): string {
   return STATUS_MAP[status] || DEFAULT_STATUS_CLASS;
+}
+
+function getStatusText(status: string): string {
+  return STATUS_TEXT_MAP[status] || status;
+}
+
+function formatArea(area: number | null): string {
+  return area !== null ? `${area}㎡` : "-";
+}
+
+function formatPrice(price: number | null): string {
+  return price !== null ? `${price}万` : "-";
+}
+
+function formatUnitPrice(price: number | null): string {
+  return price !== null ? `${price}万/㎡` : "-";
+}
+
+function formatUpdatedTime(updatedAt: string | null): string {
+  if (!updatedAt) return "-";
+  return new Date(updatedAt).toLocaleString("zh-CN", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
@@ -103,22 +137,22 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                     {lead.unitType}
                   </td>
                   <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:table-cell">
-                    {lead.area}
+                    {formatArea(lead.area)}
                   </td>
                   <td className="px-2 py-4 text-sm font-medium text-slate-500 dark:text-slate-500 hidden md:table-cell">
                     {lead.floor}
                   </td>
                   <td className="px-2 py-4 text-sm font-black text-primary">
-                    {lead.totalPrice}
+                    {formatPrice(lead.totalPrice)}
                   </td>
                   <td className="px-2 py-4 text-xs font-semibold text-slate-500 dark:text-slate-500 hidden md:table-cell">
-                    {lead.unitPrice}
+                    {formatUnitPrice(lead.unitPrice)}
                   </td>
                   <td className="px-2 py-4">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${getStatusClassName(lead.status)}`}
                     >
-                      {lead.status}
+                      {getStatusText(lead.status)}
                     </span>
                   </td>
                   <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:table-cell">
@@ -133,7 +167,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                     </div>
                   </td>
                   <td className="pl-2 pr-0 py-4 text-xs text-slate-400 text-right font-medium italic whitespace-nowrap">
-                    {lead.updatedTime}
+                    {formatUpdatedTime(lead.updatedAt)}
                   </td>
                 </tr>
               ))
