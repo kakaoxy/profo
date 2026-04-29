@@ -63,6 +63,11 @@
   --color-chart-grid: var(--chart-grid);
   --color-chart-label: var(--chart-label);
   --color-chart-line-primary: var(--chart-line-primary);
+
+  /* Progress Gradient Colors */
+  --color-progress-start: var(--progress-start);
+  --color-progress-middle: var(--progress-middle);
+  --color-progress-end: var(--progress-end);
 }
 
 :root {
@@ -120,6 +125,11 @@
   --chart-grid: #e2e8f0;
   --chart-label: #64748b;
   --chart-line-primary: #005daa;
+
+  /* Progress Gradient Colors */
+  --progress-start: var(--primary);
+  --progress-middle: #fb923c;
+  --progress-end: #f43f5e;
 }
 
 .dark {
@@ -176,6 +186,11 @@
   --chart-grid: #334155;
   --chart-label: #94a3b8;
   --chart-line-primary: #3b82f6;
+
+  /* Progress Gradient Colors - Dark Mode */
+  --progress-start: var(--primary);
+  --progress-middle: #fdba74;
+  --progress-end: #fb7185;
 }
 
 @layer base {
