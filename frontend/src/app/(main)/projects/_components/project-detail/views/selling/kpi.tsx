@@ -147,10 +147,10 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
       {/* 1. 带看卡片 (蓝色主题 - 活跃) */}
-      <Card className="shadow-sm border-blue-100 bg-blue-50/40">
+      <Card className="shadow-sm border-primary/20 bg-primary/5">
         <CardContent className="p-4 relative">
-          <Eye className="absolute top-4 right-4 h-4 w-4 text-blue-500 opacity-50" />
-          <div className="text-xs text-blue-600 font-medium">
+          <Eye className="absolute top-4 right-4 h-4 w-4 text-primary opacity-50" />
+          <div className="text-xs text-primary font-medium">
             本周带看
           </div>
           <div className="mt-2 flex items-baseline gap-2">

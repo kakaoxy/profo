@@ -16,7 +16,7 @@ const isDev = process.env.NODE_ENV === "development";
 const statusConfig: Record<string, { label: string; className: string }> = {
   "在途": {
     label: MARKETING_PROJECT_STATUS_CONFIG["在途"].label,
-    className: "bg-blue-500 text-white hover:bg-blue-600",
+    className: "bg-primary text-white hover:bg-primary/90",
   },
   "在售": {
     label: MARKETING_PROJECT_STATUS_CONFIG["在售"].label,

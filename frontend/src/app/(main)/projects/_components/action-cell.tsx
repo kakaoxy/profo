@@ -56,7 +56,7 @@ export function ActionCell({ row }: ActionCellProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          className="text-slate-400 hover:text-primary hover:bg-primary/10 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
         >
           <LineChart className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">监控</span>

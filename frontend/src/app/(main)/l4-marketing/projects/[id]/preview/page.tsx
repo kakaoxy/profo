@@ -91,7 +91,7 @@ export default async function ProjectPreviewPage({
             {project.publish_status === "发布" ? "已发布" : "待发布"}
           </div>
           <Link href={`/l4-marketing/projects/${project.id}/edit`}>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Button size="sm" className="bg-primary hover:bg-primary/90">
               立即发布
             </Button>
           </Link>

@@ -82,7 +82,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
       <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="mt-1 p-2 rounded-lg bg-blue-50 text-blue-600">
+            <div className="mt-1 p-2 rounded-lg bg-primary/10 text-primary">
               <MapPin className="h-4 w-4" />
             </div>
             <div>
@@ -108,7 +108,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
 
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="mt-1 p-2 rounded-lg bg-indigo-50 text-indigo-600">
+            <div className="mt-1 p-2 rounded-lg bg-primary/10 text-primary">
               <Clock className="h-4 w-4" />
             </div>
             <div>

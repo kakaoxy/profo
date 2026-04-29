@@ -60,7 +60,7 @@ export function FloorInput({ value, onChange }: FloorInputProps) {
         <div className="relative flex-1">
           <input
             inputMode="numeric"
-            className="w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#0b1c30]"
+            className="w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
             value={current}
             onChange={(e) => handleChange("current", e.target.value)}
             placeholder="当前"
@@ -73,7 +73,7 @@ export function FloorInput({ value, onChange }: FloorInputProps) {
         <div className="relative flex-1">
           <input
             inputMode="numeric"
-            className="w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#0b1c30]"
+            className="w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
             value={total}
             onChange={(e) => handleChange("total", e.target.value)}
             placeholder="总"

@@ -59,7 +59,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-[#005daa]">
+        <h4 className="text-sm font-semibold text-primary">
           营销照片 ({photos.length})
         </h4>
         <span className="text-xs text-slate-400">可拖拽排序</span>
@@ -74,7 +74,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
             // 默认样式
             "bg-slate-50 border-slate-200",
             // 拖拽悬停时的样式
-            isOver && "border-[#005daa] bg-[#f0f7ff] ring-2 ring-[#005daa]/20"
+            isOver && "border-primary bg-primary/5 ring-2 ring-primary/20"
           )}
           style={{
             // 优化滚动性能

@@ -87,7 +87,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-sm text-slate-600 hover:text-blue-600"
+                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-sm text-slate-600 hover:text-primary"
                   onClick={() => onEdit(lead)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -128,7 +128,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
             <div className="p-4">
               {/* Title & Location */}
               <div className="mb-3">
-                <h3 className="font-semibold text-slate-900 text-base line-clamp-1 group-hover:text-blue-600 transition-colors">
+                <h3 className="font-semibold text-slate-900 text-base line-clamp-1 group-hover:text-primary transition-colors">
                   {lead.communityName}
                 </h3>
                 <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">

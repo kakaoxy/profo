@@ -7,7 +7,7 @@ export const DEFAULT_STATUS = "signing";
 export const statusConfig: Record<string, { label: string; className: string }> = {
   signing: {
     label: "签约",
-    className: "bg-blue-500 text-white hover:bg-blue-600",
+    className: "bg-primary text-white hover:bg-primary/90",
   },
   renovating: {
     label: "装修",

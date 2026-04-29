@@ -123,7 +123,7 @@ export function Pagination({
               className={cn(
                 "w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-all",
                 currentPage === item
-                  ? "bg-blue-600 text-white"
+                  ? "bg-primary text-white"
                   : "text-slate-600 hover:bg-white hover:text-slate-900"
               )}
             >

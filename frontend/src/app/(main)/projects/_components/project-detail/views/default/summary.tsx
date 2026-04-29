@@ -96,7 +96,7 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
       <Card
         className={cn(
           "border-l-4",
-          project.status === "签约中" && "border-l-blue-500",
+          project.status === "签约中" && "border-l-primary",
           project.status === "装修中" && "border-l-orange-500",
           project.status === "在售" && "border-l-green-500",
           project.status === "已成交" && "border-l-purple-500"

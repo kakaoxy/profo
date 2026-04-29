@@ -8,7 +8,7 @@ export const statusConfig: Record<string, { label: string; className: string }> 
   },
   pending_assessment: {
     label: "待评估",
-    className: "bg-blue-500 text-white hover:bg-blue-600",
+    className: "bg-primary text-white hover:bg-primary/90",
   },
   pending_visit: {
     label: "待看房",
@@ -20,7 +20,7 @@ export const statusConfig: Record<string, { label: string; className: string }> 
   },
   signed: {
     label: "已签约",
-    className: "bg-indigo-500 text-white hover:bg-indigo-600",
+    className: "bg-primary text-white hover:bg-primary/90",
   },
   rejected: {
     label: "已驳回",
@@ -31,7 +31,7 @@ export const statusConfig: Record<string, { label: string; className: string }> 
 /** 表格 badge 样式 - 用于 dashboard 等表格展示 */
 export const statusBadgeConfig: Record<string, string> = {
   pending_assessment: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  pending_visit: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  pending_visit: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   visited: "bg-primary/10 text-primary",
   signed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",

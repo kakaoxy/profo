@@ -193,7 +193,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-all"
+                className="bg-primary hover:bg-primary/90 text-white text-sm font-medium px-6 py-2 rounded-lg transition-all"
               >
                 {submitButtonText}
               </Button>

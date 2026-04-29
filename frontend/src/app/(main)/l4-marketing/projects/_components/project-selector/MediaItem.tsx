@@ -37,7 +37,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
       onClick={onToggle}
       className={cn(
         "relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
-        selected ? "border-blue-500" : "border-transparent"
+        selected ? "border-primary" : "border-transparent"
       )}
     >
       {imageUrl ? (
@@ -58,7 +58,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
           {/* 加载状态 */}
           {loadState === "loading" && (
             <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-slate-300 border-t-primary rounded-full animate-spin" />
             </div>
           )}
 
@@ -90,7 +90,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
 
       {/* 选中标记 */}
       {selected && (
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
           <svg
             className="w-3 h-3 text-white"
             fill="none"

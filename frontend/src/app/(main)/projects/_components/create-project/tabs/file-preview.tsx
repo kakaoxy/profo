@@ -39,11 +39,11 @@ function getFileIcon(fileType: FileType) {
     case "excel":
       return <FileSpreadsheet className="h-8 w-8 text-green-600" />;
     case "image":
-      return <FileImage className="h-8 w-8 text-blue-500" />;
+      return <FileImage className="h-8 w-8 text-primary" />;
     case "pdf":
       return <FileText className="h-8 w-8 text-red-500" />;
     case "word":
-      return <File className="h-8 w-8 text-blue-700" />;
+      return <File className="h-8 w-8 text-primary/80" />;
     default:
       return <File className="h-8 w-8 text-gray-500" />;
   }

@@ -154,7 +154,7 @@ const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({
       </div>
     </div>
     <Button
-      className="w-full h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold shadow-lg"
+      className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-bold shadow-lg"
       onClick={() => onAudit(lead.id, LeadStatus.VISITED)}
     >
       确认已完成现场实勘

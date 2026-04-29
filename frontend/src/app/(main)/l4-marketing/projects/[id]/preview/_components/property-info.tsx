@@ -42,7 +42,7 @@ export function PropertyInfo({
 
   return (
     <div className="space-y-6 pt-4">
-      <h3 className="text-xl font-bold text-[#0b1c30] border-l-4 border-[#005daa] pl-4">
+      <h3 className="text-xl font-bold text-foreground border-l-4 border-primary pl-4">
         房源信息摘要
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 p-8 bg-white rounded-2xl border border-[#c0c7d6]/10">

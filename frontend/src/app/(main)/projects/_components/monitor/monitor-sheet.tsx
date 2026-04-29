@@ -82,7 +82,7 @@ export function MonitorSheet() {
         {/* Sticky Header */}
         <div className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-50 sticky top-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-200">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-md shadow-primary/20">
               <span className="text-sm font-bold">M</span>
             </div>
             <div>

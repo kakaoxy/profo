@@ -57,8 +57,8 @@ export const MARKETING_PROJECT_STATUS_CONFIG: Record<
 > = {
   在途: {
     label: "在途",
-    color: "#3b82f6", // blue-500
-    bgColor: "#dbeafe", // blue-100
+    color: "hsl(var(--primary))",
+    bgColor: "hsl(var(--primary) / 0.1)",
     description: "项目进行中，尚未挂牌",
   },
   在售: {
@@ -108,8 +108,8 @@ export const PHOTO_CATEGORY_CONFIG: Record<
 > = {
   marketing: {
     label: "营销照片",
-    color: "#005daa",
-    bgColor: "#e5eeff",
+    color: "hsl(var(--primary))",
+    bgColor: "hsl(var(--primary) / 0.1)",
     description: "用于房源展示的营销图片",
   },
   renovation: {

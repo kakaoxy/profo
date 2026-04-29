@@ -19,9 +19,9 @@ export function ProjectListItem({
       onClick={onClick}
       className={cn(
         "relative p-4 rounded-lg border cursor-pointer transition-all duration-200",
-        "hover:shadow-md hover:border-blue-300",
+        "hover:shadow-md hover:border-primary/30",
         selected
-          ? "border-blue-500 bg-blue-50/50 shadow-sm"
+          ? "border-primary bg-primary/5 shadow-sm"
           : "border-slate-200 bg-white"
       )}
       role="button"
@@ -35,7 +35,7 @@ export function ProjectListItem({
     >
       {/* 选中标记 */}
       {selected && (
-        <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+        <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
           <Check className="w-4 h-4 text-white" />
         </div>
       )}
@@ -117,8 +117,8 @@ function getStatusConfig(status: string): {
   const statusMap: Record<string, { label: string; bgColor: string; textColor: string }> = {
     签约: {
       label: "签约",
-      bgColor: "bg-blue-100",
-      textColor: "text-blue-700",
+      bgColor: "bg-primary/10",
+      textColor: "text-primary",
     },
     装修: {
       label: "装修中",

@@ -26,7 +26,7 @@ export const DrawerHeader: React.FC<Props> = ({ lead, onClose, onViewMonitor }) 
           variant="outline"
           size="sm"
           onClick={() => onViewMonitor(lead)}
-          className="text-blue-600 border-blue-100 hover:bg-blue-50 h-9 rounded-full gap-1.5"
+          className="text-primary border-primary/20 hover:bg-primary/5 h-9 rounded-full gap-1.5"
         >
           <LineChart className="h-4 w-4" />
           <span className="text-xs font-bold">数据大盘</span>

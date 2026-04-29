@@ -26,7 +26,7 @@ export function PriceSidebar({
         <div className="flex flex-col gap-1 mb-6">
           <span className="text-slate-500 text-sm font-medium">房源总价</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-blue-600 tracking-tight">
+            <span className="text-3xl font-bold text-primary tracking-tight">
               {formatPrice(totalPrice)}
             </span>
           </div>
@@ -67,7 +67,7 @@ export function PriceSidebar({
 
         <div className="space-y-4 mt-8">
           <Link href={`/l4-marketing/projects/${projectId}/edit`}>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700">
+            <Button className="w-full bg-primary hover:bg-primary/90">
               <Pencil className="mr-2 h-4 w-4" />
               修改信息
             </Button>
@@ -78,7 +78,7 @@ export function PriceSidebar({
       {/* Quick Context */}
       <div className="bg-slate-50 p-6 rounded-xl space-y-4 border border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+          <div className="p-2 bg-primary/10 rounded-lg text-primary">
             <Info className="h-4 w-4" />
           </div>
           <div>

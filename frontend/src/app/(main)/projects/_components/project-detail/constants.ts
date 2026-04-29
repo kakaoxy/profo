@@ -95,9 +95,9 @@ export function getFileIcon(fileType: string) {
  */
 export const FILE_ICON_COLORS: Record<string, string> = {
   excel: "text-green-600",
-  image: "text-blue-500",
+  image: "text-primary",
   pdf: "text-red-500",
-  word: "text-blue-700",
+  word: "text-primary/80",
   default: "text-gray-500",
 };
 

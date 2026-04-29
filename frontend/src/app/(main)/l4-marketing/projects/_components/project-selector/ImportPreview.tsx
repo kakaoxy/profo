@@ -176,7 +176,7 @@ export function ImportPreview({
             onClick={handleConfirm}
             disabled={loading}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+            className="bg-primary hover:bg-primary/90 flex-1 sm:flex-none"
           >
             {loading ? "导入中..." : "确认导入"}
           </Button>

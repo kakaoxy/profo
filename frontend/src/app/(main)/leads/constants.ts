@@ -2,7 +2,7 @@
 import { LeadStatus } from './types';
 
 export const STATUS_CONFIG = {
-  [LeadStatus.PENDING_ASSESSMENT]: { label: '待评估', color: 'bg-blue-100 text-blue-700 border-blue-200', step: 0 },
+  [LeadStatus.PENDING_ASSESSMENT]: { label: '待评估', color: 'bg-primary/10 text-primary border-primary/20', step: 0 },
   [LeadStatus.PENDING_VISIT]: { label: '待看房', color: 'bg-orange-100 text-orange-700 border-orange-200', step: 1 },
   [LeadStatus.REJECTED]: { label: '已驳回', color: 'bg-gray-100 text-gray-500 border-gray-200', step: 0 },
   [LeadStatus.VISITED]: { label: '已看房', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', step: 2 },
@@ -16,7 +16,7 @@ export const STATUS_CONFIG = {
 export const STATUS_STYLE_CONFIG: Record<LeadStatus, { label: string; className: string }> = {
   [LeadStatus.PENDING_ASSESSMENT]: {
     label: STATUS_CONFIG[LeadStatus.PENDING_ASSESSMENT].label,
-    className: "bg-blue-500 text-white",
+    className: "bg-primary text-white",
   },
   [LeadStatus.PENDING_VISIT]: {
     label: STATUS_CONFIG[LeadStatus.PENDING_VISIT].label,
@@ -28,7 +28,7 @@ export const STATUS_STYLE_CONFIG: Record<LeadStatus, { label: string; className:
   },
   [LeadStatus.SIGNED]: {
     label: STATUS_CONFIG[LeadStatus.SIGNED].label,
-    className: "bg-indigo-500 text-white",
+    className: "bg-primary text-white",
   },
   [LeadStatus.REJECTED]: {
     label: STATUS_CONFIG[LeadStatus.REJECTED].label,

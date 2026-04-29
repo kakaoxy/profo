@@ -87,7 +87,7 @@ export function AreaInput({ value, onChange }: AreaInputProps) {
     <div className="relative">
       <input
         inputMode="decimal"
-        className="w-full h-11 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#0b1c30]"
+        className="w-full h-11 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
         value={inputValue}
         onChange={handleChange}
         onBlur={handleBlur}

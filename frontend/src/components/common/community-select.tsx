@@ -198,13 +198,13 @@ export function CommunitySelect({
       placeholder: "text-[#707785] font-normal",
       popover: "w-[400px] p-0 rounded-xl",
       input:
-        "w-full px-3 py-2 text-sm bg-[#f8f9ff] border border-[#c0c7d6]/30 rounded-lg outline-none focus:ring-2 focus:ring-[#005daa]/20",
+        "w-full px-3 py-2 text-sm bg-primary/5 border border-[#c0c7d6]/30 rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
       loading: "text-[#707785]",
       createButton:
-        "w-full flex items-center gap-2 p-3 text-sm text-[#005daa] bg-[#005daa]/5 hover:bg-[#005daa]/10 rounded-lg transition-colors font-bold",
+        "w-full flex items-center gap-2 p-3 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
       resultItem:
-        "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-[#eff4ff] transition-colors group text-left",
-      resultItemActive: "bg-[#eff4ff] text-[#005daa] font-bold",
+        "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-primary/10 transition-colors group text-left",
+      resultItemActive: "bg-primary/10 text-primary font-bold",
       resultName: "font-bold text-[#0b1c30]",
       resultMeta: "text-[10px] text-[#707785] flex items-center gap-1",
       emptyState: "py-8 text-center text-[#707785] text-xs",

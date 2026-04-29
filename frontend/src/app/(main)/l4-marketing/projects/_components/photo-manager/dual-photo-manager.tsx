@@ -105,9 +105,9 @@ export function DualPhotoManager({
 
   return (
     <>
-      <section className="bg-[#eff4ff] rounded-2xl p-8">
-        <h3 className="text-lg font-bold text-[#0b1c30] mb-6 flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-[#005daa] rounded-full"></span>
+      <section className="bg-primary/5 rounded-2xl p-8">
+        <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-primary rounded-full"></span>
           照片管理 (Photos)
         </h3>
         <div className="space-y-6">
