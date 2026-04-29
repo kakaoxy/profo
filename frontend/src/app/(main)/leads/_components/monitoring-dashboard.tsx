@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Lead } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Activity, Share2, Loader2 } from "lucide-react";
+import { ArrowLeft, Activity, Share2, Loader2, MapPinOff } from "lucide-react";
 import { ProjectData } from "../../projects/_components/monitor/types";
 import { getCommunityIdByName } from "../../projects/actions/monitor-lib/utils";
 
@@ -81,6 +81,24 @@ const CardWrapper = ({ children }: { children: React.ReactNode }) => (
     {children}
   </div>
 );
+
+// 空状态组件：当无法找到小区数据时显示
+function EmptyState({ communityName }: { communityName: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <MapPinOff className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold text-foreground mb-2">
+        未找到小区数据
+      </h3>
+      <p className="text-sm text-muted-foreground max-w-md">
+        系统未能找到 &quot;{communityName}&quot; 的市场数据。<br />
+        该小区可能尚未录入数据库，或名称与系统记录不一致。
+      </p>
+    </div>
+  );
+}
 
 export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
   // 通过 communityName 查询 communityId
@@ -162,44 +180,52 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
             <HeroSection overrideData={overrideData} />
           </CardWrapper>
 
-          <CardWrapper>
-            {isLoadingCommunityId ? (
-              <ComponentSkeleton height="300px" />
-            ) : (
-              <MarketSentiment communityId={communityId} />
-            )}
-          </CardWrapper>
+          {!isLoadingCommunityId && !communityId ? (
+            <CardWrapper>
+              <EmptyState communityName={lead.communityName} />
+            </CardWrapper>
+          ) : (
+            <>
+              <CardWrapper>
+                {isLoadingCommunityId ? (
+                  <ComponentSkeleton height="300px" />
+                ) : (
+                  <MarketSentiment communityId={communityId} />
+                )}
+              </CardWrapper>
 
-          <CardWrapper>
-            {isLoadingCommunityId ? (
-              <ComponentSkeleton height="350px" />
-            ) : (
-              <NeighborhoodRadar communityId={communityId} />
-            )}
-          </CardWrapper>
+              <CardWrapper>
+                {isLoadingCommunityId ? (
+                  <ComponentSkeleton height="350px" />
+                ) : (
+                  <NeighborhoodRadar communityId={communityId} />
+                )}
+              </CardWrapper>
 
-          <CardWrapper>
-            {isLoadingCommunityId ? (
-              <ComponentSkeleton height="400px" />
-            ) : (
-              <TrendPositioning
-                communityId={communityId}
-                myOverridePrice={myOverridePrice}
-              />
-            )}
-          </CardWrapper>
+              <CardWrapper>
+                {isLoadingCommunityId ? (
+                  <ComponentSkeleton height="400px" />
+                ) : (
+                  <TrendPositioning
+                    communityId={communityId}
+                    myOverridePrice={myOverridePrice}
+                  />
+                )}
+              </CardWrapper>
 
-          <CardWrapper>
-            {isLoadingCommunityId ? (
-              <ComponentSkeleton height="500px" />
-            ) : (
-              <CompetitorsBrawl communityId={communityId} />
-            )}
-          </CardWrapper>
+              <CardWrapper>
+                {isLoadingCommunityId ? (
+                  <ComponentSkeleton height="500px" />
+                ) : (
+                  <CompetitorsBrawl communityId={communityId} />
+                )}
+              </CardWrapper>
 
-          <CardWrapper>
-            <AIStrategy communityId={communityId} />
-          </CardWrapper>
+              <CardWrapper>
+                <AIStrategy communityId={communityId} />
+              </CardWrapper>
+            </>
+          )}
         </div>
       </main>
     </div>
