@@ -12,7 +12,7 @@ import {
   mapProjectResponseToProject,
   validateSalesRecords,
 } from "./project-card-utils";
-import { getStatusLabel, getStatusClassName, DEFAULT_STATUS } from "../projects/constants/status-config";
+import { getStatusLabel, getProjectStatusClassName, DEFAULT_STATUS } from "@/lib/status-colors";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type CommunityMarketStatsResponse =
@@ -72,7 +72,7 @@ export function ProjectCardClient({
           <div className="mt-2">
             <Badge
               variant="secondary"
-              className={`text-[10px] px-2 py-0 h-5 border-none rounded-md ${getStatusClassName(status)}`}
+              className={`text-[10px] px-2 py-0 h-5 border-none rounded-md ${getProjectStatusClassName(status)}`}
             >
               {getStatusLabel(status)}
             </Badge>

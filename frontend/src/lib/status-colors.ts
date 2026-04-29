@@ -1,16 +1,16 @@
 /**
  * 全局状态配色系统
- * 
+ *
  * 统一配置所有业务状态的颜色，替代分散在各模块的硬编码颜色。
  * 颜色值与 CSS 变量联动，支持自动暗色模式切换。
- * 
+ *
  * @see globals.css 中的 --status-* 变量定义
  */
 
 import { LeadStatus } from "@/app/(main)/leads/types";
 
 /** 通用状态类型 */
-export type StatusType = 
+export type StatusType =
   | "pending"        // 待评估
   | "signing"        // 已签约
   | "renovating"     // 装修中
@@ -81,6 +81,12 @@ export const PROJECT_STATUS_MAPPING: Record<string, StatusType> = {
   sold: "sold",
 };
 
+/** 默认项目状态 */
+export const DEFAULT_STATUS = "signing";
+
+/** 默认状态样式 */
+export const defaultStatusClass = "bg-muted text-muted-foreground";
+
 /**
  * 获取状态标签
  */
@@ -130,7 +136,7 @@ export function getAllStatusColors(): Record<StatusType, string> {
  */
 export function getLeadStatusClassName(status: LeadStatus): string {
   const mapped = LEAD_STATUS_MAPPING[status];
-  
+
   const statusClassMap: Record<StatusType, string> = {
     pending: "bg-status-pending text-white hover:opacity-90",
     signing: "bg-status-signing text-white hover:opacity-90",
@@ -139,7 +145,7 @@ export function getLeadStatusClassName(status: LeadStatus): string {
     sold: "bg-status-sold text-white hover:opacity-90",
     rejected: "bg-status-rejected text-white hover:opacity-90",
   };
-  
+
   return statusClassMap[mapped] || "bg-muted text-muted-foreground";
 }
 
@@ -147,9 +153,20 @@ export function getLeadStatusClassName(status: LeadStatus): string {
  * 获取线索状态的 Badge 样式（浅色背景）
  * 用于表格、列表等展示场景
  */
-export function getLeadStatusBadgeClass(status: LeadStatus): string {
-  const mapped = LEAD_STATUS_MAPPING[status];
-  
+export function getLeadStatusBadgeClass(status: LeadStatus | string): string {
+  // 字符串状态映射（用于 dashboard 等场景）
+  const stringStatusMap: Record<string, StatusType> = {
+    pending_assessment: "pending",
+    pending_visit: "pending",
+    visited: "selling",
+    signed: "signing",
+    rejected: "rejected",
+  };
+
+  const mapped = typeof status === "string" && status in stringStatusMap
+    ? stringStatusMap[status]
+    : LEAD_STATUS_MAPPING[status as LeadStatus];
+
   const badgeClassMap: Record<StatusType, string> = {
     pending: "bg-status-pending/10 text-status-pending border-status-pending/20",
     signing: "bg-status-signing/10 text-status-signing border-status-signing/20",
@@ -158,7 +175,7 @@ export function getLeadStatusBadgeClass(status: LeadStatus): string {
     sold: "bg-status-sold/10 text-status-sold border-status-sold/20",
     rejected: "bg-status-rejected/10 text-status-rejected border-status-rejected/20",
   };
-  
+
   return badgeClassMap[mapped] || "bg-muted text-muted-foreground";
 }
 
@@ -168,7 +185,7 @@ export function getLeadStatusBadgeClass(status: LeadStatus): string {
 export function getProjectStatusClassName(status: string): string {
   const mapped = PROJECT_STATUS_MAPPING[status];
   if (!mapped) return "bg-muted text-muted-foreground";
-  
+
   const statusClassMap: Record<StatusType, string> = {
     pending: "bg-status-pending text-white hover:opacity-90",
     signing: "bg-status-signing text-white hover:opacity-90",
@@ -177,7 +194,7 @@ export function getProjectStatusClassName(status: string): string {
     sold: "bg-status-sold text-white hover:opacity-90",
     rejected: "bg-status-rejected text-white hover:opacity-90",
   };
-  
+
   return statusClassMap[mapped] || "bg-muted text-muted-foreground";
 }
 
@@ -187,7 +204,7 @@ export function getProjectStatusClassName(status: string): string {
 export function getProjectStatusBadgeClass(status: string): string {
   const mapped = PROJECT_STATUS_MAPPING[status];
   if (!mapped) return "bg-muted text-muted-foreground";
-  
+
   const badgeClassMap: Record<StatusType, string> = {
     pending: "bg-status-pending/10 text-status-pending border-status-pending/20",
     signing: "bg-status-signing/10 text-status-signing border-status-signing/20",
@@ -196,8 +213,56 @@ export function getProjectStatusBadgeClass(status: string): string {
     sold: "bg-status-sold/10 text-status-sold border-status-sold/20",
     rejected: "bg-status-rejected/10 text-status-rejected border-status-rejected/20",
   };
-  
+
   return badgeClassMap[mapped] || "bg-muted text-muted-foreground";
+}
+
+/**
+ * 获取状态样式配置（带颜色类名）
+ * 用于 drawer-header 等需要颜色类名的场景
+ */
+export function getStatusStyleConfig(status: string): { label: string; className: string } {
+  // 线索状态映射
+  const leadStatusMap: Record<string, { label: string; className: string }> = {
+    pending_assessment: {
+      label: "待评估",
+      className: "bg-primary/10 text-primary border-primary/20",
+    },
+    pending_visit: {
+      label: "待看房",
+      className: "bg-status-pending/10 text-status-pending border-status-pending/20",
+    },
+    visited: {
+      label: "已看房",
+      className: "bg-status-selling/10 text-status-selling border-status-selling/20",
+    },
+    signed: {
+      label: "已签约",
+      className: "bg-status-signing/10 text-status-signing border-status-signing/20",
+    },
+    rejected: {
+      label: "已驳回",
+      className: "bg-status-rejected/10 text-status-rejected border-status-rejected/20",
+    },
+  };
+
+  if (status in leadStatusMap) {
+    return leadStatusMap[status];
+  }
+
+  // 通用状态映射
+  const mapped = STATUS_CONFIG[status as StatusType];
+  if (mapped) {
+    return {
+      label: mapped.label,
+      className: `bg-${mapped.cssVar.replace('--', '')}/10 text-${mapped.cssVar.replace('--', '')} border-${mapped.cssVar.replace('--', '')}/20`,
+    };
+  }
+
+  return {
+    label: status,
+    className: "bg-muted text-muted-foreground",
+  };
 }
 
 /** 线索生命周期步骤配置 */

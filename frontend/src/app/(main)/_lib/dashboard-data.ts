@@ -2,7 +2,7 @@ import { cache } from "react";
 import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
 import type { FunnelData, RawDashboardLead } from "../types";
-import { getStatusLabel } from "../leads/constants/status-config";
+import { getStatusLabel } from "@/lib/status-colors";
 import { batchGetMarketData } from "./market-data";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Lead, LeadStatus } from '../../types';
-import { STATUS_CONFIG } from '../../constants';
+import { getStatusStyleConfig } from '@/lib/status-colors';
 import { Button } from '@/components/ui/button';
 import { X, LineChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,11 +40,11 @@ export const DrawerHeader: React.FC<Props> = ({ lead, onClose, onViewMonitor }) 
 };
 
 const LeadStatusBadge = ({ status }: { status: LeadStatus }) => {
-  const config = STATUS_CONFIG[status];
+  const config = getStatusStyleConfig(status);
   return (
     <span className={cn(
       "px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter border",
-      config.color
+      config.className
     )}>
       {config.label}
     </span>

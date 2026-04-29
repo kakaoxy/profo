@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Project } from "../types";
 import { ActionCell } from "./action-cell";
-import { getStatusLabel, getStatusClassName, DEFAULT_STATUS } from "../constants/status-config";
+import { getStatusLabel, getProjectStatusClassName, DEFAULT_STATUS } from "@/lib/status-colors";
 
 const formatMoney = (value: number | undefined | null) => {
   if (value === undefined || value === null) return "-";
@@ -40,7 +40,7 @@ export const columns: ColumnDef<Project>[] = [
             </span>
             <Badge
               variant="secondary"
-              className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${getStatusClassName(status)}`}
+              className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${getProjectStatusClassName(status)}`}
             >
               {getStatusLabel(status)}
             </Badge>
@@ -74,7 +74,7 @@ export const columns: ColumnDef<Project>[] = [
         <div className="hidden md:block">
           <Badge
             variant="secondary"
-            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${getStatusClassName(status)}`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${getProjectStatusClassName(status)}`}
           >
             {getStatusLabel(status)}
           </Badge>
