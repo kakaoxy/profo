@@ -253,9 +253,17 @@ export function getStatusStyleConfig(status: string): { label: string; className
   // 通用状态映射
   const mapped = STATUS_CONFIG[status as StatusType];
   if (mapped) {
+    const badgeClassMap: Record<StatusType, string> = {
+      pending: "bg-status-pending/10 text-status-pending border-status-pending/20",
+      signing: "bg-status-signing/10 text-status-signing border-status-signing/20",
+      renovating: "bg-status-renovating/10 text-status-renovating border-status-renovating/20",
+      selling: "bg-status-selling/10 text-status-selling border-status-selling/20",
+      sold: "bg-status-sold/10 text-status-sold border-status-sold/20",
+      rejected: "bg-status-rejected/10 text-status-rejected border-status-rejected/20",
+    };
     return {
       label: mapped.label,
-      className: `bg-${mapped.cssVar.replace('--', '')}/10 text-${mapped.cssVar.replace('--', '')} border-${mapped.cssVar.replace('--', '')}/20`,
+      className: badgeClassMap[status as StatusType],
     };
   }
 
