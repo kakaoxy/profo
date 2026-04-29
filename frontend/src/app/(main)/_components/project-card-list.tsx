@@ -1,20 +1,23 @@
 import type { components } from "@/lib/api-types";
-import { batchGetMarketData } from "../_lib/market-data";
 import { ProjectCardClient } from "./project-card-client";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
+type CommunityMarketStatsResponse =
+  components["schemas"]["CommunityMarketStatsResponse"];
+
+export interface MarketDataMap {
+  [communityId: string]: CommunityMarketStatsResponse | null;
+}
 
 interface ProjectCardListProps {
   projects: ProjectResponse[];
+  marketDataMap: MarketDataMap;
 }
 
-export async function ProjectCardList({ projects }: ProjectCardListProps) {
-  // 提取所有项目的社区ID
-  const communityIds = projects.map((p) => p.community_id);
-
-  // 批量获取所有市场数据
-  const { data: marketDataMap } = await batchGetMarketData(communityIds);
-
+export async function ProjectCardList({
+  projects,
+  marketDataMap,
+}: ProjectCardListProps) {
   return (
     <>
       {projects.map((project) => (

@@ -1,5 +1,9 @@
 import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
+import type { paths } from "@/lib/api-types";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ type ClientType = ReturnType<typeof import("openapi-fetch").default<paths>>;
 
 type CommunityMarketStatsResponse =
   components["schemas"]["CommunityMarketStatsResponse"];
@@ -16,11 +20,14 @@ interface MarketDataResult {
 /**
  * 批量获取小区市场数据
  * 使用 Promise.all 并发获取所有需要的市场数据，避免 N+1 请求瀑布
+ * @param communityIds 小区ID数组
+ * @param client 可选的API客户端，避免重复创建fetchClient
  */
 export async function batchGetMarketData(
-  communityIds: (string | null | undefined)[]
+  communityIds: (string | null | undefined)[],
+  client?: ClientType
 ): Promise<MarketDataResult> {
-  const client = await fetchClient();
+  const apiClient = client || (await fetchClient());
 
   // 去重并过滤掉无效ID
   const uniqueIds = Array.from(new Set(communityIds)).filter(
@@ -33,7 +40,7 @@ export async function batchGetMarketData(
 
   const results = await Promise.allSettled(
     uniqueIds.map(async (communityId) => {
-      const response = await client.GET(
+      const response = await apiClient.GET(
         "/api/v1/monitor/communities/{community_id}/market-stats",
         {
           params: {

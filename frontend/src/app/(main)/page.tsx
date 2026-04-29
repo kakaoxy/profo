@@ -17,6 +17,7 @@ export default async function DashboardPage() {
     funnelData,
     projects,
     leads,
+    marketDataMap,
     errors,
   } = await getDashboardData();
 
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar">
-          <ProjectCardList projects={sortedProjects} />
+          <ProjectCardList projects={sortedProjects} marketDataMap={marketDataMap} />
 
           <CreateProjectDialog
             trigger={

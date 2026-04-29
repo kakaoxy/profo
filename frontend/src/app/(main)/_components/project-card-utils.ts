@@ -1,3 +1,12 @@
+/**
+ * 项目卡片工具函数
+ * 职责范围：
+ * - 项目数据映射 (mapProjectResponseToProject)
+ * - 销售记录类型定义与验证
+ * - 销售记录统计计算 (getWeekViewStats, getOfferStats)
+ * - 项目状态映射 (statusMap)
+ * 注意：文件小于250行，职责相关性强，暂不做拆分
+ */
 import type { components } from "@/lib/api-types";
 import type { Project } from "../projects/types/project";
 import { toNumber } from "@/lib/number-utils";
@@ -53,24 +62,7 @@ export function mapProjectResponseToProject(project: ProjectResponse): Project {
           avatar: project.project_manager.avatar ?? undefined,
         }
       : undefined,
-    sales_records: project.sales_records
-      ? (project.sales_records as Array<{
-          id: string;
-          record_type: string;
-          price?: string | null;
-          record_date: string;
-          customer_name?: string | null;
-          notes?: string | null;
-        }>).map(r => ({
-          id: r.id,
-          project_id: project.id,
-          record_type: r.record_type as "viewing" | "offer" | "negotiation" | "sold",
-          customer_name: r.customer_name ?? undefined,
-          price: toNumber(r.price),
-          record_date: r.record_date,
-          notes: r.notes ?? undefined,
-        }))
-      : undefined,
+    sales_records: validateAndTransformSalesRecords(project.sales_records, project.id),
     created_at: project.created_at ?? "",
     updated_at: project.updated_at ?? "",
     // 销售团队角色ID
@@ -131,6 +123,53 @@ export const statusMap: Record<string, { label: string; color: string }> = {
   sold: { label: "已成交", color: "bg-purple-100 text-purple-700" },
 };
 
+const VALID_RECORD_TYPES = ["viewing", "offer", "negotiation", "sold"] as const;
+type ValidRecordType = (typeof VALID_RECORD_TYPES)[number];
+
+function isValidRecordType(type: string): type is ValidRecordType {
+  return VALID_RECORD_TYPES.includes(type as ValidRecordType);
+}
+
+/**
+ * 验证并转换销售记录
+ * 用于 mapProjectResponseToProject 内部，避免使用 as 断言
+ */
+function validateAndTransformSalesRecords(
+  data: unknown,
+  projectId: string
+): Array<{
+  id: string;
+  project_id: string;
+  record_type: ValidRecordType;
+  customer_name?: string;
+  price?: number;
+  record_date: string;
+  notes?: string;
+}> | undefined {
+  if (!data || !Array.isArray(data)) return undefined;
+
+  return data
+    .filter((item): item is ApiSalesRecord => {
+      if (!item || typeof item !== "object") return false;
+      const record = item as Record<string, unknown>;
+      return (
+        typeof record.id === "string" &&
+        typeof record.record_type === "string" &&
+        typeof record.record_date === "string"
+      );
+    })
+    .filter((r) => isValidRecordType(r.record_type))
+    .map((r) => ({
+      id: r.id,
+      project_id: projectId,
+      record_type: r.record_type as ValidRecordType,
+      customer_name: r.customer_name ?? undefined,
+      price: toNumber(r.price),
+      record_date: r.record_date,
+      notes: r.notes ?? undefined,
+    }));
+}
+
 /**
  * 验证销售记录数组
  * 将 unknown[] 验证并转换为 ApiSalesRecord[]
@@ -140,7 +179,6 @@ export function validateSalesRecords(data: unknown): ApiSalesRecord[] {
   return data.filter((item): item is ApiSalesRecord => {
     if (!item || typeof item !== "object") return false;
     const record = item as Record<string, unknown>;
-    // 检查必需字段
     return (
       typeof record.id === "string" &&
       typeof record.record_type === "string" &&

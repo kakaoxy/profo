@@ -2,11 +2,17 @@ import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
 import type { FunnelData, RawDashboardLead } from "../types";
 import { getStatusLabel } from "../leads/constants/status-config";
+import { batchGetMarketData } from "./market-data";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type LeadListItem = components["schemas"]["LeadListItem"];
 type LeadStatus = components["schemas"]["LeadStatus"];
+type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
+
+export interface MarketDataMap {
+  [communityId: string]: CommunityMarketStatsResponse | null;
+}
 
 export interface DashboardDataResult {
   projectStats: ProjectStatsResponse | null;
@@ -14,12 +20,14 @@ export interface DashboardDataResult {
   funnelData: FunnelData;
   projects: ProjectResponse[];
   leads: RawDashboardLead[];
+  marketDataMap: MarketDataMap;
   errors: {
     projectStats?: string;
     pendingLeads?: string;
     funnel?: string;
     projects?: string;
     leads?: string;
+    marketData?: string;
   };
 }
 
@@ -69,8 +77,8 @@ function validateProjectResponseList(data: unknown): ProjectResponse[] {
 function validateProjectStats(data: unknown): ProjectStatsResponse | null {
   if (!data || typeof data !== "object") return null;
   const d = data as Record<string, unknown>;
-  // 检查必需的数字字段
-  const requiredNumberFields = ["total", "signing", "renovating", "selling", "sold"];
+  // 检查必需的数字字段（注意：API 返回的 ProjectStatsResponse 不包含 total 字段）
+  const requiredNumberFields = ["signing", "renovating", "selling", "sold"];
   for (const field of requiredNumberFields) {
     if (typeof d[field] !== "number") return null;
   }
@@ -171,12 +179,23 @@ export async function getDashboardData(): Promise<DashboardDataResult> {
 
   const rawLeads = leadItems.map(transformLeadToDashboard);
 
+  // 批量获取市场数据 - 复用同一个 client 避免重复创建
+  const communityIds = projects.map((p) => p.community_id);
+  const { data: marketDataMap, errors: marketErrors } = await batchGetMarketData(
+    communityIds,
+    client
+  );
+  if (marketErrors.length > 0) {
+    errors.marketData = "部分市场数据获取失败";
+  }
+
   return {
     projectStats,
     pendingLeadsTotal,
     funnelData,
     projects,
     leads: rawLeads,
+    marketDataMap,
     errors,
   };
 }
