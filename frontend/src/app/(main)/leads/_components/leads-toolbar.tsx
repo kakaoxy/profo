@@ -40,17 +40,17 @@ export function LeadsToolbar({
       <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
         {/* Search Input */}
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="搜索小区名称..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-primary"
+            className="pl-9 pr-9 bg-background border-border focus-visible:ring-primary"
           />
           {searchQuery && (
             <button
               onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
             >
               <X className="h-3 w-3" />
             </button>
@@ -67,37 +67,37 @@ export function LeadsToolbar({
           }}
           className="w-full sm:w-auto"
         >
-          <TabsList className="h-10 bg-slate-100/50 p-1 rounded-lg flex-wrap">
+          <TabsList className="h-10 bg-muted/50 p-1 rounded-lg flex-wrap">
             <TabsTrigger value="all" className="text-xs px-3">
               全部
             </TabsTrigger>
             <TabsTrigger
               value="pending_assessment"
-              className="text-xs px-3 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800"
+              className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
               待评估
             </TabsTrigger>
             <TabsTrigger
               value="pending_visit"
-              className="text-xs px-3 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-800"
+              className="text-xs px-3 data-[state=active]:bg-status-pending/10 data-[state=active]:text-status-pending"
             >
               待看房
             </TabsTrigger>
             <TabsTrigger
               value="visited"
-              className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+              className="text-xs px-3 data-[state=active]:bg-status-selling/10 data-[state=active]:text-status-selling"
             >
               已看房
             </TabsTrigger>
             <TabsTrigger
               value="signed"
-              className="text-xs px-3 data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800"
+              className="text-xs px-3 data-[state=active]:bg-status-signing/10 data-[state=active]:text-status-signing"
             >
               已签约
             </TabsTrigger>
             <TabsTrigger
               value="rejected"
-              className="text-xs px-3 data-[state=active]:bg-slate-200 data-[state=active]:text-slate-800"
+              className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
             >
               已驳回
             </TabsTrigger>
@@ -108,13 +108,13 @@ export function LeadsToolbar({
       {/* Right: Actions */}
       <div className="flex w-full lg:w-auto gap-3 items-center">
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-lg">
+        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
           <button
             className={cn(
               "flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all",
               viewMode === "table"
-                ? "bg-white shadow-sm text-slate-900"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-card shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             )}
             onClick={() => onViewModeChange("table")}
           >
@@ -125,8 +125,8 @@ export function LeadsToolbar({
             className={cn(
               "flex items-center justify-center px-3 py-1.5 rounded-md text-xs font-medium transition-all",
               viewMode === "grid"
-                ? "bg-white shadow-sm text-slate-900"
-                : "text-slate-500 hover:text-slate-700"
+                ? "bg-card shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             )}
             onClick={() => onViewModeChange("grid")}
           >
@@ -137,7 +137,7 @@ export function LeadsToolbar({
 
         <Button
           variant="outline"
-          className="flex-1 lg:flex-none bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+          className="flex-1 lg:flex-none bg-background border-border text-foreground hover:bg-muted"
           onClick={() => toast.success("正在生成报表...")}
         >
           <Download className="mr-2 h-4 w-4" />
@@ -145,7 +145,7 @@ export function LeadsToolbar({
         </Button>
 
         <Button
-          className="flex-1 lg:flex-none bg-primary hover:bg-primary/90 text-white shadow-sm"
+          className="flex-1 lg:flex-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           onClick={onAddLead}
         >
           <Plus className="mr-2 h-4 w-4" />

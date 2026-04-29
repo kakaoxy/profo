@@ -20,17 +20,17 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
   const isDeal = dataKey === "deal";
   const TrendIcon = isDeal ? TrendingDown : TrendingUp;
   const trendColor = isDeal
-    ? "bg-rose-50 text-rose-600"
-    : "bg-emerald-50 text-emerald-600";
+    ? "bg-destructive/10 text-destructive"
+    : "bg-status-selling/10 text-status-selling";
 
   return (
-    <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col">
+    <div className="p-5 rounded-xl border border-border bg-muted/50 flex flex-col">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {title}
           </p>
-          <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
             {subtitle}
           </p>
         </div>
@@ -49,10 +49,10 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
             : item.current_avg_price;
           const colorClass =
             idx === 0
-              ? "bg-indigo-500"
+              ? "bg-primary"
               : idx === 1
-                ? "bg-blue-400"
-                : "bg-slate-300";
+                ? "bg-primary/60"
+                : "bg-muted-foreground/30";
 
           return (
             <div key={`${dataKey}-${item.type}`}>
@@ -60,27 +60,27 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
                 <div className="flex items-center gap-3">
                   <div className={`w-1 h-8 rounded-full ${colorClass}`} />
                   <div>
-                    <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                    <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                       {FLOOR_TYPE_MAP[item.type] || item.type}
-                      <span className="text-slate-300">|</span>
+                      <span className="text-border">|</span>
                       <span className="text-primary font-bold">
                         {count} 套
                       </span>
                     </p>
-                    <p className="text-base font-black text-slate-800">
+                    <p className="text-base font-black text-foreground">
                       {avgPrice.toFixed(0)} 万
                     </p>
                   </div>
                 </div>
               </div>
               {idx < stats.length - 1 && (
-                <div className="h-px bg-slate-200/50" />
+                <div className="h-px bg-border/50" />
               )}
             </div>
           );
         })}
         {stats.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-4">暂无数据</p>
+          <p className="text-sm text-muted-foreground text-center py-4">暂无数据</p>
         )}
       </div>
     </div>

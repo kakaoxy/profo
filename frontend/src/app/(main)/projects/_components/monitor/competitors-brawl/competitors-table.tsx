@@ -27,22 +27,22 @@ export function CompetitorsTable({
   return (
     <div className="overflow-x-auto scrollbar-hide">
       <Table className="min-w-[1000px]">
-        <TableHeader className="bg-slate-50/50">
-          <TableRow className="hover:bg-transparent border-b border-slate-100">
-            <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <TableHeader className="bg-muted/50">
+          <TableRow className="hover:bg-transparent border-b border-border">
+            <TableHead className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               房源 ID
             </TableHead>
-            <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <TableHead className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               小区 / 状态
             </TableHead>
-            <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <TableHead className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               户型 / 朝向
             </TableHead>
-            <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <TableHead className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               面积 (㎡)
             </TableHead>
             <TableHead
-              className="py-4 px-4 text-[10px] font-bold text-rose-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors"
+              className="py-4 px-4 text-[10px] font-bold text-destructive uppercase tracking-wider cursor-pointer select-none hover:bg-muted transition-colors"
               onClick={() => onSort("total")}
             >
               <div className="flex items-center">
@@ -51,7 +51,7 @@ export function CompetitorsTable({
               </div>
             </TableHead>
             <TableHead
-              className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-100 transition-colors"
+              className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:bg-muted transition-colors"
               onClick={() => onSort("unit")}
             >
               <div className="flex items-center">
@@ -59,32 +59,32 @@ export function CompetitorsTable({
                 <SortIcon column="unit" sortConfig={sortConfig} />
               </div>
             </TableHead>
-            <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <TableHead className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
               挂牌/成交日期
             </TableHead>
-            <TableHead className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">
+            <TableHead className="py-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-right">
               操作
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-slate-50">
+        <TableBody className="divide-y divide-muted">
           {items.map((item) => (
             <TableRow
               key={item.id}
-              className={`${item.is_current ? "bg-indigo-50/40" : "hover:bg-slate-50"} transition-colors border-none`}
+              className={`${item.is_current ? "bg-primary/5" : "hover:bg-muted"} transition-colors border-none`}
             >
-              <TableCell className="py-4 px-4 font-mono text-xs text-slate-400 font-bold">
+              <TableCell className="py-4 px-4 font-mono text-xs text-muted-foreground font-bold">
                 {item.id.length > 10
                   ? `#${item.id.slice(0, 6)}...`
                   : `#${item.id}`}
               </TableCell>
               <TableCell className="py-4 px-4 text-xs">
                 <div className="flex flex-col">
-                  <span className="font-bold text-slate-800">
+                  <span className="font-bold text-foreground">
                     {item.community}
                   </span>
                   <span
-                    className={`text-[10px] font-bold ${item.status === "on_sale" ? "text-amber-500" : "text-emerald-500"}`}
+                    className={`text-[10px] font-bold ${item.status === "on_sale" ? "text-status-pending" : "text-status-selling"}`}
                   >
                     ●{" "}
                     {item.display_status ||
@@ -92,26 +92,26 @@ export function CompetitorsTable({
                   </span>
                 </div>
               </TableCell>
-              <TableCell className="py-4 px-4 text-xs font-bold text-slate-600">
+              <TableCell className="py-4 px-4 text-xs font-bold text-muted-foreground">
                 {item.layout} · {item.floor}
               </TableCell>
-              <TableCell className="py-4 px-4 text-xs font-black text-slate-800">
+              <TableCell className="py-4 px-4 text-xs font-black text-foreground">
                 {item.area}
               </TableCell>
-              <TableCell className="py-4 px-4 text-sm font-black text-rose-600">
+              <TableCell className="py-4 px-4 text-sm font-black text-destructive">
                 ¥ {item.total}
               </TableCell>
-              <TableCell className="py-4 px-4 text-xs font-bold text-slate-500">
+              <TableCell className="py-4 px-4 text-xs font-bold text-muted-foreground">
                 ¥ {item.unit.toLocaleString()}
               </TableCell>
-              <TableCell className="py-4 px-4 text-[10px] text-slate-400 font-medium font-mono">
+              <TableCell className="py-4 px-4 text-[10px] text-muted-foreground font-medium font-mono">
                 {item.date}
               </TableCell>
               <TableCell className="py-4 px-4 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 rounded-lg hover:bg-slate-100 text-[10px] font-bold text-primary"
+                  className="h-8 rounded-lg hover:bg-muted text-[10px] font-bold text-primary"
                 >
                   查看详情
                 </Button>
