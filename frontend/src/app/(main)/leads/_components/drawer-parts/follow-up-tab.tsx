@@ -88,7 +88,7 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
 const TimelineItem = ({ title, desc, time, icon: Icon, isNewest, user }: { title: string, desc: string, time: string, icon: React.ElementType, isNewest?: boolean, user?: string }) => (
   <div className="relative group">
     <div className={cn(
-      "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-background flex items-center justify-center shadow-sm transition-all",
+      "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-border flex items-center justify-center shadow-sm transition-all",
       isNewest ? "bg-primary scale-110" : "bg-muted"
     )}>
       <Icon className={cn("h-2.5 w-2.5", isNewest ? "text-primary-foreground" : "text-muted-foreground")} />

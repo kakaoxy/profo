@@ -22,7 +22,7 @@ export function TimeMonitorDisplay({ timeMonitor }: TimeMonitorDisplayProps) {
 
       <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
         <div
-          className="h-full bg-linear-to-r from-primary via-orange-400 to-rose-500 transition-all duration-1000"
+          className="h-full bg-linear-to-r from-progress-start via-progress-middle to-progress-end transition-all duration-1000"
           style={{ width: `${timeMonitor.progress}%` }}
         />
       </div>
