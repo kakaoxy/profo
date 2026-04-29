@@ -129,8 +129,8 @@
   --status-rejected: #94a3b8;
 
   /* Chart Colors - Light Mode */
-  --chart-positive: #10b981;
-  --chart-negative: #ef4444;
+  --chart-positive: #ef4444;
+  --chart-negative: #10b981;
   --chart-grid: #e2e8f0;
   --chart-grid-subtle: #f1f5f9;
   --chart-label: #64748b;
@@ -197,8 +197,8 @@
   --status-rejected: #64748b;
 
   /* Chart Colors - Dark Mode */
-  --chart-positive: #34d399;
-  --chart-negative: #f87171;
+  --chart-positive: #f87171;
+  --chart-negative: #34d399;
   --chart-grid: #334155;
   --chart-grid-subtle: #1e293b;
   --chart-label: #94a3b8;

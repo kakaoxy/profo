@@ -24,8 +24,8 @@ export interface ChartColors {
  */
 export function getDefaultChartColors(): ChartColors {
   return {
-    positive: "#10b981",
-    negative: "#ef4444",
+    positive: "#ef4444",
+    negative: "#10b981",
     grid: "#e2e8f0",
     gridSubtle: "#f1f5f9",
     label: "#64748b",
@@ -49,8 +49,8 @@ export function getChartColors(): ChartColors {
   const style = getComputedStyle(document.documentElement);
 
   return {
-    positive: style.getPropertyValue("--chart-positive").trim() || "#10b981",
-    negative: style.getPropertyValue("--chart-negative").trim() || "#ef4444",
+    positive: style.getPropertyValue("--chart-positive").trim() || "#ef4444",
+    negative: style.getPropertyValue("--chart-negative").trim() || "#10b981",
     grid: style.getPropertyValue("--chart-grid").trim() || "#e2e8f0",
     gridSubtle: style.getPropertyValue("--chart-grid-subtle").trim() || "#f1f5f9",
     label: style.getPropertyValue("--chart-label").trim() || "#64748b",
