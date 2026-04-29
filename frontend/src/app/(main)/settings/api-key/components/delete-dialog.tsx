@@ -73,13 +73,13 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
             </div>
           </div>
 
-          <div className="rounded-lg border border-status-pending/30 dark:border-amber-800 bg-status-pending/10/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-status-pending dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-status-pending flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              <p className="text-sm font-medium text-status-pending">
                 警告
               </p>
-              <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+              <ul className="text-sm text-status-pending/80 space-y-1">
                 <li>• 撤销后，使用该 Key 的所有 API 请求将立即失败</li>
                 <li>• 如果您正在生产环境使用该 Key，请确保已更新配置</li>
                 <li>• 此操作无法撤销，如需使用 API Key 需重新生成</li>

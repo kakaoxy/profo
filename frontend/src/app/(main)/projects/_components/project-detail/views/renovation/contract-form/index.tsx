@@ -167,7 +167,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
 
   if (!isMounted || isLoading) {
     return (
-      <Card className="border-slate-200">
+      <Card className="border-border">
         <CardContent className="p-6">
           <div className="flex items-center justify-center text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -180,7 +180,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
 
   if (error) {
     return (
-      <Card className="border-slate-200">
+      <Card className="border-border">
         <CardContent className="p-6">
           <div className="text-center text-error text-xs">{error}</div>
         </CardContent>
@@ -192,7 +192,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
   const values = watch();
 
   return (
-    <Card className="border-slate-200 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="pb-3 py-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-1.5">

@@ -18,9 +18,9 @@ interface HeaderStatsProps {
 
 export function HeaderStats({ stats }: HeaderStatsProps) {
   return (
-    <Card className="shadow-sm border-slate-200">
+    <Card className="shadow-sm border-border">
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-border">
           {/* 左侧 (60%) - 资金池 */}
           <div className="md:col-span-3 p-6 flex flex-col justify-center space-y-6">
             {/* 净现金流 */}
@@ -47,7 +47,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">总收入</span>
-                  <span className="text-sm font-bold text-red-700 font-mono">
+                  <span className="text-sm font-bold text-error font-mono">
                     ¥{(stats.total_income / 10000).toFixed(2)}万
                   </span>
                 </div>
@@ -59,7 +59,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">总支出</span>
-                  <span className="text-sm font-bold text-emerald-700 font-mono">
+                  <span className="text-sm font-bold text-success font-mono">
                     ¥{(stats.total_expense / 10000).toFixed(2)}万
                   </span>
                 </div>
@@ -95,12 +95,12 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
                   </Tooltip>
                 </TooltipProvider>
               </span>
-              <span className="text-lg font-mono font-semibold text-slate-700">
+              <span className="text-lg font-mono font-semibold text-foreground">
                 {stats.annualized_return}%
               </span>
             </div>
 
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
+            <div className="flex justify-between items-center pt-2 border-t border-border/60">
               <span className="text-xs text-muted-foreground">资金占用天数</span>
               <span className="text-sm font-medium text-foreground">
                 {stats.holding_days} 天

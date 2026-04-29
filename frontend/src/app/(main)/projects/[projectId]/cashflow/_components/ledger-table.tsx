@@ -72,14 +72,14 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
             {/* 收入 Tab：红色 */}
             <TabsTrigger
               value="income"
-              className="text-xs h-7 text-red-700 data-[state=active]:text-red-700"
+              className="text-xs h-7 text-error data-[state=active]:text-error"
             >
               收入
             </TabsTrigger>
             {/* 支出 Tab：绿色 */}
             <TabsTrigger
               value="expense"
-              className="text-xs h-7 text-emerald-700 data-[state=active]:text-emerald-700"
+              className="text-xs h-7 text-success data-[state=active]:text-success"
             >
               支出
             </TabsTrigger>
@@ -106,7 +106,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
       </div>
 
       {/* 表格内容 */}
-      <div className="rounded-md border border-slate-200 bg-white overflow-x-auto">
+      <div className="rounded-md border border-border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -137,7 +137,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                     <div className="flex flex-col">
                       {record.date ? (
                         <>
-                          <span className="font-medium text-slate-700">
+                          <span className="font-medium text-foreground">
                             {format(parseISO(record.date), "yyyy-MM-dd")}
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-0.5">

@@ -30,7 +30,7 @@ function ImagePlaceholder({ size = "large" }: { size?: "large" | "small" }) {
         strokeWidth="1"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-slate-300"
+        className="text-muted-foreground"
       >
         <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
         <circle cx="9" cy="9" r="2" />
@@ -55,7 +55,7 @@ function SecondaryImagePlaceholder() {
           strokeWidth="1"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-slate-300"
+          className="text-muted-foreground"
         >
           <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
           <circle cx="9" cy="9" r="2" />
@@ -82,9 +82,9 @@ export function HeroGallery({
   const statusColor =
     projectStatus === "在售"
       ? "bg-success"
-      : projectStatus === "已售"
-        ? "bg-slate-400"
-        : "bg-primary";
+        : projectStatus === "已售"
+          ? "bg-muted"
+          : "bg-primary";
 
   // 使用 state 追踪图片加载错误状态
   const [mainImageError, setMainImageError] = useState(false);
@@ -186,7 +186,7 @@ export function HeroGallery({
               />
             )}
             {totalCount > 3 ? (
-              <button className="absolute bottom-4 right-4 bg-white/90 backdrop-blur text-slate-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-white transition-colors">
+              <button className="absolute bottom-4 right-4 bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-card transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"

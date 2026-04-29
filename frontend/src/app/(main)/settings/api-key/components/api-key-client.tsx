@@ -45,13 +45,13 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
   if (showNewKey && newApiKey) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-status-pending/30 dark:border-amber-800 bg-status-pending/10/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-status-pending dark:text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-status-pending flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+            <p className="text-sm font-medium text-status-pending">
               请立即复制您的 API Key
             </p>
-            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+            <p className="text-sm text-status-pending/80 mt-1">
               这是唯一一次显示完整 Key 的机会，关闭后将无法再次查看。请妥善保管。
             </p>
           </div>

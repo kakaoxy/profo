@@ -57,7 +57,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
 
   return (
     <Dialog>
-      <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-slate-200">
+      <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-border">
           <Image
           src={getFileUrl(photo.url)}
           alt={photo.filename || "Renovation Photo"}
@@ -148,7 +148,7 @@ PhotoItem.displayName = "PhotoItem";
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
   return (
     <div
-      className="aspect-square relative rounded-md overflow-hidden bg-muted border border-slate-200"
+      className="aspect-square relative rounded-md overflow-hidden bg-muted border border-border"
     >
       {/* Local Preview Image */}
       <Image
@@ -214,7 +214,7 @@ export function PhotoGrid({
 
       {/* 3. Upload Button */}
       {!isFuture && (
-        <label className="aspect-square rounded-md border-2 border-dashed border-slate-200 bg-white hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
+        <label className="aspect-square rounded-md border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
           <input
             type="file"
             accept="image/*"

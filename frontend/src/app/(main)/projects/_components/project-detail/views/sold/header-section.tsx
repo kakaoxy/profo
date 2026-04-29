@@ -102,7 +102,7 @@ export function SoldHeader({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            <Badge variant="secondary" className="bg-muted text-slate-700">
+            <Badge variant="secondary" className="bg-muted text-foreground">
               {project.area}m²
             </Badge>
             <Badge
