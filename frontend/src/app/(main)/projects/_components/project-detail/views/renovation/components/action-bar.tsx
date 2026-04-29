@@ -42,7 +42,7 @@ export function ActionBar({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 min-w-[130px] justify-start text-left font-normal bg-white border-slate-200 hover:bg-muted"
+                className="h-8 min-w-[130px] justify-start text-left font-normal bg-card border-border hover:bg-muted"
               >
                 <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 {selectedDate ? (

@@ -138,7 +138,7 @@ export function TimelineItem({
           <span className={cn("text-lg transition-colors", isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground group-hover:text-foreground")}>
             {stage.label}
           </span>
-          {isCurrent && <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none">进行中</Badge>}
+          {isCurrent && <Badge variant="secondary" className="bg-orange-100 text-status-renovating hover:bg-orange-100 border-none">进行中</Badge>}
           {(photos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
             <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">{photos.length + uploadQueue.length} 张照片</span>
           )}

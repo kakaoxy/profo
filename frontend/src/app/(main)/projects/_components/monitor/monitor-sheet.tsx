@@ -39,7 +39,7 @@ const AIStrategy = dynamic(
 // 新增：一个简单的包装组件，专门解决“糊在一起”的问题
 // 它负责提供白色背景、边框和阴影，不改变内部布局
 const CardWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+  <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
     {children}
   </div>
 );
@@ -77,10 +77,10 @@ export function MonitorSheet() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-none p-0 flex flex-col h-full border-l border-slate-200 shadow-xl overflow-hidden outline-none"
+        className="w-full sm:max-w-none p-0 flex flex-col h-full border-l border-border shadow-xl overflow-hidden outline-none"
       >
         {/* Sticky Header */}
-        <div className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-50 sticky top-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+        <div className="flex-none bg-card border-b border-border px-6 py-4 flex items-center justify-between z-50 sticky top-0 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-md shadow-primary/20">
               <span className="text-sm font-bold">M</span>
@@ -102,7 +102,7 @@ export function MonitorSheet() {
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-muted border border-transparent hover:border-slate-200 rounded-lg transition-all text-muted-foreground hover:text-muted-foreground"
+            className="p-2 hover:bg-muted border border-transparent hover:border-border rounded-lg transition-all text-muted-foreground hover:text-muted-foreground"
           >
             <X className="h-5 w-5" />
           </button>

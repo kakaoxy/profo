@@ -47,9 +47,9 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
   const hasAnyData = project.area || project.layout || project.orientation || project.floor_info || project.total_price;
 
   return (
-    <Card className="bg-white border-slate-200 shadow-sm">
-      <CardHeader className="!pb-3 px-5 border-b border-slate-100">
-        <CardTitle className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+    <Card className="bg-card border-border shadow-sm">
+      <CardHeader className="!pb-3 px-5 border-b border-border">
+        <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
           <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
           物理信息
           <Badge variant="secondary" className="ml-2 text-[10px] bg-muted text-muted-foreground">

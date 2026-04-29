@@ -82,10 +82,10 @@ export function TrendPositioning({
       />
 
       <div className="px-4 sm:px-6">
-        <Card className="p-6 border-slate-100 shadow-sm bg-white">
+        <Card className="p-6 border-border shadow-sm bg-card">
           <PriceChart data={data} myPricing={myPricing} priceRange={priceRange} />
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-50">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-border">
             <InsightCard
               iconColor="amber"
               title="市场趋势"
@@ -132,7 +132,7 @@ function InsightCard({ iconColor, title, content }: InsightCardProps) {
         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
           {title}
         </p>
-        <p className="text-sm font-bold text-slate-700">{content}</p>
+        <p className="text-sm font-bold text-foreground">{content}</p>
       </div>
     </div>
   );

@@ -56,13 +56,13 @@ export function GenerateDialog({ open, onOpenChange, onSuccess }: GenerateDialog
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="rounded-lg border border-status-pending/30 dark:border-amber-800 bg-status-pending/10/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-status-pending dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-status-pending flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              <p className="text-sm font-medium text-status-pending">
                 重要提示
               </p>
-              <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+              <ul className="text-sm text-status-pending/80 space-y-1">
                 <li>• 每个用户只能拥有一个有效的 API Key</li>
                 <li>• 新生成的 Key 仅显示一次，请务必立即复制保存</li>
                 <li>• 旧 Key 将被立即撤销，使用旧 Key 的请求将失败</li>

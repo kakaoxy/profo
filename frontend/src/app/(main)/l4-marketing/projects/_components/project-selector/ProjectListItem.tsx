@@ -22,7 +22,7 @@ export function ProjectListItem({
         "hover:shadow-md hover:border-primary/30",
         selected
           ? "border-primary bg-primary/5 shadow-sm"
-          : "border-slate-200 bg-white"
+          : "border-border bg-card"
       )}
       role="button"
       tabIndex={0}
@@ -122,18 +122,18 @@ function getStatusConfig(status: string): {
     },
     装修: {
       label: "装修中",
-      bgColor: "bg-amber-100",
-      textColor: "text-amber-700",
+      bgColor: "bg-status-renovating/10",
+      textColor: "text-status-renovating",
     },
     挂牌: {
       label: "挂牌中",
-      bgColor: "bg-green-100",
-      textColor: "text-green-700",
+      bgColor: "bg-status-selling/10",
+      textColor: "text-status-selling",
     },
     已售: {
       label: "已售",
       bgColor: "bg-muted",
-      textColor: "text-gray-700",
+      textColor: "text-foreground",
     },
   };
 
@@ -141,7 +141,7 @@ function getStatusConfig(status: string): {
     statusMap[status] || {
       label: status,
       bgColor: "bg-muted",
-      textColor: "text-slate-700",
+      textColor: "text-foreground",
     }
   );
 }

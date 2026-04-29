@@ -103,7 +103,7 @@ export const columns: ColumnDef<Project>[] = [
       </div>
     ),
     cell: ({ row }) => (
-      <div className="hidden sm:block text-right pr-4 font-semibold text-slate-700 tabular-nums">
+      <div className="hidden sm:block text-right pr-4 font-semibold text-foreground tabular-nums">
         {formatWan(row.original.sold_price)}
       </div>
     ),
