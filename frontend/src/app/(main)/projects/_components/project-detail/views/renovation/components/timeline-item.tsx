@@ -138,7 +138,7 @@ export function TimelineItem({
           <span className={cn("text-lg transition-colors", isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground group-hover:text-foreground")}>
             {stage.label}
           </span>
-          {isCurrent && <Badge variant="secondary" className="bg-orange-100 text-status-renovating hover:bg-orange-100 border-none">进行中</Badge>}
+          {isCurrent && <Badge variant="secondary" className="bg-status-renovating/10 text-status-renovating hover:bg-status-renovating/10 border-none">进行中</Badge>}
           {(photos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
             <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">{photos.length + uploadQueue.length} 张照片</span>
           )}
@@ -147,7 +147,7 @@ export function TimelineItem({
       </AccordionTrigger>
 
       <AccordionContent className="pl-12 pt-4 pb-2">
-        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-white border-orange-200 shadow-sm" : "bg-muted/50 border-slate-100")}>
+        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-white border-status-renovating/30 shadow-sm" : "bg-muted/50 border-slate-100")}>
           <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} onUpload={handleUpload} onDelete={handleDelete} />
           <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
         </div>
