@@ -29,8 +29,6 @@ export interface StatusConfig {
   label: string;
   /** CSS 变量名，如 --status-pending */
   cssVar: string;
-  /** 步骤顺序（用于进度指示器） */
-  step?: number;
 }
 
 /** 统一状态配置映射 */
@@ -38,12 +36,10 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
   pending: {
     label: "待评估",
     cssVar: "--status-pending",
-    step: 0,
   },
   signing: {
     label: "已签约",
     cssVar: "--status-signing",
-    step: 3,
   },
   renovating: {
     label: "装修中",
@@ -60,7 +56,6 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
   rejected: {
     label: "已驳回",
     cssVar: "--status-rejected",
-    step: 0,
   },
 };
 
@@ -91,18 +86,10 @@ export const defaultStatusClass = "bg-muted text-muted-foreground";
  * 获取状态标签
  */
 export function getStatusLabel(status: StatusType | string): string {
-  // 线索状态字符串映射
-  const leadStatusLabelMap: Record<string, string> = {
-    pending_assessment: "待评估",
-    pending_visit: "待看房",
-    visited: "已看房",
-    signed: "已签约",
-    rejected: "已驳回",
-  };
-
-  // 如果是线索状态字符串，直接返回中文标签
-  if (status in leadStatusLabelMap) {
-    return leadStatusLabelMap[status];
+  // 如果是线索状态字符串，映射到通用 StatusType 后获取标签
+  if (status in LEAD_STATUS_MAPPING) {
+    const mappedStatus = LEAD_STATUS_MAPPING[status as LeadStatus];
+    return STATUS_CONFIG[mappedStatus]?.label || status;
   }
 
   return STATUS_CONFIG[status as StatusType]?.label || status;
@@ -240,7 +227,7 @@ export function getStatusStyleConfig(status: string): { label: string; className
   const leadStatusMap: Record<string, { label: string; className: string }> = {
     pending_assessment: {
       label: "待评估",
-      className: "bg-primary/10 text-primary border-primary/20",
+      className: "bg-status-pending/10 text-status-pending border-status-pending/20",
     },
     pending_visit: {
       label: "待看房",
