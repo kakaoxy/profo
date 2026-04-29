@@ -113,7 +113,7 @@ export function FileUploader({
           className={cn(
             "flex items-center gap-3 p-2 rounded-md border",
             file.status === "error" && "border-error/20 bg-error/5",
-            file.status === "success" && "border-status-selling/20 bg-status-selling/5",
+            file.status === "success" && "border-success/20 bg-success/5",
             file.status === "uploading" && "border-primary/20 bg-primary/5"
           )}
         >
