@@ -125,7 +125,7 @@ export function ProjectSelector({
         </DialogHeader>
 
         <div className="relative px-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="搜索小区名称..."
             value={searchQuery}
@@ -135,7 +135,7 @@ export function ProjectSelector({
           {searchQuery && (
             <button
               onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
             >
               <X className="w-4 h-4" />
             </button>
@@ -155,12 +155,12 @@ export function ProjectSelector({
 
             {loading && (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             )}
 
             {!loading && projects.length === 0 && (
-              <div className="text-center py-8 text-slate-500">
+              <div className="text-center py-8 text-muted-foreground">
                 {searchQuery ? "未找到匹配的项目" : "暂无项目"}
               </div>
             )}
@@ -178,10 +178,10 @@ export function ProjectSelector({
         </ScrollArea>
 
         <div className="flex items-center justify-between gap-2 px-6 py-3 border-t bg-white">
-          <div className="text-sm text-slate-500 truncate min-w-0 flex-1">
+          <div className="text-sm text-muted-foreground truncate min-w-0 flex-1">
             {selectedProject ? (
               <span>
-                已选择: <span className="font-medium text-slate-900">{selectedProject.name}</span>
+                已选择: <span className="font-medium text-foreground">{selectedProject.name}</span>
               </span>
             ) : (
               "请选择项目"

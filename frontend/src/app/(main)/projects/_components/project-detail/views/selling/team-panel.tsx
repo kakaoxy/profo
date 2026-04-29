@@ -100,17 +100,17 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   };
 
   return (
-    <div className="bg-slate-50/50 border border-slate-100 rounded-lg p-4 mb-6">
+    <div className="bg-muted/50 border border-slate-100 rounded-lg p-4 mb-6">
       <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
         销售团队{" "}
-        <span className="text-[10px] font-normal text-slate-400 normal-case">
+        <span className="text-[10px] font-normal text-muted-foreground normal-case">
           (自动保存)
         </span>
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* 1. 渠道 */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-500">渠道</Label>
+          <Label className="text-xs text-muted-foreground">渠道</Label>
           <Select
             value={channelManagerId || "__empty__"}
             onValueChange={(value) => {
@@ -142,7 +142,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
 
         {/* 2. 讲房 */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-500">讲房</Label>
+          <Label className="text-xs text-muted-foreground">讲房</Label>
           <Select
             value={propertyAgentId || "__empty__"}
             onValueChange={(value) => {
@@ -174,7 +174,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
 
         {/* 3. 谈判 */}
         <div className="space-y-1.5">
-          <Label className="text-xs text-slate-500">谈判</Label>
+          <Label className="text-xs text-muted-foreground">谈判</Label>
           <Select
             value={negotiatorId || "__empty__"}
             onValueChange={(value) => {

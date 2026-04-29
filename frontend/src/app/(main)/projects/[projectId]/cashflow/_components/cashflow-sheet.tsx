@@ -98,17 +98,17 @@ export function CashFlowSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent className="w-full sm:max-w-2xl md:max-w-3xl bg-slate-50 p-0 flex flex-col h-full border-l border-slate-200 shadow-2xl">
+      <SheetContent className="w-full sm:max-w-2xl md:max-w-3xl bg-muted p-0 flex flex-col h-full border-l border-slate-200 shadow-2xl">
         <div className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
           <div>
             {/* 标题区域：显示小区名+地址 */}
-            <SheetTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <SheetTitle className="text-xl font-bold text-foreground flex items-center gap-2">
               资金账本
               {projectDisplayName && (
                 <>
                   <span className="text-slate-300 font-light">/</span>
                   <span
-                    className="text-base font-medium text-slate-600 truncate max-w-xs"
+                    className="text-base font-medium text-muted-foreground truncate max-w-xs"
                     title={projectDisplayName}
                   >
                     {projectDisplayName}
@@ -116,7 +116,7 @@ export function CashFlowSheet() {
                 </>
               )}
             </SheetTitle>
-            <SheetDescription className="text-xs text-slate-500 mt-1">
+            <SheetDescription className="text-xs text-muted-foreground mt-1">
               全周期资金流向监控，即时核算项目盈亏。
             </SheetDescription>
           </div>
@@ -126,7 +126,7 @@ export function CashFlowSheet() {
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {isLoading || !data ? (
             <div className="flex h-full items-center justify-center min-h-96">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <>

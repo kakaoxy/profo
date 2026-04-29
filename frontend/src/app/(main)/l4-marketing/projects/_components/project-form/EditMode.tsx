@@ -172,9 +172,9 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
           </div>
 
           {/* Fixed Bottom Actions */}
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-8 z-50">
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-xl px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-8 z-50">
             <div className="flex flex-col">
-              <span className="text-slate-400 text-[10px] uppercase font-medium tracking-wider">当前状态</span>
+              <span className="text-muted-foreground text-[10px] uppercase font-medium tracking-wider">当前状态</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                 <span className="text-white text-sm font-medium">
@@ -186,7 +186,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
             <div className="flex gap-4">
               <Link
                 href="/l4-marketing/projects"
-                className="text-slate-400 text-sm hover:text-white transition-colors px-3 py-2"
+                className="text-muted-foreground text-sm hover:text-white transition-colors px-3 py-2"
               >
                 取消
               </Link>

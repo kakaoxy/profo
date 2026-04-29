@@ -57,21 +57,21 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
 
           {/* 加载状态 */}
           {loadState === "loading" && (
-            <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-slate-300 border-t-primary rounded-full animate-spin" />
+            <div className="absolute inset-0 bg-muted flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
             </div>
           )}
 
           {/* 错误状态 */}
           {loadState === "error" && (
-            <div className="absolute inset-0 bg-slate-100 flex flex-col items-center justify-center p-2">
-              <AlertCircle className="w-6 h-6 text-slate-400 mb-1" />
-              <span className="text-xs text-slate-500 text-center">加载失败</span>
+            <div className="absolute inset-0 bg-muted flex flex-col items-center justify-center p-2">
+              <AlertCircle className="w-6 h-6 text-muted-foreground mb-1" />
+              <span className="text-xs text-muted-foreground text-center">加载失败</span>
             </div>
           )}
         </>
       ) : (
-        <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center">
+        <div className="w-full h-full bg-muted flex flex-col items-center justify-center">
           {isVideo ? (
             <Video className="w-8 h-8 text-slate-300" />
           ) : (

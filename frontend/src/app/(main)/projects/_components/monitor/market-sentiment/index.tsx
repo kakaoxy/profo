@@ -45,7 +45,7 @@ export function MarketSentiment({
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 h-48 animate-pulse"
+              className="p-5 rounded-xl border border-slate-100 bg-muted/50 h-48 animate-pulse"
             />
           ))}
         </div>
@@ -91,12 +91,12 @@ export function MarketSentiment({
           dataKey="current"
         />
 
-        <div className="p-5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="p-5 rounded-xl border border-slate-100 bg-muted/50 flex flex-col">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             去化压力 (库存/月销)
           </p>
           <div className="mt-2 flex flex-col justify-center grow pb-6">
-            <p className="text-3xl font-black text-slate-900">
+            <p className="text-3xl font-black text-foreground">
               {inventoryMonths.toFixed(1)} 个月
             </p>
             <p className={`text-sm font-bold ${pressureColor} mt-2`}>

@@ -62,7 +62,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
         <h4 className="text-sm font-semibold text-primary">
           营销照片 ({photos.length})
         </h4>
-        <span className="text-xs text-slate-400">可拖拽排序</span>
+        <span className="text-xs text-muted-foreground">可拖拽排序</span>
       </div>
 
       <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
@@ -72,7 +72,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
           className={cn(
             "space-y-2 min-h-[80px] max-h-[300px] overflow-y-auto p-2 rounded-lg border transition-all",
             // 默认样式
-            "bg-slate-50 border-slate-200",
+            "bg-muted border-slate-200",
             // 拖拽悬停时的样式
             isOver && "border-primary bg-primary/5 ring-2 ring-primary/20"
           )}
@@ -86,9 +86,9 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
           }}
         >
           {photos.length === 0 ? (
-            <div className="text-center py-6 text-slate-400 text-sm">
+            <div className="text-center py-6 text-muted-foreground text-sm">
               暂无营销照片
-              <p className="text-xs mt-1 text-slate-400/60">
+              <p className="text-xs mt-1 text-muted-foreground/60">
                 上传照片或从改造照片拖拽到此处
               </p>
             </div>

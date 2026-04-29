@@ -104,7 +104,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
             当前阶段
           </span>
           <div className="space-y-1">
-            <div className="text-xl font-bold text-slate-900">
+            <div className="text-xl font-bold text-foreground">
               {currentStageLabel}
             </div>
             <div className="flex items-center gap-1.5">
@@ -127,12 +127,12 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
             总体进度
           </span>
           <div>
-            <div className="text-2xl font-bold text-slate-900 mb-1">
+            <div className="text-2xl font-bold text-foreground mb-1">
               {progressValue}%
             </div>
             <Progress
               value={progressValue}
-              className="h-2 bg-slate-100"
+              className="h-2 bg-muted"
               indicatorClassName="bg-orange-500"
             />
           </div>
@@ -140,21 +140,21 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       </Card>
 
       {/* 卡片 4: 现场相册 */}
-      <Card className="shadow-sm hover:bg-slate-50 cursor-pointer transition-colors group">
+      <Card className="shadow-sm hover:bg-muted cursor-pointer transition-colors group">
         <CardContent className="p-4 flex flex-col justify-between h-full">
           <span className="text-xs text-muted-foreground font-medium">
             现场相册
           </span>
           <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-slate-900">
+            <div className="text-2xl font-bold text-foreground">
               {/* 显示计算出来的 photoCount */}
               {photoCount}{" "}
               <span className="text-xs font-normal text-muted-foreground">
                 张
               </span>
             </div>
-            <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
-              <ImageIcon className="h-4 w-4 text-slate-600" />
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
         </CardContent>

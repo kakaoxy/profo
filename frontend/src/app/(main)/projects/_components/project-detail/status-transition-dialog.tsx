@@ -70,7 +70,7 @@ export function StatusTransitionDialog({
           variant={triggerVariant === "default" ? "default" : triggerVariant}
           className={
             triggerVariant === "default"
-              ? "w-full bg-slate-900 hover:bg-slate-800 text-white gap-2 shadow-sm h-12 text-base"
+              ? "w-full bg-card hover:bg-card text-white gap-2 shadow-sm h-12 text-base"
               : "w-full gap-2"
           }
         >
@@ -104,7 +104,7 @@ export function StatusTransitionDialog({
           <Button
             onClick={handleConfirm}
             disabled={isLoading}
-            className="bg-slate-900 text-white"
+            className="bg-card text-white"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {confirmLabel}

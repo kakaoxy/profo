@@ -135,19 +135,19 @@ export function TimelineItem({
 
       <AccordionTrigger className={cn("pl-12 py-1 hover:no-underline data-[state=open]:py-1 group", isFuture ? "cursor-not-allowed opacity-60" : "")}>
         <div className="flex items-center gap-3 w-full">
-          <span className={cn("text-lg transition-colors", isCurrent ? "font-bold text-slate-900" : "font-medium text-slate-600 group-hover:text-slate-900")}>
+          <span className={cn("text-lg transition-colors", isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground group-hover:text-foreground")}>
             {stage.label}
           </span>
           {isCurrent && <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none">进行中</Badge>}
           {(photos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
-            <span className="text-xs text-muted-foreground ml-2 bg-slate-100 px-1.5 rounded">{photos.length + uploadQueue.length} 张照片</span>
+            <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">{photos.length + uploadQueue.length} 张照片</span>
           )}
           {renderFinishDate()}
         </div>
       </AccordionTrigger>
 
       <AccordionContent className="pl-12 pt-4 pb-2">
-        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-white border-orange-200 shadow-sm" : "bg-slate-50/50 border-slate-100")}>
+        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-white border-orange-200 shadow-sm" : "bg-muted/50 border-slate-100")}>
           <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} onUpload={handleUpload} onDelete={handleDelete} />
           <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
         </div>

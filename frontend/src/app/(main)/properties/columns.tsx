@@ -143,7 +143,7 @@ const FloorPlanPreview = ({
       onOpenChange={setOpen}
     >
       <HoverCardTrigger asChild>
-        <div className="relative w-10 h-8 sm:w-12 sm:h-9 rounded overflow-hidden border bg-slate-100 cursor-zoom-in group">
+        <div className="relative w-10 h-8 sm:w-12 sm:h-9 rounded overflow-hidden border bg-muted cursor-zoom-in group">
           <Image
             src={cover}
             alt="户型图缩略"
@@ -162,7 +162,7 @@ const FloorPlanPreview = ({
           align="start"
           sideOffset={10}
         >
-          <div className="rounded overflow-hidden bg-slate-50 border aspect-4/3 flex items-center justify-center relative">
+          <div className="rounded overflow-hidden bg-muted border aspect-4/3 flex items-center justify-center relative">
             <Image
               src={cover}
               alt="户型图大图预览"
@@ -212,7 +212,7 @@ export const columns: ColumnDef<Property>[] = [
       // 如果没图，显示占位符 (保持不变)
       if (!cover) {
         return (
-          <div className="w-10 h-8 sm:w-12 sm:h-9 bg-slate-100 rounded border flex items-center justify-center text-slate-400">
+          <div className="w-10 h-8 sm:w-12 sm:h-9 bg-muted rounded border flex items-center justify-center text-muted-foreground">
             <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" />
           </div>
         );

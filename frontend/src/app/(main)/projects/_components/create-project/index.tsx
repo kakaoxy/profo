@@ -110,7 +110,7 @@ export function CreateProjectDialog({
         </DialogHeader>
 
         {/* --- Body --- */}
-        <div className="flex-1 overflow-hidden bg-slate-50/50">
+        <div className="flex-1 overflow-hidden bg-muted/50">
           <Form {...form}>
             <form onSubmit={onSubmit} className="h-full flex flex-col">
               {/* 表单错误提示 */}

@@ -68,13 +68,13 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
         <h4 className="text-sm font-semibold text-emerald-600">
           改造照片 ({photos.length})
         </h4>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-muted-foreground">
           {activeId ? "拖拽到目标阶段" : "支持跨阶段拖拽"}
         </span>
       </div>
 
       <div 
-        className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200"
+        className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-muted rounded-lg border border-slate-200"
         style={{
           // 优化滚动性能
           willChange: "scroll-position",
@@ -94,7 +94,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
 
               return (
                 <div key={stage} className="space-y-1">
-                  <div className="text-xs font-medium text-slate-500 px-1 flex items-center gap-2">
+                  <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     {stageConfig.label} ({stagePhotos.length})
                   </div>
@@ -128,7 +128,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
 
               return (
                 <div key={stage} className="space-y-1">
-                  <div className="text-xs font-medium text-slate-500 px-1 flex items-center gap-2">
+                  <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                     {stageConfig.label} ({stagePhotos.length})
                   </div>
@@ -138,7 +138,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                   >
                     <div
                       id={containerId}
-                      className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-slate-300 hover:border-emerald-400 transition-colors"
+                      className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-border hover:border-emerald-400 transition-colors"
                     >
                       {renderStagePhotos(stagePhotos)}
                     </div>

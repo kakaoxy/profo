@@ -88,17 +88,17 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
           <AlertTriangle className="w-8 h-8 text-red-500" />
         </div>
 
-        <h2 className="text-xl font-bold text-slate-900 mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           页面出现错误
         </h2>
 
-        <p className="text-slate-500 mb-6">
+        <p className="text-muted-foreground mb-6">
           抱歉，页面加载时遇到了问题。您可以尝试刷新页面或返回首页。
         </p>
 
         {error && (
-          <div className="bg-slate-50 rounded-lg p-4 mb-6 text-left">
-            <p className="text-xs font-medium text-slate-400 mb-1">错误信息：</p>
+          <div className="bg-muted rounded-lg p-4 mb-6 text-left">
+            <p className="text-xs font-medium text-muted-foreground mb-1">错误信息：</p>
             <p className="text-sm text-red-600 font-mono break-all">
               {error.message}
             </p>
@@ -142,9 +142,9 @@ export function SectionErrorBoundary({
   return (
     <ErrorBoundary
       fallback={
-        <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 text-center">
+        <div className="p-6 bg-muted rounded-lg border border-slate-200 text-center">
           <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             {title}加载失败，请刷新页面重试
           </p>
         </div>

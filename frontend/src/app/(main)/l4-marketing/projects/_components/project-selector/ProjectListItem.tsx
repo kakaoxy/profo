@@ -41,18 +41,18 @@ export function ProjectListItem({
       )}
 
       {/* 项目名称 */}
-      <h4 className="font-semibold text-slate-900 mb-2 pr-8 line-clamp-1">
+      <h4 className="font-semibold text-foreground mb-2 pr-8 line-clamp-1">
         {project.name}
       </h4>
 
       {/* 小区和地址 */}
       <div className="space-y-1.5 mb-3">
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <span className="line-clamp-1">{project.community_name}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <span className="line-clamp-1">{project.address}</span>
         </div>
       </div>
@@ -60,19 +60,19 @@ export function ProjectListItem({
       {/* 房源属性 */}
       <div className="flex flex-wrap gap-3">
         {project.area && (
-          <div className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
             <Maximize className="w-3 h-3" />
             <span>{project.area}m²</span>
           </div>
         )}
         {project.layout && (
-          <div className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
             <LayoutGrid className="w-3 h-3" />
             <span>{project.layout}</span>
           </div>
         )}
         {project.orientation && (
-          <div className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
             <Compass className="w-3 h-3" />
             <span>{project.orientation}</span>
           </div>
@@ -140,7 +140,7 @@ function getStatusConfig(status: string): {
   return (
     statusMap[status] || {
       label: status,
-      bgColor: "bg-slate-100",
+      bgColor: "bg-muted",
       textColor: "text-slate-700",
     }
   );

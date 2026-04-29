@@ -36,8 +36,8 @@ export function ProjectImportButton({
               <Upload className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h4 className="font-medium text-slate-900">从项目导入</h4>
-              <p className="text-sm text-slate-500">从L3项目快速导入房源数据</p>
+              <h4 className="font-medium text-foreground">从项目导入</h4>
+              <p className="text-sm text-muted-foreground">从L3项目快速导入房源数据</p>
             </div>
           </div>
           <Button
@@ -72,12 +72,12 @@ export function ProjectImportButton({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-medium text-slate-900">{selectedProject.name}</h4>
+              <h4 className="font-medium text-foreground">{selectedProject.name}</h4>
               <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
                 已选择
               </span>
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               {selectedProject.community_name} · {selectedProject.layout || "未设置户型"} · {" "}
               {selectedProject.area ? `${selectedProject.area}m²` : "未设置面积"}
             </p>
@@ -87,7 +87,7 @@ export function ProjectImportButton({
           variant="ghost"
           size="icon"
           onClick={onClear}
-          className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+          className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
         >
           <X className="w-5 h-5" />
         </Button>

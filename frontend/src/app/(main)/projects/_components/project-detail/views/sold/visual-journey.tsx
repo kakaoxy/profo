@@ -33,10 +33,10 @@ export function VisualJourney({ project }: { project: Project }) {
     <Card className="border-slate-200 shadow-sm flex flex-col overflow-hidden">
       <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-slate-500" />
+          <ImageIcon className="h-4 w-4 text-muted-foreground" />
           项目蜕变影像 (Visual Journey)
         </CardTitle>
-        <span className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+        <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full border border-slate-100">
           📸 全生命周期影像记录 (共 {totalPhotos} 张)
         </span>
       </CardHeader>
@@ -55,19 +55,19 @@ export function VisualJourney({ project }: { project: Project }) {
 
                   <div className="mt-4 space-y-1 pl-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-card" />
                       <span className="text-sm font-bold text-slate-700">
                         {idx + 1}. {stage.value}{stage.label.includes("阶段") ? "" : "阶段"}
                       </span>
                     </div>
-                    <p className="text-[11px] font-mono text-slate-400 pl-3">
+                    <p className="text-[11px] font-mono text-muted-foreground pl-3">
                       ({stage.date ? format(parseISO(stage.date), "MM/dd") : "--/--"})
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="w-full py-12 flex flex-col items-center justify-center text-slate-400">
+              <div className="w-full py-12 flex flex-col items-center justify-center text-muted-foreground">
                 <ImageIcon className="h-8 w-8 mb-2 opacity-30" />
                 <span className="text-xs">暂无影像记录</span>
               </div>

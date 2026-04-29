@@ -100,7 +100,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
           <div className="grid gap-2">
             <Label
               htmlFor="date"
-              className="text-xs font-medium text-slate-500"
+              className="text-xs font-medium text-muted-foreground"
             >
               成交日期
             </Label>
@@ -110,7 +110,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
                   id="date"
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-normal border-slate-200 hover:bg-slate-50",
+                    "w-full justify-start text-left font-normal border-slate-200 hover:bg-muted",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -137,7 +137,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
           <div className="grid gap-2">
             <Label
               htmlFor="price"
-              className="text-xs font-medium text-slate-500"
+              className="text-xs font-medium text-muted-foreground"
             >
               成交总价 (万元)
             </Label>
@@ -150,7 +150,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
                 onChange={(e) => setPrice(e.target.value)}
                 className="pl-3 pr-8 border-slate-200 focus-visible:ring-emerald-500"
               />
-              <span className="absolute right-3 top-2.5 text-xs text-slate-400">
+              <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">
                 万
               </span>
             </div>
@@ -162,7 +162,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
             variant="outline"
             onClick={() => setIsOpen(false)}
             disabled={isSubmitting}
-            className="border-slate-200 text-slate-600"
+            className="border-slate-200 text-muted-foreground"
           >
             取消
           </Button>

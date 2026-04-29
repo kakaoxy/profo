@@ -21,12 +21,12 @@ interface StatusCardProps {
 }
 
 function StatusCard({ label, badge, color }: StatusCardProps) {
-  const bgClass = color === "green" ? "bg-emerald-50" : "bg-slate-50";
+  const bgClass = color === "green" ? "bg-emerald-50" : "bg-muted";
   const borderClass = color === "green" ? "border-emerald-100" : "border-slate-100";
 
   return (
     <div className={`rounded-lg p-4 ${bgClass} border ${borderClass}`}>
-      <div className="text-xs text-slate-500 mb-2">{label}</div>
+      <div className="text-xs text-muted-foreground mb-2">{label}</div>
       <div>{badge}</div>
     </div>
   );
@@ -41,7 +41,7 @@ interface ConfigItemProps {
 function ConfigItem({ label, value }: ConfigItemProps) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-sm font-medium text-slate-700">{value}</span>
     </div>
   );
@@ -135,14 +135,14 @@ export const BasicConfigSection = memo(function BasicConfigSection({
             label="关联顾问"
             value={
               isLoadingConsultant ? (
-                <span className="text-slate-400">加载中...</span>
+                <span className="text-muted-foreground">加载中...</span>
               ) : consultant ? (
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-slate-400" />
+                  <User className="h-4 w-4 text-muted-foreground" />
                   <span>{consultant.nickname || consultant.username}</span>
                 </div>
               ) : project.consultant_id ? (
-                <span className="text-slate-400">顾问未找到</span>
+                <span className="text-muted-foreground">顾问未找到</span>
               ) : (
                 "-"
               )

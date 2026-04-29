@@ -37,7 +37,7 @@ const LazyPhotoPlaceholder = memo(function LazyPhotoPlaceholder({ onVisible }: L
   }, [onVisible]);
 
   return (
-    <div ref={ref} className="absolute inset-0 bg-slate-800 animate-pulse" />
+    <div ref={ref} className="absolute inset-0 bg-card animate-pulse" />
   );
 });
 
@@ -46,7 +46,7 @@ export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   return (
-    <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-800">
+    <div className="relative aspect-video rounded-lg overflow-hidden bg-card">
       {isVisible ? (
         <Image
           src={getFileUrl(photo.url)}

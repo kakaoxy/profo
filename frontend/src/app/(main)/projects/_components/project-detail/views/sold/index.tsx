@@ -22,7 +22,7 @@ export function SoldView({
   currentProjectStageIndex,
 }: SoldViewProps) {
   return (
-    <div className="h-full flex flex-col bg-slate-50/30">
+    <div className="h-full flex flex-col bg-muted/30">
       {/* 1. 顶部固定区域 (Header) */}
       <SoldHeader
         project={project}

@@ -16,8 +16,8 @@ export default function UploadPage() {
       <UploadZone />
 
       {/* 帮助文档区 */}
-      <div className="bg-slate-50 rounded-lg p-6 border text-sm text-muted-foreground space-y-4">
-        <h4 className="font-semibold text-slate-900">注意事项：</h4>
+      <div className="bg-muted rounded-lg p-6 border text-sm text-muted-foreground space-y-4">
+        <h4 className="font-semibold text-foreground">注意事项：</h4>
         <ul className="list-disc pl-4 space-y-1">
           <li>请务必使用&quot;下载数据模板&quot;功能获取最新的 CSV 模板。</li>
           <li>标有&quot;必填&quot;的字段不能为空，否则会导致该行数据导入失败。</li>

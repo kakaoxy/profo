@@ -28,7 +28,7 @@ export function DatePickerField({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium text-slate-600">{label}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -74,7 +74,7 @@ export function NumberInputField({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium text-slate-600">{label}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       <div className="relative">
         <Input
           type="number"
@@ -89,7 +89,7 @@ export function NumberInputField({
           className="h-9 text-sm"
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
             {suffix}
           </span>
         )}
@@ -114,7 +114,7 @@ export function TextInputField({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-medium text-slate-600">{label}</Label>
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       <Input
         type="text"
         placeholder={placeholder}

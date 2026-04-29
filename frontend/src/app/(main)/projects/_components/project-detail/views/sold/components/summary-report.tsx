@@ -67,7 +67,7 @@ export function SummaryReport({ project }: SummaryReportProps) {
   }, [reportContent]);
 
   return (
-    <Card className="border-slate-200 shadow-sm flex flex-col h-full bg-slate-50/50">
+    <Card className="border-slate-200 shadow-sm flex flex-col h-full bg-muted/50">
       <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-700">
           <Quote className="h-4 w-4 text-red-400 rotate-180" />
@@ -89,14 +89,14 @@ export function SummaryReport({ project }: SummaryReportProps) {
             </>
           ) : (
             <>
-              <Copy className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-600" />
+              <Copy className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground" />
               复制完整报告
             </>
           )}
         </Button>
       </CardHeader>
       <CardContent className="p-5">
-        <div className="bg-white rounded-lg border border-slate-200 shadow-inner p-6 font-mono text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-inner p-6 font-mono text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
           {reportContent}
         </div>
       </CardContent>

@@ -22,7 +22,7 @@ export function ViewMode({ project, photos }: ViewModeProps) {
         <BasicConfigView project={project} />
         <InfoCard title="照片">
           <PhotoGallery photos={photos} />
-          <div className="mt-4 text-xs text-slate-400">
+          <div className="mt-4 text-xs text-muted-foreground">
             如需管理照片（同步/删除/上传），请进入编辑页。
           </div>
         </InfoCard>

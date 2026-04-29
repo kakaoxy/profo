@@ -59,7 +59,7 @@ function PaymentNodeRow({
   const calculatedAmount = ratioValue && hardAmount ? hardAmount * (ratioValue / 100) : undefined;
 
   return (
-    <div className="grid grid-cols-3 gap-3 items-center py-2 px-2 bg-slate-50 rounded border-b border-slate-100 last:border-b-0">
+    <div className="grid grid-cols-3 gap-3 items-center py-2 px-2 bg-muted rounded border-b border-slate-100 last:border-b-0">
       {/* 支付节点 - 下拉选择器 */}
       <div>
         {isEditing ? (
@@ -84,7 +84,7 @@ function PaymentNodeRow({
             </SelectContent>
           </Select>
         ) : (
-          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-slate-100 rounded border border-slate-200">
+          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-muted rounded border border-slate-200">
             {nodeValue || "-"}
           </div>
         )}
@@ -105,10 +105,10 @@ function PaymentNodeRow({
               disabled={!isEditing}
               className="h-7 text-xs px-2 pr-6"
             />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">%</span>
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
           </div>
         ) : (
-          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-slate-100 rounded border border-slate-200">
+          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-muted rounded border border-slate-200">
             {ratioValue !== undefined ? `${ratioValue}%` : "-"}
           </div>
         )}
@@ -116,7 +116,7 @@ function PaymentNodeRow({
 
       {/* 计算金额 */}
       <div className="text-right">
-        <span className={`text-xs font-semibold ${calculatedAmount ? "text-primary" : "text-slate-400"}`}>
+        <span className={`text-xs font-semibold ${calculatedAmount ? "text-primary" : "text-muted-foreground"}`}>
           {formatAmount(calculatedAmount)}
         </span>
       </div>
@@ -141,7 +141,7 @@ export function PaymentNodesSection({ values, setValue, isEditing }: PaymentNode
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
           <CreditCard className="h-3 w-3" />
           支付节点
         </h4>
@@ -151,7 +151,7 @@ export function PaymentNodesSection({ values, setValue, isEditing }: PaymentNode
             ? "bg-red-100 text-red-700"
             : totalRatio === 100
             ? "bg-green-100 text-green-700"
-            : "bg-slate-100 text-slate-600"
+            : "bg-muted text-muted-foreground"
         }`}>
           合计: {totalRatio.toFixed(0)}%
           {isOverLimit && <span className="ml-1">⚠️</span>}
@@ -167,7 +167,7 @@ export function PaymentNodesSection({ values, setValue, isEditing }: PaymentNode
       )}
 
       {/* 表头 */}
-      <div className="grid grid-cols-3 gap-3 px-2 py-1 bg-slate-100 rounded text-[10px] font-medium text-slate-500">
+      <div className="grid grid-cols-3 gap-3 px-2 py-1 bg-muted rounded text-[10px] font-medium text-muted-foreground">
         <div>支付节点</div>
         <div>比例</div>
         <div className="text-right">金额</div>

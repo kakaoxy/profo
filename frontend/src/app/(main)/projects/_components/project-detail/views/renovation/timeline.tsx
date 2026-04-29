@@ -70,7 +70,7 @@ export function RenovationTimeline({
   return (
     <div className="relative pl-4 space-y-6 pb-12">
       {/* 灰色垂直贯穿线 */}
-      <div className="absolute left-[27px] top-4 bottom-10 w-0.5 bg-slate-200" />
+      <div className="absolute left-[27px] top-4 bottom-10 w-0.5 bg-muted" />
 
       {/* [关键修复] 
          1. 移除了 useState 和 useEffect 对 activeItem 的控制。

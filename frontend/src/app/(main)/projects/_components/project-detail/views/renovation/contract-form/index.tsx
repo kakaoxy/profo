@@ -169,7 +169,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
     return (
       <Card className="border-slate-200">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center text-slate-400">
+          <div className="flex items-center justify-center text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             <span className="text-xs">加载中...</span>
           </div>

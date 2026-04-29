@@ -116,7 +116,7 @@ export function ProjectDetailHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <SheetTitle className="text-xl font-bold text-slate-900">
+            <SheetTitle className="text-xl font-bold text-foreground">
               {project.name}
             </SheetTitle>
 

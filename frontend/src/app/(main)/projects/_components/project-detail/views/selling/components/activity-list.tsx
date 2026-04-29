@@ -28,7 +28,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-slate-200 rounded-md bg-slate-50/50">
+      <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-slate-200 rounded-md bg-muted/50">
         暂无{type === "viewing" ? "带看" : type === "offer" ? "出价" : "面谈"}
         记录
       </div>
@@ -41,7 +41,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
       <div className="rounded-md border border-slate-200 bg-white">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-[120px] text-xs">时间</TableHead>
               <TableHead className="text-xs">带看人/机构</TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -49,7 +49,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
           </TableHeader>
           <TableBody>
             {sortedData.map((item) => (
-              <TableRow key={item.id} className="text-xs hover:bg-slate-50">
+              <TableRow key={item.id} className="text-xs hover:bg-muted">
                 <TableCell className="text-muted-foreground font-mono">
                   {format(parseISO(item.record_date), "MM-dd HH:mm")}
                 </TableCell>
@@ -59,7 +59,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                 <TableCell>
                   <button
                     onClick={() => onDelete(item.id)}
-                    className="text-slate-400 hover:text-red-500 transition-colors"
+                    className="text-muted-foreground hover:text-red-500 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -130,7 +130,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
   // 3. 面谈记录 (时间轴视图)
   return (
     <div className="relative pl-4 space-y-6 pb-2 mt-4">
-      <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-slate-200" />
+      <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-muted" />
       {sortedData.map((item) => (
         <div key={item.id} className="relative pl-4 group">
           <div className="absolute left-[-4px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-emerald-500 bg-white group-hover:bg-emerald-500 transition-colors z-10" />
@@ -146,11 +146,11 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                 <Trash2 className="h-3 w-3" />
               </button>
             </div>
-            <div className="text-sm font-bold text-slate-800">
+            <div className="text-sm font-bold text-foreground">
               {item.customer_name}
             </div>
             {item.notes && (
-              <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded mt-1 border border-slate-100">
+              <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1 border border-slate-100">
                 {item.notes}
               </div>
             )}

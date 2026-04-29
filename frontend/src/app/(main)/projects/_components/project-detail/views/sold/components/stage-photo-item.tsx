@@ -50,11 +50,11 @@ export const StagePhotoItem = memo(function StagePhotoItem({
                 onLoad={() => setImageLoaded(true)}
                 className={cn(
                   "object-cover transition-all duration-500 group-hover:scale-110",
-                  imageLoaded ? "opacity-100" : "opacity-0 bg-slate-100"
+                  imageLoaded ? "opacity-100" : "opacity-0 bg-muted"
                 )}
               />
               {!imageLoaded && (
-                <div className="absolute inset-0 bg-slate-100 animate-pulse" />
+                <div className="absolute inset-0 bg-muted animate-pulse" />
               )}
             </AspectRatio>
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">

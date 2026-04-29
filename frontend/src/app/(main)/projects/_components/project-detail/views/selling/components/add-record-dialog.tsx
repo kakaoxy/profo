@@ -124,7 +124,7 @@ export function AddRecordDialog({
         <div className="space-y-4 py-4">
           {/* 1. 时间 */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium text-slate-500">日期时间</span>
+            <span className="text-xs font-medium text-muted-foreground">日期时间</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -155,7 +155,7 @@ export function AddRecordDialog({
 
           {/* 2. 人名 */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium text-slate-500">
+            <span className="text-xs font-medium text-muted-foreground">
               {defaultTab === "viewing"
                 ? "带看人/机构"
                 : defaultTab === "offer"
@@ -173,7 +173,7 @@ export function AddRecordDialog({
           {/* 3. 出价金额 (仅出价) */}
           {defaultTab === "offer" && (
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-slate-500">
+              <span className="text-xs font-medium text-muted-foreground">
                 出价金额 (万元)
               </span>
               <Input
@@ -189,7 +189,7 @@ export function AddRecordDialog({
           {/* 4. 面谈内容 (仅面谈) */}
           {defaultTab === "negotiation" && (
             <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium text-slate-500">
+              <span className="text-xs font-medium text-muted-foreground">
                 沟通纪要
               </span>
               <Textarea

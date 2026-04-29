@@ -22,7 +22,7 @@ interface ContractSectionsProps {
 export function CompanySection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Building2 className="h-3 w-3" />
         装修公司
       </h4>
@@ -41,7 +41,7 @@ export function CompanySection({ values, setValue, isEditing }: ContractSections
 export function TimeSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Calendar className="h-3 w-3" />
         时间信息
       </h4>
@@ -79,7 +79,7 @@ export function TimeSection({ values, setValue, isEditing }: ContractSectionsPro
 export function DecorationCostSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <HardHat className="h-3 w-3" />
         装修费用
       </h4>
@@ -117,7 +117,7 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
 export function OtherFeesSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Receipt className="h-3 w-3" />
         其他费用
       </h4>
@@ -156,7 +156,7 @@ export function OtherFeesSection({ values, setValue, isEditing }: ContractSectio
         />
       </div>
       <div className="space-y-1">
-        <Label className="text-[10px] font-medium text-slate-500">其他费用原因</Label>
+        <Label className="text-[10px] font-medium text-muted-foreground">其他费用原因</Label>
         <Textarea
           placeholder="请说明其他费用的产生原因..."
           value={values.other_fee_reason || ""}

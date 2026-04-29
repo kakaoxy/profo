@@ -39,7 +39,7 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
       </div>
 
       <div
-        className="w-16 h-16 rounded-md bg-slate-100 border shrink-0 relative overflow-hidden"
+        className="w-16 h-16 rounded-md bg-muted border shrink-0 relative overflow-hidden"
       >
         {optimizedUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

@@ -123,7 +123,7 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
           {/* 2. 预览影响 */}
           {primaryId && (
             <div className="space-y-4">
-              <div className="rounded-md bg-slate-50 p-3 text-sm">
+              <div className="rounded-md bg-muted p-3 text-sm">
                 <p className="font-medium mb-2">将被删除的小区 ({communitiesToDelete.length}个):</p>
                 <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                   {communitiesToDelete.map((c) => (

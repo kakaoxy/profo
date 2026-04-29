@@ -154,7 +154,7 @@ export function PropertyDetailSheet() {
                  {/* 4. 图片预览 (如果有链接) */}
                  {data.picture_links && data.picture_links.length > 0 && (
                    <div>
-                      <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-slate-800">
+                      <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                         <Layers className="w-4 h-4" /> 图片预览
                       </h3>
                       <div className="grid grid-cols-3 gap-2">
@@ -164,7 +164,7 @@ export function PropertyDetailSheet() {
                               key={idx} 
                               src={link} 
                               alt={`图${idx}`} 
-                              className="w-full aspect-[4/3] object-cover rounded border bg-slate-200" 
+                              className="w-full aspect-[4/3] object-cover rounded border bg-muted" 
                               loading="lazy"
                               referrerPolicy="no-referrer"
                            />
@@ -175,7 +175,7 @@ export function PropertyDetailSheet() {
 
                 {/* 2. 基础信息 */}
                 <div>
-                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-slate-800">
+                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                     <Home className="w-4 h-4" /> 基础属性
                   </h3>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-white p-4 rounded-lg border">
@@ -192,7 +192,7 @@ export function PropertyDetailSheet() {
 
                 {/* 3. 交易属性 */}
                 <div>
-                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-slate-800">
+                  <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                     <Tag className="w-4 h-4" /> 交易属性
                   </h3>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-white p-4 rounded-lg border">

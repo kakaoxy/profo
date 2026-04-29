@@ -52,16 +52,16 @@ export function MarketingStats({ stats }: MarketingStatsProps) {
         return (
           <Card
             key={index}
-            className="p-4 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer shadow-sm"
+            className="p-4 bg-card border-border hover:bg-muted dark:hover:bg-slate-700/50 transition-colors cursor-pointer shadow-sm"
             role="button"
             aria-label={`${item.label} ${item.value}`}
           >
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-medium text-muted-foreground">
                   {item.label}
                 </p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+                <p className="text-2xl font-bold text-foreground tabular-nums">
                   {item.value}
                 </p>
               </div>

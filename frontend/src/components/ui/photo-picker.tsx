@@ -82,7 +82,7 @@ export function PhotoPicker({
               {photos.map((photo) => (
                 <div
                   key={photo.id}
-                  className="group relative aspect-square rounded overflow-hidden border bg-slate-50 cursor-pointer hover:border-primary transition-colors"
+                  className="group relative aspect-square rounded overflow-hidden border bg-muted cursor-pointer hover:border-primary transition-colors"
                   onClick={() => handleSelect(photo)}
                 >
                   <Image

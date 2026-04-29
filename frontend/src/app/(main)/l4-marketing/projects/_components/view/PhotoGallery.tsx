@@ -19,7 +19,7 @@ export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryP
   }, [photos]);
 
   if (sortedPhotos.length === 0) {
-    return <div className="text-sm text-slate-400">暂无照片</div>;
+    return <div className="text-sm text-muted-foreground">暂无照片</div>;
   }
 
   return (
@@ -29,7 +29,7 @@ export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryP
         return (
           <div
             key={p.id}
-            className="relative aspect-square rounded-lg border border-slate-200 bg-slate-50 overflow-hidden group"
+            className="relative aspect-square rounded-lg border border-slate-200 bg-muted overflow-hidden group"
           >
             {url && (
               <div

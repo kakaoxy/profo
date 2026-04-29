@@ -84,11 +84,11 @@ export default async function ProjectEditPage({
         ? "没有权限访问该项目（请重新登录或联系管理员开通权限）"
         : "获取项目详情失败，请稍后重试";
     return (
-      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-sm font-semibold text-red-600">{message}</div>
           {statusCode ? (
-            <div className="mt-2 text-xs text-slate-500">状态码: {statusCode}</div>
+            <div className="mt-2 text-xs text-muted-foreground">状态码: {statusCode}</div>
           ) : null}
         </div>
       </div>
@@ -104,7 +104,7 @@ export default async function ProjectEditPage({
     .map(mapToL4MarketingMedia);
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-muted/50">
       <div className="w-full max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -115,10 +115,10 @@ export default async function ProjectEditPage({
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 编辑房源信息
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 最后更新于 {project.updated_at ? new Date(project.updated_at).toLocaleString('zh-CN') : '未知时间'}
               </p>
             </div>

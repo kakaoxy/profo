@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function ProjectCreatePage() {
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-muted/50">
       <div className="w-full max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -17,10 +17,10 @@ export default async function ProjectCreatePage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 创建新房源
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 填写房源基本信息以创建新的营销项目
               </p>
             </div>
