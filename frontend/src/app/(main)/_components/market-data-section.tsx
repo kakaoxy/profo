@@ -25,6 +25,7 @@ export function MarketDataSection({
   }
 
   const onSaleCount = marketData?.on_sale ?? 0;
+  // API 返回的 avg_price 单位是元/㎡，转换为万元/㎡ 显示 (/10000)
   const avgPriceWan = marketData?.avg_price
     ? (marketData.avg_price / 10000).toFixed(1)
     : "-";

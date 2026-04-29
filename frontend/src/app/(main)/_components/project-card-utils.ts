@@ -130,3 +130,21 @@ export const statusMap: Record<string, { label: string; color: string }> = {
   selling: { label: "在售中", color: "bg-green-100 text-green-700" },
   sold: { label: "已成交", color: "bg-purple-100 text-purple-700" },
 };
+
+/**
+ * 验证销售记录数组
+ * 将 unknown[] 验证并转换为 ApiSalesRecord[]
+ */
+export function validateSalesRecords(data: unknown): ApiSalesRecord[] {
+  if (!data || !Array.isArray(data)) return [];
+  return data.filter((item): item is ApiSalesRecord => {
+    if (!item || typeof item !== "object") return false;
+    const record = item as Record<string, unknown>;
+    // 检查必需字段
+    return (
+      typeof record.id === "string" &&
+      typeof record.record_type === "string" &&
+      typeof record.record_date === "string"
+    );
+  });
+}

@@ -6,7 +6,7 @@ interface AlertCardProps {
 
 export function AlertCard({ count }: AlertCardProps) {
   return (
-    <div className="col-span-12 lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-card p-3 lg:p-4 flex items-center gap-2 lg:gap-3 h-40 min-w-0">
+    <div className="col-span-12 lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card p-3 lg:p-4 flex items-center gap-2 lg:gap-3 h-40 min-w-0">
       <div className="w-12 h-12 bg-error-container rounded-xl flex items-center justify-center shrink-0">
         <AlertCircle className="w-6 h-6 text-error" />
       </div>

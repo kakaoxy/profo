@@ -1,4 +1,3 @@
-export { ProjectCard } from "./project-card";
 export { ProjectCardList } from "./project-card-list";
 export { ProjectOverviewCard } from "./project-overview-card";
 export { LeadsFunnelCard } from "./leads-funnel-card";
