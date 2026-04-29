@@ -30,12 +30,12 @@ export const columns: ColumnDef<Project>[] = [
 
       return (
         <div className="flex flex-col py-1 min-w-[140px]">
-          <span className="font-bold text-slate-800 text-[15px] truncate max-w-[200px] md:max-w-xs">
+          <span className="font-bold text-foreground text-[15px] truncate max-w-[200px] md:max-w-xs">
             {row.original.name}
           </span>
 
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[11px] text-slate-400 font-mono tracking-tight">
+            <span className="text-[11px] text-muted-foreground font-mono tracking-tight">
               ID: {row.original.id.slice(0, 8)}
             </span>
             <Badge
@@ -52,10 +52,10 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "community_name",
     header: () => (
-      <div className="hidden lg:block text-slate-500 font-medium">小区</div>
+      <div className="hidden lg:block text-muted-foreground font-medium">小区</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden lg:block text-sm text-slate-600 font-medium truncate max-w-[120px]">
+      <span className="hidden lg:block text-sm text-foreground font-medium truncate max-w-[120px]">
         {row.original.community_name || "-"}
       </span>
     ),
@@ -63,7 +63,7 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "status",
     header: () => (
-      <div className="hidden md:block pl-2 text-slate-500 font-medium">
+      <div className="hidden md:block pl-2 text-muted-foreground font-medium">
         状态
       </div>
     ),
@@ -85,12 +85,12 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "signing_price",
     header: () => (
-      <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
+      <div className="hidden sm:block text-right pr-4 text-muted-foreground font-medium">
         签约价(万)
       </div>
     ),
     cell: ({ row }) => (
-      <div className="hidden sm:block text-right pr-4 font-semibold text-slate-700 tabular-nums">
+      <div className="hidden sm:block text-right pr-4 font-semibold text-foreground tabular-nums">
         {formatWan(row.original.signing_price)}
       </div>
     ),
@@ -98,7 +98,7 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "sold_price",
     header: () => (
-      <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
+      <div className="hidden sm:block text-right pr-4 text-muted-foreground font-medium">
         成交价(万)
       </div>
     ),
@@ -111,14 +111,14 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "manager",
     header: () => (
-      <div className="hidden xl:block text-slate-500 font-medium">负责人</div>
+      <div className="hidden xl:block text-muted-foreground font-medium">负责人</div>
     ),
     cell: ({ row }) => {
       const manager = row.original.project_manager;
       const displayName = manager?.nickname || manager?.username || "-";
       return (
         <div className="hidden xl:flex items-center gap-2">
-          <span className="text-sm text-slate-600 font-medium bg-slate-50 px-2 py-1 rounded-md">
+          <span className="text-sm text-foreground font-medium bg-muted px-2 py-1 rounded-md">
             {displayName}
           </span>
         </div>
@@ -128,13 +128,13 @@ export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "net_cash_flow",
     header: () => (
-      <div className="hidden lg:block text-right text-slate-500 font-medium">
+      <div className="hidden lg:block text-right text-muted-foreground font-medium">
         现金流
       </div>
     ),
     cell: ({ row }) => {
       const val = row.original.net_cash_flow || 0;
-      let colorClass = "text-slate-400";
+      let colorClass = "text-muted-foreground";
       if (val > 0) colorClass = "text-red-600";
       if (val < 0) colorClass = "text-emerald-600";
 

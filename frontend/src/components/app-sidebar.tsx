@@ -345,7 +345,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                     src={user?.avatar || ""}
                     alt={user?.username}
                   />
-                  <AvatarFallback className="rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700 text-xs font-medium">
+                  <AvatarFallback className="rounded-full bg-gradient-to-br from-muted to-muted/80 text-foreground text-xs font-medium">
                     {user?.username?.slice(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
