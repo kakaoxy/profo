@@ -56,21 +56,21 @@ export function FinancialLifecycle({ project }: { project: Project }) {
         <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 py-6">
           {/* Col 1: 成交总价 */}
           <div className="px-8 flex flex-col justify-center">
-            <span className="text-sm text-slate-500 mb-1">成交总价</span>
+            <span className="text-sm text-muted-foreground mb-1">成交总价</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-slate-900 font-mono">
+              <span className="text-2xl font-bold text-foreground font-mono">
                 ¥{soldPrice.toFixed(1)}
               </span>
-              <span className="text-sm font-bold text-slate-900">万</span>
+              <span className="text-sm font-bold text-foreground">万</span>
             </div>
-            <span className="text-xs text-slate-400 mt-1">
+            <span className="text-xs text-muted-foreground mt-1">
               挂牌 ¥{listPrice.toFixed(1)}万
             </span>
           </div>
 
           {/* Col 2: 累计回款 */}
           <div className="px-8 flex flex-col justify-center">
-            <span className="text-sm text-slate-500 mb-1">累计回款 (实收)</span>
+            <span className="text-sm text-muted-foreground mb-1">累计回款 (实收)</span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold text-red-600 font-mono">
                 ¥{(totalIncome / 10000).toFixed(1)}
@@ -85,7 +85,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
           {/* Col 3: 累计投入 */}
           <TooltipProvider>
             <div className="px-8 flex flex-col justify-center">
-              <span className="text-sm text-slate-500 mb-1">累计投入 (实付)</span>
+              <span className="text-sm text-muted-foreground mb-1">累计投入 (实付)</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-baseline gap-1 cursor-help">
@@ -99,7 +99,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
                   <p>含收房、装修、持有成本等全周期支出</p>
                 </TooltipContent>
               </Tooltip>
-              <span className="text-xs text-slate-400 mt-1">
+              <span className="text-xs text-muted-foreground mt-1">
                 包含所有财务支出明细
               </span>
             </div>
@@ -114,15 +114,15 @@ export function FinancialLifecycle({ project }: { project: Project }) {
           <div className="flex-1 w-full max-w-2xl relative">
             <div className="flex items-center justify-between relative">
               {/* 背景线 */}
-              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+              <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
               
               {steps.map((step, idx) => (
                 <div key={idx} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
-                  <span className="text-[10px] font-mono font-medium text-slate-400">
+                  <span className="text-[10px] font-mono font-medium text-muted-foreground">
                     {formatNodeDate(step.date)}
                   </span>
-                  <div className={`h-3 w-3 rounded-full border-2 ${step.date ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-200'}`} />
-                  <span className="text-xs font-bold text-slate-600">
+                  <div className={`h-3 w-3 rounded-full border-2 ${step.date ? 'bg-card border-slate-900' : 'bg-white border-slate-200'}`} />
+                  <span className="text-xs font-bold text-muted-foreground">
                     {step.label}
                   </span>
                 </div>
@@ -132,12 +132,12 @@ export function FinancialLifecycle({ project }: { project: Project }) {
 
           {/* 关键指标 (右侧) */}
           <div className="flex flex-col items-end border-l border-slate-100 pl-8 md:min-w-[140px]">
-            <span className="text-xs text-slate-500 font-medium mb-1">资金占用周期</span>
+            <span className="text-xs text-muted-foreground font-medium mb-1">资金占用周期</span>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-mono font-bold text-foreground">
                 {occupationDays}
               </span>
-              <span className="text-sm font-bold text-slate-600">天</span>
+              <span className="text-sm font-bold text-muted-foreground">天</span>
             </div>
           </div>
         </div>

@@ -24,24 +24,24 @@ export function PriceSidebar({
     <div className="lg:sticky lg:top-28 space-y-6">
       <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-1 mb-6">
-          <span className="text-slate-500 text-sm font-medium">房源总价</span>
+          <span className="text-muted-foreground text-sm font-medium">房源总价</span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-primary tracking-tight">
               {formatPrice(totalPrice)}
             </span>
           </div>
-          <div className="mt-1 text-sm text-slate-500">
+          <div className="mt-1 text-sm text-muted-foreground">
             单价：{formatUnitPrice(unitPrice)}
           </div>
         </div>
 
         {/* Responsible Person */}
         <div className="mt-8 pt-8 border-t border-slate-200 flex flex-col gap-4">
-          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             房源责任人
           </span>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-muted flex items-center justify-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -52,15 +52,15 @@ export function PriceSidebar({
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-slate-400"
+                className="text-muted-foreground"
               >
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <div>
-              <div className="text-slate-800 font-medium">管理员</div>
-              <div className="text-slate-500 text-xs">房源审核员</div>
+              <div className="text-foreground font-medium">管理员</div>
+              <div className="text-muted-foreground text-xs">房源审核员</div>
             </div>
           </div>
         </div>
@@ -76,13 +76,13 @@ export function PriceSidebar({
       </div>
 
       {/* Quick Context */}
-      <div className="bg-slate-50 p-6 rounded-xl space-y-4 border border-slate-200">
+      <div className="bg-muted p-6 rounded-xl space-y-4 border border-slate-200">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg text-primary">
             <Info className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-xs text-slate-500">提示</div>
+            <div className="text-xs text-muted-foreground">提示</div>
             <div className="text-sm font-medium text-slate-700">
               预览模式仅显示核心字段
             </div>

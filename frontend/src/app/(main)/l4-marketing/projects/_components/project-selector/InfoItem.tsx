@@ -13,14 +13,14 @@ interface InfoItemProps {
  */
 export function InfoItem({ icon, label, value, muted = false }: InfoItemProps) {
   return (
-    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-      <div className="text-slate-400 mt-0.5">{icon}</div>
+    <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+      <div className="text-muted-foreground mt-0.5">{icon}</div>
       <div>
-        <p className="text-xs text-slate-500">{label}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
         <p
           className={cn(
             "text-sm font-medium",
-            muted ? "text-slate-400" : "text-slate-900"
+            muted ? "text-muted-foreground" : "text-foreground"
           )}
         >
           {value}

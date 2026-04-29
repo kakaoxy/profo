@@ -74,7 +74,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
               <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">
                 挂牌价
               </span>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 {unitPrice > 0 ? `单价 ${unitPrice.toLocaleString()} 元/m²` : ""}
               </span>
             </div>
@@ -87,7 +87,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
             </div>
 
             {/* 涨跌幅模拟占位 (未来可接真实数据) */}
-            <div className="mt-3 flex items-center text-xs text-slate-400">
+            <div className="mt-3 flex items-center text-xs text-muted-foreground">
                <TrendingUp className="w-3.5 h-3.5 mr-1" />
                <span className="opacity-80">根据市场波动适时调整</span>
             </div>
@@ -99,11 +99,11 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
           {/* 顶部标题栏 */}
           <div className="flex items-start justify-between mb-8">
             <div className="space-y-1">
-               <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
+               <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium">
                  <Share2 className="w-3.5 h-3.5" />
                  <span>小区名称</span>
                </div>
-               <div className="text-lg font-bold text-slate-900 leading-tight">
+               <div className="text-lg font-bold text-foreground leading-tight">
                  {project.community_name || "未填写小区名称"}
                </div>
             </div>
@@ -131,7 +131,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
           <div className="grid grid-cols-2 gap-y-6 gap-x-8">
             {/* 面积 */}
             <div className="space-y-1">
-               <div className="flex items-center gap-2 text-xs text-slate-400">
+               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Ruler className="w-3.5 h-3.5" />
                   <span>建筑面积</span>
                </div>
@@ -142,7 +142,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
 
             {/* 挂牌日期 */}
             <div className="space-y-1 flex flex-col items-end">
-               <div className="flex items-center gap-2 text-xs text-slate-400">
+               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CalendarDays className="w-3.5 h-3.5" />
                   <span>挂牌日期</span>
                </div>

@@ -67,7 +67,7 @@ export default async function PropertiesPage(props: PageProps) {
 
       <div className="flex flex-1 overflow-hidden">
         {/* 左侧筛选面板 - 仅在 md 及以上显示 */}
-        <div className="hidden md:flex w-64 border-r bg-slate-50/50 p-4 overflow-y-auto shrink-0">
+        <div className="hidden md:flex w-64 border-r bg-muted/50 p-4 overflow-y-auto shrink-0">
           <PropertyFilters />
         </div>
 

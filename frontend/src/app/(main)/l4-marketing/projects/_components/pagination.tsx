@@ -69,8 +69,8 @@ export function Pagination({
 
   if (totalPages <= 1) {
     return (
-      <div className="px-6 py-4 bg-slate-50 flex items-center justify-between border-t border-slate-200">
-        <div className="text-xs text-slate-500">
+      <div className="px-6 py-4 bg-muted flex items-center justify-between border-t border-slate-200">
+        <div className="text-xs text-muted-foreground">
           {total > 0 ? (
             <>
               共 <span className="text-slate-700 font-medium">{total}</span> 个房源
@@ -84,8 +84,8 @@ export function Pagination({
   }
 
   return (
-    <div className="px-6 py-4 bg-slate-50 flex items-center justify-between border-t border-slate-200">
-      <div className="text-xs text-slate-500">
+    <div className="px-6 py-4 bg-muted flex items-center justify-between border-t border-slate-200">
+      <div className="text-xs text-muted-foreground">
         {total > 0 ? (
           <>
             显示 <span className="text-slate-700 font-medium">{startItem} - {endItem}</span> 之 <span className="text-slate-700 font-medium">{total}</span> 个房源
@@ -104,7 +104,7 @@ export function Pagination({
             "w-8 h-8 flex items-center justify-center rounded-md border transition-all",
             currentPage <= 1 || isLoading
               ? "text-slate-300 cursor-not-allowed border-slate-200"
-              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 border-slate-200"
+              : "text-muted-foreground hover:bg-white hover:text-foreground hover:border-border border-slate-200"
           )}
           aria-label="上一页"
         >
@@ -114,7 +114,7 @@ export function Pagination({
         {/* 页码按钮 */}
         {paginationItems.map((item, index) => (
           item === "..." ? (
-            <span key={`ellipsis-${index}`} className="px-2 text-slate-400">...</span>
+            <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">...</span>
           ) : (
             <button
               key={item}
@@ -124,7 +124,7 @@ export function Pagination({
                 "w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-all",
                 currentPage === item
                   ? "bg-primary text-white"
-                  : "text-slate-600 hover:bg-white hover:text-slate-900"
+                  : "text-muted-foreground hover:bg-white hover:text-foreground"
               )}
             >
               {item}
@@ -140,7 +140,7 @@ export function Pagination({
             "w-8 h-8 flex items-center justify-center rounded-md border transition-all",
             currentPage >= totalPages || isLoading
               ? "text-slate-300 cursor-not-allowed border-slate-200"
-              : "text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 border-slate-200"
+              : "text-muted-foreground hover:bg-white hover:text-foreground hover:border-border border-slate-200"
           )}
           aria-label="下一页"
         >

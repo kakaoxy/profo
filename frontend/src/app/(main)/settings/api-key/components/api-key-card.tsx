@@ -40,7 +40,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
 
     const config = statusConfig[status] || {
       label: status,
-      className: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
+      className: "bg-muted text-slate-700 dark:text-slate-300",
     };
 
     return (
@@ -58,7 +58,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
       <CardHeader className="pb-4">
         <CardTitle className="text-base font-semibold flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-slate-500" />
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
             <span>当前 API Key</span>
           </div>
           {getStatusBadge(apiKeyInfo.status)}
@@ -67,15 +67,15 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
       <CardContent className="space-y-4">
         {/* Key Display */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             API Key
           </label>
           <div className="flex items-center gap-2">
-            <code className="flex-1 px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-sm text-slate-500 dark:text-slate-400">
+            <code className="flex-1 px-4 py-3 rounded-lg border border-border bg-muted font-mono text-sm text-muted-foreground">
               {maskedKey}
             </code>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500">
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground">
             出于安全考虑，完整的 Key 不会再次显示
           </p>
         </div>
@@ -83,7 +83,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
         {/* Key Info Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               创建时间
             </label>
@@ -92,7 +92,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
             </p>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Activity className="h-3 w-3" />
               最后使用
             </label>
@@ -101,7 +101,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
             </p>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Clock className="h-3 w-3" />
               过期时间
             </label>

@@ -173,21 +173,21 @@ export function CommunitySelect({
       label: "text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1",
       required: "text-red-500",
       button:
-        "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-slate-200 hover:bg-slate-50 hover:text-slate-900",
-      icon: "text-slate-400",
-      placeholder: "text-slate-400 font-normal",
+        "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-slate-200 hover:bg-muted hover:text-foreground",
+      icon: "text-muted-foreground",
+      placeholder: "text-muted-foreground font-normal",
       popover: "w-[400px] p-0 rounded-xl",
       input:
-        "w-full px-3 py-2 text-sm bg-slate-50 border rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
-      loading: "text-slate-400",
+        "w-full px-3 py-2 text-sm bg-muted border rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
+      loading: "text-muted-foreground",
       createButton:
         "w-full flex items-center gap-2 p-3 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
       resultItem:
-        "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-slate-100 transition-colors group text-left",
-      resultItemActive: "bg-slate-50 text-primary font-bold",
-      resultName: "font-bold text-slate-900",
-      resultMeta: "text-[10px] text-slate-400 flex items-center gap-1",
-      emptyState: "py-8 text-center text-slate-400 text-xs",
+        "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-muted transition-colors group text-left",
+      resultItemActive: "bg-muted text-primary font-bold",
+      resultName: "font-bold text-foreground",
+      resultMeta: "text-[10px] text-muted-foreground flex items-center gap-1",
+      emptyState: "py-8 text-center text-muted-foreground text-xs",
     },
     marketing: {
       label: "block text-xs font-bold text-[#707785] uppercase tracking-wider",

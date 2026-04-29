@@ -31,15 +31,15 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
           </Button>
 
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-slate-900 leading-tight">
+            <h1 className="text-lg font-bold text-foreground leading-tight">
               {project.title || "未命名项目"}
             </h1>
             {project.community_name ? (
-              <span className="text-slate-400 text-sm">
+              <span className="text-muted-foreground text-sm">
                 · {project.community_name}
               </span>
             ) : null}
-            <span className="text-slate-400 text-sm">
+            <span className="text-muted-foreground text-sm">
               (ID:{project.id})
             </span>
           </div>

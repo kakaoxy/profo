@@ -64,16 +64,16 @@ export function CompetitorManagerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-card/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h3 className="font-bold text-slate-800">管理竞品小区</h3>
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-muted">
+          <h3 className="font-bold text-foreground">管理竞品小区</h3>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-slate-200 rounded-full transition-colors"
+            className="p-1 hover:bg-muted rounded-full transition-colors"
           >
-            <X size={18} className="text-slate-500" />
+            <X size={18} className="text-muted-foreground" />
           </button>
         </div>
 
@@ -89,7 +89,7 @@ export function CompetitorManagerModal({
           />
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-2">
+            <label className="block text-xs font-bold text-muted-foreground mb-2">
               当前竞品列表 ({competitors.length})
             </label>
             <CompetitorList
@@ -102,7 +102,7 @@ export function CompetitorManagerModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50">
+        <div className="px-6 py-4 border-t border-slate-100 bg-muted">
           <Button onClick={onClose} variant="outline" className="w-full">
             完成
           </Button>

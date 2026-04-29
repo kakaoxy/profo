@@ -169,7 +169,7 @@ export function PhotoManager({
                   从照片库选择
                 </Button>
               </div>
-              <div className="text-sm text-slate-500 text-center py-8">
+              <div className="text-sm text-muted-foreground text-center py-8">
                 点击上方按钮从照片库中选择照片进行同步
               </div>
             </TabsContent>

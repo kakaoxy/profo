@@ -46,7 +46,7 @@ export function CostSummarySection({ values }: CostSummaryProps) {
 
   return (
     <div className="space-y-3 pt-3 border-t border-slate-200">
-      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Calculator className="h-3 w-3" />
         费用汇总
       </h4>
@@ -54,11 +54,11 @@ export function CostSummarySection({ values }: CostSummaryProps) {
       {/* 汇总卡片 - 紧凑布局 */}
       <div className="grid grid-cols-2 gap-3">
         <div className="p-3 bg-primary/5 rounded border border-primary/20">
-          <div className="text-[10px] text-slate-500 mb-0.5">总预算</div>
+          <div className="text-[10px] text-muted-foreground mb-0.5">总预算</div>
           <div className="text-base font-bold text-primary">{formatAmount(totalBudget)}</div>
         </div>
         <div className="p-3 bg-green-50 rounded border border-green-100">
-          <div className="text-[10px] text-slate-500 mb-0.5">实际费用</div>
+          <div className="text-[10px] text-muted-foreground mb-0.5">实际费用</div>
           <div className="text-base font-bold text-green-700">{formatAmount(totalActualCost)}</div>
         </div>
       </div>
@@ -67,8 +67,8 @@ export function CostSummarySection({ values }: CostSummaryProps) {
       <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-[10px]">
         {items.map((item) => (
           <div key={item.label} className="flex justify-between py-1 border-b border-slate-100">
-            <span className="text-slate-400">{item.label}</span>
-            <span className="font-medium text-slate-600">{formatAmount(item.value)}</span>
+            <span className="text-muted-foreground">{item.label}</span>
+            <span className="font-medium text-muted-foreground">{formatAmount(item.value)}</span>
           </div>
         ))}
       </div>

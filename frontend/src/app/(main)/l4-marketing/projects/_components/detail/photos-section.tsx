@@ -116,9 +116,9 @@ export const PhotosSection = memo(function PhotosSection({
     <div className="bg-white rounded-lg border border-slate-200">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-slate-400" />
+          <ImageIcon className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium text-slate-700">媒体资源</span>
-          <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-500">
+          <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground">
             共 {photos.length} 张
           </Badge>
         </div>
@@ -133,7 +133,7 @@ export const PhotosSection = memo(function PhotosSection({
 
           <TabsContent value="upload" className="space-y-4 mt-4">
             <div className="space-y-3">
-              <div className="text-xs font-medium text-slate-500">
+              <div className="text-xs font-medium text-muted-foreground">
                 选择照片类别
               </div>
               <PhotoCategorySelector
@@ -145,7 +145,7 @@ export const PhotosSection = memo(function PhotosSection({
               {uploadCategory === "renovation" && (
                 <div className="grid grid-cols-12 gap-3">
                   <div className="col-span-6 lg:col-span-4">
-                    <div className="text-xs font-medium text-slate-500 mb-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1">
                       装修阶段
                     </div>
                     <Select
@@ -179,7 +179,7 @@ export const PhotosSection = memo(function PhotosSection({
 
           <TabsContent value="sync" className="space-y-4 mt-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-xs font-medium text-slate-500">
+              <div className="text-xs font-medium text-muted-foreground">
                 从其他项目同步照片
               </div>
               <Button
@@ -187,7 +187,7 @@ export const PhotosSection = memo(function PhotosSection({
                 variant="outline"
                 size="sm"
                 onClick={handleOpenPicker}
-                className="bg-white border-slate-200 hover:bg-slate-50"
+                className="bg-white border-slate-200 hover:bg-muted"
               >
                 <FolderOpen className="h-4 w-4 mr-1" />
                 从照片库选择
@@ -220,7 +220,7 @@ export const PhotosSection = memo(function PhotosSection({
         )}
 
         {photos.length === 0 && !isUploading && (
-          <div className="text-center py-8 text-slate-400">
+          <div className="text-center py-8 text-muted-foreground">
             <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">暂无照片</p>
             <p className="text-xs mt-1">请上传或关联照片</p>

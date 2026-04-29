@@ -119,7 +119,7 @@ export function CompetitorsBrawl({
               <span className="text-sm">{error}</span>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
+            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
               暂无数据
             </div>
           ) : isMobile ? (

@@ -56,7 +56,7 @@ export function ApiKeyDisplay({
       <CardContent className="space-y-4">
         {/* Key Display */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             API Key
           </label>
           <div className="flex items-center gap-2">
@@ -65,18 +65,18 @@ export function ApiKeyDisplay({
                 type={showKey ? "text" : "password"}
                 value={apiKey}
                 readOnly
-                className="w-full px-4 py-3 pr-24 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700"
+                className="w-full px-4 py-3 pr-24 rounded-lg border border-border bg-muted font-mono text-sm text-foreground dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-border dark:focus:ring-slate-700"
               />
               <button
                 onClick={() => setShowKey(!showKey)}
-                className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-muted-foreground dark:hover:text-slate-300 transition-colors"
                 title={showKey ? "隐藏" : "显示"}
               >
                 {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
               <button
                 onClick={handleCopy}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-muted-foreground dark:hover:text-slate-300 transition-colors"
                 title="复制"
               >
                 {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
@@ -88,20 +88,20 @@ export function ApiKeyDisplay({
         {/* Key Info */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               前缀
             </label>
-            <p className="text-sm font-mono text-slate-900 dark:text-slate-100">{prefix}</p>
+            <p className="text-sm font-mono text-foreground dark:text-slate-100">{prefix}</p>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               创建时间
             </label>
             <p className="text-sm text-slate-700 dark:text-slate-300">{formatDate(createdAt)}</p>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Clock className="h-3 w-3" />
               过期时间
             </label>

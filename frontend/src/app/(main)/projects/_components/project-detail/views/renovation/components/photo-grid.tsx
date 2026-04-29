@@ -57,7 +57,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
 
   return (
     <Dialog>
-      <div className="aspect-square relative group rounded-md overflow-hidden bg-slate-100 border border-slate-200">
+      <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-slate-200">
           <Image
           src={getFileUrl(photo.url)}
           alt={photo.filename || "Renovation Photo"}
@@ -72,7 +72,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
           )}
         />
         {!imageLoaded && (
-          <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+          <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
 
         {/* Hover Mask */}
@@ -148,7 +148,7 @@ PhotoItem.displayName = "PhotoItem";
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
   return (
     <div
-      className="aspect-square relative rounded-md overflow-hidden bg-slate-50 border border-slate-200"
+      className="aspect-square relative rounded-md overflow-hidden bg-muted border border-slate-200"
     >
       {/* Local Preview Image */}
       <Image
@@ -214,7 +214,7 @@ export function PhotoGrid({
 
       {/* 3. Upload Button */}
       {!isFuture && (
-        <label className="aspect-square rounded-md border-2 border-dashed border-slate-200 bg-white hover:bg-slate-50 hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
+        <label className="aspect-square rounded-md border-2 border-dashed border-slate-200 bg-white hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
           <input
             type="file"
             accept="image/*"

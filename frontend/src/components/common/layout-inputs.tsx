@@ -110,13 +110,13 @@ export function LayoutInputs({
   const styles = {
     default: {
       container: "space-y-1.5",
-      label: "text-[10px] font-bold text-slate-500 ml-1",
+      label: "text-[10px] font-bold text-muted-foreground ml-1",
       required: "text-red-500",
       inputWrapper: "relative flex-1",
       input:
         "w-full h-11 px-3 border rounded-lg bg-background text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20",
       suffix:
-        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400",
+        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground",
     },
     marketing: {
       container: "space-y-2",

@@ -36,7 +36,7 @@ export function TrendPositioning({
           subtitle="Trend & Positioning"
         />
         <div className="px-6 flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </section>
     );
@@ -66,7 +66,7 @@ export function TrendPositioning({
           title="趋势研判 (价格与成交量预测)"
           subtitle="Trend & Positioning"
         />
-        <div className="px-6 text-center py-10 text-slate-500 text-sm">
+        <div className="px-6 text-center py-10 text-muted-foreground text-sm">
           暂无走势数据
         </div>
       </section>
@@ -129,7 +129,7 @@ function InsightCard({ iconColor, title, content }: InsightCardProps) {
         <Info className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
           {title}
         </p>
         <p className="text-sm font-bold text-slate-700">{content}</p>

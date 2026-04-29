@@ -86,11 +86,11 @@ export function MonitorSheet() {
               <span className="text-sm font-bold">M</span>
             </div>
             <div>
-              <SheetTitle className="text-xl font-bold text-slate-900">
+              <SheetTitle className="text-xl font-bold text-foreground">
                 项目房价监控
               </SheetTitle>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-medium text-slate-500">
+                <span className="text-sm font-medium text-muted-foreground">
                   {projectName}
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -102,14 +102,14 @@ export function MonitorSheet() {
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-lg transition-all text-slate-400 hover:text-slate-600"
+            className="p-2 hover:bg-muted border border-transparent hover:border-slate-200 rounded-lg transition-all text-muted-foreground hover:text-muted-foreground"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-100 pb-20">
+        <div className="flex-1 overflow-y-auto bg-muted pb-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
             <CardWrapper>
               <HeroSection projectId={monitorId} projectName={projectName} />

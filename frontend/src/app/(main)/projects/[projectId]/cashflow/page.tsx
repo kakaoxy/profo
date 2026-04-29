@@ -28,13 +28,13 @@ export default async function CashFlowPage({ params }: PageProps) {
   const stats = mapToCashFlowStats(apiData.summary);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1200px] mx-auto">
+    <div className="min-h-screen bg-muted/50 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1200px] mx-auto">
       {/* 标题区 */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           资金账本
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           全周期资金流向监控，即时核算项目盈亏。
         </p>
       </div>

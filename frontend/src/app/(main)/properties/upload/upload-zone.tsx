@@ -203,7 +203,7 @@ export function UploadZone() {
           "relative border-2 border-dashed rounded-xl p-10 transition-all duration-200 ease-in-out flex flex-col items-center justify-center gap-4 cursor-pointer min-h-[300px]",
           isDragging
             ? "border-primary bg-primary/5 scale-[1.01]"
-            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-slate-50",
+            : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted",
           (isUploading || isPolling) && "pointer-events-none opacity-60"
         )}
         onDragOver={handleDragOver}
@@ -221,7 +221,7 @@ export function UploadZone() {
 
         {isUploading || isPolling ? (
           <div className="w-full max-w-md space-y-4 text-center animate-in fade-in">
-            <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
               <Loader2 className="h-8 w-8 text-primary animate-spin" />
             </div>
             <div className="space-y-2">
@@ -281,7 +281,7 @@ export function UploadZone() {
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
               <UploadCloud className="h-8 w-8 text-muted-foreground" />
             </div>
             <div className="text-center space-y-1">

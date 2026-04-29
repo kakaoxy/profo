@@ -70,7 +70,7 @@ export default async function ProjectPreviewPage({
   const tags = Array.isArray(project.tags) ? project.tags : [];
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-muted/50">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -80,8 +80,8 @@ export default async function ProjectPreviewPage({
               <span>返回编辑</span>
             </Button>
           </Link>
-          <div className="h-4 w-px bg-slate-200"></div>
-          <span className="text-sm text-slate-500">
+          <div className="h-4 w-px bg-muted"></div>
+          <span className="text-sm text-muted-foreground">
             预览模式：{project.community_name || "未知小区"}
           </span>
         </div>
@@ -112,11 +112,11 @@ export default async function ProjectPreviewPage({
           <div className="lg:col-span-2 space-y-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-slate-500 text-sm font-medium bg-slate-100 px-3 py-1 rounded">
+                <span className="text-muted-foreground text-sm font-medium bg-muted px-3 py-1 rounded">
                   小区：{project.community_name || "未知小区"}
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-3xl font-bold text-foreground tracking-tight leading-tight">
                 {project.title || "未命名房源"}
               </h1>
               {/* Tags */}
@@ -125,7 +125,7 @@ export default async function ProjectPreviewPage({
                   {tags.slice(0, 6).map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-medium"
+                      className="bg-muted text-muted-foreground border border-slate-200 px-3 py-1 rounded-full text-xs font-medium"
                     >
                       {tag}
                     </span>
@@ -166,12 +166,12 @@ export default async function ProjectPreviewPage({
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-100 border-t border-slate-200 mt-12 py-12">
+      <footer className="bg-muted border-t border-slate-200 mt-12 py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="text-lg font-bold text-slate-600 mb-4">
+          <div className="text-lg font-bold text-muted-foreground mb-4">
             Estate Logic
           </div>
-          <p className="text-slate-500 text-sm max-w-md mx-auto">
+          <p className="text-muted-foreground text-sm max-w-md mx-auto">
             房源核心数据预览视图。仅供内部审核和责任人校对使用。
           </p>
         </div>

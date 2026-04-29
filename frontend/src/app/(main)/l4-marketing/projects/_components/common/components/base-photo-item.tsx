@@ -125,7 +125,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       style={transformStyle}
       className={cn(
         "flex items-center gap-3 rounded-lg border bg-white p-3",
-        "hover:bg-slate-50 transition-colors",
+        "hover:bg-muted transition-colors",
         isDragging && "shadow-lg ring-2 ring-primary opacity-90",
         className
       )}
@@ -134,18 +134,18 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       {showDragHandle && (
         <button
           type="button"
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-slate-100 rounded flex-shrink-0"
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded flex-shrink-0"
           {...dragAttributes}
           {...dragListeners}
         >
-          <GripVertical className="h-4 w-4 text-slate-400" />
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
         </button>
       )}
 
       {/* 图片容器 - 使用懒加载 */}
       <div
         ref={imageContainerRef}
-        className="rounded-md bg-slate-100 border shrink-0 relative overflow-hidden"
+        className="rounded-md bg-muted border shrink-0 relative overflow-hidden"
         style={{ width: imageSize, height: imageSize }}
       >
         {isVisible && (
@@ -153,7 +153,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
             {/* 加载状态 */}
             {imageStatus === "loading" && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               </div>
             )}
 
@@ -176,7 +176,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
 
             {/* 错误状态 */}
             {imageStatus === "error" && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
                 加载失败
               </div>
             )}
@@ -184,7 +184,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
         )}
 
         {/* 占位符 - 未进入视口时显示 */}
-        {!isVisible && <div className="absolute inset-0 bg-slate-100" />}
+        {!isVisible && <div className="absolute inset-0 bg-muted" />}
 
         {/* 分类徽章 */}
         {showCategoryBadge && categoryConfig && (
@@ -204,11 +204,11 @@ export const BasePhotoItem = memo(function BasePhotoItem({
 
       {/* 信息区域 */}
       <div className="flex-1 min-w-0 overflow-hidden" onClick={handleClick}>
-        <p className="text-xs font-medium text-slate-900 truncate">
+        <p className="text-xs font-medium text-foreground truncate">
           照片 #{photo.id}
         </p>
         {stageLabel && (
-          <p className="text-xs text-slate-500 truncate">{stageLabel}</p>
+          <p className="text-xs text-muted-foreground truncate">{stageLabel}</p>
         )}
       </div>
 
@@ -216,7 +216,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       {showIndexBadge && (
         <Badge
           variant="outline"
-          className="rounded-md border-slate-200 text-slate-500 flex-shrink-0"
+          className="rounded-md border-slate-200 text-muted-foreground flex-shrink-0"
         >
           #{index + 1}
         </Badge>

@@ -45,8 +45,8 @@ function InfoRow({ label, value, highlight }: InfoRowProps) {
 
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className={`text-sm font-medium text-slate-800 ${highlight ? "font-bold text-slate-900" : ""}`}>
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={`text-sm font-medium text-foreground ${highlight ? "font-bold text-foreground" : ""}`}>
         {value}
       </span>
     </div>
@@ -78,7 +78,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
           <Badge
             key={tag}
             variant="secondary"
-            className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 border-0"
+            className="bg-muted text-muted-foreground text-xs font-medium px-2 py-0.5 border-0"
           >
             {tag}
           </Badge>
@@ -91,7 +91,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
     <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       {/* 左侧：营销主图 */}
       <div className="relative">
-        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 border border-slate-200 relative">
+        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-slate-200 relative">
           {mainImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -100,7 +100,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
               className="absolute inset-0 w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
               <ImageOff className="w-12 h-12 mb-2 opacity-50" />
               <span className="text-sm">暂无主图</span>
             </div>
@@ -155,7 +155,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
         />
         {tagsContent && (
           <div className="flex items-start justify-between py-2">
-            <span className="text-sm text-slate-500 pt-0.5">标签</span>
+            <span className="text-sm text-muted-foreground pt-0.5">标签</span>
             <div className="text-right max-w-[70%]">{tagsContent}</div>
           </div>
         )}

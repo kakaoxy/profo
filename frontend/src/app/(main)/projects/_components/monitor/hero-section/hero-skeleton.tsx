@@ -6,27 +6,27 @@ export function HeroSkeleton() {
       <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="mt-1 p-2 rounded-lg bg-slate-100 animate-pulse w-8 h-8" />
+            <div className="mt-1 p-2 rounded-lg bg-muted animate-pulse w-8 h-8" />
             <div className="flex-1">
-              <div className="h-3 bg-slate-100 rounded animate-pulse w-16 mb-2" />
-              <div className="h-4 bg-slate-100 rounded animate-pulse w-32" />
+              <div className="h-3 bg-muted rounded animate-pulse w-16 mb-2" />
+              <div className="h-4 bg-muted rounded animate-pulse w-32" />
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="mt-1 p-2 rounded-lg bg-slate-100 animate-pulse w-8 h-8" />
+            <div className="mt-1 p-2 rounded-lg bg-muted animate-pulse w-8 h-8" />
             <div className="flex-1">
-              <div className="h-3 bg-slate-100 rounded animate-pulse w-16 mb-2" />
-              <div className="h-4 bg-slate-100 rounded animate-pulse w-24" />
+              <div className="h-3 bg-muted rounded animate-pulse w-16 mb-2" />
+              <div className="h-4 bg-muted rounded animate-pulse w-24" />
             </div>
           </div>
         </div>
         <div className="space-y-4">
-          <div className="h-20 bg-slate-100 rounded animate-pulse" />
-          <div className="h-12 bg-slate-100 rounded animate-pulse" />
+          <div className="h-20 bg-muted rounded animate-pulse" />
+          <div className="h-12 bg-muted rounded animate-pulse" />
         </div>
       </div>
       <div className="lg:col-span-5">
-        <div className="h-32 bg-slate-100 rounded animate-pulse" />
+        <div className="h-32 bg-muted rounded animate-pulse" />
       </div>
     </section>
   );

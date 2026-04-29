@@ -50,15 +50,15 @@ export function NeighborhoodRadar({
         <Card className="border-slate-100 shadow-sm overflow-hidden bg-white">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-              <span className="ml-2 text-sm text-slate-500">加载中...</span>
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-sm text-slate-500">
+            <div className="text-center py-12 text-sm text-muted-foreground">
               {error}
             </div>
           ) : competitors.length === 0 ? (
-            <div className="text-center py-12 text-sm text-slate-500">
+            <div className="text-center py-12 text-sm text-muted-foreground">
               暂无竞品数据，请先添加竞品小区
             </div>
           ) : (

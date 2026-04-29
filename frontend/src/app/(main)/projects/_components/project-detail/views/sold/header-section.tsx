@@ -41,7 +41,7 @@ export function SoldHeader({
         <div className="space-y-2">
           {/* [修改] 使用 Flex 布局将 标题 和 切换按钮 并排 */}
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               {project.name}
             </h1>
 
@@ -95,14 +95,14 @@ export function SoldHeader({
           </div>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 text-slate-400" />
+            <MapPin className="h-4 w-4 text-muted-foreground" />
             <span>
               {project.community_name} {project.address}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+            <Badge variant="secondary" className="bg-muted text-slate-700">
               {project.area}m²
             </Badge>
             <Badge
@@ -119,7 +119,7 @@ export function SoldHeader({
           <Badge className="bg-red-600 hover:bg-red-700 text-base px-3 py-1 shadow-sm">
             🎉 已售罄 (Sold)
           </Badge>
-          <span className="text-xs text-slate-400 font-mono">
+          <span className="text-xs text-muted-foreground font-mono">
             成交日期:{" "}
             {(project.sold_at || project.sold_date)?.split("T")[0] || "-"}
           </span>

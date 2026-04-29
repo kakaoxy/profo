@@ -42,7 +42,7 @@ export function ActionBar({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 min-w-[130px] justify-start text-left font-normal bg-white border-slate-200 hover:bg-slate-50"
+                className="h-8 min-w-[130px] justify-start text-left font-normal bg-white border-slate-200 hover:bg-muted"
               >
                 <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                 {selectedDate ? (
@@ -64,7 +64,7 @@ export function ActionBar({
 
           <Button
             size="sm"
-            className="h-8 bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+            className="h-8 bg-card hover:bg-card text-white shadow-sm"
             onClick={() => onSubmit(true)}
             disabled={isLoading}
           >

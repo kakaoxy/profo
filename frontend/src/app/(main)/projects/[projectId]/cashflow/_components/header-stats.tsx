@@ -25,7 +25,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
           <div className="md:col-span-3 p-6 flex flex-col justify-center space-y-6">
             {/* 净现金流 */}
             <div>
-              <div className="text-sm text-slate-500 font-medium mb-1">
+              <div className="text-sm text-muted-foreground font-medium mb-1">
                 净现金流 (Net Cash Flow)
               </div>
               <div
@@ -46,7 +46,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
                   <TrendingUp className="h-4 w-4 text-red-600" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-slate-400">总收入</span>
+                  <span className="text-xs text-muted-foreground">总收入</span>
                   <span className="text-sm font-bold text-red-700 font-mono">
                     ¥{(stats.total_income / 10000).toFixed(2)}万
                   </span>
@@ -58,7 +58,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
                   <TrendingDown className="h-4 w-4 text-emerald-600" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-slate-400">总支出</span>
+                  <span className="text-xs text-muted-foreground">总支出</span>
                   <span className="text-sm font-bold text-emerald-700 font-mono">
                     ¥{(stats.total_expense / 10000).toFixed(2)}万
                   </span>
@@ -68,9 +68,9 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
           </div>
 
           {/* 右侧 (40%) - 效益分析 */}
-          <div className="md:col-span-2 p-6 bg-slate-50/50 flex flex-col justify-center space-y-4">
+          <div className="md:col-span-2 p-6 bg-muted/50 flex flex-col justify-center space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500">ROI (投资回报率)</span>
+              <span className="text-sm text-muted-foreground">ROI (投资回报率)</span>
               <span
                 className={cn(
                   "text-xl font-bold",
@@ -82,12 +82,12 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500 flex items-center gap-1">
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
                 年化收益率
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
-                      <Info className="h-3 w-3 text-slate-400 cursor-help" />
+                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>基于当前持有天数推算，仅供参考</p>
@@ -101,8 +101,8 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t border-slate-200/60">
-              <span className="text-xs text-slate-400">资金占用天数</span>
-              <span className="text-sm font-medium text-slate-900">
+              <span className="text-xs text-muted-foreground">资金占用天数</span>
+              <span className="text-sm font-medium text-foreground">
                 {stats.holding_days} 天
               </span>
             </div>

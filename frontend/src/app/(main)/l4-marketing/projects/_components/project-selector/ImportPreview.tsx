@@ -135,9 +135,9 @@ export function ImportPreview({
             </Section>
 
             <Section title="营销信息">
-              <div className="p-3 bg-slate-50 rounded-lg">
+              <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm font-medium text-slate-700">标题</p>
-                <p className="text-sm text-slate-900 mt-1">{data.title}</p>
+                <p className="text-sm text-foreground mt-1">{data.title}</p>
               </div>
             </Section>
 
@@ -150,7 +150,7 @@ export function ImportPreview({
                     checked={selectedMedia.size === data.available_media.length}
                     onCheckedChange={toggleAllMedia}
                   />
-                  <span className="text-sm text-slate-600">全选</span>
+                  <span className="text-sm text-muted-foreground">全选</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

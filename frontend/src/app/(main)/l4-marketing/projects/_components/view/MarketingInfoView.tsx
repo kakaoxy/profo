@@ -18,7 +18,7 @@ export function MarketingInfoView({ project }: MarketingInfoViewProps) {
         <DisplayRow
           label="标题"
           value={
-            <span className="text-lg font-semibold text-slate-900">
+            <span className="text-lg font-semibold text-foreground">
               {project?.title || "-"}
             </span>
           }
@@ -45,7 +45,7 @@ export function MarketingInfoView({ project }: MarketingInfoViewProps) {
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="bg-slate-100 text-slate-700"
+                    className="bg-muted text-slate-700"
                   >
                     {tag}
                   </Badge>

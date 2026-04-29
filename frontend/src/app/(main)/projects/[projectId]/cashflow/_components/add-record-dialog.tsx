@@ -136,7 +136,7 @@ export function AddRecordDialog({
           <div className="grid grid-cols-2 gap-4">
             {/* 2. 金额输入 */}
             <div className="grid gap-2">
-              <Label className="text-xs text-slate-500">金额 (元)</Label>
+              <Label className="text-xs text-muted-foreground">金额 (元)</Label>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -153,7 +153,7 @@ export function AddRecordDialog({
 
             {/* 3. 日期选择 */}
             <div className="grid gap-2">
-              <Label className="text-xs text-slate-500">发生日期</Label>
+              <Label className="text-xs text-muted-foreground">发生日期</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -181,7 +181,7 @@ export function AddRecordDialog({
 
           {/* 4. 分类选择 (Tag 模式) */}
           <div className="grid gap-2">
-            <Label className="text-xs text-slate-500">分类</Label>
+            <Label className="text-xs text-muted-foreground">分类</Label>
             <div className="flex flex-wrap gap-2">
               {categoryOptions.map((c) => {
                 const isSelected = category === c;
@@ -194,7 +194,7 @@ export function AddRecordDialog({
                       "px-3 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 flex items-center gap-1.5",
                       // 未选中样式 (统一灰色)
                       !isSelected &&
-                        "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                        "bg-white border-slate-200 text-muted-foreground hover:border-border hover:bg-muted",
                       // 选中样式 (根据收支类型变色)
                       isSelected &&
                         type === "expense" &&
@@ -214,7 +214,7 @@ export function AddRecordDialog({
 
           {/* 5. 备注 */}
           <div className="grid gap-2">
-            <Label className="text-xs text-slate-500">备注说明</Label>
+            <Label className="text-xs text-muted-foreground">备注说明</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

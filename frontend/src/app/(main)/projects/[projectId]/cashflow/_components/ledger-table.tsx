@@ -65,7 +65,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
           onValueChange={setFilter}
           className="w-full sm:w-auto"
         >
-          <TabsList className="bg-slate-100 p-1 h-9">
+          <TabsList className="bg-muted p-1 h-9">
             <TabsTrigger value="all" className="text-xs h-7">
               全部
             </TabsTrigger>
@@ -96,7 +96,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
           </Button>
           <Button
             size="sm"
-            className="h-9 bg-slate-900 hover:bg-slate-800 text-xs"
+            className="h-9 bg-card hover:bg-card text-xs"
             onClick={() => setIsDialogOpen(true)}
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
@@ -109,7 +109,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
       <div className="rounded-md border border-slate-200 bg-white overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-[120px] text-xs">日期</TableHead>
               <TableHead className="w-[100px] text-xs">分类</TableHead>
               <TableHead className="text-xs">说明</TableHead>
@@ -131,7 +131,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
               filteredData.map((record) => (
                 <TableRow
                   key={record.id}
-                  className="group text-xs hover:bg-slate-50"
+                  className="group text-xs hover:bg-muted"
                 >
                   <TableCell className="py-3">
                     <div className="flex flex-col">
@@ -140,14 +140,14 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                           <span className="font-medium text-slate-700">
                             {format(parseISO(record.date), "yyyy-MM-dd")}
                           </span>
-                          <span className="text-[10px] text-slate-400 mt-0.5">
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
                             {format(parseISO(record.date), "EEEE", {
                               locale: zhCN,
                             })}
                           </span>
                         </>
                       ) : (
-                        <span className="font-medium text-slate-400">-</span>
+                        <span className="font-medium text-muted-foreground">-</span>
                       )}
                     </div>
                   </TableCell>
@@ -166,7 +166,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                   </TableCell>
                   <TableCell>
                     <div
-                      className="max-w-[200px] truncate text-slate-600"
+                      className="max-w-[200px] truncate text-muted-foreground"
                       title={record.notes}
                     >
                       {record.notes || "-"}

@@ -29,11 +29,11 @@ function InfoItem({ label, value, icon, highlight }: InfoItemProps) {
   
   return (
     <div className="flex items-center justify-between py-2 min-h-[36px]">
-      <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
         {icon}
         <span>{label}</span>
       </div>
-      <div className={`text-sm font-medium text-slate-800 ${highlight ? "font-bold text-slate-900" : ""}`}>
+      <div className={`text-sm font-medium text-foreground ${highlight ? "font-bold text-foreground" : ""}`}>
         {value}
       </div>
     </div>
@@ -50,9 +50,9 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
     <Card className="bg-white border-slate-200 shadow-sm">
       <CardHeader className="!pb-3 px-5 border-b border-slate-100">
         <CardTitle className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-          <Building2 className="w-3.5 h-3.5 text-slate-400" />
+          <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
           物理信息
-          <Badge variant="secondary" className="ml-2 text-[10px] bg-slate-100 text-slate-500">
+          <Badge variant="secondary" className="ml-2 text-[10px] bg-muted text-muted-foreground">
             只读
           </Badge>
         </CardTitle>
@@ -65,7 +65,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
               <InfoItem 
                 label="关联主项目ID" 
                 value={
-                  <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">
+                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
                     {project.project_id}
                   </span>
                 }
@@ -78,7 +78,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
               <InfoItem 
                 label="小区ID" 
                 value={
-                  <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">
+                  <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
                     {project.community_id}
                   </span>
                 }
@@ -138,7 +138,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
           </div>
         ) : (
           /* 空状态提示 */
-          <div className="text-center py-6 text-slate-400">
+          <div className="text-center py-6 text-muted-foreground">
             <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p className="text-sm">暂无物理信息</p>
             <p className="text-xs mt-1">数据来源于关联的主项目</p>

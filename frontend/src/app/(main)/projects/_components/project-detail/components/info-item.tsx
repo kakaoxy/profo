@@ -46,7 +46,7 @@ export function InfoItem({
         {label}
       </span>
       <div className="flex items-center gap-2">
-        <span className={cn("text-sm font-medium text-slate-900", highlight && "font-bold font-mono")}>
+        <span className={cn("text-sm font-medium text-foreground", highlight && "font-bold font-mono")}>
           {value}
         </span>
         {copyable && copyValue && (

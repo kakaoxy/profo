@@ -19,7 +19,7 @@ interface HeroGalleryProps {
 function ImagePlaceholder({ size = "large" }: { size?: "large" | "small" }) {
   const dimensions = size === "large" ? { width: 64, height: 64 } : { width: 48, height: 48 };
   return (
-    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+    <div className="w-full h-full bg-muted flex items-center justify-center">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width={dimensions.width}
@@ -43,7 +43,7 @@ function ImagePlaceholder({ size = "large" }: { size?: "large" | "small" }) {
 // 次要图片占位符组件
 function SecondaryImagePlaceholder() {
   return (
-    <div className="relative overflow-hidden rounded-xl bg-slate-100">
+    <div className="relative overflow-hidden rounded-xl bg-muted">
       <div className="absolute inset-0 flex items-center justify-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"

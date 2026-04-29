@@ -51,7 +51,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
     <div className="space-y-4">
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">销售活动记录</h3>
+        <h3 className="text-sm font-semibold text-foreground">销售活动记录</h3>
         <Button
           variant="outline"
           size="sm"
@@ -68,7 +68,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
         onValueChange={(v) => setActiveTab(v as TabType)}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-3 bg-slate-100 h-9 p-1">
+        <TabsList className="grid w-full grid-cols-3 bg-muted h-9 p-1">
           <TabsTrigger
             value="viewing"
             className="text-xs data-[state=active]:bg-white data-[state=active]:text-emerald-700"

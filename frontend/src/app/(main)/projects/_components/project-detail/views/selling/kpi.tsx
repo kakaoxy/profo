@@ -154,7 +154,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
             本周带看
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-foreground">
               {stats.viewings.count}
             </span>
             <span className="text-xs text-muted-foreground">组</span>
@@ -187,14 +187,14 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       </Card>
 
       {/* 2. 出价卡片 (浅灰主题 - 中性) */}
-      <Card className="shadow-sm border-slate-200 bg-slate-50/50">
+      <Card className="shadow-sm border-slate-200 bg-muted/50">
         <CardContent className="p-4 relative">
-          <Tag className="absolute top-4 right-4 h-4 w-4 text-slate-400 opacity-50" />
-          <div className="text-xs text-slate-600 font-medium">
+          <Tag className="absolute top-4 right-4 h-4 w-4 text-muted-foreground opacity-50" />
+          <div className="text-xs text-muted-foreground font-medium">
             本周出价
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-foreground">
               {stats.bids.count}
             </span>
             <span className="text-xs text-muted-foreground">笔</span>
@@ -217,14 +217,14 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
             本周面谈
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
+            <span className="text-2xl font-bold text-foreground">
               {stats.talks.count}
             </span>
             <span className="text-xs text-muted-foreground">场</span>
           </div>
           <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
              <MessageSquare className="h-3 w-3" />
-            最新: {stats.talks.latest === "暂无" ? <span className="text-slate-400">暂无</span> : stats.talks.latest}
+            最新: {stats.talks.latest === "暂无" ? <span className="text-muted-foreground">暂无</span> : stats.talks.latest}
           </div>
         </CardContent>
       </Card>
