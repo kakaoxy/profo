@@ -64,7 +64,7 @@ export function PerformanceReport({
         {metrics.memory !== undefined && (
           <div className="flex justify-between">
             <span>Memory:</span>
-            <span className="text-blue-400">{metrics.memory}MB</span>
+            <span className="text-muted-foreground">{metrics.memory}MB</span>
           </div>
         )}
       </div>

@@ -12,15 +12,15 @@ import {
 export const statusConfig: Record<string, { label: string; className: string }> = {
   "在售": {
     label: "在售",
-    className: "bg-emerald-500 text-white",
+    className: "bg-status-selling text-white",
   },
   "已售": {
     label: "已售",
-    className: "bg-slate-400 text-white",
+    className: "bg-status-sold text-white",
   },
   "在途": {
     label: "在途",
-    className: "bg-blue-500 text-white",
+    className: "bg-primary text-white",
   },
 };
 
@@ -28,11 +28,11 @@ export const statusConfig: Record<string, { label: string; className: string }> 
 export const publishStatusConfig: Record<string, { label: string; className: string }> = {
   "发布": {
     label: "已发布",
-    className: "bg-emerald-500 text-white",
+    className: "bg-status-selling text-white",
   },
   "草稿": {
     label: "草稿",
-    className: "bg-amber-500 text-white",
+    className: "bg-status-pending text-white",
   },
 };
 
@@ -79,7 +79,7 @@ export function getStatusConfig(status: string) {
   return (
     statusConfig[status] || {
       label: status,
-      className: "bg-slate-100 text-slate-600",
+      className: "bg-muted text-muted-foreground",
     }
   );
 }
@@ -89,7 +89,7 @@ export function getPublishStatusConfig(status: string) {
   return (
     publishStatusConfig[status] || {
       label: status,
-      className: "bg-slate-100 text-slate-600",
+      className: "bg-muted text-muted-foreground",
     }
   );
 }
