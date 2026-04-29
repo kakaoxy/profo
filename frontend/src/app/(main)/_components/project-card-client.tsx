@@ -12,7 +12,7 @@ import {
   mapProjectResponseToProject,
   validateSalesRecords,
 } from "./project-card-utils";
-import { getStatusLabel, getStatusClassName } from "../projects/constants/status-config";
+import { getStatusLabel, getStatusClassName, DEFAULT_STATUS } from "../projects/constants/status-config";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type CommunityMarketStatsResponse =
@@ -40,7 +40,7 @@ export function ProjectCardClient({
   const salesRecords = validateSalesRecords(project.sales_records);
   const projectData = mapProjectResponseToProject(project);
 
-  const status = project.status || "signing";
+  const status = project.status || DEFAULT_STATUS;
 
   return (
     <>
