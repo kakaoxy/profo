@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { MoreHorizontal, MapPin, Home } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { components } from "@/lib/api-types";
 import { MarketDataSection } from "./market-data-section";
 import { ProjectDetailSheet } from "../projects/_components/project-detail-sheet";
@@ -11,6 +12,7 @@ import {
   mapProjectResponseToProject,
   validateSalesRecords,
 } from "./project-card-utils";
+import { getStatusLabel, getStatusClassName } from "../projects/constants/status-config";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 type CommunityMarketStatsResponse =
@@ -37,6 +39,8 @@ export function ProjectCardClient({
 
   const salesRecords = validateSalesRecords(project.sales_records);
   const projectData = mapProjectResponseToProject(project);
+
+  const status = project.status || "signing";
 
   return (
     <>
@@ -65,6 +69,14 @@ export function ProjectCardClient({
             <Home className="w-3 h-3" />
             {layout} · {area}
           </p>
+          <div className="mt-2">
+            <Badge
+              variant="secondary"
+              className={`text-[10px] px-2 py-0 h-5 border-none rounded-md ${getStatusClassName(status)}`}
+            >
+              {getStatusLabel(status)}
+            </Badge>
+          </div>
         </div>
 
         <div className="p-4 flex-1 flex flex-col justify-between">
