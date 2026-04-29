@@ -1,40 +1,13 @@
 import { ClipboardCheck, UserCircle2, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import type { RawDashboardLead } from "../types";
+import {
+  getStatusBadgeClass,
+  getStatusLabel,
+} from "../leads/constants/status-config";
 
 interface DashboardLeadsTableProps {
   leads: RawDashboardLead[];
-}
-
-// 状态样式映射 - 移到组件外部避免每次渲染重新创建
-const STATUS_MAP: Record<string, string> = {
-  pending_assessment: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  pending_visit: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  visited: "bg-primary/10 text-primary",
-  signed: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-};
-
-const STATUS_TEXT_MAP: Record<string, string> = {
-  pending_assessment: "待评估",
-  pending_visit: "待看房",
-  rejected: "已驳回",
-  visited: "已看房",
-  signed: "已签约",
-};
-
-const DEFAULT_STATUS_CLASS =
-  "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400";
-
-/**
- * 获取状态对应的样式类名
- */
-function getStatusClassName(status: string): string {
-  return STATUS_MAP[status] || DEFAULT_STATUS_CLASS;
-}
-
-function getStatusText(status: string): string {
-  return STATUS_TEXT_MAP[status] || status;
 }
 
 function formatArea(area: number | null): string {
@@ -150,9 +123,9 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                   </td>
                   <td className="px-2 py-4">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${getStatusClassName(lead.status)}`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${getStatusBadgeClass(lead.status)}`}
                     >
-                      {getStatusText(lead.status)}
+                      {getStatusLabel(lead.status)}
                     </span>
                   </td>
                   <td className="px-2 py-4 text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:table-cell">

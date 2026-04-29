@@ -1,6 +1,7 @@
 import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
 import type { FunnelData, RawDashboardLead } from "../types";
+import { getStatusLabel } from "../leads/constants/status-config";
 
 type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -66,14 +67,7 @@ function validateProjectResponseList(data: unknown): ProjectResponse[] {
 }
 
 export function getStatusText(status: LeadStatus): string {
-  const statusMap: Record<string, string> = {
-    pending_assessment: "待评估",
-    pending_visit: "待看房",
-    rejected: "已驳回",
-    visited: "已看房",
-    signed: "已签约",
-  };
-  return statusMap[status] || status;
+  return getStatusLabel(status);
 }
 
 export function transformLeadToDashboard(lead: LeadListItem): RawDashboardLead {
