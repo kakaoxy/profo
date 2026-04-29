@@ -43,9 +43,9 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
 
   if (error) {
     return (
-      <section className="p-6 bg-white border-b border-slate-100">
+      <section className="p-6 bg-card border-b border-border">
         <div className="text-center py-8">
-          <p className="text-sm text-rose-500">{error.message}</p>
+          <p className="text-sm text-destructive">{error.message}</p>
           <Button
             variant="outline"
             size="sm"
@@ -77,7 +77,7 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
   );
 
   return (
-    <section className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white border-b border-slate-100">
+    <section className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-card border-b border-border">
       {/* Left Column: Basic Info */}
       <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
@@ -86,22 +86,22 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
               <MapPin className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 项目地址
               </p>
-              <p className="text-sm font-semibold text-slate-700">{address}</p>
+              <p className="text-sm font-semibold text-foreground">{address}</p>
             </div>
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="mt-1 p-2 rounded-lg bg-slate-50 text-slate-600">
+            <div className="mt-1 p-2 rounded-lg bg-muted text-muted-foreground">
               <Info className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 户型面积
               </p>
-              <p className="text-sm font-semibold text-slate-700">{layout}</p>
+              <p className="text-sm font-semibold text-foreground">{layout}</p>
             </div>
           </div>
         </div>
@@ -112,23 +112,23 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
               <Clock className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                 价格信息 (万)
               </p>
               <div className="flex items-baseline gap-4 mt-0.5">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">
+                  <span className="text-[10px] text-muted-foreground block">
                     签约价
                   </span>
-                  <span className="text-lg font-bold text-slate-900">
+                  <span className="text-lg font-bold text-foreground">
                     ¥{signingPrice.toFixed(0)}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">
+                  <span className="text-[10px] text-muted-foreground block">
                     当前挂牌
                   </span>
-                  <span className="text-lg font-bold text-red-500">
+                  <span className="text-lg font-bold text-destructive">
                     ¥{listPrice.toFixed(0)}
                   </span>
                 </div>
@@ -137,10 +137,10 @@ export function HeroSection({ projectId, overrideData }: HeroSectionProps) {
           </div>
 
           <div className="pl-11">
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
               单价详情
             </p>
-            <p className="text-lg font-bold text-slate-900">
+            <p className="text-lg font-bold text-foreground">
               {unitPrice > 0 ? `¥${unitPrice.toLocaleString()}/㎡` : "—"}
             </p>
           </div>

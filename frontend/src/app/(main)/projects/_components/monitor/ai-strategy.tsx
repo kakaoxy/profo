@@ -68,16 +68,16 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
       
       <div className="px-4 sm:px-6 space-y-4 sm:space-y-6">
         {/* Input & Action Header */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all focus-within:ring-2 ring-indigo-500/10">
-          <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden transition-all focus-within:ring-2 ring-primary/10">
+          <div className="p-4 bg-muted border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BrainCircuit className="text-indigo-500" size={18} />
-              <span className="text-xs font-bold text-slate-700">AI 决策研判工作台</span>
+              <BrainCircuit className="text-primary" size={18} />
+              <span className="text-xs font-bold text-foreground">AI 决策研判工作台</span>
             </div>
             {report && (
               <button 
                 onClick={() => { setReport(null); setInput(''); }}
-                className="text-[10px] font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                className="text-[10px] font-bold text-muted-foreground hover:text-destructive transition-colors"
               >
                 清空会话
               </button>
@@ -90,14 +90,14 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="输入补充信息 (如：业主急售、房屋带名额、高标准精装等)..."
-                className="w-full h-24 p-4 bg-slate-50 rounded-xl text-sm text-slate-600 placeholder:text-slate-400 border border-slate-100 focus:bg-white focus:border-indigo-300 outline-none transition-all resize-none"
+                className="w-full h-24 p-4 bg-muted rounded-xl text-sm text-foreground placeholder:text-muted-foreground border border-border focus:bg-card focus:border-primary/50 outline-none transition-all resize-none"
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
                 <Button 
                   onClick={handleGenerate}
                   disabled={isGenerating}
                   className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50 h-auto ${
-                    report ? 'bg-slate-800 text-white' : 'bg-primary text-white shadow-primary/20'
+                    report ? 'bg-foreground text-background' : 'bg-primary text-primary-foreground shadow-primary/20'
                   }`}
                 >
                   {isGenerating ? (
@@ -116,51 +116,51 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
         {report && !isGenerating && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="lg:col-span-2 space-y-4">
-              <div className="bg-white p-6 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden">
+              <div className="bg-card p-6 rounded-2xl border border-primary/20 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                   <BrainCircuit size={120} />
                 </div>
-                <h3 className="text-slate-800 font-black flex items-center gap-2 mb-6 border-b border-slate-50 pb-3 uppercase tracking-tight">
-                  <Sparkles className="text-amber-500" size={18} />
+                <h3 className="text-foreground font-black flex items-center gap-2 mb-6 border-b border-border pb-3 uppercase tracking-tight">
+                  <Sparkles className="text-status-pending" size={18} />
                   AI 定价专家研判报告
                 </h3>
-                <div className="prose prose-sm prose-slate max-w-none prose-headings:text-slate-900 prose-strong:text-indigo-700">
+                <div className="prose prose-sm prose-slate max-w-none prose-headings:text-foreground prose-strong:text-primary">
                    <ReactMarkdown>{report}</ReactMarkdown>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="bg-linear-to-br from-indigo-50 to-white p-6 rounded-2xl border border-indigo-100 shadow-sm">
-                <h3 className="text-indigo-800 font-bold mb-4 flex items-center gap-2 text-sm uppercase">
+              <div className="bg-linear-to-br from-primary/5 to-card p-6 rounded-2xl border border-primary/20 shadow-sm">
+                <h3 className="text-foreground font-bold mb-4 flex items-center gap-2 text-sm uppercase">
                   <ShieldAlert className="w-4 h-4" />
                   风控核心提醒
                 </h3>
                 <div className="space-y-3">
-                  <div className="p-3 bg-white/60 rounded-lg border border-indigo-50">
-                    <p className="text-[11px] text-slate-500 font-medium mb-1">利润临界点</p>
-                    <p className="text-sm font-black text-slate-800">¥ 202.5 万</p>
+                  <div className="p-3 bg-card/60 rounded-lg border border-primary/10">
+                    <p className="text-[11px] text-muted-foreground font-medium mb-1">利润临界点</p>
+                    <p className="text-sm font-black text-foreground">¥ 202.5 万</p>
                   </div>
-                  <div className="p-3 bg-white/60 rounded-lg border border-indigo-50">
-                    <p className="text-[11px] text-slate-500 font-medium mb-1">延期日损失</p>
-                    <p className="text-sm font-black text-rose-600">¥ 300 / 天</p>
+                  <div className="p-3 bg-card/60 rounded-lg border border-primary/10">
+                    <p className="text-[11px] text-muted-foreground font-medium mb-1">延期日损失</p>
+                    <p className="text-sm font-black text-destructive">¥ 300 / 天</p>
                   </div>
                 </div>
-                <Button className="w-full mt-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 h-auto">
-                  <Sparkles size={14} className="fill-white" />
+                <Button className="w-full mt-6 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 h-auto">
+                  <Sparkles size={14} className="fill-primary-foreground" />
                   立即同步至挂牌系统
                 </Button>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <h3 className="text-slate-700 font-bold mb-2 flex items-center gap-2 text-sm uppercase">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <div className="bg-muted p-6 rounded-2xl border border-border">
+                <h3 className="text-foreground font-bold mb-2 flex items-center gap-2 text-sm uppercase">
+                  <AlertTriangle className="w-4 h-4 text-status-pending" />
                   备选对冲方案
                 </h3>
-                <p className="text-slate-500 text-[11px] leading-relaxed mb-6">
+                <p className="text-muted-foreground text-[11px] leading-relaxed mb-6">
                   若不接受调价，建议立即增加 2000 元渠道激励金，以此提升在各平台成交排名优先级。
                 </p>
-                <Button variant="outline" className="w-full py-2.5 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold transition-all h-auto">
+                <Button variant="outline" className="w-full py-2.5 bg-card hover:bg-muted text-foreground border border-border rounded-xl text-xs font-bold transition-all h-auto">
                   开启渠道激励
                 </Button>
               </div>
@@ -170,14 +170,14 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
 
         {/* Loading Placeholder */}
         {isGenerating && (
-          <div className="p-20 flex flex-col items-center justify-center border border-slate-100 rounded-2xl bg-white/50 space-y-4">
+          <div className="p-20 flex flex-col items-center justify-center border border-border rounded-2xl bg-card/50 space-y-4">
             <div className="relative">
-              <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
-              <BrainCircuit className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-500" size={32} />
+              <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              <BrainCircuit className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" size={32} />
             </div>
             <div className="text-center">
-              <p className="text-slate-700 font-bold">深度研判中...</p>
-              <p className="text-slate-400 text-xs mt-1">AI 正在调取周边竞品成交曲线并计算持有折旧...</p>
+              <p className="text-foreground font-bold">深度研判中...</p>
+              <p className="text-muted-foreground text-xs mt-1">AI 正在调取周边竞品成交曲线并计算持有折旧...</p>
             </div>
           </div>
         )}
