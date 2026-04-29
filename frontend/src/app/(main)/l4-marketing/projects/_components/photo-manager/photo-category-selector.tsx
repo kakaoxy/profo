@@ -36,7 +36,7 @@ export function PhotoCategorySelector({
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
               isActive && "border-transparent text-white",
-              !isActive && "bg-white hover:bg-muted border-border",
+              !isActive && "bg-card hover:bg-muted border-border",
               disabled && "opacity-50 cursor-not-allowed"
             )}
             style={

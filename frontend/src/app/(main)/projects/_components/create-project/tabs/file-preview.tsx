@@ -37,7 +37,7 @@ interface FilePreviewProps {
 function getFileIcon(fileType: FileType) {
   switch (fileType) {
     case "excel":
-      return <FileSpreadsheet className="h-8 w-8 text-green-600" />;
+      return <FileSpreadsheet className="h-8 w-8 text-success" />;
     case "image":
       return <FileImage className="h-8 w-8 text-primary" />;
     case "pdf":

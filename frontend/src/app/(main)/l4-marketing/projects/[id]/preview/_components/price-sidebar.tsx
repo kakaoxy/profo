@@ -22,7 +22,7 @@ export function PriceSidebar({
 }: PriceSidebarProps) {
   return (
     <div className="lg:sticky lg:top-28 space-y-6">
-      <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-card p-8 rounded-xl border border-border shadow-sm">
         <div className="flex flex-col gap-1 mb-6">
           <span className="text-muted-foreground text-sm font-medium">房源总价</span>
           <div className="flex items-baseline gap-2">
@@ -36,7 +36,7 @@ export function PriceSidebar({
         </div>
 
         {/* Responsible Person */}
-        <div className="mt-8 pt-8 border-t border-slate-200 flex flex-col gap-4">
+        <div className="mt-8 pt-8 border-t border-border flex flex-col gap-4">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             房源责任人
           </span>
@@ -76,14 +76,14 @@ export function PriceSidebar({
       </div>
 
       {/* Quick Context */}
-      <div className="bg-muted p-6 rounded-xl space-y-4 border border-slate-200">
+      <div className="bg-muted p-6 rounded-xl space-y-4 border border-border">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg text-primary">
             <Info className="h-4 w-4" />
           </div>
           <div>
             <div className="text-xs text-muted-foreground">提示</div>
-            <div className="text-sm font-medium text-slate-700">
+            <div className="text-sm font-medium text-muted-foreground">
               预览模式仅显示核心字段
             </div>
           </div>

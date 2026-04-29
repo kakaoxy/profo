@@ -87,7 +87,7 @@ export const OptimizedPhotoItem = memo(function OptimizedPhotoItem({
       dragAttributes={attributes}
       dragListeners={listeners}
       setNodeRef={setNodeRef}
-      className="hover:bg-[#f8faff] [&_button]:hover:bg-[#e5eeff]"
+      className="hover:bg-[var(--muted)] [&_button]:hover:bg-[var(--primary)]"
     />
   );
 });

@@ -29,7 +29,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   const deadlineDate = addDays(handoverDate, 65);
   const daysLeft = differenceInDays(deadlineDate, today);
 
-  let daysColor = "text-green-600";
+  let daysColor = "text-success";
   if (daysLeft < 10) daysColor = "text-error animate-pulse";
   else if (daysLeft <= 30) daysColor = "text-status-renovating";
 
@@ -153,7 +153,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
                 张
               </span>
             </div>
-            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
+            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-card group-hover:shadow-sm transition-all">
               <ImageIcon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>

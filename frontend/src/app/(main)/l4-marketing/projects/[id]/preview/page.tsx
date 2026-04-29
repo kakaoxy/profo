@@ -72,7 +72,7 @@ export default async function ProjectPreviewPage({
   return (
     <div className="min-h-screen bg-muted/50">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href={`/l4-marketing/projects/${project.id}/edit`}>
             <Button variant="ghost" size="sm" className="gap-2">
@@ -125,7 +125,7 @@ export default async function ProjectPreviewPage({
                   {tags.slice(0, 6).map((tag, index) => (
                     <span
                       key={index}
-                      className="bg-muted text-muted-foreground border border-slate-200 px-3 py-1 rounded-full text-xs font-medium"
+                      className="bg-muted text-muted-foreground border border-border px-3 py-1 rounded-full text-xs font-medium"
                     >
                       {tag}
                     </span>
@@ -166,7 +166,7 @@ export default async function ProjectPreviewPage({
       </main>
 
       {/* Footer */}
-      <footer className="bg-muted border-t border-slate-200 mt-12 py-12">
+      <footer className="bg-muted border-t border-border mt-12 py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="text-lg font-bold text-muted-foreground mb-4">
             Estate Logic

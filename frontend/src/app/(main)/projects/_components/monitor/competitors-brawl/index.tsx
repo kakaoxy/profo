@@ -108,10 +108,10 @@ export function CompetitorsBrawl({
           onSearchChange={setSearchQuery}
         />
 
-        <Card className="border-slate-100 shadow-sm overflow-x-auto bg-white min-h-[300px]">
+        <Card className="border-border shadow-sm overflow-x-auto bg-card min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-40 text-error">

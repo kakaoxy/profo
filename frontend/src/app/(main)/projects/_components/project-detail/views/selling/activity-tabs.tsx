@@ -71,19 +71,19 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
         <TabsList className="grid w-full grid-cols-3 bg-muted h-9 p-1">
           <TabsTrigger
             value="viewing"
-            className="text-xs data-[state=active]:bg-white data-[state=active]:text-emerald-700"
+            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
           >
             带看记录
           </TabsTrigger>
           <TabsTrigger
             value="offer"
-            className="text-xs data-[state=active]:bg-white data-[state=active]:text-emerald-700"
+            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
           >
             出价记录
           </TabsTrigger>
           <TabsTrigger
             value="negotiation"
-            className="text-xs data-[state=active]:bg-white data-[state=active]:text-emerald-700"
+            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
           >
             面谈记录
           </TabsTrigger>

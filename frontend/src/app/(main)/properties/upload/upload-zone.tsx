@@ -253,7 +253,7 @@ export function UploadZone() {
                   
                   {(taskStatus.success_count > 0 || taskStatus.failed_count > 0) && (
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-green-600">成功: {taskStatus.success_count}</span>
+                      <span className="text-success">成功: {taskStatus.success_count}</span>
                       <span className="mx-2">|</span>
                       <span className="text-error">失败: {taskStatus.failed_count}</span>
                     </p>
@@ -305,7 +305,7 @@ export function UploadZone() {
             <div className="flex items-start gap-4">
               {taskStatus.status === "completed" && taskStatus.failed_count === 0 ? (
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                  <CheckCircle2 className="h-6 w-6 text-success" />
                 </div>
               ) : taskStatus.status === "completed" ? (
                 <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
@@ -345,7 +345,7 @@ export function UploadZone() {
                 
                 <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                   <span>总记录: {taskStatus.total_records}</span>
-                  <span className="text-green-600">成功: {taskStatus.success_count}</span>
+                  <span className="text-success">成功: {taskStatus.success_count}</span>
                   <span className="text-error">失败: {taskStatus.failed_count}</span>
                   {taskStatus.processing_duration && (
                     <span>用时: {Math.round(taskStatus.processing_duration)}秒</span>

@@ -96,8 +96,8 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
             name="title"
             render={({ field }) => (
               <FormItem className="space-y-2">
-                <FormLabel className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
-                  房源标题 <span className="text-[#ba1a1a]">*</span>
+                <FormLabel className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
+                  房源标题 <span className="text-[var(--error)]">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -105,7 +105,7 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
                     {...field}
                     value={String(field.value ?? "")}
                     onChange={(e) => field.onChange(e.target.value)}
-                    className="w-full h-12 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                    className="w-full h-12 px-4 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
                   />
                 </FormControl>
                 <FormMessage />
@@ -175,8 +175,8 @@ function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
           name="area"
           render={({ field }) => (
             <FormItem className="space-y-2">
-              <FormLabel className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
-                面积 (㎡) <span className="text-[#ba1a1a]">*</span>
+              <FormLabel className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
+                面积 (㎡) <span className="text-[var(--error)]">*</span>
               </FormLabel>
               <FormControl>
                 <AreaInput

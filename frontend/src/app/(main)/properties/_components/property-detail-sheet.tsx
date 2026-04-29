@@ -93,7 +93,7 @@ export function PropertyDetailSheet() {
       <SheetContent className="w-[400px] sm:w-[600px] p-0 flex flex-col gap-0 bg-background">
         
         {/* 头部：标题与状态 */}
-        <SheetHeader className="p-6 bg-white border-b shrink-0">
+        <SheetHeader className="p-6 bg-card border-b shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline">{data?.data_source || "数据源"}</Badge>
             {data?.status && (
@@ -131,7 +131,7 @@ export function PropertyDetailSheet() {
             {data && !loading && (
               <>
                 {/* 1. 核心价格与面积 */}
-                <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-lg border shadow-sm">
+                <div className="grid grid-cols-3 gap-4 bg-card p-4 rounded-lg border shadow-sm">
                   <div className="text-center border-r">
                     <div className="text-xs text-muted-foreground mb-1">
                         {data.status === "成交" ? "成交总价" : "挂牌总价"}
@@ -178,7 +178,7 @@ export function PropertyDetailSheet() {
                   <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                     <Home className="w-4 h-4" /> 基础属性
                   </h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-white p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-card p-4 rounded-lg border">
                     <Field label="户型结构" value={data.layout_display} />
                     <Field label="所在楼层" value={data.floor_display} />
                     <Field label="房屋朝向" value={data.orientation} />
@@ -195,7 +195,7 @@ export function PropertyDetailSheet() {
                   <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                     <Tag className="w-4 h-4" /> 交易属性
                   </h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-white p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-card p-4 rounded-lg border">
                     <Field label="挂牌时间" value={data.listed_date?.split("T")[0]} icon={Calendar} />
                     <Field label="上次交易" value={data.last_transaction?.split("T")[0]} />
                     <Field label="持有年限" value={data.ownership_years ? `满${data.ownership_years}年` : ""} />

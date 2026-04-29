@@ -72,7 +72,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
           className={cn(
             "space-y-2 min-h-[80px] max-h-[300px] overflow-y-auto p-2 rounded-lg border transition-all",
             // 默认样式
-            "bg-muted border-slate-200",
+            "bg-muted border-border",
             // 拖拽悬停时的样式
             isOver && "border-primary bg-primary/5 ring-2 ring-primary/20"
           )}

@@ -13,7 +13,7 @@ export function InfoSection({ title, icon, children }: InfoSectionProps) {
   return (
     <Card className="bg-card/50 border-muted">
       <CardHeader className="!pb-2 px-4 border-b border-border/60">
-        <CardTitle className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+        <CardTitle className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
           {icon}
           {title}
         </CardTitle>

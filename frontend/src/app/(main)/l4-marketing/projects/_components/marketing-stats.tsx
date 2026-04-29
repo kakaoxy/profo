@@ -52,7 +52,7 @@ export function MarketingStats({ stats }: MarketingStatsProps) {
         return (
           <Card
             key={index}
-            className="p-4 bg-card border-border hover:bg-muted dark:hover:bg-slate-700/50 transition-colors cursor-pointer shadow-sm"
+            className="p-4 bg-card border-border hover:bg-muted dark:hover:bg-muted transition-colors cursor-pointer shadow-sm"
             role="button"
             aria-label={`${item.label} ${item.value}`}
           >

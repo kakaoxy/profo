@@ -114,7 +114,7 @@ export function TimelineItem({
     try {
       const date = parseISO(stageFinishDateStr);
       if (isValid(date)) {
-        return <span className="text-[12px] text-green-600 font-mono ml-auto"> {format(date, "MM-dd")}</span>;
+        return <span className="text-[12px] text-success font-mono ml-auto"> {format(date, "MM-dd")}</span>;
       }
     } catch {
       return null;
@@ -123,7 +123,7 @@ export function TimelineItem({
 
   return (
     <AccordionItem value={stage.key} className="border-none relative" disabled={isFuture}>
-      <div className="absolute left-0 top-1 z-10 bg-white p-1">
+      <div className="absolute left-0 top-1 z-10 bg-card p-1">
         {isCompleted ? (
           <CheckCircle2 className="h-6 w-6 text-status-selling fill-status-selling/10" />
         ) : isCurrent ? (
@@ -147,7 +147,7 @@ export function TimelineItem({
       </AccordionTrigger>
 
       <AccordionContent className="pl-12 pt-4 pb-2">
-        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-white border-status-renovating/30 shadow-sm" : "bg-muted/50 border-slate-100")}>
+        <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-card border-status-renovating/30 shadow-sm" : "bg-muted/50 border-border")}>
           <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} onUpload={handleUpload} onDelete={handleDelete} />
           <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
         </div>

@@ -18,8 +18,8 @@ export function BasicConfigFields() {
   return (
     <div className="space-y-6">
       {/* Status & Controls Card */}
-      <section className="bg-white border border-[#c0c7d6]/20 rounded-2xl p-6 shadow-sm">
-        <h3 className="text-xs font-black text-[#707785] uppercase tracking-[0.2em] mb-6">发布设置 (Settings)</h3>
+      <section className="bg-card border border-[var(--border)]/20 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-xs font-black text-[var(--muted-foreground)] uppercase tracking-[0.2em] mb-6">发布设置 (Settings)</h3>
         <div className="space-y-8">
           {/* Toggle: Draft/Publish */}
           <FormField
@@ -29,8 +29,8 @@ export function BasicConfigFields() {
               <FormItem>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold text-[#0b1c30]">发布状态</p>
-                    <p className="text-[11px] text-[#707785]">房源是否在前端对外展示</p>
+                    <p className="text-sm font-bold text-[var(--foreground)]">发布状态</p>
+                    <p className="text-[11px] text-[var(--muted-foreground)]">房源是否在前端对外展示</p>
                   </div>
                   <div className="flex bg-primary/10 rounded-full p-1 w-32 relative">
                     <div
@@ -42,7 +42,7 @@ export function BasicConfigFields() {
                       type="button"
                       onClick={() => field.onChange("发布")}
                       className={`flex-1 text-[11px] font-bold relative z-10 py-1.5 rounded-full transition-colors ${
-                        field.value === "发布" ? "text-white" : "text-[#707785]"
+                        field.value === "发布" ? "text-white" : "text-[var(--muted-foreground)]"
                       }`}
                     >
                       发布
@@ -51,7 +51,7 @@ export function BasicConfigFields() {
                       type="button"
                       onClick={() => field.onChange("草稿")}
                       className={`flex-1 text-[11px] font-bold relative z-10 py-1.5 rounded-full transition-colors ${
-                        field.value === "草稿" ? "text-white" : "text-[#707785]"
+                        field.value === "草稿" ? "text-white" : "text-[var(--muted-foreground)]"
                       }`}
                     >
                       草稿
@@ -69,7 +69,7 @@ export function BasicConfigFields() {
             name="project_status"
             render={({ field }) => (
               <FormItem className="space-y-4">
-                <p className="text-sm font-bold text-[#0b1c30]">项目状态</p>
+                <p className="text-sm font-bold text-[var(--foreground)]">项目状态</p>
                 <div className="grid grid-cols-3 gap-2">
                   {["在途", "在售", "已售"].map((status) => {
                     const isSelected = field.value === status;
@@ -80,8 +80,8 @@ export function BasicConfigFields() {
                         onClick={() => field.onChange(status)}
                         className={`flex flex-col items-center py-3 rounded-xl border transition-all group ${
                           isSelected
-                            ? "bg-[#9d6a00] text-white border-[#9d6a00]"
-                            : "border-[#c0c7d6]/20 hover:border-primary text-foreground"
+                            ? "bg-[var(--status-pending)] text-white border-[var(--status-pending)]"
+                            : "border-[var(--border)]/20 hover:border-primary text-foreground"
                         }`}
                       >
                         <span className="text-lg mb-1">
@@ -104,9 +104,9 @@ export function BasicConfigFields() {
             control={control}
             name="sort_order"
             render={({ field }) => (
-              <FormItem className="space-y-3 pt-4 border-t border-[#c0c7d6]/10">
+              <FormItem className="space-y-3 pt-4 border-t border-[var(--border)]/10">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-[#707785] uppercase tracking-wider">排序权重</label>
+                  <label className="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">排序权重</label>
                   <span className="text-primary font-bold">{field.value ?? 50}</span>
                 </div>
                 <FormControl>
@@ -127,8 +127,8 @@ export function BasicConfigFields() {
       </section>
 
       {/* Tags & Styles Card - 白色卡片配色风格（与发布设置一致） */}
-      <section className="bg-white border border-[#c0c7d6]/20 rounded-2xl p-6 shadow-sm">
-        <h3 className="text-xs font-black text-[#707785] uppercase tracking-[0.2em] mb-6">标签与风格 (Tags & Styles)</h3>
+      <section className="bg-card border border-[var(--border)]/20 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-xs font-black text-[var(--muted-foreground)] uppercase tracking-[0.2em] mb-6">标签与风格 (Tags & Styles)</h3>
         <div className="space-y-6">
           {/* Tags */}
           <FormField
@@ -136,9 +136,9 @@ export function BasicConfigFields() {
             name="tags"
             render={({ field }) => (
               <FormItem className="space-y-2">
-                <FormLabel className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
+                <FormLabel className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                   房源标签
-                  <span className="text-xs text-[#707785]/60 ml-2">
+                  <span className="text-xs text-[var(--muted-foreground)]/60 ml-2">
                     ({tags.length}/20)
                   </span>
                 </FormLabel>
@@ -159,7 +159,7 @@ export function BasicConfigFields() {
             name="decoration_style"
             render={({ field }) => (
               <FormItem className="space-y-4">
-                <FormLabel className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
+                <FormLabel className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
                   装修风格 (Style)
                 </FormLabel>
                 <div className="grid grid-cols-2 gap-2">
@@ -171,7 +171,7 @@ export function BasicConfigFields() {
                         className={`relative flex items-center justify-center py-2.5 rounded-lg border cursor-pointer transition-all ${
                           isSelected
                             ? "bg-primary/10 border-primary"
-                            : "border-[#c0c7d6]/20 hover:border-primary/50"
+                            : "border-[var(--border)]/20 hover:border-primary/50"
                         }`}
                       >
                         <input

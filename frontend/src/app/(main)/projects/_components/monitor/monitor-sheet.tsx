@@ -8,32 +8,32 @@ import { useEffect, useState } from "react";
 
 const HeroSection = dynamic(
   () => import("./hero-section").then((m) => m.HeroSection),
-  { ssr: false, loading: () => <div className="p-6 h-56 bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-56 bg-card" /> },
 );
 
 const MarketSentiment = dynamic(
   () => import("./market-sentiment").then((m) => m.MarketSentiment),
-  { ssr: false, loading: () => <div className="p-6 h-72 bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-72 bg-card" /> },
 );
 
 const NeighborhoodRadar = dynamic(
   () => import("./neighborhood-radar").then((m) => m.NeighborhoodRadar),
-  { ssr: false, loading: () => <div className="p-6 h-80 bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-80 bg-card" /> },
 );
 
 const TrendPositioning = dynamic(
   () => import("./trend-positioning").then((m) => m.TrendPositioning),
-  { ssr: false, loading: () => <div className="p-6 h-128 bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-128 bg-card" /> },
 );
 
 const CompetitorsBrawl = dynamic(
   () => import("./competitors-brawl").then((m) => m.CompetitorsBrawl),
-  { ssr: false, loading: () => <div className="p-6 h-96 bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-96 bg-card" /> },
 );
 
 const AIStrategy = dynamic(
   () => import("./ai-strategy").then((m) => m.AIStrategy),
-  { ssr: false, loading: () => <div className="p-6 h-80 bg-white" /> },
+  { ssr: false, loading: () => <div className="p-6 h-80 bg-card" /> },
 );
 
 // 新增：一个简单的包装组件，专门解决“糊在一起”的问题

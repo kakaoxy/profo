@@ -194,7 +194,7 @@ export function AddRecordDialog({
                       "px-3 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 flex items-center gap-1.5",
                       // 未选中样式 (统一灰色)
                       !isSelected &&
-                        "bg-white border-slate-200 text-muted-foreground hover:border-border hover:bg-muted",
+                        "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
                       // 选中样式 (根据收支类型变色)
                       isSelected &&
                         type === "expense" &&

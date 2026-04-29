@@ -110,7 +110,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
                   id="date"
                   variant={"outline"}
                   className={cn(
-                    "w-full justify-start text-left font-normal border-slate-200 hover:bg-muted",
+                    "w-full justify-start text-left font-normal border-border hover:bg-muted",
                     !date && "text-muted-foreground"
                   )}
                 >
@@ -162,7 +162,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
             variant="outline"
             onClick={() => setIsOpen(false)}
             disabled={isSubmitting}
-            className="border-slate-200 text-muted-foreground"
+            className="border-border text-muted-foreground"
           >
             取消
           </Button>

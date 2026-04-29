@@ -173,7 +173,7 @@ export function CommunitySelect({
       label: "text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1",
       required: "text-error",
       button:
-        "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-slate-200 hover:bg-muted hover:text-foreground",
+        "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-border hover:bg-muted hover:text-foreground",
       icon: "text-muted-foreground",
       placeholder: "text-muted-foreground font-normal",
       popover: "w-[400px] p-0 rounded-xl",
@@ -190,24 +190,24 @@ export function CommunitySelect({
       emptyState: "py-8 text-center text-muted-foreground text-xs",
     },
     marketing: {
-      label: "block text-xs font-bold text-[#707785] uppercase tracking-wider",
-      required: "text-[#ba1a1a]",
+      label: "block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider",
+      required: "text-[var(--error)]",
       button:
-        "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-[#c0c7d6]/50 hover:bg-[#e5eeff] hover:text-[#0b1c30] bg-white",
-      icon: "text-[#707785]",
-      placeholder: "text-[#707785] font-normal",
+        "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-[var(--border)]/50 hover:bg-[var(--primary)] hover:text-[var(--foreground)] bg-card",
+      icon: "text-[var(--muted-foreground)]",
+      placeholder: "text-[var(--muted-foreground)] font-normal",
       popover: "w-[400px] p-0 rounded-xl",
       input:
-        "w-full px-3 py-2 text-sm bg-primary/5 border border-[#c0c7d6]/30 rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
-      loading: "text-[#707785]",
+        "w-full px-3 py-2 text-sm bg-primary/5 border border-[var(--border)]/30 rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
+      loading: "text-[var(--muted-foreground)]",
       createButton:
         "w-full flex items-center gap-2 p-3 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
       resultItem:
         "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-primary/10 transition-colors group text-left",
       resultItemActive: "bg-primary/10 text-primary font-bold",
-      resultName: "font-bold text-[#0b1c30]",
-      resultMeta: "text-[10px] text-[#707785] flex items-center gap-1",
-      emptyState: "py-8 text-center text-[#707785] text-xs",
+      resultName: "font-bold text-[var(--foreground)]",
+      resultMeta: "text-[10px] text-[var(--muted-foreground)] flex items-center gap-1",
+      emptyState: "py-8 text-center text-[var(--muted-foreground)] text-xs",
     },
   };
 
@@ -238,7 +238,7 @@ export function CommunitySelect({
         </PopoverTrigger>
         <PopoverContent className={s.popover} align="start">
           {/* 搜索输入框 */}
-          <div className={cn("p-2 border-b", variant === "marketing" && "border-[#c0c7d6]/20")}>
+          <div className={cn("p-2 border-b", variant === "marketing" && "border-[var(--border)]/20")}>
             <input
               className={s.input}
               placeholder="输入关键词搜索..."

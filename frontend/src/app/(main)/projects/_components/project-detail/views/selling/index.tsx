@@ -30,7 +30,7 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
       <ActivityTabs project={project} onRefresh={onRefresh} />
 
       {/* 4. 底部固定操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 flex items-center justify-between sm:absolute sm:rounded-b-xl z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border flex items-center justify-between sm:absolute sm:rounded-b-xl z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">当前状态</span>
           <Badge

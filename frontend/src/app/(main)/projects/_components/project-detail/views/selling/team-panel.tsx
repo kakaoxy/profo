@@ -100,7 +100,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   };
 
   return (
-    <div className="bg-muted/50 border border-slate-100 rounded-lg p-4 mb-6">
+    <div className="bg-muted/50 border border-border rounded-lg p-4 mb-6">
       <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
         销售团队{" "}
         <span className="text-[10px] font-normal text-muted-foreground normal-case">
@@ -124,7 +124,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
             }}
             disabled={isLoadingUsers}
           >
-            <SelectTrigger className="h-8 text-sm bg-white focus:ring-success w-full">
+            <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
               <SelectValue placeholder="选择渠道负责人">
                 {getUserDisplayName(channelManagerId) || "选择渠道负责人"}
               </SelectValue>
@@ -156,7 +156,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
             }}
             disabled={isLoadingUsers}
           >
-            <SelectTrigger className="h-8 text-sm bg-white focus:ring-success w-full">
+            <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
               <SelectValue placeholder="选择讲房人">
                 {getUserDisplayName(propertyAgentId) || "选择讲房人"}
               </SelectValue>
@@ -188,7 +188,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
             }}
             disabled={isLoadingUsers}
           >
-            <SelectTrigger className="h-8 text-sm bg-white focus:ring-success w-full">
+            <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
               <SelectValue placeholder="选择谈判人">
                 {getUserDisplayName(negotiatorId) || "选择谈判人"}
               </SelectValue>

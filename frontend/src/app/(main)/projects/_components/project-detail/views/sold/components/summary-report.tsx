@@ -67,10 +67,10 @@ export function SummaryReport({ project }: SummaryReportProps) {
   }, [reportContent]);
 
   return (
-    <Card className="border-slate-200 shadow-sm flex flex-col h-full bg-muted/50">
+    <Card className="border-border shadow-sm flex flex-col h-full bg-muted/50">
       <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-semibold flex items-center gap-2 text-slate-700">
-          <Quote className="h-4 w-4 text-red-400 rotate-180" />
+        <CardTitle className="text-base font-semibold flex items-center gap-2 text-muted-foreground">
+          <Quote className="h-4 w-4 text-error rotate-180" />
           项目结案简报
         </CardTitle>
         <Button
@@ -78,7 +78,7 @@ export function SummaryReport({ project }: SummaryReportProps) {
           size="sm"
           className={cn(
             "h-8 gap-2 font-medium transition-all group",
-            copied ? "border-success text-success bg-success-container" : "hover:border-slate-400"
+            copied ? "border-success text-success bg-success-container" : "hover:border-border"
           )}
           onClick={handleCopy}
         >
@@ -96,7 +96,7 @@ export function SummaryReport({ project }: SummaryReportProps) {
         </Button>
       </CardHeader>
       <CardContent className="p-5">
-        <div className="bg-white rounded-lg border border-slate-200 shadow-inner p-6 font-mono text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+        <div className="bg-card rounded-lg border border-border shadow-inner p-6 font-mono text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
           {reportContent}
         </div>
       </CardContent>

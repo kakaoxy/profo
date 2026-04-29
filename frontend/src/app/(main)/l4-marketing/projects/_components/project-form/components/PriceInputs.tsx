@@ -83,19 +83,19 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
-        总价 (万元) <span className="text-[#ba1a1a]">*</span>
+      <label className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
+        总价 (万元) <span className="text-[var(--error)]">*</span>
       </label>
       <div className="relative">
         <input
           inputMode="decimal"
-          className="w-full h-14 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-2xl font-black outline-none focus:ring-2 focus:ring-primary/20 text-primary"
+          className="w-full h-14 px-4 border border-[var(--border)]/50 rounded-xl bg-card text-2xl font-black outline-none focus:ring-2 focus:ring-primary/20 text-primary"
           value={inputValue}
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder="0"
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[#707785]">万</span>
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--muted-foreground)]">万</span>
       </div>
     </div>
   );
@@ -115,18 +115,18 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
 export function UnitPriceDisplay({ value }: UnitPriceDisplayProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
+      <label className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
         单价 (万元/㎡)
       </label>
       <div className="relative">
         <input
           inputMode="decimal"
-          className="w-full h-14 px-4 border border-[#c0c7d6]/50 rounded-xl bg-[#f8f9ff] text-xl font-bold outline-none text-[#0b1c30]"
+          className="w-full h-14 px-4 border border-[var(--border)]/50 rounded-xl bg-[var(--muted)] text-xl font-bold outline-none text-[var(--foreground)]"
           value={value}
           readOnly
           placeholder="自动计算"
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#7d5400] bg-[#ffddb0]/30 px-2 py-0.5 rounded">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--status-pending)] bg-[var(--status-pending)]/30 px-2 py-0.5 rounded">
           自动
         </span>
       </div>

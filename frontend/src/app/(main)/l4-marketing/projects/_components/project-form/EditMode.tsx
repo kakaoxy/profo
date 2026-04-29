@@ -182,7 +182,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
                 </span>
               </div>
             </div>
-            <div className="h-8 w-px bg-white/10"></div>
+            <div className="h-8 w-px bg-card/10"></div>
             <div className="flex gap-4">
               <Link
                 href="/l4-marketing/projects"

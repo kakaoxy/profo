@@ -38,7 +38,7 @@ export const StagePhotoItem = memo(function StagePhotoItem({
     <div className="flex-none w-[200px] group">
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-slate-100">
+          <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-border">
             <AspectRatio ratio={4 / 3} className="relative">
               <Image
                 src={getFileUrl(photo.url)}
@@ -58,7 +58,7 @@ export const StagePhotoItem = memo(function StagePhotoItem({
               )}
             </AspectRatio>
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-              <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
+              <Badge className="bg-card/20 hover:bg-card/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
                 {photoCount} 张
               </Badge>
             </div>

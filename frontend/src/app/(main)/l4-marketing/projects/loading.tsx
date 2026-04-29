@@ -13,7 +13,7 @@ export default function MarketingProjectsLoading() {
         {/* Stats Skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-slate-200 p-4">
+            <div key={i} className="bg-card rounded-lg border border-border p-4">
               <Skeleton className="h-4 w-16 mb-2" />
               <Skeleton className="h-8 w-12" />
             </div>
@@ -34,10 +34,10 @@ export default function MarketingProjectsLoading() {
         </div>
 
         {/* Table Skeleton */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
           <div className="p-4">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 py-4 border-b border-slate-100 last:border-0">
+              <div key={i} className="flex items-center gap-4 py-4 border-b border-border last:border-0">
                 <Skeleton className="h-12 w-12 rounded-lg" />
                 <div className="flex-1">
                   <Skeleton className="h-4 w-48 mb-2" />

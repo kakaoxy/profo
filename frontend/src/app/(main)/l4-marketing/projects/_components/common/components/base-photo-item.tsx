@@ -124,7 +124,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       ref={setNodeRef}
       style={transformStyle}
       className={cn(
-        "flex items-center gap-3 rounded-lg border bg-white p-3",
+        "flex items-center gap-3 rounded-lg border bg-card p-3",
         "hover:bg-muted transition-colors",
         isDragging && "shadow-lg ring-2 ring-primary opacity-90",
         className
@@ -216,7 +216,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       {showIndexBadge && (
         <Badge
           variant="outline"
-          className="rounded-md border-slate-200 text-muted-foreground flex-shrink-0"
+          className="rounded-md border-border text-muted-foreground flex-shrink-0"
         >
           #{index + 1}
         </Badge>

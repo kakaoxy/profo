@@ -59,7 +59,7 @@ function PaymentNodeRow({
   const calculatedAmount = ratioValue && hardAmount ? hardAmount * (ratioValue / 100) : undefined;
 
   return (
-    <div className="grid grid-cols-3 gap-3 items-center py-2 px-2 bg-muted rounded border-b border-slate-100 last:border-b-0">
+    <div className="grid grid-cols-3 gap-3 items-center py-2 px-2 bg-muted rounded border-b border-border last:border-b-0">
       {/* 支付节点 - 下拉选择器 */}
       <div>
         {isEditing ? (
@@ -68,7 +68,7 @@ function PaymentNodeRow({
             onValueChange={onNodeChange}
             disabled={!isEditing}
           >
-            <SelectTrigger className="h-7 text-xs px-2 w-full bg-white">
+            <SelectTrigger className="h-7 text-xs px-2 w-full bg-card">
               <SelectValue placeholder="选择节点" />
             </SelectTrigger>
             <SelectContent>
@@ -84,7 +84,7 @@ function PaymentNodeRow({
             </SelectContent>
           </Select>
         ) : (
-          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-muted rounded border border-slate-200">
+          <div className="h-7 flex items-center px-2 text-xs text-muted-foreground bg-muted rounded border border-border">
             {nodeValue || "-"}
           </div>
         )}
@@ -108,7 +108,7 @@ function PaymentNodeRow({
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
           </div>
         ) : (
-          <div className="h-7 flex items-center px-2 text-xs text-slate-700 bg-muted rounded border border-slate-200">
+          <div className="h-7 flex items-center px-2 text-xs text-muted-foreground bg-muted rounded border border-border">
             {ratioValue !== undefined ? `${ratioValue}%` : "-"}
           </div>
         )}

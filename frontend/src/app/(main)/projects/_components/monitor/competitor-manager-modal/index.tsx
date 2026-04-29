@@ -65,9 +65,9 @@ export function CompetitorManagerModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-card/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-border">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-muted">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted">
           <h3 className="font-bold text-foreground">管理竞品小区</h3>
           <button
             onClick={onClose}
@@ -102,7 +102,7 @@ export function CompetitorManagerModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-muted">
+        <div className="px-6 py-4 border-t border-border bg-muted">
           <Button onClick={onClose} variant="outline" className="w-full">
             完成
           </Button>

@@ -2,7 +2,7 @@
 
 export function HeroSkeleton() {
   return (
-    <section className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white border-b border-slate-100">
+    <section className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-card border-b border-border">
       <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div className="flex items-start gap-3">

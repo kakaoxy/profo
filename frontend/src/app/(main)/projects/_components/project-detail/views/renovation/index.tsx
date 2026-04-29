@@ -108,7 +108,7 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
         >
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">上架日期</label>
+              <label className="text-sm font-medium text-muted-foreground">上架日期</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -137,7 +137,7 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
               </p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">上架价格 (万元)</label>
+              <label className="text-sm font-medium text-muted-foreground">上架价格 (万元)</label>
               <Input 
                 type="number"
                 placeholder="请输入上架价格"

@@ -37,7 +37,7 @@ export function NeighborhoodRadar({
               variant="outline"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="bg-white text-primary border-primary/20 hover:bg-primary/5 gap-1.5 shadow-sm"
+              className="bg-card text-primary border-primary/20 hover:bg-primary/5 gap-1.5 shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
               管理竞品小区
@@ -47,7 +47,7 @@ export function NeighborhoodRadar({
       />
 
       <div className="px-4 sm:px-6">
-        <Card className="border-slate-100 shadow-sm overflow-hidden bg-white">
+        <Card className="border-border shadow-sm overflow-hidden bg-card">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
