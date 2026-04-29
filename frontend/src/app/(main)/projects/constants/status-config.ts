@@ -1,5 +1,8 @@
 // 项目状态配置
 
+/** 默认状态 */
+export const DEFAULT_STATUS = "signing";
+
 /** 项目状态标签配置 */
 export const statusConfig: Record<string, { label: string; className: string }> = {
   signing: {

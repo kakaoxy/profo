@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Project } from "../types";
 import { ActionCell } from "./action-cell";
-import { getStatusLabel, getStatusClassName } from "../constants/status-config";
+import { getStatusLabel, getStatusClassName, DEFAULT_STATUS } from "../constants/status-config";
 
 const formatMoney = (value: number | undefined | null) => {
   if (value === undefined || value === null) return "-";
@@ -26,7 +26,7 @@ export const columns: ColumnDef<Project>[] = [
     accessorKey: "name",
     header: "项目名称 / ID",
     cell: ({ row }) => {
-      const status = row.original.status || "signing";
+      const status = row.original.status || DEFAULT_STATUS;
 
       return (
         <div className="flex flex-col py-1 min-w-[140px]">
@@ -68,7 +68,7 @@ export const columns: ColumnDef<Project>[] = [
       </div>
     ),
     cell: ({ row }) => {
-      const status = row.original.status || "signing";
+      const status = row.original.status || DEFAULT_STATUS;
 
       return (
         <div className="hidden md:block">
