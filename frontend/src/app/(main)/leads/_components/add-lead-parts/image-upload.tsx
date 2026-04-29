@@ -98,9 +98,9 @@ export const ImageUpload: React.FC<Props> = ({
       
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         {images.map((img, idx) => (
-          <div 
-            key={`${img}-${idx}`} 
-            className="aspect-square relative rounded-xl overflow-hidden border group bg-slate-50"
+          <div
+            key={`${img}-${idx}`}
+            className="aspect-square relative rounded-xl overflow-hidden border group bg-muted"
           >
             {/* 
               使用 next/image 保持优化能力
@@ -132,7 +132,7 @@ export const ImageUpload: React.FC<Props> = ({
             type="button" 
             onClick={() => !isUploading && fileInputRef.current?.click()}
             disabled={isUploading}
-            className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-primary hover:border-primary/40 transition-all bg-slate-50/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="添加图片"
           >
             {isUploading ? (

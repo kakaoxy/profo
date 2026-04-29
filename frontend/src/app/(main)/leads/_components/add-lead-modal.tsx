@@ -17,7 +17,7 @@ const ORIENTATION_OPTIONS = ['南', '北', '东', '西', '南北', '东西'];
 
 export const FormItem = ({ label, children }: { label: string, children?: React.ReactNode }) => (
   <div className="space-y-1.5">
-    <label className="text-[10px] font-bold text-slate-500 ml-1">{label}</label>
+    <label className="text-[10px] font-bold text-muted-foreground ml-1">{label}</label>
     {children}
   </div>
 );
@@ -124,7 +124,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
       
       <div className="relative bg-background w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex items-center justify-between border-b px-6 py-4">
@@ -157,7 +157,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">所在区域</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input 
                     placeholder="例如: 静安区"
                     className="w-full h-12 pl-10 pr-4 border rounded-xl bg-background outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
@@ -178,10 +178,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             </div>
           </div>
 
-          <div className="bg-slate-50 p-6 rounded-2xl space-y-6 border border-slate-100">
+          <div className="bg-muted p-6 rounded-2xl space-y-6 border border-border">
              <div className="flex items-center gap-2 mb-2">
-                <Ruler className="h-4 w-4 text-slate-400" />
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">物理指标与价格</span>
+                <Ruler className="h-4 w-4 text-muted-foreground" />
+                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">物理指标与价格</span>
              </div>
              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <div className="col-span-2 sm:col-span-3">
@@ -205,17 +205,17 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                             value={formData.currentFloor} 
                             onChange={e => setFormData({...formData, currentFloor: e.target.value})} 
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-background">层</span>
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background">层</span>
                     </div>
-                    <span className="text-slate-300">/</span>
+                    <span className="text-muted-foreground/50">/</span>
                     <div className="relative flex-1">
-                        <input 
-                            placeholder="6" 
-                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center" 
-                            value={formData.totalFloor} 
-                            onChange={e => setFormData({...formData, totalFloor: e.target.value})} 
+                        <input
+                            placeholder="6"
+                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center"
+                            value={formData.totalFloor}
+                            onChange={e => setFormData({...formData, totalFloor: e.target.value})}
                         />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 bg-background">总</span>
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background">总</span>
                     </div>
                   </div>
                 </FormItem>
@@ -223,7 +223,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                   <input type="number" className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary bg-background" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} />
                 </FormItem>
                 <FormItem label="计算单价">
-                  <div className="h-11 flex items-center px-4 bg-slate-100/50 rounded-lg text-xs font-black text-slate-400">{calculatedUnitPrice} 万/㎡</div>
+                  <div className="h-11 flex items-center px-4 bg-muted rounded-lg text-xs font-black text-muted-foreground">{calculatedUnitPrice} 万/㎡</div>
                 </FormItem>
              </div>
           </div>

@@ -115,9 +115,9 @@ export const ImagesTab: React.FC<Props> = ({ images, onImagesChange }) => {
         </div>
       ))}
       
-      <div 
+      <div
         onClick={handleClick}
-        className="aspect-[4/3] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-primary/40 hover:text-primary transition-all cursor-pointer bg-slate-50/50"
+        className="aspect-[4/3] rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-all cursor-pointer bg-muted/50"
       >
         {uploading ? (
           <>
