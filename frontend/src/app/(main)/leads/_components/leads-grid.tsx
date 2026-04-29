@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead } from "../types";
-import { getStatusStyleConfig } from "../constants";
+import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
   AlertDialog,
   AlertDialogAction,

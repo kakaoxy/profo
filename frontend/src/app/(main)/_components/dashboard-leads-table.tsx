@@ -2,9 +2,9 @@ import { ClipboardCheck, UserCircle2, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import type { RawDashboardLead } from "../types";
 import {
-  getStatusBadgeClass,
+  getLeadStatusBadgeClass,
   getStatusLabel,
-} from "../leads/constants/status-config";
+} from "@/lib/status-colors";
 
 interface DashboardLeadsTableProps {
   leads: RawDashboardLead[];
@@ -123,7 +123,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                   </td>
                   <td className="px-2 py-4">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${getStatusBadgeClass(lead.status)}`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${getLeadStatusBadgeClass(lead.status)}`}
                     >
                       {getStatusLabel(lead.status)}
                     </span>

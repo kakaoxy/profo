@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Lead, LeadStatus } from '../../types';
-import { STATUS_CONFIG, LIFECYCLE_STEPS } from '../../constants';
+import { LEAD_LIFECYCLE_STEPS } from '@/lib/status-colors';
 import { cn } from '@/lib/utils';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -12,13 +12,14 @@ export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
   const currentStep = useMemo(() => {
     if (!lead) return 0;
     if (lead.status === LeadStatus.REJECTED) return -1;
-    return STATUS_CONFIG[lead.status]?.step || 0;
+    const stepConfig = LEAD_LIFECYCLE_STEPS.find(s => s.status === lead.status);
+    return stepConfig?.step ?? 0;
   }, [lead]);
 
   return (
     <div className="px-6 py-4 bg-slate-50/80 border-b overflow-x-auto no-scrollbar">
       <div className="flex items-center min-w-[500px]">
-        {LIFECYCLE_STEPS.map((step, idx) => {
+        {LEAD_LIFECYCLE_STEPS.map((step, idx) => {
           const isActive = currentStep === idx;
           const isCompleted = currentStep > idx || currentStep === 3; // 3 implies completed/signed
 
@@ -40,7 +41,7 @@ export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
                   {step.label}
                 </span>
               </div>
-              {idx < LIFECYCLE_STEPS.length - 1 && (
+              {idx < LEAD_LIFECYCLE_STEPS.length - 1 && (
                 <div className={cn(
                   "h-[2px] w-full flex-1 -mt-4 transition-colors",
                   isCompleted ? "bg-primary" : "bg-slate-200"
