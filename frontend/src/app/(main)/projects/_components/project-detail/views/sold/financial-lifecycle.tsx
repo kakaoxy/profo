@@ -18,11 +18,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
-    // 使用 requestAnimationFrame 避免同步 setState 导致的级联渲染
-    const rafId = requestAnimationFrame(() => {
-      setToday(new Date());
-    });
-    return () => cancelAnimationFrame(rafId);
+    setToday(new Date());
   }, []);
 
   // 计算关键日期
