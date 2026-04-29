@@ -63,10 +63,10 @@ const AIStrategy = dynamic(
 function ComponentSkeleton({ height }: { height: string }) {
   return (
     <div
-      className="flex items-center justify-center bg-slate-50"
+      className="flex items-center justify-center bg-muted"
       style={{ minHeight: height }}
     >
-      <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
     </div>
   );
 }
@@ -77,7 +77,7 @@ interface Props {
 }
 
 const CardWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+  <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden mb-6">
     {children}
   </div>
 );
@@ -120,9 +120,9 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
         : 0;
 
   return (
-    <div className="fixed inset-0 z-60 bg-slate-50 flex flex-col animate-in fade-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-60 bg-background flex flex-col animate-in fade-in zoom-in-95 duration-300">
       {/* Header */}
-      <header className="h-16 border-b bg-white flex items-center justify-between px-6 shrink-0">
+      <header className="h-16 border-b bg-card flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -132,7 +132,7 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="h-8 w-px bg-slate-200" />
+          <div className="h-8 w-px bg-border" />
           <div>
             <h1 className="text-lg font-black font-sans tracking-tight">
               {lead.communityName} · 监控看板
@@ -156,7 +156,7 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-slate-100 pb-20">
+      <main className="flex-1 overflow-y-auto bg-muted pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 font-sans">
           <CardWrapper>
             <HeroSection overrideData={overrideData} />

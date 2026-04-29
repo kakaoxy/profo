@@ -17,7 +17,7 @@ export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
   }, [lead]);
 
   return (
-    <div className="px-6 py-4 bg-slate-50/80 border-b overflow-x-auto no-scrollbar">
+    <div className="px-6 py-4 bg-muted/80 border-b overflow-x-auto no-scrollbar">
       <div className="flex items-center min-w-[500px]">
         {LEAD_LIFECYCLE_STEPS.map((step, idx) => {
           const isActive = currentStep === idx;
@@ -29,14 +29,14 @@ export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
                 <div className={cn(
                   "h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all z-10",
                   isCompleted ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" :
-                  isActive ? "bg-white border-primary text-primary ring-4 ring-primary/10" :
-                  "bg-white border-slate-200 text-slate-400"
+                  isActive ? "bg-card border-primary text-primary ring-4 ring-primary/10" :
+                  "bg-card border-border text-muted-foreground"
                 )}>
                   {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-xs font-black">{idx + 1}</span>}
                 </div>
                 <span className={cn(
                   "text-[10px] font-black uppercase mt-2 tracking-tighter whitespace-nowrap",
-                  isActive ? "text-primary" : "text-slate-400"
+                  isActive ? "text-primary" : "text-muted-foreground"
                 )}>
                   {step.label}
                 </span>
@@ -44,7 +44,7 @@ export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
               {idx < LEAD_LIFECYCLE_STEPS.length - 1 && (
                 <div className={cn(
                   "h-[2px] w-full flex-1 -mt-4 transition-colors",
-                  isCompleted ? "bg-primary" : "bg-slate-200"
+                  isCompleted ? "bg-primary" : "bg-border"
                 )} />
               )}
             </React.Fragment>

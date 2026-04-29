@@ -59,7 +59,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
         
         <TabsNav activeTab={activeTab} onTabChange={setActiveTab} imagesCount={lead.images.length} />
 
-        <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-slate-50/30">
+        <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-muted/30">
           {activeTab === 'info' && (
             <InfoTab lead={lead} onAudit={onAudit} onViewMonitor={onViewMonitor} />
           )}

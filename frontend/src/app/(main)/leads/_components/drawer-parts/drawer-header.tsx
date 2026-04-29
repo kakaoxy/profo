@@ -13,13 +13,13 @@ interface Props {
 
 export const DrawerHeader: React.FC<Props> = ({ lead, onClose, onViewMonitor }) => {
   return (
-    <div className="flex items-center justify-between border-b p-6 bg-white sticky top-0 z-10">
+    <div className="flex items-center justify-between border-b p-6 bg-card sticky top-0 z-10">
       <div className="min-w-0 pr-4">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Case #{lead.id}</span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Case #{lead.id}</span>
           <LeadStatusBadge status={lead.status} />
         </div>
-        <h2 className="text-2xl font-black font-geist tracking-tight truncate text-slate-900">{lead.communityName}</h2>
+        <h2 className="text-2xl font-black font-geist tracking-tight truncate text-foreground">{lead.communityName}</h2>
       </div>
       <div className="flex items-center gap-2">
         <Button
@@ -31,7 +31,7 @@ export const DrawerHeader: React.FC<Props> = ({ lead, onClose, onViewMonitor }) 
           <LineChart className="h-4 w-4" />
           <span className="text-xs font-bold">数据大盘</span>
         </Button>
-        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-slate-100">
+        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted">
           <X className="h-5 w-5" />
         </Button>
       </div>

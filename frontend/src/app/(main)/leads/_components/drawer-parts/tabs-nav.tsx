@@ -18,7 +18,7 @@ export const TabsNav: React.FC<Props> = ({ activeTab, onTabChange, imagesCount }
   ];
 
   return (
-    <div className="px-6 bg-white border-b">
+    <div className="px-6 bg-card border-b">
       <div className="flex h-12">
         {tabs.map((tab) => (
           <button
@@ -26,7 +26,7 @@ export const TabsNav: React.FC<Props> = ({ activeTab, onTabChange, imagesCount }
             onClick={() => onTabChange(tab.id)}
             className={cn(
               "flex items-center gap-2 px-6 text-xs font-bold uppercase tracking-widest transition-all relative",
-              activeTab === tab.id ? "text-primary" : "text-slate-400 hover:text-slate-600"
+              activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {tab.icon}

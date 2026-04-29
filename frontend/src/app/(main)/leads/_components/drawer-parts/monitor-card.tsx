@@ -18,7 +18,7 @@ interface Props {
 export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewMonitor }) => {
   // 获取市场活跃度标签
   const getActivityLabel = () => {
-    if (!sentiment) return { label: '数据加载中', color: 'text-slate-400' };
+    if (!sentiment) return { label: '数据加载中', color: 'text-muted-foreground' };
     const inventoryMonths = sentiment.inventoryMonths;
     if (inventoryMonths < 12) return { label: '市场活跃', color: 'text-emerald-600' };
     if (inventoryMonths < 24) return { label: '商圈活跃', color: 'text-primary' };
@@ -42,66 +42,66 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
           <span className="font-sans font-black text-primary tracking-tight uppercase text-xs">实时市场动态</span>
         </div>
         {loading ? (
-          <Badge variant="outline" className="bg-white/50 text-slate-400 border-slate-200">
+          <Badge variant="outline" className="bg-card/50 text-muted-foreground border-border">
             <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 加载中
           </Badge>
         ) : sentiment ? (
-          <Badge variant="outline" className={`bg-white/50 ${activity.color} border-primary/20`}>
+          <Badge variant="outline" className={`bg-card/50 ${activity.color} border-primary/20`}>
             <TrendingUp className="h-3 w-3 mr-1" /> {activity.label}
           </Badge>
         ) : (
-          <Badge variant="outline" className="bg-white/50 text-slate-400 border-slate-200">
+          <Badge variant="outline" className="bg-card/50 text-muted-foreground border-border">
             <AlertCircle className="h-3 w-3 mr-1" /> 暂无数据
           </Badge>
         )}
       </div>
       
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white/60 p-3 rounded-xl border border-white/80">
-          <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+        <div className="bg-card/60 p-3 rounded-xl border border-card/80">
+          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <PieChart className="h-3 w-3" />
             <span className="text-[9px] font-bold uppercase tracking-wider">挂牌量</span>
           </div>
           {loading ? (
             <div className="h-6 flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
             </div>
           ) : (
-            <div className="text-lg font-black text-slate-900">
-              {sentiment?.totalListingCount ?? '--'} <span className="text-[10px] font-normal text-slate-400">套</span>
+            <div className="text-lg font-black text-foreground">
+              {sentiment?.totalListingCount ?? '--'} <span className="text-[10px] font-normal text-muted-foreground">套</span>
             </div>
           )}
         </div>
-        <div className="bg-white/60 p-3 rounded-xl border border-white/80">
-          <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+        <div className="bg-card/60 p-3 rounded-xl border border-card/80">
+          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <BarChart3 className="h-3 w-3" />
             <span className="text-[9px] font-bold uppercase tracking-wider">成交(12M)</span>
           </div>
           {loading ? (
             <div className="h-6 flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
             </div>
           ) : (
-            <div className="text-lg font-black text-slate-900">
-              {sentiment?.totalDealsCount ?? '--'} <span className="text-[10px] font-normal text-slate-400">套</span>
+            <div className="text-lg font-black text-foreground">
+              {sentiment?.totalDealsCount ?? '--'} <span className="text-[10px] font-normal text-muted-foreground">套</span>
             </div>
           )}
         </div>
-        <div className="bg-white/60 p-3 rounded-xl border border-white/80">
-          <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+        <div className="bg-card/60 p-3 rounded-xl border border-card/80">
+          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
             <Timer className="h-3 w-3" />
             <span className="text-[9px] font-bold uppercase tracking-wider">去化压力</span>
           </div>
           {loading ? (
             <div className="h-6 flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin text-slate-300" />
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
             </div>
           ) : (
             <div className={`text-lg font-black ${
-              sentiment && sentiment.inventoryMonths > 18 ? 'text-amber-600' : 'text-slate-900'
+              sentiment && sentiment.inventoryMonths > 18 ? 'text-amber-600' : 'text-foreground'
             }`}>
-              {sentiment ? formatInventoryMonths(sentiment.inventoryMonths) : '--'} 
-              <span className="text-[10px] font-normal text-slate-400">月</span>
+              {sentiment ? formatInventoryMonths(sentiment.inventoryMonths) : '--'}
+              <span className="text-[10px] font-normal text-muted-foreground">月</span>
             </div>
           )}
         </div>

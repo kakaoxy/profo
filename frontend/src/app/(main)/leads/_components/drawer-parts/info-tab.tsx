@@ -34,7 +34,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({ lead, onAudit, onViewMonitor }
       <LeadInfoCards lead={lead} />
 
       {/* House Config Details */}
-      <div className="grid grid-cols-3 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div className="grid grid-cols-3 gap-4 bg-card p-6 rounded-2xl shadow-sm border border-border">
         <DetailBadge
           icon={<Ruler className="h-3 w-3" />}
           label="面积"

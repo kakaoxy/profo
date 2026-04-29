@@ -44,11 +44,11 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
         return (
           <Card
             key={lead.id}
-            className="overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group bg-white"
+            className="overflow-hidden border border-border shadow-sm hover:shadow-md transition-all cursor-pointer group bg-card"
             onClick={() => onOpenDetail(lead.id)}
           >
             {/* Image Area */}
-            <div className="relative aspect-[4/3] flex items-center justify-center bg-slate-100 overflow-hidden">
+            <div className="relative aspect-[4/3] flex items-center justify-center bg-muted overflow-hidden">
               {lead.images && lead.images.length > 0 ? (
                 <Image
                   src={lead.images[0]}
@@ -62,7 +62,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                   }
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-slate-300">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground/30">
                   <Home className="h-10 w-10" />
                 </div>
               )}
@@ -87,7 +87,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-sm text-slate-600 hover:text-primary"
+                  className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-primary"
                   onClick={() => onEdit(lead)}
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -98,7 +98,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-sm text-slate-600 hover:text-red-600"
+                      className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-red-600"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -128,10 +128,10 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
             <div className="p-4">
               {/* Title & Location */}
               <div className="mb-3">
-                <h3 className="font-semibold text-slate-900 text-base line-clamp-1 group-hover:text-primary transition-colors">
+                <h3 className="font-semibold text-foreground text-base line-clamp-1 group-hover:text-primary transition-colors">
                   {lead.communityName}
                 </h3>
-                <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                   <MapPin className="h-3 w-3" />
                   <span className="line-clamp-1">
                     {lead.district || "-"}
@@ -142,40 +142,40 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
 
               {/* Info Grid */}
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-slate-50 rounded-md p-2">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">
+                <div className="bg-muted rounded-md p-2">
+                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     户型
                   </span>
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-foreground">
                     {lead.layout || "-"}
                   </span>
                 </div>
-                <div className="bg-slate-50 rounded-md p-2">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">
+                <div className="bg-muted rounded-md p-2">
+                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     面积
                   </span>
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-foreground">
                     {lead.area > 0 ? `${lead.area}㎡` : "-"}
                   </span>
                 </div>
               </div>
 
               {/* Price & Floor */}
-              <div className="flex items-end justify-between pt-3 border-t border-slate-100">
+              <div className="flex items-end justify-between pt-3 border-t border-border">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block mb-0.5">
+                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-0.5">
                     总价
                   </span>
-                  <span className="text-lg font-bold text-slate-900 tabular-nums">
+                  <span className="text-lg font-bold text-foreground tabular-nums">
                     {lead.totalPrice > 0 ? `¥${lead.totalPrice}万` : "-"}
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {lead.floorInfo || "-"}
                   </span>
                   {lead.unitPrice > 0 && (
-                    <span className="text-xs text-slate-400 block tabular-nums">
+                    <span className="text-xs text-muted-foreground/60 block tabular-nums">
                       {lead.unitPrice.toFixed(2)}万/㎡
                     </span>
                   )}
