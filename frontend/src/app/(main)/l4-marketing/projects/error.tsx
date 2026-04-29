@@ -46,7 +46,7 @@ export default function MarketingProjectsError({ error, reset }: ErrorProps) {
           <Button
             onClick={reset}
             variant="default"
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <RefreshCcw className="mr-2 h-4 w-4" />
             重试

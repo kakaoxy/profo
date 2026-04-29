@@ -32,9 +32,9 @@ export function BasicConfigFields() {
                     <p className="text-sm font-bold text-[#0b1c30]">发布状态</p>
                     <p className="text-[11px] text-[#707785]">房源是否在前端对外展示</p>
                   </div>
-                  <div className="flex bg-[#e5eeff] rounded-full p-1 w-32 relative">
+                  <div className="flex bg-primary/10 rounded-full p-1 w-32 relative">
                     <div
-                      className={`absolute top-1 w-[60px] h-7 bg-[#005daa] rounded-full transition-all ${
+                      className={`absolute top-1 w-[60px] h-7 bg-primary rounded-full transition-all ${
                         field.value === "发布" ? "left-1" : "left-[66px]"
                       }`}
                     ></div>
@@ -81,7 +81,7 @@ export function BasicConfigFields() {
                         className={`flex flex-col items-center py-3 rounded-xl border transition-all group ${
                           isSelected
                             ? "bg-[#9d6a00] text-white border-[#9d6a00]"
-                            : "border-[#c0c7d6]/20 hover:border-[#005daa] text-[#0b1c30]"
+                            : "border-[#c0c7d6]/20 hover:border-primary text-foreground"
                         }`}
                       >
                         <span className="text-lg mb-1">
@@ -107,7 +107,7 @@ export function BasicConfigFields() {
               <FormItem className="space-y-3 pt-4 border-t border-[#c0c7d6]/10">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-bold text-[#707785] uppercase tracking-wider">排序权重</label>
-                  <span className="text-[#005daa] font-bold">{field.value ?? 50}</span>
+                  <span className="text-primary font-bold">{field.value ?? 50}</span>
                 </div>
                 <FormControl>
                   <input
@@ -116,7 +116,7 @@ export function BasicConfigFields() {
                     max="100"
                     value={field.value ?? 50}
                     onChange={(e) => field.onChange(Number(e.target.value))}
-                    className="w-full h-1.5 bg-[#d3e4fe] rounded-lg appearance-none cursor-pointer accent-[#005daa]"
+                    className="w-full h-1.5 bg-primary/20 rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                 </FormControl>
                 <FormMessage />
@@ -170,8 +170,8 @@ export function BasicConfigFields() {
                         key={style}
                         className={`relative flex items-center justify-center py-2.5 rounded-lg border cursor-pointer transition-all ${
                           isSelected
-                            ? "bg-[#d4e3ff] border-[#005daa]"
-                            : "border-[#c0c7d6]/20 hover:border-[#005daa]/50"
+                            ? "bg-primary/10 border-primary"
+                            : "border-[#c0c7d6]/20 hover:border-primary/50"
                         }`}
                       >
                         <input
@@ -182,7 +182,7 @@ export function BasicConfigFields() {
                           onChange={() => field.onChange(style)}
                           className="hidden"
                         />
-                        <span className={`text-xs font-bold ${isSelected ? "text-[#005daa]" : "text-[#0b1c30]"}`}>
+                        <span className={`text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
                           {style}
                         </span>
                       </label>

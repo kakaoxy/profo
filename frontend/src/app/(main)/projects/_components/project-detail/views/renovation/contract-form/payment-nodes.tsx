@@ -116,7 +116,7 @@ function PaymentNodeRow({
 
       {/* 计算金额 */}
       <div className="text-right">
-        <span className={`text-xs font-semibold ${calculatedAmount ? "text-blue-600" : "text-slate-400"}`}>
+        <span className={`text-xs font-semibold ${calculatedAmount ? "text-primary" : "text-slate-400"}`}>
           {formatAmount(calculatedAmount)}
         </span>
       </div>

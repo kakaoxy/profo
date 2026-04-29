@@ -32,7 +32,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 // 状态显示映射
 const statusMap: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "等待处理", color: "bg-yellow-100 text-yellow-700", icon: <Clock className="h-4 w-4" /> },
-  processing: { label: "处理中", color: "bg-blue-100 text-blue-700", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
+  processing: { label: "处理中", color: "bg-primary/10 text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
   completed: { label: "已完成", color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="h-4 w-4" /> },
   failed: { label: "失败", color: "bg-red-100 text-red-700", icon: <AlertCircle className="h-4 w-4" /> },
   cancelled: { label: "已取消", color: "bg-gray-100 text-gray-700", icon: <Ban className="h-4 w-4" /> },
@@ -320,8 +320,8 @@ export function UploadZone() {
                   <Ban className="h-6 w-6 text-gray-600" />
                 </div>
               ) : (
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                  <Clock className="h-6 w-6 text-blue-600" />
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Clock className="h-6 w-6 text-primary" />
                 </div>
               )}
 

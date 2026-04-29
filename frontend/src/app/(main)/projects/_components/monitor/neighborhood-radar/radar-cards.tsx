@@ -30,7 +30,7 @@ export function RadarCards({ competitors }: RadarCardsProps) {
               <p className="font-bold text-slate-900">
                 {item.listing_count} 套
               </p>
-              <p className="text-indigo-600 font-bold">
+              <p className="text-primary font-bold">
                 ¥{item.listing_avg_price.toLocaleString()}/㎡
               </p>
             </div>

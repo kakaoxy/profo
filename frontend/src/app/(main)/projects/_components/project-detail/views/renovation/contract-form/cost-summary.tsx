@@ -53,9 +53,9 @@ export function CostSummarySection({ values }: CostSummaryProps) {
 
       {/* 汇总卡片 - 紧凑布局 */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="p-3 bg-blue-50 rounded border border-blue-100">
+        <div className="p-3 bg-primary/5 rounded border border-primary/20">
           <div className="text-[10px] text-slate-500 mb-0.5">总预算</div>
-          <div className="text-base font-bold text-blue-700">{formatAmount(totalBudget)}</div>
+          <div className="text-base font-bold text-primary">{formatAmount(totalBudget)}</div>
         </div>
         <div className="p-3 bg-green-50 rounded border border-green-100">
           <div className="text-[10px] text-slate-500 mb-0.5">实际费用</div>

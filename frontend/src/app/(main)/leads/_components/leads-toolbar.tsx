@@ -45,7 +45,7 @@ export function LeadsToolbar({
             placeholder="搜索小区名称..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-blue-600"
+            className="pl-9 pr-9 bg-white border-slate-200 focus-visible:ring-primary"
           />
           {searchQuery && (
             <button
@@ -145,7 +145,7 @@ export function LeadsToolbar({
         </Button>
 
         <Button
-          className="flex-1 lg:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          className="flex-1 lg:flex-none bg-primary hover:bg-primary/90 text-white shadow-sm"
           onClick={onAddLead}
         >
           <Plus className="mr-2 h-4 w-4" />

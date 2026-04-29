@@ -97,7 +97,7 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
                   onClick={handleGenerate}
                   disabled={isGenerating}
                   className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50 h-auto ${
-                    report ? 'bg-slate-800 text-white' : 'bg-indigo-600 text-white shadow-indigo-200'
+                    report ? 'bg-slate-800 text-white' : 'bg-primary text-white shadow-primary/20'
                   }`}
                 >
                   {isGenerating ? (
@@ -146,7 +146,7 @@ export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
                     <p className="text-sm font-black text-rose-600">¥ 300 / 天</p>
                   </div>
                 </div>
-                <Button className="w-full mt-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 h-auto">
+                <Button className="w-full mt-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 h-auto">
                   <Sparkles size={14} className="fill-white" />
                   立即同步至挂牌系统
                 </Button>

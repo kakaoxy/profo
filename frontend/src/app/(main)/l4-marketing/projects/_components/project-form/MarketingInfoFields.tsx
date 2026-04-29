@@ -64,9 +64,9 @@ interface BasicInfoSectionProps {
 
 function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
   return (
-    <section className="bg-[#eff4ff] rounded-2xl p-8">
-      <h3 className="text-lg font-bold text-[#0b1c30] mb-6 flex items-center gap-2">
-        <span className="w-1.5 h-6 bg-[#005daa] rounded-full"></span>
+    <section className="bg-primary/5 rounded-2xl p-8">
+      <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
         基础信息 (Basic Info)
       </h3>
       <div className="space-y-6">
@@ -105,7 +105,7 @@ function BasicInfoSection({ control, setValue }: BasicInfoSectionProps) {
                     {...field}
                     value={String(field.value ?? "")}
                     onChange={(e) => field.onChange(e.target.value)}
-                    className="w-full h-12 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-medium outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#0b1c30]"
+                    className="w-full h-12 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
                   />
                 </FormControl>
                 <FormMessage />
@@ -148,9 +148,9 @@ interface LayoutSpecsSectionProps {
 
 function LayoutSpecsSection({ control }: LayoutSpecsSectionProps) {
   return (
-    <section className="bg-[#eff4ff] rounded-2xl p-8">
-      <h3 className="text-lg font-bold text-[#0b1c30] mb-6 flex items-center gap-2">
-        <span className="w-1.5 h-6 bg-[#005daa] rounded-full"></span>
+    <section className="bg-primary/5 rounded-2xl p-8">
+      <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+        <span className="w-1.5 h-6 bg-primary rounded-full"></span>
         户型与规格 (Layout & Specs)
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -254,10 +254,10 @@ function PricingSection({ control }: PricingSectionProps) {
   }, [totalPrice, area]);
 
   return (
-    <section className="bg-[#eff4ff] rounded-2xl p-8">
+    <section className="bg-primary/5 rounded-2xl p-8">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-bold text-[#0b1c30] flex items-center gap-2">
-          <span className="w-1.5 h-6 bg-[#005daa] rounded-full"></span>
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-primary rounded-full"></span>
           价格设置 (Pricing)
         </h3>
       </div>

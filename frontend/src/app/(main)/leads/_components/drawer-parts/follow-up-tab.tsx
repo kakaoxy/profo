@@ -52,7 +52,7 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
               onChange={(e) => setFollowUpContent(e.target.value)}
             />
             <Button 
-              className="rounded-xl h-11 px-6 bg-indigo-600 hover:bg-indigo-700 font-bold"
+              className="rounded-xl h-11 px-6 bg-primary hover:bg-primary/90 font-bold"
               onClick={handleAddFollowUpSubmit}
             >
               记录
@@ -89,7 +89,7 @@ const TimelineItem = ({ title, desc, time, icon: Icon, isNewest, user }: { title
   <div className="relative group">
     <div className={cn(
       "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-white flex items-center justify-center shadow-sm transition-all",
-      isNewest ? "bg-indigo-600 scale-110" : "bg-slate-200"
+      isNewest ? "bg-primary scale-110" : "bg-slate-200"
     )}>
       <Icon className={cn("h-2.5 w-2.5", isNewest ? "text-white" : "text-slate-500")} />
     </div>

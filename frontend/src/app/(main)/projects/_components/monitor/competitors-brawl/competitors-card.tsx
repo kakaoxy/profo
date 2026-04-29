@@ -51,7 +51,7 @@ export function CompetitorsCard({ items }: CompetitorsCardProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs text-indigo-600"
+              className="h-7 text-xs text-primary"
             >
               详情
             </Button>

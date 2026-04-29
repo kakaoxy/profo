@@ -111,7 +111,7 @@ export function CompetitorsTable({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 rounded-lg hover:bg-slate-100 text-[10px] font-bold text-indigo-600"
+                  className="h-8 rounded-lg hover:bg-slate-100 text-[10px] font-bold text-primary"
                 >
                   查看详情
                 </Button>

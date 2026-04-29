@@ -116,7 +116,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
                 key={consultant.id}
                 className={cn(
                   "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-[#eff4ff] transition-colors group text-left",
-                  value === consultant.id && "bg-[#eff4ff] text-[#005daa] font-bold"
+                  value === consultant.id && "bg-primary/10 text-primary font-bold"
                 )}
                 onClick={() => {
                   onChange(consultant.id);

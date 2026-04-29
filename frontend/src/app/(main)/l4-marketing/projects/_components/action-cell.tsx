@@ -55,7 +55,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
         <Button
           variant="ghost"
           size="sm"
-          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          className="text-slate-400 hover:text-primary hover:bg-primary/10 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
           onClick={handleClick}
         >
           <Eye className="h-3.5 w-3.5" />
@@ -70,7 +70,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
         <Button
           variant="ghost"
           size="sm"
-          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          className="text-slate-400 hover:text-primary hover:bg-primary/10 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
           onClick={handleClick}
         >
           <Pencil className="h-3.5 w-3.5" />

@@ -30,7 +30,7 @@ export function MarketingPhotoList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-[#005daa]">
+        <h4 className="text-sm font-semibold text-primary">
           营销照片 ({photos.length})
         </h4>
         <span className="text-xs text-[#707785]">可拖拽到右侧</span>
@@ -43,8 +43,8 @@ export function MarketingPhotoList({
         className={cn(
           "rounded border-2 border-dashed transition-all min-h-[100px] p-3",
           isOver
-            ? "border-[#005daa] bg-[#eff4ff] ring-2 ring-[#005daa]/20"
-            : "border-[#005daa]/30 bg-[#eff4ff]/30"
+            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+            : "border-primary/30 bg-primary/5"
         )}
       >
         <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>

@@ -84,7 +84,7 @@ export function HeroGallery({
       ? "bg-emerald-500"
       : projectStatus === "已售"
         ? "bg-slate-400"
-        : "bg-blue-500";
+        : "bg-primary";
 
   // 使用 state 追踪图片加载错误状态
   const [mainImageError, setMainImageError] = useState(false);

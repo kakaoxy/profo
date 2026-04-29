@@ -137,7 +137,7 @@ export function FileUploader({
 
           <div className="flex items-center gap-2">
             {file.status === "uploading" && (
-              <span className="text-xs text-blue-600">{file.progress}%</span>
+              <span className="text-xs text-primary">{file.progress}%</span>
             )}
             {file.status === "error" && (
               <button

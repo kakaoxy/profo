@@ -117,7 +117,7 @@ interface InsightCardProps {
 function InsightCard({ iconColor, title, content }: InsightCardProps) {
   const colorMap = {
     amber: "bg-amber-50 text-amber-600",
-    blue: "bg-blue-50 text-blue-600",
+    blue: "bg-primary/10 text-primary",
     red: "bg-red-50 text-red-600",
   };
 

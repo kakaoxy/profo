@@ -196,7 +196,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
       <CardHeader className="pb-3 py-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 text-blue-500" />
+            <Building2 className="h-3.5 w-3.5 text-primary" />
             装修合同信息
           </CardTitle>
           <div className="flex items-center gap-1.5">

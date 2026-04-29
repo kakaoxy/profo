@@ -38,7 +38,7 @@ export function FilterBar({
           variant="outline"
           size="sm"
           onClick={() => onToggleStatus("on_sale")}
-          className={`${statusFilters.includes("on_sale") ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-50 text-slate-500 hover:bg-slate-100"} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
+          className={`${statusFilters.includes("on_sale") ? "bg-primary text-white hover:bg-primary/90" : "bg-slate-50 text-slate-500 hover:bg-slate-100"} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
         >
           在售 ({counts.on_sale})
         </Button>
@@ -46,7 +46,7 @@ export function FilterBar({
           variant="outline"
           size="sm"
           onClick={() => onToggleStatus("sold")}
-          className={`${statusFilters.includes("sold") ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-slate-50 text-slate-500 hover:bg-slate-100"} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
+          className={`${statusFilters.includes("sold") ? "bg-primary text-white hover:bg-primary/90" : "bg-slate-50 text-slate-500 hover:bg-slate-100"} border-none rounded-lg font-bold text-[11px] h-8 transition-colors`}
         >
           已售 ({counts.sold})
         </Button>

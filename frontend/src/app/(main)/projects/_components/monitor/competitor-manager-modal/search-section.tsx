@@ -48,7 +48,7 @@ export function SearchSection({
               className="w-full px-3 py-2.5 text-left text-sm hover:bg-indigo-50 transition-colors flex justify-between items-center disabled:opacity-50"
             >
               <span className="text-slate-700">{item.name}</span>
-              <span className="text-xs text-indigo-600 font-medium">
+              <span className="text-xs text-primary font-medium">
                 + 添加
               </span>
             </button>

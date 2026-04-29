@@ -61,7 +61,7 @@ export function RadarTable({ competitors }: RadarTableProps) {
                 </div>
               </TableCell>
               <TableCell className="py-4 px-4">
-                <span className="text-sm font-bold text-indigo-600">
+                <span className="text-sm font-bold text-primary">
                   ¥ {item.listing_avg_price.toLocaleString()} /㎡
                 </span>
               </TableCell>

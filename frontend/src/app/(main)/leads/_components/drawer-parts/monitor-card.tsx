@@ -21,7 +21,7 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
     if (!sentiment) return { label: '数据加载中', color: 'text-slate-400' };
     const inventoryMonths = sentiment.inventoryMonths;
     if (inventoryMonths < 12) return { label: '市场活跃', color: 'text-emerald-600' };
-    if (inventoryMonths < 24) return { label: '商圈活跃', color: 'text-blue-600' };
+    if (inventoryMonths < 24) return { label: '商圈活跃', color: 'text-primary' };
     return { label: '市场平稳', color: 'text-amber-600' };
   };
 
@@ -33,20 +33,20 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
   };
 
   return (
-    <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 p-5 overflow-hidden relative group">
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-5 overflow-hidden relative group">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-md">
+          <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-md">
             <Activity className="h-4 w-4" />
           </div>
-          <span className="font-sans font-black text-blue-900 tracking-tight uppercase text-xs">实时市场动态</span>
+          <span className="font-sans font-black text-primary tracking-tight uppercase text-xs">实时市场动态</span>
         </div>
         {loading ? (
           <Badge variant="outline" className="bg-white/50 text-slate-400 border-slate-200">
             <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 加载中
           </Badge>
         ) : sentiment ? (
-          <Badge variant="outline" className={`bg-white/50 ${activity.color} border-blue-200`}>
+          <Badge variant="outline" className={`bg-white/50 ${activity.color} border-primary/20`}>
             <TrendingUp className="h-3 w-3 mr-1" /> {activity.label}
           </Badge>
         ) : (
@@ -111,7 +111,7 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
         variant="link" 
         size="sm" 
         onClick={() => onViewMonitor(lead)}
-        className="mt-4 w-full text-blue-600 font-bold text-xs uppercase tracking-widest h-auto p-0 hover:no-underline hover:text-blue-700"
+        className="mt-4 w-full text-primary font-bold text-xs uppercase tracking-widest h-auto p-0 hover:no-underline hover:text-primary/80"
       >
         查看区域供需全景 <ChevronRight className="h-3 w-3 ml-1" />
       </Button>

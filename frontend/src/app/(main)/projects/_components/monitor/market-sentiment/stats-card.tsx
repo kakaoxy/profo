@@ -63,7 +63,7 @@ export function StatsCard({ title, subtitle, stats, dataKey }: StatsCardProps) {
                     <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                       {FLOOR_TYPE_MAP[item.type] || item.type}
                       <span className="text-slate-300">|</span>
-                      <span className="text-indigo-600 font-bold">
+                      <span className="text-primary font-bold">
                         {count} 套
                       </span>
                     </p>

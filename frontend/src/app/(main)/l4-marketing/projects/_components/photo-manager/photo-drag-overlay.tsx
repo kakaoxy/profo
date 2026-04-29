@@ -27,15 +27,15 @@ export const PhotoDragOverlay = memo(function PhotoDragOverlay({ photo }: PhotoD
 
   return (
     <div 
-      className="flex items-center gap-3 rounded-lg border-2 border-[#005daa] bg-white p-3 shadow-xl ring-2 ring-[#005daa]/20"
+      className="flex items-center gap-3 rounded-lg border-2 border-primary bg-white p-3 shadow-xl ring-2 ring-primary/20"
       style={{
         // 使用 GPU 加速
         transform: "translateZ(0)",
         willChange: "transform",
       }}
     >
-      <div className="cursor-grabbing p-1 bg-[#e5eeff] rounded">
-        <GripVertical className="h-4 w-4 text-[#005daa]" />
+      <div className="cursor-grabbing p-1 bg-primary/10 rounded">
+        <GripVertical className="h-4 w-4 text-primary" />
       </div>
 
       <div

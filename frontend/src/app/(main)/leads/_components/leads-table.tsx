@@ -79,7 +79,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-slate-900 text-sm truncate max-w-[180px] group-hover:text-blue-600 transition-colors">
+                    <span className="font-semibold text-slate-900 text-sm truncate max-w-[180px] group-hover:text-primary transition-colors">
                       {lead.communityName}
                     </span>
                     <span className="text-xs text-slate-400 font-mono tracking-tight">
@@ -150,7 +150,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 h-8 w-8 p-0 rounded-full transition-all"
+                    className="text-slate-400 hover:text-primary hover:bg-primary/10 h-8 w-8 p-0 rounded-full transition-all"
                     onClick={() => onEdit(lead)}
                   >
                     <Pencil className="h-3.5 w-3.5" />

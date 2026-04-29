@@ -89,7 +89,7 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
       <div className="relative">
         <input
           inputMode="decimal"
-          className="w-full h-14 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-2xl font-black outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#005daa]"
+          className="w-full h-14 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-2xl font-black outline-none focus:ring-2 focus:ring-primary/20 text-primary"
           value={inputValue}
           onChange={handleChange}
           onBlur={handleBlur}

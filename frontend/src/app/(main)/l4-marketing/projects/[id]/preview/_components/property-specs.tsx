@@ -36,7 +36,7 @@ export function PropertySpecs({
           <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
             单价
           </span>
-          <span className="text-[8px] bg-blue-100 text-blue-700 px-1 rounded">
+          <span className="text-[8px] bg-primary/10 text-primary px-1 rounded">
             自动计算
           </span>
         </div>

@@ -124,7 +124,7 @@ export function LayoutInputs({
       required: "text-[#ba1a1a]",
       inputWrapper: "relative flex-1",
       input:
-        "w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-[#005daa]/20 text-[#0b1c30]",
+        "w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground",
       suffix:
         "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#707785]",
     },

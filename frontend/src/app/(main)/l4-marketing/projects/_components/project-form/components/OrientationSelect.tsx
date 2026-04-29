@@ -36,8 +36,8 @@ export function OrientationSelect({ value, onChange }: OrientationSelectProps) {
             className={cn(
               "h-10 rounded-lg text-sm font-bold transition-all border",
               value === orientation
-                ? "bg-[#005daa] text-white border-[#005daa]"
-                : "bg-white text-[#0b1c30] border-[#c0c7d6]/50 hover:border-[#005daa]/50"
+                ? "bg-primary text-white border-primary"
+                : "bg-white text-foreground border-[#c0c7d6]/50 hover:border-primary/50"
             )}
           >
             {orientation}
