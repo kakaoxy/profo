@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Project } from "../types";
 import { ActionCell } from "./action-cell";
+import { getStatusLabel, getStatusClassName } from "../constants/status-config";
 
 const formatMoney = (value: number | undefined | null) => {
   if (value === undefined || value === null) return "-";
@@ -20,32 +21,12 @@ const formatWan = (value: number | string | undefined | null) => {
   return `${value}`;
 };
 
-const statusConfig: Record<string, { label: string; className: string }> = {
-  signing: {
-    label: "签约",
-    className: "bg-blue-500 text-white hover:bg-blue-600",
-  },
-  renovating: {
-    label: "装修",
-    className: "bg-orange-500 text-white hover:bg-orange-600",
-  },
-  selling: {
-    label: "在售",
-    className: "bg-emerald-500 text-white hover:bg-emerald-600",
-  },
-  sold: {
-    label: "已售",
-    className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
-  },
-};
-
 export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
     header: "项目名称 / ID",
     cell: ({ row }) => {
       const status = row.original.status || "signing";
-      const config = statusConfig[status];
 
       return (
         <div className="flex flex-col py-1 min-w-[140px]">
@@ -59,9 +40,9 @@ export const columns: ColumnDef<Project>[] = [
             </span>
             <Badge
               variant="secondary"
-              className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${config?.className}`}
+              className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${getStatusClassName(status)}`}
             >
-              {config?.label}
+              {getStatusLabel(status)}
             </Badge>
           </div>
         </div>
@@ -88,18 +69,14 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => {
       const status = row.original.status || "signing";
-      const config = statusConfig[status] || {
-        label: status,
-        className: "bg-slate-100 text-slate-600",
-      };
 
       return (
         <div className="hidden md:block">
           <Badge
             variant="secondary"
-            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${config.className}`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${getStatusClassName(status)}`}
           >
-            {config.label}
+            {getStatusLabel(status)}
           </Badge>
         </div>
       );
