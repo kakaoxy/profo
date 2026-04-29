@@ -6,6 +6,7 @@ import {
   AlertCardSkeleton,
   ProjectCardListSkeleton,
   DashboardLeadsTableSkeleton,
+  DashboardErrorWrapper,
   DashboardOverviewWrapper,
   DashboardFunnelWrapper,
   DashboardAlertWrapper,
@@ -138,6 +139,9 @@ export default function DashboardPage() {
 
       {/* Top Row - Three Column Layout */}
       <div className="grid grid-cols-12 gap-4 lg:gap-6 mb-8 min-w-0">
+        <Suspense fallback={null}>
+          <DashboardErrorWrapper />
+        </Suspense>
         <Suspense fallback={<ProjectOverviewCardSkeleton />}>
           <DashboardOverviewWrapper />
         </Suspense>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,12 +15,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   const soldPrice = Number(project.sold_price || 0);
 
   // 使用 state 存储 today，避免 SSR 和客户端时间不一致导致的 hydration 错误
-  const [today, setToday] = useState<Date | null>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setToday(new Date()), 0);
-    return () => clearTimeout(timer);
-  }, []);
+  const [today] = useState<Date | null>(() => new Date());
 
   // 计算关键日期
   // 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天
