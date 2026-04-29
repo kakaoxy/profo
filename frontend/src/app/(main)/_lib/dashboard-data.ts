@@ -88,21 +88,22 @@ function validateProjectStats(data: unknown): ProjectStatsResponse | null {
   const record = data as Record<string, unknown>;
 
   // 检查必需的数字字段（注意：API 返回的 ProjectStatsResponse 不包含 total 字段）
-  const requiredNumberFields = ["signing", "renovating", "selling", "sold"] as const;
+  const signing = record.signing;
+  const renovating = record.renovating;
+  const selling = record.selling;
+  const sold = record.sold;
 
-  for (const field of requiredNumberFields) {
-    if (!(field in record) || typeof record[field] !== "number") {
-      return null;
-    }
+  if (
+    typeof signing !== "number" ||
+    typeof renovating !== "number" ||
+    typeof selling !== "number" ||
+    typeof sold !== "number"
+  ) {
+    return null;
   }
 
-  // 构造验证后的对象，避免裸 as 断言
-  return {
-    signing: record.signing as number,
-    renovating: record.renovating as number,
-    selling: record.selling as number,
-    sold: record.sold as number,
-  };
+  // 构造验证后的对象，无需类型断言
+  return { signing, renovating, selling, sold };
 }
 
 export function getStatusText(status: LeadStatus): string {

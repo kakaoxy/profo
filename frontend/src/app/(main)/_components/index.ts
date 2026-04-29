@@ -16,6 +16,7 @@ export {
 
 // 数据包装组件（配合 Suspense）
 export {
+  DashboardErrorWrapper,
   DashboardOverviewWrapper,
   DashboardFunnelWrapper,
   DashboardAlertWrapper,

@@ -14,25 +14,30 @@ import {
   DashboardLeadsTable,
 } from "./";
 
-export async function DashboardOverviewWrapper() {
-  const { projectStats, errors } = await getDashboardData();
+export async function DashboardErrorWrapper() {
+  const { errors } = await getDashboardData();
+
+  if (Object.keys(errors).length === 0) return null;
 
   return (
-    <>
-      {Object.keys(errors).length > 0 && (
-        <div className="col-span-12 mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-          <p className="text-sm text-amber-700 dark:text-amber-400">
-            部分数据加载失败，请刷新页面重试
-          </p>
-        </div>
-      )}
-      <ProjectOverviewCard
-        signingCount={projectStats?.signing ?? 0}
-        renovatingCount={projectStats?.renovating ?? 0}
-        sellingCount={projectStats?.selling ?? 0}
-        soldCount={projectStats?.sold ?? 0}
-      />
-    </>
+    <div className="col-span-12 mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+      <p className="text-sm text-amber-700 dark:text-amber-400">
+        部分数据加载失败，请刷新页面重试
+      </p>
+    </div>
+  );
+}
+
+export async function DashboardOverviewWrapper() {
+  const { projectStats } = await getDashboardData();
+
+  return (
+    <ProjectOverviewCard
+      signingCount={projectStats?.signing ?? 0}
+      renovatingCount={projectStats?.renovating ?? 0}
+      sellingCount={projectStats?.selling ?? 0}
+      soldCount={projectStats?.sold ?? 0}
+    />
   );
 }
 
