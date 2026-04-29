@@ -49,15 +49,15 @@ export default async function DashboardLayout({
       <AppSidebar user={user} />
       
       {/* 2. 主体区域 (移除了 Header) */}
-      <SidebarInset className="bg-white min-w-0">
+      <SidebarInset className="bg-card min-w-0">
         {/* 移动端顶部导航栏 */}
-        <header className="flex md:hidden items-center h-14 px-4 border-b bg-white/80 backdrop-blur-xl sticky top-0 z-40">
-          <SidebarTrigger className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg" />
+        <header className="flex md:hidden items-center h-14 px-4 border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40">
+          <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" />
           <div className="ml-3 flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-linear-to-br from-slate-800 to-slate-600 text-white font-bold text-[10px]">
               P
             </div>
-            <span className="font-semibold text-sm text-slate-800">Profo</span>
+            <span className="font-semibold text-sm text-foreground">Profo</span>
           </div>
         </header>
         {/* 直接渲染子页面，没有公共头了 */}

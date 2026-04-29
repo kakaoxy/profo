@@ -49,23 +49,23 @@ export function ProjectCardClient({
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.01 }}
         onClick={() => setIsDetailOpen(true)}
-        className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card overflow-hidden flex flex-col hover:border-primary/40 transition-all group cursor-pointer"
+        className="bg-card rounded-xl border border-border shadow-card overflow-hidden flex flex-col hover:border-primary/40 transition-all group cursor-pointer"
       >
-        <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+        <div className="p-4 border-b border-border bg-muted">
           <div className="flex justify-between items-start mb-1">
             <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">
               #{contractNo}
             </span>
-            <MoreHorizontal className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+            <MoreHorizontal className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
           </div>
-          <h4 className="text-lg font-semibold text-on-surface dark:text-slate-100 truncate">
+          <h4 className="text-lg font-semibold text-foreground truncate">
             {communityName}
           </h4>
-          <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <MapPin className="w-3 h-3" />
             {address}
           </p>
-          <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
             <Home className="w-3 h-3" />
             {layout} · {area}
           </p>
@@ -81,18 +81,18 @@ export function ProjectCardClient({
 
         <div className="p-4 flex-1 flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 block">
               项目动态
             </span>
             <ProjectStatsSection salesRecords={salesRecords} />
           </div>
 
           <div className="py-2">
-            <div className="border-t border-dashed border-slate-200 dark:border-slate-700"></div>
+            <div className="border-t border-dashed border-border"></div>
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 block">
               市场数据
             </span>
             <MarketDataSection

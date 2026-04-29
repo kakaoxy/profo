@@ -48,6 +48,21 @@
   --color-error: var(--error);
   --color-error-container: var(--error-container);
   --shadow-card: var(--shadow-card);
+
+  /* Status Colors */
+  --color-status-pending: var(--status-pending);
+  --color-status-signing: var(--status-signing);
+  --color-status-renovating: var(--status-renovating);
+  --color-status-selling: var(--status-selling);
+  --color-status-sold: var(--status-sold);
+  --color-status-rejected: var(--status-rejected);
+
+  /* Chart Colors */
+  --color-chart-positive: var(--chart-positive);
+  --color-chart-negative: var(--chart-negative);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-label: var(--chart-label);
+  --color-chart-line-primary: var(--chart-line-primary);
 }
 
 :root {
@@ -90,6 +105,21 @@
   --error: #ef4444;
   --error-container: #fef2f2;
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+
+  /* Status Colors - Light Mode */
+  --status-pending: #f59e0b;
+  --status-signing: #005daa;
+  --status-renovating: #f97316;
+  --status-selling: #10b981;
+  --status-sold: #64748b;
+  --status-rejected: #94a3b8;
+
+  /* Chart Colors - Light Mode */
+  --chart-positive: #10b981;
+  --chart-negative: #ef4444;
+  --chart-grid: #e2e8f0;
+  --chart-label: #64748b;
+  --chart-line-primary: #005daa;
 }
 
 .dark {
@@ -124,6 +154,28 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  /* Workspace Theme Variables - Dark Mode */
+  --on-surface: oklch(0.929 0.013 255.508);
+  --tertiary: oklch(0.696 0.17 162.48);
+  --error: oklch(0.704 0.191 22.216);
+  --error-container: oklch(0.279 0.041 260.031);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+
+  /* Status Colors - Dark Mode */
+  --status-pending: #fbbf24;
+  --status-signing: #3b82f6;
+  --status-renovating: #fb923c;
+  --status-selling: #34d399;
+  --status-sold: #94a3b8;
+  --status-rejected: #64748b;
+
+  /* Chart Colors - Dark Mode */
+  --chart-positive: #34d399;
+  --chart-negative: #f87171;
+  --chart-grid: #334155;
+  --chart-label: #94a3b8;
+  --chart-line-primary: #3b82f6;
 }
 
 @layer base {

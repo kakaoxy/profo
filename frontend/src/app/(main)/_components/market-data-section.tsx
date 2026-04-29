@@ -18,7 +18,7 @@ export function MarketDataSection({
 }: MarketDataSectionProps) {
   if (!hasCommunityId) {
     return (
-      <div className="flex items-center justify-center min-h-[70px] text-xs text-slate-400 bg-slate-50 rounded-lg">
+      <div className="flex items-center justify-center min-h-[70px] text-xs text-muted-foreground bg-muted rounded-lg">
         未关联小区，暂无数据
       </div>
     );
@@ -40,32 +40,32 @@ export function MarketDataSection({
   return (
     <div className="grid grid-cols-2 gap-3 min-h-[70px]">
       <div className="space-y-0.5">
-        <p className="text-[10px] text-slate-400">竞品在售</p>
+        <p className="text-[10px] text-muted-foreground">竞品在售</p>
         <p className="text-sm font-bold">
           {isLoading ? "-" : `${onSaleCount} 套`}
         </p>
       </div>
       <div className="space-y-0.5">
-        <p className="text-[10px] text-slate-400">成交均价</p>
+        <p className="text-[10px] text-muted-foreground">成交均价</p>
         <p className="text-sm font-bold">
           {isLoading ? "-" : `${avgPriceWan}万/㎡`}
         </p>
       </div>
       <div className="space-y-0.5">
-        <p className="text-[10px] text-slate-400">30日成交</p>
+        <p className="text-[10px] text-muted-foreground">30日成交</p>
         <p className="text-sm font-bold">
           {isLoading ? "-" : `${volume30d} 套`}
         </p>
       </div>
       <div className="space-y-0.5">
-        <p className="text-[10px] text-slate-400">30日趋势</p>
+        <p className="text-[10px] text-muted-foreground">30日趋势</p>
         <p
           className={`text-sm font-bold flex items-center gap-1 ${
             isPriceUp === true
               ? "text-primary"
               : isPriceUp === false
               ? "text-error"
-              : "text-slate-400"
+              : "text-muted-foreground"
           }`}
         >
           {isPriceUp === true ? (
