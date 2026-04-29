@@ -45,17 +45,17 @@ export function PropertyInfo({
       <h3 className="text-xl font-bold text-foreground border-l-4 border-primary pl-4">
         房源信息摘要
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 p-8 bg-white rounded-2xl border border-[#c0c7d6]/10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 p-8 bg-card rounded-2xl border border-border/10">
         {infoItems.map((item, index) => (
           <div
             key={index}
-            className="flex justify-between items-center border-b border-[#c0c7d6]/10 pb-2"
+            className="flex justify-between items-center border-b border-border/10 pb-2"
           >
-            <span className="text-[#707785] text-sm font-medium">
+            <span className="text-muted-foreground text-sm font-medium">
               {item.label}
             </span>
             <span
-              className={`text-[#0b1c30] font-semibold ${item.className || ""}`}
+              className={`text-foreground font-semibold ${item.className || ""}`}
             >
               {item.value || "--"}
             </span>
