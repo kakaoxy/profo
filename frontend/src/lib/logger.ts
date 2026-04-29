@@ -138,21 +138,18 @@ class Logger {
   debug(message: string, data?: unknown): void {
     if (!this.shouldLog("debug")) return;
     const processed = this.processLog("debug", message, data);
-    // eslint-disable-next-line no-console
     console.log(`[DEBUG] ${processed.message}`, processed.data !== undefined ? processed.data : "");
   }
 
   info(message: string, data?: unknown): void {
     if (!this.shouldLog("info")) return;
     const processed = this.processLog("info", message, data);
-    // eslint-disable-next-line no-console
     console.log(`[INFO] ${processed.message}`, processed.data !== undefined ? processed.data : "");
   }
 
   warn(message: string, data?: unknown): void {
     if (!this.shouldLog("warn")) return;
     const processed = this.processLog("warn", message, data);
-    // eslint-disable-next-line no-console
     console.warn(`[WARN] ${processed.message}`, processed.data !== undefined ? processed.data : "");
   }
 
@@ -162,7 +159,6 @@ class Logger {
     const safeError = error instanceof Error
       ? { name: error.name, message: error.message }
       : maskSensitiveData(error);
-    // eslint-disable-next-line no-console
     console.error(`[ERROR] ${message}`, safeError);
   }
 
@@ -171,7 +167,6 @@ class Logger {
    */
   devDebug(message: string, data?: unknown): void {
     if (this.config.isDevelopment) {
-      // eslint-disable-next-line no-console
       console.log(`[DEV] ${message}`, data !== undefined ? data : "");
     }
   }
