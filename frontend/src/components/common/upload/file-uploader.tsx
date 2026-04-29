@@ -112,14 +112,14 @@ export function FileUploader({
           key={file.id}
           className={cn(
             "flex items-center gap-3 p-2 rounded-md border",
-            file.status === "error" && "border-red-200 bg-red-50",
-            file.status === "success" && "border-green-200 bg-green-50/30",
-            file.status === "uploading" && "border-blue-200 bg-blue-50/30"
+            file.status === "error" && "border-error/20 bg-error/5",
+            file.status === "success" && "border-status-selling/20 bg-status-selling/5",
+            file.status === "uploading" && "border-primary/20 bg-primary/5"
           )}
         >
           <div className={cn(
             "p-1.5 rounded",
-            file.status === "error" ? "bg-red-100 text-red-600" : "bg-muted"
+            file.status === "error" ? "bg-error/10 text-error" : "bg-muted"
           )}>
             {file.status === "error" ? (
               <AlertCircle className="h-4 w-4" />
@@ -142,7 +142,7 @@ export function FileUploader({
             {file.status === "error" && (
               <button
                 onClick={() => retry(file.id)}
-                className="p-1 hover:bg-red-100 rounded text-red-600"
+                className="p-1 hover:bg-error/10 rounded text-error"
                 title="重试"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ export function FileUploader({
             {(file.status === "success" || file.status === "error") && (
               <button
                 onClick={() => remove(file.id)}
-                className="p-1 hover:bg-gray-100 rounded text-muted-foreground hover:text-red-600"
+                className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-error"
                 title="删除"
               >
                 <X className="h-3.5 w-3.5" />

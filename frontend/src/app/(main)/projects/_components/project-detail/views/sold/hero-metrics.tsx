@@ -61,52 +61,52 @@ export function HeroMetrics({ project }: { project: Project }) {
       </Card>
 
       {/* 卡片 2：投资回报率 */}
-      <Card className="bg-white border-slate-200 shadow-sm transition-all hover:shadow-md">
+      <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-slate-500">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             投资回报率 (ROI)
           </CardTitle>
-          <TrendingUp className="h-4 w-4 text-amber-500" />
+          <TrendingUp className="h-4 w-4 text-status-pending" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-extrabold text-amber-500 tracking-tight font-mono">
+          <div className="text-2xl font-extrabold text-status-pending tracking-tight font-mono">
             {roi.toFixed(1)}%
           </div>
-          <p className="text-xs text-slate-400 mt-1">基于实收实付</p>
+          <p className="text-xs text-muted-foreground mt-1">基于实收实付</p>
         </CardContent>
       </Card>
 
       {/* 卡片 3：年化收益率 */}
-      <Card className="bg-white border-slate-200 shadow-sm transition-all hover:shadow-md">
+      <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-slate-500">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             年化收益率 (Annualized)
           </CardTitle>
-          <Timer className="h-4 w-4 text-blue-500" />
+          <Timer className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-extrabold text-blue-500 tracking-tight font-mono">
+          <div className="text-2xl font-extrabold text-primary tracking-tight font-mono">
             {annualizedRoR.toFixed(1)}%
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             预估年化回报
           </p>
         </CardContent>
       </Card>
 
       {/* 卡片 4：资金占用天数 */}
-      <Card className="bg-white border-slate-200 shadow-sm transition-all hover:shadow-md">
+      <Card className="bg-card border shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-slate-500">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
             资金占用 (Days)
           </CardTitle>
-          <CalendarDays className="h-4 w-4 text-purple-500" />
+          <CalendarDays className="h-4 w-4 text-tertiary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-extrabold text-purple-500 tracking-tight font-mono">
+          <div className="text-2xl font-extrabold text-tertiary tracking-tight font-mono">
             {occupationDays} <span className="text-sm">天</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             签约至成交周期
           </p>
         </CardContent>
