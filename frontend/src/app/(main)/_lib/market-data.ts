@@ -2,8 +2,7 @@ import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
 import type { paths } from "@/lib/api-types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
- type ClientType = ReturnType<typeof import("openapi-fetch").default<paths>>;
+type ClientType = ReturnType<typeof import("openapi-fetch").default<paths>>;
 
 type CommunityMarketStatsResponse =
   components["schemas"]["CommunityMarketStatsResponse"];

@@ -38,7 +38,9 @@ function formatAmount(amount: number | undefined | null): string {
 
 // 支付节点行组件
 function PaymentNodeRow({
-  index,
+  // index 保留供未来使用
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  index: _index,
   nodeValue,
   ratioValue,
   hardAmount,

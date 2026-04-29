@@ -3,9 +3,6 @@
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { MarketSentimentData } from "./types";
-import { components } from "@/lib/api-types";
-
-type MarketSentimentResponse = components["schemas"]["MarketSentimentResponse"];
 
 /**
  * 获取市场情绪数据

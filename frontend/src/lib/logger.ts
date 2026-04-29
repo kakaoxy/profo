@@ -87,18 +87,6 @@ function maskSensitiveData(data: unknown): unknown {
   return data;
 }
 
-/**
- * 安全地序列化数据，处理循环引用
- */
-function safeStringify(data: unknown): string {
-  try {
-    return JSON.stringify(data, null, 2);
-  } catch {
-    // 处理循环引用或其他序列化错误
-    return String(data);
-  }
-}
-
 class Logger {
   private config: LogConfig;
 

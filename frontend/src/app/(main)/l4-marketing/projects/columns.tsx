@@ -68,6 +68,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
           {imageUrl ? (
             <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-slate-200 overflow-hidden">
               {isDev ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={imageUrl}
                   alt="封面"

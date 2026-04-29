@@ -9,8 +9,6 @@ import { ProjectDetailSheet } from "../projects/_components/project-detail-sheet
 import { ProjectStatsSection } from "./project-stats-section";
 import {
   mapProjectResponseToProject,
-  statusMap,
-  type ApiSalesRecord,
   validateSalesRecords,
 } from "./project-card-utils";
 
@@ -35,10 +33,6 @@ export function ProjectCardClient({
   const layout = project.layout || "-";
   const area = project.area ? `${project.area}㎡` : "-";
 
-  const statusInfo = statusMap[project.status] || {
-    label: project.status,
-    color: "bg-gray-100 text-gray-700",
-  };
   const hasCommunityId = !!project.community_id;
 
   const salesRecords = validateSalesRecords(project.sales_records);

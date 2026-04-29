@@ -126,7 +126,7 @@ export function useImageUpload({
         } else {
           toast.error(createResult.error || `${file.name}: 保存记录失败`);
         }
-      } catch (error) {
+      } catch {
         toast.error(`${file.name}: 保存记录失败`);
       }
     },

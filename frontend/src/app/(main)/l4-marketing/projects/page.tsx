@@ -57,16 +57,6 @@ function ErrorState({ message, statusCode }: { message: string; statusCode?: num
   );
 }
 
-// 页面头部骨架屏
-function HeaderSkeleton() {
-  return (
-    <div className="flex flex-col gap-1">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-4 w-64 mt-2" />
-    </div>
-  );
-}
-
 // 统计数据骨架屏
 function StatsSkeleton() {
   return (

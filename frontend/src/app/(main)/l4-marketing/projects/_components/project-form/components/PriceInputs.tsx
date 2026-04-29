@@ -31,6 +31,7 @@ export function TotalPriceInput({ value, onChange }: TotalPriceInputProps) {
     if (inputValue === "" || parsedExternal !== parsedInput) {
       setInputValue(stringValue);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

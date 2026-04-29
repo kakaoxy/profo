@@ -88,6 +88,7 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
 
         {/* 实际图片 - 使用img标签配合loading="lazy" */}
         {isInViewport ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={thumbnailUrl}
             alt={photo.description || `Photo ${photo.id}`}

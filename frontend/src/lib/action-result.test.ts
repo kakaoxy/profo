@@ -4,7 +4,6 @@ import {
   createErrorResult,
   handleActionError,
   extractErrorMessage,
-  type ActionResult,
 } from "./action-result";
 
 describe("action-result", () => {

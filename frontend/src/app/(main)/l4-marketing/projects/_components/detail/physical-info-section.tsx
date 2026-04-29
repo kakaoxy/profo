@@ -13,7 +13,7 @@ import {
   Hash,
   Link2
 } from "lucide-react";
-import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
+import { formatUnitPrice, formatArea } from "@/lib/formatters";
 import type { PhysicalInfoSectionProps } from "./types";
 
 // 信息项组件 - 每行一个，与 project-detail 保持一致

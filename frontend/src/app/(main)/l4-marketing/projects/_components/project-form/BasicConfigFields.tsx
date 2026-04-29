@@ -9,12 +9,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import type { FormValues } from "../form-schema";
-import { MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "../../types";
 import { TagInputField } from "./TagInputField";
 
 export function BasicConfigFields() {
   const { control, watch } = useFormContext<FormValues>();
-  const sortOrder = watch("sort_order") ?? 50;
   const tags = watch("tags") ?? [];
 
   return (
@@ -74,7 +72,6 @@ export function BasicConfigFields() {
                 <p className="text-sm font-bold text-[#0b1c30]">项目状态</p>
                 <div className="grid grid-cols-3 gap-2">
                   {["在途", "在售", "已售"].map((status) => {
-                    const config = MARKETING_PROJECT_STATUS_CONFIG[status as keyof typeof MARKETING_PROJECT_STATUS_CONFIG];
                     const isSelected = field.value === status;
                     return (
                       <button

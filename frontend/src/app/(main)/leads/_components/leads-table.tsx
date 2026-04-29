@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Lead, LeadStatus } from "../types";
+import { Lead } from "../types";
 import { getStatusStyleConfig } from "../constants";
 import {
   AlertDialog,

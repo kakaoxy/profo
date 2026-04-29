@@ -42,6 +42,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
     >
       {imageUrl ? (
         <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={media.description || "媒体资源"}
@@ -74,6 +75,7 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
           {isVideo ? (
             <Video className="w-8 h-8 text-slate-300" />
           ) : (
+            // eslint-disable-next-line jsx-a11y/alt-text
             <Image className="w-8 h-8 text-slate-300" />
           )}
         </div>

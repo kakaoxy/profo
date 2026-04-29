@@ -26,7 +26,14 @@ interface PhotoPickerProps {
   title?: string;
 }
 
-export function PhotoPicker({ projectId, onSelect, trigger, title = "选择照片" }: PhotoPickerProps) {
+export function PhotoPicker({
+  // projectId 保留供未来使用
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  projectId: _projectId,
+  onSelect,
+  trigger,
+  title = "选择照片",
+}: PhotoPickerProps) {
   const [open, setOpen] = useState(false);
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
   const [loading, setLoading] = useState(false);

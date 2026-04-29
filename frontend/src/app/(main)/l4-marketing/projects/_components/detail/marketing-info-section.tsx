@@ -93,6 +93,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
       <div className="relative">
         <div className="aspect-[4/3] rounded-lg overflow-hidden bg-slate-100 border border-slate-200 relative">
           {mainImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={mainImage}
               alt="营销主图"

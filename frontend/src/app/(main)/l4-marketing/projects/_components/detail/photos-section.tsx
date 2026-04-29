@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 
 import { RENOVATION_STAGES } from "@/app/(main)/l4-marketing/projects/types";
 import type { PhotoCategory } from "@/app/(main)/l4-marketing/projects/types";
@@ -65,7 +64,6 @@ export const PhotosSection = memo(function PhotosSection({
     activeId,
     marketingPhotos,
     renovationPhotos,
-    renovationPhotosByStage,
     marketingPhotoIds,
     getRenovationStageIds,
     activePhoto,

@@ -4,7 +4,7 @@ import React, { useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { X, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUpload, formatFileSize } from '@/components/common/upload';
+import { useUpload } from '@/components/common/upload';
 
 interface Props {
   images: string[];

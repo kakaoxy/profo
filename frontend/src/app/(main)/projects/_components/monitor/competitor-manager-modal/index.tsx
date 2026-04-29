@@ -30,7 +30,6 @@ export function CompetitorManagerModal({
     communityId,
     loading,
     deletingId,
-    refresh,
     addCompetitor,
     removeCompetitor,
   } = useCompetitors({

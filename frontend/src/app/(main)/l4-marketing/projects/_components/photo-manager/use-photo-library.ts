@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import type { RenovationPhoto, StageOption } from "./types";
+import type { RenovationPhoto } from "./types";
 import { getRenovationPhotosAction } from "@/app/(main)/projects/actions/renovation";
 import { usePerformanceMonitor } from "../common/hooks";
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Store, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -14,7 +13,7 @@ import { updateProjectStatusAction } from "../../../../actions/client";
 import { RenovationKPIs } from "./kpi";
 import { RenovationTimeline } from "./timeline";
 import { RenovationContractForm } from "./contract-form";
-import { RenovationTabs, TabValue } from "./renovation-tabs";
+import { RenovationTabs } from "./renovation-tabs";
 import { StatusTransitionDialog } from "../../status-transition-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -33,7 +32,6 @@ interface RenovationViewProps {
 }
 
 export function RenovationView({ project, onRefresh, onListingSuccess }: RenovationViewProps) {
-  const router = useRouter();
   const [listingDate, setListingDate] = useState<Date | undefined>(new Date());
   const [listPrice, setListPrice] = useState<string>("");
 

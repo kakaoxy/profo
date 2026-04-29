@@ -42,7 +42,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   }
 
   // Fetch leads data on the server
-  const { data, error } = await client.GET("/api/v1/leads/", {
+  const { data } = await client.GET("/api/v1/leads/", {
     params: { query: queryParams },
   });
 

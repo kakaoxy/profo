@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_MOBILE } from "./constants"
+import { SIDEBAR_WIDTH_MOBILE } from "./constants"
 import { useSidebar } from "./sidebar-context"
 import type { SidebarProps } from "./types"
 
