@@ -16,7 +16,8 @@ export function HeroMetrics({ project }: { project: Project }) {
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
-    setToday(new Date());
+    const timer = setTimeout(() => setToday(new Date()), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // 计算资金占用天数

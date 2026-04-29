@@ -18,7 +18,8 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
-    setToday(new Date());
+    const timer = setTimeout(() => setToday(new Date()), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // 计算关键日期

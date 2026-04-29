@@ -22,7 +22,8 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
-    setToday(new Date());
+    const timer = setTimeout(() => setToday(new Date()), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // 1. 计算倒计时逻辑
