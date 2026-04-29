@@ -145,8 +145,8 @@ export function AddRecordDialog({
                 className={cn(
                   "font-mono focus-visible:ring-1 text-lg font-semibold", // 字体加大一点
                   type === "income"
-                    ? "text-error focus-visible:ring-red-500 placeholder:text-red-200"
-                    : "text-success focus-visible:ring-emerald-500 placeholder:text-emerald-200"
+                    ? "text-error focus-visible:ring-error placeholder:text-error/30"
+                    : "text-success focus-visible:ring-success placeholder:text-success/30"
                 )}
               />
             </div>

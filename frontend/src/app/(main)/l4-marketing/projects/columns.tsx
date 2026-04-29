@@ -20,22 +20,22 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   },
   "在售": {
     label: MARKETING_PROJECT_STATUS_CONFIG["在售"].label,
-    className: "bg-success text-white hover:bg-success",
+    className: "bg-status-selling text-white hover:bg-status-selling/90",
   },
   "已售": {
     label: MARKETING_PROJECT_STATUS_CONFIG["已售"].label,
-    className: "bg-muted text-foreground hover:bg-muted/80",
+    className: "bg-status-sold text-white hover:bg-status-sold/90",
   },
 };
 
 const publishStatusConfig: Record<string, { label: string; className: string }> = {
   "草稿": {
     label: PUBLISH_STATUS_CONFIG["草稿"].label,
-    className: "bg-status-pending text-white hover:bg-status-pending",
+    className: "bg-status-pending text-white hover:bg-status-pending/90",
   },
   "发布": {
     label: PUBLISH_STATUS_CONFIG["发布"].label,
-    className: "bg-success text-white hover:bg-success",
+    className: "bg-status-selling text-white hover:bg-status-selling/90",
   },
 };
 

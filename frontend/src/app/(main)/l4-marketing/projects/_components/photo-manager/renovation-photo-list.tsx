@@ -32,15 +32,15 @@ export function RenovationPhotoList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-[#22c55e]">
+        <h4 className="text-sm font-semibold text-status-renovating">
           改造照片 ({photos.length})
         </h4>
-        <span className="text-xs text-[#707785]">
+        <span className="text-xs text-muted-foreground">
           {activeId ? "拖拽到目标阶段" : "支持跨阶段拖拽"}
         </span>
       </div>
 
-      <div className="space-y-3 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-white rounded-lg border border-[#c0c7d6]/20">
+      <div className="space-y-3 min-h-[100px] max-h-[400px] overflow-y-auto p-2 bg-card rounded-lg border border-border">
         {/* 拖拽时显示所有阶段，平常只显示有照片的阶段 */}
         {activeId
           ? // 拖拽模式：显示所有阶段作为放置目标
@@ -51,8 +51,8 @@ export function RenovationPhotoList({
 
               return (
                 <div key={stage} className="space-y-1">
-                  <div className="text-xs font-medium text-[#707785] px-1 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                  <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-status-renovating"></span>
                     {stageConfig.label} ({stagePhotos.length})
                   </div>
                   <SortableContext
@@ -65,7 +65,7 @@ export function RenovationPhotoList({
                       isActive={true}
                     >
                       {stagePhotos.length === 0 ? (
-                        <div className="text-center text-xs text-[#22c55e]/60">
+                        <div className="text-center text-xs text-status-renovating/60">
                           拖拽到此处
                         </div>
                       ) : null}
@@ -93,8 +93,8 @@ export function RenovationPhotoList({
 
               return (
                 <div key={stage} className="space-y-1">
-                  <div className="text-xs font-medium text-[#707785] px-1 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></span>
+                  <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-status-renovating"></span>
                     {stageConfig.label} ({stagePhotos.length})
                   </div>
                   <SortableContext
@@ -103,7 +103,7 @@ export function RenovationPhotoList({
                   >
                     <div
                       id={containerId}
-                      className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-[#c0c7d6]/30 hover:border-[#22c55e]/50 transition-colors"
+                      className="space-y-2 min-h-[40px] p-1 rounded border border-dashed border-border/50 hover:border-status-renovating/50 transition-colors"
                     >
                       {stagePhotos.map((photo, index) => (
                         <SortablePhotoItem

@@ -117,7 +117,7 @@ interface InsightCardProps {
 function InsightCard({ iconColor, title, content }: InsightCardProps) {
   const colorMap = {
     amber: "bg-status-pending/10 text-status-pending",
-    blue: "bg-primary/10 text-primary",
+    blue: "bg-primary-container text-primary",
     red: "bg-error-container text-error",
   };
 

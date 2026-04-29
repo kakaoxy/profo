@@ -166,7 +166,7 @@ export function AddRecordDialog({
               value={person}
               onChange={(e) => setPerson(e.target.value)}
               placeholder="请输入姓名或机构名"
-              className="focus-visible:ring-emerald-500"
+              className="focus-visible:ring-primary"
             />
           </div>
 
@@ -181,7 +181,7 @@ export function AddRecordDialog({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
-                className="focus-visible:ring-emerald-500"
+                className="focus-visible:ring-primary"
               />
             </div>
           )}
@@ -196,7 +196,7 @@ export function AddRecordDialog({
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="记录核心谈判点..."
-                className="h-20 focus-visible:ring-emerald-500"
+                className="h-20 focus-visible:ring-primary"
               />
             </div>
           )}

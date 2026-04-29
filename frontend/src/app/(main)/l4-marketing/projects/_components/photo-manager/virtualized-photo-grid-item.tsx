@@ -67,17 +67,14 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
 
       {/* 已添加状态指示器 */}
       {isExisting ? (
-        <div className="absolute top-3 right-3 z-10 bg-green-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+        <div className="absolute top-3 right-3 z-10 bg-status-selling text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
           已添加
         </div>
       ) : null}
 
       {/* 图片容器 */}
       <div
-        className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative"
-        style={{
-          backgroundColor: "#f3f4f6",
-        }}
+        className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-muted"
       >
         {/* 占位符/加载状态 */}
         {imageStatus !== "loaded" ? (

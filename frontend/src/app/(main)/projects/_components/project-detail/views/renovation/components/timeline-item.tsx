@@ -125,11 +125,11 @@ export function TimelineItem({
     <AccordionItem value={stage.key} className="border-none relative" disabled={isFuture}>
       <div className="absolute left-0 top-1 z-10 bg-white p-1">
         {isCompleted ? (
-          <CheckCircle2 className="h-6 w-6 text-green-500 fill-green-50" />
+          <CheckCircle2 className="h-6 w-6 text-status-selling fill-status-selling/10" />
         ) : isCurrent ? (
           <CircleDot className="h-6 w-6 text-status-renovating animate-pulse" />
         ) : (
-          <Circle className="h-6 w-6 text-slate-300" />
+          <Circle className="h-6 w-6 text-muted-foreground/30" />
         )}
       </div>
 

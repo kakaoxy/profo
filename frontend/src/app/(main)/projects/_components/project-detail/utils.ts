@@ -47,13 +47,13 @@ export function formatPrice(price?: number | null): string {
 // 获取状态颜色
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    签约中: "bg-primary",
+    签约中: "bg-status-signing",
     装修中: "bg-status-renovating",
-    在售: "bg-green-500",
-    已成交: "bg-purple-500",
-    已结束: "bg-gray-500",
+    在售: "bg-status-selling",
+    已成交: "bg-status-sold",
+    已结束: "bg-status-sold",
   };
-  return colors[status] || "bg-gray-500";
+  return colors[status] || "bg-muted";
 }
 
 // 获取文件URL

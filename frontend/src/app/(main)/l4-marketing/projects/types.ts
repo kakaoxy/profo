@@ -63,14 +63,14 @@ export const MARKETING_PROJECT_STATUS_CONFIG: Record<
   },
   在售: {
     label: "在售",
-    color: "#22c55e", // green-500
-    bgColor: "#dcfce7", // green-100
+    color: "hsl(var(--status-selling))",
+    bgColor: "hsl(var(--status-selling) / 0.1)",
     description: "已挂牌销售",
   },
   已售: {
     label: "已售",
-    color: "#6b7280", // gray-500
-    bgColor: "#f3f4f6", // gray-100
+    color: "hsl(var(--status-sold))",
+    bgColor: "hsl(var(--status-sold) / 0.1)",
     description: "已成交",
   },
 };
@@ -81,13 +81,13 @@ export const PUBLISH_STATUS_CONFIG: Record<
 > = {
   草稿: {
     label: "草稿",
-    color: "#f59e0b", // amber-500
-    bgColor: "#fef3c7", // amber-100
+    color: "hsl(var(--status-pending))",
+    bgColor: "hsl(var(--status-pending) / 0.1)",
   },
   发布: {
     label: "已发布",
-    color: "#10b981", // emerald-500
-    bgColor: "#d1fae5", // emerald-100
+    color: "hsl(var(--status-selling))",
+    bgColor: "hsl(var(--status-selling) / 0.1)",
   },
 };
 
@@ -114,8 +114,8 @@ export const PHOTO_CATEGORY_CONFIG: Record<
   },
   renovation: {
     label: "改造照片",
-    color: "#22c55e",
-    bgColor: "#dcfce7",
+    color: "hsl(var(--status-renovating))",
+    bgColor: "hsl(var(--status-renovating) / 0.1)",
     description: "记录装修改造过程的照片",
   },
 };

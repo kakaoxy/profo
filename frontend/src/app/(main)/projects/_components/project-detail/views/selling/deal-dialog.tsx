@@ -148,7 +148,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
                 placeholder="0.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="pl-3 pr-8 border-slate-200 focus-visible:ring-emerald-500"
+                className="pl-3 pr-8 border-border focus-visible:ring-status-selling"
               />
               <span className="absolute right-3 top-2.5 text-xs text-muted-foreground">
                 万
