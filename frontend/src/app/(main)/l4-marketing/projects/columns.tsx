@@ -24,7 +24,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   },
   "已售": {
     label: MARKETING_PROJECT_STATUS_CONFIG["已售"].label,
-    className: "bg-slate-300 text-slate-700 hover:bg-slate-400",
+    className: "bg-muted text-foreground hover:bg-muted/80",
   },
 };
 
@@ -60,13 +60,13 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       const status = project.project_status || "在途";
       const config = statusConfig[status] || {
         label: status,
-        className: "bg-slate-100 text-slate-600",
+        className: "bg-muted text-muted-foreground",
       };
 
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {imageUrl ? (
-            <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-slate-200 overflow-hidden">
+            <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-border overflow-hidden">
               {isDev ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -85,16 +85,16 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               )}
             </div>
           ) : (
-            <div className="w-20 h-14 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-400 flex-shrink-0 border border-slate-200">
+            <div className="w-20 h-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground flex-shrink-0 border border-border">
               无图
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-slate-800 text-[15px] truncate max-w-[200px] md:max-w-xs">
+            <span className="font-bold text-foreground text-[15px] truncate max-w-[200px] md:max-w-xs">
               {project.title || "未命名项目"}
             </span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] text-slate-400 font-mono tracking-tight">
+              <span className="text-[11px] text-muted-foreground font-mono tracking-tight">
                 ID: {project.id}
               </span>
               <Badge
@@ -103,7 +103,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               >
                 {config?.label}
               </Badge>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-muted-foreground">
                 {project.community_name || "未知小区"}
               </span>
             </div>
@@ -116,12 +116,12 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "layout",
     header: () => (
-      <div className="hidden md:block text-slate-500 font-medium">户型</div>
+      <div className="hidden md:block text-muted-foreground font-medium">户型</div>
     ),
     cell: ({ row }) => (
       <div className="hidden md:block">
-        <div className="text-sm font-medium text-slate-700">{row.original.layout || "-"}</div>
-        <div className="text-xs text-slate-500">{formatArea(row.original.area)}</div>
+        <div className="text-sm font-medium text-foreground">{row.original.layout || "-"}</div>
+        <div className="text-xs text-muted-foreground">{formatArea(row.original.area)}</div>
       </div>
     ),
   },
@@ -129,10 +129,10 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "orientation",
     header: () => (
-      <div className="hidden md:block text-slate-500 font-medium">朝向</div>
+      <div className="hidden md:block text-muted-foreground font-medium">朝向</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden md:block text-sm text-slate-700">
+      <span className="hidden md:block text-sm text-foreground">
         {row.original.orientation || "-"}
       </span>
     ),
@@ -141,10 +141,10 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "floor_info",
     header: () => (
-      <div className="hidden lg:block text-slate-500 font-medium">楼层</div>
+      <div className="hidden lg:block text-muted-foreground font-medium">楼层</div>
     ),
     cell: ({ row }) => (
-      <span className="hidden lg:block text-sm text-slate-700">
+      <span className="hidden lg:block text-sm text-foreground">
         {row.original.floor_info || "-"}
       </span>
     ),
@@ -153,16 +153,16 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "total_price",
     header: () => (
-      <div className="hidden sm:block text-right pr-4 text-slate-500 font-medium">
+      <div className="hidden sm:block text-right pr-4 text-muted-foreground font-medium">
         总价
       </div>
     ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-right pr-4">
-        <div className="font-semibold text-slate-700 tabular-nums">
+        <div className="font-semibold text-foreground tabular-nums">
           {formatPrice(row.original.total_price)}
         </div>
-        <div className="text-xs text-slate-500 tabular-nums">
+        <div className="text-xs text-muted-foreground tabular-nums">
           {formatUnitPrice(row.original.unit_price)}
         </div>
       </div>
@@ -172,7 +172,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "project_status",
     header: () => (
-      <div className="hidden md:block pl-2 text-slate-500 font-medium">
+      <div className="hidden md:block pl-2 text-muted-foreground font-medium">
         项目状态
       </div>
     ),
@@ -180,7 +180,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       const status = row.original.project_status || "在途";
       const config = statusConfig[status] || {
         label: status,
-        className: "bg-slate-100 text-slate-600",
+        className: "bg-muted text-muted-foreground",
       };
 
       return (
@@ -199,13 +199,13 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "publish_status",
     header: () => (
-      <div className="hidden lg:block text-slate-500 font-medium">发布状态</div>
+      <div className="hidden lg:block text-muted-foreground font-medium">发布状态</div>
     ),
     cell: ({ row }) => {
       const publishStatus = row.original.publish_status || "草稿";
       const config = publishStatusConfig[publishStatus] || {
         label: publishStatus,
-        className: "bg-slate-100 text-slate-600",
+        className: "bg-muted text-muted-foreground",
       };
 
       return (
@@ -224,12 +224,12 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
   {
     accessorKey: "updated_at",
     header: () => (
-      <div className="hidden xl:block text-slate-500 font-medium">更新时间</div>
+      <div className="hidden xl:block text-muted-foreground font-medium">更新时间</div>
     ),
     cell: ({ row }) => {
       const date = row.original.updated_at;
       return (
-        <span className="hidden xl:block text-sm text-slate-500">
+        <span className="hidden xl:block text-sm text-muted-foreground">
           {date ? format(new Date(date), "yyyy/MM/dd HH:mm") : "-"}
         </span>
       );
@@ -238,7 +238,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
   {
     id: "actions",
-    header: () => <div className="text-right pr-4 text-slate-500 font-medium">操作</div>,
+    header: () => <div className="text-right pr-4 text-muted-foreground font-medium">操作</div>,
     cell: ({ row }) => <ActionCell project={row.original} />,
   },
 ];
