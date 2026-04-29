@@ -81,7 +81,7 @@ export function HeroGallery({
 
   const statusColor =
     projectStatus === "在售"
-      ? "bg-emerald-500"
+      ? "bg-success"
       : projectStatus === "已售"
         ? "bg-slate-400"
         : "bg-primary";

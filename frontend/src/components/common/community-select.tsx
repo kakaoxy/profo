@@ -171,7 +171,7 @@ export function CommunitySelect({
   const styles = {
     default: {
       label: "text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1",
-      required: "text-red-500",
+      required: "text-error",
       button:
         "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-slate-200 hover:bg-muted hover:text-foreground",
       icon: "text-muted-foreground",

@@ -206,7 +206,7 @@ export function AddRecordDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-emerald-600 hover:bg-emerald-700 w-full text-white"
+            className="bg-success hover:bg-success w-full text-white"
           >
             确认添加
           </Button>

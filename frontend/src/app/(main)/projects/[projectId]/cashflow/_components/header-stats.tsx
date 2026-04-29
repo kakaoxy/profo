@@ -31,7 +31,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
               <div
                 className={cn(
                   "text-4xl font-bold font-mono tracking-tight",
-                  stats.net_cash_flow >= 0 ? "text-red-600" : "text-emerald-600"
+                  stats.net_cash_flow >= 0 ? "text-error" : "text-success"
                 )}
               >
                 {stats.net_cash_flow >= 0 ? "+" : ""}¥
@@ -42,8 +42,8 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
             {/* 收支微观对比 */}
             <div className="flex gap-8">
               <div className="flex items-center gap-2">
-                <div className="bg-red-50 p-1.5 rounded-full">
-                  <TrendingUp className="h-4 w-4 text-red-600" />
+                <div className="bg-error-container p-1.5 rounded-full">
+                  <TrendingUp className="h-4 w-4 text-error" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">总收入</span>
@@ -54,8 +54,8 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="bg-emerald-50 p-1.5 rounded-full">
-                  <TrendingDown className="h-4 w-4 text-emerald-600" />
+                <div className="bg-success-container p-1.5 rounded-full">
+                  <TrendingDown className="h-4 w-4 text-success" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">总支出</span>
@@ -74,7 +74,7 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
               <span
                 className={cn(
                   "text-xl font-bold",
-                  stats.roi >= 0 ? "text-red-600" : "text-emerald-600"
+                  stats.roi >= 0 ? "text-error" : "text-success"
                 )}
               >
                 {stats.roi.toFixed(2)}%

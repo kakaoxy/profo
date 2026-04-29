@@ -47,7 +47,7 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+          <DialogTitle className="flex items-center gap-2 text-error dark:text-error">
             <Trash2 className="h-5 w-5" />
             撤销 API Key
           </DialogTitle>
@@ -57,10 +57,10 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/20 p-4">
+          <div className="rounded-lg border border-error/30 dark:border-error bg-error-container/50 dark:bg-red-900/20 p-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900">
-                <KeyRound className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <KeyRound className="h-5 w-5 text-error dark:text-error" />
               </div>
               <div>
                 <p className="text-sm font-medium text-red-900 dark:text-red-100">
@@ -73,8 +73,8 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
             </div>
           </div>
 
-          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-status-pending/30 dark:border-amber-800 bg-status-pending/10/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-status-pending dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                 警告
@@ -88,7 +88,7 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400">
+            <div className="rounded-lg border border-error/30 dark:border-error bg-error-container dark:bg-red-900/20 p-3 text-sm text-error dark:text-error">
               {error}
             </div>
           )}

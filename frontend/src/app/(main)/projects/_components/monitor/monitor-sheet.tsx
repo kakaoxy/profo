@@ -93,8 +93,8 @@ export function MonitorSheet() {
                 <span className="text-sm font-medium text-muted-foreground">
                   {projectName}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                <span className="text-[10px] font-bold text-success uppercase tracking-widest">
                   Live Monitoring
                 </span>
               </div>

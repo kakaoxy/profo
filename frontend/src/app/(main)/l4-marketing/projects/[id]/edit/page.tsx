@@ -86,7 +86,7 @@ export default async function ProjectEditPage({
     return (
       <div className="min-h-screen bg-muted/50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-sm font-semibold text-red-600">{message}</div>
+          <div className="text-sm font-semibold text-error">{message}</div>
           {statusCode ? (
             <div className="mt-2 text-xs text-muted-foreground">状态码: {statusCode}</div>
           ) : null}

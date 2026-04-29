@@ -135,9 +135,9 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
         <form onSubmit={onSubmit} className="space-y-6">
           {/* 表单错误提示 */}
           {Object.keys(errors).length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="bg-error-container border border-error/30 rounded-lg p-4 mb-4">
               <h4 className="text-red-800 font-medium text-sm mb-2">表单验证失败，请检查以下字段：</h4>
-              <ul className="list-disc list-inside text-red-600 text-sm space-y-1">
+              <ul className="list-disc list-inside text-error text-sm space-y-1">
                 {Object.entries(errors).map(([field, error]) => (
                   <li key={field}>{field}: {error?.message || '验证失败'}</li>
                 ))}
@@ -176,7 +176,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
             <div className="flex flex-col">
               <span className="text-muted-foreground text-[10px] uppercase font-medium tracking-wider">当前状态</span>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
                 <span className="text-white text-sm font-medium">
                   {mode === "create" ? "正在创建新项目" : `正在编辑: 房源 #${project?.id}`}
                 </span>

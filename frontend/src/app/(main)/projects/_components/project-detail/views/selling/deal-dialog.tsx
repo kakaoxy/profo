@@ -78,7 +78,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all duration-200 active:scale-[0.98]">
+        <Button className="w-full bg-success hover:bg-success text-white shadow-sm transition-all duration-200 active:scale-[0.98]">
           <Gavel className="mr-2 h-4 w-4" />
           确认成交
         </Button>
@@ -169,7 +169,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
           <Button
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[80px]"
+            className="bg-success hover:bg-success text-white min-w-[80px]"
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -42,7 +42,7 @@ export function PhotoItem({
         <Badge
           className={cn(
             "absolute -top-2 -right-2 px-2 py-0.5",
-            isSynced ? "" : "bg-emerald-600 text-white",
+            isSynced ? "" : "bg-success text-white",
           )}
         >
           {isSynced ? "同步" : "上传"}

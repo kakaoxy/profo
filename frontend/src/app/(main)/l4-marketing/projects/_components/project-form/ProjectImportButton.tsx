@@ -87,7 +87,7 @@ export function ProjectImportButton({
           variant="ghost"
           size="icon"
           onClick={onClear}
-          className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
+          className="text-muted-foreground hover:text-error hover:bg-error-container"
         >
           <X className="w-5 h-5" />
         </Button>

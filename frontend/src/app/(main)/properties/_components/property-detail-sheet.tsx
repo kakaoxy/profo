@@ -123,7 +123,7 @@ export function PropertyDetailSheet() {
             )}
 
             {error && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-md text-sm">
+              <div className="p-4 bg-error-container text-error rounded-md text-sm">
                 {error}
               </div>
             )}
@@ -137,7 +137,7 @@ export function PropertyDetailSheet() {
                         {data.status === "成交" ? "成交总价" : "挂牌总价"}
                     </div>
                     {/* 修复：使用 listed_price_wan 或 sold_price_wan */}
-                    <div className="text-xl font-bold text-red-600">
+                    <div className="text-xl font-bold text-error">
                       {displayPrice} <span className="text-xs font-normal text-muted-foreground">万</span>
                     </div>
                   </div>

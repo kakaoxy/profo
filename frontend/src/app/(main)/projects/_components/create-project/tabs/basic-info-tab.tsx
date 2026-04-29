@@ -123,7 +123,7 @@ export function BasicInfoTab({ form }: TabProps) {
             <FormItem>
               <FormLabel>
                 详细地址
-                <span className="text-red-500 ml-1">*</span>
+                <span className="text-error ml-1">*</span>
               </FormLabel>
               <FormControl>
                 <Input

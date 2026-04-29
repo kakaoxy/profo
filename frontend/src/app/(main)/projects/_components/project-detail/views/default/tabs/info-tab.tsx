@@ -209,7 +209,7 @@ export function InfoTab({ project }: InfoTabProps) {
                   "font-bold font-mono",
                   (project.net_cash_flow ?? 0) >= 0
                     ? "text-green-600"
-                    : "text-red-500"
+                    : "text-error"
                 )}
               >
                 {formatPrice((project.net_cash_flow || 0) / 10000)}

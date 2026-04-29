@@ -116,7 +116,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
           <Button
             onClick={onDelete}
             variant="outline"
-            className="gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300 border-red-200 dark:border-red-800"
+            className="gap-2 text-error dark:text-error hover:bg-error-container dark:hover:bg-error/20 hover:text-error dark:hover:text-error border-error/30 dark:border-error"
           >
             <Trash2 className="h-4 w-4" />
             撤销 Key

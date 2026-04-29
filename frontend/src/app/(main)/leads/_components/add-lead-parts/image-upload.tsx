@@ -152,7 +152,7 @@ export const ImageUpload: React.FC<Props> = ({
         )}
         
         {!canAddMore && images.length >= maxImages && (
-          <div className="aspect-square border-2 border-dashed border-amber-200 rounded-xl flex flex-col items-center justify-center text-amber-500 bg-amber-50/50">
+          <div className="aspect-square border-2 border-dashed border-status-pending/30 rounded-xl flex flex-col items-center justify-center text-status-pending bg-status-pending/10/50">
             <AlertCircle className="h-5 w-5 mb-1" />
             <span className="text-[8px] font-black uppercase tracking-widest">已满</span>
           </div>

@@ -91,7 +91,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button
-                  className="bg-white/90 p-1.5 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 shadow-sm transition-colors"
+                  className="bg-white/90 p-1.5 rounded-full text-error hover:bg-error-container hover:text-error shadow-sm transition-colors"
                   title="Delete Photo"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -111,7 +111,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => onDelete(photo.id)}
-                    className="bg-red-600 hover:bg-red-700"
+                    className="bg-error hover:bg-red-700"
                   >
                     Confirm Delete
                   </AlertDialogAction>
@@ -163,7 +163,7 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
       {/* Progress Overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 z-10 p-2 gap-2">
         {item.status === "error" ? (
-          <span className="text-xs text-white bg-red-500/90 px-2 py-1 rounded font-medium">
+          <span className="text-xs text-white bg-error/90 px-2 py-1 rounded font-medium">
             Upload Failed
           </span>
         ) : (

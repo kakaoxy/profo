@@ -28,8 +28,8 @@ export function MarketSentiment({
     inventoryMonths > 6
       ? "text-rose-600"
       : inventoryMonths > 3
-        ? "text-amber-600"
-        : "text-emerald-600";
+        ? "text-status-pending"
+        : "text-success";
   const pressureIcon =
     inventoryMonths > 6 ? "🔴" : inventoryMonths > 3 ? "🟡" : "🟢";
 

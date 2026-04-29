@@ -88,7 +88,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
         </label>
         <input
           type="number"
-          className="w-full h-11 px-4 border rounded-xl font-bold text-emerald-600 focus:ring-2 focus:ring-primary/20"
+          className="w-full h-11 px-4 border rounded-xl font-bold text-success focus:ring-2 focus:ring-primary/20"
           placeholder="输入评估价..."
           value={evalPrice}
           onChange={(e) => onEvalPriceChange(Number(e.target.value))}
@@ -108,7 +108,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
     </div>
     <div className="grid grid-cols-2 gap-3">
       <Button
-        className="h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold shadow-lg shadow-emerald-100"
+        className="h-12 rounded-xl bg-success hover:bg-success font-bold shadow-lg shadow-emerald-100"
         onClick={() =>
           onAudit(
             lead.id,
@@ -143,8 +143,8 @@ const PendingVisitPanel: React.FC<PendingVisitPanelProps> = ({
   onAudit,
 }) => (
   <div className="space-y-4">
-    <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex gap-3">
-      <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+    <div className="bg-status-pending/10 border border-amber-100 p-4 rounded-xl flex gap-3">
+      <AlertTriangle className="h-5 w-5 text-status-pending shrink-0" />
       <div className="space-y-1">
         <p className="text-xs font-bold text-amber-800">当前阶段：实勘核验</p>
         <p className="text-[11px] text-amber-700 leading-relaxed">
@@ -169,8 +169,8 @@ interface VisitedPanelProps {
 
 const VisitedPanel: React.FC<VisitedPanelProps> = ({ lead, onAudit }) => (
   <div className="space-y-4">
-    <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex gap-3">
-      <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+    <div className="bg-success-container border border-emerald-100 p-4 rounded-xl flex gap-3">
+      <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
       <div className="space-y-1">
         <p className="text-xs font-bold text-emerald-800">实勘通过 - 等待签约</p>
         <p className="text-[11px] text-emerald-700 leading-relaxed">
@@ -189,7 +189,7 @@ const VisitedPanel: React.FC<VisitedPanelProps> = ({ lead, onAudit }) => (
 
 const SignedPanel: React.FC = () => (
   <div className="text-center py-4">
-    <div className="inline-flex h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 items-center justify-center mb-3">
+    <div className="inline-flex h-12 w-12 rounded-full bg-emerald-100 text-success items-center justify-center mb-3">
       <CheckCircle2 className="h-6 w-6" />
     </div>
     <h4 className="font-black text-foreground">恭喜！已完成资产收储</h4>

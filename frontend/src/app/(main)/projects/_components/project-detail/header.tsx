@@ -235,7 +235,7 @@ export function ProjectDetailHeader({
                       handleDelete();
                     }}
                     disabled={isDeleting}
-                    className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                    className="bg-error hover:bg-red-700 focus:ring-red-600"
                   >
                     {isDeleting ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -59,7 +59,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                 <TableCell>
                   <button
                     onClick={() => onDelete(item.id)}
-                    className="text-muted-foreground hover:text-red-500 transition-colors"
+                    className="text-muted-foreground hover:text-error transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -94,13 +94,13 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                   className={cn(
                     "text-sm font-bold",
                     isMax
-                      ? "text-red-600 flex items-center gap-1"
+                      ? "text-error flex items-center gap-1"
                       : "text-slate-700"
                   )}
                 >
                   ¥{item.price}万{" "}
                   {isMax && (
-                    <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded font-normal">
+                    <span className="text-[10px] bg-red-100 text-error px-1 rounded font-normal">
                       最高
                     </span>
                   )}
@@ -116,7 +116,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
               </div>
               <button
                 onClick={() => onDelete(item.id)}
-                className="text-slate-300 hover:text-red-500 p-1"
+                className="text-slate-300 hover:text-error p-1"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -133,7 +133,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
       <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-muted" />
       {sortedData.map((item) => (
         <div key={item.id} className="relative pl-4 group">
-          <div className="absolute left-[-4px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-emerald-500 bg-white group-hover:bg-emerald-500 transition-colors z-10" />
+          <div className="absolute left-[-4px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-success bg-white group-hover:bg-success transition-colors z-10" />
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-mono">
@@ -141,7 +141,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
               </span>
               <button
                 onClick={() => onDelete(item.id)}
-                className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-slate-300 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <Trash2 className="h-3 w-3" />
               </button>

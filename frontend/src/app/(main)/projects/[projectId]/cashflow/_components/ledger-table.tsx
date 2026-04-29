@@ -157,8 +157,8 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                       className={cn(
                         "font-normal",
                         record.type === "income"
-                          ? "border-red-200 text-red-700 bg-red-50/30"
-                          : "border-emerald-200 text-emerald-700 bg-emerald-50/30"
+                          ? "border-error/30 text-red-700 bg-error-container/30"
+                          : "border-emerald-200 text-emerald-700 bg-success-container/30"
                       )}
                     >
                       {record.category}
@@ -177,8 +177,8 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                       className={cn(
                         "font-mono font-medium text-sm",
                         record.type === "income"
-                          ? "text-red-600"
-                          : "text-emerald-600"
+                          ? "text-error"
+                          : "text-success"
                       )}
                     >
                       {record.type === "income" ? "+" : "-"}
@@ -190,7 +190,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                   <TableCell className="w-[40px]">
                     <button
                       onClick={() => handleDelete(record.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-500"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-error"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

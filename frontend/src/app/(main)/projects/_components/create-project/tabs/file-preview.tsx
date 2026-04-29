@@ -41,11 +41,11 @@ function getFileIcon(fileType: FileType) {
     case "image":
       return <FileImage className="h-8 w-8 text-primary" />;
     case "pdf":
-      return <FileText className="h-8 w-8 text-red-500" />;
+      return <FileText className="h-8 w-8 text-error" />;
     case "word":
       return <File className="h-8 w-8 text-primary/80" />;
     default:
-      return <File className="h-8 w-8 text-gray-500" />;
+      return <File className="h-8 w-8 text-muted-foreground" />;
   }
 }
 

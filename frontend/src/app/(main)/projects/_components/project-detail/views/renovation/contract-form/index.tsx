@@ -182,7 +182,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
     return (
       <Card className="border-slate-200">
         <CardContent className="p-6">
-          <div className="text-center text-red-500 text-xs">{error}</div>
+          <div className="text-center text-error text-xs">{error}</div>
         </CardContent>
       </Card>
     );

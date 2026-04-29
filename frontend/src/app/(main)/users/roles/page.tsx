@@ -18,7 +18,7 @@ export default async function RolesPage(props: {
   });
 
   if (!result.success || !result.data) {
-    return <div className="p-4 text-red-500">获取数据失败: {result.message}</div>;
+    return <div className="p-4 text-error">获取数据失败: {result.message}</div>;
   }
 
   return (

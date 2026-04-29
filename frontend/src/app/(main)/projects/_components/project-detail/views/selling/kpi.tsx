@@ -163,8 +163,8 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
             className={cn(
               "mt-1 flex items-center text-[10px] font-medium",
               stats.viewings.isInfinite || stats.viewings.isPositive
-                ? "text-emerald-600"
-                : "text-red-600"
+                ? "text-success"
+                : "text-error"
             )}
           >
             {stats.viewings.isInfinite ? (
@@ -210,10 +210,10 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       </Card>
 
       {/* 3. 面谈卡片 (浅黄主题 - 机会) */}
-      <Card className="shadow-sm border-orange-100 bg-orange-50/30">
+      <Card className="shadow-sm border-orange-100 bg-status-renovating/10/30">
         <CardContent className="p-4 relative">
           <Calendar className="absolute top-4 right-4 h-4 w-4 text-orange-400 opacity-50" />
-          <div className="text-xs text-orange-600 font-medium">
+          <div className="text-xs text-status-renovating font-medium">
             本周面谈
           </div>
           <div className="mt-2 flex items-baseline gap-2">

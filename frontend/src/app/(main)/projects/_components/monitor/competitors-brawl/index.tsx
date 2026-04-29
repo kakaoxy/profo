@@ -114,7 +114,7 @@ export function CompetitorsBrawl({
               <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-40 text-red-500">
+            <div className="flex flex-col items-center justify-center h-40 text-error">
               <AlertCircle className="h-6 w-6 mb-2" />
               <span className="text-sm">{error}</span>
             </div>

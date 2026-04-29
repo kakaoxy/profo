@@ -35,7 +35,7 @@ const statusMap: Record<string, { label: string; color: string; icon: React.Reac
   processing: { label: "处理中", color: "bg-primary/10 text-primary", icon: <Loader2 className="h-4 w-4 animate-spin" /> },
   completed: { label: "已完成", color: "bg-green-100 text-green-700", icon: <CheckCircle2 className="h-4 w-4" /> },
   failed: { label: "失败", color: "bg-red-100 text-red-700", icon: <AlertCircle className="h-4 w-4" /> },
-  cancelled: { label: "已取消", color: "bg-gray-100 text-gray-700", icon: <Ban className="h-4 w-4" /> },
+  cancelled: { label: "已取消", color: "bg-muted text-gray-700", icon: <Ban className="h-4 w-4" /> },
 };
 
 export function UploadZone() {
@@ -255,7 +255,7 @@ export function UploadZone() {
                     <p className="text-xs text-muted-foreground">
                       <span className="text-green-600">成功: {taskStatus.success_count}</span>
                       <span className="mx-2">|</span>
-                      <span className="text-red-600">失败: {taskStatus.failed_count}</span>
+                      <span className="text-error">失败: {taskStatus.failed_count}</span>
                     </p>
                   )}
                 </div>
@@ -309,15 +309,15 @@ export function UploadZone() {
                 </div>
               ) : taskStatus.status === "completed" ? (
                 <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                  <AlertCircle className="h-6 w-6 text-orange-600" />
+                  <AlertCircle className="h-6 w-6 text-status-renovating" />
                 </div>
               ) : taskStatus.status === "failed" ? (
                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
+                  <AlertCircle className="h-6 w-6 text-error" />
                 </div>
               ) : taskStatus.status === "cancelled" ? (
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                  <Ban className="h-6 w-6 text-gray-600" />
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Ban className="h-6 w-6 text-muted-foreground" />
                 </div>
               ) : (
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -346,14 +346,14 @@ export function UploadZone() {
                 <div className="text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                   <span>总记录: {taskStatus.total_records}</span>
                   <span className="text-green-600">成功: {taskStatus.success_count}</span>
-                  <span className="text-red-600">失败: {taskStatus.failed_count}</span>
+                  <span className="text-error">失败: {taskStatus.failed_count}</span>
                   {taskStatus.processing_duration && (
                     <span>用时: {Math.round(taskStatus.processing_duration)}秒</span>
                   )}
                 </div>
 
                 {taskStatus.error_message && (
-                  <p className="text-sm text-red-600 mt-2">
+                  <p className="text-sm text-error mt-2">
                     错误: {taskStatus.error_message}
                   </p>
                 )}

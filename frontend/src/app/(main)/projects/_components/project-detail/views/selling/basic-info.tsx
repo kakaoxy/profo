@@ -71,7 +71,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
           
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
-              <span className="bg-red-100 text-red-600 text-[10px] px-2 py-0.5 rounded-full font-bold">
+              <span className="bg-red-100 text-error text-[10px] px-2 py-0.5 rounded-full font-bold">
                 挂牌价
               </span>
               <span className="text-xs text-muted-foreground">
@@ -80,10 +80,10 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
             </div>
             
             <div className="flex items-baseline gap-1.5 overflow-hidden">
-              <span className="text-4xl lg:text-5xl font-extrabold text-red-600 tracking-tight">
+              <span className="text-4xl lg:text-5xl font-extrabold text-error tracking-tight">
                 {project.list_price || "-"}
               </span>
-              <span className="text-lg text-red-500 font-medium">万</span>
+              <span className="text-lg text-error font-medium">万</span>
             </div>
 
             {/* 涨跌幅模拟占位 (未来可接真实数据) */}
@@ -112,8 +112,8 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
             <div className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-lg border",
               daysLeft < 30 
-                ? "bg-red-50 border-red-100 text-red-700" 
-                : "bg-emerald-50 border-emerald-100 text-emerald-700"
+                ? "bg-error-container border-red-100 text-red-700" 
+                : "bg-success-container border-emerald-100 text-emerald-700"
             )}>
                {daysLeft < 30 ? <Hourglass className="w-3.5 h-3.5 animate-pulse" /> : <Clock className="w-3.5 h-3.5" />}
                <div className="flex flex-col items-end leading-none">

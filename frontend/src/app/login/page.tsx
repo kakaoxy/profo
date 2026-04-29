@@ -47,13 +47,13 @@ export default function LoginPage() {
   const tempToken = loginState?.tempToken || "";
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gray-100 px-4 py-8 sm:px-6">
+    <div className="flex min-h-screen w-full items-center justify-center bg-muted px-4 py-8 sm:px-6">
       <Card className="w-full max-w-sm shadow-lg">
         {/* --- 模式 A: 修改密码 --- */}
         {isChangePasswordMode ? (
           <>
             <CardHeader>
-              <CardTitle className="text-xl text-orange-600">
+              <CardTitle className="text-xl text-status-renovating">
                 需修改初始密码
               </CardTitle>
               <CardDescription>
@@ -86,7 +86,7 @@ export default function LoginPage() {
                   />
                 </div>
                 {changeState?.error && (
-                  <div className="text-sm text-red-500 font-medium">
+                  <div className="text-sm text-error font-medium">
                     {changeState.error}
                   </div>
                 )}
@@ -140,7 +140,7 @@ export default function LoginPage() {
                   />
                 </div>
                 {loginState?.error && (
-                  <div className="text-sm text-red-500 font-medium">
+                  <div className="text-sm text-error font-medium">
                     {loginState.error}
                   </div>
                 )}

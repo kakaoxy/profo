@@ -228,7 +228,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-red-600 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
+          className="h-8 w-8 text-error hover:text-error hover:bg-error-container flex-shrink-0"
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />

@@ -46,7 +46,7 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
           <div
             className={cn(
               "flex items-baseline gap-1",
-              isProfitable ? "text-red-600" : "text-green-600"
+              isProfitable ? "text-error" : "text-green-600"
             )}
           >
             <span className="text-2xl font-bold font-mono tracking-tight">
@@ -71,11 +71,11 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
                 "text-2xl font-bold font-mono tracking-tight",
                 daysUntilHandover !== null &&
                   daysUntilHandover < 0 &&
-                  "text-red-500",
+                  "text-error",
                 daysUntilHandover !== null &&
                   daysUntilHandover >= 0 &&
                   daysUntilHandover <= 7
-                  ? "text-orange-500"
+                  ? "text-status-renovating"
                   : "text-foreground"
               )}
             >

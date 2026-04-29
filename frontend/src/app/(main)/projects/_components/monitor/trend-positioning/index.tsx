@@ -51,8 +51,8 @@ export function TrendPositioning({
           subtitle="Trend & Positioning"
         />
         <div className="px-6">
-          <AlertCircle className="h-5 w-5 text-red-500 mb-2" />
-          <p className="text-sm text-red-500">{error}</p>
+          <AlertCircle className="h-5 w-5 text-error mb-2" />
+          <p className="text-sm text-error">{error}</p>
         </div>
       </section>
     );
@@ -116,9 +116,9 @@ interface InsightCardProps {
 
 function InsightCard({ iconColor, title, content }: InsightCardProps) {
   const colorMap = {
-    amber: "bg-amber-50 text-amber-600",
+    amber: "bg-status-pending/10 text-status-pending",
     blue: "bg-primary/10 text-primary",
-    red: "bg-red-50 text-red-600",
+    red: "bg-error-container text-error",
   };
 
   return (
