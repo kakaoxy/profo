@@ -30,7 +30,7 @@ export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: Photo
         </div>
       ) : null}
       {!isSelected && !isExisting ? (
-        <div className="absolute top-3 right-3 z-10 w-5 h-5 border-2 border-border bg-white/80 rounded-full" />
+        <div className="absolute top-3 right-3 z-10 w-5 h-5 border-2 border-border bg-card/80 rounded-full" />
       ) : null}
       {isExisting ? (
         <div className="absolute top-3 right-3 z-10 bg-status-selling text-white text-[8px] font-bold px-1.5 py-0.5 rounded">

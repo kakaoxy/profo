@@ -36,7 +36,7 @@ export function BasicConfigView({ project }: BasicConfigViewProps) {
           }
         />
         <DisplayRow label="装修风格" value={project?.decoration_style || "-"} />
-        <div className="pt-4 border-t border-slate-100">
+        <div className="pt-4 border-t border-border">
           <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
             <div>创建时间: {project?.created_at || "-"}</div>
             <div>更新时间: {project?.updated_at || "-"}</div>

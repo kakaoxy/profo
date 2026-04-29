@@ -80,7 +80,7 @@ export function CreateProjectDialog({
 
       <DialogContent className="sm:max-w-[750px] p-0 gap-0 overflow-hidden h-[85vh] flex flex-col">
         {/* --- Header --- */}
-        <DialogHeader className="px-6 py-4 border-b bg-white flex-shrink-0">
+        <DialogHeader className="px-6 py-4 border-b bg-card flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle>{project ? "编辑项目" : "新建项目"}</DialogTitle>
@@ -100,7 +100,7 @@ export function CreateProjectDialog({
                   <Trash2 className="mr-1 h-3 w-3" />
                   清空
                 </Button>
-                <div className="flex items-center rounded-full bg-green-50 px-2 py-1 text-xs text-green-600">
+                <div className="flex items-center rounded-full bg-success/10 px-2 py-1 text-xs text-success">
                   <Save className="mr-1 h-3 w-3" />
                   自动保存中
                 </div>
@@ -165,7 +165,7 @@ export function CreateProjectDialog({
               </Tabs>
 
               {/* --- Footer --- */}
-              <DialogFooter className="px-6 py-4 border-t bg-white flex-shrink-0">
+              <DialogFooter className="px-6 py-4 border-t bg-card flex-shrink-0">
                 <Button
                   type="button"
                   variant="outline"

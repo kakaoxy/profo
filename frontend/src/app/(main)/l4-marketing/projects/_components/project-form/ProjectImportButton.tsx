@@ -64,11 +64,11 @@ export function ProjectImportButton({
 
   // 已选择项目时显示项目信息
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+    <div className="bg-success/10 border border-green-200 rounded-lg p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-green-600" />
+            <Building2 className="w-5 h-5 text-success" />
           </div>
           <div>
             <div className="flex items-center gap-2">

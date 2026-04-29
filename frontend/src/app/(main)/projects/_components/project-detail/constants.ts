@@ -94,7 +94,7 @@ export function getFileIcon(fileType: string) {
  * 文件图标颜色映射
  */
 export const FILE_ICON_COLORS: Record<string, string> = {
-  excel: "text-green-600",
+  excel: "text-success",
   image: "text-primary",
   pdf: "text-error",
   word: "text-primary/80",

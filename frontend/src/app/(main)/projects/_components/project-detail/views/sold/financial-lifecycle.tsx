@@ -50,10 +50,10 @@ export function FinancialLifecycle({ project }: { project: Project }) {
   ];
 
   return (
-    <Card className="mt-6 shadow-sm border-slate-200 overflow-hidden">
+    <Card className="mt-6 shadow-sm border-border overflow-hidden">
       <CardContent className="p-0">
         {/* 上半部分：资金构成 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border py-6">
           {/* Col 1: 成交总价 */}
           <div className="px-8 flex flex-col justify-center">
             <span className="text-sm text-muted-foreground mb-1">成交总价</span>
@@ -117,11 +117,11 @@ export function FinancialLifecycle({ project }: { project: Project }) {
               <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
               
               {steps.map((step, idx) => (
-                <div key={idx} className="relative z-10 flex flex-col items-center gap-2 bg-white px-2">
+                <div key={idx} className="relative z-10 flex flex-col items-center gap-2 bg-card px-2">
                   <span className="text-[10px] font-mono font-medium text-muted-foreground">
                     {formatNodeDate(step.date)}
                   </span>
-                  <div className={`h-3 w-3 rounded-full border-2 ${step.date ? 'bg-card border-slate-900' : 'bg-white border-slate-200'}`} />
+                  <div className={`h-3 w-3 rounded-full border-2 ${step.date ? 'bg-card border-primary' : 'bg-card border-border'}`} />
                   <span className="text-xs font-bold text-muted-foreground">
                     {step.label}
                   </span>
@@ -131,7 +131,7 @@ export function FinancialLifecycle({ project }: { project: Project }) {
           </div>
 
           {/* 关键指标 (右侧) */}
-          <div className="flex flex-col items-end border-l border-slate-100 pl-8 md:min-w-[140px]">
+          <div className="flex flex-col items-end border-l border-border pl-8 md:min-w-[140px]">
             <span className="text-xs text-muted-foreground font-medium mb-1">资金占用周期</span>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-mono font-bold text-foreground">

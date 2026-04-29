@@ -34,7 +34,7 @@ export function CompetitorList({
   }
 
   return (
-    <div className="border border-slate-200 rounded-lg divide-y divide-slate-100">
+    <div className="border border-border rounded-lg divide-y divide-border">
       {competitors.map((item) => (
         <div
           key={item.community_id}

@@ -119,7 +119,7 @@ export function DualPhotoManager({
 
             <TabsContent value="upload" className="space-y-4 mt-4">
               <div className="space-y-3">
-                <div className="text-xs font-medium text-[#707785]">选择照片类别</div>
+                <div className="text-xs font-medium text-[var(--muted-foreground)]">选择照片类别</div>
                 <PhotoCategorySelector
                   value={uploadCategory}
                   onChange={setUploadCategory}
@@ -129,13 +129,13 @@ export function DualPhotoManager({
                 {uploadCategory === "renovation" ? (
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-6 lg:col-span-4">
-                      <div className="text-xs font-medium text-[#707785] mb-1">装修阶段</div>
+                      <div className="text-xs font-medium text-[var(--muted-foreground)] mb-1">装修阶段</div>
                       <Select
                         value={uploadStage}
                         onValueChange={setUploadStage}
                         disabled={isUploading}
                       >
-                        <SelectTrigger className="bg-white border-[#c0c7d6]/50">
+                        <SelectTrigger className="bg-card border-[var(--border)]/50">
                           <SelectValue placeholder="选择阶段" />
                         </SelectTrigger>
                         <SelectContent>
@@ -161,13 +161,13 @@ export function DualPhotoManager({
 
             <TabsContent value="sync" className="space-y-4 mt-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-medium text-[#707785]">从其他项目同步照片</div>
+                <div className="text-xs font-medium text-[var(--muted-foreground)]">从其他项目同步照片</div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setPickerOpen(true)}
-                  className="bg-white border-[#c0c7d6]/50 hover:bg-[#e5eeff]"
+                  className="bg-card border-[var(--border)]/50 hover:bg-[var(--primary)]"
                 >
                   <FolderOpen className="h-4 w-4 mr-1" />
                   从照片库选择
@@ -182,7 +182,7 @@ export function DualPhotoManager({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[#c0c7d6]/20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[var(--border)]/20">
               <MarketingPhotoList
                 photos={marketingPhotos}
                 photoIds={marketingPhotoIds}

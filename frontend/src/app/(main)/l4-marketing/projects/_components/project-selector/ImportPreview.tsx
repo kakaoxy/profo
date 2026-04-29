@@ -136,7 +136,7 @@ export function ImportPreview({
 
             <Section title="营销信息">
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium text-slate-700">标题</p>
+                <p className="text-sm font-medium text-muted-foreground">标题</p>
                 <p className="text-sm text-foreground mt-1">{data.title}</p>
               </div>
             </Section>
@@ -168,7 +168,7 @@ export function ImportPreview({
           </div>
         </ScrollArea>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t bg-white">
+        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t bg-card">
           <Button variant="outline" onClick={onCancel} disabled={loading} size="sm">
             取消
           </Button>

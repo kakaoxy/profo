@@ -177,7 +177,7 @@ export function ProjectSelector({
           </div>
         </ScrollArea>
 
-        <div className="flex items-center justify-between gap-2 px-6 py-3 border-t bg-white">
+        <div className="flex items-center justify-between gap-2 px-6 py-3 border-t bg-card">
           <div className="text-sm text-muted-foreground truncate min-w-0 flex-1">
             {selectedProject ? (
               <span>

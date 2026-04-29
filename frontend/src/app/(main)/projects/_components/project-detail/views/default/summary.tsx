@@ -46,7 +46,7 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
           <div
             className={cn(
               "flex items-baseline gap-1",
-              isProfitable ? "text-error" : "text-green-600"
+              isProfitable ? "text-error" : "text-success"
             )}
           >
             <span className="text-2xl font-bold font-mono tracking-tight">

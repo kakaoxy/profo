@@ -120,13 +120,13 @@ export function LayoutInputs({
     },
     marketing: {
       container: "space-y-2",
-      label: "block text-xs font-bold text-[#707785] uppercase tracking-wider",
-      required: "text-[#ba1a1a]",
+      label: "block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider",
+      required: "text-[var(--error)]",
       inputWrapper: "relative flex-1",
       input:
-        "w-full h-11 px-3 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground",
+        "w-full h-11 px-3 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground",
       suffix:
-        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#707785]",
+        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]",
     },
   };
 

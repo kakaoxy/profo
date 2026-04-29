@@ -98,15 +98,15 @@ export function CashFlowSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <SheetContent className="w-full sm:max-w-2xl md:max-w-3xl bg-muted p-0 flex flex-col h-full border-l border-slate-200 shadow-2xl">
-        <div className="flex-none bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+      <SheetContent className="w-full sm:max-w-2xl md:max-w-3xl bg-muted p-0 flex flex-col h-full border-l border-border shadow-2xl">
+        <div className="flex-none bg-card border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <div>
             {/* 标题区域：显示小区名+地址 */}
             <SheetTitle className="text-xl font-bold text-foreground flex items-center gap-2">
               资金账本
               {projectDisplayName && (
                 <>
-                  <span className="text-slate-300 font-light">/</span>
+                  <span className="text-muted-foreground/50 font-light">/</span>
                   <span
                     className="text-base font-medium text-muted-foreground truncate max-w-xs"
                     title={projectDisplayName}

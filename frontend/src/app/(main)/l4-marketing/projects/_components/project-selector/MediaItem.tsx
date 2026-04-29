@@ -73,10 +73,10 @@ export function MediaItem({ media, selected, onToggle }: MediaItemProps) {
       ) : (
         <div className="w-full h-full bg-muted flex flex-col items-center justify-center">
           {isVideo ? (
-            <Video className="w-8 h-8 text-slate-300" />
+            <Video className="w-8 h-8 text-muted-foreground/50" />
           ) : (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image className="w-8 h-8 text-slate-300" />
+            <Image className="w-8 h-8 text-muted-foreground/50" />
           )}
         </div>
       )}

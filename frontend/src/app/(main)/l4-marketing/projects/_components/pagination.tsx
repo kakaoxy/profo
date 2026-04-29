@@ -69,11 +69,11 @@ export function Pagination({
 
   if (totalPages <= 1) {
     return (
-      <div className="px-6 py-4 bg-muted flex items-center justify-between border-t border-slate-200">
+      <div className="px-6 py-4 bg-muted flex items-center justify-between border-t border-border">
         <div className="text-xs text-muted-foreground">
           {total > 0 ? (
             <>
-              共 <span className="text-slate-700 font-medium">{total}</span> 个房源
+              共 <span className="text-muted-foreground font-medium">{total}</span> 个房源
             </>
           ) : (
             <span>暂无数据</span>
@@ -84,11 +84,11 @@ export function Pagination({
   }
 
   return (
-    <div className="px-6 py-4 bg-muted flex items-center justify-between border-t border-slate-200">
+    <div className="px-6 py-4 bg-muted flex items-center justify-between border-t border-border">
       <div className="text-xs text-muted-foreground">
         {total > 0 ? (
           <>
-            显示 <span className="text-slate-700 font-medium">{startItem} - {endItem}</span> 之 <span className="text-slate-700 font-medium">{total}</span> 个房源
+            显示 <span className="text-muted-foreground font-medium">{startItem} - {endItem}</span> 之 <span className="text-muted-foreground font-medium">{total}</span> 个房源
           </>
         ) : (
           <span>暂无数据</span>
@@ -103,8 +103,8 @@ export function Pagination({
           className={cn(
             "w-8 h-8 flex items-center justify-center rounded-md border transition-all",
             currentPage <= 1 || isLoading
-              ? "text-slate-300 cursor-not-allowed border-slate-200"
-              : "text-muted-foreground hover:bg-white hover:text-foreground hover:border-border border-slate-200"
+              ? "text-muted-foreground/50 cursor-not-allowed border-border"
+              : "text-muted-foreground hover:bg-card hover:text-foreground hover:border-border border-border"
           )}
           aria-label="上一页"
         >
@@ -124,7 +124,7 @@ export function Pagination({
                 "w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-all",
                 currentPage === item
                   ? "bg-primary text-white"
-                  : "text-muted-foreground hover:bg-white hover:text-foreground"
+                  : "text-muted-foreground hover:bg-card hover:text-foreground"
               )}
             >
               {item}
@@ -139,8 +139,8 @@ export function Pagination({
           className={cn(
             "w-8 h-8 flex items-center justify-center rounded-md border transition-all",
             currentPage >= totalPages || isLoading
-              ? "text-slate-300 cursor-not-allowed border-slate-200"
-              : "text-muted-foreground hover:bg-white hover:text-foreground hover:border-border border-slate-200"
+              ? "text-muted-foreground/50 cursor-not-allowed border-border"
+              : "text-muted-foreground hover:bg-card hover:text-foreground hover:border-border border-border"
           )}
           aria-label="下一页"
         >

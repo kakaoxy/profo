@@ -91,7 +91,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button
-                  className="bg-white/90 p-1.5 rounded-full text-error hover:bg-error-container hover:text-error shadow-sm transition-colors"
+                  className="bg-card/90 p-1.5 rounded-full text-error hover:bg-error-container hover:text-error shadow-sm transition-colors"
                   title="Delete Photo"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -172,7 +172,7 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
             <div className="w-full px-2">
               <Progress
                 value={item.progress}
-                className="h-1.5 w-full bg-white/40"
+                className="h-1.5 w-full bg-card/40"
               />
             </div>
             <span className="text-[10px] text-white font-medium drop-shadow-md">

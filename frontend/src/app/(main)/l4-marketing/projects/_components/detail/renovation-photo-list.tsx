@@ -74,7 +74,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
       </div>
 
       <div 
-        className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-muted rounded-lg border border-slate-200"
+        className="space-y-3 min-h-[80px] max-h-[300px] overflow-y-auto p-2 bg-muted rounded-lg border border-border"
         style={{
           // 优化滚动性能
           willChange: "scroll-position",

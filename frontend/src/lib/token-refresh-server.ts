@@ -23,8 +23,11 @@ declare global {
   };
 }
 
-// 初始化全局状态
-if (!global.__tokenRefreshState) {
+// 检查是否在服务端环境
+const isServer = typeof window === "undefined" && typeof global !== "undefined";
+
+// 初始化全局状态（仅在服务端）
+if (isServer && !global.__tokenRefreshState) {
   global.__tokenRefreshState = {
     isRefreshing: false,
     refreshPromise: null,
@@ -32,7 +35,14 @@ if (!global.__tokenRefreshState) {
   };
 }
 
-const refreshState = global.__tokenRefreshState;
+// 客户端使用临时对象（不会被实际使用，因为服务端函数会在服务端执行）
+const refreshState = isServer
+  ? global.__tokenRefreshState
+  : {
+      isRefreshing: false,
+      refreshPromise: null,
+      lastResult: null,
+    };
 
 // Token有效期缓冲时间（毫秒），提前刷新
 const TOKEN_REFRESH_BUFFER = 60 * 1000; // 1分钟

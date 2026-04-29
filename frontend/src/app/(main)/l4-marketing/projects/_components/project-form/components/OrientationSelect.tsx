@@ -24,8 +24,8 @@ const ORIENTATIONS = ["南", "北", "东", "西", "南北", "东西", "东南", 
 export function OrientationSelect({ value, onChange }: OrientationSelectProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-[#707785] uppercase tracking-wider">
-        朝向 <span className="text-[#ba1a1a]">*</span>
+      <label className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
+        朝向 <span className="text-[var(--error)]">*</span>
       </label>
       <div className="grid grid-cols-5 gap-2">
         {ORIENTATIONS.map((orientation) => (
@@ -37,7 +37,7 @@ export function OrientationSelect({ value, onChange }: OrientationSelectProps) {
               "h-10 rounded-lg text-sm font-bold transition-all border",
               value === orientation
                 ? "bg-primary text-white border-primary"
-                : "bg-white text-foreground border-[#c0c7d6]/50 hover:border-primary/50"
+                : "bg-card text-foreground border-[var(--border)]/50 hover:border-primary/50"
             )}
           >
             {orientation}

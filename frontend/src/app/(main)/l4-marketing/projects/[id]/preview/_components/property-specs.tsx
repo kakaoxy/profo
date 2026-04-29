@@ -16,7 +16,7 @@ export function PropertySpecs({
   orientation,
 }: PropertySpecsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-0.5 rounded-xl overflow-hidden bg-muted border border-slate-200">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-0.5 rounded-xl overflow-hidden bg-muted border border-border">
       <div className="bg-muted p-6 flex flex-col gap-1">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
           户型

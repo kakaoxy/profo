@@ -113,11 +113,11 @@ export const PhotosSection = memo(function PhotosSection({
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+    <div className="bg-card rounded-lg border border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <ImageIcon className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-slate-700">媒体资源</span>
+          <span className="text-sm font-medium text-muted-foreground">媒体资源</span>
           <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground">
             共 {photos.length} 张
           </Badge>
@@ -187,7 +187,7 @@ export const PhotosSection = memo(function PhotosSection({
                 variant="outline"
                 size="sm"
                 onClick={handleOpenPicker}
-                className="bg-white border-slate-200 hover:bg-muted"
+                className="bg-card border-border hover:bg-muted"
               >
                 <FolderOpen className="h-4 w-4 mr-1" />
                 从照片库选择
@@ -198,7 +198,7 @@ export const PhotosSection = memo(function PhotosSection({
 
         {photos.length > 0 && (
           <DndProvider onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-border">
               <MarketingPhotoList
                 photos={marketingPhotos}
                 photoIds={marketingPhotoIds}

@@ -17,7 +17,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
   onClose,
 }: MarketingDetailHeaderProps) {
   return (
-    <div className="px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+    <div className="px-6 py-4 border-b border-border bg-card sticky top-0 z-10">
       <div className="flex items-center justify-between gap-4">
         {/* 左侧：返回按钮和标题 */}
         <div className="flex items-center gap-3">

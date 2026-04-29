@@ -190,7 +190,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                   <TableCell className="w-[40px]">
                     <button
                       onClick={() => handleDelete(record.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-error"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/50 hover:text-error"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

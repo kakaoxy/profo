@@ -89,7 +89,7 @@ export function usePerformanceMonitor(
       if (logToConsole) {
         const style = isWarning
           ? "color: #ef4444; font-weight: bold;"
-          : "color: #22c55e;";
+          : "color: var(--status-selling);";
         console.log(
           `%c[Performance] ${componentName} - ${name}: ${value.toFixed(2)}${unit}`,
           style

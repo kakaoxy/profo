@@ -24,7 +24,7 @@ export function PerformanceReport({
         {metrics.loadTime !== undefined && (
           <div className="flex justify-between">
             <span>Load Time:</span>
-            <span className={metrics.loadTime > 1000 ? "text-red-400" : "text-green-400"}>
+            <span className={metrics.loadTime > 1000 ? "text-error" : "text-green-400"}>
               {metrics.loadTime.toFixed(0)}ms
             </span>
           </div>
@@ -32,7 +32,7 @@ export function PerformanceReport({
         {metrics.fcp !== undefined && (
           <div className="flex justify-between">
             <span>FCP:</span>
-            <span className={metrics.fcp > 1800 ? "text-red-400" : "text-green-400"}>
+            <span className={metrics.fcp > 1800 ? "text-error" : "text-green-400"}>
               {metrics.fcp.toFixed(0)}ms
             </span>
           </div>
@@ -40,7 +40,7 @@ export function PerformanceReport({
         {metrics.lcp !== undefined && (
           <div className="flex justify-between">
             <span>LCP:</span>
-            <span className={metrics.lcp > 2500 ? "text-red-400" : "text-green-400"}>
+            <span className={metrics.lcp > 2500 ? "text-error" : "text-green-400"}>
               {metrics.lcp.toFixed(0)}ms
             </span>
           </div>
@@ -48,7 +48,7 @@ export function PerformanceReport({
         {metrics.cls !== undefined && (
           <div className="flex justify-between">
             <span>CLS:</span>
-            <span className={metrics.cls > 0.1 ? "text-red-400" : "text-green-400"}>
+            <span className={metrics.cls > 0.1 ? "text-error" : "text-green-400"}>
               {metrics.cls.toFixed(3)}
             </span>
           </div>
@@ -56,7 +56,7 @@ export function PerformanceReport({
         {metrics.fps !== undefined && (
           <div className="flex justify-between">
             <span>FPS:</span>
-            <span className={metrics.fps < 30 ? "text-red-400" : "text-green-400"}>
+            <span className={metrics.fps < 30 ? "text-error" : "text-green-400"}>
               {metrics.fps}
             </span>
           </div>

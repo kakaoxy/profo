@@ -87,13 +87,13 @@ export function AreaInput({ value, onChange }: AreaInputProps) {
     <div className="relative">
       <input
         inputMode="decimal"
-        className="w-full h-11 px-4 border border-[#c0c7d6]/50 rounded-xl bg-white text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+        className="w-full h-11 px-4 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
         value={inputValue}
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder="例如：120.5"
       />
-      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#707785]">㎡</span>
+      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]">㎡</span>
     </div>
   );
 }

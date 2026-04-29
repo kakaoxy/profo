@@ -157,7 +157,7 @@ const FloorPlanPreview = ({
 
       {open && (
         <HoverCardContent
-          className="w-[400px] p-2 bg-white z-50 shadow-lg"
+          className="w-[400px] p-2 bg-card z-50 shadow-lg"
           side="bottom"
           align="start"
           sideOffset={10}

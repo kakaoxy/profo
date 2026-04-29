@@ -30,13 +30,13 @@ export function VisualJourney({ project }: { project: Project }) {
   const totalPhotos = photos.length;
 
   return (
-    <Card className="border-slate-200 shadow-sm flex flex-col overflow-hidden">
+    <Card className="border-border shadow-sm flex flex-col overflow-hidden">
       <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-muted-foreground" />
           项目蜕变影像 (Visual Journey)
         </CardTitle>
-        <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full border border-slate-100">
+        <span className="text-[10px] text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-full border border-border">
           📸 全生命周期影像记录 (共 {totalPhotos} 张)
         </span>
       </CardHeader>
@@ -56,7 +56,7 @@ export function VisualJourney({ project }: { project: Project }) {
                   <div className="mt-4 space-y-1 pl-1">
                     <div className="flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-card" />
-                      <span className="text-sm font-bold text-slate-700">
+                      <span className="text-sm font-bold text-muted-foreground">
                         {idx + 1}. {stage.value}{stage.label.includes("阶段") ? "" : "阶段"}
                       </span>
                     </div>

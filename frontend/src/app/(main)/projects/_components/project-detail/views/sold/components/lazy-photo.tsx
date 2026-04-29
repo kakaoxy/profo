@@ -65,7 +65,7 @@ export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
         <LazyPhotoPlaceholder onVisible={() => setIsVisible(true)} />
       )}
       {!isLoaded && isVisible && (
-        <div className="absolute inset-0 bg-slate-700 animate-pulse" />
+        <div className="absolute inset-0 bg-muted animate-pulse" />
       )}
     </div>
   );

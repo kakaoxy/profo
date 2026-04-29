@@ -10,7 +10,7 @@ interface SortIconProps {
 
 export function SortIcon({ column, sortConfig }: SortIconProps) {
   if (sortConfig.key !== column)
-    return <ArrowUpDown className="ml-1 h-3 w-3 text-slate-300" />;
+    return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
   if (sortConfig.direction === "asc")
     return <ArrowUp className="ml-1 h-3 w-3 text-primary" />;
   return <ArrowDown className="ml-1 h-3 w-3 text-primary" />;

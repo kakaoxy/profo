@@ -28,7 +28,7 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Quick Log */}
-      <Card className="border-none shadow-sm bg-white p-5">
+      <Card className="border-none shadow-sm bg-card p-5">
         <div className="flex flex-col gap-4">
            <div className="flex items-center gap-2">
              <History className="h-4 w-4 text-primary" />

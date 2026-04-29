@@ -45,7 +45,7 @@ export function MarketingInfoView({ project }: MarketingInfoViewProps) {
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="bg-muted text-slate-700"
+                    className="bg-muted text-muted-foreground"
                   >
                     {tag}
                   </Badge>
