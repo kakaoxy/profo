@@ -21,7 +21,7 @@ interface StatusCardProps {
 }
 
 function StatusCard({ label, badge, color }: StatusCardProps) {
-  const bgClass = color === "green" ? "bg-emerald-50" : "bg-muted";
+  const bgClass = color === "green" ? "bg-success-container" : "bg-muted";
   const borderClass = color === "green" ? "border-emerald-100" : "border-slate-100";
 
   return (

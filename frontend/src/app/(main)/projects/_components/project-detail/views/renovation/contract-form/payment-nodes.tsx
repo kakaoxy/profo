@@ -160,7 +160,7 @@ export function PaymentNodesSection({ values, setValue, isEditing }: PaymentNode
 
       {/* 预警提示 */}
       {isOverLimit && (
-        <div className="flex items-center gap-1.5 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+        <div className="flex items-center gap-1.5 p-2 bg-error-container border border-error/30 rounded text-red-700 text-xs">
           <AlertTriangle className="h-3 w-3 flex-shrink-0" />
           <span className="text-[11px]">支付比例之和({totalRatio.toFixed(0)}%)已超过100%</span>
         </div>

@@ -35,7 +35,7 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
           <span className="text-xs text-muted-foreground">当前状态</span>
           <Badge
             variant="secondary"
-            className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-none"
+            className="bg-success-container text-emerald-700 hover:bg-emerald-100 border-none"
           >
             在售中
           </Badge>
@@ -43,7 +43,7 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
 
         <div className="w-[180px]">
           {/* 覆盖默认按钮样式为翠绿色 */}
-          <div className="[&_button]:bg-emerald-600 [&_button]:hover:bg-emerald-700 [&_button]:text-white">
+          <div className="[&_button]:bg-success [&_button]:hover:bg-success [&_button]:text-white">
             <DealDialog project={project} onSuccess={onDealSuccess} />
           </div>
         </div>

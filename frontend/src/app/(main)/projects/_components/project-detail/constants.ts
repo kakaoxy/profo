@@ -96,9 +96,9 @@ export function getFileIcon(fileType: string) {
 export const FILE_ICON_COLORS: Record<string, string> = {
   excel: "text-green-600",
   image: "text-primary",
-  pdf: "text-red-500",
+  pdf: "text-error",
   word: "text-primary/80",
-  default: "text-gray-500",
+  default: "text-muted-foreground",
 };
 
 // [修复] 增加 value 字段，对应后端的中文 Enum

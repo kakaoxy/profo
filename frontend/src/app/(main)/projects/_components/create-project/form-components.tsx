@@ -46,7 +46,7 @@ export function SimpleInputField({
         <FormItem>
           <FormLabel className={description ? "" : "mb-2"}>
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="text-error ml-1">*</span>}
           </FormLabel>
           <FormControl>
             <Input
@@ -88,7 +88,7 @@ export function SimpleTextareaField({
         <FormItem>
           <FormLabel>
             {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="text-error ml-1">*</span>}
           </FormLabel>
           <FormControl>
             <Textarea

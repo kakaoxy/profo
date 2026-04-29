@@ -41,15 +41,15 @@ export function HeroMetrics({ project }: { project: Project }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
       {/* 卡片 1：净利润 */}
-      <Card className="bg-red-50/50 border-red-200 shadow-sm transition-all hover:shadow-md">
+      <Card className="bg-error-container/50 border-error/30 shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium text-red-800">
             净利润 (Net Profit)
           </CardTitle>
-          <Wallet className="h-4 w-4 text-red-600" />
+          <Wallet className="h-4 w-4 text-error" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-extrabold text-red-600 tracking-tight font-mono">
+          <div className="text-2xl font-extrabold text-error tracking-tight font-mono">
             {netProfit > 0 ? "+" : ""}
             {(netProfit / 10000).toFixed(2)}{" "}
             <span className="text-sm font-bold">万</span>

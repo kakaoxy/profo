@@ -28,11 +28,11 @@ export const LeadInfoCards: React.FC<LeadInfoCardsProps> = ({ lead }) => (
         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
           <Target className="h-3 w-3" /> 评估建议
         </span>
-        <div className="text-2xl font-black text-emerald-600">
+        <div className="text-2xl font-black text-success">
           {lead.evalPrice ? `¥ ${lead.evalPrice}` : "--"}{" "}
           <span className="text-xs font-bold text-muted-foreground ml-1">万</span>
         </div>
-        <div className="text-[10px] text-emerald-500 font-bold uppercase">
+        <div className="text-[10px] text-success font-bold uppercase">
           {lead.evalPrice
             ? `建议价 vs 报价: ${((lead.evalPrice / lead.totalPrice - 1) * 100).toFixed(1)}%`
             : "待评估"}

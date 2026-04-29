@@ -120,7 +120,7 @@ export const PhysicalInfoSection = memo(function PhysicalInfoSection({
               label="总价" 
               value={
                 project.total_price ? (
-                  <span className="text-red-600 font-bold">
+                  <span className="text-error font-bold">
                     ¥{project.total_price.toLocaleString()}万
                   </span>
                 ) : "-"

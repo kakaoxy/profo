@@ -45,8 +45,8 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
   if (showNewKey && newApiKey) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-status-pending/30 dark:border-amber-800 bg-status-pending/10/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-status-pending dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
               请立即复制您的 API Key
@@ -85,8 +85,8 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/20 p-4 flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-success-container/50 dark:bg-emerald-900/20 p-4 flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 text-success dark:text-success flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
               API Key 已激活

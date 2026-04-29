@@ -377,7 +377,7 @@ export function AppSidebar({ user }: { user: User | null }) {
               <DropdownMenuSeparator className="hidden" />
               <DropdownMenuItem
                 onClick={() => logoutAction()}
-                className="rounded-lg px-2.5 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer"
+                className="rounded-lg px-2.5 py-2 text-error dark:text-error hover:bg-error-container dark:hover:bg-error/20 focus:bg-error-container dark:focus:bg-red-900/20 cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span className="text-[13px]">退出登录</span>

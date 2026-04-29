@@ -72,12 +72,12 @@ export function FinancialLifecycle({ project }: { project: Project }) {
           <div className="px-8 flex flex-col justify-center">
             <span className="text-sm text-muted-foreground mb-1">累计回款 (实收)</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-red-600 font-mono">
+              <span className="text-2xl font-bold text-error font-mono">
                 ¥{(totalIncome / 10000).toFixed(1)}
               </span>
-              <span className="text-sm font-bold text-red-600">万</span>
+              <span className="text-sm font-bold text-error">万</span>
             </div>
-            <span className="text-xs text-red-600/60 mt-1 font-medium">
+            <span className="text-xs text-error/60 mt-1 font-medium">
               款项已全部结清
             </span>
           </div>
@@ -89,10 +89,10 @@ export function FinancialLifecycle({ project }: { project: Project }) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-baseline gap-1 cursor-help">
-                    <span className="text-2xl font-bold text-red-500 font-mono">
+                    <span className="text-2xl font-bold text-error font-mono">
                       ¥{(totalInvestment / 10000).toFixed(1)}
                     </span>
-                    <span className="text-sm font-bold text-red-500">万</span>
+                    <span className="text-sm font-bold text-error">万</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>

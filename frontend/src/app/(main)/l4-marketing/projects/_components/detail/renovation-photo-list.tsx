@@ -65,7 +65,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-emerald-600">
+        <h4 className="text-sm font-semibold text-success">
           改造照片 ({photos.length})
         </h4>
         <span className="text-xs text-muted-foreground">
@@ -95,7 +95,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
               return (
                 <div key={stage} className="space-y-1">
                   <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                     {stageConfig.label} ({stagePhotos.length})
                   </div>
                   <SortableContext
@@ -108,7 +108,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
                       isActive={true}
                     >
                       {stagePhotos.length === 0 ? (
-                        <div className="text-center text-xs text-emerald-600/60">
+                        <div className="text-center text-xs text-success/60">
                           拖拽到此处
                         </div>
                       ) : null}
@@ -129,7 +129,7 @@ export const RenovationPhotoList = memo(function RenovationPhotoList({
               return (
                 <div key={stage} className="space-y-1">
                   <div className="text-xs font-medium text-muted-foreground px-1 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                     {stageConfig.label} ({stagePhotos.length})
                   </div>
                   <SortableContext

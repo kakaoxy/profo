@@ -12,7 +12,7 @@ export function TimeMonitorDisplay({ timeMonitor }: TimeMonitorDisplayProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-          <Clock className="w-4 h-4 text-orange-500" />
+          <Clock className="w-4 h-4 text-status-renovating" />
           时间成本监控 (Time Bomb)
         </h3>
         <span className="text-xs font-bold text-muted-foreground">

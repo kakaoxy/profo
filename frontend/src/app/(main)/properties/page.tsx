@@ -48,7 +48,7 @@ export default async function PropertiesPage(props: PageProps) {
   });
 
   if (error) {
-    return <div className="p-8 text-red-500">连接后端失败，请稍后重试</div>;
+    return <div className="p-8 text-error">连接后端失败，请稍后重试</div>;
   }
 
   return (

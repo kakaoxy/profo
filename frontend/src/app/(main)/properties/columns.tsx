@@ -357,12 +357,12 @@ export const columns: ColumnDef<Property>[] = [
       return (
         <div className="min-w-0">
           {/* 桌面端只显示价格 */}
-          <div className="hidden sm:block text-red-600 font-bold text-sm">
+          <div className="hidden sm:block text-error font-bold text-sm">
             {price}万
           </div>
           {/* 移动端堆叠显示 */}
           <div className="sm:hidden flex flex-col">
-            <span className="text-red-600 font-bold text-xs">{price}万</span>
+            <span className="text-error font-bold text-xs">{price}万</span>
             <span className="text-[10px] text-muted-foreground">{area}㎡</span>
           </div>
         </div>

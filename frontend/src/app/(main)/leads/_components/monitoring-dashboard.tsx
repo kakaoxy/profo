@@ -145,7 +145,7 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
         <div className="flex items-center gap-3">
           <Badge
             variant="outline"
-            className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold"
+            className="bg-success-container text-emerald-700 border-emerald-100 font-bold"
           >
             <Activity className="h-3 w-3 mr-1" /> 实时数据同步中
           </Badge>

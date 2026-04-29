@@ -56,8 +56,8 @@ export function GenerateDialog({ open, onOpenChange, onSuccess }: GenerateDialog
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="rounded-lg border border-status-pending/30 dark:border-amber-800 bg-status-pending/10/50 dark:bg-amber-900/20 p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-status-pending dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                 重要提示
@@ -71,7 +71,7 @@ export function GenerateDialog({ open, onOpenChange, onSuccess }: GenerateDialog
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-600 dark:text-red-400">
+            <div className="rounded-lg border border-error/30 dark:border-error bg-error-container dark:bg-red-900/20 p-3 text-sm text-error dark:text-error">
               {error}
             </div>
           )}

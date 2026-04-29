@@ -26,11 +26,11 @@ export default async function UsersPage(props: {
   ]);
 
   if (!usersResult.success || !usersResult.data) {
-    return <div className="p-4 text-red-500">获取用户数据失败: {usersResult.message}</div>;
+    return <div className="p-4 text-error">获取用户数据失败: {usersResult.message}</div>;
   }
 
   if (!rolesResult.success || !rolesResult.data) {
-    return <div className="p-4 text-red-500">获取角色数据失败: {rolesResult.message}</div>;
+    return <div className="p-4 text-error">获取角色数据失败: {rolesResult.message}</div>;
   }
 
   return (

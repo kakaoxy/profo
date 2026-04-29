@@ -30,8 +30,8 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   const daysLeft = differenceInDays(deadlineDate, today);
 
   let daysColor = "text-green-600";
-  if (daysLeft < 10) daysColor = "text-red-600 animate-pulse";
-  else if (daysLeft <= 30) daysColor = "text-orange-500";
+  if (daysLeft < 10) daysColor = "text-error animate-pulse";
+  else if (daysLeft <= 30) daysColor = "text-status-renovating";
 
   // 2. 计算索引用于传参 (与 RenovationTimeline 同步逻辑)
   const currentIndex = (() => {
@@ -98,7 +98,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
       </Card>
 
       {/* 卡片 2: 当前阶段 */}
-      <Card className="shadow-sm border-orange-100 bg-orange-50/30">
+      <Card className="shadow-sm border-orange-100 bg-status-renovating/10/30">
         <CardContent className="p-4 flex flex-col justify-between h-full">
           <span className="text-xs text-muted-foreground font-medium">
             当前阶段
@@ -110,9 +110,9 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
             <div className="flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-status-renovating"></span>
               </span>
-              <span className="text-xs text-orange-600 font-medium">
+              <span className="text-xs text-status-renovating font-medium">
                 进行中
               </span>
             </div>
@@ -133,7 +133,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
             <Progress
               value={progressValue}
               className="h-2 bg-muted"
-              indicatorClassName="bg-orange-500"
+              indicatorClassName="bg-status-renovating"
             />
           </div>
         </CardContent>

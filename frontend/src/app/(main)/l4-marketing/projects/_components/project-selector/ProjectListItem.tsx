@@ -132,7 +132,7 @@ function getStatusConfig(status: string): {
     },
     已售: {
       label: "已售",
-      bgColor: "bg-gray-100",
+      bgColor: "bg-muted",
       textColor: "text-gray-700",
     },
   };

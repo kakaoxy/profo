@@ -67,7 +67,7 @@ export function ActionCell({ row }: ActionCellProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
+          className="text-muted-foreground hover:text-success hover:bg-success-container h-8 w-8 sm:w-auto sm:px-2 p-0 flex items-center justify-center gap-1 transition-all rounded-full"
         >
           <Wallet className="h-3.5 w-3.5" />
           <span className="hidden lg:inline text-xs font-medium">账本</span>
@@ -80,7 +80,7 @@ export function ActionCell({ row }: ActionCellProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+              className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full"
               onClick={handleClick}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -101,7 +101,7 @@ export function ActionCell({ row }: ActionCellProps) {
                   handleDelete();
                 }}
                 disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-error hover:bg-red-700"
               >
                 确认删除
               </AlertDialogAction>

@@ -120,13 +120,13 @@ export function AddRecordDialog({
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger
                 value="expense"
-                className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-600"
+                className="data-[state=active]:bg-success-container data-[state=active]:text-success"
               >
                 支出
               </TabsTrigger>
               <TabsTrigger
                 value="income"
-                className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600"
+                className="data-[state=active]:bg-error-container data-[state=active]:text-error"
               >
                 收入
               </TabsTrigger>
@@ -145,8 +145,8 @@ export function AddRecordDialog({
                 className={cn(
                   "font-mono focus-visible:ring-1 text-lg font-semibold", // 字体加大一点
                   type === "income"
-                    ? "text-red-600 focus-visible:ring-red-500 placeholder:text-red-200"
-                    : "text-emerald-600 focus-visible:ring-emerald-500 placeholder:text-emerald-200"
+                    ? "text-error focus-visible:ring-red-500 placeholder:text-red-200"
+                    : "text-success focus-visible:ring-emerald-500 placeholder:text-emerald-200"
                 )}
               />
             </div>
@@ -198,10 +198,10 @@ export function AddRecordDialog({
                       // 选中样式 (根据收支类型变色)
                       isSelected &&
                         type === "expense" &&
-                        "bg-emerald-600 border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
+                        "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
                       isSelected &&
                         type === "income" &&
-                        "bg-red-600 border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1"
+                        "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1"
                     )}
                   >
                     {isSelected && <Check className="h-3 w-3" />}
@@ -231,8 +231,8 @@ export function AddRecordDialog({
             className={cn(
               "w-full text-white shadow-sm transition-all active:scale-[0.98]",
               type === "income"
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-emerald-600 hover:bg-emerald-700"
+                ? "bg-error hover:bg-red-700"
+                : "bg-success hover:bg-success"
             )}
           >
             {isSubmitting ? (

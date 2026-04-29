@@ -48,7 +48,7 @@ export function formatPrice(price?: number | null): string {
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     签约中: "bg-primary",
-    装修中: "bg-orange-500",
+    装修中: "bg-status-renovating",
     在售: "bg-green-500",
     已成交: "bg-purple-500",
     已结束: "bg-gray-500",

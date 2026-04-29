@@ -127,7 +127,7 @@ export function TimelineItem({
         {isCompleted ? (
           <CheckCircle2 className="h-6 w-6 text-green-500 fill-green-50" />
         ) : isCurrent ? (
-          <CircleDot className="h-6 w-6 text-orange-500 animate-pulse" />
+          <CircleDot className="h-6 w-6 text-status-renovating animate-pulse" />
         ) : (
           <Circle className="h-6 w-6 text-slate-300" />
         )}

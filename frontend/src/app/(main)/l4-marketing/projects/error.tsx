@@ -20,8 +20,8 @@ export default function MarketingProjectsError({ error, reset }: ErrorProps) {
     <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-card rounded-xl shadow-lg border border-border p-8 text-center">
         {/* Error Icon */}
-        <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
-          <AlertCircle className="h-8 w-8 text-red-500" />
+        <div className="mx-auto w-16 h-16 bg-error-container rounded-full flex items-center justify-center mb-6">
+          <AlertCircle className="h-8 w-8 text-error" />
         </div>
 
         {/* Error Title */}

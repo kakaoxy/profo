@@ -161,7 +161,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full transition-all"
+                        className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full transition-all"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -177,7 +177,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                         <AlertDialogCancel>取消</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => onDelete(lead.id)}
-                          className="bg-red-600 hover:bg-red-700"
+                          className="bg-error hover:bg-red-700"
                         >
                           确认删除
                         </AlertDialogAction>

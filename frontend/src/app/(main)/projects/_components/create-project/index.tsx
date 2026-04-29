@@ -95,7 +95,7 @@ export function CreateProjectDialog({
                   variant="ghost"
                   size="sm"
                   onClick={clearDraft}
-                  className="h-8 text-xs text-muted-foreground hover:text-red-600"
+                  className="h-8 text-xs text-muted-foreground hover:text-error"
                 >
                   <Trash2 className="mr-1 h-3 w-3" />
                   清空

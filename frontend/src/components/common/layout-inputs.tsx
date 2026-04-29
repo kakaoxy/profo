@@ -111,7 +111,7 @@ export function LayoutInputs({
     default: {
       container: "space-y-1.5",
       label: "text-[10px] font-bold text-muted-foreground ml-1",
-      required: "text-red-500",
+      required: "text-error",
       inputWrapper: "relative flex-1",
       input:
         "w-full h-11 px-3 border rounded-lg bg-background text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20",

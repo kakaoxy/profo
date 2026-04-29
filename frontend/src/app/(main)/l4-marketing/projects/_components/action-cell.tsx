@@ -84,7 +84,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+              className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full"
               onClick={handleClick}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -105,7 +105,7 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
                   handleDelete();
                 }}
                 disabled={isDeleting}
-                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                className="bg-error hover:bg-red-700 focus:ring-red-600"
               >
                 {isDeleting ? "删除中..." : "确认删除"}
               </AlertDialogAction>

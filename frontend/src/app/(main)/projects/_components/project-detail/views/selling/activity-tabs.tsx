@@ -55,7 +55,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+          className="h-8 border-emerald-200 text-emerald-700 hover:bg-success-container hover:text-emerald-800"
           onClick={() => setIsDialogOpen(true)}
         >
           <Plus className="h-3.5 w-3.5 mr-1" />
