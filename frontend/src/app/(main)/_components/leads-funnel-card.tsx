@@ -27,7 +27,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
       </span>
 
       <div className="flex-1 flex items-center gap-1 min-w-0 overflow-hidden">
-        {stages.map((stage, index) => {
+        {stages.map((stage) => {
           const widthPercent = (stage.value / maxValue) * 100;
           const minWidth = stage.value > 0 ? 8 : 0;
 

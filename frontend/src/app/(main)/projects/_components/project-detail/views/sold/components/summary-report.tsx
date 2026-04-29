@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Quote, Copy, Check } from "lucide-react";
 import { Project } from "../../../../../types";
@@ -15,7 +15,7 @@ interface SummaryReportProps {
 export function SummaryReport({ project }: SummaryReportProps) {
   const [copied, setCopied] = useState(false);
   // 使用函数式初始化，避免 SSR 和客户端时间不一致导致的 hydration 错误
-  const [today, setToday] = useState<Date>(() => new Date());
+  const [today] = useState<Date>(() => new Date());
 
   const netProfit = Number(project.net_cash_flow) || 0;
   const roi = Number(project.roi) || 0;

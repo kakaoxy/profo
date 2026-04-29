@@ -58,6 +58,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
     };
 
     fetchConsultants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 更新选中顾问的显示名称

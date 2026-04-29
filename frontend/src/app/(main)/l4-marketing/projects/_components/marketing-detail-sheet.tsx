@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, memo, lazy, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -48,6 +48,7 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
     if (initialProject) {
       setProject(initialProject);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProject?.id]);
 
   // 加载详情数据（带请求去重）
@@ -99,6 +100,7 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
       setIsLoading(false);
       isFetchingRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 当模态框打开时加载数据

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useTransition, useRef, useCallback } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { Lead, FilterState, LeadStatus, LeadTabValue } from "../types";
+import { Lead, FilterState, LeadTabValue } from "../types";
 import { getLeadsAction } from "../actions";
 
 export function useLeadsFilter(initialLeads: Lead[]) {

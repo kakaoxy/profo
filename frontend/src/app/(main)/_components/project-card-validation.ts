@@ -3,7 +3,7 @@
  */
 
 import { toNumber } from "@/lib/number-utils";
-import type { ApiSalesRecord, ValidRecordType, TransformedSalesRecord, isValidRecordType } from "./project-card-types";
+import type { ApiSalesRecord, TransformedSalesRecord } from "./project-card-types";
 
 /**
  * 验证并转换销售记录

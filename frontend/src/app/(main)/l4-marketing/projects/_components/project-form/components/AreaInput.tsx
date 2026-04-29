@@ -33,6 +33,7 @@ export function AreaInput({ value, onChange }: AreaInputProps) {
     } else if (value === undefined || value === null) {
       setInputValue("");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

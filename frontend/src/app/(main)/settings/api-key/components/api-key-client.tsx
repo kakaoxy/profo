@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { ApiKeyInfoResponse, ApiKeyCreateResponse } from "../actions";
 import { ApiKeyEmptyState } from "./api-key-empty-state";
 import { ApiKeyDisplay } from "./api-key-display";

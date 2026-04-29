@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition, useCallback, useEffect } from "react";
+import { useState, useMemo, useTransition, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "../columns";
 import { L4MarketingProject } from "@/app/(main)/l4-marketing/projects/types";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
-import { Pagination } from "./pagination";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
@@ -73,7 +72,7 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   const [activeTab, setActiveTab] = useState<keyof typeof STATUS_FILTER_MAP>(initialTab);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [layoutFilter, setLayoutFilter] = useState(initialLayout);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const [selectedProject, setSelectedProject] = useState<L4MarketingProject | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -107,7 +106,9 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     router.push(`/l4-marketing/projects?${params.toString()}`);
   }, [searchParams, router]);
 
-  const handlePageChange = useCallback((page: number) => {
+  // _handlePageChange 保留供将来使用
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handlePageChange = useCallback((page: number) => {
     if (page < 1 || page > totalPages || page === currentPage) return;
 
     const params = new URLSearchParams(searchParams.toString());

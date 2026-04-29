@@ -28,7 +28,6 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
     url = getUploadUrl(),
     maxSize = DEFAULT_MAX_FILE_SIZE,
     allowedTypes = DEFAULT_ALLOWED_IMAGE_TYPES,
-    multiple = true,
     maxCount,
     validateFile: customValidate,
     beforeUpload,

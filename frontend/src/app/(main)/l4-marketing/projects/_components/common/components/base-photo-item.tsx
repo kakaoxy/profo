@@ -159,6 +159,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
 
             {/* 实际图片 */}
             {optimizedUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={optimizedUrl}
                 alt={photo.description || `照片 #${photo.id}`}

@@ -2,7 +2,6 @@
 
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Pencil,
@@ -50,7 +49,7 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
         <div className="flex items-center gap-2">
           <Link
             href={`/l4-marketing/projects/${project.id}/edit`}
-            onClick={(e) => {
+            onClick={() => {
               onClose();
             }}
           >

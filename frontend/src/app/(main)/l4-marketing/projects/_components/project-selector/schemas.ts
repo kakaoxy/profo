@@ -62,9 +62,9 @@ export const ProjectQueryParamsSchema = z.object({
   page_size: z.number(),
 });
 
-// 类型推断导出
-type L3ProjectBrief = z.infer<typeof L3ProjectBriefSchema>;
-type L3ProjectListResponse = z.infer<typeof L3ProjectListResponseSchema>;
-type ImportableMedia = z.infer<typeof ImportableMediaSchema>;
-type ImportPreviewData = z.infer<typeof ImportPreviewDataSchema>;
-type ProjectQueryParams = z.infer<typeof ProjectQueryParamsSchema>;
+// 类型推断导出 - 保留供将来使用
+// type L3ProjectBrief = z.infer<typeof L3ProjectBriefSchema>;
+// type L3ProjectListResponse = z.infer<typeof L3ProjectListResponseSchema>;
+// type ImportableMedia = z.infer<typeof ImportableMediaSchema>;
+// type ImportPreviewData = z.infer<typeof ImportPreviewDataSchema>;
+// type ProjectQueryParams = z.infer<typeof ProjectQueryParamsSchema>;

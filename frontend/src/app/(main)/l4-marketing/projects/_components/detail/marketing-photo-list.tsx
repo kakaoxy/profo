@@ -22,7 +22,7 @@ export const MarketingPhotoList = memo(function MarketingPhotoList({
   onDelete,
 }: MarketingPhotoListProps) {
   // 性能监控
-  const { metrics } = usePerformanceMonitor("MarketingPhotoList", {
+  usePerformanceMonitor("MarketingPhotoList", {
     enableFPS: false,
     logToConsole: false,
   });

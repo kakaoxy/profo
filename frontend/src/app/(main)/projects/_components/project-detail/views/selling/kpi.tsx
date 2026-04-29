@@ -141,6 +141,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
         latest: latestTalkText,
       },
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.sales_records]);
 
   return (

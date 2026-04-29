@@ -5,8 +5,6 @@ import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
 import {
-  CashFlowRecordRaw,
-  CashFlowSummaryRaw,
   CashFlowApiResponse,
   TransactionType,
 } from "./types";

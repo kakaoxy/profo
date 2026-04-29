@@ -56,7 +56,7 @@ export async function fetchClient() {
 
       // 尝试清除过期的cookies
       try {
-        const cookieStore = await cookies();
+        await cookies();
         // 注意：Server Component中无法直接删除cookie，需要后续处理
         console.log("🔁 [Server] 请清除过期的登录状态");
       } catch {

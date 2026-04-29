@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowUpDown, FolderOpen } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -21,10 +20,7 @@ import {
 import { ImageUploader } from "../../_components/photo-manager";
 import { useImageUpload } from "../../_components/photo-manager";
 
-// 计算下一个排序值的工具函数
-function getNextSortOrder(photos: L4MarketingMedia[]): number {
-  return photos.length;
-}
+
 
 interface PhotoManagerProps {
   l3ProjectId?: string | null;

@@ -51,7 +51,11 @@ export function MonitorSheet() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // 使用 requestAnimationFrame 避免同步 setState 导致的级联渲染
+    const rafId = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   const monitorId = searchParams.get("monitor_id");

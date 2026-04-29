@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 
 // 图片加载状态
 export type ImageLoadStatus = "idle" | "loading" | "loaded" | "error";

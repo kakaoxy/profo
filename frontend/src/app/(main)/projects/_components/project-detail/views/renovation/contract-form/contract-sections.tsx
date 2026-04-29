@@ -4,7 +4,6 @@ import {
   Building2,
   Calendar,
   HardHat,
-  Sofa,
   Receipt,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";

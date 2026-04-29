@@ -11,10 +11,6 @@ interface Props {
   onImagesChange?: (images: string[]) => void;
 }
 
-const isLocalDevUrl = (url: string): boolean => {
-  return url.includes('127.0.0.1') || url.includes('localhost');
-};
-
 export const ImagesTab: React.FC<Props> = ({ images, onImagesChange }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

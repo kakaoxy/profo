@@ -16,7 +16,9 @@ export function PriceSidebar({
   projectId,
   totalPrice,
   unitPrice,
-  area,
+  // area 保留供未来使用
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  area: _area,
 }: PriceSidebarProps) {
   return (
     <div className="lg:sticky lg:top-28 space-y-6">

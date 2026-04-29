@@ -35,7 +35,7 @@ export function GenerateDialog({ open, onOpenChange, onSuccess }: GenerateDialog
       } else {
         setError(result.message || "生成失败");
       }
-    } catch (err) {
+    } catch {
       setError("网络错误，请稍后重试");
     } finally {
       setLoading(false);

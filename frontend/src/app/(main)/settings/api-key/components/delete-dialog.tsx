@@ -36,7 +36,7 @@ export function DeleteDialog({ open, onOpenChange, onSuccess, apiKeyPrefix }: De
       } else {
         setError(result.message || "删除失败");
       }
-    } catch (err) {
+    } catch {
       setError("网络错误，请稍后重试");
     } finally {
       setLoading(false);

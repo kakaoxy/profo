@@ -161,7 +161,7 @@ export function usePhotoDragAndDrop({
     async (
       activePhoto: L4MarketingMedia,
       targetContainer: string,
-      overId: number | string
+      _overId: number | string // eslint-disable-line @typescript-eslint/no-unused-vars
     ) => {
       const isMovingToMarketing = targetContainer === CONTAINER_MARKETING;
       const targetStage = isMovingToMarketing

@@ -24,7 +24,11 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
-    setToday(new Date());
+    // 使用 requestAnimationFrame 避免同步 setState 导致的级联渲染
+    const rafId = requestAnimationFrame(() => {
+      setToday(new Date());
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   // 1. 计算倒计时

@@ -113,6 +113,7 @@ export function HeroGallery({
       <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-xl group">
         {!shouldShowMainPlaceholder ? (
           isDev ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={getFileUrl(mainImage!)}
               alt="Primary view"
@@ -143,6 +144,7 @@ export function HeroGallery({
         {!shouldShowSecondaryPlaceholder0 ? (
           <div className="relative overflow-hidden rounded-xl group">
             {isDev ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={getFileUrl(secondaryImages[0]!)}
                 alt="Interior"
@@ -166,6 +168,7 @@ export function HeroGallery({
         {!shouldShowSecondaryPlaceholder1 ? (
           <div className="relative overflow-hidden rounded-xl group">
             {isDev ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={getFileUrl(secondaryImages[1]!)}
                 alt="Kitchen"
