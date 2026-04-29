@@ -70,8 +70,8 @@ export function TrendChart({ data }: TrendChartProps) {
     );
   }, [data]);
 
-  const COLOR_INCOME = colors.negative;
-  const COLOR_EXPENSE = colors.positive;
+  const COLOR_INCOME = colors.positive;
+  const COLOR_EXPENSE = colors.negative;
 
   return (
     <Card className="shadow-none border-0 bg-transparent">
