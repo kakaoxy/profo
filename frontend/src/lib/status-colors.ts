@@ -91,6 +91,20 @@ export const defaultStatusClass = "bg-muted text-muted-foreground";
  * 获取状态标签
  */
 export function getStatusLabel(status: StatusType | string): string {
+  // 线索状态字符串映射
+  const leadStatusLabelMap: Record<string, string> = {
+    pending_assessment: "待评估",
+    pending_visit: "待看房",
+    visited: "已看房",
+    signed: "已签约",
+    rejected: "已驳回",
+  };
+
+  // 如果是线索状态字符串，直接返回中文标签
+  if (status in leadStatusLabelMap) {
+    return leadStatusLabelMap[status];
+  }
+
   return STATUS_CONFIG[status as StatusType]?.label || status;
 }
 
