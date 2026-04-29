@@ -142,19 +142,19 @@ const MenuButton = React.forwardRef<
       className={`
         rounded-lg px-3 py-2.5 transition-all duration-200
         ${isActive
-          ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-medium shadow-sm"
-          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
+          ? "bg-muted text-foreground font-medium shadow-sm"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }
       `}
       {...props}
     >
       <Icon
-        className={`h-5 w-5 ${isActive ? "text-slate-800 dark:text-white" : "text-slate-500 dark:text-slate-400"}`}
+        className={`h-5 w-5 ${isActive ? "text-foreground" : "text-muted-foreground"}`}
         strokeWidth={isActive ? 2 : 1.5}
       />
       <span className="text-sm tracking-tight">{item.title}</span>
       {state === "expanded" && hasSubmenu && (
-        <ChevronRight className="ml-auto h-4 w-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+        <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
       )}
     </SidebarMenuButton>
   );
@@ -198,22 +198,22 @@ export function AppSidebar({ user }: { user: User | null }) {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl"
+      className="border-r-0 bg-card/80 backdrop-blur-xl"
     >
       {/* Apple-style Header */}
-      <SidebarHeader className="border-b border-slate-200/60 dark:border-slate-800/60">
+      <SidebarHeader className="border-b border-border">
         <div className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}>
           {state === "expanded" ? (
             <div className="flex items-center gap-2.5 transition-all">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 font-bold text-xs shadow-sm">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-linear-to-br from-slate-800 to-slate-600 text-white font-bold text-xs shadow-sm">
                 P
               </div>
-              <span className="truncate font-semibold text-[15px] text-slate-800 dark:text-white tracking-tight">
+              <span className="truncate font-semibold text-[15px] text-foreground tracking-tight">
                 Profo
               </span>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-slate-800 to-slate-600 dark:from-white dark:to-slate-200 text-white dark:text-slate-900 font-bold text-xs shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-slate-800 to-slate-600 text-white font-bold text-xs shadow-sm">
               P
             </div>
           )}
@@ -242,9 +242,9 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <HoverCardContent
                           side="right"
                           align="start"
-                          className="min-w-52 p-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl rounded-xl z-100"
+                          className="min-w-52 p-1.5 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-xl z-100"
                         >
-                          <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                          <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                             {item.title}
                           </div>
                           <div className="flex flex-col gap-1 mt-1">
@@ -255,8 +255,8 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 className={`
                                   block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
                                   ${pathname === sub.url
-                                    ? "bg-slate-100 dark:bg-slate-800 font-medium text-slate-900 dark:text-white"
-                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white"
+                                    ? "bg-muted font-medium text-foreground"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                   }
                                 `}
                               >
@@ -290,7 +290,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub className="ml-5 mt-1 border-l border-slate-200/60 dark:border-slate-700/60 pl-3 space-y-1">
+                        <SidebarMenuSub className="ml-5 mt-1 border-l border-border pl-3 space-y-1">
                           {item.items!.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
@@ -299,8 +299,8 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 className={`
                                   rounded-md px-3 py-2 text-sm transition-all duration-150
                                   ${pathname === subItem.url
-                                    ? "bg-slate-100/80 dark:bg-slate-800/80 text-slate-900 dark:text-white font-medium"
-                                    : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white"
+                                    ? "bg-muted text-foreground font-medium"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                                   }
                                 `}
                               >
@@ -328,51 +328,51 @@ export function AppSidebar({ user }: { user: User | null }) {
       </SidebarContent>
 
       {/* Apple-style Footer */}
-      <SidebarFooter className={`border-t border-slate-200/60 dark:border-slate-800/60 ${state === "collapsed" ? "px-0 py-2" : "p-2"}`}>
+      <SidebarFooter className={`border-t border-border ${state === "collapsed" ? "px-0 py-2" : "p-2"}`}>
         {/* 折叠/展开按钮 */}
-        <div className={`pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-800/60 flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}>
-          <SidebarTrigger className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white h-8 w-8 rounded-lg hover:bg-slate-100/80 dark:hover:bg-slate-800/50 transition-colors" />
+        <div className={`pb-2 mb-2 border-b border-border flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}>
+          <SidebarTrigger className="text-muted-foreground hover:text-foreground h-8 w-8 rounded-lg hover:bg-muted transition-colors" />
         </div>
         {/* 用户头像 */}
         <div className={state === "collapsed" ? "flex justify-center" : ""}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex items-center rounded-xl py-2 hover:bg-slate-100/80 dark:hover:bg-slate-800/50 transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
+                className={`flex items-center rounded-xl py-2 hover:bg-muted transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
               >
-                <Avatar className="h-8 w-8 rounded-full ring-2 ring-slate-200/60 dark:ring-slate-700/60 shrink-0">
+                <Avatar className="h-8 w-8 rounded-full ring-2 ring-border shrink-0">
                   <AvatarImage
                     src={user?.avatar || ""}
                     alt={user?.username}
                   />
-                  <AvatarFallback className="rounded-full bg-linear-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium">
+                  <AvatarFallback className="rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-slate-700 text-xs font-medium">
                     {user?.username?.slice(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
                 {state === "expanded" && (
                   <>
                     <div className="grid flex-1 text-left leading-tight">
-                      <span className="truncate font-medium text-[13px] text-slate-800 dark:text-white">
+                      <span className="truncate font-medium text-[13px] text-foreground">
                         {user?.nickname || user?.username}
                       </span>
-                      <span className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="truncate text-[11px] text-muted-foreground">
                         {user?.role?.name || "管理员"}
                       </span>
                     </div>
-                    <MoreHorizontal className="ml-auto h-4 w-4 text-slate-400 dark:text-slate-500" />
+                    <MoreHorizontal className="ml-auto h-4 w-4 text-muted-foreground" />
                   </>
                 )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="min-w-52 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 shadow-xl p-1"
+              className="min-w-52 rounded-xl bg-card/95 backdrop-blur-xl border border-border shadow-xl p-1"
               side={isMobile ? "bottom" : "right"}
               align="end"
               sideOffset={8}
             >
-              <div className="px-2.5 py-2 border-b border-slate-100 dark:border-slate-800 mb-1">
-                <p className="text-[13px] font-medium text-slate-800 dark:text-white">{user?.nickname || user?.username}</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">{user?.role?.name || "管理员"}</p>
+              <div className="px-2.5 py-2 border-b border-border mb-1">
+                <p className="text-[13px] font-medium text-foreground">{user?.nickname || user?.username}</p>
+                <p className="text-[11px] text-muted-foreground">{user?.role?.name || "管理员"}</p>
               </div>
               <DropdownMenuSeparator className="hidden" />
               <DropdownMenuItem

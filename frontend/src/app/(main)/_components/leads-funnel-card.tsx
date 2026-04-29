@@ -21,8 +21,8 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
     total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
-    <div className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-card p-5 h-40 flex flex-col min-w-0">
-      <span className="text-xs text-slate-400 font-black uppercase tracking-widest block mb-2">
+    <div className="col-span-12 lg:col-span-6 bg-card rounded-xl border border-border shadow-card p-5 h-40 flex flex-col min-w-0">
+      <span className="text-xs text-muted-foreground font-black uppercase tracking-widest block mb-2">
         线索漏斗
       </span>
 
@@ -45,16 +45,16 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
         })}
       </div>
 
-      <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+      <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
         <div className="flex items-center gap-4">
-          <span className="text-xs text-slate-500">
-            总线索: <span className="font-bold text-slate-700">{total}</span>
+          <span className="text-xs text-muted-foreground">
+            总线索: <span className="font-bold text-foreground">{total}</span>
           </span>
-          <span className="text-xs text-slate-500 hidden sm:inline">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
             签约: <span className="font-bold text-primary">{signed}</span>
           </span>
         </div>
-        <span className="text-xs font-bold text-slate-700">
+        <span className="text-xs font-bold text-foreground">
           转化率: {total > 0 ? ((signed / total) * 100).toFixed(1) : 0}%
         </span>
       </div>
