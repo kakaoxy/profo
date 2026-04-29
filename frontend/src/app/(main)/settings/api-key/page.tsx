@@ -11,7 +11,7 @@ export default async function ApiKeyPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
-          <KeyRound className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+          <KeyRound className="h-5 w-5 text-muted-foreground" />
         </div>
         <div>
           <h2 className="text-2xl font-bold tracking-tight">API Key 管理</h2>
@@ -24,7 +24,7 @@ export default async function ApiKeyPage() {
       {/* Content */}
       <Suspense
         fallback={
-          <div className="flex items-center justify-center h-64 rounded-xl border border-slate-200 dark:border-slate-800 bg-muted/50 /50">
+          <div className="flex items-center justify-center h-64 rounded-xl border border-border bg-muted/50">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         }
@@ -33,25 +33,25 @@ export default async function ApiKeyPage() {
       </Suspense>
 
       {/* Usage Guide */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-muted/50 /50 p-6">
+      <div className="rounded-xl border border-border bg-muted/50 p-6">
         <h3 className="text-sm font-semibold text-foreground mb-3">
           使用说明
         </h3>
-        <ul className="space-y-2 text-sm text-muted-foreground dark:text-muted-foreground">
+        <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-start gap-2">
-            <span className="text-muted-foreground">•</span>
+            <span>•</span>
             <span>API Key 用于程序化访问系统接口，请妥善保管，不要泄露给他人</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-muted-foreground">•</span>
+            <span>•</span>
             <span>每个用户只能拥有一个有效的 API Key，生成新 Key 会自动撤销旧 Key</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-muted-foreground">•</span>
-            <span>在请求头中添加 <code className="px-1.5 py-0.5 rounded bg-muted dark:bg-slate-700 font-mono text-xs">X-API-Key: your-api-key</code> 进行认证</span>
+            <span>•</span>
+            <span>在请求头中添加 <code className="px-1.5 py-0.5 rounded bg-muted font-mono text-xs">X-API-Key: your-api-key</code> 进行认证</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-muted-foreground">•</span>
+            <span>•</span>
             <span>完整的 API Key 仅在生成时显示一次，请务必及时复制保存</span>
           </li>
         </ul>

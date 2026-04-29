@@ -187,7 +187,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       </Card>
 
       {/* 2. 出价卡片 (浅灰主题 - 中性) */}
-      <Card className="shadow-sm border-slate-200 bg-muted/50">
+      <Card className="shadow-sm border-border bg-muted/50">
         <CardContent className="p-4 relative">
           <Tag className="absolute top-4 right-4 h-4 w-4 text-muted-foreground opacity-50" />
           <div className="text-xs text-muted-foreground font-medium">
@@ -202,7 +202,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
           <div className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
             <Gavel className="h-3 w-3" />
             最高:{" "}
-            <span className="font-bold text-slate-700">
+            <span className="font-bold text-foreground">
               ¥{stats.bids.max}万
             </span>
           </div>
@@ -210,9 +210,9 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
       </Card>
 
       {/* 3. 面谈卡片 (浅黄主题 - 机会) */}
-      <Card className="shadow-sm border-orange-100 bg-status-renovating/10/30">
+      <Card className="shadow-sm border-status-pending/20 bg-status-pending/10">
         <CardContent className="p-4 relative">
-          <Calendar className="absolute top-4 right-4 h-4 w-4 text-orange-400 opacity-50" />
+          <Calendar className="absolute top-4 right-4 h-4 w-4 text-status-pending opacity-50" />
           <div className="text-xs text-status-renovating font-medium">
             本周面谈
           </div>

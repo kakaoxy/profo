@@ -26,21 +26,21 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
     const statusConfig: Record<string, { label: string; className: string }> = {
       active: {
         label: "正常",
-        className: "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300",
+        className: "bg-success/20 text-success",
       },
       revoked: {
         label: "已撤销",
-        className: "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
+        className: "bg-destructive/20 text-destructive",
       },
       expired: {
         label: "已过期",
-        className: "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300",
+        className: "bg-status-pending/20 text-status-pending",
       },
     };
 
     const config = statusConfig[status] || {
       label: status,
-      className: "bg-muted text-slate-700 dark:text-slate-300",
+      className: "bg-muted text-foreground",
     };
 
     return (
@@ -54,7 +54,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
   const maskedKey = `${apiKeyInfo.prefix}••••••••••••••••••••••••`;
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800">
+    <Card className="border-border">
       <CardHeader className="pb-4">
         <CardTitle className="text-base font-semibold flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
               <Calendar className="h-3 w-3" />
               创建时间
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
+            <p className="text-sm text-foreground">
               {formatDate(apiKeyInfo.created_at)}
             </p>
           </div>
@@ -96,7 +96,7 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
               <Activity className="h-3 w-3" />
               最后使用
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
+            <p className="text-sm text-foreground">
               {formatDate(apiKeyInfo.last_used_at)}
             </p>
           </div>
@@ -105,14 +105,14 @@ export function ApiKeyCard({ apiKeyInfo, onDelete }: ApiKeyCardProps) {
               <Clock className="h-3 w-3" />
               过期时间
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
+            <p className="text-sm text-foreground">
               {apiKeyInfo.expires_at ? formatDate(apiKeyInfo.expires_at) : "永不过期"}
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex justify-end pt-4 border-t border-border">
           <Button
             onClick={onDelete}
             variant="outline"

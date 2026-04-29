@@ -22,7 +22,7 @@ interface StatusCardProps {
 
 function StatusCard({ label, badge, color }: StatusCardProps) {
   const bgClass = color === "green" ? "bg-success-container" : "bg-muted";
-  const borderClass = color === "green" ? "border-emerald-100" : "border-slate-100";
+  const borderClass = color === "green" ? "border-success/20" : "border-border";
 
   return (
     <div className={`rounded-lg p-4 ${bgClass} border ${borderClass}`}>
@@ -42,7 +42,7 @@ function ConfigItem({ label, value }: ConfigItemProps) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-slate-700">{value}</span>
+      <span className="text-sm font-medium text-foreground">{value}</span>
     </div>
   );
 }
@@ -90,8 +90,8 @@ export const BasicConfigSection = memo(function BasicConfigSection({
   return (
     <div className="space-y-4">
       {/* 房源状态区域 */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4">
-        <h3 className="text-sm font-medium text-slate-700 mb-3">房源状态</h3>
+      <div className="bg-card rounded-lg border border-border p-4">
+        <h3 className="text-sm font-medium text-foreground mb-3">房源状态</h3>
         <div className="grid grid-cols-2 gap-4">
           {/* 发布状态 */}
           <StatusCard
@@ -124,8 +124,8 @@ export const BasicConfigSection = memo(function BasicConfigSection({
       </div>
 
       {/* 管理配置区域 */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4">
-        <h3 className="text-sm font-medium text-slate-700 mb-3">管理配置</h3>
+      <div className="bg-card rounded-lg border border-border p-4">
+        <h3 className="text-sm font-medium text-foreground mb-3">管理配置</h3>
         <div className="grid grid-cols-4 gap-4">
           <ConfigItem
             label="排序权重"
