@@ -11,25 +11,25 @@ export function TimeMonitorDisplay({ timeMonitor }: TimeMonitorDisplayProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+        <h3 className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">
           <Clock className="w-4 h-4 text-orange-500" />
           时间成本监控 (Time Bomb)
         </h3>
-        <span className="text-xs font-bold text-slate-400">
+        <span className="text-xs font-bold text-muted-foreground">
           进度: {timeMonitor.progress}%
         </span>
       </div>
 
-      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
         <div
-          className="h-full bg-linear-to-r from-indigo-500 via-orange-400 to-rose-500 transition-all duration-1000"
+          className="h-full bg-linear-to-r from-primary via-orange-400 to-rose-500 transition-all duration-1000"
           style={{ width: `${timeMonitor.progress}%` }}
         />
       </div>
 
       <div className="flex justify-between items-center gap-4">
-        <div className="flex-1 p-2.5 bg-white border border-slate-100 rounded-lg shadow-sm">
-          <p className="text-[10px] text-slate-400 font-bold mb-1">
+        <div className="flex-1 p-2.5 bg-card border border-border rounded-lg shadow-sm">
+          <p className="text-[10px] text-muted-foreground font-bold mb-1">
             免租期余额
           </p>
           <p className="text-sm font-black text-rose-600">

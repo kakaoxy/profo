@@ -26,10 +26,10 @@ export const LeadAuditPanel: React.FC<LeadAuditPanelProps> = ({
   const [evalPrice, setEvalPrice] = useState<number | "">("");
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      <div className="p-4 border-b bg-slate-50 flex items-center gap-2">
-        <Gavel className="h-4 w-4 text-slate-600" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+    <div className="bg-card rounded-2xl shadow-xl border border-border overflow-hidden">
+      <div className="p-4 border-b bg-muted flex items-center gap-2">
+        <Gavel className="h-4 w-4 text-muted-foreground" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
           管理决策终端
         </span>
       </div>
@@ -83,19 +83,19 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
   <div className="space-y-5">
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-1.5">
-        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+        <label className="text-[10px] font-black text-muted-foreground uppercase ml-1">
           拟收房评估价 (万)
         </label>
         <input
           type="number"
-          className="w-full h-11 px-4 border rounded-xl font-bold text-emerald-600 focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full h-11 px-4 border rounded-xl font-bold text-emerald-600 focus:ring-2 focus:ring-primary/20"
           placeholder="输入评估价..."
           value={evalPrice}
           onChange={(e) => onEvalPriceChange(Number(e.target.value))}
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">
+        <label className="text-[10px] font-black text-muted-foreground uppercase ml-1">
           评估意见摘要
         </label>
         <input
@@ -122,7 +122,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
       </Button>
       <Button
         variant="outline"
-        className="h-12 rounded-xl border-slate-200 text-slate-500 hover:bg-slate-50 font-bold"
+        className="h-12 rounded-xl border-border text-muted-foreground hover:bg-muted font-bold"
         onClick={() =>
           onAudit(lead.id, LeadStatus.REJECTED, undefined, auditReason)
         }
@@ -179,7 +179,7 @@ const VisitedPanel: React.FC<VisitedPanelProps> = ({ lead, onAudit }) => (
       </div>
     </div>
     <Button
-      className="w-full h-12 rounded-xl bg-indigo-900 hover:bg-black font-bold shadow-xl flex items-center gap-2"
+      className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-bold shadow-xl flex items-center gap-2"
       onClick={() => onAudit(lead.id, LeadStatus.SIGNED)}
     >
       <FileCheck className="h-4 w-4" /> 确认合同签署并收房
@@ -192,8 +192,8 @@ const SignedPanel: React.FC = () => (
     <div className="inline-flex h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 items-center justify-center mb-3">
       <CheckCircle2 className="h-6 w-6" />
     </div>
-    <h4 className="font-black text-slate-900">恭喜！已完成资产收储</h4>
-    <p className="text-xs text-slate-500 mt-1">
+    <h4 className="font-black text-foreground">恭喜！已完成资产收储</h4>
+    <p className="text-xs text-muted-foreground mt-1">
       该房源已进入&quot;工程翻新&quot;阶段
     </p>
   </div>
@@ -204,11 +204,11 @@ interface RejectedPanelProps {
 }
 
 const RejectedPanel: React.FC<RejectedPanelProps> = ({ auditReason }) => (
-  <div className="bg-slate-50 border p-4 rounded-xl">
-    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+  <div className="bg-muted border p-4 rounded-xl">
+    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
       驳回原因
     </p>
-    <p className="text-sm italic text-slate-600">
+    <p className="text-sm italic text-muted-foreground">
       &quot;{auditReason || "未填写具体原因"}&quot;
     </p>
   </div>
