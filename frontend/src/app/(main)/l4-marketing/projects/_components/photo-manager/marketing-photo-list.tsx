@@ -33,7 +33,7 @@ export function MarketingPhotoList({
         <h4 className="text-sm font-semibold text-primary">
           营销照片 ({photos.length})
         </h4>
-        <span className="text-xs text-[#707785]">可拖拽到右侧</span>
+        <span className="text-xs text-muted-foreground">可拖拽到右侧</span>
       </div>
 
       <div
@@ -50,9 +50,9 @@ export function MarketingPhotoList({
         <SortableContext items={photoIds} strategy={verticalListSortingStrategy}>
           {photos.length === 0 ? (
             <div className="flex items-center justify-center h-full py-8">
-              <div className="text-center text-[#707785] text-sm pointer-events-none">
+              <div className="text-center text-muted-foreground text-sm pointer-events-none">
                 暂无营销照片
-                <p className="text-xs mt-1 text-[#707785]/60">
+                <p className="text-xs mt-1 text-muted-foreground/60">
                   可将改造照片拖拽到此处
                 </p>
               </div>

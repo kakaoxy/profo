@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -15,6 +16,7 @@ import {
 } from "recharts";
 import type { TrendData } from "../../../actions/monitor-lib/types";
 import type { PriceRange } from "./chart-config";
+import { getChartColors } from "@/lib/chart-colors";
 
 interface PriceChartProps {
   data: TrendData[];
@@ -23,6 +25,8 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
+  const colors = useMemo(() => getChartColors(), []);
+
   return (
     <div className="h-[400px] w-full mt-4">
       <ResponsiveContainer width="100%" height="100%">
@@ -30,26 +34,26 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
           <CartesianGrid
             strokeDasharray="3 3"
             vertical={false}
-            stroke="#f1f5f9"
+            stroke={colors.gridSubtle}
           />
           <XAxis
             dataKey="month"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#94a3b8", fontSize: 12 }}
+            tick={{ fill: colors.label, fontSize: 12 }}
           />
           <YAxis
             yAxisId="left"
             orientation="left"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#94a3b8", fontSize: 12 }}
+            tick={{ fill: colors.label, fontSize: 12 }}
             domain={[priceRange.min, priceRange.max]}
             label={{
               value: "单价 (元/㎡)",
               angle: -90,
               position: "insideLeft",
-              style: { fill: "#94a3b8", fontSize: 12 },
+              style: { fill: colors.label, fontSize: 12 },
             }}
           />
           <YAxis
@@ -57,13 +61,13 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
             orientation="right"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#94a3b8", fontSize: 12 }}
+            tick={{ fill: colors.label, fontSize: 12 }}
             domain={[0, "auto"]}
             label={{
               value: "成交量 (套)",
               angle: 90,
               position: "insideRight",
-              style: { fill: "#94a3b8", fontSize: 12 },
+              style: { fill: colors.label, fontSize: 12 },
             }}
           />
           <Tooltip
@@ -72,7 +76,7 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
               border: "none",
               boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
             }}
-            cursor={{ stroke: "#e2e8f0", strokeWidth: 1 }}
+            cursor={{ stroke: colors.cursor, strokeWidth: 1 }}
           />
           <Legend verticalAlign="top" height={36} iconType="circle" />
 
@@ -80,7 +84,7 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
             yAxisId="right"
             dataKey="volume"
             name="成交量"
-            fill="#e2e8f0"
+            fill={colors.barBg}
             radius={[4, 4, 0, 0]}
             barSize={40}
           />
@@ -89,13 +93,13 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
             type="monotone"
             dataKey="listing_price"
             name="小区挂牌均价"
-            stroke="#6366f1"
+            stroke={colors.linePrimary}
             strokeWidth={3}
             dot={{
               r: 4,
-              fill: "#6366f1",
+              fill: colors.linePrimary,
               strokeWidth: 2,
-              stroke: "#fff",
+              stroke: colors.white,
             }}
           />
           <Line
@@ -103,13 +107,13 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
             type="monotone"
             dataKey="deal_price"
             name="小区成交均价"
-            stroke="#10b981"
+            stroke={colors.lineSecondary}
             strokeWidth={3}
             dot={{
               r: 4,
-              fill: "#10b981",
+              fill: colors.lineSecondary,
               strokeWidth: 2,
-              stroke: "#fff",
+              stroke: colors.white,
             }}
           />
 
@@ -117,14 +121,14 @@ export function PriceChart({ data, myPricing, priceRange }: PriceChartProps) {
             <ReferenceLine
               yAxisId="left"
               y={myPricing}
-              stroke="#ef4444"
+              stroke={colors.negative}
               strokeDasharray="5 5"
               strokeWidth={2}
             >
               <Label
                 value={`我的定价: ${Math.round(myPricing / 1000)}k`}
                 position="right"
-                fill="#ef4444"
+                fill={colors.negative}
                 fontSize={12}
                 fontWeight="bold"
                 offset={10}

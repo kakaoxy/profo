@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CashFlowRecord } from "../types";
+import { getChartColors } from "@/lib/chart-colors";
 
 // 动态导入 Recharts 组件，减少初始包大小
 const ResponsiveContainer = dynamic(
@@ -41,16 +42,15 @@ interface TrendChartProps {
   data: CashFlowRecord[];
 }
 
-const COLOR_INCOME = "#ef4444"; // red-500
-const COLOR_EXPENSE = "#10b981"; // emerald-500
-
 export function TrendChart({ data }: TrendChartProps) {
+  const colors = useMemo(() => getChartColors(), []);
+
   // 数据预处理：按日期聚合
   const chartData = useMemo(() => {
     const grouped = data.reduce((acc, curr) => {
       // 过滤掉没有日期的记录
       if (!curr.date) return acc;
-      
+
       const dateKey = format(parseISO(curr.date), "yyyy-MM-dd");
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, income: 0, expense: 0 };
@@ -70,6 +70,9 @@ export function TrendChart({ data }: TrendChartProps) {
     );
   }, [data]);
 
+  const COLOR_INCOME = colors.negative;
+  const COLOR_EXPENSE = colors.positive;
+
   return (
     <Card className="shadow-none border-0 bg-transparent">
       <CardHeader className="px-0 pt-0 pb-4">
@@ -86,23 +89,23 @@ export function TrendChart({ data }: TrendChartProps) {
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              stroke="#e2e8f0"
+              stroke={colors.grid}
             />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: "#64748b" }}
+              tick={{ fontSize: 10, fill: colors.label }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(val) => format(parseISO(val), "MM-dd")}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: "#64748b" }}
+              tick={{ fontSize: 10, fill: colors.label }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(val) => `¥${Math.abs(val) / 10000}w`}
             />
             <Tooltip
-              cursor={{ fill: "#f1f5f9" }}
+              cursor={{ fill: colors.gridSubtle }}
               contentStyle={{
                 borderRadius: "8px",
                 border: "none",
@@ -111,7 +114,7 @@ export function TrendChart({ data }: TrendChartProps) {
               formatter={(value) => {
                 // ValueType 可能是 string | number | readonly (string | number)[]
                 // 我们只处理数值情况
-                const numericValue = typeof value === 'number' ? value : 
+                const numericValue = typeof value === 'number' ? value :
                                     typeof value === 'string' ? parseFloat(value) : 0;
                 const val = Number.isNaN(numericValue) ? 0 : numericValue;
                 return [
@@ -120,7 +123,7 @@ export function TrendChart({ data }: TrendChartProps) {
                 ];
               }}
             />
-            <ReferenceLine y={0} stroke="#94a3b8" />
+            <ReferenceLine y={0} stroke={colors.label} />
             <Bar
               dataKey="income"
               fill={COLOR_INCOME}

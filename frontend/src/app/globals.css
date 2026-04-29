@@ -63,8 +63,13 @@
   --color-chart-positive: var(--chart-positive);
   --color-chart-negative: var(--chart-negative);
   --color-chart-grid: var(--chart-grid);
+  --color-chart-grid-subtle: var(--chart-grid-subtle);
   --color-chart-label: var(--chart-label);
   --color-chart-line-primary: var(--chart-line-primary);
+  --color-chart-line-secondary: var(--chart-line-secondary);
+  --color-chart-bar-bg: var(--chart-bar-bg);
+  --color-chart-cursor: var(--chart-cursor);
+  --color-chart-white: var(--chart-white);
 
   /* Progress Gradient Colors */
   --color-progress-start: var(--progress-start);
@@ -127,8 +132,13 @@
   --chart-positive: #10b981;
   --chart-negative: #ef4444;
   --chart-grid: #e2e8f0;
+  --chart-grid-subtle: #f1f5f9;
   --chart-label: #64748b;
-  --chart-line-primary: #005daa;
+  --chart-line-primary: #6366f1;
+  --chart-line-secondary: #10b981;
+  --chart-bar-bg: #e2e8f0;
+  --chart-cursor: #e2e8f0;
+  --chart-white: #ffffff;
 
   /* Progress Gradient Colors */
   --progress-start: var(--primary);
@@ -190,8 +200,13 @@
   --chart-positive: #34d399;
   --chart-negative: #f87171;
   --chart-grid: #334155;
+  --chart-grid-subtle: #1e293b;
   --chart-label: #94a3b8;
-  --chart-line-primary: #3b82f6;
+  --chart-line-primary: #818cf8;
+  --chart-line-secondary: #34d399;
+  --chart-bar-bg: #334155;
+  --chart-cursor: #334155;
+  --chart-white: #1e293b;
 
   /* Progress Gradient Colors - Dark Mode */
   --progress-start: var(--primary);
