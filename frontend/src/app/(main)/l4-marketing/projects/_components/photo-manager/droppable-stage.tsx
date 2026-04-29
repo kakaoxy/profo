@@ -28,12 +28,12 @@ export function DroppableStage({ id, children, isEmpty, isActive }: DroppableSta
         "min-h-[80px] p-3",
         // 空状态样式
         isEmpty && "flex items-center justify-center",
-        // 默认状态
-        !isOver && "border-[#22c55e]/30 bg-[#f0fdf4]/30",
+        // 默认状态 - 使用状态色语义 token
+        !isOver && "border-status-selling/30 bg-status-selling/10",
         // Hover 状态
-        isOver && "border-[#22c55e] bg-[#f0fdf4] ring-2 ring-[#22c55e]/20",
+        isOver && "border-status-selling bg-status-selling/20 ring-2 ring-status-selling/20",
         // 拖拽激活时的样式
-        isActive && "border-[#22c55e]/50 bg-[#f0fdf4]/50"
+        isActive && "border-status-selling/50 bg-status-selling/15"
       )}
     >
       {children}
