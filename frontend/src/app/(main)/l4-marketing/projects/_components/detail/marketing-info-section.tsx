@@ -55,7 +55,7 @@ function InfoRow({ label, value, highlight }: InfoRowProps) {
 
 // 分隔线组件
 function Divider() {
-  return <div className="border-t border-slate-100 my-2" />;
+  return <div className="border-t border-border my-2" />;
 }
 
 // 使用 memo 避免不必要的重渲染
@@ -91,7 +91,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
     <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
       {/* 左侧：营销主图 */}
       <div className="relative">
-        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-slate-200 relative">
+        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-border relative">
           {mainImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

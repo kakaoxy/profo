@@ -28,7 +28,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
 
   if (data.length === 0) {
     return (
-      <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-slate-200 rounded-md bg-muted/50">
+      <div className="text-center text-xs text-muted-foreground py-8 border border-dashed border-border rounded-md bg-muted/50">
         暂无{type === "viewing" ? "带看" : type === "offer" ? "出价" : "面谈"}
         记录
       </div>
@@ -38,7 +38,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
   // 1. 带看记录 (表格视图)
   if (type === "viewing") {
     return (
-      <div className="rounded-md border border-slate-200 bg-white">
+      <div className="rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -53,7 +53,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                 <TableCell className="text-muted-foreground font-mono">
                   {format(parseISO(item.record_date), "MM-dd HH:mm")}
                 </TableCell>
-                <TableCell className="font-medium text-slate-700">
+                <TableCell className="font-medium text-foreground">
                   {item.customer_name}
                 </TableCell>
                 <TableCell>
@@ -83,10 +83,10 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
             <div
               key={item.id}
               className={cn(
-                "flex items-center justify-between p-3 rounded-lg border bg-white transition-all",
+                "flex items-center justify-between p-3 rounded-lg border bg-card transition-all",
                 isMax
-                  ? "border-red-100 shadow-sm ring-1 ring-red-50"
-                  : "border-slate-100"
+                  ? "border-error/20 shadow-sm ring-1 ring-error/10"
+                  : "border-border"
               )}
             >
               <div className="flex flex-col">
@@ -95,19 +95,19 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                     "text-sm font-bold",
                     isMax
                       ? "text-error flex items-center gap-1"
-                      : "text-slate-700"
+                      : "text-foreground"
                   )}
                 >
                   ¥{item.price}万{" "}
                   {isMax && (
-                    <span className="text-[10px] bg-red-100 text-error px-1 rounded font-normal">
+                    <span className="text-[10px] bg-error/10 text-error px-1 rounded font-normal">
                       最高
                     </span>
                   )}
                 </span>
               </div>
               <div className="flex flex-col text-right mr-4 flex-1">
-                <span className="text-xs font-medium text-slate-700">
+                <span className="text-xs font-medium text-foreground">
                   {item.customer_name}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
@@ -116,7 +116,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
               </div>
               <button
                 onClick={() => onDelete(item.id)}
-                className="text-slate-300 hover:text-error p-1"
+                className="text-muted-foreground hover:text-error p-1"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -133,7 +133,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
       <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-muted" />
       {sortedData.map((item) => (
         <div key={item.id} className="relative pl-4 group">
-          <div className="absolute left-[-4px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-success bg-white group-hover:bg-success transition-colors z-10" />
+          <div className="absolute left-[-4px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-success bg-card group-hover:bg-success transition-colors z-10" />
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-mono">
@@ -141,7 +141,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
               </span>
               <button
                 onClick={() => onDelete(item.id)}
-                className="text-slate-300 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-muted-foreground hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <Trash2 className="h-3 w-3" />
               </button>
@@ -150,7 +150,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
               {item.customer_name}
             </div>
             {item.notes && (
-              <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1 border border-slate-100">
+              <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1 border border-border">
                 {item.notes}
               </div>
             )}

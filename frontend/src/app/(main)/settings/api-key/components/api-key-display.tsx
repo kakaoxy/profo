@@ -44,11 +44,11 @@ export function ApiKeyDisplay({
   };
 
   return (
-    <Card className="border-slate-200 dark:border-slate-800">
+    <Card className="border-border">
       <CardHeader className="pb-4">
         <CardTitle className="text-base font-semibold flex items-center justify-between">
           <span>您的 API Key</span>
-          <span className="text-xs font-normal px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300">
+          <span className="text-xs font-normal px-2 py-1 rounded-full bg-success/20 text-success">
             新生成
           </span>
         </CardTitle>
@@ -65,18 +65,18 @@ export function ApiKeyDisplay({
                 type={showKey ? "text" : "password"}
                 value={apiKey}
                 readOnly
-                className="w-full px-4 py-3 pr-24 rounded-lg border border-border bg-muted font-mono text-sm text-foreground dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-border dark:focus:ring-slate-700"
+                className="w-full px-4 py-3 pr-24 rounded-lg border border-border bg-muted font-mono text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
               <button
                 onClick={() => setShowKey(!showKey)}
-                className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-muted-foreground dark:hover:text-slate-300 transition-colors"
+                className="absolute right-12 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                 title={showKey ? "隐藏" : "显示"}
               >
                 {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
               <button
                 onClick={handleCopy}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-muted-foreground dark:hover:text-slate-300 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                 title="复制"
               >
                 {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
@@ -91,28 +91,28 @@ export function ApiKeyDisplay({
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               前缀
             </label>
-            <p className="text-sm font-mono text-foreground dark:text-slate-100">{prefix}</p>
+            <p className="text-sm font-mono text-foreground">{prefix}</p>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               创建时间
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300">{formatDate(createdAt)}</p>
+            <p className="text-sm text-foreground">{formatDate(createdAt)}</p>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <Clock className="h-3 w-3" />
               过期时间
             </label>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
+            <p className="text-sm text-foreground">
               {expiresAt ? formatDate(expiresAt) : "永不过期"}
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex justify-end pt-4 border-t border-border">
           <Button onClick={handleCopy} variant="outline" className="gap-2 mr-2">
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? "已复制" : "复制 Key"}
