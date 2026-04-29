@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
 import type { FunnelData, RawDashboardLead } from "../types";
@@ -41,13 +42,20 @@ const defaultFunnelData: FunnelData = {
 
 function isValidFunnelData(data: unknown): data is FunnelData {
   if (!data || typeof data !== "object") return false;
-  const d = data as Record<string, unknown>;
+
+  const record = data as Record<string, unknown>;
+
+  // 使用类型守卫函数替代裸 as
+  const hasValidNumberField = (obj: Record<string, unknown>, key: string): boolean => {
+    return key in obj && typeof obj[key] === "number";
+  };
+
   return (
-    typeof d.total === "number" &&
-    typeof d.evaluating === "number" &&
-    typeof d.rejected === "number" &&
-    typeof d.visiting === "number" &&
-    typeof d.signed === "number"
+    hasValidNumberField(record, "total") &&
+    hasValidNumberField(record, "evaluating") &&
+    hasValidNumberField(record, "rejected") &&
+    hasValidNumberField(record, "visiting") &&
+    hasValidNumberField(record, "signed")
   );
 }
 
@@ -76,13 +84,25 @@ function validateProjectResponseList(data: unknown): ProjectResponse[] {
 
 function validateProjectStats(data: unknown): ProjectStatsResponse | null {
   if (!data || typeof data !== "object") return null;
-  const d = data as Record<string, unknown>;
+
+  const record = data as Record<string, unknown>;
+
   // 检查必需的数字字段（注意：API 返回的 ProjectStatsResponse 不包含 total 字段）
-  const requiredNumberFields = ["signing", "renovating", "selling", "sold"];
+  const requiredNumberFields = ["signing", "renovating", "selling", "sold"] as const;
+
   for (const field of requiredNumberFields) {
-    if (typeof d[field] !== "number") return null;
+    if (!(field in record) || typeof record[field] !== "number") {
+      return null;
+    }
   }
-  return data as ProjectStatsResponse;
+
+  // 构造验证后的对象，避免裸 as 断言
+  return {
+    signing: record.signing as number,
+    renovating: record.renovating as number,
+    selling: record.selling as number,
+    sold: record.sold as number,
+  };
 }
 
 export function getStatusText(status: LeadStatus): string {
@@ -105,7 +125,8 @@ export function transformLeadToDashboard(lead: LeadListItem): RawDashboardLead {
   };
 }
 
-export async function getDashboardData(): Promise<DashboardDataResult> {
+// 使用 React.cache 确保在同一次请求中只获取一次数据
+export const getDashboardData = cache(async (): Promise<DashboardDataResult> => {
   const client = await fetchClient();
 
   const results = await Promise.allSettled([
@@ -198,4 +219,4 @@ export async function getDashboardData(): Promise<DashboardDataResult> {
     marketDataMap,
     errors,
   };
-}
+});
