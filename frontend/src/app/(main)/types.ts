@@ -28,6 +28,20 @@ export interface Project {
   market: MarketData;
 }
 
+export interface RawDashboardLead {
+  id: string;
+  community: string;
+  unitType: string;
+  area: number | null;
+  floor: string;
+  totalPrice: number | null;
+  unitPrice: number | null;
+  status: string;
+  region: string;
+  creator: string;
+  updatedAt: string | null;
+}
+
 export interface DashboardLead {
   id: string;
   community: string;

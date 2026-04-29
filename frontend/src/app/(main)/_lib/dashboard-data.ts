@@ -1,109 +1,177 @@
-import type { Project, DashboardLead } from "../types";
+import { fetchClient } from "@/lib/api-server";
+import type { components } from "@/lib/api-types";
+import type { FunnelData, RawDashboardLead } from "../types";
 
-export const MOCK_PROJECTS: Project[] = [
-  {
-    id: "1",
-    code: "AC-8821",
-    name: "锦绣华城 - 3期 A栋",
-    location: "静安区",
-    specs: "128㎡ · 3室2厅",
-    stats: {
-      viewTotal: 142,
-      viewTrend: { current: 12, last: 8, isUp: true },
-      offerCount: 5,
-      maxOffer: 820,
-      lastOffer: 815,
-    },
-    market: {
-      onSale: 12,
-      avgPrice: "6.8万/㎡",
-      volume30d: 4,
-      priceTrend30d: "-1.2% ↓",
-      isPriceUp: false,
-    },
-  },
-  {
-    id: "2",
-    code: "AC-9012",
-    name: "东方曼哈顿 - 2单元",
-    location: "徐汇区",
-    specs: "156㎡ · 4室2厅",
-    stats: {
-      viewTotal: 205,
-      viewTrend: { current: 24, last: 15, isUp: true },
-      offerCount: 8,
-      maxOffer: 1250,
-      lastOffer: 1240,
-    },
-    market: {
-      onSale: 5,
-      avgPrice: "8.2万/㎡",
-      volume30d: 2,
-      priceTrend30d: "+0.5% ↑",
-      isPriceUp: true,
-    },
-  },
-  {
-    id: "3",
-    code: "AC-4432",
-    name: "仁恒河滨城",
-    location: "浦东新区",
-    specs: "89㎡ · 2室2厅",
-    stats: {
-      viewTotal: 56,
-      viewTrend: { current: 2, last: 5, isUp: false },
-      offerCount: 1,
-      maxOffer: 580,
-      lastOffer: 580,
-    },
-    market: {
-      onSale: 18,
-      avgPrice: "6.4万/㎡",
-      volume30d: 1,
-      priceTrend30d: "持平",
-      isPriceUp: null,
-    },
-  },
-];
+type ProjectStatsResponse = components["schemas"]["ProjectStatsResponse"];
+type ProjectResponse = components["schemas"]["ProjectResponse"];
+type LeadListItem = components["schemas"]["LeadListItem"];
+type LeadStatus = components["schemas"]["LeadStatus"];
 
-export const MOCK_LEADS: DashboardLead[] = [
-  {
-    id: "l1",
-    community: "锦绣华城 - 3期 A栋",
-    unitType: "3室2厅",
-    area: "128㎡",
-    floor: "12/28",
-    totalPrice: "820万",
-    unitPrice: "6.4万/㎡",
-    status: "带看中",
-    region: "静安区",
-    creator: "李晓梅",
-    updatedTime: "2小时前",
-  },
-  {
-    id: "l2",
-    community: "东方曼哈顿 - 2单元",
-    unitType: "4室2厅",
-    area: "156㎡",
-    floor: "6/12",
-    totalPrice: "1250万",
-    unitPrice: "8.0万/㎡",
-    status: "已出价",
-    region: "徐汇区",
-    creator: "陈大卫",
-    updatedTime: "5小时前",
-  },
-  {
-    id: "l3",
-    community: "仁恒河滨城",
-    unitType: "2室2厅",
-    area: "89㎡",
-    floor: "18/32",
-    totalPrice: "580万",
-    unitPrice: "6.5万/㎡",
-    status: "初步评估",
-    region: "浦东新区",
-    creator: "王五",
-    updatedTime: "昨天 16:30",
-  },
-];
+export interface DashboardDataResult {
+  projectStats: ProjectStatsResponse | null;
+  pendingLeadsTotal: number;
+  funnelData: FunnelData;
+  projects: ProjectResponse[];
+  leads: RawDashboardLead[];
+  errors: {
+    projectStats?: string;
+    pendingLeads?: string;
+    funnel?: string;
+    projects?: string;
+    leads?: string;
+  };
+}
+
+const defaultFunnelData: FunnelData = {
+  total: 0,
+  evaluating: 0,
+  rejected: 0,
+  visiting: 0,
+  signed: 0,
+};
+
+function isValidFunnelData(data: unknown): data is FunnelData {
+  if (!data || typeof data !== "object") return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.total === "number" &&
+    typeof d.evaluating === "number" &&
+    typeof d.rejected === "number" &&
+    typeof d.visiting === "number" &&
+    typeof d.signed === "number"
+  );
+}
+
+function validateFunnelData(data: unknown): FunnelData {
+  if (isValidFunnelData(data)) {
+    return data;
+  }
+  return defaultFunnelData;
+}
+
+function validateLeadListItems(data: unknown): LeadListItem[] {
+  if (!data || !Array.isArray(data)) return [];
+  return data.filter((item): item is LeadListItem => {
+    if (!item || typeof item !== "object") return false;
+    return typeof item.id === "string";
+  });
+}
+
+function validateProjectResponseList(data: unknown): ProjectResponse[] {
+  if (!data || !Array.isArray(data)) return [];
+  return data.filter((item): item is ProjectResponse => {
+    if (!item || typeof item !== "object") return false;
+    return typeof item.id === "string";
+  });
+}
+
+export function getStatusText(status: LeadStatus): string {
+  const statusMap: Record<string, string> = {
+    pending_assessment: "待评估",
+    pending_visit: "待看房",
+    rejected: "已驳回",
+    visited: "已看房",
+    signed: "已签约",
+  };
+  return statusMap[status] || status;
+}
+
+export function transformLeadToDashboard(lead: LeadListItem): RawDashboardLead {
+  return {
+    id: lead.id,
+    community: lead.community_name,
+    unitType: lead.layout || "-",
+    area: lead.area ?? null,
+    floor: lead.floor_info || "-",
+    totalPrice: lead.total_price ?? null,
+    unitPrice: lead.unit_price ?? null,
+    status: lead.status,
+    region: lead.district || lead.business_area || "-",
+    creator: lead.creator_name || "-",
+    updatedAt: lead.updated_at,
+  };
+}
+
+export async function getDashboardData(): Promise<DashboardDataResult> {
+  const client = await fetchClient();
+
+  const results = await Promise.allSettled([
+    client.GET("/api/v1/projects/stats", {}),
+    client.GET("/api/v1/leads/", {
+      params: {
+        query: { page: 1, page_size: 5, statuses: ["pending_assessment"] },
+      },
+    }),
+    client.GET("/api/v1/leads/stats/funnel", {}),
+    client.GET("/api/v1/projects", {
+      params: {
+        query: { page: 1, page_size: 10 },
+      },
+    }),
+    client.GET("/api/v1/leads/", {
+      params: {
+        query: { page: 1, page_size: 10 },
+      },
+    }),
+  ]);
+
+  const errors: DashboardDataResult["errors"] = {};
+
+  const [projectStatsRes, pendingLeadsRes, funnelRes, projectsRes, leadsRes] = results;
+
+  const projectStats =
+    projectStatsRes.status === "fulfilled" && projectStatsRes.value.data
+      ? (projectStatsRes.value.data as ProjectStatsResponse)
+      : null;
+  if (projectStatsRes.status === "rejected") {
+    errors.projectStats = "获取项目统计失败";
+    console.error("[Dashboard] 项目统计获取失败:", projectStatsRes.reason);
+  }
+
+  const pendingLeadsTotal =
+    pendingLeadsRes.status === "fulfilled" && pendingLeadsRes.value.data
+      ? pendingLeadsRes.value.data.total || 0
+      : 0;
+  if (pendingLeadsRes.status === "rejected") {
+    errors.pendingLeads = "获取待处理线索失败";
+    console.error("[Dashboard] 待处理线索获取失败:", pendingLeadsRes.reason);
+  }
+
+  const funnelData =
+    funnelRes.status === "fulfilled"
+      ? validateFunnelData(funnelRes.value.data)
+      : defaultFunnelData;
+  if (funnelRes.status === "rejected") {
+    errors.funnel = "获取线索漏斗失败";
+    console.error("[Dashboard] 线索漏斗获取失败:", funnelRes.reason);
+  }
+
+  const projects =
+    projectsRes.status === "fulfilled" && projectsRes.value.data
+      ? validateProjectResponseList(projectsRes.value.data.items)
+      : [];
+  if (projectsRes.status === "rejected") {
+    errors.projects = "获取项目列表失败";
+    console.error("[Dashboard] 项目列表获取失败:", projectsRes.reason);
+  }
+
+  const leadItems =
+    leadsRes.status === "fulfilled" && leadsRes.value.data
+      ? validateLeadListItems(leadsRes.value.data.items)
+      : [];
+  if (leadsRes.status === "rejected") {
+    errors.leads = "获取线索列表失败";
+    console.error("[Dashboard] 线索列表获取失败:", leadsRes.reason);
+  }
+
+  const rawLeads = leadItems.map(transformLeadToDashboard);
+
+  return {
+    projectStats,
+    pendingLeadsTotal,
+    funnelData,
+    projects,
+    leads: rawLeads,
+    errors,
+  };
+}
