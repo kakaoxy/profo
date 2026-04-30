@@ -7,6 +7,7 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
   return {
     id: backendLead.id,
     communityName: backendLead.community_name,
+    communityId: backendLead.community_id ?? undefined,
     layout: backendLead.layout ?? "",
     orientation: backendLead.orientation ?? "",
     floorInfo: backendLead.floor_info ?? "",

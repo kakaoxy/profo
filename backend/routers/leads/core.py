@@ -32,6 +32,7 @@ def _lead_to_list_item(lead) -> LeadListItem:
     return LeadListItem(
         id=lead.id,
         community_name=lead.community_name,
+        community_id=lead.community_id,
         is_hot=lead.is_hot or 0,
         layout=lead.layout,
         orientation=lead.orientation,

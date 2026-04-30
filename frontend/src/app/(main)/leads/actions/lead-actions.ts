@@ -22,6 +22,7 @@ export async function createLeadAction(
 
     const payload: LeadCreatePayload = {
       community_name: data.communityName,
+      community_id: data.communityId,
       is_hot: 0,
       layout: data.layout,
       orientation: data.orientation,
@@ -87,6 +88,8 @@ export async function updateLeadAction(
     const payload: LeadUpdatePayload = {};
     if (data.communityName !== undefined)
       payload.community_name = data.communityName;
+    if (data.communityId !== undefined)
+      payload.community_id = data.communityId;
     if (data.layout !== undefined) payload.layout = data.layout;
     if (data.orientation !== undefined) payload.orientation = data.orientation;
     if (data.floorInfo !== undefined) payload.floor_info = data.floorInfo;

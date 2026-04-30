@@ -54,7 +54,13 @@ export function useCompetitors({
         setLoading(false);
       }
     }
-    loadData();
+    if (projectId || communityId) {
+      loadData();
+    } else {
+      // 当缺少参数时，直接结束加载状态
+      setLoading(false);
+      setError("缺少必要参数");
+    }
   }, [projectId, communityId]);
 
   return { allItems, counts, loading, error };
