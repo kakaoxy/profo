@@ -1,18 +1,16 @@
 "use client";
 
 /**
- * 装修照片上传 Hook
- * 流程特殊（上传→入库→刷新），保留原有结构，仅复用通用工具函数
+ * 装修照片上传 Hook - 重构版
+ * 基于通用 useUpload hook，与 leads 模块保持一致
  */
 
-import { useState } from "react";
+import { useCallback, useRef, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { apiPaths, getClientApiUrl } from "@/lib/config";
-import { tryRefreshToken, isTokenExpired } from "@/components/common/upload";
+import { useUpload } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
-import { UploadingPhoto } from "./photo-grid";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 10; // MB
 
 interface UseRenovationUploadProps {
   projectId: string;
@@ -20,150 +18,119 @@ interface UseRenovationUploadProps {
   onPhotoUploaded: () => void;
 }
 
+export interface UploadingPhoto {
+  id: string;
+  file: File;
+  previewUrl: string;
+  progress: number;
+  status: "uploading" | "error";
+}
+
 export function useRenovationUpload({
   projectId,
   stageValue,
   onPhotoUploaded,
 }: UseRenovationUploadProps) {
-  const [uploadQueue, setUploadQueue] = useState<UploadingPhoto[]>([]);
+  // 使用 ref 存储 previewUrl 映射，避免重复创建 ObjectURL
+  const previewUrlsRef = useRef<Map<string, string>>(new Map());
 
-  const handleUploadError = (itemId: string, message?: string) => {
-    setUploadQueue((prev) =>
-      prev.map((p) =>
-        p.id === itemId ? { ...p, status: "error", progress: 0 } : p
-      )
-    );
-    toast.error(message || "部分图片上传失败");
-  };
-
-  const uploadSingleFile = async (item: UploadingPhoto) => {
-    const formData = new FormData();
-    formData.append("file", item.file);
-
-    const uploadUrl = getClientApiUrl(apiPaths.files.upload);
-
-    // 获取并检查 token
-    let token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
-    // 检查 token 是否存在或过期
-    const tokenExpired = token ? isTokenExpired(token) : true;
-    if (!token || tokenExpired) {
-      const newToken = await tryRefreshToken();
-      if (newToken) {
-        token = newToken;
-      } else {
-        toast.error("登录已过期，请重新登录");
-        handleUploadError(item.id);
-        return;
-      }
-    }
-
-    return new Promise<void>((resolve) => {
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          setUploadQueue((prev) =>
-            prev.map((p) => (p.id === item.id ? { ...p, progress: percent } : p))
-          );
-        }
-      };
-
-      xhr.onload = async () => {
-        // 检查 2xx 状态码（修复：原代码只检查 200）
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const json = JSON.parse(xhr.responseText);
-            if (json.url) {
-              const realUrl = json.url;
-              const dbRes = await addRenovationPhotoAction({
-                projectId,
-                stage: stageValue,
-                url: realUrl,
-                filename: item.file.name,
-              });
-
-              if (dbRes.success) {
-                setUploadQueue((prev) => prev.filter((p) => p.id !== item.id));
-                URL.revokeObjectURL(item.previewUrl);
-                onPhotoUploaded();
-                resolve();
-                return;
-              } else {
-                handleUploadError(item.id, `保存照片记录失败: ${dbRes.message}`);
-              }
-            } else {
-              console.error("[Renovation Upload] 响应中没有 url 字段:", json);
-              handleUploadError(item.id, "服务器返回的数据格式无效");
-            }
-          } catch (e) {
-            console.error("[Renovation Upload] 解析响应失败", e);
-            handleUploadError(item.id, "解析服务器响应失败");
-          }
-        } else {
-          // 处理非 2xx 状态码
-          try {
-            const errorJson = JSON.parse(xhr.responseText);
-            const errorMsg = errorJson.detail || `上传失败 (${xhr.status})`;
-            handleUploadError(item.id, errorMsg);
-          } catch {
-            handleUploadError(item.id, `上传失败 (${xhr.status})`);
-          }
-        }
-        resolve();
-      };
-
-      xhr.onerror = () => {
-        handleUploadError(item.id, "网络错误，请检查网络连接");
-        resolve();
-      };
-
-      xhr.open("POST", uploadUrl);
-      xhr.withCredentials = true;
-
-      // 添加认证头
-      if (token) {
-        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-      }
-
-      xhr.send(formData);
-    });
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const newUploads: UploadingPhoto[] = [];
-    Array.from(files).forEach((file) => {
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error(`${file.name} 过大，已跳过`);
-        return;
-      }
-      const previewUrl = URL.createObjectURL(file);
-      newUploads.push({
-        id: Math.random().toString(36).substring(7),
-        file,
-        previewUrl,
-        progress: 0,
-        status: "uploading",
+  // 清理不再需要的 ObjectURL
+  useEffect(() => {
+    return () => {
+      // 组件卸载时清理所有 ObjectURL
+      previewUrlsRef.current.forEach((url) => {
+        URL.revokeObjectURL(url);
       });
+      previewUrlsRef.current.clear();
+    };
+  }, []);
+
+  const {
+    isUploading,
+    uploadingFiles,
+    upload,
+    files,
+    remove,
+    clear,
+  } = useUpload({
+    maxSize: MAX_FILE_SIZE * 1024 * 1024,
+    allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    multiple: true,
+    onSuccess: async (response, file) => {
+      if (!response.url) {
+        toast.error(`${file.name}: 上传响应无效`);
+        return;
+      }
+
+      // 上传到服务器成功后，保存到数据库
+      const dbRes = await addRenovationPhotoAction({
+        projectId,
+        stage: stageValue,
+        url: response.url,
+        filename: file.name,
+      });
+
+      if (dbRes.success) {
+        onPhotoUploaded();
+      } else {
+        toast.error(`保存照片记录失败: ${dbRes.message}`);
+      }
+    },
+    onError: (error, file) => {
+      toast.error(`${file.name}: ${error.message}`);
+    },
+  });
+
+  // 转换上传队列为组件需要的格式，使用 useMemo 缓存
+  const uploadQueue: UploadingPhoto[] = useMemo(() => {
+    return uploadingFiles.map((f) => {
+      const fileItem = files.find((file) => file.id === f.id);
+      if (!fileItem) {
+        return {
+          id: f.id,
+          file: new File([], f.filename),
+          previewUrl: "",
+          progress: f.progress,
+          status: "error" as const,
+        };
+      }
+
+      // 复用已创建的 ObjectURL 或创建新的
+      let previewUrl = previewUrlsRef.current.get(f.id);
+      if (!previewUrl) {
+        previewUrl = URL.createObjectURL(fileItem.file);
+        previewUrlsRef.current.set(f.id, previewUrl);
+      }
+
+      return {
+        id: f.id,
+        file: fileItem.file,
+        previewUrl,
+        progress: f.progress,
+        status: fileItem.status === "error" ? "error" : "uploading",
+      };
     });
+  }, [uploadingFiles, files]);
 
-    if (newUploads.length === 0) {
+  const handleUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const fileList = e.target.files;
+      if (!fileList || fileList.length === 0) return;
+
+      await upload(Array.from(fileList));
+
+      // 清空 input 以允许重复上传同一文件
       e.target.value = "";
-      return;
-    }
-
-    setUploadQueue((prev) => [...prev, ...newUploads]);
-    e.target.value = "";
-    newUploads.forEach((item) => uploadSingleFile(item));
-  };
+    },
+    [upload]
+  );
 
   return {
     uploadQueue,
+    isUploading,
     handleUpload,
-    setUploadQueue,
+    setUploadQueue: () => {}, // 保持兼容，实际由 useUpload 管理
+    clear,
+    remove,
   };
 }

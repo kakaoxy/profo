@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo } from "react";
+import React, { useState, memo } from "react";
 import Image from "next/image";
 import { UploadCloud, Plus, Loader2, Trash2, Eye } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
@@ -146,13 +146,25 @@ PhotoItem.displayName = "PhotoItem";
 
 // [优化] 使用 memo 缓存上传中照片项组件
 const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPhoto }) {
+  // 使用 ref 存储 previewUrl，避免重复创建 ObjectURL
+  const previewRef = React.useRef<string>(item.previewUrl);
+
+  React.useEffect(() => {
+    // 组件卸载时释放 ObjectURL
+    return () => {
+      if (previewRef.current && previewRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(previewRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
       className="aspect-square relative rounded-md overflow-hidden bg-muted border border-border"
     >
       {/* Local Preview Image */}
       <Image
-        src={item.previewUrl}
+        src={previewRef.current}
         alt="Uploading..."
         fill
         sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
