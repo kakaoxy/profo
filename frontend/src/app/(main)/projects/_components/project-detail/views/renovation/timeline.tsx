@@ -18,7 +18,7 @@ export function RenovationTimeline({
 }: RenovationTimelineProps) {
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
 
-  // 2. 获取照片数据的方法
+  // 初始加载照片数据
   const fetchPhotos = useCallback(async () => {
     const res = await getRenovationPhotosAction(project.id);
     if (res.success && Array.isArray(res.data)) {
@@ -26,15 +26,12 @@ export function RenovationTimeline({
     }
   }, [project.id]);
 
-  // 初始加载
+  // 组件挂载时获取数据
   useEffect(() => {
-    const init = async () => {
-      await fetchPhotos();
-    };
-    init();
+    fetchPhotos();
   }, [fetchPhotos]);
 
-  // 3. 数据聚合
+  // 按阶段分组照片，作为 initialPhotos 传递给子组件
   const groupedPhotos = useMemo(() => {
     const map: Record<string, RenovationPhoto[]> = {};
     // 初始化
@@ -52,7 +49,7 @@ export function RenovationTimeline({
     return map;
   }, [photos]);
 
-  // 计算索引用于传参
+  // 计算当前阶段索引
   const currentIndex = useMemo(() => {
     if (project.renovation_stage === "已完成" || ["selling", "sold"].includes(project.status)) {
       return RENOVATION_STAGES.length;
@@ -72,12 +69,6 @@ export function RenovationTimeline({
       {/* 灰色垂直贯穿线 */}
       <div className="absolute left-[27px] top-4 bottom-10 w-0.5 bg-muted" />
 
-      {/* [关键修复] 
-         1. 移除了 useState 和 useEffect 对 activeItem 的控制。
-         2. 添加 key={currentStageKey}：
-            当 project 更新导致 currentStageKey 变化时，React 会认为这是一个"新"的 Accordion。
-            这会触发组件重置，从而自动应用新的 defaultValue，实现自动展开新阶段的效果。
-      */}
       <Accordion
         type="single"
         collapsible
@@ -92,8 +83,7 @@ export function RenovationTimeline({
             index={index}
             currentIndex={currentIndex}
             project={project}
-            photos={groupedPhotos[stage.key] || []}
-            onPhotoUploaded={fetchPhotos}
+            initialPhotos={groupedPhotos[stage.key] || []}
             onRefresh={onRefresh}
           />
         ))}
