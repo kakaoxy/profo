@@ -205,7 +205,7 @@ export function AppSidebar({ user }: { user: User | null }) {
         <div className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}>
           {state === "expanded" ? (
             <div className="flex items-center gap-2.5 transition-all">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-card to-muted text-white font-bold text-xs shadow-sm">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-sm">
                 P
               </div>
               <span className="truncate font-semibold text-[15px] text-foreground tracking-tight">
@@ -213,7 +213,7 @@ export function AppSidebar({ user }: { user: User | null }) {
               </span>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-card to-muted text-white font-bold text-xs shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-sm">
               P
             </div>
           )}

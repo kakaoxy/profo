@@ -58,7 +58,7 @@ export const StagePhotoItem = memo(function StagePhotoItem({
               )}
             </AspectRatio>
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-              <Badge className="bg-card/20 hover:bg-card/30 backdrop-blur-md text-white text-[10px] border-0 h-5">
+              <Badge className="bg-black/40 hover:bg-black/50 backdrop-blur-md text-white text-[10px] border-0 h-5">
                 {photoCount} 张
               </Badge>
             </div>
