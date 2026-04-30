@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useUpload } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
 
-const MAX_FILE_SIZE = 10; // MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface UseRenovationUploadProps {
   projectId: string;
@@ -53,7 +53,7 @@ export function useRenovationUpload({
     remove,
     clear,
   } = useUpload({
-    maxSize: MAX_FILE_SIZE * 1024 * 1024,
+    maxSize: MAX_FILE_SIZE,
     allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
     multiple: true,
     onSuccess: async (response, file) => {
