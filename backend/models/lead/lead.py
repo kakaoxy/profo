@@ -15,6 +15,7 @@ class Lead(Base):
     
     # Core Info
     community_name = Column(String(200), nullable=False, comment="小区名称")
+    community_id = Column(String(36), nullable=True, comment="关联小区ID(软引用)")
     is_hot = Column(Integer, default=0, comment="是否热门/关注(0/1)")
     
     # Property Physical Attributes

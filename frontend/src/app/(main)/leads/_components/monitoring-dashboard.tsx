@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import dynamic from "next/dynamic";
 import { Lead } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Activity, Share2, Loader2, MapPinOff } from "lucide-react";
 import { ProjectData } from "../../projects/_components/monitor/types";
-import { getCommunityIdByName } from "../../projects/actions/monitor-lib/utils";
 
 // [性能优化] 使用动态导入延迟加载重型 Monitor 组件
 // 这些组件只有在用户打开 Dashboard 时才会加载
@@ -94,37 +93,24 @@ function EmptyState({ communityName }: { communityName: string }) {
       </h3>
       <p className="text-sm text-muted-foreground max-w-md">
         系统未能找到 &quot;{communityName}&quot; 的市场数据。<br />
-        该小区可能尚未录入数据库，或名称与系统记录不一致。
+        该线索未关联有效小区，或小区数据尚未录入系统。
       </p>
     </div>
   );
 }
 
 export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
-  // 通过 communityName 查询 communityId
-  const [communityId, setCommunityId] = useState<string | undefined>(undefined);
-  const [isLoadingCommunityId, setIsLoadingCommunityId] = useState(true);
-
-  useEffect(() => {
-    async function fetchCommunityId() {
-      if (lead.communityName) {
-        setIsLoadingCommunityId(true);
-        const id = await getCommunityIdByName(lead.communityName);
-        setCommunityId(id || undefined);
-        setIsLoadingCommunityId(false);
-      }
-    }
-    fetchCommunityId();
-  }, [lead.communityName]);
+  // 直接使用 lead 中的 communityId
+  const communityId = lead.communityId;
 
   // Construct ProjectData from Lead to override HeroSection fetching
   const overrideData: ProjectData = {
     address: lead.communityName,
     community_name: lead.communityName,
     area: lead.area,
-    signing_price: lead.totalPrice, // Treating User Offer Price as main price
+    signing_price: lead.totalPrice,
     list_price: lead.totalPrice,
-    signing_date: lead.createdAt, // Use creation date as reference
+    signing_date: lead.createdAt,
     signing_period: 0,
     extension_period: 0,
     extension_rent: 0,
@@ -180,45 +166,29 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
             <HeroSection overrideData={overrideData} />
           </CardWrapper>
 
-          {!isLoadingCommunityId && !communityId ? (
+          {!communityId ? (
             <CardWrapper>
               <EmptyState communityName={lead.communityName} />
             </CardWrapper>
           ) : (
             <>
               <CardWrapper>
-                {isLoadingCommunityId ? (
-                  <ComponentSkeleton height="300px" />
-                ) : (
-                  <MarketSentiment communityId={communityId} />
-                )}
+                <MarketSentiment communityId={communityId} />
               </CardWrapper>
 
               <CardWrapper>
-                {isLoadingCommunityId ? (
-                  <ComponentSkeleton height="350px" />
-                ) : (
-                  <NeighborhoodRadar communityId={communityId} />
-                )}
+                <NeighborhoodRadar communityId={communityId} />
               </CardWrapper>
 
               <CardWrapper>
-                {isLoadingCommunityId ? (
-                  <ComponentSkeleton height="400px" />
-                ) : (
-                  <TrendPositioning
-                    communityId={communityId}
-                    myOverridePrice={myOverridePrice}
-                  />
-                )}
+                <TrendPositioning
+                  communityId={communityId}
+                  myOverridePrice={myOverridePrice}
+                />
               </CardWrapper>
 
               <CardWrapper>
-                {isLoadingCommunityId ? (
-                  <ComponentSkeleton height="500px" />
-                ) : (
-                  <CompetitorsBrawl communityId={communityId} />
-                )}
+                <CompetitorsBrawl communityId={communityId} />
               </CardWrapper>
 
               <CardWrapper>

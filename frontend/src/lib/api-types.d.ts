@@ -1723,10 +1723,7 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /**
-             * Password
-             * Format: password
-             */
+            /** Password */
             password: string;
             /**
              * Scope
@@ -1735,10 +1732,7 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /**
-             * Client Secret
-             * Format: password
-             */
+            /** Client Secret */
             client_secret?: string | null;
         };
         /** Body_upload_file_api_v1_files_upload_post */
@@ -2820,6 +2814,8 @@ export interface components {
         LeadCreate: {
             /** Community Name */
             community_name: string;
+            /** Community Id */
+            community_id?: string | null;
             /**
              * Is Hot
              * @default 0
@@ -2896,6 +2892,8 @@ export interface components {
             id: string;
             /** Community Name */
             community_name: string;
+            /** Community Id */
+            community_id?: string | null;
             /**
              * Is Hot
              * @default 0
@@ -2956,6 +2954,8 @@ export interface components {
         LeadResponse: {
             /** Community Name */
             community_name: string;
+            /** Community Id */
+            community_id?: string | null;
             /**
              * Is Hot
              * @default 0
@@ -3024,6 +3024,8 @@ export interface components {
         LeadUpdate: {
             /** Community Name */
             community_name?: string | null;
+            /** Community Id */
+            community_id?: string | null;
             /** Is Hot */
             is_hot?: number | null;
             /** Layout */
@@ -3900,9 +3902,7 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: {
-                [key: string]: unknown;
-            }[];
+            errors?: Record<string, never>[];
         };
         /**
          * RecordType
@@ -4319,9 +4319,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -4366,9 +4364,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -7371,9 +7367,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -7406,9 +7400,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -7437,9 +7429,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
         };
@@ -7781,9 +7771,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
+                "application/json": Record<string, never>[];
             };
         };
         responses: {

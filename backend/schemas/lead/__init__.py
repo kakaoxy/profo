@@ -56,6 +56,7 @@ class PriceHistoryResponse(PriceHistoryBase):
 # ----------------------
 class LeadBase(BaseModel):
     community_name: str
+    community_id: str | None = None
     is_hot: int = 0
     layout: str | None = None
     orientation: str | None = None
@@ -79,6 +80,7 @@ class LeadCreate(LeadBase):
 
 class LeadUpdate(BaseModel):
     community_name: str | None = None
+    community_id: str | None = None
     is_hot: int | None = None
     layout: str | None = None
     orientation: str | None = None
@@ -135,6 +137,7 @@ class LeadListItem(BaseModel):
     """
     id: str
     community_name: str
+    community_id: str | None = None
     is_hot: int = 0
     layout: str | None = None
     orientation: str | None = None

@@ -51,7 +51,13 @@ export function useRadarData({
       }
     };
 
-    loadData();
+    if (projectId || communityId) {
+      loadData();
+    } else {
+      // 当缺少参数时，直接结束加载状态
+      setIsLoading(false);
+      setError("缺少必要参数");
+    }
     return () => {
       isMounted = false;
     };

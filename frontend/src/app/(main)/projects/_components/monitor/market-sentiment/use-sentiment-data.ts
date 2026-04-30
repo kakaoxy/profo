@@ -57,6 +57,10 @@ export function useSentimentData({
 
     if (projectId || communityId) {
       fetchData();
+    } else {
+      // 当缺少参数时，直接结束加载状态
+      setLoading(false);
+      setError("缺少必要参数");
     }
   }, [projectId, communityId]);
 

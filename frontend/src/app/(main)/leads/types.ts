@@ -30,6 +30,7 @@ export interface PriceHistory {
 export interface Lead {
   id: string;
   communityName: string;
+  communityId?: string;  // 关联小区ID
   layout: string;      // e.g., "2室1厅"
   orientation: string; // e.g., "南"
   floorInfo: string;   // e.g., "18/24层"
