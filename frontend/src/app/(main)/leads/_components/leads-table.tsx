@@ -69,10 +69,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                         fill
                         className="object-cover transition-transform group-hover:scale-105"
                         sizes="64px"
-                        unoptimized={
-                          lead.images[0]?.includes("127.0.0.1") ||
-                          lead.images[0]?.includes("localhost")
-                        }
+                        unoptimized={true}
                       />
                     ) : (
                       <Home className="h-5 w-5 text-muted-foreground/50" />

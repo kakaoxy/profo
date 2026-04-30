@@ -31,6 +31,7 @@ export const ImagePreviewDialog = memo(function ImagePreviewDialog({
             className="object-contain rounded-lg shadow-2xl"
             sizes="(max-width: 896px) 100vw, 896px"
             priority
+            unoptimized={true}
           />
         </div>
       </DialogContent>

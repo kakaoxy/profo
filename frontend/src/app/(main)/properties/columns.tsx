@@ -151,6 +151,7 @@ const FloorPlanPreview = ({
             sizes="48px"
             className="object-cover transition-opacity group-hover:opacity-80"
             referrerPolicy="no-referrer"
+            unoptimized={true}
           />
         </div>
       </HoverCardTrigger>
@@ -170,6 +171,7 @@ const FloorPlanPreview = ({
               sizes="400px"
               className="object-contain"
               referrerPolicy="no-referrer"
+              unoptimized={true}
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">

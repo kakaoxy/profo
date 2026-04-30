@@ -14,20 +14,14 @@ interface Props {
 }
 
 /**
- * 检查是否为本地开发环境的 URL（私有 IP）
- * Next.js Image 组件对本地开发环境的 URL 需要特殊处理
- */
-const isLocalDevUrl = (url: string): boolean => {
-  return url.includes('127.0.0.1') || url.includes('localhost');
-};
-
-/**
  * 图片上传组件 - 基于通用上传系统重构
  * 
  * 特性：
  * - 使用通用 useUpload hook 处理上传逻辑
- * - 使用 next/image 进行图片优化
- * - 对本地开发环境使用 unoptimized 避免私有 IP 限制
+ * - 使用 Next.js Image 组件但禁用优化 (unoptimized)
+ *   原因：我们上传到自己服务器的图片已经是优化后的原图，
+ *   不需要 Next.js 再次优化，避免 500 错误和额外的服务器负载
+ * - 保留 Next.js Image 的布局稳定性优势（fill, sizes 等）
  * - 支持多图片上传和删除
  */
 export const ImageUpload: React.FC<Props> = ({ 
@@ -103,9 +97,11 @@ export const ImageUpload: React.FC<Props> = ({
             className="aspect-square relative rounded-xl overflow-hidden border group bg-muted"
           >
             {/* 
-              使用 next/image 保持优化能力
-              对于本地开发环境 URL 使用 unoptimized 避免私有 IP 限制
-              生产环境会自动进行图片优化
+              使用 Next.js Image 组件但禁用优化
+              - unoptimized=true: 禁用 Next.js 图片优化服务，避免 500 错误
+              - 原因：我们上传到自己服务器的图片已经是原图，不需要再次优化
+              - 保留 Next.js Image 的布局稳定性优势（自动处理 fill 模式）
+              - 将来如果解决了优化服务问题，可以移除 unoptimized 属性
             */}
             <Image 
               src={img} 
@@ -113,7 +109,7 @@ export const ImageUpload: React.FC<Props> = ({
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105" 
               sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 20vw"
-              unoptimized={isLocalDevUrl(img)}
+              unoptimized={true}
               priority={idx === 0}
             />
             <button 

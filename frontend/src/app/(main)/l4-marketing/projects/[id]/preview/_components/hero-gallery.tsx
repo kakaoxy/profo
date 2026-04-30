@@ -5,9 +5,6 @@ import { getFileUrl } from "@/lib/config";
 import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 
-// 判断是否为开发环境
-const isDev = process.env.NODE_ENV === "development";
-
 interface HeroGalleryProps {
   mainImage?: string;
   secondaryImages: string[];
@@ -112,25 +109,16 @@ export function HeroGallery({
     <section className="mt-4 grid grid-cols-12 gap-4 h-[500px]">
       <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-xl group">
         {!shouldShowMainPlaceholder ? (
-          isDev ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={getFileUrl(mainImage!)}
-              alt="Primary view"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              onError={handleMainImageError}
-            />
-          ) : (
-            <Image
-              src={getFileUrl(mainImage!)}
-              alt="Primary view"
-              fill
-              sizes="(max-width: 1024px) 100vw, 66vw"
-              priority
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
-              onError={handleMainImageError}
-            />
-          )
+          <Image
+            src={getFileUrl(mainImage!)}
+            alt="Primary view"
+            fill
+            sizes="(max-width: 1024px) 100vw, 66vw"
+            priority
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            onError={handleMainImageError}
+            unoptimized={true}
+          />
         ) : (
           <ImagePlaceholder size="large" />
         )}
@@ -143,48 +131,30 @@ export function HeroGallery({
       <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-4">
         {!shouldShowSecondaryPlaceholder0 ? (
           <div className="relative overflow-hidden rounded-xl group">
-            {isDev ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={getFileUrl(secondaryImages[0]!)}
-                alt="Interior"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                onError={() => handleSecondaryImageError(0)}
-              />
-            ) : (
-              <Image
-                src={getFileUrl(secondaryImages[0]!)}
-                alt="Interior"
-                fill
-                sizes="(max-width: 1024px) 100vw, 33vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                onError={() => handleSecondaryImageError(0)}
-              />
-            )}
+            <Image
+              src={getFileUrl(secondaryImages[0]!)}
+              alt="Interior"
+              fill
+              sizes="(max-width: 1024px) 100vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              onError={() => handleSecondaryImageError(0)}
+              unoptimized={true}
+            />
           </div>
         ) : (
           <SecondaryImagePlaceholder />
         )}
         {!shouldShowSecondaryPlaceholder1 ? (
           <div className="relative overflow-hidden rounded-xl group">
-            {isDev ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={getFileUrl(secondaryImages[1]!)}
-                alt="Kitchen"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                onError={() => handleSecondaryImageError(1)}
-              />
-            ) : (
-              <Image
-                src={getFileUrl(secondaryImages[1]!)}
-                alt="Kitchen"
-                fill
-                sizes="(max-width: 1024px) 100vw, 33vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                onError={() => handleSecondaryImageError(1)}
-              />
-            )}
+            <Image
+              src={getFileUrl(secondaryImages[1]!)}
+              alt="Kitchen"
+              fill
+              sizes="(max-width: 1024px) 100vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              onError={() => handleSecondaryImageError(1)}
+              unoptimized={true}
+            />
             {totalCount > 3 ? (
               <button className="absolute bottom-4 right-4 bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-card transition-colors">
                 <svg

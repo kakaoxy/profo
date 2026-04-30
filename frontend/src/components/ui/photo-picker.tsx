@@ -91,6 +91,7 @@ export function PhotoPicker({
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 50vw, 25vw"
+                    unoptimized={true}
                   />
                   <div className="absolute top-1 left-1">
                     <Badge variant="secondary" className="bg-black/50 text-white border-0 text-[10px] px-1 h-4">

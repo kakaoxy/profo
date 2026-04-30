@@ -56,10 +56,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  unoptimized={
-                    lead.images[0]?.includes("127.0.0.1") ||
-                    lead.images[0]?.includes("localhost")
-                  }
+                  unoptimized={true}
                 />
               ) : (
                 <div className="flex flex-col items-center gap-2 text-muted-foreground/30">

@@ -9,9 +9,6 @@ import { getFileUrl } from "@/lib/config";
 import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
 import { ActionCell } from "./_components/action-cell";
 
-// 判断是否为开发环境
-const isDev = process.env.NODE_ENV === "development";
-
 // 使用 types.ts 中定义的状态配置，转换为 Badge 所需的 className 格式
 const statusConfig: Record<string, { label: string; className: string }> = {
   "在途": {
@@ -67,22 +64,14 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {imageUrl ? (
             <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-border overflow-hidden">
-              {isDev ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl}
-                  alt="封面"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Image
-                  src={imageUrl}
-                  alt="封面"
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
-              )}
+              <Image
+                src={imageUrl}
+                alt="封面"
+                fill
+                sizes="80px"
+                className="object-cover"
+                unoptimized={true}
+              />
             </div>
           ) : (
             <div className="w-20 h-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground flex-shrink-0 border border-border">
