@@ -26,7 +26,7 @@ interface InfoTabProps {
 }
 
 export const InfoTab: React.FC<InfoTabProps> = ({ lead, onAudit, onViewMonitor }) => {
-  const { sentiment, loading: sentimentLoading } = useMarketSentiment(lead.communityName);
+  const { sentiment, loading: sentimentLoading } = useMarketSentiment(lead.communityId || '');
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

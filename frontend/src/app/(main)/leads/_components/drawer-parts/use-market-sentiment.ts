@@ -12,7 +12,7 @@ interface UseMarketSentimentReturn {
 /**
  * 获取市场情绪数据的 Hook
  */
-export function useMarketSentiment(communityName: string): UseMarketSentimentReturn {
+export function useMarketSentiment(communityId: string): UseMarketSentimentReturn {
   const [sentiment, setSentiment] = useState<MarketSentiment | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -21,10 +21,16 @@ export function useMarketSentiment(communityName: string): UseMarketSentimentRet
     let isMounted = true;
 
     const fetchSentiment = async () => {
+      if (!communityId) {
+        setSentiment(null);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
-        const data = await getMarketSentimentAction(communityName);
+        const data = await getMarketSentimentAction(communityId);
         if (isMounted) {
           setSentiment(data);
         }
@@ -45,7 +51,7 @@ export function useMarketSentiment(communityName: string): UseMarketSentimentRet
     return () => {
       isMounted = false;
     };
-  }, [communityName]);
+  }, [communityId]);
 
   return { sentiment, loading, error };
 }
