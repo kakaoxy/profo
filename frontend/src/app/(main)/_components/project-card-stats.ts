@@ -30,12 +30,18 @@ export function getWeekViewStats(viewingRecords: ApiSalesRecord[]) {
 export function getOfferStats(offerRecords: ApiSalesRecord[]) {
   const offerCount = offerRecords.length;
 
-  const offerPrices = offerRecords
+  // 按日期降序排序，确保获取最新的记录
+  const sortedOffers = [...offerRecords].sort(
+    (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
+  );
+
+  const offerPrices = sortedOffers
     .map(r => toNumber(r.price))
     .filter((p): p is number => p !== undefined);
 
   const maxOffer = offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
-  const lastOffer = offerPrices.length > 0 ? offerPrices[offerPrices.length - 1] : 0;
+  // 取按日期排序后最新的出价
+  const lastOffer = sortedOffers.length > 0 ? toNumber(sortedOffers[0].price) ?? 0 : 0;
 
   return { offerCount, maxOffer, lastOffer };
 }
