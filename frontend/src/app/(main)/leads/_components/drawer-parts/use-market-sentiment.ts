@@ -21,7 +21,7 @@ export function useMarketSentiment(communityId: string): UseMarketSentimentRetur
     let isMounted = true;
 
     const fetchSentiment = async () => {
-      if (!communityId) {
+      if (!communityId || communityId.trim() === "") {
         setSentiment(null);
         setLoading(false);
         return;
