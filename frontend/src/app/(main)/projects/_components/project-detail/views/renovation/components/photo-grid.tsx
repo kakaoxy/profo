@@ -178,6 +178,17 @@ const UploadingItem = memo(function UploadingItem({ item }: { item: UploadingPho
           <span className="text-xs text-white bg-error/90 px-2 py-1 rounded font-medium">
             Upload Failed
           </span>
+        ) : item.progress === 100 ? (
+          <>
+            <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-[10px] text-white font-medium drop-shadow-md">
+              完成
+            </span>
+          </>
         ) : (
           <>
             <Loader2 className="h-6 w-6 animate-spin text-white drop-shadow-md" />

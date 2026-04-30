@@ -33,6 +33,8 @@ export function useRenovationUpload({
 }: UseRenovationUploadProps) {
   // 使用 ref 存储 previewUrl 映射，避免重复创建 ObjectURL
   const previewUrlsRef = useRef<Map<string, string>>(new Map());
+  // 使用 ref 存储正在上传的文件 ID，即使上传完成也短暂保留以显示100%进度
+  const completedFilesRef = useRef<Set<string>>(new Set());
 
   // 清理不再需要的 ObjectURL
   useEffect(() => {
@@ -71,6 +73,7 @@ export function useRenovationUpload({
       });
 
       if (dbRes.success) {
+        toast.success(`${file.name} 上传成功`);
         onPhotoUploaded();
       } else {
         toast.error(`保存照片记录失败: ${dbRes.message}`);
@@ -82,35 +85,46 @@ export function useRenovationUpload({
   });
 
   // 转换上传队列为组件需要的格式，使用 useMemo 缓存
+  // 包含上传中和刚完成的文件（让用户看到100%进度）
   const uploadQueue: UploadingPhoto[] = useMemo(() => {
-    return uploadingFiles.map((f) => {
-      const fileItem = files.find((file) => file.id === f.id);
-      if (!fileItem) {
-        return {
-          id: f.id,
-          file: new File([], f.filename),
-          previewUrl: "",
-          progress: f.progress,
-          status: "error" as const,
-        };
-      }
+    // 合并上传中文件和刚完成的文件
+    const relevantFiles = files.filter(
+      (f) => f.status === "uploading" || f.status === "success"
+    );
 
+    return relevantFiles.map((f) => {
       // 复用已创建的 ObjectURL 或创建新的
       let previewUrl = previewUrlsRef.current.get(f.id);
-      if (!previewUrl) {
-        previewUrl = URL.createObjectURL(fileItem.file);
+      if (!previewUrl && f.file) {
+        previewUrl = URL.createObjectURL(f.file);
         previewUrlsRef.current.set(f.id, previewUrl);
+      }
+
+      // 上传完成且新成功的文件，标记为已完成
+      if (f.status === "success" && !completedFilesRef.current.has(f.id)) {
+        completedFilesRef.current.add(f.id);
+        // 延迟清理，让用户看到100%状态
+        setTimeout(() => {
+          remove(f.id);
+          // 清理 ObjectURL
+          const url = previewUrlsRef.current.get(f.id);
+          if (url) {
+            URL.revokeObjectURL(url);
+            previewUrlsRef.current.delete(f.id);
+          }
+          completedFilesRef.current.delete(f.id);
+        }, 800); // 800ms 延迟，让用户看到完成状态
       }
 
       return {
         id: f.id,
-        file: fileItem.file,
-        previewUrl,
-        progress: f.progress,
-        status: fileItem.status === "error" ? "error" : "uploading",
+        file: f.file,
+        previewUrl: previewUrl || "",
+        progress: f.status === "success" ? 100 : f.progress,
+        status: f.status === "error" ? "error" : "uploading",
       };
     });
-  }, [uploadingFiles, files]);
+  }, [files, remove]);
 
   const handleUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
