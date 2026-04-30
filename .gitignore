@@ -38,6 +38,7 @@ coverage.xml
 
 # 数据库迁移
 alembic/
+alembic.ini
 
 # ==========================================
 # UV 包管理器
@@ -45,6 +46,7 @@ alembic/
 .venv/
 venv/
 example/
+
 
 # ==========================================
 # Node.js / Next.js 相关
