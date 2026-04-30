@@ -54,9 +54,11 @@ export function useRadarData({
     if (projectId || communityId) {
       loadData();
     } else {
-      // 当缺少参数时，直接结束加载状态
-      setIsLoading(false);
-      setError("缺少必要参数");
+      // 当缺少参数时，推迟到下一个微任务更新状态，避免级联渲染
+      queueMicrotask(() => {
+        setIsLoading(false);
+        setError("缺少必要参数");
+      });
     }
     return () => {
       isMounted = false;
