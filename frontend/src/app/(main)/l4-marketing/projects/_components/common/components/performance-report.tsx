@@ -18,7 +18,7 @@ export function PerformanceReport({
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-card text-white p-4 rounded-lg shadow-lg text-xs font-mono z-50 max-w-xs">
+    <div className="fixed bottom-4 right-4 bg-popover text-popover-foreground p-4 rounded-lg shadow-lg text-xs font-mono z-50 max-w-xs border border-border">
       <div className="font-bold mb-2 text-emerald-400">{componentName} Performance</div>
       <div className="space-y-1">
         {metrics.loadTime !== undefined && (

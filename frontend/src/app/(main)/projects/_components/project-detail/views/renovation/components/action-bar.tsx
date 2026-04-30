@@ -64,7 +64,7 @@ export function ActionBar({
 
           <Button
             size="sm"
-            className="h-8 bg-card hover:bg-card text-white shadow-sm"
+            className="h-8 bg-primary hover:bg-primary text-primary-foreground shadow-sm"
             onClick={() => onSubmit(true)}
             disabled={isLoading}
           >
