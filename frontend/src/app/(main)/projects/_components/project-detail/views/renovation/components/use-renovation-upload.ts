@@ -45,8 +45,6 @@ export function useRenovationUpload({
 }: UseRenovationUploadProps) {
   // 使用 ref 存储 previewUrl 映射，避免重复创建 ObjectURL
   const previewUrlsRef = useRef<Map<string, string>>(new Map());
-  // 使用 ref 存储正在上传的文件 ID，即使上传完成也短暂保留以显示100%进度
-  const completedFilesRef = useRef<Set<string>>(new Set());
 
   // 清理不再需要的 ObjectURL
   useEffect(() => {
@@ -107,39 +105,41 @@ export function useRenovationUpload({
   });
 
   // 转换上传队列为组件需要的格式
+  // 【关键修复】只显示正在上传中的文件，不显示已完成的
+  // 因为上传成功后已通过 onPhotoAdded 添加到本地状态显示
   const uploadQueue: UploadingPhoto[] = useMemo(() => {
-    const relevantFiles = files.filter(
-      (f) => f.status === "uploading" || f.status === "success"
-    );
+    // 只保留正在上传中的文件，上传成功的立即移除（不再显示绿色勾选）
+    const uploadingOnlyFiles = files.filter((f) => f.status === "uploading");
 
-    return relevantFiles.map((f) => {
+    return uploadingOnlyFiles.map((f) => {
       let previewUrl = previewUrlsRef.current.get(f.id);
       if (!previewUrl && f.file) {
         previewUrl = URL.createObjectURL(f.file);
         previewUrlsRef.current.set(f.id, previewUrl);
       }
 
-      // 上传完成后延迟清理
-      if (f.status === "success" && !completedFilesRef.current.has(f.id)) {
-        completedFilesRef.current.add(f.id);
-        setTimeout(() => {
-          remove(f.id);
-          const url = previewUrlsRef.current.get(f.id);
-          if (url) {
-            URL.revokeObjectURL(url);
-            previewUrlsRef.current.delete(f.id);
-          }
-          completedFilesRef.current.delete(f.id);
-        }, 1500);
-      }
-
       return {
         id: f.id,
         file: f.file,
         previewUrl: previewUrl || "",
-        progress: f.status === "success" ? 100 : f.progress,
-        status: f.status === "error" ? "error" : "uploading",
+        progress: f.progress,
+        status: "uploading",
       };
+    });
+  }, [files]);
+
+  // 清理已上传完成的文件（从 useUpload 的 files 中移除）
+  useEffect(() => {
+    const completedFiles = files.filter((f) => f.status === "success" || f.status === "error");
+    completedFiles.forEach((f) => {
+      // 释放 ObjectURL
+      const url = previewUrlsRef.current.get(f.id);
+      if (url) {
+        URL.revokeObjectURL(url);
+        previewUrlsRef.current.delete(f.id);
+      }
+      // 从 useUpload 中移除
+      remove(f.id);
     });
   }, [files, remove]);
 
