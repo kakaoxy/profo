@@ -44,18 +44,6 @@ export function formatPrice(price?: number | null): string {
   return `¥ ${price.toLocaleString("zh-CN", { maximumFractionDigits: 2 })} 万`;
 }
 
-// 获取状态颜色
-export function getStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    签约中: "bg-status-signing",
-    装修中: "bg-status-renovating",
-    在售: "bg-status-selling",
-    已成交: "bg-status-sold",
-    已结束: "bg-status-sold",
-  };
-  return colors[status] || "bg-muted";
-}
-
 // 获取文件URL
 // 复用 config.ts 中的实现，保持行为一致
 export function getFileUrl(url: string | undefined | null): string {

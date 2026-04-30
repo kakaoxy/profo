@@ -38,7 +38,8 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-import { formatDate, getRelativeTime, getStatusColor } from "./utils";
+import { formatDate, getRelativeTime } from "./utils";
+import { getProjectStatusClassName } from "@/lib/status-colors";
 import { CreateProjectDialog as ProjectFormDialog } from "../create-project";
 import { deleteProjectAction } from "../../actions/core";
 import { Project } from "../../types";
@@ -129,10 +130,10 @@ export function ProjectDetailHeader({
                     "inline-flex items-center justify-center rounded-full text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
                     // 2. 尺寸与边距
                     "h-6 px-3 shadow-sm",
-                    // 3. 动态颜色 (背景色)
-                    getStatusColor(project.status),
-                    // 4. 强制字体颜色 & Hover 效果
-                    "text-white border-0 hover:opacity-85 hover:shadow-md active:scale-95"
+                    // 3. 动态颜色（使用统一配色系统，已包含 text-white）
+                    getProjectStatusClassName(project.status),
+                    // 4. Hover 效果
+                    "border-0 hover:opacity-85 hover:shadow-md active:scale-95"
                   )}
                 >
                   {STAGE_CONFIG.find((s) => s.key === viewMode)?.label}

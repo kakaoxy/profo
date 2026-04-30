@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Project } from "../../../../types";
 import { STAGE_CONFIG, ViewMode } from "../../constants";
-import { getStatusColor } from "../../utils";
+import { getProjectStatusClassName } from "@/lib/status-colors";
 
 // [修改] 扩展 Props 接口，接收视图控制参数
 interface SoldHeaderProps {
@@ -52,9 +52,9 @@ export function SoldHeader({
                   className={cn(
                     "inline-flex items-center justify-center rounded-full text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
                     "h-6 px-3 shadow-sm",
-                    // 这里会自动获取 'sold' 对应的绿色，非常契合当前页面风格
-                    getStatusColor(project.status),
-                    "text-white border-0 hover:opacity-85 hover:shadow-md active:scale-95"
+                    // 使用统一配色系统，已包含 text-white
+                    getProjectStatusClassName(project.status),
+                    "border-0 hover:opacity-85 hover:shadow-md active:scale-95"
                   )}
                 >
                   {STAGE_CONFIG.find((s) => s.key === viewMode)?.label}
