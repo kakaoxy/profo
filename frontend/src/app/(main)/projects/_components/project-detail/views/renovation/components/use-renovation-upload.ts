@@ -74,7 +74,10 @@ export function useRenovationUpload({
 
       if (dbRes.success) {
         toast.success(`${file.name} 上传成功`);
-        onPhotoUploaded();
+        // 延迟刷新列表，让用户看到完成状态，也给后端数据同步时间
+        setTimeout(() => {
+          onPhotoUploaded();
+        }, 1000);
       } else {
         toast.error(`保存照片记录失败: ${dbRes.message}`);
       }
@@ -103,7 +106,8 @@ export function useRenovationUpload({
       // 上传完成且新成功的文件，标记为已完成
       if (f.status === "success" && !completedFilesRef.current.has(f.id)) {
         completedFilesRef.current.add(f.id);
-        // 延迟清理，让用户看到100%状态
+        // 延迟清理，等列表刷新完成后再清理上传状态
+        // 给用户时间看到"完成"状态，同时确保列表已刷新
         setTimeout(() => {
           remove(f.id);
           // 清理 ObjectURL
@@ -113,7 +117,7 @@ export function useRenovationUpload({
             previewUrlsRef.current.delete(f.id);
           }
           completedFilesRef.current.delete(f.id);
-        }, 800); // 800ms 延迟，让用户看到完成状态
+        }, 1500); // 1.5s 延迟，确保列表刷新完成后再清理
       }
 
       return {
