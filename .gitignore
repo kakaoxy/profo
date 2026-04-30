@@ -125,6 +125,7 @@ backend/data.db
 .env
 .env.local
 .env.*.local
+.env.*
 
 # ==========================================
 # 文档与媒体文件
