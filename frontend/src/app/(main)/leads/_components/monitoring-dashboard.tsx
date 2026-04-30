@@ -100,8 +100,8 @@ function EmptyState({ communityName }: { communityName: string }) {
 }
 
 export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
-  // 直接使用 lead 中的 communityId
-  const communityId = lead.communityId;
+  // 使用 lead 中的 communityId，空值转换为 undefined 确保组件参数有效
+  const communityId = lead.communityId || undefined;
 
   // Construct ProjectData from Lead to override HeroSection fetching
   const overrideData: ProjectData = {
