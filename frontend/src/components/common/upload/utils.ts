@@ -32,15 +32,13 @@ export async function tryRefreshToken(): Promise<string | null> {
 
 /**
  * 获取有效的 access token
- * 优先从 localStorage 获取，不存在则尝试刷新
+ * [修复] 项目已改用 httpOnly Cookie，不再从 localStorage 读取
+ * 改为尝试刷新获取新 token（用于需要 Authorization header 的场景）
  */
 export async function getValidToken(): Promise<string | null> {
-  let token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
-  if (!token) {
-    token = await tryRefreshToken();
-  }
-
+  // [修复] 直接尝试刷新获取 token
+  // 因为 token 存储在 httpOnly Cookie 中，JavaScript 无法直接读取
+  const token = await tryRefreshToken();
   return token;
 }
 

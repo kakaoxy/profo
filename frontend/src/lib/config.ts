@@ -19,6 +19,12 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://fangmengchina.com";
 
 /**
+ * 服务器端直接访问后端的 URL（不经过 Nginx）
+ * 用于 Server Actions 直接连接本地后端，避免服务器访问自身公网域名的问题
+ */
+const SERVER_SIDE_API_URL = process.env.SERVER_SIDE_API_URL || "http://127.0.0.1:8000";
+
+/**
  * 预定义的 API 端点路径
  * 使用这些常量而不是手动拼接 URL
  */
@@ -47,10 +53,20 @@ export const apiPaths = {
  * @returns 完整的 API URL
  * 
  * 注意：Server Actions 中的 fetch 需要完整的绝对 URL
+ * 
+ * [修复] 服务器端直接访问本地后端 (127.0.0.1:8000)，避免服务器访问自身公网域名失败的问题
+ * 客户端仍使用公网域名，通过 Nginx 代理到后端
  */
 export function getApiUrl(path: string): string {
   // 确保 path 以 / 开头
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  
+  // 服务器端（Server Actions）：直接访问本地后端，不经过 Nginx
+  if (typeof window === "undefined") {
+    return `${SERVER_SIDE_API_URL}${normalizedPath}`;
+  }
+  
+  // 客户端：使用公网域名，通过 Nginx 代理
   return `${API_BASE_URL}${normalizedPath}`;
 }
 
@@ -61,17 +77,24 @@ export function getApiUrl(path: string): string {
  * 
  * [修复] 开发环境使用相对路径配合 Next.js rewrite 规则代理到后端
  * 这样可以解决跨域 Cookie 问题，确保 httpOnly Cookie 能正确发送
+ * 
+ * [修复2] 服务器端渲染时直接访问本地后端，避免 SSL 证书问题
  */
 export function getClientApiUrl(path: string): string {
   // 确保 path 以 / 开头
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
+  // 服务器端（SSR/Server Action）：直接访问本地后端
+  if (typeof window === "undefined") {
+    return `${SERVER_SIDE_API_URL}${normalizedPath}`;
+  }
+
   // 开发环境：使用相对路径，通过 Next.js rewrite 代理到后端
-  // 这样浏览器发送请求时会带上同域的 Cookie
   if (!isProduction) {
     return normalizedPath;
   }
 
+  // 客户端生产环境：使用公网域名
   return `${API_BASE_URL}${normalizedPath}`;
 }
 

@@ -13,13 +13,13 @@ const nextConfig: NextConfig = {
     },
   },
   // [修复] API 代理重写规则 - 解决跨域 Cookie 问题
-  // 开发环境下将 /api/* 请求代理到后端，使前后端同域，Cookie 可正常发送
+  // 只 rewrite /api/v1/* 到后端，/api/auth/* 留给 Next.js 自己处理
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     return [
       {
-        source: "/api/:path*",
-        destination: `${apiUrl}/api/:path*`,
+        source: "/api/v1/:path*",
+        destination: `${apiUrl}/api/v1/:path*`,
       },
     ];
   },
