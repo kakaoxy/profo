@@ -16,6 +16,8 @@ interface UseRenovationUploadProps {
   projectId: string;
   stageValue: string;
   onPhotoUploaded: () => void;
+  /** 上传成功后立即回调，用于本地状态更新（解决图片消失问题） */
+  onPhotoAdded?: (photo: { url: string; filename: string }) => void;
 }
 
 export interface UploadingPhoto {
@@ -30,6 +32,7 @@ export function useRenovationUpload({
   projectId,
   stageValue,
   onPhotoUploaded,
+  onPhotoAdded,
 }: UseRenovationUploadProps) {
   // 使用 ref 存储 previewUrl 映射，避免重复创建 ObjectURL
   const previewUrlsRef = useRef<Map<string, string>>(new Map());
@@ -64,6 +67,10 @@ export function useRenovationUpload({
         return;
       }
 
+      // 【关键修复】上传成功后，立即回调给父组件添加本地状态
+      // 这样即使服务器数据同步有延迟，用户也能立即看到图片
+      onPhotoAdded?.({ url: response.url, filename: file.name });
+
       // 上传到服务器成功后，保存到数据库
       const dbRes = await addRenovationPhotoAction({
         projectId,
@@ -74,10 +81,10 @@ export function useRenovationUpload({
 
       if (dbRes.success) {
         toast.success(`${file.name} 上传成功`);
-        // 延迟刷新列表，让用户看到完成状态，也给后端数据同步时间
+        // 延迟刷新列表，同步服务器数据
         setTimeout(() => {
           onPhotoUploaded();
-        }, 1000);
+        }, 1500);
       } else {
         toast.error(`保存照片记录失败: ${dbRes.message}`);
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CheckCircle2, CircleDot, Circle } from "lucide-react";
@@ -21,6 +21,14 @@ import { useRenovationUpload } from "./use-renovation-upload";
 import { Project, RenovationPhoto } from "../../../../../types";
 import { RENOVATION_STAGES } from "../../../constants";
 import { updateRenovationStageAction, deleteRenovationPhotoAction } from "../../../../../actions/renovation";
+
+// 【关键修复】本地临时照片类型，用于上传后立即显示
+interface LocalTempPhoto {
+  id: string;
+  url: string;
+  filename: string;
+  createdAt: string;
+}
 
 interface TimelineItemProps {
   stage: (typeof RENOVATION_STAGES)[number];
@@ -44,12 +52,47 @@ export function TimelineItem({
   const router = useRouter();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  // 【关键修复】本地临时照片状态，上传后立即显示，避免图片"消失"
+  const [localTempPhotos, setLocalTempPhotos] = useState<LocalTempPhoto[]>([]);
+
+  // 【关键修复】处理新照片添加到本地状态
+  const handlePhotoAdded = useCallback((photo: { url: string; filename: string }) => {
+    const newPhoto: LocalTempPhoto = {
+      id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      url: photo.url,
+      filename: photo.filename,
+      createdAt: new Date().toISOString(),
+    };
+    setLocalTempPhotos((prev) => [...prev, newPhoto]);
+  }, []);
+
+  // 【关键修复】当服务器刷新后，清理本地临时照片（避免重复显示）
+  const handlePhotoUploaded = useCallback(() => {
+    setLocalTempPhotos([]); // 清理本地临时照片，因为服务器已经有了
+    onPhotoUploaded();
+  }, [onPhotoUploaded]);
 
   const { uploadQueue, handleUpload } = useRenovationUpload({
     projectId: project.id,
     stageValue: stage.value,
-    onPhotoUploaded,
+    onPhotoUploaded: handlePhotoUploaded,
+    onPhotoAdded: handlePhotoAdded, // 【关键修复】上传成功后立即添加到本地状态
   });
+
+  // 【关键修复】合并服务器照片和本地临时照片，优先显示本地照片（更新鲜）
+  const displayPhotos = useMemo(() => {
+    // 将本地临时照片转换为 RenovationPhoto 格式
+    const localPhotos: RenovationPhoto[] = localTempPhotos.map((p) => ({
+      id: p.id,
+      url: p.url,
+      filename: p.filename,
+      stage: stage.value,
+      project_id: project.id,
+      created_at: p.createdAt,
+    }));
+    // 服务器照片 + 本地临时照片
+    return [...photos, ...localPhotos];
+  }, [photos, localTempPhotos, stage.value, project.id]);
 
   // [修改] 优先通过 renovationStageDates 判断是否已完成
   const stageFinishDateStr = project.renovationStageDates?.[stage.value];
@@ -62,7 +105,7 @@ export function TimelineItem({
       toast.warning("请等待图片上传完成");
       return;
     }
-    if (photos.length === 0) {
+    if (displayPhotos.length === 0) {
       toast.error("请至少上传一张验收照片");
       return;
     }
@@ -139,8 +182,8 @@ export function TimelineItem({
             {stage.label}
           </span>
           {isCurrent && <Badge variant="secondary" className="bg-status-renovating/10 text-status-renovating hover:bg-status-renovating/10 border-none">进行中</Badge>}
-          {(photos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
-            <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">{photos.length + uploadQueue.length} 张照片</span>
+          {(displayPhotos.length > 0 || uploadQueue.length > 0) && !isCurrent && (
+            <span className="text-xs text-muted-foreground ml-2 bg-muted px-1.5 rounded">{displayPhotos.length + uploadQueue.length} 张照片</span>
           )}
           {renderFinishDate()}
         </div>
@@ -148,7 +191,7 @@ export function TimelineItem({
 
       <AccordionContent className="pl-12 pt-4 pb-2">
         <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-card border-status-renovating/30 shadow-sm" : "bg-muted/50 border-border")}>
-          <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} onUpload={handleUpload} onDelete={handleDelete} />
+          <PhotoGrid photos={displayPhotos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} onUpload={handleUpload} onDelete={handleDelete} />
           <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
         </div>
       </AccordionContent>
