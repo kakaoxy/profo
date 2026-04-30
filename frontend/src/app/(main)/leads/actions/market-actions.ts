@@ -18,10 +18,10 @@ export interface MarketSentiment {
 }
 
 export async function getMarketSentimentAction(
-  communityName: string,
+  communityId: string,
 ): Promise<MarketSentiment | null> {
   const result =
-    await getProjectMarketSentimentByCommunityAction(communityName);
+    await getProjectMarketSentimentByCommunityAction(communityId);
   if (!result.success || !result.data) return null;
 
   const floorStats = (result.data.floor_stats || []).map((s) => ({

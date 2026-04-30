@@ -107,15 +107,20 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             : formData.floorInfo; // Fallback or empty
 
     onAdd({
-      ...formData,
+      communityId: formData.communityId || undefined,
+      communityName: formData.communityName,
+      layout: formData.layout,
+      orientation: formData.orientation,
       floorInfo: floorText,
       area: Number(formData.area),
       totalPrice: Number(formData.totalPrice),
       unitPrice: Number(calculatedUnitPrice),
-      status: lead?.status || LeadStatus.PENDING_ASSESSMENT, // Keep existing status if editing
+      district: formData.district,
+      businessArea: formData.businessArea,
+      remarks: formData.remarks,
+      status: lead?.status || LeadStatus.PENDING_ASSESSMENT,
       images: images.length > 0 ? images : [],
       creatorName: lead?.creatorName || '运营',
-      // communityId is already in formData
     });
     
     // Close modal (state reset happens in useEffect when re-opened or lead changes)
