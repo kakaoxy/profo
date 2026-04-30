@@ -39,7 +39,7 @@ export function getOfferStats(offerRecords: ApiSalesRecord[]) {
     .map(r => toNumber(r.price))
     .filter((p): p is number => p !== undefined);
 
-  const maxOffer = offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
+  const maxOffer = sortedOffers.length > 0 && offerPrices.length > 0 ? Math.max(...offerPrices) : 0;
   // 取按日期排序后最新的出价
   const lastOffer = sortedOffers.length > 0 ? toNumber(sortedOffers[0].price) ?? 0 : 0;
 
