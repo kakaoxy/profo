@@ -52,5 +52,3 @@ test_*.db
 .DS_Store
 Thumbs.db
 
-# uv
-uv.lock
