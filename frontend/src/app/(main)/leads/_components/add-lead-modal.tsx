@@ -24,6 +24,7 @@ export const FormItem = ({ label, children }: { label: string, children?: React.
 
 export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) => {
   const [formData, setFormData] = useState({
+    communityId: '',
     communityName: '',
     layout: '2室1厅1卫',
     orientation: '南',
@@ -55,6 +56,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         }
 
         setFormData({
+            communityId: lead.communityId || '',
             communityName: lead.communityName,
             layout: lead.layout || '2室1厅1卫',
             orientation: lead.orientation || '南',
@@ -70,18 +72,19 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         setImages(lead.images || []);
     } else if (isOpen && !lead) {
         // Reset for add mode
-        setFormData({ 
-            communityName: '', 
-            layout: '2室1厅1卫', 
-            orientation: '南', 
-            floorInfo: '', 
-            currentFloor: '', 
-            totalFloor: '', 
-            area: '', 
-            totalPrice: '', 
-            district: '', 
-            businessArea: '', 
-            remarks: '' 
+        setFormData({
+            communityId: '',
+            communityName: '',
+            layout: '2室1厅1卫',
+            orientation: '南',
+            floorInfo: '',
+            currentFloor: '',
+            totalFloor: '',
+            area: '',
+            totalPrice: '',
+            district: '',
+            businessArea: '',
+            remarks: ''
         });
         setImages([]);
     }
@@ -112,6 +115,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
       status: lead?.status || LeadStatus.PENDING_ASSESSMENT, // Keep existing status if editing
       images: images.length > 0 ? images : [],
       creatorName: lead?.creatorName || '运营',
+      // communityId is already in formData
     });
     
     // Close modal (state reset happens in useEffect when re-opened or lead changes)
@@ -145,6 +149,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                 onChange={(community) =>
                   setFormData((prev) => ({
                     ...prev,
+                    communityId: community.id,
                     communityName: community.name,
                     district: community.district || prev.district,
                     businessArea:
