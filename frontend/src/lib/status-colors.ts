@@ -68,12 +68,19 @@ export const LEAD_STATUS_MAPPING: Record<LeadStatus, StatusType> = {
   [LeadStatus.REJECTED]: "rejected",
 };
 
-/** 项目状态映射：将项目状态字符串映射到通用 StatusType */
+/** 项目状态映射：将项目状态字符串映射到通用 StatusType（支持中英文） */
 export const PROJECT_STATUS_MAPPING: Record<string, StatusType> = {
+  // 英文键名
   signing: "signing",
   renovating: "renovating",
   selling: "selling",
   sold: "sold",
+  // 中文键名（与后端返回的 project.status 对应）
+  签约中: "signing",
+  装修中: "renovating",
+  在售: "selling",
+  已成交: "sold",
+  已结束: "sold",
 };
 
 /** 默认项目状态 */
