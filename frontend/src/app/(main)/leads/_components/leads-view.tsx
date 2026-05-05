@@ -23,6 +23,7 @@ import { LeadsTable } from "./leads-table";
 import { LeadsGrid } from "./leads-grid";
 import { LeadsToolbar } from "./leads-toolbar";
 import { Loader2 } from "lucide-react";
+import { ListView } from "@/components/common";
 
 const LeadDrawer = dynamic(
   () => import("./lead-drawer").then((mod) => mod.LeadDrawer),
@@ -163,7 +164,7 @@ export function LeadsView({
 
         <LeadsStats leads={leads} />
 
-        <div className="space-y-4">
+        <ListView totalCount={leads.length} filteredCount={filteredLeads.length}>
           <LeadsToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -202,12 +203,9 @@ export function LeadsView({
                   onDelete={handleDeleteLead}
                 />
               )}
-              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-                <span>显示 {filteredLeads.length} 条记录 (共 {leads.length} 条)</span>
-              </div>
             </>
           )}
-        </div>
+        </ListView>
 
         <LeadDrawer
           lead={selectedLead}

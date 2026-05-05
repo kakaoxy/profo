@@ -24,6 +24,7 @@ interface StatusTransitionDialogProps {
     | "secondary"
     | "ghost"
     | "link";
+  triggerClassName?: string;
 
   // 弹窗内容配置
   title: string;
@@ -39,6 +40,7 @@ export function StatusTransitionDialog({
   triggerLabel,
   triggerIcon,
   triggerVariant = "default", // 默认为黑底白字风格，也可以传入其他风格
+  triggerClassName,
   title,
   description,
   children,
@@ -69,9 +71,11 @@ export function StatusTransitionDialog({
         <Button
           variant={triggerVariant === "default" ? "default" : triggerVariant}
           className={
-            triggerVariant === "default"
-              ? "w-full bg-primary hover:bg-primary text-primary-foreground gap-2 shadow-sm h-12 text-base"
-              : "w-full gap-2"
+            triggerClassName ?? (
+              triggerVariant === "default"
+                ? "w-full bg-primary hover:bg-primary text-primary-foreground gap-2 shadow-sm h-12 text-base"
+                : "w-full gap-2"
+            )
           }
         >
           {triggerIcon}
