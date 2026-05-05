@@ -2,12 +2,12 @@
 
 import { useState, useMemo, useTransition, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, X, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
+import { SearchBar, ListView } from "@/components/common";
 import { columns } from "../columns";
 import { L4MarketingProject } from "@/app/(main)/l4-marketing/projects/types";
 import { MarketingDetailSheet } from "./marketing-detail-sheet";
@@ -133,18 +133,8 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     // 户型过滤仍使用客户端过滤，不更新 URL
   }, []);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    startTransition(() => {
-      setSearchQuery(value);
-    });
-    // 搜索使用客户端过滤，不更新 URL
-  }, []);
-
-  const handleClearSearch = useCallback(() => {
-    startTransition(() => {
-      setSearchQuery("");
-    });
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
   }, []);
 
   const handleRowClick = useCallback((row: L4MarketingProject) => {
@@ -161,119 +151,99 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   ];
 
   return (
-    <div className="space-y-4">
-      {/* --- Top Toolbar --- */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        {/* Left: Filter Area */}
-        <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="搜索房源名称..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-9 pr-9 bg-card border-border focus-visible:ring-primary"
-            />
-            {searchQuery ? (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            ) : null}
-          </div>
-
-          {/* Layout Tabs */}
-          <div className="flex p-1 bg-muted rounded-lg">
-            {layoutTabs.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => handleLayoutChange(tab.value)}
-                className={`py-1.5 px-3 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
-                  layoutFilter === tab.value
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Status Tabs */}
-          <Tabs
-            value={activeTab}
-            onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTER_MAP)}
-            className="w-full sm:w-auto"
-          >
-            <TabsList className="h-10 bg-muted p-1 rounded-lg">
-              <TabsTrigger value="all" className="text-xs px-3">
-                全部
-              </TabsTrigger>
-              <TabsTrigger
-                value="in_progress"
-                className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-              >
-                在途
-              </TabsTrigger>
-              <TabsTrigger
-                value="for_sale"
-                className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
-              >
-                在售
-              </TabsTrigger>
-              <TabsTrigger
-                value="sold"
-                className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
-              >
-                已售
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Right: Actions */}
-        <div className="flex w-full lg:w-auto gap-3">
-          <Button
-            variant="outline"
-            className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
-            onClick={() => toast.success("正在生成报表...")}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            导出
-          </Button>
-
-          <div className="flex-1 lg:flex-none">
-            <Link
-              href="/l4-marketing/projects/new"
-              className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              新建房源
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Table Area --- */}
-      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <DataTable
-            columns={columns}
-            data={filteredData}
-            onRowClick={handleRowClick}
+    <>
+      <ListView
+        searchBar={
+          <SearchBar
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="搜索房源名称..."
           />
-        </div>
-      </div>
+        }
+        filterTabs={
+          <>
+            <div className="flex p-1 bg-muted rounded-lg">
+              {layoutTabs.map((tab) => (
+                <button
+                  key={tab.value}
+                  onClick={() => handleLayoutChange(tab.value)}
+                  className={`py-1.5 px-3 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+                    layoutFilter === tab.value
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-      {/* Footer Info */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-        <span>
-          显示 {filteredData.length} 条记录 (共 {total} 条)
-        </span>
-      </div>
+            <Tabs
+              value={activeTab}
+              onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTER_MAP)}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="h-10 bg-muted p-1 rounded-lg">
+                <TabsTrigger value="all" className="text-xs px-3">
+                  全部
+                </TabsTrigger>
+                <TabsTrigger
+                  value="in_progress"
+                  className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  在途
+                </TabsTrigger>
+                <TabsTrigger
+                  value="for_sale"
+                  className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+                >
+                  在售
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sold"
+                  className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
+                >
+                  已售
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </>
+        }
+        actions={
+          <>
+            <Button
+              variant="outline"
+              className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
+              onClick={() => toast.success("正在生成报表...")}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              导出
+            </Button>
+
+            <div className="flex-1 lg:flex-none">
+              <Link
+                href="/l4-marketing/projects/new"
+                className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                新建房源
+              </Link>
+            </div>
+          </>
+        }
+        totalCount={total}
+        filteredCount={filteredData.length}
+      >
+        <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={filteredData}
+              onRowClick={handleRowClick}
+            />
+          </div>
+        </div>
+      </ListView>
 
       <MarketingDetailSheet
         key={selectedProject?.id}
@@ -281,6 +251,6 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
       />
-    </div>
+    </>
   );
 }

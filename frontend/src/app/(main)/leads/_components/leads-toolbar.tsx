@@ -1,11 +1,11 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, X, Download, List, LayoutGrid, Plus } from "lucide-react";
+import { Download, List, LayoutGrid, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SearchBar } from "@/components/common";
 
 import { LeadTabValue, LeadStatus } from "../types";
 
@@ -38,24 +38,11 @@ export function LeadsToolbar({
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
       {/* Left: Filter Area */}
       <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="搜索小区名称..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 pr-9 bg-background border-border focus-visible:ring-primary"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
+        <SearchBar
+          value={searchQuery}
+          onChange={onSearchChange}
+          placeholder="搜索小区名称..."
+        />
 
         {/* Status Tabs */}
         <Tabs
