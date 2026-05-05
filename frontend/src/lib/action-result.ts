@@ -54,30 +54,33 @@ export async function handleActionError<T>(
 /**
  * 从 API 错误响应中提取错误信息
  */
-export function extractErrorMessage(error: unknown): string {
+export function extractErrorMessage(
+  error: unknown,
+  fallbackMessage = "未知错误"
+): string {
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   if (typeof error === "string") {
     return error;
   }
-  
+
   if (error && typeof error === "object") {
     // FastAPI 标准错误格式
     if ("detail" in error && typeof error.detail === "string") {
       return error.detail;
     }
-    
+
     // 其他常见错误格式
     if ("message" in error && typeof error.message === "string") {
       return error.message;
     }
-    
+
     if ("error" in error && typeof error.error === "string") {
       return error.error;
     }
   }
-  
-  return "未知错误";
+
+  return fallbackMessage;
 }

@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { extractErrorMessage } from "./action-result";
 
 export interface ErrorHandlerOptions {
   showToast?: boolean;
@@ -18,45 +19,18 @@ export function handleError(
   options: ErrorHandlerOptions = {}
 ): string {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  
+
   const errorMessage = extractErrorMessage(error, opts.fallbackMessage);
-  
+
   if (opts.logToConsole) {
     console.error(`[${context}]`, error);
   }
-  
+
   if (opts.showToast) {
     toast.error(errorMessage);
   }
-  
-  return errorMessage;
-}
 
-export function extractErrorMessage(
-  error: unknown,
-  fallbackMessage: string = "操作失败"
-): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  
-  if (typeof error === "string") {
-    return error;
-  }
-  
-  if (error && typeof error === "object") {
-    if ("message" in error && typeof error.message === "string") {
-      return error.message;
-    }
-    if ("detail" in error && typeof error.detail === "string") {
-      return error.detail;
-    }
-    if ("error" in error && typeof error.error === "string") {
-      return error.error;
-    }
-  }
-  
-  return fallbackMessage;
+  return errorMessage;
 }
 
 export function handleSuccess(message: string, description?: string): void {
