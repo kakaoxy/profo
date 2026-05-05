@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/action-result";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +42,7 @@ export function DeleteConfirmButton({
         toast.error(res.message || "删除失败");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "删除失败");
+      toast.error(extractErrorMessage(error));
     } finally {
       setIsDeleting(false);
     }
