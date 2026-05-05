@@ -54,14 +54,14 @@ export function useRadarData({
       }
     };
 
-    if (projectId || communityId) {
+    if (hasParam) {
       loadData();
     }
 
     return () => {
       isMounted = false;
     };
-  }, [projectId, communityId, refreshKey]);
+  }, [hasParam, projectId, communityId, refreshKey]);
 
   const refresh = () => setRefreshKey((k) => k + 1);
 
