@@ -19,8 +19,8 @@ interface InfoCardProps {
 
 export function InfoCard({ title, icon, children, className, gridColumns }: InfoCardProps) {
   return (
-    <Card className={cn("border-border shadow-sm", className)}>
-      <CardHeader className="border-b border-border py-4">
+    <Card className={cn("border-border shadow-sm py-0 gap-0", className)}>
+      <CardHeader className="border-b border-border py-3 px-4 !pb-3">
         <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-1.5">
           {icon}
           {title}
@@ -29,8 +29,8 @@ export function InfoCard({ title, icon, children, className, gridColumns }: Info
       <CardContent
         className={
           gridColumns
-            ? cn("grid gap-x-8 gap-y-1", gridColsMap[gridColumns] ?? "sm:grid-cols-2")
-            : "py-6"
+            ? cn("grid gap-x-8 gap-y-1 px-4 py-4", gridColsMap[gridColumns] ?? "sm:grid-cols-2")
+            : "py-4 px-4"
         }
       >
         {children}
