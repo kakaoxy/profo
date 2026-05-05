@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { InfoCard } from "../ui/InfoCard";
+import { InfoCard } from "@/components/common";
 import { MarketingInfoView } from "./MarketingInfoView";
 import { PhysicalInfoView } from "./PhysicalInfoView";
 import { BasicConfigView } from "./BasicConfigView";

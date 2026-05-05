@@ -1,8 +1,7 @@
 import { FileText, TrendingUp, User, MapPin, FileCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Project } from "../../../../../types";
-import { InfoSection } from "../../../components/info-section";
-import { InfoItem } from "../../../components/info-item";
+import { InfoCard as InfoSection, InfoItem } from "@/components/common";
 import { formatDate, formatPrice } from "../../../utils";
 
 interface InfoTabProps {
