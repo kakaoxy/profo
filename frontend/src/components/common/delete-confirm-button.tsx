@@ -40,8 +40,8 @@ export function DeleteConfirmButton({
       } else {
         toast.error(res.message || "删除失败");
       }
-    } catch {
-      toast.error("删除失败");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "删除失败");
     } finally {
       setIsDeleting(false);
     }
