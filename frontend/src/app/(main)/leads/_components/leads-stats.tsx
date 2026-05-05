@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+import { StatsCardGrid, type StatItem } from "@/components/common";
 import {
   ClipboardList,
   CalendarClock,
@@ -23,7 +23,7 @@ export function LeadsStats({ leads }: LeadsStatsProps) {
     rejected: leads.filter((l) => l.status === LeadStatus.REJECTED).length,
   };
 
-  const items = [
+  const items: StatItem[] = [
     {
       label: "待评估",
       value: stats.pendingAssessment,
@@ -56,36 +56,5 @@ export function LeadsStats({ leads }: LeadsStatsProps) {
     },
   ];
 
-  return (
-    <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-      {items.map((item, index) => {
-        const Icon = item.icon;
-        return (
-          <Card
-            key={index}
-            className="p-4 bg-card border-border hover:bg-muted/50 transition-colors cursor-pointer shadow-sm"
-            role="button"
-            aria-label={`${item.label} ${item.value}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">
-                  {item.label}
-                </p>
-                <p className="text-2xl font-bold text-foreground tabular-nums">
-                  {item.value}
-                </p>
-              </div>
-              <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center ${item.color} text-white`}
-                aria-hidden="true"
-              >
-                <Icon className="w-5 h-5" strokeWidth={1.75} />
-              </div>
-            </div>
-          </Card>
-        );
-      })}
-    </div>
-  );
+  return <StatsCardGrid items={items} columns={5} />;
 }

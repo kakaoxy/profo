@@ -1,22 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { Row } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { LineChart, Trash2, Wallet } from "lucide-react";
+import { LineChart, Wallet } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { DeleteConfirmButton } from "@/components/common";
 import { Project } from "../types";
 import { deleteProjectAction } from "../actions/core";
 
@@ -25,24 +14,6 @@ interface ActionCellProps {
 }
 
 export function ActionCell({ row }: ActionCellProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = useCallback(async () => {
-    setIsDeleting(true);
-    try {
-      const res = await deleteProjectAction(row.original.id);
-      if (res.success) {
-        toast.success("项目已删除");
-      } else {
-        toast.error(res.message);
-      }
-    } catch {
-      toast.error("删除失败");
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [row.original.id]);
-
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
   }, []);
@@ -75,39 +46,13 @@ export function ActionCell({ row }: ActionCellProps) {
       </Link>
 
       <div className="hidden sm:block">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full"
-              onClick={handleClick}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent onClick={handleClick}>
-            <AlertDialogHeader>
-              <AlertDialogTitle>确认删除项目？</AlertDialogTitle>
-              <AlertDialogDescription>
-                此操作将把项目标记为删除状态。
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDelete();
-                }}
-                disabled={isDeleting}
-                className="bg-error hover:bg-red-700"
-              >
-                确认删除
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteConfirmButton
+          onDelete={async () => {
+            const res = await deleteProjectAction(row.original.id);
+            return res;
+          }}
+          description="此操作将把项目标记为删除状态。"
+        />
       </div>
     </div>
   );
