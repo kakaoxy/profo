@@ -116,26 +116,34 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       const oldIndex = currentList.findIndex((p) => p.id === activePhoto.id);
       const newIndex = currentList.findIndex((p) => p.id === overId);
 
-      if (oldIndex === -1 || newIndex === -1) return;
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
       const reordered = arrayMove(currentList, oldIndex, newIndex);
-      const updatedPhotos = reordered.map((p, idx) => ({ ...p, sort_order: idx }));
+
+      // 优化：只更新排序顺序实际发生变化的照片
+      const startIndex = Math.min(oldIndex, newIndex);
+      const endIndex = Math.max(oldIndex, newIndex);
+
+      // 只生成受影响范围内的照片更新数据
+      const sortUpdates = reordered
+        .slice(startIndex, endIndex + 1)
+        .map((p, idx) => ({
+          media_id: Number(p.id),
+          sort_order: startIndex + idx,
+        }));
 
       const newPhotos = photos.map((p) => {
-        const updated = updatedPhotos.find((u) => u.id === p.id);
+        const updated = reordered.find((u) => u.id === p.id);
         return updated || p;
       });
 
       setPhotos(newPhotos);
 
-      const sortUpdates = updatedPhotos.map((p, idx) => ({
-        media_id: Number(p.id),
-        sort_order: idx,
-      }));
-
       const result = await batchUpdateMediaSortOrderAction(Number(projectId), sortUpdates);
       if (!result.success) {
         toast.error("保存排序失败");
+        // 失败时回滚本地状态
+        setPhotos(photos);
       }
     },
     [marketingPhotos, renovationPhotos, photos, projectId]
