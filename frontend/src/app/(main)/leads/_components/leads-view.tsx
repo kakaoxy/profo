@@ -11,7 +11,7 @@ import {
   createLeadAction,
 } from "../actions";
 import { useLeadsFilter, useLeadSelection, useViewMode } from "../hooks";
-import { handleError, handleSuccess } from "../lib/error-handling";
+import { handleError, handleSuccess } from "@/lib/error-handling";
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
