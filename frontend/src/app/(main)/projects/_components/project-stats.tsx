@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { StatsCardGrid, type StatItem } from "@/components/common";
 import {
   FileSignature,
   Hammer,
@@ -16,7 +16,7 @@ interface StatsProps {
 }
 
 export function ProjectStats({ stats }: StatsProps) {
-  const items = [
+  const items: StatItem[] = [
     {
       label: "签约",
       value: stats.signing || 0,
@@ -43,36 +43,5 @@ export function ProjectStats({ stats }: StatsProps) {
     },
   ];
 
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {items.map((item, index) => {
-        const Icon = item.icon;
-        return (
-          <Card
-            key={index}
-            className="p-4 bg-card border-border hover:bg-muted dark:hover:bg-muted transition-colors cursor-pointer shadow-sm"
-            role="button"
-            aria-label={`${item.label} ${item.value}`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">
-                  {item.label}
-                </p>
-                <p className="text-2xl font-bold text-foreground tabular-nums">
-                  {item.value}
-                </p>
-              </div>
-              <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center ${item.color} text-white`}
-                aria-hidden="true"
-              >
-                <Icon className="w-5 h-5" strokeWidth={1.75} />
-              </div>
-            </div>
-          </Card>
-        );
-      })}
-    </div>
-  );
+  return <StatsCardGrid items={items} />;
 }
