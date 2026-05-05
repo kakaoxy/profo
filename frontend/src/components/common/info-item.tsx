@@ -31,13 +31,17 @@ export function InfoItem({
   const variant = muted ? "muted" : variantProp ?? "default";
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     const textToCopy = copyValue ?? (typeof value === "string" ? value : "");
     if (!textToCopy) return;
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    toast.success("已复制到剪贴板");
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      toast.success("已复制到剪贴板");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("复制失败");
+    }
   }, [copyValue, value]);
 
   if (value === undefined || value === null || value === "") return null;
