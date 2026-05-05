@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
-import { InfoCard } from "../ui/InfoCard";
-import { DisplayRow } from "../ui/DisplayRow";
+import { InfoCard } from "@/components/common";
+import { DisplayRow } from "@/components/common";
 import { getStatusConfig, getPublishStatusConfig } from "../detail/utils";
 import type { L4MarketingProject } from "../../types";
 

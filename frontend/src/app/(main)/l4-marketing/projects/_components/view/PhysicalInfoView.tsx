@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { InfoCard } from "../ui/InfoCard";
-import { DisplayRow } from "../ui/DisplayRow";
+import { InfoCard } from "@/components/common";
+import { DisplayRow } from "@/components/common";
 import { formatUnitPrice } from "@/lib/formatters";
 import type { L4MarketingProject } from "../../types";
 

@@ -28,7 +28,7 @@ export { ProjectSelector } from "./ProjectSelector";
 export { ProjectListItem } from "./ProjectListItem";
 export { ImportPreview } from "./ImportPreview";
 export { Section } from "./Section";
-export { InfoItem } from "./InfoItem";
+export { InfoItem } from "@/components/common";
 export { MediaItem } from "./MediaItem";
 
 // API导出
