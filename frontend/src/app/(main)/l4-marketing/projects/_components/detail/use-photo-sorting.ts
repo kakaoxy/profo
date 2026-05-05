@@ -116,6 +116,7 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       const oldIndex = currentList.findIndex((p) => p.id === activePhoto.id);
       const newIndex = currentList.findIndex((p) => p.id === overId);
 
+      // 拖拽到同一位置时不处理，避免不必要的 API 调用和状态更新
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
       const reordered = arrayMove(currentList, oldIndex, newIndex);
@@ -142,8 +143,11 @@ export function usePhotoSorting({ projectId, initialPhotos }: UsePhotoSortingPro
       const result = await batchUpdateMediaSortOrderAction(Number(projectId), sortUpdates);
       if (!result.success) {
         toast.error("保存排序失败");
-        // 失败时回滚本地状态
-        setPhotos(photos);
+        // 失败时回滚本地状态，使用函数式更新避免闭包引用过时状态
+        setPhotos((prev) => prev.map((p) => {
+          const original = photos.find((orig) => orig.id === p.id);
+          return original !== undefined ? original : p;
+        }));
       }
     },
     [marketingPhotos, renovationPhotos, photos, projectId]
