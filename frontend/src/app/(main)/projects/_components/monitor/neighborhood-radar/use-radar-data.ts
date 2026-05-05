@@ -23,8 +23,11 @@ export function useRadarData({
   projectId,
   communityId,
 }: UseRadarDataProps): UseRadarDataReturn {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const hasParam = Boolean(projectId || communityId);
+  const [isLoading, setIsLoading] = useState(hasParam);
+  const [error, setError] = useState<string | null>(
+    hasParam ? null : "缺少必要参数"
+  );
   const [competitors, setCompetitors] = useState<NeighborhoodRadarItem[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -39,7 +42,7 @@ export function useRadarData({
         ? await getNeighborhoodRadarAction(projectId)
         : communityId
           ? await getNeighborhoodRadarByCommunityAction(communityId)
-          : { success: false, message: "缺少参数" };
+          : { success: false, message: "缺少必要参数" };
 
       if (isMounted) {
         if (result.success && result.data) {
@@ -53,11 +56,8 @@ export function useRadarData({
 
     if (projectId || communityId) {
       loadData();
-    } else {
-      // 当缺少参数时，直接结束加载状态
-      setIsLoading(false);
-      setError("缺少必要参数");
     }
+
     return () => {
       isMounted = false;
     };
