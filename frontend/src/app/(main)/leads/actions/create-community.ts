@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
+import { apiPaths } from "@/lib/config";
 
 export interface CreateCommunityRequest {
   name: string;
@@ -25,7 +26,7 @@ export async function createCommunityAction(
   try {
     const client = await fetchClient();
     const { data: result, error } = await client.POST(
-      "/api/v1/admin/communities",
+      apiPaths.communities.base,
       {
         body: data,
       }
