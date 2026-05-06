@@ -137,21 +137,23 @@ export function useImageUpload({
   });
 
   const uploadFiles = useCallback(
-    async (files: File[]) => {
-      if (files.length > 1) {
-        toast.info(`开始上传 ${files.length} 个文件...`);
+    async (files: FileList | File[]) => {
+      const fileArray = Array.isArray(files) ? files : Array.from(files);
+
+      if (fileArray.length > 1) {
+        toast.info(`开始上传 ${fileArray.length} 个文件...`);
       }
 
       setUploadingFiles([]);
 
-      const results = await Promise.all(files.map((file) => uploadSingle(file)));
+      const results = await Promise.all(fileArray.map((file) => uploadSingle(file)));
       const successCount = results.filter(Boolean).length;
 
       setUploadingFiles([]);
 
-      if (files.length > 1) {
+      if (fileArray.length > 1) {
         toast.success(`上传完成`, {
-          description: `成功 ${successCount} 个，共 ${files.length} 个文件`,
+          description: `成功 ${successCount} 个，共 ${fileArray.length} 个文件`,
         });
       }
     },
