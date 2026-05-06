@@ -45,9 +45,26 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
   const activeCountRef = useRef(0);
   const pendingQueueRef = useRef<Array<() => void>>([]);
 
+  // 使用 ref 模式稳定回调引用，消除对外部回调稳定性的依赖
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  const onProgressRef = useRef(onProgress);
+
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
 
   const isUploading = useMemo(
     () => files.some((f) => f.status === "uploading"),
@@ -143,7 +160,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 f.id === fileId ? { ...f, progress: percent } : f
               )
             );
-            onProgress?.({ id: fileId, filename: processedFile.name, progress: percent, file: processedFile });
+            onProgressRef.current?.({ id: fileId, filename: processedFile.name, progress: percent, file: processedFile });
           }
         };
 
@@ -166,7 +183,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                       : f
                   )
                 );
-                onError?.(error, processedFile);
+                onErrorRef.current?.(error, processedFile);
                 resolve(null);
                 return;
               }
@@ -178,7 +195,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                     : f
                 )
               );
-              onSuccess?.(response, processedFile);
+              onSuccessRef.current?.(response, processedFile);
               resolve(response);
             } catch (err) {
               const error =
@@ -191,7 +208,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                     : f
                 )
               );
-              onError?.(error, processedFile);
+              onErrorRef.current?.(error, processedFile);
               resolve(null);
             }
           } else {
@@ -208,7 +225,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                   : f
               )
             );
-            onError?.(error, processedFile);
+            onErrorRef.current?.(error, processedFile);
             resolve(null);
           }
         };
@@ -225,7 +242,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 : f
             )
           );
-          onError?.(error, processedFile);
+          onErrorRef.current?.(error, processedFile);
           resolve(null);
         };
 
@@ -239,14 +256,14 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 : f
             )
           );
-          onError?.(error, processedFile);
+          onErrorRef.current?.(error, processedFile);
           resolve(null);
         };
 
         xhr.send(formData);
       });
     },
-    [url, maxSize, allowedTypes, customValidate, beforeUpload, onSuccess, onError, onProgress, dequeueNext]
+    [url, maxSize, allowedTypes, customValidate, beforeUpload, dequeueNext]
   );
 
   /**

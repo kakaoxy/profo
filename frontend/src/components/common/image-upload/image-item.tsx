@@ -50,7 +50,7 @@ export const ImageItemView = memo(function ImageItemView({
       )}
 
       {/* Uploading overlay */}
-      {item.status === "uploading" && (
+      {item.status === "uploading" ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 z-10 p-2 gap-2">
           <Loader2 className="h-6 w-6 animate-spin text-white drop-shadow-md" />
           <div className="w-full px-2">
@@ -60,23 +60,23 @@ export const ImageItemView = memo(function ImageItemView({
             {item.progress}%
           </span>
         </div>
-      )}
+      ) : null}
 
       {/* Error overlay */}
-      {item.status === "error" && (
+      {item.status === "error" ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 z-10 p-2 gap-1.5">
           <AlertCircle className="h-5 w-5 text-error drop-shadow-md" />
           <span className="text-[10px] text-white font-medium drop-shadow-md text-center line-clamp-2 px-1">
             {item.error || "上传失败"}
           </span>
         </div>
-      )}
+      ) : null}
 
       {/* Success / hover state actions */}
-      {item.status !== "uploading" && (
+      {item.status !== "uploading" ? (
         <>
           {/* Preview button on hover */}
-          {item.status === "success" && (
+          {item.status === "success" ? (
             <button
               onClick={() => onPreview(item)}
               className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center"
@@ -84,11 +84,11 @@ export const ImageItemView = memo(function ImageItemView({
             >
               <Eye className="text-white opacity-0 group-hover:opacity-100 w-6 h-6 drop-shadow-md transition-opacity" />
             </button>
-          )}
+          ) : null}
 
           {/* Action buttons */}
           <div className="absolute top-1.5 right-1.5 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {item.status === "error" && (
+            {item.status === "error" ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -99,7 +99,7 @@ export const ImageItemView = memo(function ImageItemView({
               >
                 <RefreshCw className="h-3.5 w-3.5" />
               </button>
-            )}
+            ) : null}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -112,7 +112,7 @@ export const ImageItemView = memo(function ImageItemView({
             </button>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 });

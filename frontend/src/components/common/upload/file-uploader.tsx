@@ -162,7 +162,7 @@ export function FileUploader({
       ))}
 
       {/* 上传进度条 */}
-      {isUploading && uploadingFiles.length > 0 && (
+      {isUploading && uploadingFiles.length > 0 ? (
         <div className="space-y-2 pt-2">
           {uploadingFiles.map((file) => (
             <div key={file.id} className="space-y-1">
@@ -174,7 +174,7 @@ export function FileUploader({
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 
@@ -228,13 +228,13 @@ export function FileUploader({
       </div>
 
       {/* 文件列表 */}
-      {showFileList && files.length > 0 && (
+      {showFileList && files.length > 0 ? (
         renderFileList ? (
           renderFileList({ files, onRemove: remove, onRetry: retry })
         ) : (
           defaultFileList
         )
-      )}
+      ) : null}
     </div>
   );
 }
