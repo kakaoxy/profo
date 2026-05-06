@@ -109,9 +109,9 @@ export const UploadArea = memo(function UploadArea({
           <UploadCloud className="h-10 w-10 text-muted-foreground" />
           <div className="text-center">
             <p className="text-sm font-medium">{title}</p>
-            {description && (
+            {description ? (
               <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-            )}
+            ) : null}
           </div>
         </>
       )}

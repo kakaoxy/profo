@@ -38,9 +38,12 @@ export function useRenovationUpload({
 
       if (dbRes.success) {
         setUploadQueue((prev) => {
-          const item = prev.find((p) => p.file === file);
-          if (item) URL.revokeObjectURL(item.previewUrl);
-          return prev.filter((p) => p.file !== file);
+          const idx = prev.findIndex((p) => p.file === file);
+          if (idx !== -1) {
+            URL.revokeObjectURL(prev[idx].previewUrl);
+            return prev.filter((_, i) => i !== idx);
+          }
+          return prev;
         });
         onPhotoUploadedRef.current();
       } else {
