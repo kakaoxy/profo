@@ -58,7 +58,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
     () =>
       files
         .filter((f) => f.status === "uploading")
-        .map((f) => ({ id: f.id, filename: f.file.name, progress: f.progress })),
+        .map((f) => ({ id: f.id, filename: f.file.name, progress: f.progress, file: f.file })),
     [files]
   );
 
@@ -143,7 +143,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 f.id === fileId ? { ...f, progress: percent } : f
               )
             );
-            onProgress?.({ id: fileId, filename: processedFile.name, progress: percent });
+            onProgress?.({ id: fileId, filename: processedFile.name, progress: percent, file: processedFile });
           }
         };
 

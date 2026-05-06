@@ -109,7 +109,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     },
     onProgress: (progress) => {
       const fileId = itemsRef.current.find(
-        (item) => item.file?.name === progress.filename && item.status === "uploading"
+        (item) => item.file === progress.file && item.status === "uploading"
       )?.id;
       if (fileId) {
         updateItem(fileId, { progress: progress.progress });
