@@ -12,7 +12,7 @@ export type UploadStatus = "pending" | "uploading" | "success" | "error";
 export interface UploadFile {
   /** 唯一标识 */
   id: string;
-  /** 原始文件对象 */
+  /** 原始文件对象，用于精确匹配上传项（避免同名文件冲突） */
   file: File;
   /** 上传状态 */
   status: UploadStatus;
@@ -46,7 +46,7 @@ export interface UploadProgress {
   filename: string;
   /** 进度百分比 */
   progress: number;
-  /** 原始文件对象 */
+  /** 原始文件对象，用于精确匹配上传项（避免同名文件冲突） */
   file: File;
 }
 
