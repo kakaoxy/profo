@@ -60,6 +60,8 @@ export interface UploadOptions {
   multiple?: boolean;
   /** 多文件上传时最大数量 */
   maxCount?: number;
+  /** 最大并发上传数（默认 3） */
+  maxConcurrency?: number;
   /** 自定义文件验证函数 */
   validateFile?: (file: File) => string | null;
   /** 上传前处理 */
@@ -81,7 +83,7 @@ export interface UseUploadReturn {
   /** 当前上传进度 */
   uploadingFiles: UploadProgress[];
   /** 上传文件 */
-  upload: (files: File[]) => Promise<void>;
+  upload: (files: File[]) => void;
   /** 上传单个文件 */
   uploadSingle: (file: File) => Promise<UploadResponse | null>;
   /** 移除文件 */
@@ -90,6 +92,10 @@ export interface UseUploadReturn {
   clear: () => void;
   /** 重新上传失败的文件 */
   retry: (id: string) => Promise<void>;
+  /** 取消所有上传 */
+  cancelAll: () => void;
+  /** 取消指定文件上传 */
+  cancel: (id: string) => void;
 }
 
 /** 文件上传器组件属性 */
