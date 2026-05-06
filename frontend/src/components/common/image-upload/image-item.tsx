@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import { Trash2, RefreshCw, Eye, Loader2, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -14,7 +15,7 @@ interface ImageItemViewProps {
   onPreview: (item: ImageItem) => void;
 }
 
-export function ImageItemView({
+export const ImageItemView = memo(function ImageItemView({
   item,
   aspectRatio,
   onRemove,
@@ -114,4 +115,4 @@ export function ImageItemView({
       )}
     </div>
   );
-}
+});
