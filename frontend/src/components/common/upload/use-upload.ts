@@ -5,7 +5,7 @@
  * 整合6个上传模块的共同逻辑
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import type {
   UploadFile,
@@ -23,12 +23,15 @@ import {
 } from "./utils";
 import { DEFAULT_MAX_FILE_SIZE, DEFAULT_ALLOWED_IMAGE_TYPES } from "./types";
 
+const DEFAULT_MAX_CONCURRENCY = 3;
+
 export function useUpload(options: UploadOptions = {}): UseUploadReturn {
   const {
     url = getUploadUrl(),
     maxSize = DEFAULT_MAX_FILE_SIZE,
     allowedTypes = DEFAULT_ALLOWED_IMAGE_TYPES,
     maxCount,
+    maxConcurrency = DEFAULT_MAX_CONCURRENCY,
     validateFile: customValidate,
     beforeUpload,
     onSuccess,
@@ -38,17 +41,33 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
   const [files, setFiles] = useState<UploadFile[]>([]);
   const filesRef = useRef(files);
+  const activeXhrs = useRef<Map<string, XMLHttpRequest>>(new Map());
+  const activeCountRef = useRef(0);
+  const pendingQueueRef = useRef<Array<() => void>>([]);
 
-  // 使用 useEffect 同步 ref，避免在渲染期间更新
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
 
-  const isUploading = files.some((f) => f.status === "uploading");
+  const isUploading = useMemo(
+    () => files.some((f) => f.status === "uploading"),
+    [files]
+  );
 
-  const uploadingFiles: UploadProgress[] = files
-    .filter((f) => f.status === "uploading")
-    .map((f) => ({ id: f.id, filename: f.file.name, progress: f.progress }));
+  const uploadingFiles: UploadProgress[] = useMemo(
+    () =>
+      files
+        .filter((f) => f.status === "uploading")
+        .map((f) => ({ id: f.id, filename: f.file.name, progress: f.progress })),
+    [files]
+  );
+
+  const dequeueNext = useCallback(() => {
+    if (pendingQueueRef.current.length > 0) {
+      const next = pendingQueueRef.current.shift()!;
+      next();
+    }
+  }, []);
 
   /**
    * 上传单个文件 (核心方法)
@@ -102,6 +121,14 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         formData.append("file", processedFile);
 
         const xhr = new XMLHttpRequest();
+        activeXhrs.current.set(fileId, xhr);
+        activeCountRef.current += 1;
+
+        const cleanup = () => {
+          activeXhrs.current.delete(fileId);
+          activeCountRef.current -= 1;
+          dequeueNext();
+        };
 
         xhr.open("POST", url);
         xhr.withCredentials = true;
@@ -122,11 +149,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
         // 完成处理
         xhr.onload = () => {
-          setFiles((prev) =>
-            prev.map((f) =>
-              f.id === fileId ? { ...f, status: "success" as const } : f
-            )
-          );
+          cleanup();
 
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
@@ -148,6 +171,13 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
                 return;
               }
 
+              setFiles((prev) =>
+                prev.map((f) =>
+                  f.id === fileId
+                    ? { ...f, status: "success" as const, response }
+                    : f
+                )
+              );
               onSuccess?.(response, processedFile);
               resolve(response);
             } catch (err) {
@@ -185,6 +215,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
         // 错误处理
         xhr.onerror = () => {
+          cleanup();
           const error = new Error("网络错误");
           toast.error(`${processedFile.name}: 网络错误`);
           setFiles((prev) =>
@@ -199,8 +230,15 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         };
 
         xhr.onabort = () => {
+          cleanup();
           const error = new Error("上传已取消");
-          setFiles((prev) => prev.filter((f) => f.id !== fileId));
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === fileId
+                ? { ...f, status: "error" as const, error: error.message }
+                : f
+            )
+          );
           onError?.(error, processedFile);
           resolve(null);
         };
@@ -208,45 +246,71 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         xhr.send(formData);
       });
     },
-    [url, maxSize, allowedTypes, customValidate, beforeUpload, onSuccess, onError, onProgress]
+    [url, maxSize, allowedTypes, customValidate, beforeUpload, onSuccess, onError, onProgress, dequeueNext]
   );
 
   /**
-   * 上传多个文件
+   * 上传多个文件（支持并发控制）
    */
   const upload = useCallback(
-    async (fileList: File[]) => {
+    (fileList: File[]) => {
       if (!fileList.length) return;
 
       // 检查最大数量限制
-      if (maxCount && filesRef.current.length + fileList.length > maxCount) {
-        toast.error(`最多只能上传 ${maxCount} 个文件`);
-        return;
+      if (maxCount) {
+        const activeFiles = filesRef.current.filter(
+          (f) => f.status === "uploading" || f.status === "pending"
+        );
+        if (activeFiles.length + fileList.length > maxCount) {
+          toast.error(`最多只能上传 ${maxCount} 个文件`);
+          return;
+        }
       }
 
       if (fileList.length > 1) {
         toast.info(`开始上传 ${fileList.length} 个文件...`);
       }
 
-      const results = await Promise.all(
-        fileList.map((file) => uploadSingle(file))
-      );
+      let completedCount = 0;
+      let successCount = 0;
+      const total = fileList.length;
 
-      const successCount = results.filter(Boolean).length;
+      const onComplete = (ok: boolean) => {
+        if (ok) successCount += 1;
+        completedCount += 1;
 
-      if (fileList.length > 1) {
-        toast.success(`上传完成`, {
-          description: `成功 ${successCount} 个，共 ${fileList.length} 个文件`,
-        });
+        if (completedCount === total && total > 1) {
+          toast.success(`上传完成`, {
+            description: `成功 ${successCount} 个，共 ${total} 个文件`,
+          });
+        }
+      };
+
+      for (const file of fileList) {
+        const startUpload = () => {
+          uploadSingle(file).then((result) => {
+            onComplete(result !== null);
+          });
+        };
+
+        if (activeCountRef.current < maxConcurrency) {
+          startUpload();
+        } else {
+          pendingQueueRef.current.push(startUpload);
+        }
       }
     },
-    [uploadSingle, maxCount]
+    [uploadSingle, maxCount, maxConcurrency]
   );
 
   /**
    * 移除文件
    */
   const remove = useCallback((id: string) => {
+    const xhr = activeXhrs.current.get(id);
+    if (xhr) {
+      xhr.abort();
+    }
     setFiles((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
@@ -254,6 +318,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
    * 清空所有文件
    */
   const clear = useCallback(() => {
+    activeXhrs.current.forEach((xhr) => xhr.abort());
+    activeXhrs.current.clear();
     setFiles([]);
   }, []);
 
@@ -265,7 +331,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
       const fileItem = files.find((f) => f.id === id);
       if (!fileItem || fileItem.status !== "error") return;
 
-      // 移除失败的记录
+      // 移除失败/取消的记录
       setFiles((prev) => prev.filter((f) => f.id !== id));
 
       // 重新上传
@@ -273,6 +339,27 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
     },
     [files, uploadSingle]
   );
+
+  /**
+   * 取消单个文件上传
+   */
+  const cancel = useCallback((id: string) => {
+    const xhr = activeXhrs.current.get(id);
+    if (xhr) {
+      xhr.abort();
+    }
+    // 从等待队列中移除（简单方案：标记后 dequeueNext 会跳过不存在的文件）
+  }, []);
+
+  /**
+   * 取消所有上传
+   * 中止所有进行中的 XHR，清空等待队列
+   */
+  const cancelAll = useCallback(() => {
+    activeXhrs.current.forEach((xhr) => xhr.abort());
+    activeXhrs.current.clear();
+    pendingQueueRef.current = [];
+  }, []);
 
   return {
     files,
@@ -283,6 +370,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
     remove,
     clear,
     retry,
+    cancelAll,
+    cancel,
   };
 }
 

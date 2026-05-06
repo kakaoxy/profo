@@ -32,13 +32,22 @@ export async function tryRefreshToken(): Promise<string | null> {
 
 /**
  * 获取有效的 access token
- * 优先从 localStorage 获取，不存在则尝试刷新
+ * 优先从 localStorage 获取，过期或不存在则尝试刷新
  */
 export async function getValidToken(): Promise<string | null> {
   let token = localStorage.getItem("access_token") || localStorage.getItem("token");
 
+  if (token && isTokenExpired(token)) {
+    token = null;
+  }
+
   if (!token) {
     token = await tryRefreshToken();
+    if (token) {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("token");
+      localStorage.setItem("access_token", token);
+    }
   }
 
   return token;
