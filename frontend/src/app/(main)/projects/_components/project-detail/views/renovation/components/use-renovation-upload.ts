@@ -46,6 +46,7 @@ export function useRenovationUpload({
           }
           return prev;
         });
+        toast.success(`${file.name} 上传成功`);
         onPhotoUploadedRef.current();
       } else {
         setUploadQueue((prev) =>
