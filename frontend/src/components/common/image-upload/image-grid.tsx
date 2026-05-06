@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import type { ImageItem } from "./types";
 import { ImageItemView } from "./image-item";
@@ -21,7 +22,7 @@ const gridColsClasses: Record<number, string> = {
   5: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
 };
 
-export function ImageGrid({
+export const ImageGrid = memo(function ImageGrid({
   items,
   aspectRatio,
   gridCols,
@@ -45,4 +46,4 @@ export function ImageGrid({
       ))}
     </div>
   );
-}
+});

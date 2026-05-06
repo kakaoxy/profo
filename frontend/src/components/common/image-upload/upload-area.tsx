@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, memo } from "react";
 import { UploadCloud, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ interface UploadAreaProps {
   onUpload: (files: File[]) => void;
 }
 
-export function UploadArea({
+export const UploadArea = memo(function UploadArea({
   isUploading,
   disabled,
   title,
@@ -117,4 +117,4 @@ export function UploadArea({
       )}
     </div>
   );
-}
+});

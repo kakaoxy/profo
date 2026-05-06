@@ -146,12 +146,10 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         };
       });
 
-      newItems.forEach((item) => {
-        setItems((prev) => {
-          const next = [...prev, item];
-          onChangeRef.current?.(next);
-          return next;
-        });
+      setItems((prev) => {
+        const next = [...prev, ...newItems];
+        onChangeRef.current?.(next);
+        return next;
       });
 
       baseUpload(filesToUpload);
