@@ -32,7 +32,7 @@ interface UseImageUploadOptions {
 interface UseImageUploadReturn {
   uploadingFiles: UploadProgress[];
   isUploading: boolean;
-  uploadFiles: (files: FileList) => Promise<void>;
+  uploadFiles: (files: File[]) => Promise<void>;
   setUploadingFiles: React.Dispatch<React.SetStateAction<UploadProgress[]>>;
 }
 
@@ -137,24 +137,21 @@ export function useImageUpload({
   });
 
   const uploadFiles = useCallback(
-    async (files: FileList) => {
-      const fileArray = Array.from(files);
-      if (fileArray.length > 1) {
-        toast.info(`开始上传 ${fileArray.length} 个文件...`);
+    async (files: File[]) => {
+      if (files.length > 1) {
+        toast.info(`开始上传 ${files.length} 个文件...`);
       }
 
-      // 清空之前的上传进度
       setUploadingFiles([]);
 
-      const results = await Promise.all(fileArray.map((file) => uploadSingle(file)));
+      const results = await Promise.all(files.map((file) => uploadSingle(file)));
       const successCount = results.filter(Boolean).length;
 
-      // 上传完成后清空进度列表
       setUploadingFiles([]);
 
-      if (fileArray.length > 1) {
+      if (files.length > 1) {
         toast.success(`上传完成`, {
-          description: `成功 ${successCount} 个，共 ${fileArray.length} 个文件`,
+          description: `成功 ${successCount} 个，共 ${files.length} 个文件`,
         });
       }
     },

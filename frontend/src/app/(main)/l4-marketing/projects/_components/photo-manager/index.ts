@@ -11,7 +11,6 @@ export { DualPhotoManager } from "./dual-photo-manager";
 // 子组件
 export { PhotoDragOverlay } from "./photo-drag-overlay";
 export { PhotoCategorySelector } from "./photo-category-selector";
-export { ImageUploader } from "./image-uploader";
 export { MarketingPhotoList } from "./marketing-photo-list";
 export { RenovationPhotoList } from "./renovation-photo-list";
 export { SortablePhotoItem } from "./sortable-photo-item";
