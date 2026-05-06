@@ -80,11 +80,12 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
   );
 
   const dequeueNext = useCallback(() => {
+    if (activeCountRef.current >= maxConcurrency) return;
     if (pendingQueueRef.current.length > 0) {
       const next = pendingQueueRef.current.shift()!;
       next();
     }
-  }, []);
+  }, [maxConcurrency]);
 
   /**
    * 上传单个文件 (核心方法)
@@ -303,24 +304,11 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         }
       };
 
-      const runNext = () => {
-        if (pendingQueueRef.current.length === 0) return;
-        if (activeCountRef.current >= maxConcurrency) return;
-
-        const next = pendingQueueRef.current.shift()!;
-        next();
-      };
-
       for (const file of fileList) {
         const startUpload = () => {
-          activeCountRef.current += 1;
           uploadSingle(file)
             .then((result) => {
               onComplete(result !== null);
-            })
-            .finally(() => {
-              activeCountRef.current -= 1;
-              runNext();
             });
         };
 
