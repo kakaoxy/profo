@@ -32,7 +32,7 @@ interface UseImageUploadOptions {
 interface UseImageUploadReturn {
   uploadingFiles: UploadProgress[];
   isUploading: boolean;
-  uploadFiles: (files: File[]) => Promise<void>;
+  uploadFiles: (files: FileList | File[]) => Promise<void>;
   setUploadingFiles: React.Dispatch<React.SetStateAction<UploadProgress[]>>;
 }
 
