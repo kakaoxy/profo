@@ -46,6 +46,8 @@ export interface UploadProgress {
   filename: string;
   /** 进度百分比 */
   progress: number;
+  /** 原始文件对象 */
+  file: File;
 }
 
 /** 上传配置选项 */
