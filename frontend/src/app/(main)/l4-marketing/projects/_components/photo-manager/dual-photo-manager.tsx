@@ -9,10 +9,11 @@ import { PhotoCategorySelector } from "./photo-category-selector";
 import { deleteL4MarketingMediaAction } from "../../actions";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ImageUploader } from "./image-uploader";
+import { UploadArea } from "@/components/common/image-upload";
 import { useImageUpload } from "./use-image-upload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderOpen } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePhotoDragAndDrop } from "./use-photo-drag-and-drop";
 import { MarketingPhotoList } from "./marketing-photo-list";
@@ -151,12 +152,33 @@ export function DualPhotoManager({
                 ) : null}
               </div>
 
-              <ImageUploader
-                uploadingFiles={uploadingFiles}
+              <UploadArea
                 isUploading={isUploading}
-                onUpload={uploadFiles}
                 disabled={isUploading}
+                title="点击或拖拽图片到此处上传"
+                description="支持 JPG, PNG, GIF, WebP 格式，单文件最大 10MB"
+                accept=".jpg,.jpeg,.png,.gif,.webp"
+                multiple
+                onUpload={uploadFiles}
               />
+
+              {uploadingFiles.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    正在上传 {uploadingFiles.length} 个文件...
+                  </div>
+                  {uploadingFiles.map((file) => (
+                    <div key={file.filename} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="truncate max-w-[200px]">{file.filename}</span>
+                        <span>{file.progress}%</span>
+                      </div>
+                      <Progress value={file.progress} className="h-1" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="sync" className="space-y-4 mt-4">
