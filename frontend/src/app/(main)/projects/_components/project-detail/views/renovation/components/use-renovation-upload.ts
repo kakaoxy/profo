@@ -40,8 +40,9 @@ export function useRenovationUpload({
         setUploadQueue((prev) => {
           const idx = prev.findIndex((p) => p.file === file);
           if (idx !== -1) {
-            URL.revokeObjectURL(prev[idx].previewUrl);
-            return prev.filter((_, i) => i !== idx);
+            const item = prev[idx];
+            URL.revokeObjectURL(item.previewUrl);
+            return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
           }
           return prev;
         });
