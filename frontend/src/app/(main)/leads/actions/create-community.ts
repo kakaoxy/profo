@@ -1,7 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { apiPaths, getApiUrl } from "@/lib/config";
+import { fetchClient } from "@/lib/api-server";
 
 export interface CreateCommunityRequest {
   name: string;
@@ -24,25 +23,25 @@ export async function createCommunityAction(
   data: CreateCommunityRequest
 ): Promise<CreateCommunityResponse | null> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("access_token")?.value;
+    const client = await fetchClient();
+    const { data: result, error } = await client.POST(
+      "/api/v1/admin/communities",
+      {
+        body: data,
+      }
+    );
 
-    const response = await fetch(getApiUrl(apiPaths.communities.base), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      console.error("Create community error:", response.statusText);
+    if (error || !result) {
+      console.error("Create community error:", error);
       return null;
     }
 
-    const result = await response.json();
-    return result as CreateCommunityResponse;
+    return {
+      id: result.id,
+      name: result.name,
+      district: result.district ?? null,
+      business_circle: result.business_circle ?? null,
+    };
   } catch (error) {
     console.error("Create community error:", error);
     return null;
