@@ -26,6 +26,7 @@ export function getOptimizedImageUrl(
   url: string | undefined | null,
   _options?: ImageOptimizationOptions
 ): string {
+  void _options;
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
@@ -41,6 +42,7 @@ export function getResponsiveImageSrc(
   url: string | undefined | null,
   _sizes?: number[]
 ): string {
+  void _sizes;
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
