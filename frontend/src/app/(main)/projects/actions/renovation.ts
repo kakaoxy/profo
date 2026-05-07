@@ -58,8 +58,9 @@ export async function getRenovationPhotosAction(projectId: string) {
       return { success: false, message: errorMsg };
     }
 
-    const photos = extractApiData<unknown[]>(data);
-    return { success: true, data: photos ?? [] };
+    const extracted = extractApiData<{ items: unknown[]; total: number }>(data);
+    const photos = extracted?.items ?? [];
+    return { success: true, data: photos };
   } catch (e) {
     console.error("获取装修照片异常:", e);
     return { success: false, message: "网络错误" };
