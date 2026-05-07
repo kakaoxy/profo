@@ -32,7 +32,6 @@ export { MarketingDetailHeader } from "./marketing-detail-header";
 export {
   getFileUrl,
   getOptimizedImageUrl,
-  getResponsiveImageSrc,
   preloadImage,
   preloadImages,
   formatDate,
