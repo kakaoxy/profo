@@ -3,7 +3,6 @@
 import {
   getFileUrl,
   getOptimizedImageUrl,
-  getResponsiveImageSrc,
   preloadImage,
   preloadImages,
 } from "../common/utils";
@@ -95,4 +94,4 @@ export function getPublishStatusConfig(status: string) {
 }
 
 // 从 common/utils 重新导出图片相关函数（保持向后兼容）
-export { getFileUrl, getOptimizedImageUrl, getResponsiveImageSrc, preloadImage, preloadImages };
+export { getFileUrl, getOptimizedImageUrl, preloadImage, preloadImages };
