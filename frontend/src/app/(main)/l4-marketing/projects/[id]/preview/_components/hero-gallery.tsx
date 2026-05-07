@@ -109,8 +109,9 @@ export function HeroGallery({
   const shouldShowSecondaryPlaceholder1 = !secondaryImages[1] || secondaryImageErrors[1];
 
   return (
-    <section className="mt-4 grid grid-cols-12 gap-4 h-[500px]">
-      <div className="col-span-12 lg:col-span-8 relative overflow-hidden rounded-xl group">
+    <section className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+      {/* Main Image */}
+      <div className="lg:col-span-8 relative overflow-hidden rounded-xl group aspect-[16/10]">
         {!shouldShowMainPlaceholder ? (
           isDev ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -140,10 +141,13 @@ export function HeroGallery({
           </Badge>
         </div>
       </div>
-      <div className="col-span-12 lg:col-span-4 grid grid-rows-2 gap-4">
-        {!shouldShowSecondaryPlaceholder0 ? (
-          <div className="relative overflow-hidden rounded-xl group">
-            {isDev ? (
+
+      {/* Secondary Images */}
+      <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-4">
+        {/* Secondary Image 1 */}
+        <div className="relative overflow-hidden rounded-xl group aspect-[16/10] lg:aspect-auto">
+          {!shouldShowSecondaryPlaceholder0 ? (
+            isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={getFileUrl(secondaryImages[0]!)}
@@ -160,14 +164,16 @@ export function HeroGallery({
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 onError={() => handleSecondaryImageError(0)}
               />
-            )}
-          </div>
-        ) : (
-          <SecondaryImagePlaceholder />
-        )}
-        {!shouldShowSecondaryPlaceholder1 ? (
-          <div className="relative overflow-hidden rounded-xl group">
-            {isDev ? (
+            )
+          ) : (
+            <SecondaryImagePlaceholder />
+          )}
+        </div>
+
+        {/* Secondary Image 2 */}
+        <div className="relative overflow-hidden rounded-xl group aspect-[16/10] lg:aspect-auto">
+          {!shouldShowSecondaryPlaceholder1 ? (
+            isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={getFileUrl(secondaryImages[1]!)}
@@ -184,32 +190,32 @@ export function HeroGallery({
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 onError={() => handleSecondaryImageError(1)}
               />
-            )}
-            {totalCount > 3 ? (
-              <button className="absolute bottom-4 right-4 bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-card transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect width="7" height="7" x="3" y="3" rx="1" />
-                  <rect width="7" height="7" x="14" y="3" rx="1" />
-                  <rect width="7" height="7" x="14" y="14" rx="1" />
-                  <rect width="7" height="7" x="3" y="14" rx="1" />
-                </svg>
-                查看全部 {totalCount} 张照片
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <SecondaryImagePlaceholder />
-        )}
+            )
+          ) : (
+            <SecondaryImagePlaceholder />
+          )}
+          {totalCount > 3 ? (
+            <button className="absolute bottom-4 right-4 bg-card/90 backdrop-blur text-foreground px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-card transition-colors">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect width="7" height="7" x="3" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="14" rx="1" />
+                <rect width="7" height="7" x="3" y="14" rx="1" />
+              </svg>
+              查看全部 {totalCount} 张照片
+            </button>
+          ) : null}
+        </div>
       </div>
     </section>
   );

@@ -60,7 +60,7 @@ export default async function ProjectPreviewPage({
   const projectImages = Array.isArray(project.images) ? project.images : [];
   const photoUrls =
     photos.length > 0
-      ? photos.map((p) => p.file_path).filter((path): path is string => !!path)
+      ? photos.map((p) => p.file_url).filter((url): url is string => !!url)
       : projectImages;
 
   const mainImage = photoUrls[0] || "";
