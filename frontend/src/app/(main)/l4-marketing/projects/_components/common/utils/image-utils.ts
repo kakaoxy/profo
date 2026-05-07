@@ -24,58 +24,27 @@ export function getFileUrl(url: string | undefined | null): string {
 // 3. 否则返回原图 URL
 export function getOptimizedImageUrl(
   url: string | undefined | null,
-  options: ImageOptimizationOptions = {}
+  _options?: ImageOptimizationOptions
 ): string {
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
-  const { width, height, quality = 80, format = "auto", fit = "cover" } = options;
-
-  // 如果 URL 已经包含优化参数或者是 blob/data URL，直接返回
-  if (
-    baseUrl.startsWith("blob:") ||
-    baseUrl.startsWith("data:") ||
-    baseUrl.includes("?w=") ||
-    baseUrl.includes("?width=")
-  ) {
+  if (baseUrl.startsWith("blob:") || baseUrl.startsWith("data:")) {
     return baseUrl;
   }
 
-  // 构建查询参数
-  const params = new URLSearchParams();
-
-  if (width) params.set("w", width.toString());
-  if (height) params.set("h", height.toString());
-  if (quality) params.set("q", quality.toString());
-  if (format && format !== "auto") params.set("f", format);
-  if (fit) params.set("fit", fit);
-
-  const queryString = params.toString();
-  if (!queryString) return baseUrl;
-
-  // 检查 URL 是否已经有查询参数
-  const separator = baseUrl.includes("?") ? "&" : "?";
-  return `${baseUrl}${separator}${queryString}`;
+  return baseUrl;
 }
 
 // 获取响应式图片 srcset
 export function getResponsiveImageSrc(
   url: string | undefined | null,
-  sizes: number[] = [64, 128, 256, 512]
+  _sizes?: number[]
 ): string {
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
-  return sizes
-    .map((size) => {
-      const optimizedUrl = getOptimizedImageUrl(baseUrl, {
-        width: size,
-        height: size,
-        quality: 80,
-      });
-      return `${optimizedUrl} ${size}w`;
-    })
-    .join(", ");
+  return baseUrl;
 }
 
 // 预加载关键图片

@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { getFileUrl } from "@/lib/config";
 import { Check } from "lucide-react";
+import { useSimpleImageLoader } from "../common/hooks";
 import type { RenovationPhoto } from "./types";
 
 interface PhotoGridItemProps {
@@ -13,6 +14,8 @@ interface PhotoGridItemProps {
 }
 
 export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: PhotoGridItemProps) {
+  const { status: imageStatus } = useSimpleImageLoader(getFileUrl(photo.url));
+
   return (
     <div
       className={cn(
@@ -38,9 +41,30 @@ export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: Photo
         </div>
       ) : null}
       <div
-        className="w-full aspect-square rounded-lg bg-cover bg-center mb-2"
-        style={{ backgroundImage: `url(${getFileUrl(photo.url)})` }}
-      />
+        className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-muted"
+      >
+        {imageStatus === "loading" && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+          </div>
+        )}
+        {imageStatus === "error" && (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+            加载失败
+          </div>
+        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={getFileUrl(photo.url)}
+          alt={photo.description || `Photo ${photo.id}`}
+          loading="lazy"
+          decoding="async"
+          className={cn(
+            "w-full h-full object-cover transition-opacity duration-200",
+            imageStatus === "loaded" ? "opacity-100" : "opacity-0"
+          )}
+        />
+      </div>
       <div className="px-1">
         <p className="text-xs font-bold truncate">
           ID: #{photo.id}
