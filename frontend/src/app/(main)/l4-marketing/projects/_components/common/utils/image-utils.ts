@@ -24,9 +24,8 @@ export function getFileUrl(url: string | undefined | null): string {
 // 3. 否则返回原图 URL
 export function getOptimizedImageUrl(
   url: string | undefined | null,
-  _options?: ImageOptimizationOptions
+  options?: ImageOptimizationOptions
 ): string {
-  void _options;
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
@@ -34,19 +33,39 @@ export function getOptimizedImageUrl(
     return baseUrl;
   }
 
-  return baseUrl;
+  // 构建查询参数
+  const params = new URLSearchParams();
+  if (options?.width) params.set("w", options.width.toString());
+  if (options?.height) params.set("h", options.height.toString());
+  if (options?.quality) params.set("q", options.quality.toString());
+  if (options?.format && options.format !== "auto") params.set("fmt", options.format);
+  if (options?.fit) params.set("fit", options.fit);
+
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
 }
 
 // 获取响应式图片 srcset
 export function getResponsiveImageSrc(
   url: string | undefined | null,
-  _sizes?: number[]
+  sizes?: number[]
 ): string {
-  void _sizes;
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
-  return baseUrl;
+  if (!sizes || sizes.length === 0) {
+    return baseUrl;
+  }
+
+  // 生成 srcset：为每个尺寸生成优化后的 URL
+  const srcset = sizes
+    .map((size) => {
+      const optimized = getOptimizedImageUrl(baseUrl, { width: size });
+      return `${optimized} ${size}w`;
+    })
+    .join(", ");
+
+  return srcset || baseUrl;
 }
 
 // 预加载关键图片
