@@ -338,6 +338,7 @@ export function AppSidebar({ user }: { user: User | null }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
+                suppressHydrationWarning
                 className={`flex items-center rounded-xl py-2 hover:bg-muted transition-all duration-200 ${state === "collapsed" ? "justify-center w-8 h-8 mx-auto" : "w-full px-3 gap-3"}`}
               >
                 <Avatar className="h-8 w-8 rounded-full ring-2 ring-border shrink-0">
