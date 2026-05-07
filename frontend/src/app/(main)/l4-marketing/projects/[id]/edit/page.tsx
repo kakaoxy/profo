@@ -20,6 +20,19 @@ function isPhotoCategory(value: unknown): value is PhotoCategory {
 
 // 将 API 媒体项转换为 L4MarketingMedia
 function mapToL4MarketingMedia(item: unknown): L4MarketingMedia {
+  if (!item || typeof item !== "object") {
+    return {
+      id: 0,
+      marketing_project_id: 0,
+      file_url: "",
+      media_type: "image",
+      photo_category: "marketing",
+      sort_order: 0,
+      is_deleted: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+  }
   const apiItem = item as Record<string, unknown>;
   return {
     ...apiItem,
