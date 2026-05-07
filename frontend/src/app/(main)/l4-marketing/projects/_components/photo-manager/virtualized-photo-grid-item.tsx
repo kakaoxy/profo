@@ -76,15 +76,29 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
       <div
         className="w-full aspect-square rounded-lg bg-center mb-2 overflow-hidden relative bg-muted"
       >
-        {/* 占位符/加载状态 */}
-        {imageStatus !== "loaded" ? (
+        {/* 占位符 - 未进入视口 */}
+        {!isInViewport ? (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
           </div>
         ) : null}
 
+        {/* 加载状态 */}
+        {isInViewport && imageStatus === "loading" ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : null}
+
+        {/* 错误状态 */}
+        {isInViewport && imageStatus === "error" ? (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+            加载失败
+          </div>
+        ) : null}
+
         {/* 实际图片 - 使用img标签配合loading="lazy" */}
-        {isInViewport ? (
+        {isInViewport && thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={thumbnailUrl}
