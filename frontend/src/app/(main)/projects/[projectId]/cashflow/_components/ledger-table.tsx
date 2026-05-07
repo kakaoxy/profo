@@ -96,7 +96,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
           </Button>
           <Button
             size="sm"
-            className="h-9 bg-card hover:bg-card text-xs"
+            className="h-9 text-xs"
             onClick={() => setIsDialogOpen(true)}
           >
             <Plus className="h-3.5 w-3.5 mr-1" />
