@@ -90,6 +90,20 @@ export const DEFAULT_STATUS = "signing";
 export const defaultStatusClass = "bg-muted text-muted-foreground";
 
 /**
+ * SSR 环境下的状态颜色回退值
+ * 必须与 globals.css 中 :root 的 --status-* 亮色模式值保持一致
+ * @see globals.css Status Colors - Light Mode
+ */
+const SSR_STATUS_COLORS: Record<StatusType, string> = {
+  pending: "#f59e0b",
+  signing: "#005daa",
+  renovating: "#f97316",
+  selling: "#10b981",
+  sold: "#64748b",
+  rejected: "#94a3b8",
+};
+
+/**
  * 获取状态标签
  */
 export function getStatusLabel(status: StatusType | string): string {
@@ -108,16 +122,7 @@ export function getStatusLabel(status: StatusType | string): string {
  */
 export function getStatusColor(status: StatusType): string {
   if (typeof window === "undefined") {
-    // SSR 环境返回默认值
-    const defaults: Record<StatusType, string> = {
-      pending: "#f59e0b",
-      signing: "#005daa",
-      renovating: "#f97316",
-      selling: "#10b981",
-      sold: "#64748b",
-      rejected: "#94a3b8",
-    };
-    return defaults[status];
+    return SSR_STATUS_COLORS[status];
   }
   const style = getComputedStyle(document.documentElement);
   const cssVar = STATUS_CONFIG[status].cssVar;
