@@ -55,19 +55,19 @@ export const MARKETING_PROJECT_STATUS_CONFIG: Record<
 > = {
   在途: {
     label: "在途",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
     bgColor: "hsl(var(--primary) / 0.1)",
     description: "项目进行中，尚未挂牌",
   },
   在售: {
     label: "在售",
-    color: "hsl(var(--status-selling))",
+    color: "var(--status-selling)",
     bgColor: "hsl(var(--status-selling) / 0.1)",
     description: "已挂牌销售",
   },
   已售: {
     label: "已售",
-    color: "hsl(var(--status-sold))",
+    color: "var(--status-sold)",
     bgColor: "hsl(var(--status-sold) / 0.1)",
     description: "已成交",
   },
@@ -79,12 +79,12 @@ export const PUBLISH_STATUS_CONFIG: Record<
 > = {
   草稿: {
     label: "草稿",
-    color: "hsl(var(--status-pending))",
+    color: "var(--status-pending)",
     bgColor: "hsl(var(--status-pending) / 0.1)",
   },
   发布: {
     label: "已发布",
-    color: "hsl(var(--status-selling))",
+    color: "var(--status-selling)",
     bgColor: "hsl(var(--status-selling) / 0.1)",
   },
 };
@@ -106,13 +106,13 @@ export const PHOTO_CATEGORY_CONFIG: Record<
 > = {
   marketing: {
     label: "营销照片",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
     bgColor: "hsl(var(--primary) / 0.1)",
     description: "用于房源展示的营销图片",
   },
   renovation: {
     label: "改造照片",
-    color: "hsl(var(--status-renovating))",
+    color: "var(--status-renovating)",
     bgColor: "hsl(var(--status-renovating) / 0.1)",
     description: "记录装修改造过程的照片",
   },

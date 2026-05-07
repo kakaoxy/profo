@@ -111,7 +111,7 @@ export function getStatusColor(status: StatusType): string {
     // SSR 环境返回默认值
     const defaults: Record<StatusType, string> = {
       pending: "#f59e0b",
-      signing: "hsl(var(--primary))",
+      signing: "#005daa",
       renovating: "#f97316",
       selling: "#10b981",
       sold: "#64748b",
