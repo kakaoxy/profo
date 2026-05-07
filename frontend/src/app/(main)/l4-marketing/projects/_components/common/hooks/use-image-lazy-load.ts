@@ -61,7 +61,6 @@ export function useImageLazyLoad(
   // 当 src 变化时重置状态
   useEffect(() => {
     if (!src) {
-      // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
       requestAnimationFrame(() => {
         setStatus("idle");
       });
@@ -132,22 +131,19 @@ export function useImageLazyLoad(
   // 图片加载逻辑
   useEffect(() => {
     if (!src || !isVisible) {
-      // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
-      if (!src || !isVisible) {
-        requestAnimationFrame(() => {
-          setStatus("idle");
-        });
-      }
+      requestAnimationFrame(() => {
+        setStatus("idle");
+      });
       return;
     }
 
     // 重置完成标记
     isCompleteRef.current = false;
-    // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
-    requestAnimationFrame(() => {
+    startTimeRef.current = performance.now();
+
+    queueMicrotask(() => {
       setStatus("loading");
     });
-    startTimeRef.current = performance.now();
 
     const img = new Image();
     img.src = src;
@@ -232,7 +228,6 @@ export function useSimpleImageLoader(
 
   useEffect(() => {
     if (!src) {
-      // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
       requestAnimationFrame(() => {
         setStatus("idle");
       });
@@ -240,11 +235,11 @@ export function useSimpleImageLoader(
     }
 
     isCompleteRef.current = false;
-    // 使用 requestAnimationFrame 避免在渲染期间同步调用 setState
-    requestAnimationFrame(() => {
+    const startTime = performance.now();
+
+    queueMicrotask(() => {
       setStatus("loading");
     });
-    const startTime = performance.now();
 
     const img = new Image();
     img.src = src;
