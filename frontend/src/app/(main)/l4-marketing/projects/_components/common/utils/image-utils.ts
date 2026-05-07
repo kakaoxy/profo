@@ -33,12 +33,12 @@ export function getOptimizedImageUrl(
     return baseUrl;
   }
 
-  // 构建查询参数
+  // 构建查询参数（使用标准化参数名）
   const params = new URLSearchParams();
-  if (options?.width) params.set("w", options.width.toString());
-  if (options?.height) params.set("h", options.height.toString());
-  if (options?.quality) params.set("q", options.quality.toString());
-  if (options?.format && options.format !== "auto") params.set("fmt", options.format);
+  if (options?.width) params.set("width", options.width.toString());
+  if (options?.height) params.set("height", options.height.toString());
+  if (options?.quality) params.set("quality", options.quality.toString());
+  if (options?.format && options.format !== "auto") params.set("format", options.format);
   if (options?.fit) params.set("fit", options.fit);
 
   const queryString = params.toString();
