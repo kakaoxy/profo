@@ -39,26 +39,20 @@ export function getOptimizedImageUrl(
 }
 
 // 获取响应式图片 srcset
+// ⚠️ 警告：当前后端暂无图片处理服务，此函数暂时禁用响应式生成功能
+// 因为 getOptimizedImageUrl 会直接返回原图 URL，导致所有尺寸返回相同的 URL
+// 浏览器无法根据设备像素密度选择合适的图片，srcset 失去意义
 export function getResponsiveImageSrc(
   url: string | undefined | null,
-  sizes?: number[]
+  _sizes?: number[]
 ): string {
+  void _sizes;
   const baseUrl = getFileUrl(url);
   if (!baseUrl) return "";
 
-  if (!sizes || sizes.length === 0) {
-    return baseUrl;
-  }
-
-  // 生成 srcset：为每个尺寸生成优化后的 URL
-  const srcset = sizes
-    .map((size) => {
-      const optimized = getOptimizedImageUrl(baseUrl, { width: size });
-      return `${optimized} ${size}w`;
-    })
-    .join(", ");
-
-  return srcset || baseUrl;
+  // 暂时返回单一原图 URL，避免生成误导性的 srcset
+  // 待后端接入图片处理服务后，可恢复为不同尺寸生成不同 URL 的逻辑
+  return baseUrl;
 }
 
 // 预加载关键图片
