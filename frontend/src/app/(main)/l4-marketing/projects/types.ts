@@ -20,8 +20,6 @@ export type L4MarketingProjectListResponse =
 type L4MarketingMediaResponse = components["schemas"]["L4MarketingMediaResponse"];
 
 export type L4MarketingMedia = L4MarketingMediaResponse & {
-  /** File path for the media */
-  file_path?: string;
   /** Photo category: marketing or renovation */
   photo_category: PhotoCategory;
 };

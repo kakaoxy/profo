@@ -13,31 +13,19 @@ const paramsSchema = z.object({
   id: z.string().min(1).regex(/^\d+$/, "ID 必须是数字"),
 });
 
-// API 返回的媒体项类型
-interface ApiMediaItem {
-  id?: unknown;
-  file_path?: unknown;
-  photo_category?: unknown;
-  [key: string]: unknown;
-}
-
-// 类型守卫：验证是否为有效的媒体项
-function isApiMediaItem(item: unknown): item is ApiMediaItem {
-  return item !== null && typeof item === "object";
-}
-
 // 类型守卫：验证是否为有效的照片类别
 function isPhotoCategory(value: unknown): value is PhotoCategory {
   return value === "marketing" || value === "renovation";
 }
 
 // 将 API 媒体项转换为 L4MarketingMedia
-function mapToL4MarketingMedia(item: ApiMediaItem): L4MarketingMedia {
+function mapToL4MarketingMedia(item: unknown): L4MarketingMedia {
+  const apiItem = item as Record<string, unknown>;
   return {
-    ...item,
-    id: typeof item.id === "number" || typeof item.id === "string" ? item.id : 0,
-    file_path: typeof item.file_path === "string" ? item.file_path : undefined,
-    photo_category: isPhotoCategory(item.photo_category) ? item.photo_category : "marketing",
+    ...apiItem,
+    id: typeof apiItem.id === "number" || typeof apiItem.id === "string" ? apiItem.id : 0,
+    file_url: typeof apiItem.file_url === "string" ? apiItem.file_url : "",
+    photo_category: isPhotoCategory(apiItem.photo_category) ? apiItem.photo_category : "marketing",
   } as L4MarketingMedia;
 }
 
@@ -100,7 +88,6 @@ export default async function ProjectEditPage({
   // 为 API 返回的数据添加默认的 photo_category 字段
   const apiItems = Array.isArray(photosRes.data?.items) ? photosRes.data.items : [];
   const photos: L4MarketingMedia[] = apiItems
-    .filter(isApiMediaItem)
     .map(mapToL4MarketingMedia);
 
   return (
