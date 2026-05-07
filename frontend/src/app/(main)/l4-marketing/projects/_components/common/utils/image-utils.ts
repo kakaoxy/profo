@@ -18,10 +18,9 @@ export function getFileUrl(url: string | undefined | null): string {
 }
 
 // 获取优化后的图片 URL
-// 支持多种图片优化服务：
-// 1. 如果后端支持图片处理（如 /thumb/ 路径），添加尺寸参数
-// 2. 如果是外部 CDN（如 Cloudinary, Imgix），添加对应的优化参数
-// 3. 否则返回原图 URL
+// 当前后端暂无图片处理服务，此函数保留参数接口供未来扩展
+// 如需接入图片处理服务（如 Cloudinary, Imgix 或自研 /thumb/ 路径），
+// 可在此统一修改参数格式，无需改动调用方
 export function getOptimizedImageUrl(
   url: string | undefined | null,
   options?: ImageOptimizationOptions
@@ -33,16 +32,10 @@ export function getOptimizedImageUrl(
     return baseUrl;
   }
 
-  // 构建查询参数（使用标准化参数名）
-  const params = new URLSearchParams();
-  if (options?.width) params.set("width", options.width.toString());
-  if (options?.height) params.set("height", options.height.toString());
-  if (options?.quality) params.set("quality", options.quality.toString());
-  if (options?.format && options.format !== "auto") params.set("format", options.format);
-  if (options?.fit) params.set("fit", options.fit);
-
-  const queryString = params.toString();
-  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  // 当前后端未实现图片处理，直接返回原图 URL
+  // 参数 options 保留用于未来接入 CDN 或图片处理服务
+  void options;
+  return baseUrl;
 }
 
 // 获取响应式图片 srcset
