@@ -93,6 +93,19 @@ export const BasicConfigSection = memo(function BasicConfigSection({
       <div className="bg-card rounded-lg border border-border p-4">
         <h3 className="text-sm font-medium text-foreground mb-3">房源状态</h3>
         <div className="grid grid-cols-2 gap-4">
+          {/* 项目进度 */}
+          <StatusCard
+            label="项目进度"
+            color={project.project_status === "在售" ? "green" : "gray"}
+            badge={
+              <Badge
+                variant="secondary"
+                className={`${statusConfig.className} text-xs font-semibold border-0 px-2.5 py-1`}
+              >
+                {statusConfig.label}
+              </Badge>
+            }
+          />
           {/* 发布状态 */}
           <StatusCard
             label="发布状态"
@@ -107,19 +120,7 @@ export const BasicConfigSection = memo(function BasicConfigSection({
             }
           />
 
-          {/* 项目进度 */}
-          <StatusCard
-            label="项目进度"
-            color={project.project_status === "在售" ? "green" : "gray"}
-            badge={
-              <Badge
-                variant="secondary"
-                className={`${statusConfig.className} text-xs font-semibold border-0 px-2.5 py-1`}
-              >
-                {statusConfig.label}
-              </Badge>
-            }
-          />
+
         </div>
       </div>
 
