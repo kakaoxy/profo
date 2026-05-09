@@ -47,5 +47,4 @@ export function getOfferStats(offerRecords: ApiSalesRecord[]) {
 }
 
 export { mapProjectResponseToProject } from "./project-card-mapper";
-export { validateSalesRecords, validateAndTransformSalesRecords } from "./project-card-types";
 export { toNumber } from "@/lib/number-utils";
