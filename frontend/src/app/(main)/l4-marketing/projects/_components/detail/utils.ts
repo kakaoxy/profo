@@ -10,7 +10,7 @@ import {
   STATUS_CONFIG,
   PUBLISH_STATUS_CONFIG,
   PROJECT_STATUS_MAPPING,
-  getProjectStatusBadgeClass,
+  getProjectStatusClassName,
 } from "@/lib/status-colors";
 
 // 格式化日期
@@ -26,7 +26,7 @@ export function getStatusConfig(status: string) {
     const config = STATUS_CONFIG[mapped];
     return {
       label: config?.label || status,
-      className: getProjectStatusBadgeClass(status),
+      className: getProjectStatusClassName(mapped),
     };
   }
   return {
@@ -46,7 +46,7 @@ export function getPublishStatusConfig(status: string) {
     const config = PUBLISH_STATUS_CONFIG[mapped];
     return {
       label: config.label,
-      className: getProjectStatusBadgeClass(mapped),
+      className: getProjectStatusClassName(mapped),
     };
   }
   return {
