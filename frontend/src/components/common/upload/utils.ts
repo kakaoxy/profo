@@ -6,6 +6,7 @@
 
 import { toast } from "sonner";
 import { apiPaths, getClientApiUrl, getFileUrl } from "@/lib/config";
+import { formatFileSize } from "@/lib/formatters";
 import type { UploadResponse } from "./types";
 
 /**
@@ -74,16 +75,7 @@ export function getUploadUrl(): string {
   return getClientApiUrl(apiPaths.files.upload);
 }
 
-/**
- * 格式化文件大小显示
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-}
+export { formatFileSize };
 
 /**
  * 检查文件类型是否被允许

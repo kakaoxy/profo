@@ -35,9 +35,6 @@ export {
   preloadImage,
   preloadImages,
   formatDate,
-  getRelativeTime,
-  formatPrice,
-  formatArea,
   getStatusConfig,
   getPublishStatusConfig,
 } from "./utils";

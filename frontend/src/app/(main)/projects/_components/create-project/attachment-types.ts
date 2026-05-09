@@ -4,6 +4,8 @@
  * 房屋交接书/收款收据/合作房源确认函/门店跟投协议书/增值服务确认书/其他
  */
 
+import { formatFileSize } from "@/lib/formatters";
+
 // 附件分类枚举
 export const ATTACHMENT_CATEGORIES = [
   { value: "signing_contract", label: "签约合同" },
@@ -97,14 +99,7 @@ export function isAllowedFile(file: File): boolean {
   );
 }
 
-/**
- * 格式化文件大小
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+export { formatFileSize };
 
 /**
  * 获取分类标签

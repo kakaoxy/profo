@@ -301,3 +301,18 @@ export const PROJECT_LIFECYCLE_STEPS = [
   { status: "selling", label: "在售", step: 2 },
   { status: "sold", label: "已售", step: 3 },
 ] as const;
+
+/** 发布状态类型 */
+export type PublishStatusType = "published" | "draft";
+
+/** 发布状态配置 */
+export const PUBLISH_STATUS_CONFIG: Record<PublishStatusType, StatusConfig> = {
+  published: {
+    label: "已发布",
+    cssVar: "--status-selling",
+  },
+  draft: {
+    label: "草稿",
+    cssVar: "--status-pending",
+  },
+};

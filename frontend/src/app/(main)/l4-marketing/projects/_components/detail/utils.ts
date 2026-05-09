@@ -6,34 +6,11 @@ import {
   preloadImage,
   preloadImages,
 } from "../common/utils";
-
-// 状态配置 - 与 projects 保持一致
-export const statusConfig: Record<string, { label: string; className: string }> = {
-  "在售": {
-    label: "在售",
-    className: "bg-status-selling text-white",
-  },
-  "已售": {
-    label: "已售",
-    className: "bg-status-sold text-white",
-  },
-  "在途": {
-    label: "在途",
-    className: "bg-primary text-white",
-  },
-};
-
-// 发布状态配置
-export const publishStatusConfig: Record<string, { label: string; className: string }> = {
-  "发布": {
-    label: "已发布",
-    className: "bg-status-selling text-white",
-  },
-  "草稿": {
-    label: "草稿",
-    className: "bg-status-pending text-white",
-  },
-};
+import {
+  STATUS_CONFIG,
+  PUBLISH_STATUS_CONFIG,
+  getProjectStatusClassName,
+} from "@/lib/status-colors";
 
 // 格式化日期
 export function formatDate(dateStr?: string | null): string {
@@ -41,56 +18,49 @@ export function formatDate(dateStr?: string | null): string {
   return new Date(dateStr).toLocaleDateString("zh-CN");
 }
 
-// 计算相对时间
-export function getRelativeTime(dateStr?: string | null): string {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "今天";
-  if (diffDays === 1) return "昨天";
-  if (diffDays < 7) return `${diffDays} 天前`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} 个月前`;
-  return `${Math.floor(diffDays / 365)} 年前`;
-}
-
-// 格式化价格
-export function formatPrice(value: number | string | undefined | null): string {
-  if (value === undefined || value === null) return "-";
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "-";
-  return `¥${numValue.toLocaleString()}`;
-}
-
-// 格式化面积
-export function formatArea(value: number | string | undefined | null): string {
-  if (value === undefined || value === null) return "-";
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(numValue)) return "-";
-  return `${numValue.toLocaleString()} m²`;
-}
-
 // 获取项目状态配置
 export function getStatusConfig(status: string) {
-  return (
-    statusConfig[status] || {
-      label: status,
-      className: "bg-muted text-muted-foreground",
-    }
-  );
+  const labelMap: Record<string, string> = {
+    "在售": "selling",
+    "已售": "sold",
+    "在途": "signing",
+  };
+  const mapped = labelMap[status];
+  if (mapped) {
+    const config = STATUS_CONFIG[mapped as keyof typeof STATUS_CONFIG];
+    return {
+      label: status === "在途" ? "在途" : config?.label || status,
+      className: getProjectStatusClassName(mapped),
+    };
+  }
+  return {
+    label: status,
+    className: "bg-muted text-muted-foreground",
+  };
 }
 
 // 获取发布状态配置
 export function getPublishStatusConfig(status: string) {
-  return (
-    publishStatusConfig[status] || {
-      label: status,
-      className: "bg-muted text-muted-foreground",
-    }
-  );
+  const labelMap: Record<string, keyof typeof PUBLISH_STATUS_CONFIG> = {
+    "发布": "published",
+    "草稿": "draft",
+  };
+  const mapped = labelMap[status];
+  if (mapped) {
+    const config = PUBLISH_STATUS_CONFIG[mapped];
+    const classMap: Record<string, string> = {
+      published: "bg-status-selling text-white",
+      draft: "bg-status-pending text-white",
+    };
+    return {
+      label: config.label,
+      className: classMap[mapped],
+    };
+  }
+  return {
+    label: status,
+    className: "bg-muted text-muted-foreground",
+  };
 }
 
 // 从 common/utils 重新导出图片相关函数（保持向后兼容）

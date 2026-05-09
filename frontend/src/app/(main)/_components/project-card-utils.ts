@@ -7,9 +7,6 @@
 export type { ApiSalesRecord, ValidRecordType, TransformedSalesRecord } from "./project-card-types";
 export { isValidRecordType } from "./project-card-types";
 
-// 状态映射
-export { statusMap } from "./project-card-status";
-
 // 统计计算
 export { getWeekViewStats, getOfferStats } from "./project-card-stats";
 
