@@ -1,3 +1,6 @@
+import { formatDistanceToNow } from "date-fns";
+import { zhCN } from "date-fns/locale";
+
 /**
  * 格式化工具函数
  * 统一处理价格、面积等数值的格式化显示
@@ -26,7 +29,6 @@ export function formatUnitPrice(
   if (value === undefined || value === null || value === "") return "-";
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue) || numValue === 0) return "-";
-  // 后端返回的 unit_price 已经是 万元/㎡，直接显示
   return `¥${numValue.toFixed(2)}万/㎡`;
 }
 
@@ -56,4 +58,27 @@ export function formatNumber(
   const numValue = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(numValue)) return "-";
   return `${numValue.toLocaleString()}${suffix}`;
+}
+
+/**
+ * 格式化相对时间
+ * @param date - 日期（Date 或 ISO 字符串）
+ * @returns 相对时间字符串，如 "约1小时前"
+ */
+export function formatRelativeTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return formatDistanceToNow(d, { addSuffix: true, locale: zhCN });
+}
+
+/**
+ * 格式化文件大小显示
+ * @param bytes - 文件大小（字节）
+ * @returns 格式化后的文件大小字符串，如 "10 MB"
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
