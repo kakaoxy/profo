@@ -9,16 +9,13 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useUpload } from "@/components/common/upload";
 import { createL4MarketingMediaAction } from "../../actions";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/constants";
 import type { L4MarketingMedia, PhotoCategory } from "../../types";
 
 export interface UploadProgress {
   filename: string;
   progress: number;
 }
-
-// 允许的图片格式
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 interface UseImageUploadOptions {
   projectId?: number;
@@ -60,7 +57,7 @@ export function useImageUpload({
   }, [onPhotosChange]);
 
   const { isUploading, uploadSingle } = useUpload({
-    maxSize: MAX_FILE_SIZE,
+    maxSize: MAX_IMAGE_SIZE,
     allowedTypes: ALLOWED_IMAGE_TYPES,
     multiple: true,
     onProgress: ({ filename, progress }) => {

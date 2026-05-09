@@ -11,15 +11,16 @@ import {
 import type { ImageItem } from "./types";
 
 interface ImagePreviewProps {
-  item: ImageItem | null;
+  item?: ImageItem | null;
+  imageUrl?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function ImagePreview({ item, open, onOpenChange }: ImagePreviewProps) {
-  if (!item) return null;
+export function ImagePreview({ item, imageUrl, open, onOpenChange }: ImagePreviewProps) {
+  const displayUrl = imageUrl || item?.response?.url || item?.url;
 
-  const displayUrl = item.response?.url || item.url;
+  if (!displayUrl) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

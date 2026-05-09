@@ -29,8 +29,3 @@ export interface PhotosSectionProps {
   photos: L4MarketingMedia[];
 }
 
-// 图片预览对话框组件属性
-export interface ImagePreviewDialogProps {
-  imageUrl: string | null;
-  onClose: () => void;
-}
