@@ -7,24 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "./types";
 import { getFileUrl } from "@/lib/config";
 import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
+import { getProjectStatusClassName } from "@/lib/status-colors";
 import { ActionCell } from "./_components/action-cell";
 
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
 
-// 使用 types.ts 中定义的状态配置，转换为 Badge 所需的 className 格式
-const statusConfig: Record<string, { label: string; className: string }> = {
+// 使用 types.ts 中定义的状态配置，className 通过 getProjectStatusClassName 统一获取
+const statusConfig: Record<string, { label: string }> = {
   "在途": {
     label: MARKETING_PROJECT_STATUS_CONFIG["在途"].label,
-    className: "bg-status-signing text-white hover:bg-status-signing/90",
   },
   "在售": {
     label: MARKETING_PROJECT_STATUS_CONFIG["在售"].label,
-    className: "bg-status-selling text-white hover:bg-status-selling/90",
   },
   "已售": {
     label: MARKETING_PROJECT_STATUS_CONFIG["已售"].label,
-    className: "bg-status-sold text-white hover:bg-status-sold/90",
   },
 };
 
@@ -58,10 +56,8 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       }
 
       const status = project.project_status || "在途";
-      const config = statusConfig[status] || {
-        label: status,
-        className: "bg-muted text-muted-foreground",
-      };
+      const config = statusConfig[status] || { label: status };
+      const statusClassName = getProjectStatusClassName(status);
 
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
@@ -99,7 +95,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               </span>
               <Badge
                 variant="secondary"
-                className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${config?.className}`}
+                className={`md:hidden text-[10px] px-1.5 py-0 h-5 border-none rounded-lg ${statusClassName}`}
               >
                 {config?.label}
               </Badge>
@@ -178,16 +174,14 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
     ),
     cell: ({ row }) => {
       const status = row.original.project_status || "在途";
-      const config = statusConfig[status] || {
-        label: status,
-        className: "bg-muted text-muted-foreground",
-      };
+      const config = statusConfig[status] || { label: status };
+      const statusClassName = getProjectStatusClassName(status);
 
       return (
         <div className="hidden md:block">
           <Badge
             variant="secondary"
-            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${config.className}`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${statusClassName}`}
           >
             {config.label}
           </Badge>
