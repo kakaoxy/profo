@@ -6,7 +6,7 @@
 import type { components } from "@/lib/api-types";
 import type { Project } from "../projects/types/project";
 import { toNumber } from "@/lib/number-utils";
-import { validateAndTransformSalesRecords } from "./project-card-validation";
+import { validateAndTransformSalesRecords } from "./project-card-types";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
 

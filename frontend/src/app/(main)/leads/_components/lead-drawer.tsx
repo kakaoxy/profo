@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lead, LeadStatus, FollowUpMethod, FollowUp } from '../types';
-import { cn } from '@/lib/utils';
 import { getLeadFollowUpsAction } from '../actions';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { DrawerHeader } from './drawer-parts/drawer-header';
 import { LifecycleStepper } from './drawer-parts/lifecycle-stepper';
 import { TabsNav, TabId } from './drawer-parts/tabs-nav';
@@ -29,9 +29,11 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
     }
   }, [isOpen, lead]);
 
-  const handleClose = () => {
-    setActiveTab('info');
-    onClose();
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setActiveTab('info');
+      onClose();
+    }
   };
 
   const handleImagesChange = (images: string[]) => {
@@ -43,41 +45,32 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
   if (!lead) return null;
 
   return (
-    <>
-      <div 
-        className={cn("fixed inset-0 bg-black/40 z-40 transition-opacity duration-300", isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')}
-        onClick={handleClose}
-      />
-      
-      <div className={cn(
-        "fixed inset-y-0 right-0 w-full sm:w-[550px] md:w-[650px] bg-background z-50 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col",
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      )}>
-        <DrawerHeader lead={lead} onClose={handleClose} onViewMonitor={onViewMonitor} />
-        
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full sm:w-[550px] md:w-[650px] p-0 flex flex-col gap-0"
+      >
+        <DrawerHeader lead={lead} onViewMonitor={onViewMonitor} />
+
         <LifecycleStepper lead={lead} />
-        
+
         <TabsNav activeTab={activeTab} onTabChange={setActiveTab} imagesCount={lead.images.length} />
 
         <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-muted/30">
-          {activeTab === 'info' && (
+          {activeTab === 'info' ? (
             <InfoTab lead={lead} onAudit={onAudit} onViewMonitor={onViewMonitor} />
-          )}
-
-          {activeTab === 'images' && (
+          ) : activeTab === 'images' ? (
             <ImagesTab images={lead.images} onImagesChange={onImagesUpdate ? handleImagesChange : undefined} />
-          )}
-
-          {activeTab === 'followup' && (
-            <FollowUpTab 
-              lead={lead} 
-              followUps={followUps} 
+          ) : (
+            <FollowUpTab
+              lead={lead}
+              followUps={followUps}
               onAddFollowUp={onAddFollowUp}
               onRefreshFollowUps={setFollowUps}
             />
           )}
         </div>
-      </div>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 };
