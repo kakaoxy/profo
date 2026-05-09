@@ -129,12 +129,7 @@ export interface FileUploaderProps {
 }
 
 /** 默认允许的图片类型 */
-export const DEFAULT_ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-];
+export { ALLOWED_IMAGE_TYPES as DEFAULT_ALLOWED_IMAGE_TYPES } from "@/lib/constants";
 
 /** 默认允许的文件类型 (通用) */
 export const DEFAULT_ALLOWED_FILE_TYPES = [
@@ -150,4 +145,4 @@ export const DEFAULT_ALLOWED_FILE_TYPES = [
 ];
 
 /** 默认文件大小限制: 10MB */
-export const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+export { MAX_IMAGE_SIZE as DEFAULT_MAX_FILE_SIZE } from "@/lib/constants";
