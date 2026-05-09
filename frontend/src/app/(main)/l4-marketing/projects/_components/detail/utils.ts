@@ -44,9 +44,13 @@ export function getPublishStatusConfig(status: string) {
   const mapped = labelMap[status];
   if (mapped) {
     const config = PUBLISH_STATUS_CONFIG[mapped];
+    const classMap: Record<keyof typeof PUBLISH_STATUS_CONFIG, string> = {
+      published: "bg-status-selling text-white",
+      draft: "bg-status-pending text-white",
+    };
     return {
       label: config.label,
-      className: getProjectStatusClassName(mapped),
+      className: classMap[mapped],
     };
   }
   return {
