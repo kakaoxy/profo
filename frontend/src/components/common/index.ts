@@ -6,3 +6,6 @@ export { Pagination } from "./pagination";
 export { DisplayRow, type DisplayRowProps } from "./display-row";
 export { InfoItem, type InfoItemProps } from "./info-item";
 export { InfoCard, type InfoCardProps } from "./info-card";
+export { EmptyState, type EmptyStateProps } from "./empty-state";
+export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
+export { TableActionCell, type TableActionCellProps, type ActionDef } from "./table-action-cell";
