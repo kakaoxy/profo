@@ -9,7 +9,9 @@ import {
 import {
   STATUS_CONFIG,
   PUBLISH_STATUS_CONFIG,
+  PUBLISH_STATUS_MAPPING,
   PROJECT_STATUS_MAPPING,
+  PublishStatusType,
   getProjectStatusClassName,
 } from "@/lib/status-colors";
 
@@ -37,14 +39,10 @@ export function getStatusConfig(status: string) {
 
 // 获取发布状态配置
 export function getPublishStatusConfig(status: string) {
-  const labelMap: Record<string, keyof typeof PUBLISH_STATUS_CONFIG> = {
-    "发布": "published",
-    "草稿": "draft",
-  };
-  const mapped = labelMap[status];
+  const mapped = PUBLISH_STATUS_MAPPING[status];
   if (mapped) {
     const config = PUBLISH_STATUS_CONFIG[mapped];
-    const classMap: Record<keyof typeof PUBLISH_STATUS_CONFIG, string> = {
+    const classMap: Record<PublishStatusType, string> = {
       published: "bg-status-selling text-white",
       draft: "bg-status-pending text-white",
     };
