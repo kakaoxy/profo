@@ -148,6 +148,7 @@ backend/data.db
 .kiro/specs/profo-real-estate
 .claude/
 .trae/
+.codex/
 
 # ==========================================
 # 项目特定文件
