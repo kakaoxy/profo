@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 export interface ActionDef {
+  /** 操作项的唯一标识符，用于 React key 生成，避免 label 重复导致渲染问题 */
   id?: string;
   label: string;
   icon?: LucideIcon;
