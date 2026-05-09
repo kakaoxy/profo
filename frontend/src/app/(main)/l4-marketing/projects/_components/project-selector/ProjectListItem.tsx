@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Building2, MapPin, Maximize, LayoutGrid, Compass, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getStatusLabel, getProjectStatusBadgeClass, PROJECT_STATUS_MAPPING } from "@/lib/status-colors";
 import type { ProjectListItemProps } from "./types";
 
 /**
@@ -87,61 +88,21 @@ export function ProjectListItem({
   );
 }
 
-/**
- * 状态标签组件
- */
 function StatusBadge({ status }: { status: string }) {
-  const config = getStatusConfig(status);
+  const mapped = PROJECT_STATUS_MAPPING[status];
+  const label = mapped ? getStatusLabel(mapped) : status;
+  const className = mapped
+    ? getProjectStatusBadgeClass(mapped)
+    : "bg-muted text-foreground";
 
   return (
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
-        config.bgColor,
-        config.textColor
+        className
       )}
     >
-      {config.label}
+      {label}
     </span>
-  );
-}
-
-/**
- * 获取状态配置
- */
-function getStatusConfig(status: string): {
-  label: string;
-  bgColor: string;
-  textColor: string;
-} {
-  const statusMap: Record<string, { label: string; bgColor: string; textColor: string }> = {
-    签约: {
-      label: "签约",
-      bgColor: "bg-primary/10",
-      textColor: "text-primary",
-    },
-    装修: {
-      label: "装修中",
-      bgColor: "bg-status-renovating/10",
-      textColor: "text-status-renovating",
-    },
-    挂牌: {
-      label: "挂牌中",
-      bgColor: "bg-status-selling/10",
-      textColor: "text-status-selling",
-    },
-    已售: {
-      label: "已售",
-      bgColor: "bg-muted",
-      textColor: "text-foreground",
-    },
-  };
-
-  return (
-    statusMap[status] || {
-      label: status,
-      bgColor: "bg-muted",
-      textColor: "text-foreground",
-    }
   );
 }

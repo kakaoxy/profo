@@ -38,7 +38,8 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-import { formatDate, getRelativeTime } from "./utils";
+import { formatDate } from "./utils";
+import { formatRelativeTime } from "@/lib/formatters";
 import { getProjectStatusClassName } from "@/lib/status-colors";
 import { CreateProjectDialog as ProjectFormDialog } from "../create-project";
 import { deleteProjectAction } from "../../actions/core";
@@ -177,7 +178,7 @@ export function ProjectDetailHeader({
             <Clock className="h-3 w-3" />
             <span>创建于 {formatDate(project.created_at)}</span>
             <span className="text-muted-foreground">
-              ({getRelativeTime(project.created_at)})
+              ({formatRelativeTime(project.created_at)})
             </span>
           </SheetDescription>
         </div>

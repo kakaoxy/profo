@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PROJECT_STATUS_MAPPING } from "@/lib/status-colors";
 import { Project } from "../../../../types";
 import { getDaysUntil } from "../../utils";
 
@@ -17,6 +18,11 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
   const daysUntilHandover = getDaysUntil(project.planned_handover_date);
   const netCashFlow = (project.net_cash_flow || 0) / 10000;
   const isProfitable = netCashFlow >= 0;
+
+  const mappedStatus = PROJECT_STATUS_MAPPING[project.status];
+  const borderClass = mappedStatus
+    ? `border-l-status-${mappedStatus}`
+    : "";
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -94,13 +100,7 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
 
       {/* 当前状态 - 只有这个卡片有背景色区分 */}
       <Card
-        className={cn(
-          "border-l-4",
-          project.status === "签约中" && "border-l-status-signing",
-          project.status === "装修中" && "border-l-status-renovating",
-          project.status === "在售" && "border-l-status-selling",
-          project.status === "已成交" && "border-l-status-sold"
-        )}
+        className={cn("border-l-4", borderClass)}
       >
         <CardContent className="p-4 flex flex-col justify-center h-full">
           <div className="flex items-center justify-between">
