@@ -20,9 +20,15 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
   const isProfitable = netCashFlow >= 0;
 
   const mappedStatus = PROJECT_STATUS_MAPPING[project.status];
-  const borderClass = mappedStatus
-    ? `border-l-status-${mappedStatus}`
-    : "";
+  const borderClassMap: Record<string, string> = {
+    pending: "border-l-status-pending",
+    signing: "border-l-status-signing",
+    renovating: "border-l-status-renovating",
+    selling: "border-l-status-selling",
+    sold: "border-l-status-sold",
+    rejected: "border-l-status-rejected",
+  };
+  const borderClass = mappedStatus ? (borderClassMap[mappedStatus] || "") : "";
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
