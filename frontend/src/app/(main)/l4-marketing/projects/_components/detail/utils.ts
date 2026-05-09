@@ -9,7 +9,8 @@ import {
 import {
   STATUS_CONFIG,
   PUBLISH_STATUS_CONFIG,
-  getProjectStatusClassName,
+  PROJECT_STATUS_MAPPING,
+  getProjectStatusBadgeClass,
 } from "@/lib/status-colors";
 
 // 格式化日期
@@ -20,17 +21,12 @@ export function formatDate(dateStr?: string | null): string {
 
 // 获取项目状态配置
 export function getStatusConfig(status: string) {
-  const labelMap: Record<string, string> = {
-    "在售": "selling",
-    "已售": "sold",
-    "在途": "signing",
-  };
-  const mapped = labelMap[status];
+  const mapped = PROJECT_STATUS_MAPPING[status];
   if (mapped) {
-    const config = STATUS_CONFIG[mapped as keyof typeof STATUS_CONFIG];
+    const config = STATUS_CONFIG[mapped];
     return {
-      label: status === "在途" ? "在途" : config?.label || status,
-      className: getProjectStatusClassName(mapped),
+      label: config?.label || status,
+      className: getProjectStatusBadgeClass(status),
     };
   }
   return {
@@ -48,13 +44,9 @@ export function getPublishStatusConfig(status: string) {
   const mapped = labelMap[status];
   if (mapped) {
     const config = PUBLISH_STATUS_CONFIG[mapped];
-    const classMap: Record<string, string> = {
-      published: "bg-status-selling text-white",
-      draft: "bg-status-pending text-white",
-    };
     return {
       label: config.label,
-      className: classMap[mapped],
+      className: getProjectStatusBadgeClass(mapped),
     };
   }
   return {
