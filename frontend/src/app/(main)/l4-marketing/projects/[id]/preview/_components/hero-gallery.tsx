@@ -4,6 +4,7 @@ import Image from "next/image";
 import { getFileUrl } from "@/lib/config";
 import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { getStatusLabel, getProjectStatusClassName } from "@/lib/status-colors";
 
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
@@ -72,19 +73,8 @@ export function HeroGallery({
   totalCount,
   projectStatus,
 }: HeroGalleryProps) {
-  const statusText =
-    projectStatus === "在售"
-      ? "在售中"
-      : projectStatus === "已售"
-        ? "已成交"
-        : "在途中";
-
-  const statusColor =
-    projectStatus === "在售"
-      ? "bg-success"
-        : projectStatus === "已售"
-          ? "bg-muted"
-          : "bg-primary";
+  const statusText = getStatusLabel(projectStatus);
+  const statusColor = getProjectStatusClassName(projectStatus);
 
   // 使用 state 追踪图片加载错误状态
   const [mainImageError, setMainImageError] = useState(false);
