@@ -322,3 +322,9 @@ export const PUBLISH_STATUS_MAPPING: Record<string, PublishStatusType> = {
   发布: "published",
   草稿: "draft",
 };
+
+/** 发布状态样式映射 */
+export const PUBLISH_STATUS_CLASS_MAP: Record<PublishStatusType, string> = {
+  published: "bg-status-selling text-white",
+  draft: "bg-status-pending text-white",
+};

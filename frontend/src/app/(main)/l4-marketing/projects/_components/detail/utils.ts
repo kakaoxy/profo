@@ -10,8 +10,8 @@ import {
   STATUS_CONFIG,
   PUBLISH_STATUS_CONFIG,
   PUBLISH_STATUS_MAPPING,
+  PUBLISH_STATUS_CLASS_MAP,
   PROJECT_STATUS_MAPPING,
-  PublishStatusType,
   getProjectStatusClassName,
 } from "@/lib/status-colors";
 
@@ -42,13 +42,9 @@ export function getPublishStatusConfig(status: string) {
   const mapped = PUBLISH_STATUS_MAPPING[status];
   if (mapped) {
     const config = PUBLISH_STATUS_CONFIG[mapped];
-    const classMap: Record<PublishStatusType, string> = {
-      published: "bg-status-selling text-white",
-      draft: "bg-status-pending text-white",
-    };
     return {
       label: config.label,
-      className: classMap[mapped],
+      className: PUBLISH_STATUS_CLASS_MAP[mapped],
     };
   }
   return {
