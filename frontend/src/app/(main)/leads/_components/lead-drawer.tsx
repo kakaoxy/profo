@@ -48,7 +48,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:w-[550px] md:w-[650px] p-0 flex flex-col gap-0"
+        className="w-full sm:w-[550px] md:w-[650px] sm:max-w-[550px] md:max-w-[650px] p-0 flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">客户详情</SheetTitle>
         <DrawerHeader lead={lead} onViewMonitor={onViewMonitor} />
