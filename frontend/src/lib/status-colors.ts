@@ -245,16 +245,14 @@ export function getProjectStatusBorderClass(status: string): string {
   const mapped = PROJECT_STATUS_MAPPING[status];
   if (!mapped) return "";
 
-  const borderClassMap: Record<StatusType, string> = {
-    pending: "border-l-status-pending",
+  const borderClassMap: Record<ProjectStatusType, string> = {
     signing: "border-l-status-signing",
     renovating: "border-l-status-renovating",
     selling: "border-l-status-selling",
     sold: "border-l-status-sold",
-    rejected: "border-l-status-rejected",
   };
 
-  return borderClassMap[mapped] || "";
+  return borderClassMap[mapped as ProjectStatusType] || "";
 }
 
 /**
