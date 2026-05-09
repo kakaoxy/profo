@@ -43,8 +43,8 @@ export function TableActionCell({ actions, maxVisible = 2 }: TableActionCellProp
 
   return (
     <div className="flex items-center gap-1">
-      {visibleActions.map((action, i) => (
-        <ActionButton key={i} {...action} />
+      {visibleActions.map((action) => (
+        <ActionButton key={action.label} {...action} />
       ))}
       {overflowActions.length > 0 && (
         <DropdownMenu>
@@ -54,9 +54,9 @@ export function TableActionCell({ actions, maxVisible = 2 }: TableActionCellProp
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {overflowActions.map((action, i) => (
+            {overflowActions.map((action) => (
               <DropdownMenuItem
-                key={i}
+                key={action.label}
                 onClick={action.onClick}
                 disabled={action.disabled}
               >
