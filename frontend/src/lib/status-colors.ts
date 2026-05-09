@@ -316,3 +316,9 @@ export const PUBLISH_STATUS_CONFIG: Record<PublishStatusType, StatusConfig> = {
     cssVar: "--status-pending",
   },
 };
+
+/** 发布状态映射：将中文状态字符串映射到 PublishStatusType */
+export const PUBLISH_STATUS_MAPPING: Record<string, PublishStatusType> = {
+  发布: "published",
+  草稿: "draft",
+};
