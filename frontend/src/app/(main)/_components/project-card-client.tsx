@@ -8,10 +8,8 @@ import type { components } from "@/lib/api-types";
 import { MarketDataSection } from "./market-data-section";
 import { ProjectDetailSheet } from "../projects/_components/project-detail-sheet";
 import { ProjectStatsSection } from "./project-stats-section";
-import {
-  mapProjectResponseToProject,
-  validateSalesRecords,
-} from "./project-card-utils";
+import { mapProjectResponseToProject } from "./project-card-utils";
+import { validateSalesRecords } from "./project-card-types";
 import { getStatusLabel, getProjectStatusClassName, DEFAULT_STATUS } from "@/lib/status-colors";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
