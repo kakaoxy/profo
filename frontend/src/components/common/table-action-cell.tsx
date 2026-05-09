@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 export interface ActionDef {
+  id?: string;
   label: string;
   icon?: LucideIcon;
   onClick: () => void;
@@ -43,8 +44,8 @@ export function TableActionCell({ actions, maxVisible = 2 }: TableActionCellProp
 
   return (
     <div className="flex items-center gap-1">
-      {visibleActions.map((action) => (
-        <ActionButton key={action.label} {...action} />
+      {visibleActions.map((action, i) => (
+        <ActionButton key={action.id ?? `${action.label}-${i}`} {...action} />
       ))}
       {overflowActions.length > 0 && (
         <DropdownMenu>
@@ -54,9 +55,9 @@ export function TableActionCell({ actions, maxVisible = 2 }: TableActionCellProp
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {overflowActions.map((action) => (
+            {overflowActions.map((action, i) => (
               <DropdownMenuItem
-                key={action.label}
+                key={action.id ?? `${action.label}-${i}`}
                 onClick={action.onClick}
                 disabled={action.disabled}
               >
