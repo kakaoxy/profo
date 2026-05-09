@@ -4,7 +4,7 @@ import React, { useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { X, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUpload } from '@/components/common/upload';
+import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES } from '@/components/common/upload';
 
 interface Props {
   images: string[];
@@ -40,7 +40,7 @@ export const ImageUpload: React.FC<Props> = ({
 
   const { isUploading, upload, uploadingFiles } = useUpload({
     maxSize: maxFileSize * 1024 * 1024,
-    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+    allowedTypes: DEFAULT_ALLOWED_IMAGE_TYPES,
     multiple: true,
     maxCount: maxImages,
     onSuccess: (response) => {
@@ -162,7 +162,7 @@ export const ImageUpload: React.FC<Props> = ({
       <input 
         ref={fileInputRef} 
         type="file" 
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept={DEFAULT_ALLOWED_IMAGE_TYPES.join(",")}
         multiple 
         className="hidden" 
         onChange={handleImageUpload} 
