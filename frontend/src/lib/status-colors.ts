@@ -80,6 +80,7 @@ export const PROJECT_STATUS_MAPPING: Record<string, StatusType> = {
   装修中: "renovating",
   在售: "selling",
   已成交: "sold",
+  成交: "sold",
   已结束: "sold",
   // L4 营销项目状态映射
   在途: "signing",

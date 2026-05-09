@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Home, Calendar, Tag, Layers, LucideIcon } from "lucide-react";
+import { getProjectStatusBadgeClass } from "@/lib/status-colors";
 
 // 获取详情接口的返回类型
 type PropertyDetail = components["schemas"]["PropertyDetailResponse"];
@@ -97,7 +98,7 @@ export function PropertyDetailSheet() {
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="outline">{data?.data_source || "数据源"}</Badge>
             {data?.status && (
-              <Badge variant={data.status === "在售" ? "default" : "secondary"}>
+              <Badge className={getProjectStatusBadgeClass(data.status)}>
                 {data.status}
               </Badge>
             )}
