@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PROJECT_STATUS_MAPPING } from "@/lib/status-colors";
+import { getProjectStatusBorderClass } from "@/lib/status-colors";
 import { Project } from "../../../../types";
 import { getDaysUntil } from "../../utils";
 
@@ -19,16 +19,7 @@ export function ProjectSummary({ project }: ProjectSummaryProps) {
   const netCashFlow = (project.net_cash_flow || 0) / 10000;
   const isProfitable = netCashFlow >= 0;
 
-  const mappedStatus = PROJECT_STATUS_MAPPING[project.status];
-  const borderClassMap: Record<string, string> = {
-    pending: "border-l-status-pending",
-    signing: "border-l-status-signing",
-    renovating: "border-l-status-renovating",
-    selling: "border-l-status-selling",
-    sold: "border-l-status-sold",
-    rejected: "border-l-status-rejected",
-  };
-  const borderClass = mappedStatus ? (borderClassMap[mappedStatus] || "") : "";
+  const borderClass = getProjectStatusBorderClass(project.status);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

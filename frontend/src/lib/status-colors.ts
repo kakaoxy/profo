@@ -238,6 +238,26 @@ export function getProjectStatusBadgeClass(status: string): string {
 }
 
 /**
+ * 获取项目状态的左边框颜色类名
+ * 用于卡片等需要左侧颜色条的场景
+ */
+export function getProjectStatusBorderClass(status: string): string {
+  const mapped = PROJECT_STATUS_MAPPING[status];
+  if (!mapped) return "";
+
+  const borderClassMap: Record<StatusType, string> = {
+    pending: "border-l-status-pending",
+    signing: "border-l-status-signing",
+    renovating: "border-l-status-renovating",
+    selling: "border-l-status-selling",
+    sold: "border-l-status-sold",
+    rejected: "border-l-status-rejected",
+  };
+
+  return borderClassMap[mapped] || "";
+}
+
+/**
  * 获取状态样式配置（带颜色类名）
  * 用于 drawer-header 等需要颜色类名的场景
  */
