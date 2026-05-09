@@ -91,9 +91,7 @@ export function ProjectListItem({
 function StatusBadge({ status }: { status: string }) {
   const mapped = PROJECT_STATUS_MAPPING[status];
   const label = mapped ? getStatusLabel(mapped) : status;
-  const className = mapped
-    ? getProjectStatusBadgeClass(mapped)
-    : "bg-muted text-foreground";
+  const className = getProjectStatusBadgeClass(status);
 
   return (
     <span
