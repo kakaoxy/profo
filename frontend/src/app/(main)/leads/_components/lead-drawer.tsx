@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lead, LeadStatus, FollowUpMethod, FollowUp } from '../types';
 import { getLeadFollowUpsAction } from '../actions';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { DrawerHeader } from './drawer-parts/drawer-header';
 import { LifecycleStepper } from './drawer-parts/lifecycle-stepper';
 import { TabsNav, TabId } from './drawer-parts/tabs-nav';
@@ -50,6 +50,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
         side="right"
         className="w-full sm:w-[550px] md:w-[650px] p-0 flex flex-col gap-0"
       >
+        <SheetTitle className="sr-only">客户详情</SheetTitle>
         <DrawerHeader lead={lead} onViewMonitor={onViewMonitor} />
 
         <LifecycleStepper lead={lead} />
