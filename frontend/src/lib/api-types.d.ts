@@ -1712,7 +1712,6 @@ export interface components {
         Body_create_import_task_api_v1_upload_csv_post: {
             /**
              * File
-             * Format: binary
              * @description CSV 文件
              */
             file: string;
@@ -1723,7 +1722,10 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /** Password */
+            /**
+             * Password
+             * Format: password
+             */
             password: string;
             /**
              * Scope
@@ -1732,15 +1734,15 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * Format: password
+             */
             client_secret?: string | null;
         };
         /** Body_upload_file_api_v1_files_upload_post */
         Body_upload_file_api_v1_files_upload_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /**
@@ -3902,7 +3904,9 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: Record<string, never>[];
+            errors?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * RecordType
@@ -4319,7 +4323,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -4364,7 +4370,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -4722,6 +4730,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * WechatAuthUrlResponse
@@ -6394,7 +6406,7 @@ export interface operations {
     };
     list_marketing_projects_api_v1_admin_l4_marketing_projects_get: {
         parameters: {
-            query?: {
+            query: {
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页大小 */
@@ -6407,6 +6419,8 @@ export interface operations {
                 consultant_id?: string | null;
                 /** @description 小区ID */
                 community_id?: string | null;
+                args: unknown;
+                kwargs: unknown;
             };
             header?: never;
             path?: never;
@@ -6436,7 +6450,10 @@ export interface operations {
     };
     create_marketing_project_api_v1_admin_l4_marketing_projects_post: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -6469,7 +6486,10 @@ export interface operations {
     };
     get_marketing_project_api_v1_admin_l4_marketing_projects__project_id__get: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6501,7 +6521,10 @@ export interface operations {
     };
     update_marketing_project_api_v1_admin_l4_marketing_projects__project_id__put: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6537,7 +6560,10 @@ export interface operations {
     };
     delete_marketing_project_api_v1_admin_l4_marketing_projects__project_id__delete: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6567,11 +6593,13 @@ export interface operations {
     };
     list_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_get: {
         parameters: {
-            query?: {
+            query: {
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页大小 */
                 page_size?: number;
+                args: unknown;
+                kwargs: unknown;
             };
             header?: never;
             path: {
@@ -6604,7 +6632,10 @@ export interface operations {
     };
     create_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_post: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6640,7 +6671,10 @@ export interface operations {
     };
     update_marketing_media_api_v1_admin_l4_marketing_media__media_id__put: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 媒体ID */
@@ -6676,7 +6710,10 @@ export interface operations {
     };
     delete_marketing_media_api_v1_admin_l4_marketing_media__media_id__delete: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 媒体ID */
@@ -6706,7 +6743,10 @@ export interface operations {
     };
     update_media_sort_order_api_v1_admin_l4_marketing_projects__project_id__media_sort_order_put: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6742,7 +6782,7 @@ export interface operations {
     };
     list_available_projects_api_v1_admin_l4_marketing_available_projects_get: {
         parameters: {
-            query?: {
+            query: {
                 /** @description 小区名称筛选 */
                 community_name?: string | null;
                 /** @description 项目状态筛选 */
@@ -6751,6 +6791,8 @@ export interface operations {
                 page?: number;
                 /** @description 每页大小 */
                 page_size?: number;
+                args: unknown;
+                kwargs: unknown;
             };
             header?: never;
             path?: never;
@@ -6780,7 +6822,10 @@ export interface operations {
     };
     get_l3_project_detail_api_v1_admin_l4_marketing_available_projects__project_id__get: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6812,7 +6857,10 @@ export interface operations {
     };
     import_from_l3_project_api_v1_admin_l4_marketing_projects_import_from_l3__project_id__post: {
         parameters: {
-            query?: never;
+            query: {
+                args: unknown;
+                kwargs: unknown;
+            };
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -7367,7 +7415,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -7400,7 +7450,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -7429,7 +7481,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -7771,7 +7825,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>[];
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
             };
         };
         responses: {

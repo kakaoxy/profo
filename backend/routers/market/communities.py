@@ -49,7 +49,11 @@ def get_communities(
     return result
 
 
-@router.get("/dictionaries", response_model=DictionaryResponse)
+@router.get(
+    "/dictionaries",
+    response_model=DictionaryResponse,
+    responses={400: {"description": "不支持的字典类型参数"}}
+)
 def get_dictionaries(
     db: DbSessionDep,
     current_user: CurrentOperatorUserDep,
