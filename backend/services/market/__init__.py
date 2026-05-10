@@ -19,11 +19,17 @@ from .import_task_service import ImportTaskService, get_import_task_service
 from .import_task_processor import ImportTaskProcessor, get_task_processor, start_import_task
 from .csv_parser import CSVParser
 from .failed_record_handler import FailedRecordHandler
+from .property_service import PropertyService, get_property_service
+from .community_service import CommunityQueryService, _find_existing_community_by_name
 
 __all__ = [
     # 查询服务
     "PropertyQueryService",
     "get_property_query_service",
+    "PropertyService",
+    "get_property_service",
+    # 小区服务
+    "CommunityQueryService",
     # 导入服务
     "PropertyImporter",
     "CSVBatchImporter",

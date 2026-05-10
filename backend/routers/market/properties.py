@@ -17,8 +17,13 @@ from dependencies.auth import (
     DbSessionDep,
     CurrentInternalUserDep,
 )
-from services.market import PropertyQueryService, get_property_query_service
-from models import PropertyCurrent, Community, PropertyMedia
+from services.market import (
+    PropertyQueryService,
+    get_property_query_service,
+    PropertyService,
+    get_property_service,
+)
+from models import PropertyCurrent, Community
 from models.common.base import MediaType
 
 
@@ -26,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 # 定义服务依赖类型别名
 PropertyServiceDep = Annotated[PropertyQueryService, Depends(get_property_query_service)]
+DetailServiceDep = Annotated[PropertyService, Depends(get_property_service)]
 
 router = APIRouter(tags=["市场情报-房源查询"])
 
@@ -35,18 +41,10 @@ def search_communities(
     q: Annotated[str, Query(min_length=1, description="搜索关键词")],
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
+    detail_service: DetailServiceDep,
 ) -> list[CommunitySearchResponse]:
     """Search communities by name"""
-    results = db.query(Community).filter(Community.name.contains(q)).limit(20).all()
-    return [
-        CommunitySearchResponse(
-            id=c.id,
-            name=c.name,
-            district=c.district,
-            business_circle=c.business_circle
-        )
-        for c in results
-    ]
+    return detail_service.search_communities(db, q)
 
 
 @router.get("", response_model=PaginatedPropertyResponse)
@@ -176,27 +174,13 @@ def get_property_detail(
     id: Annotated[int, Path(ge=1, description="房源ID")],
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
+    detail_service: DetailServiceDep,
 ) -> PropertyDetailResponse:
     """获取房源详情"""
-    property_obj = db.query(PropertyCurrent).filter(
-        PropertyCurrent.id == id,
-        PropertyCurrent.is_active == True
-    ).first()
-    if not property_obj:
-        raise HTTPException(status_code=404, detail="房源不存在")
-
-    community = db.query(Community).filter(Community.id == property_obj.community_id).first()
-    if not community:
-        raise HTTPException(status_code=404, detail="关联小区不存在")
-
-    detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, community)
-    # 获取图片链接
-    picture_links = db.query(PropertyMedia.url).filter(
-        PropertyMedia.data_source == property_obj.data_source,
-        PropertyMedia.source_property_id == property_obj.source_property_id
-    ).order_by(PropertyMedia.sort_order).all()
-    detail.picture_links = [link[0] for link in picture_links] if picture_links else []
-    return detail
+    try:
+        return detail_service.get_detail(db, id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 def _parse_rooms_param(rooms: Optional[str]) -> Optional[List[int]]:
