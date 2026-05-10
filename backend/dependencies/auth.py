@@ -1,6 +1,7 @@
 """
 认证相关依赖注入函数
 """
+import warnings
 from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, status, Request
@@ -199,7 +200,7 @@ def get_current_admin_user(
     current_user: CurrentAdminUserDep,
 ) -> User:
     """
-    获取当前管理员用户
+    获取当前管理员用户 [已弃用]
 
     Args:
         current_user: 当前管理员用户对象（通过 CurrentAdminUserDep 验证）
@@ -210,6 +211,11 @@ def get_current_admin_user(
     Raises:
         HTTPException: 403 Forbidden - 权限不足（由 CurrentAdminUserDep 依赖验证）
     """
+    warnings.warn(
+        "get_current_admin_user is deprecated, use CurrentAdminUserDep directly",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return current_user
 
 
@@ -217,7 +223,7 @@ def get_current_operator_user(
     current_user: CurrentOperatorUserDep,
 ) -> User:
     """
-    获取当前运营人员用户
+    获取当前运营人员用户 [已弃用]
 
     Args:
         current_user: 当前运营人员用户对象（通过 CurrentOperatorUserDep 验证）
@@ -228,6 +234,11 @@ def get_current_operator_user(
     Raises:
         HTTPException: 403 Forbidden - 权限不足（由 CurrentOperatorUserDep 依赖验证）
     """
+    warnings.warn(
+        "get_current_operator_user is deprecated, use CurrentOperatorUserDep directly",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return current_user
 
 
@@ -235,7 +246,7 @@ def get_current_normal_user(
     current_user: CurrentNormalUserDep,
 ) -> User:
     """
-    获取当前普通用户
+    获取当前普通用户 [已弃用]
 
     Args:
         current_user: 当前普通用户对象（通过 CurrentNormalUserDep 验证）
@@ -246,6 +257,11 @@ def get_current_normal_user(
     Raises:
         HTTPException: 403 Forbidden - 权限不足（由 CurrentNormalUserDep 依赖验证）
     """
+    warnings.warn(
+        "get_current_normal_user is deprecated, use CurrentNormalUserDep directly",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return current_user
 
 
@@ -253,7 +269,7 @@ def get_current_internal_user(
     current_user: CurrentInternalUserDep,
 ) -> User:
     """
-    获取当前内部管理用户（管理员或运营人员）
+    获取当前内部管理用户（管理员或运营人员） [已弃用]
     用于所有内部管理API的统一权限验证
 
     Args:
@@ -265,6 +281,11 @@ def get_current_internal_user(
     Raises:
         HTTPException: 403 Forbidden - 权限不足（由 CurrentInternalUserDep 依赖验证）
     """
+    warnings.warn(
+        "get_current_internal_user is deprecated, use CurrentInternalUserDep directly",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return current_user
 
 

@@ -24,29 +24,6 @@ class PaginatedResponse(BaseModel, Generic[T]):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============================================
-# 注意: BaseResponse 和 GenericBaseResponse 已弃用
-# 符合 AGENTS.md 规范第 26 条: 严禁给成功响应添加 code/msg/data 等额外包装器
-# ============================================
-
-class BaseResponse(BaseModel):
-    """基础响应模型 [已弃用]"""
-    code: int = Field(default=200, description="响应码")
-    msg: str = Field(default="success", description="响应消息")
-    data: Optional[Any] = Field(default=None, description="响应数据")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class GenericBaseResponse(BaseModel):
-    """通用基础响应模型 [已弃用]"""
-    code: int = Field(default=200, description="响应码")
-    msg: str = Field(default="success", description="响应消息")
-    data: Optional[Any] = Field(default=None, description="响应数据")
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class FloorInfo(BaseModel):
     """楼层解析结果"""
     floor_number: Optional[int] = None

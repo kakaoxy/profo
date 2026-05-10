@@ -3,10 +3,7 @@
 此模块包含所有与项目功能相关的Pydantic模型
 """
 
-# 1. 从 common 导入通用响应（向后兼容）
-from ..common import BaseResponse, GenericBaseResponse
-
-# 2. 导入 Core (基础 CRUD)
+# 1. 导入 Core (基础 CRUD)
 from .core import (
     ProjectBase,
     ProjectCreate,
@@ -102,9 +99,6 @@ from .status_log import (
 )
 
 __all__ = [
-    # Common (向后兼容)
-    "BaseResponse",
-    "GenericBaseResponse",
     # Core
     "ProjectBase",
     "ProjectCreate",
