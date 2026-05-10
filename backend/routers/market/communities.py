@@ -60,7 +60,10 @@ def get_dictionaries(
     """
     返回行政区或商圈的去重列表
     """
-    return service.query_dictionaries(db=db, type=type, search=search, limit=limit)
+    try:
+        return service.query_dictionaries(db=db, type=type, search=search, limit=limit)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
