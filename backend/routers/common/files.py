@@ -13,6 +13,8 @@ from settings import settings
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
 from common import limiter
+from utils.file_security import sanitize_filename
+
 router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,8 @@ def upload_file(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}"
             )
+
+        sanitize_filename(file.filename)
 
         file.file.seek(0, 2)
         file_size = file.file.tell()
