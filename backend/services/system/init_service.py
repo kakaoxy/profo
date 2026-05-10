@@ -76,7 +76,7 @@ class SystemInitService:
             db.commit()
         except SQLAlchemyError as e:
             db.rollback()
-            logger.error(f"系统初始化失败: {str(e)}")
+            logger.error(f"系统初始化失败: {str(e)}", exc_info=True)
             return {"error": "系统初始化失败", "details": str(e)}
 
         return {
