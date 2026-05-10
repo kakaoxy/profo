@@ -11,8 +11,7 @@ import os
 import logging
 
 from schemas import (
-    UploadResult, 
-    ImportTaskCreateResponse, 
+    ImportTaskCreateResponse,
     ImportTaskStatusResponse
 )
 
@@ -24,7 +23,6 @@ class CancelTaskResponse(BaseModel):
 from exceptions import FileProcessingException, ResourceNotFoundException
 from dependencies.auth import DbSessionDep, CurrentInternalUserDep
 from services.market import (
-    CSVBatchImporter, 
     get_import_task_service,
     start_import_task
 )
@@ -247,31 +245,3 @@ def download_failed_file(
         media_type='text/csv',
         headers={'Content-Disposition': f'attachment; filename="{safe_filename}"'}
     )
-
-
-# 保留旧的同步上传接口作为兼容性支持（可选）
-@router.post("/csv-sync", response_model=UploadResult, include_in_schema=False)
-@limiter.limit("10/hour")
-def upload_csv_sync_legacy(
-    request: Request,
-    file: Annotated[UploadFile, File(description="CSV 文件")],
-    db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
-) -> UploadResult:
-    """
-    [已弃用] 同步上传 CSV 文件
-    
-    此接口保留用于小文件快速导入（<100条记录），不推荐用于大量数据
-    建议使用 /csv 异步接口
-    """
-    if not file.filename.endswith('.csv'):
-        raise FileProcessingException(
-            message="只支持 CSV 文件格式",
-            details={"filename": file.filename, "allowed_formats": [".csv"]}
-        )
-
-    logger.info(f"[同步模式] 接收到 CSV 文件: {file.filename}")
-
-    importer = CSVBatchImporter()
-    result = importer.batch_import_csv(file, db, str(current_user.id))
-    return result
