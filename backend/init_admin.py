@@ -27,9 +27,10 @@ def init_admin_user():
     print("=" * 60)
 
     init_db()
-    db = SessionLocal()
 
+    db = None
     try:
+        db = SessionLocal()
         result = init_service.initialize(db)
         message = result.get("message", "")
 
@@ -65,7 +66,8 @@ def init_admin_user():
         print("=" * 60)
         return False
     finally:
-        db.close()
+        if db is not None:
+            db.close()
 
 
 if __name__ == "__main__":
