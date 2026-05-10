@@ -110,7 +110,7 @@ class CommunityQueryService:
         }
 
         if type not in field_map:
-            return DictionaryResponse(type=type, items=[])
+            raise ValueError(f"不支持的字典类型: {type}，支持的类型: {list(field_map.keys())}")
 
         target_column = field_map[type]
 
