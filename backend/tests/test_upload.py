@@ -18,7 +18,7 @@ from models import Base, FailedRecord
 from schemas import PropertyIngestionModel, UploadResult
 from services.market import CSVBatchImporter
 from exceptions import FileProcessingException, ResourceNotFoundException
-from dependencies.auth import get_current_operator_user, get_current_normal_user
+from dependencies.auth import CurrentOperatorUserDep, CurrentNormalUserDep
 
 
 @pytest.fixture
@@ -57,8 +57,8 @@ def client():
     from main import app
     
     # Override auth dependencies
-    app.dependency_overrides[get_current_operator_user] = lambda: {"id": 1, "username": "test_op", "role": "operator"}
-    app.dependency_overrides[get_current_normal_user] = lambda: {"id": 1, "username": "test_user", "role": "user"}
+    app.dependency_overrides[CurrentOperatorUserDep] = lambda: {"id": 1, "username": "test_op", "role": "operator"}
+    app.dependency_overrides[CurrentNormalUserDep] = lambda: {"id": 1, "username": "test_user", "role": "user"}
     
     yield TestClient(app)
     

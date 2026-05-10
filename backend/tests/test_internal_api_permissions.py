@@ -9,9 +9,9 @@ from fastapi import HTTPException, status
 from main import app
 from dependencies.auth import (
     get_current_active_user,
-    get_current_internal_user,
-    get_current_admin_user,
-    get_current_operator_user
+    CurrentInternalUserDep,
+    CurrentAdminUserDep,
+    CurrentOperatorUserDep,
 )
 
 
@@ -133,9 +133,9 @@ class TestInternalAPIPermissions:
         # 保存原始依赖
         self.original_deps = {
             "get_current_active_user": app.dependency_overrides.get(get_current_active_user),
-            "get_current_internal_user": app.dependency_overrides.get(get_current_internal_user),
-            "get_current_admin_user": app.dependency_overrides.get(get_current_admin_user),
-            "get_current_operator_user": app.dependency_overrides.get(get_current_operator_user),
+            "CurrentInternalUserDep": app.dependency_overrides.get(CurrentInternalUserDep),
+            "CurrentAdminUserDep": app.dependency_overrides.get(CurrentAdminUserDep),
+            "CurrentOperatorUserDep": app.dependency_overrides.get(CurrentOperatorUserDep),
         }
 
     def teardown_method(self):
@@ -144,9 +144,9 @@ class TestInternalAPIPermissions:
         for key, value in self.original_deps.items():
             dep_map = {
                 "get_current_active_user": get_current_active_user,
-                "get_current_internal_user": get_current_internal_user,
-                "get_current_admin_user": get_current_admin_user,
-                "get_current_operator_user": get_current_operator_user,
+                "CurrentInternalUserDep": CurrentInternalUserDep,
+                "CurrentAdminUserDep": CurrentAdminUserDep,
+                "CurrentOperatorUserDep": CurrentOperatorUserDep,
             }
             if value:
                 app.dependency_overrides[dep_map[key]] = value
@@ -158,7 +158,7 @@ class TestInternalAPIPermissions:
 
     def test_properties_list_admin_access(self):
         """测试管理员可以访问房源列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_admin
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_admin
 
         response = client.get("/api/v1/properties")
         # 由于我们没有真实的数据库，预期可能是422或404，但不应该是403
@@ -166,28 +166,28 @@ class TestInternalAPIPermissions:
 
     def test_properties_list_operator_access(self):
         """测试运营人员可以访问房源列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_operator
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_operator
 
         response = client.get("/api/v1/properties")
         assert response.status_code != 403
 
     def test_properties_list_normal_user_denied(self):
         """测试普通用户无法访问房源列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/properties")
         assert response.status_code == 403
 
     def test_properties_detail_normal_user_denied(self):
         """测试普通用户无法访问房源详情"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/properties/1")
         assert response.status_code == 403
 
     def test_communities_search_normal_user_denied(self):
         """测试普通用户无法访问小区搜索"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/properties/communities/search?q=test")
         assert response.status_code == 403
@@ -196,21 +196,21 @@ class TestInternalAPIPermissions:
 
     def test_leads_list_normal_user_denied(self):
         """测试普通用户无法访问线索列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/leads/")
         assert response.status_code == 403
 
     def test_leads_create_normal_user_denied(self):
         """测试普通用户无法创建线索"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.post("/api/v1/leads/", json={"community_name": "测试小区", "total_price": 500})
         assert response.status_code == 403
 
     def test_leads_detail_normal_user_denied(self):
         """测试普通用户无法访问线索详情"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/leads/123")
         assert response.status_code == 403
@@ -219,35 +219,35 @@ class TestInternalAPIPermissions:
 
     def test_projects_list_normal_user_denied(self):
         """测试普通用户无法访问项目列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/projects")
         assert response.status_code == 403
 
     def test_projects_create_normal_user_denied(self):
         """测试普通用户无法创建项目"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.post("/api/v1/projects", json={"community_name": "测试小区"})
         assert response.status_code == 403
 
     def test_projects_detail_normal_user_denied(self):
         """测试普通用户无法访问项目详情"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/projects/123")
         assert response.status_code == 403
 
     def test_projects_renovation_normal_user_denied(self):
         """测试普通用户无法访问项目改造接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/projects/123/renovation/photos")
         assert response.status_code == 403
 
     def test_projects_sales_normal_user_denied(self):
         """测试普通用户无法访问项目销售接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/projects/123/selling/records")
         assert response.status_code == 403
@@ -256,7 +256,7 @@ class TestInternalAPIPermissions:
 
     def test_cashflow_normal_user_denied(self):
         """测试普通用户无法访问现金流接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/projects/123/cashflow")
         assert response.status_code == 403
@@ -265,28 +265,28 @@ class TestInternalAPIPermissions:
 
     def test_monitor_sentiment_normal_user_denied(self):
         """测试普通用户无法访问市场情绪接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/monitor/communities/1/sentiment")
         assert response.status_code == 403
 
     def test_monitor_trends_normal_user_denied(self):
         """测试普通用户无法访问市场趋势接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/monitor/communities/1/trends")
         assert response.status_code == 403
 
     def test_monitor_radar_normal_user_denied(self):
         """测试普通用户无法访问竞品雷达接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/monitor/communities/1/radar")
         assert response.status_code == 403
 
     def test_competitors_list_normal_user_denied(self):
         """测试普通用户无法访问竞品列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/communities/1/competitors")
         assert response.status_code == 403
@@ -295,7 +295,7 @@ class TestInternalAPIPermissions:
 
     def test_push_normal_user_denied(self):
         """测试普通用户无法访问数据推送接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         # 发送非空数组以通过验证，但应该返回403
         response = client.post("/api/v1/push", json=[{"test": "data"}])
@@ -303,14 +303,14 @@ class TestInternalAPIPermissions:
 
     def test_upload_csv_normal_user_denied(self):
         """测试普通用户无法访问CSV上传接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.post("/api/v1/upload/csv")
         assert response.status_code == 403
 
     def test_upload_download_normal_user_denied(self):
         """测试普通用户无法访问下载失败记录接口"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/upload/download/test.csv")
         assert response.status_code == 403
@@ -319,7 +319,7 @@ class TestInternalAPIPermissions:
 
     def test_users_simple_normal_user_denied(self):
         """测试普通用户无法访问简化用户列表"""
-        app.dependency_overrides[get_current_internal_user] = override_get_current_internal_user_normal
+        app.dependency_overrides[CurrentInternalUserDep] = override_get_current_internal_user_normal
 
         response = client.get("/api/v1/users/simple")
         assert response.status_code == 403
@@ -328,21 +328,21 @@ class TestInternalAPIPermissions:
 
     def test_users_list_operator_denied(self):
         """测试运营人员无法访问用户列表（仅admin）"""
-        app.dependency_overrides[get_current_admin_user] = override_get_current_admin_user_operator
+        app.dependency_overrides[CurrentAdminUserDep] = override_get_current_admin_user_operator
 
         response = client.get("/api/v1/users/users")
         assert response.status_code == 403
 
     def test_roles_list_operator_denied(self):
         """测试运营人员无法访问角色列表（仅admin）"""
-        app.dependency_overrides[get_current_admin_user] = override_get_current_admin_user_operator
+        app.dependency_overrides[CurrentAdminUserDep] = override_get_current_admin_user_operator
 
         response = client.get("/api/v1/roles")
         assert response.status_code == 403
 
     def test_admin_communities_merge_operator_denied(self):
         """测试运营人员无法访问小区合并接口（仅admin）"""
-        app.dependency_overrides[get_current_admin_user] = override_get_current_admin_user_operator
+        app.dependency_overrides[CurrentAdminUserDep] = override_get_current_admin_user_operator
 
         response = client.post("/api/v1/admin/communities/merge", json={"primary_id": 1, "merge_ids": [2]})
         assert response.status_code == 403

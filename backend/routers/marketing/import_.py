@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import get_current_operator_user
+from dependencies.auth import CurrentOperatorUserDep
 from services.marketing import (
     MarketingQueryService as L4MarketingQueryService,
     MarketingImportService as L4MarketingImportService,
@@ -22,7 +22,7 @@ from schemas.l4_marketing.import_schemas import (
 router = APIRouter(
     prefix="/admin/l4-marketing",
     tags=["L4-Marketing-Import"],
-    dependencies=[Depends(get_current_operator_user)]
+    dependencies=[Depends(CurrentOperatorUserDep)]
 )
 
 

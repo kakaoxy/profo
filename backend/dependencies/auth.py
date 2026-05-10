@@ -1,7 +1,6 @@
 """
 认证相关依赖注入函数
 """
-import warnings
 from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, status, Request
@@ -192,103 +191,6 @@ CurrentNormalUserDep = Annotated[User, Depends(require_roles(["admin", "operator
 CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operator"]))]
 
 
-# 向后兼容的函数形式
-# 这些函数统一使用 require_roles 工厂函数，保持逻辑一致性
-
-
-def get_current_admin_user(
-    current_user: CurrentAdminUserDep,
-) -> User:
-    """
-    获取当前管理员用户 [已弃用]
-
-    Args:
-        current_user: 当前管理员用户对象（通过 CurrentAdminUserDep 验证）
-
-    Returns:
-        User: 当前管理员用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 权限不足（由 CurrentAdminUserDep 依赖验证）
-    """
-    warnings.warn(
-        "get_current_admin_user is deprecated, use CurrentAdminUserDep directly",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return current_user
-
-
-def get_current_operator_user(
-    current_user: CurrentOperatorUserDep,
-) -> User:
-    """
-    获取当前运营人员用户 [已弃用]
-
-    Args:
-        current_user: 当前运营人员用户对象（通过 CurrentOperatorUserDep 验证）
-
-    Returns:
-        User: 当前运营人员用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 权限不足（由 CurrentOperatorUserDep 依赖验证）
-    """
-    warnings.warn(
-        "get_current_operator_user is deprecated, use CurrentOperatorUserDep directly",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return current_user
-
-
-def get_current_normal_user(
-    current_user: CurrentNormalUserDep,
-) -> User:
-    """
-    获取当前普通用户 [已弃用]
-
-    Args:
-        current_user: 当前普通用户对象（通过 CurrentNormalUserDep 验证）
-
-    Returns:
-        User: 当前普通用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 权限不足（由 CurrentNormalUserDep 依赖验证）
-    """
-    warnings.warn(
-        "get_current_normal_user is deprecated, use CurrentNormalUserDep directly",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return current_user
-
-
-def get_current_internal_user(
-    current_user: CurrentInternalUserDep,
-) -> User:
-    """
-    获取当前内部管理用户（管理员或运营人员） [已弃用]
-    用于所有内部管理API的统一权限验证
-
-    Args:
-        current_user: 当前内部管理用户对象（通过 CurrentInternalUserDep 验证）
-
-    Returns:
-        User: 当前内部管理用户对象
-
-    Raises:
-        HTTPException: 403 Forbidden - 权限不足（由 CurrentInternalUserDep 依赖验证）
-    """
-    warnings.warn(
-        "get_current_internal_user is deprecated, use CurrentInternalUserDep directly",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return current_user
-
-
 __all__ = [
     # 类型别名
     "DbSessionDep",
@@ -304,9 +206,4 @@ __all__ = [
     "get_current_active_user",
     "require_roles",
     "require_api_key",
-    # 向后兼容的函数
-    "get_current_admin_user",
-    "get_current_operator_user",
-    "get_current_normal_user",
-    "get_current_internal_user",
 ]
