@@ -13,6 +13,7 @@ from .user import UserService, user_service
 from .role import RoleService, role_service
 from .error import save_failed_record
 from .api_key import ApiKeyService, api_key_service
+from .init_service import SystemInitService, init_service
 
 __all__ = [
     "AuthService",
@@ -23,4 +24,6 @@ __all__ = [
     "save_failed_record",
     "ApiKeyService",
     "api_key_service",
+    "SystemInitService",
+    "init_service",
 ]

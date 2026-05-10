@@ -2,13 +2,10 @@
 用户管理相关路由
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
-import secrets
-import string
 from typing import Annotated
 
 from fastapi import APIRouter, Query, HTTPException, status, Request
 
-from models import User, Role
 from schemas.user import (
     UserCreate,
     UserUpdate,
@@ -18,7 +15,6 @@ from schemas.user import (
     PasswordChange,
     PasswordResetRequest,
 )
-from utils.auth import get_password_hash
 from dependencies.auth import (
     DbSessionDep,
     CurrentAdminUserDep,
@@ -26,6 +22,7 @@ from dependencies.auth import (
     CurrentInternalUserDep,
 )
 from services.system import user_service
+from services.system.init_service import init_service
 from common import limiter
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -72,27 +69,7 @@ def get_users_simple(
     """
     获取简化用户列表（仅包含ID和昵称），用于下拉选择
     """
-    from sqlalchemy import or_
-
-    query = db.query(User.id, User.nickname, User.username)
-
-    if status:
-        query = query.filter(User.status == status)
-
-    if nickname:
-        query = query.filter(
-            or_(
-                User.nickname.ilike(f"%{nickname}%"),
-                User.username.ilike(f"%{nickname}%")
-            )
-        )
-
-    users = query.all()
-
-    items = [
-        {"id": u.id, "nickname": u.nickname, "username": u.username}
-        for u in users
-    ]
+    items = user_service.list_users_simple(db, nickname=nickname, status=status)
 
     return UserSimpleListResponse(
         total=len(items),
@@ -212,70 +189,4 @@ def init_system_data(
     初始化系统数据，包括默认角色和管理员用户
     注意：使用 def 避免 sync DB 阻塞
     """
-    # 检查是否已初始化
-    existing_roles = db.query(Role).count()
-    if existing_roles > 0:
-        return {"message": "系统数据已初始化"}
-
-    # 创建默认角色
-    roles_data = [
-        {
-            "name": "管理员",
-            "code": "admin",
-            "description": "拥有所有权限，包括用户管理、权限配置",
-            "permissions": ["view_data", "edit_data", "manage_users", "manage_roles"]
-        },
-        {
-            "name": "运营人员",
-            "code": "operator",
-            "description": "拥有数据修改权限，包括项目、房源的增删改查",
-            "permissions": ["view_data", "edit_data"]
-        },
-        {
-            "name": "普通用户",
-            "code": "user",
-            "description": "仅拥有数据查看权限",
-            "permissions": ["view_data"]
-        }
-    ]
-
-    roles = []
-    for role_data in roles_data:
-        role = Role(**role_data)
-        db.add(role)
-        roles.append(role)
-
-    db.commit()
-
-    # 获取管理员角色
-    admin_role = next(r for r in roles if r.code == "admin")
-
-    # 生成临时密码（符合强密码策略）
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
-
-    # 确保密码符合策略
-    temp_password = "Temp" + temp_password + "9!"
-
-    # 创建临时管理员用户
-    admin_user = User(
-        username="admin",
-        password=get_password_hash(temp_password),
-        nickname="系统管理员",
-        role_id=admin_role.id,
-        status="active",
-        must_change_password=True  # 标记必须修改密码
-    )
-
-    db.add(admin_user)
-    db.commit()
-
-    return {
-        "message": "系统数据初始化成功",
-        "warning": "请立即使用临时密码登录并修改密码",
-        "temp_admin": {
-            "username": "admin",
-            "temp_password": temp_password,
-            "note": "此密码仅显示一次，请妥善保存。首次登录必须修改密码。"
-        }
-    }
+    return init_service.initialize(db)

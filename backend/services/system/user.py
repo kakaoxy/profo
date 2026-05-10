@@ -138,6 +138,34 @@ class UserService:
         db.commit()
         return {"message": "密码修改成功"}
 
+    def list_users_simple(
+        self,
+        db: Session,
+        nickname: str | None = None,
+        status: str | None = None,
+    ) -> list[dict]:
+        """获取简化用户列表（仅id/nickname/username），用于下拉选择"""
+        from sqlalchemy import or_
+
+        query = db.query(User.id, User.nickname, User.username)
+
+        if status:
+            query = query.filter(User.status == status)
+
+        if nickname:
+            query = query.filter(
+                or_(
+                    User.nickname.ilike(f"%{nickname}%"),
+                    User.username.ilike(f"%{nickname}%")
+                )
+            )
+
+        users = query.all()
+        return [
+            {"id": u.id, "nickname": u.nickname, "username": u.username}
+            for u in users
+        ]
+
 
 # 全局服务实例
 user_service = UserService()
