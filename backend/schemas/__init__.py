@@ -30,11 +30,7 @@ from .response import PaginatedResponse
 
 # 2. Common
 from .common import (
-    BaseResponse,          # 保留兼容，但标记为弃用
-    GenericBaseResponse,   # 保留兼容，但标记为弃用
     FailedRecordResponse,
-    PropertyHistoryResponse,
-    FloorInfo
 )
 
 # 3. Property (房源)
@@ -64,7 +60,6 @@ from .upload import (
 
 # 6. Project (项目) - 从新位置导入
 from .project import (
-    BaseResponse,
     ProjectCreate,
     ProjectUpdate,
     ProjectResponse,
@@ -163,11 +158,7 @@ __all__ = [
     'PaginatedResponse',
 
     # Common
-    'BaseResponse',        # 兼容保留
-    'GenericBaseResponse', # 兼容保留
     'FailedRecordResponse',
-    'PropertyHistoryResponse',
-    'FloorInfo',
 
     # Property
     'PropertyIngestionModel',

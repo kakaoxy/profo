@@ -191,20 +191,6 @@ class ApiKeyService:
 
         return user
 
-    @staticmethod
-    def update_last_used(db: Session, api_key_id: str) -> None:
-        """
-        更新 API Key 的最后使用时间
-        注意：调用方需要自行提交事务
-
-        Args:
-            db: 数据库会话
-            api_key_id: API Key ID
-        """
-        api_key = db.query(ApiKey).filter(ApiKey.id == api_key_id).first()
-        if api_key:
-            api_key.mark_used()
-
 
 # 全局服务实例
 api_key_service = ApiKeyService()
