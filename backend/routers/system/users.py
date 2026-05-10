@@ -189,4 +189,10 @@ def init_system_data(
     初始化系统数据，包括默认角色和管理员用户
     注意：使用 def 避免 sync DB 阻塞
     """
-    return init_service.initialize(db)
+    result = init_service.initialize(db)
+    if result.get("error"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result["error"],
+        )
+    return result

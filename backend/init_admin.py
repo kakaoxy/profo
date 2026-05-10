@@ -32,6 +32,14 @@ def init_admin_user():
     try:
         db = SessionLocal()
         result = init_service.initialize(db)
+
+        if result.get("error"):
+            print(f"\n  初始化失败: {result['error']}")
+            if result.get("details"):
+                print(f"   详情: {result['details']}")
+            print("=" * 60)
+            return False
+
         message = result.get("message", "")
 
         if "已初始化" in message:
