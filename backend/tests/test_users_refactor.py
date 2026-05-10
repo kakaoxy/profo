@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from models import Base
 from main import app
 from db import get_db
-from dependencies.auth import get_current_admin_user, get_current_active_user
+from dependencies.auth import CurrentAdminUserDep, get_current_active_user
 
 @pytest.fixture
 def db_session():
@@ -31,7 +31,7 @@ def client_admin(db_session):
     """Create FastAPI test client with admin auth and test db"""
     
     # Override auth dependencies
-    app.dependency_overrides[get_current_admin_user] = lambda: MagicMock(id="admin_id", username="admin", role_id="admin_role")
+    app.dependency_overrides[CurrentAdminUserDep] = lambda: MagicMock(id="admin_id", username="admin", role_id="admin_role")
     app.dependency_overrides[get_current_active_user] = lambda: MagicMock(id="admin_id", username="admin", role_id="admin_role")
     app.dependency_overrides[get_db] = lambda: db_session
     
