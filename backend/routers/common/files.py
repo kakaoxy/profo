@@ -13,6 +13,7 @@ from settings import settings
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
 from common import limiter
+from utils.file_security import sanitize_filename
 
 router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
@@ -37,7 +38,8 @@ def upload_file(
     速率限制：50次/小时（防止资源耗尽攻击）
     """
     try:
-        ext = os.path.splitext(file.filename)[1].lower()
+        safe_filename = sanitize_filename(file.filename)
+        ext = os.path.splitext(safe_filename)[1].lower()
         if ext not in settings.allowed_extensions:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -78,5 +80,6 @@ def upload_file(
 
         return FileUploadResponse(url=url, filename=filename)
 
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"文件上传失败: {str(e)}")
+    except Exception:
+        logger.exception("文件上传失败")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="文件上传失败，请稍后重试")
