@@ -2,13 +2,17 @@
 系统初始化服务
 提供角色和默认管理员用户的创建逻辑
 """
+import logging
 import secrets
 import string
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from models import User, Role
 from utils.auth import get_password_hash
+
+logger = logging.getLogger(__name__)
 
 
 class SystemInitService:
@@ -45,32 +49,35 @@ class SystemInitService:
             }
         ]
 
-        roles = []
-        for role_data in roles_data:
-            role = Role(**role_data)
-            db.add(role)
-            roles.append(role)
+        try:
+            roles = []
+            for role_data in roles_data:
+                role = Role(**role_data)
+                db.add(role)
+                roles.append(role)
 
-        db.commit()
+            admin_role = next(r for r in roles if r.code == "admin")
 
-        admin_role = next(r for r in roles if r.code == "admin")
+            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+            temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+            temp_password = "Temp" + temp_password + "9!"
 
-        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-        temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
-        temp_password = "Temp" + temp_password + "9!"
+            admin_user = User(
+                id="admin-user",
+                username="admin",
+                password=get_password_hash(temp_password),
+                nickname="系统管理员",
+                role_id=admin_role.id,
+                status="active",
+                must_change_password=True
+            )
 
-        admin_user = User(
-            id="admin-user",
-            username="admin",
-            password=get_password_hash(temp_password),
-            nickname="系统管理员",
-            role_id=admin_role.id,
-            status="active",
-            must_change_password=True
-        )
-
-        db.add(admin_user)
-        db.commit()
+            db.add(admin_user)
+            db.commit()
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(f"系统初始化失败: {str(e)}")
+            raise
 
         return {
             "message": "系统数据初始化成功",
