@@ -3,7 +3,7 @@
 """
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, Request
 
 from schemas.user import (
     RoleCreate,
@@ -13,6 +13,7 @@ from schemas.user import (
 )
 from dependencies.auth import DbSessionDep, CurrentAdminUserDep
 from services.system import role_service
+from common import limiter
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
@@ -68,7 +69,9 @@ def create_role(
 
 
 @router.put("/{role_id}", response_model=RoleResponse)
+@limiter.limit("100/hour")
 def update_role(
+    request: Request,
     role_id: str,
     role_data: RoleUpdate,
     db: DbSessionDep,
@@ -76,18 +79,22 @@ def update_role(
 ) -> RoleResponse:
     """
     更新角色信息
+    速率限制：100次/小时
     """
     return role_service.update_role(db, role_id, role_data)
 
 
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/hour")
 def delete_role(
+    request: Request,
     role_id: str,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
 ) -> None:
     """
     删除角色
+    速率限制：20次/小时
     """
     role_service.delete_role(db, role_id)
     return None

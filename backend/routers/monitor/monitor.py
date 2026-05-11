@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, Path, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Path, Query, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -15,6 +15,7 @@ from schemas.monitor import (
     CommunityMarketStatsResponse,
 )
 from services.monitor import MonitorService
+from common import limiter
 
 router = APIRouter(prefix="/monitor")
 
@@ -91,12 +92,17 @@ def add_competitor(
 
 
 @router.delete("/communities/{community_id}/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/hour")
 def remove_competitor(
+    request: Request,
     community_id: CommunityIdPath,
     competitor_id: CompetitorIdPath,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> None:
+    """删除竞品
+    速率限制：20次/小时
+    """
     removed = MonitorService.remove_competitor(db, community_id, competitor_id)
     if removed:
         db.commit()

@@ -1,21 +1,26 @@
 from typing import Annotated, Optional, List
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Request
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import RenovationUpdate, RenovationPhotoResponse, ProjectResponse
 from schemas.project.renovation import RenovationContractUpdate, RenovationContractResponse, RenovationPhotoListResponse
+from common import limiter
 
 router = APIRouter()
 
 
 @router.put("/{project_id}/renovation", response_model=ProjectResponse)
+@limiter.limit("100/hour")
 def update_renovation_stage(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     renovation_data: RenovationUpdate,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """更新改造阶段"""
+    """更新改造阶段
+    速率限制：100次/小时
+    """
     project = service.update_renovation_stage(project_id, renovation_data)
     return project
 
@@ -62,13 +67,17 @@ def get_renovation_photos(
 
 
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
+@limiter.limit("20/hour")
 def delete_renovation_photo(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     photo_id: Annotated[str, Path(description="照片ID")],
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """删除改造阶段照片"""
+    """删除改造阶段照片
+    速率限制：20次/小时
+    """
     service.delete_renovation_photo(project_id, photo_id)
     return None
 
@@ -85,12 +94,16 @@ def get_renovation_contract(
 
 
 @router.put("/{project_id}/renovation/contract", response_model=RenovationContractResponse)
+@limiter.limit("100/hour")
 def update_renovation_contract(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     contract_data: RenovationContractUpdate,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """更新装修合同信息"""
+    """更新装修合同信息
+    速率限制：100次/小时
+    """
     contract = service.update_renovation_contract(project_id, contract_data)
     return contract

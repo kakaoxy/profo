@@ -4,7 +4,7 @@ L4 市场营销层路由
 """
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path, Request
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -29,6 +29,7 @@ from schemas.l4_marketing import (
     L4SyncResponse,
     L4RefreshResponse,
 )
+from common import limiter
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
@@ -105,11 +106,15 @@ async def list_marketing_projects(
     status_code=status.HTTP_201_CREATED,
     summary="创建独立营销项目"
 )
+@limiter.limit("100/hour")
 async def create_marketing_project(
+    request: Request,
     data: L4MarketingProjectCreate,
     service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectResponse:
-    """创建独立营销项目 (不关联 L3 项目)"""
+    """创建独立营销项目 (不关联 L3 项目)
+    速率限制：100次/小时
+    """
     return service.create_project(data)
 
 
@@ -137,12 +142,16 @@ async def get_marketing_project(
     response_model=L4MarketingProjectResponse,
     summary="更新营销项目"
 )
+@limiter.limit("100/hour")
 async def update_marketing_project(
+    request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
     service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> L4MarketingProjectResponse:
-    """更新营销项目"""
+    """更新营销项目
+    速率限制：100次/小时
+    """
     item = service.update_project(project_id, data)
     if not item:
         raise HTTPException(
@@ -157,11 +166,15 @@ async def update_marketing_project(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除营销项目"
 )
+@limiter.limit("20/hour")
 async def delete_marketing_project(
+    request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
 ) -> None:
-    """逻辑删除营销项目"""
+    """逻辑删除营销项目
+    速率限制：20次/小时
+    """
     if not service.delete_project(project_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -215,12 +228,16 @@ async def create_marketing_media(
     response_model=L4MarketingMediaResponse,
     summary="更新媒体"
 )
+@limiter.limit("100/hour")
 async def update_marketing_media(
+    request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     data: L4MarketingMediaUpdate,
     service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4MarketingMediaResponse:
-    """更新媒体信息"""
+    """更新媒体信息
+    速率限制：100次/小时
+    """
     item = service.update_media(media_id, data)
     if not item:
         raise HTTPException(
@@ -235,11 +252,15 @@ async def update_marketing_media(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除媒体"
 )
+@limiter.limit("20/hour")
 async def delete_marketing_media(
+    request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> None:
-    """逻辑删除媒体"""
+    """逻辑删除媒体
+    速率限制：20次/小时
+    """
     if not service.delete_media(media_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -252,11 +273,15 @@ async def delete_marketing_media(
     response_model=L4SyncResponse,
     summary="批量更新媒体排序"
 )
+@limiter.limit("100/hour")
 async def update_media_sort_order(
+    request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     sort_updates: List[MediaSortOrderUpdate],
     service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
 ) -> L4SyncResponse:
-    """批量更新媒体排序顺序"""
+    """批量更新媒体排序顺序
+    速率限制：100次/小时
+    """
     updated_count = service.batch_update_sort_order(project_id, sort_updates)
     return L4SyncResponse(total_synced=updated_count)
