@@ -1,21 +1,26 @@
 from typing import Annotated, Optional, List
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Request
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import SalesRolesUpdate, SalesRecordCreate, SalesRecordResponse, ProjectResponse
 from schemas.project.sales import SalesRecordListResponse
+from common import limiter
 
 router = APIRouter()
 
 
 @router.put("/{project_id}/selling/roles", response_model=ProjectResponse)
+@limiter.limit("100/hour")
 def update_sales_roles(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     roles_data: SalesRolesUpdate,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """更新销售角色"""
+    """更新销售角色
+    速率限制：100次/小时
+    """
     project = service.update_sales_roles(project_id, roles_data)
     return project
 
@@ -71,12 +76,16 @@ def get_sales_records(
 
 
 @router.delete("/{project_id}/selling/records/{record_id}", status_code=204)
+@limiter.limit("20/hour")
 def delete_sales_record(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """删除销售记录"""
+    """删除销售记录
+    速率限制：20次/小时
+    """
     service.delete_sales_record(project_id, record_id)
     return None

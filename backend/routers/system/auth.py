@@ -105,12 +105,15 @@ def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("10/minute")
 def refresh_access_token(
+    request: Request,
     refresh_data: Annotated[RefreshTokenRequest, Body()],
     db: DBSessionDep
 ) -> TokenResponse:
     """
     刷新令牌 (Sync - Run in threadpool by FastAPI)
+    速率限制：10次/分钟
     """
     return AuthService.refresh_user_token(db, refresh_data.refresh_token)
 
@@ -250,12 +253,15 @@ def get_api_key_info(
 
 
 @router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/hour")
 def delete_api_key(
+    request: Request,
     current_user: CurrentUserDep,
     db: DBSessionDep
 ) -> None:
     """
     撤销当前用户的 API Key
+    速率限制：20次/小时
     """
     try:
         ApiKeyService.revoke_api_key(db, str(current_user.id))

@@ -32,7 +32,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=UserListResponse)
+@limiter.limit("60/minute")
 def get_users(
+    request: Request,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
     username: Annotated[str | None, Query(description="用户名搜索")] = None,
@@ -44,6 +46,7 @@ def get_users(
 ) -> UserListResponse:
     """
     获取用户列表，支持搜索和筛选
+    速率限制：60次/分钟
     """
     total, users = user_service.get_users(
         db, username, nickname, role_id, status, page, page_size
@@ -121,7 +124,9 @@ def create_user(
 
 
 @router.put("/{user_id}", response_model=UserResponse)
+@limiter.limit("100/hour")
 def update_user(
+    request: Request,
     user_id: str,
     user_data: UserUpdate,
     db: DbSessionDep,
@@ -129,6 +134,7 @@ def update_user(
 ) -> UserResponse:
     """
     更新用户信息
+    速率限制：100次/小时
     """
     return user_service.update_user(db, user_id, user_data)
 
@@ -151,13 +157,16 @@ def reset_user_password(
 
 
 @router.delete("/{user_id}", status_code=204)
+@limiter.limit("20/hour")
 def delete_user(
+    request: Request,
     user_id: str,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
 ) -> None:
     """
     删除用户
+    速率限制：20次/小时
     """
     user_service.delete_user(db, user_id, current_user.id)
     return None
@@ -182,12 +191,15 @@ def change_password(
 # ==================== 初始化数据 ====================
 
 @router.post("/init-data")
+@limiter.limit("3/hour")
 def init_system_data(
+    request: Request,
     db: DbSessionDep,
 ) -> dict:
     """
     初始化系统数据，包括默认角色和管理员用户
     注意：使用 def 避免 sync DB 阻塞
+    速率限制：3次/小时
     """
     result = init_service.initialize(db)
     if result.get("error"):

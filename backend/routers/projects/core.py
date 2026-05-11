@@ -4,7 +4,7 @@
 符合 AGENTS.md 规范第 26 条
 """
 from typing import Annotated, Optional
-from fastapi import APIRouter, Query, Path, HTTPException, status
+from fastapi import APIRouter, Query, Path, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
@@ -15,6 +15,7 @@ from schemas.project import (
 from schemas.common import PaginatedResponse
 from .renovation import router as renovation_router
 from .sales import router as sales_router
+from common import limiter
 import csv
 import io
 from datetime import datetime
@@ -40,12 +41,16 @@ def get_next_contract_no(
 
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("100/hour")
 def create_project(
+    request: Request,
     project_data: ProjectCreate,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """创建项目"""
+    """创建项目
+    速率限制：100次/小时
+    """
     project = service.create_project(project_data)
     return project
 
@@ -85,7 +90,9 @@ def get_project_stats(
 
 
 @router.get("/export")
+@limiter.limit("10/hour")
 def export_projects(
+    request: Request,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
     status: Annotated[Optional[str], Query(description="项目状态筛选")] = None,
@@ -95,6 +102,7 @@ def export_projects(
     导出项目数据为 CSV 文件
 
     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
+    速率限制：10次/小时
     """
     result = service.get_projects(
         status_filter=status,
@@ -183,13 +191,17 @@ def get_project(
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
+@limiter.limit("100/hour")
 def update_project(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     update_data: ProjectUpdate,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """更新项目信息"""
+    """更新项目信息
+    速率限制：100次/小时
+    """
     project = service.update_project(project_id, update_data)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -197,24 +209,32 @@ def update_project(
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/hour")
 def delete_project(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """删除项目"""
+    """删除项目
+    速率限制：20次/小时
+    """
     service.delete_project(project_id)
     return None
 
 
 @router.put("/{project_id}/status", response_model=ProjectResponse)
+@limiter.limit("100/hour")
 def update_project_status(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     status_update: StatusUpdate,
     service: ProjectServiceDep,
     current_user: CurrentInternalUserDep,
 ):
-    """更新项目状态"""
+    """更新项目状态
+    速率限制：100次/小时
+    """
     project = service.update_status(project_id, status_update)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")

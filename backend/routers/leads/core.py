@@ -3,7 +3,7 @@
 """
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Request
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from models.common import LeadStatus
@@ -16,6 +16,7 @@ from schemas.lead import (
     LeadFunnelResponse,
 )
 from services.leads import LeadService
+from common import limiter
 
 router = APIRouter()
 
@@ -125,13 +126,17 @@ def get_lead(
 
 
 @router.put("/{lead_id}", response_model=LeadResponse)
+@limiter.limit("100/hour")
 def update_lead(
+    request: Request,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],
     lead_in: LeadUpdate,
 ):
-    """更新线索"""
+    """更新线索
+    速率限制：100次/小时
+    """
     service = LeadService(db)
     lead = service.update_lead(lead_id, lead_in, current_user.id)
 
@@ -142,12 +147,16 @@ def update_lead(
 
 
 @router.delete("/{lead_id}", status_code=204)
+@limiter.limit("20/hour")
 def delete_lead(
+    request: Request,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],
 ):
-    """删除线索"""
+    """删除线索
+    速率限制：20次/小时
+    """
     service = LeadService(db)
     service.delete_lead(lead_id)
     return None

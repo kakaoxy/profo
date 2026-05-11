@@ -3,7 +3,7 @@
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器
 """
 from typing import Annotated
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Request
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -13,6 +13,7 @@ from schemas.project import (
     CashFlowRecordCreate, CashFlowRecordResponse,
     CashFlowResponse
 )
+from common import limiter
 
 router = APIRouter(tags=["cashflow"])
 
@@ -54,12 +55,16 @@ def get_project_cashflow(
 
 
 @router.delete("/projects/{project_id}/cashflow/{record_id}", status_code=204)
+@limiter.limit("20/hour")
 def delete_cashflow_record(
+    request: Request,
     service: CashFlowServiceDep,
     current_user: CurrentInternalUserDep,
     project_id: Annotated[str, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
 ) -> None:
-    """删除现金流记录"""
+    """删除现金流记录
+    速率限制：20次/小时
+    """
     service.delete_cashflow_record(record_id, project_id)
     return None

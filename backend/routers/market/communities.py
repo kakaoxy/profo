@@ -3,7 +3,7 @@
 小区管理路由
 处理小区查询、搜索和合并操作
 """
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Request
 from typing import Annotated, Optional
 import logging
 
@@ -19,6 +19,7 @@ from schemas.community import (
 from services.market import CommunityMerger
 from services.market.community_service import CommunityQueryService, _find_existing_community_by_name
 from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSessionDep
+from common import limiter
 from datetime import datetime, timezone
 import uuid
 
@@ -71,13 +72,16 @@ def get_dictionaries(
 
 
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
+@limiter.limit("20/hour")
 def merge_communities(
+    request_obj: Request,
     request: CommunityMergeRequest,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
 ) -> CommunityMergeResponse:
     """
     合并小区操作
+    速率限制：20次/小时
     """
     logger.info(f"收到小区合并请求: primary_id={request.primary_id}, merge_ids={request.merge_ids}")
 
@@ -112,15 +116,17 @@ def merge_communities(
 
 
 @router.post("/communities", response_model=CommunityResponse)
+@limiter.limit("100/hour")
 def create_community(
+    request_obj: Request,
     request: CommunityCreateRequest,
     db: DbSessionDep,
     current_user: CurrentOperatorUserDep,
 ) -> CommunityResponse:
     """
     创建新小区
-    
-    如果小区名称已存在，则返回已存在的小区
+
+    速率限制：100次/小时
     """
     from sqlalchemy.exc import IntegrityError
     
