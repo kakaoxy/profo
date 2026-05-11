@@ -81,6 +81,13 @@ def merge_communities(
 ) -> CommunityMergeResponse:
     """
     合并小区操作
+
+    参数:
+        request: FastAPI HTTP 请求对象（用于速率限制）
+        merge_request: 小区合并请求体，包含主小区 ID 和待合并小区 ID 列表
+        db: 数据库会话
+        current_user: 当前登录的管理员用户
+
     速率限制：20次/小时
     """
     logger.info(f"收到小区合并请求: primary_id={merge_request.primary_id}, merge_ids={merge_request.merge_ids}")
