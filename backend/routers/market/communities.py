@@ -74,8 +74,8 @@ def get_dictionaries(
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
 @limiter.limit("20/hour")
 def merge_communities(
-    request_obj: Request,
-    request: CommunityMergeRequest,
+    request: Request,
+    merge_request: CommunityMergeRequest,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
 ) -> CommunityMergeResponse:
@@ -83,7 +83,7 @@ def merge_communities(
     合并小区操作
     速率限制：20次/小时
     """
-    logger.info(f"收到小区合并请求: primary_id={request.primary_id}, merge_ids={request.merge_ids}")
+    logger.info(f"收到小区合并请求: primary_id={merge_request.primary_id}, merge_ids={merge_request.merge_ids}")
 
     # 建议：CommunityMerger 也可以通过 Depends 注入，方便管理 DB session 生命周期
     # 但如果 Merger 内部逻辑简单，直接传递 db 也可以
@@ -92,8 +92,8 @@ def merge_communities(
     try:
         # 假设 merger 内部处理了事务回滚，如果没有，建议在这里处理
         result = merger.merge_communities(
-            primary_id=request.primary_id,
-            merge_ids=request.merge_ids,
+            primary_id=merge_request.primary_id,
+            merge_ids=merge_request.merge_ids,
             db=db
         )
 
