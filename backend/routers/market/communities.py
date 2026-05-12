@@ -146,16 +146,7 @@ def create_community(
     
     if existing:
         logger.info(f"小区已存在，直接返回: {existing.name} (ID: {existing.id})")
-        return CommunityResponse(
-            id=existing.id,
-            name=existing.name,
-            city_id=existing.city_id,
-            district=existing.district,
-            business_circle=existing.business_circle,
-            avg_price_wan=existing.avg_price_wan,
-            total_properties=existing.total_properties,
-            created_at=existing.created_at
-        )
+        return CommunityQueryService._build_response(existing)
     
     # 2. 创建新小区
     new_community = Community(
@@ -183,16 +174,7 @@ def create_community(
         # 并发情况下可能另一个请求已创建，再次尝试查找
         existing = _find_existing_community_by_name(db, request.name)
         if existing:
-            return CommunityResponse(
-                id=existing.id,
-                name=existing.name,
-                city_id=existing.city_id,
-                district=existing.district,
-                business_circle=existing.business_circle,
-                avg_price_wan=existing.avg_price_wan,
-                total_properties=existing.total_properties,
-                created_at=existing.created_at
-            )
+            return CommunityQueryService._build_response(existing)
         raise HTTPException(status_code=500, detail="创建小区失败")
     except SQLAlchemyError as e:
         db.rollback()
@@ -203,13 +185,4 @@ def create_community(
         logger.error(f"创建小区发生未知错误: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="创建小区失败")
     
-    return CommunityResponse(
-        id=new_community.id,
-        name=new_community.name,
-        city_id=new_community.city_id,
-        district=new_community.district,
-        business_circle=new_community.business_circle,
-        avg_price_wan=new_community.avg_price_wan,
-        total_properties=new_community.total_properties,
-        created_at=new_community.created_at
-    )
+    return CommunityQueryService._build_response(new_community)

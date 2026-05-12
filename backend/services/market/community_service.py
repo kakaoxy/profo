@@ -21,6 +21,19 @@ class CommunityQueryService:
     """小区查询服务"""
 
     @staticmethod
+    def _build_response(community: Community) -> CommunityResponse:
+        return CommunityResponse(
+            id=community.id,
+            name=community.name,
+            city_id=community.city_id,
+            district=community.district,
+            business_circle=community.business_circle,
+            avg_price_wan=community.avg_price_wan,
+            total_properties=community.total_properties,
+            created_at=community.created_at
+        )
+
+    @staticmethod
     def query_communities(
         db: Session,
         search: Optional[str] = None,
