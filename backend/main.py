@@ -35,6 +35,9 @@ from routers.common import files_router, upload_router, push_router
 from routers.monitor import monitor_router
 
 
+logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -42,33 +45,33 @@ async def lifespan(app: FastAPI):
     在应用启动时初始化数据库和验证配置
     """
     # 启动时执行
-    print("Starting Profo Real Estate Data Center...")
+    logger.info("Starting Profo Real Estate Data Center...")
     
     # 初始化速率限制器
     app.state.limiter = limiter
-    print("速率限制器已初始化")
+    logger.info("速率限制器已初始化")
     
     # 验证JWT配置
     try:
         from utils.jwt_validator import check_jwt_configuration
         check_jwt_configuration()
-        print("JWT配置验证通过")
+        logger.info("JWT配置验证通过")
     except SystemExit:
         # JWT配置验证失败，应用无法启动
-        print("JWT配置验证失败，应用无法启动", file=sys.stderr)
+        logger.error("JWT配置验证失败，应用无法启动")
         sys.exit(1)
     except Exception as e:
-        print(f"JWT配置验证失败: {e}", file=sys.stderr)
+        logger.error(f"JWT配置验证失败: {e}")
         sys.exit(1)
     
     # 初始化数据库
     init_db()
-    print(f"Application started successfully: {settings.app_name} v{settings.app_version}")
+    logger.info(f"Application started successfully: {settings.app_name} v{settings.app_version}")
 
     yield
 
     # 关闭时执行
-    print("Application is shutting down...")
+    logger.info("Application is shutting down...")
 
 
 # 创建 FastAPI 应用实例
@@ -154,10 +157,8 @@ app.include_router(monitor_router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
 # ==================== 全局异常处理 ====================
 from fastapi.exceptions import RequestValidationError, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
-from exceptions import ProfoException
 from services.system.exceptions import ServiceException
 from error_handlers import (
-    profo_exception_handler,
     service_exception_handler,
     validation_exception_handler,
     sqlalchemy_exception_handler,
@@ -167,7 +168,6 @@ from error_handlers import (
 from slowapi.errors import RateLimitExceeded
 
 # 注册异常处理器
-app.add_exception_handler(ProfoException, profo_exception_handler)
 app.add_exception_handler(ServiceException, service_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)

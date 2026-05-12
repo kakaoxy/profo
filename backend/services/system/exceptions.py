@@ -48,3 +48,17 @@ class ConflictError(ServiceException):
 
     def __init__(self, message: str = "资源冲突"):
         super().__init__(message, status_code=409)
+
+
+class FileProcessingError(ServiceException):
+    """文件处理错误（400）"""
+
+    def __init__(self, message: str):
+        super().__init__(message, status_code=400)
+
+
+class BusinessLogicError(ServiceException):
+    """业务逻辑错误（422）"""
+
+    def __init__(self, message: str):
+        super().__init__(message, status_code=422)

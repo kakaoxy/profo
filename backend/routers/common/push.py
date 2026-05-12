@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends
 from fastapi.concurrency import run_in_threadpool
 
 from schemas import PushResult
-from exceptions import ValidationException, BusinessLogicException
+from services.system.exceptions import ValidationError, BusinessLogicError
 from dependencies.auth import DbSessionDep, require_api_key
 from models import User
 from services.market.json_batch_importer import JSONBatchImporter
@@ -44,16 +44,10 @@ async def push_properties(
         HTTPException: 数据验证失败或处理失败
     """
     if not properties:
-        raise ValidationException(
-            message="请求体不能为空",
-            details={"received": "empty array"}
-        )
+        raise ValidationError("请求体不能为空")
 
     if len(properties) > 10000:
-        raise ValidationException(
-            message="单次推送最多支持 10000 条记录",
-            details={"received": len(properties), "max_allowed": 10000}
-        )
+        raise ValidationError("单次推送最多支持 10000 条记录")
 
     logger.info(f"接收到 JSON 推送请求，包含 {len(properties)} 条记录")
 
@@ -71,7 +65,4 @@ async def push_properties(
 
     except Exception as e:
         logger.error(f"JSON 推送处理失败: {str(e)}")
-        raise BusinessLogicException(
-            message=f"推送处理失败: {str(e)}",
-            details={"total_records": len(properties)}
-        )
+        raise BusinessLogicError(f"推送处理失败: {str(e)}")

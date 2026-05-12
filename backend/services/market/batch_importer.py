@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from schemas import PropertyIngestionModel, UploadResult
 from .importer import PropertyImporter
 from models import FailedRecord
-from exceptions import FileProcessingException
+from services.system.exceptions import FileProcessingError
 from utils.error_formatters import format_validation_error
 from services.system import save_failed_record
 
@@ -103,7 +103,7 @@ class CSVBatchImporter:
             reader = csv.reader(f, delimiter=delimiter)
             headers = next(reader, None)
             if not headers:
-                raise FileProcessingException("CSV 文件无表头")
+                raise FileProcessingError("CSV 文件无表头")
 
             # 清理 header 并保留原始顺序
             clean_headers = []
@@ -135,10 +135,7 @@ class CSVBatchImporter:
 
         except Exception as e:
             logger.error(f"CSV 解析失败: {e}", exc_info=True)
-            raise FileProcessingException(
-                message="CSV 文件格式无效或内容损坏",
-                details={"error": str(e)}
-            )
+            raise FileProcessingError("CSV 文件格式无效或内容损坏")
 
     def batch_import_csv(self, file: UploadFile, db: Session, user_id: str = "") -> UploadResult:
         total = 0
@@ -151,7 +148,7 @@ class CSVBatchImporter:
         try:
             content = file.file.read()
             if not content:
-                raise FileProcessingException("上传的 CSV 文件为空")
+                raise FileProcessingError("上传的 CSV 文件为空")
 
             file_content = self._decode_file_content(content)
             rows, original_headers = self.parse_csv_file(file_content)
@@ -271,7 +268,7 @@ class CSVBatchImporter:
                 failed_file_url=failed_file_url
             )
 
-        except FileProcessingException:
+        except FileProcessingError:
             # 重新抛出文件处理异常（如空文件、格式错误等）
             raise
         except Exception as e:
