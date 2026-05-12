@@ -1,146 +1,44 @@
 """
-自定义异常类
-定义业务逻辑相关的异常类型
+已弃用 — 请改用 services.system.exceptions
+
+此模块中的所有异常类型已统一迁移至 services.system.exceptions.ServiceException 体系。
+为保持向后兼容，此处保留别名重导出，但推荐直接导入新模块。
+
+迁移映射:
+    ProfoException           → ServiceException
+    ResourceNotFoundException → ResourceNotFoundError
+    ValidationException      → ValidationError
+    AuthenticationException  → AuthenticationError
+    PermissionDeniedException → PermissionDeniedError
+    FileProcessingException  → FileProcessingError
+    BusinessLogicException   → BusinessLogicError
+    DuplicateRecordException → ConflictError
+    DatabaseException        → ServiceException
+    DateProcessingException  → ServiceException
+    DateFormatException      → ValidationError
+    DateParsingException     → ValidationError
+    PasswordValidationException → ValidationError
 """
-from typing import Optional, Any
+import warnings
 
+from services.system.exceptions import (
+    ServiceException as ProfoException,
+    ServiceException as DatabaseException,
+    ServiceException as DateProcessingException,
+    ResourceNotFoundError as ResourceNotFoundException,
+    ValidationError as ValidationException,
+    ValidationError as DateFormatException,
+    ValidationError as DateParsingException,
+    ValidationError as PasswordValidationException,
+    AuthenticationError as AuthenticationException,
+    PermissionDeniedError as PermissionDeniedException,
+    FileProcessingError as FileProcessingException,
+    BusinessLogicError as BusinessLogicException,
+    ConflictError as DuplicateRecordException,
+)
 
-class ProfoException(Exception):
-    """Profo 系统基础异常类"""
-    
-    def __init__(
-        self, 
-        message: str, 
-        code: str = "PROFO_ERROR",
-        details: Optional[Any] = None
-    ):
-        self.message = message
-        self.code = code
-        self.details = details
-        super().__init__(self.message)
-
-
-class ValidationException(ProfoException):
-    """数据验证异常"""
-    
-    def __init__(self, message: str, details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="VALIDATION_ERROR",
-            details=details
-        )
-
-
-class DatabaseException(ProfoException):
-    """数据库操作异常"""
-    
-    def __init__(self, message: str, details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="DATABASE_ERROR",
-            details=details
-        )
-
-
-class DuplicateRecordException(ProfoException):
-    """重复记录异常"""
-    
-    def __init__(self, message: str = "记录已存在", details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="DUPLICATE_RECORD",
-            details=details
-        )
-
-
-class ResourceNotFoundException(ProfoException):
-    """资源不存在异常"""
-    
-    def __init__(self, message: str = "资源不存在", details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="RESOURCE_NOT_FOUND",
-            details=details
-        )
-
-
-class FileProcessingException(ProfoException):
-    """文件处理异常"""
-    
-    def __init__(self, message: str, details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="FILE_PROCESSING_ERROR",
-            details=details
-        )
-
-
-class BusinessLogicException(ProfoException):
-    """业务逻辑异常"""
-
-    def __init__(self, message: str, details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="BUSINESS_LOGIC_ERROR",
-            details=details
-        )
-
-
-class AuthenticationException(ProfoException):
-    """认证异常（未登录或Token无效）"""
-    
-    def __init__(self, message: str = "认证失败", details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="AUTHENTICATION_ERROR",
-            details=details
-        )
-
-
-class PermissionDeniedException(ProfoException):
-    """权限不足异常"""
-    
-    def __init__(self, message: str = "权限不足", details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="PERMISSION_DENIED",
-            details=details
-        )
-
-
-class DateProcessingException(ProfoException):
-    """日期处理异常"""
-
-    def __init__(self, message: str, details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="DATE_PROCESSING_ERROR",
-            details=details
-        )
-
-
-class DateFormatException(DateProcessingException):
-    """日期格式错误异常"""
-
-    def __init__(self, message: str = "日期格式无效", details: Optional[Any] = None):
-        super().__init__(message, details)
-        self.code = "DATE_FORMAT_ERROR"
-
-
-class DateParsingException(DateProcessingException):
-    """日期解析错误异常"""
-
-    def __init__(self, message: str = "日期解析失败", details: Optional[Any] = None):
-        super().__init__(message, details)
-        self.code = "DATE_PARSING_ERROR"
-
-
-class PasswordValidationException(ProfoException):
-    """密码验证异常"""
-    
-    def __init__(self, message: str, details: Optional[Any] = None):
-        super().__init__(
-            message=message,
-            code="PASSWORD_VALIDATION_ERROR",
-            details=details
-        )
+warnings.warn(
+    "exceptions 模块已弃用，请改用 services.system.exceptions",
+    DeprecationWarning,
+    stacklevel=2,
+)

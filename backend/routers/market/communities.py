@@ -5,6 +5,7 @@
 """
 from fastapi import APIRouter, Query, HTTPException, Request
 from typing import Annotated, Optional
+from sqlalchemy.exc import SQLAlchemyError
 import logging
 
 from models.property import Community
@@ -117,7 +118,7 @@ def merge_communities(
     except ValueError as e:
         logger.warning(f"小区合并业务验证失败: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"小区合并发生未知错误: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
 
@@ -190,7 +191,7 @@ def create_community(
                 created_at=existing.created_at
             )
         raise HTTPException(status_code=500, detail="创建小区失败")
-    except Exception as e:
+    except SQLAlchemyError as e:
         db.rollback()
         logger.error(f"创建小区失败: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="创建小区失败")

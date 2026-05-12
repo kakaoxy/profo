@@ -15,10 +15,9 @@ import json
 import traceback
 from starlette.concurrency import run_in_threadpool
 
-from exceptions import ProfoException
+from services.system.exceptions import ServiceException
 from utils.error_formatters import format_request_validation_error, format_database_error
 from services.system import save_failed_record
-from services.system.exceptions import ServiceException
 from utils.security_logger import safe_log_request_body, safe_log_dict
 
 logger = logging.getLogger(__name__)
@@ -65,36 +64,6 @@ async def service_exception_handler(request: Request, exc: ServiceException) -> 
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message}
-    )
-
-
-async def profo_exception_handler(request: Request, exc: ProfoException) -> JSONResponse:
-    """
-    处理自定义 Profo 异常
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    """
-    logger.warning(f"业务异常: {exc.code} - {exc.message}")
-
-    # 根据异常类型确定 HTTP 状态码
-    status_code_map = {
-        "VALIDATION_ERROR": status.HTTP_400_BAD_REQUEST,
-        "DUPLICATE_RECORD": status.HTTP_409_CONFLICT,
-        "RESOURCE_NOT_FOUND": status.HTTP_404_NOT_FOUND,
-        "FILE_PROCESSING_ERROR": status.HTTP_400_BAD_REQUEST,
-        "BUSINESS_LOGIC_ERROR": status.HTTP_422_UNPROCESSABLE_ENTITY,
-        "DATABASE_ERROR": status.HTTP_500_INTERNAL_SERVER_ERROR,
-        "AUTHENTICATION_ERROR": status.HTTP_401_UNAUTHORIZED,
-        "PERMISSION_DENIED": status.HTTP_403_FORBIDDEN,
-    }
-
-    status_code = status_code_map.get(exc.code, status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    response_content = {"detail": exc.message}
-
-    return JSONResponse(
-        status_code=status_code,
-        content=response_content
     )
 
 

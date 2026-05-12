@@ -20,7 +20,7 @@ class CancelTaskResponse(BaseModel):
     """取消任务响应"""
     message: str
     task_id: str
-from exceptions import FileProcessingException, ResourceNotFoundException
+from services.system.exceptions import FileProcessingError, ResourceNotFoundError
 from dependencies.auth import DbSessionDep, CurrentInternalUserDep
 from services.market import (
     get_import_task_service,
@@ -57,10 +57,7 @@ async def create_import_task(
     速率限制：30次/小时
     """
     if not file.filename.endswith('.csv'):
-        raise FileProcessingException(
-            message="只支持 CSV 文件格式",
-            details={"filename": file.filename, "allowed_formats": [".csv"]}
-        )
+        raise FileProcessingError("只支持 CSV 文件格式")
 
     logger.info(f"接收到 CSV 文件: {file.filename}, 用户: {current_user.id}")
 
@@ -108,10 +105,7 @@ def get_task_status(
     task = task_service.get_task(task_id, db)
     
     if not task:
-        raise ResourceNotFoundException(
-            message="任务不存在",
-            details={"task_id": task_id}
-        )
+        raise ResourceNotFoundError("任务不存在")
     
     # 检查权限（只能查看自己的任务）
     if task.user_id != current_user.id:
@@ -223,10 +217,7 @@ def download_failed_file(
 
     # 二次验证：确保文件存在且不是目录
     if not os.path.exists(filepath) or os.path.isdir(filepath):
-        raise ResourceNotFoundException(
-            message="文件不存在或已过期",
-            details={"filename": filename}
-        )
+        raise ResourceNotFoundError("文件不存在或已过期")
 
     # 三次验证：确保文件确实在安全目录内（防御性编程）
     if not is_safe_path(temp_dir, filepath):

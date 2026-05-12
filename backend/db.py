@@ -6,6 +6,9 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from typing import Generator
 from settings import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # 创建数据库引擎（优化版本）
@@ -78,7 +81,7 @@ def init_db():
     from models import Base
     Base.metadata.create_all(bind=engine)
 
-    print("Database tables created successfully")
+    logger.info("Database tables created successfully")
 
 
 def drop_all_tables():
@@ -89,7 +92,7 @@ def drop_all_tables():
     """
     from models import Base
     Base.metadata.drop_all(bind=engine)
-    print("⚠️  所有表已删除")
+    logger.warning("⚠️  所有表已删除")
 
 
 def reset_db():
@@ -100,4 +103,4 @@ def reset_db():
     """
     drop_all_tables()
     init_db()
-    print("🔄 数据库已重置")
+    logger.info("🔄 数据库已重置")

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from fastapi import UploadFile
 
 from models import PropertyImportTask, ImportTaskStatus
-from exceptions import FileProcessingException
+from services.system.exceptions import FileProcessingError
 from settings import settings
 
 logger = logging.getLogger(__name__)
@@ -53,10 +53,7 @@ class ImportTaskService:
             logger.info(f"文件已保存: {file_path}, 大小: {file_size} bytes")
         except Exception as e:
             logger.error(f"保存上传文件时出错: {e}")
-            raise FileProcessingException(
-                message="保存上传文件失败",
-                details={"error": str(e), "filename": file.filename}
-            )
+            raise FileProcessingError("保存上传文件失败")
         
         # 创建任务记录
         task = PropertyImportTask(
