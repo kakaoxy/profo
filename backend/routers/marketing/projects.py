@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Path, Requ
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import CurrentOperatorUserDep
+from dependencies.auth import require_roles
 from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
     MarketingMediaService as L4MarketingMediaService,
@@ -34,7 +34,7 @@ from common import limiter
 router = APIRouter(
     prefix="/admin/l4-marketing",
     tags=["L4-Marketing"],
-    dependencies=[Depends(CurrentOperatorUserDep)]
+    dependencies=[Depends(require_roles(["admin", "operator"]))]
 )
 
 
@@ -69,7 +69,7 @@ async def list_marketing_projects(
     project_status: Annotated[Optional[str], Query(description="项目状态: 在途/在售/已售")] = None,
     consultant_id: Annotated[Optional[str], Query(description="顾问ID")] = None,
     community_id: Annotated[Optional[str], Query(description="小区ID")] = None,
-    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
+    service: L4MarketingProjectService = Depends(get_project_service)
 ) -> L4MarketingProjectListResponse:
     """获取营销项目列表 - 统一分页格式，包含摘要统计"""
     # 摘要统计：基于筛选条件的全量统计，不受分页影响
@@ -110,7 +110,7 @@ async def list_marketing_projects(
 async def create_marketing_project(
     request: Request,
     data: L4MarketingProjectCreate,
-    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
+    service: L4MarketingProjectService = Depends(get_project_service),
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目 (不关联 L3 项目)
     速率限制：100次/小时
@@ -125,7 +125,7 @@ async def create_marketing_project(
 )
 async def get_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
-    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
+    service: L4MarketingProjectService = Depends(get_project_service),
 ) -> L4MarketingProjectResponse:
     """获取营销项目详情"""
     item = service.get_project(project_id)
@@ -147,7 +147,7 @@ async def update_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
-    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
+    service: L4MarketingProjectService = Depends(get_project_service),
 ) -> L4MarketingProjectResponse:
     """更新营销项目
     速率限制：100次/小时
@@ -170,7 +170,7 @@ async def update_marketing_project(
 async def delete_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
-    service: Annotated[L4MarketingProjectService, Depends(get_project_service)] = None
+    service: L4MarketingProjectService = Depends(get_project_service),
 ) -> None:
     """逻辑删除营销项目
     速率限制：20次/小时
@@ -195,7 +195,7 @@ async def list_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 100,
-    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
+    service: L4MarketingMediaService = Depends(get_media_service),
 ) -> L4MarketingMediaListResponse:
     """获取营销项目的媒体列表"""
     skip = (page - 1) * page_size
@@ -217,7 +217,7 @@ async def list_marketing_media(
 async def create_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingMediaCreate,
-    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
+    service: L4MarketingMediaService = Depends(get_media_service),
 ) -> L4MarketingMediaResponse:
     """为营销项目添加媒体"""
     return service.create_media(data, project_id)
@@ -233,7 +233,7 @@ async def update_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     data: L4MarketingMediaUpdate,
-    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
+    service: L4MarketingMediaService = Depends(get_media_service),
 ) -> L4MarketingMediaResponse:
     """更新媒体信息
     速率限制：100次/小时
@@ -256,7 +256,7 @@ async def update_marketing_media(
 async def delete_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
-    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
+    service: L4MarketingMediaService = Depends(get_media_service),
 ) -> None:
     """逻辑删除媒体
     速率限制：20次/小时
@@ -278,7 +278,7 @@ async def update_media_sort_order(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     sort_updates: List[MediaSortOrderUpdate],
-    service: Annotated[L4MarketingMediaService, Depends(get_media_service)] = None
+    service: L4MarketingMediaService = Depends(get_media_service),
 ) -> L4SyncResponse:
     """批量更新媒体排序顺序
     速率限制：100次/小时

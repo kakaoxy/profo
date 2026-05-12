@@ -89,9 +89,9 @@ async def validation_exception_handler(
         pass
 
     if safe_body:
-        logger.warning(f"请求验证失败: {error_message}, 请求体: {json.dumps(safe_body, ensure_ascii=False)}")
+        logger.warning(f"请求验证失败: {error_message}, 请求体: {json.dumps(safe_body, ensure_ascii=False)}, 原始错误: {exc.errors()}")
     else:
-        logger.warning(f"请求验证失败: {error_message}")
+        logger.warning(f"请求验证失败: {error_message}, 原始错误: {exc.errors()}")
 
     # 尝试保存失败记录（使用脱敏后的数据）
     await save_failed_record_safely(
