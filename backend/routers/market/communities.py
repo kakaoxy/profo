@@ -119,6 +119,9 @@ def merge_communities(
         logger.warning(f"小区合并业务验证失败: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except SQLAlchemyError as e:
+        logger.error(f"小区合并发生数据库错误: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
+    except Exception as e:
         logger.error(f"小区合并发生未知错误: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
 
@@ -193,7 +196,11 @@ def create_community(
         raise HTTPException(status_code=500, detail="创建小区失败")
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"创建小区失败: {str(e)}", exc_info=True)
+        logger.error(f"创建小区发生数据库错误: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="创建小区失败")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"创建小区发生未知错误: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="创建小区失败")
     
     return CommunityResponse(
