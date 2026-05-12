@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import CurrentOperatorUserDep
+from dependencies.auth import require_roles
 from services.marketing import (
     MarketingQueryService as L4MarketingQueryService,
     MarketingImportService as L4MarketingImportService,
@@ -22,7 +22,7 @@ from schemas.l4_marketing.import_schemas import (
 router = APIRouter(
     prefix="/admin/l4-marketing",
     tags=["L4-Marketing-Import"],
-    dependencies=[Depends(CurrentOperatorUserDep)]
+    dependencies=[Depends(require_roles(["admin", "operator"]))]
 )
 
 
@@ -57,7 +57,7 @@ async def list_available_projects(
     status: Annotated[Optional[str], Query(description="项目状态筛选")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 20,
-    service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None
+    service: L4MarketingQueryService = Depends(get_query_service)
 ) -> L3ProjectListResponse:
     """获取可用于关联的L3项目列表
     
@@ -84,7 +84,7 @@ async def list_available_projects(
 )
 async def get_l3_project_detail(
     project_id: Annotated[str, Path(description="项目ID")],
-    service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None
+    service: L4MarketingQueryService = Depends(get_query_service)
 ) -> L3ProjectBriefResponse:
     """获取单个L3项目详情
 
@@ -120,8 +120,8 @@ async def get_l3_project_detail(
 )
 async def import_from_l3_project(
     project_id: Annotated[str, Path(description="项目ID")],
-    query_service: Annotated[L4MarketingQueryService, Depends(get_query_service)] = None,
-    import_service: Annotated[L4MarketingImportService, Depends(get_import_service)] = None
+    query_service: L4MarketingQueryService = Depends(get_query_service),
+    import_service: L4MarketingImportService = Depends(get_import_service)
 ) -> L3ProjectImportResponse:
     """从L3项目导入数据
 

@@ -145,7 +145,7 @@ export interface paths {
          * Create Community
          * @description 创建新小区
          *
-         *     如果小区名称已存在，则返回已存在的小区
+         *     速率限制：100次/小时
          */
         post: operations["create_community_api_v1_admin_communities_post"];
         delete?: never;
@@ -186,6 +186,14 @@ export interface paths {
         /**
          * Merge Communities
          * @description 合并小区操作
+         *
+         *     参数:
+         *         request: FastAPI HTTP 请求对象（用于速率限制）
+         *         merge_request: 小区合并请求体，包含主小区 ID 和待合并小区 ID 列表
+         *         db: 数据库会话
+         *         current_user: 当前登录的管理员用户
+         *
+         *     速率限制：20次/小时
          */
         post: operations["merge_communities_api_v1_admin_communities_merge_post"];
         delete?: never;
@@ -234,12 +242,14 @@ export interface paths {
         /**
          * Update Lead
          * @description 更新线索
+         *     速率限制：100次/小时
          */
         put: operations["update_lead_api_v1_leads__lead_id__put"];
         post?: never;
         /**
          * Delete Lead
          * @description 删除线索
+         *     速率限制：20次/小时
          */
         delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
         options?: never;
@@ -327,6 +337,7 @@ export interface paths {
         /**
          * Update Renovation Stage
          * @description 更新改造阶段
+         *     速率限制：100次/小时
          */
         put: operations["update_renovation_stage_api_v1_projects__project_id__renovation_put"];
         post?: never;
@@ -373,6 +384,7 @@ export interface paths {
         /**
          * Delete Renovation Photo
          * @description 删除改造阶段照片
+         *     速率限制：20次/小时
          */
         delete: operations["delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete"];
         options?: never;
@@ -395,6 +407,7 @@ export interface paths {
         /**
          * Update Renovation Contract
          * @description 更新装修合同信息
+         *     速率限制：100次/小时
          */
         put: operations["update_renovation_contract_api_v1_projects__project_id__renovation_contract_put"];
         post?: never;
@@ -415,6 +428,7 @@ export interface paths {
         /**
          * Update Sales Roles
          * @description 更新销售角色
+         *     速率限制：100次/小时
          */
         put: operations["update_sales_roles_api_v1_projects__project_id__selling_roles_put"];
         post?: never;
@@ -517,6 +531,7 @@ export interface paths {
         /**
          * Delete Sales Record
          * @description 删除销售记录
+         *     速率限制：20次/小时
          */
         delete: operations["delete_sales_record_api_v1_projects__project_id__selling_records__record_id__delete"];
         options?: never;
@@ -563,6 +578,7 @@ export interface paths {
         /**
          * Create Project
          * @description 创建项目
+         *     速率限制：100次/小时
          */
         post: operations["create_project_api_v1_projects_post"];
         delete?: never;
@@ -603,6 +619,7 @@ export interface paths {
          * @description 导出项目数据为 CSV 文件
          *
          *     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
+         *     速率限制：10次/小时
          */
         get: operations["export_projects_api_v1_projects_export_get"];
         put?: never;
@@ -628,12 +645,14 @@ export interface paths {
         /**
          * Update Project
          * @description 更新项目信息
+         *     速率限制：100次/小时
          */
         put: operations["update_project_api_v1_projects__project_id__put"];
         post?: never;
         /**
          * Delete Project
          * @description 删除项目
+         *     速率限制：20次/小时
          */
         delete: operations["delete_project_api_v1_projects__project_id__delete"];
         options?: never;
@@ -652,6 +671,7 @@ export interface paths {
         /**
          * Update Project Status
          * @description 更新项目状态
+         *     速率限制：100次/小时
          */
         put: operations["update_project_status_api_v1_projects__project_id__status_put"];
         post?: never;
@@ -738,6 +758,7 @@ export interface paths {
         /**
          * Delete Cashflow Record
          * @description 删除现金流记录
+         *     速率限制：20次/小时
          */
         delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
         options?: never;
@@ -761,6 +782,7 @@ export interface paths {
         /**
          * 创建独立营销项目
          * @description 创建独立营销项目 (不关联 L3 项目)
+         *     速率限制：100次/小时
          */
         post: operations["create_marketing_project_api_v1_admin_l4_marketing_projects_post"];
         delete?: never;
@@ -784,12 +806,14 @@ export interface paths {
         /**
          * 更新营销项目
          * @description 更新营销项目
+         *     速率限制：100次/小时
          */
         put: operations["update_marketing_project_api_v1_admin_l4_marketing_projects__project_id__put"];
         post?: never;
         /**
          * 删除营销项目
          * @description 逻辑删除营销项目
+         *     速率限制：20次/小时
          */
         delete: operations["delete_marketing_project_api_v1_admin_l4_marketing_projects__project_id__delete"];
         options?: never;
@@ -832,12 +856,14 @@ export interface paths {
         /**
          * 更新媒体
          * @description 更新媒体信息
+         *     速率限制：100次/小时
          */
         put: operations["update_marketing_media_api_v1_admin_l4_marketing_media__media_id__put"];
         post?: never;
         /**
          * 删除媒体
          * @description 逻辑删除媒体
+         *     速率限制：20次/小时
          */
         delete: operations["delete_marketing_media_api_v1_admin_l4_marketing_media__media_id__delete"];
         options?: never;
@@ -856,6 +882,7 @@ export interface paths {
         /**
          * 批量更新媒体排序
          * @description 批量更新媒体排序顺序
+         *     速率限制：100次/小时
          */
         put: operations["update_media_sort_order_api_v1_admin_l4_marketing_projects__project_id__media_sort_order_put"];
         post?: never;
@@ -986,6 +1013,7 @@ export interface paths {
         /**
          * Refresh Access Token
          * @description 刷新令牌 (Sync - Run in threadpool by FastAPI)
+         *     速率限制：10次/分钟
          */
         post: operations["refresh_access_token_api_v1_auth_refresh_post"];
         delete?: never;
@@ -1099,6 +1127,7 @@ export interface paths {
         /**
          * Delete Api Key
          * @description 撤销当前用户的 API Key
+         *     速率限制：20次/小时
          */
         delete: operations["delete_api_key_api_v1_auth_api_key_delete"];
         options?: never;
@@ -1116,6 +1145,7 @@ export interface paths {
         /**
          * Get Users
          * @description 获取用户列表，支持搜索和筛选
+         *     速率限制：60次/分钟
          */
         get: operations["get_users_api_v1_users__get"];
         put?: never;
@@ -1186,12 +1216,14 @@ export interface paths {
         /**
          * Update User
          * @description 更新用户信息
+         *     速率限制：100次/小时
          */
         put: operations["update_user_api_v1_users__user_id__put"];
         post?: never;
         /**
          * Delete User
          * @description 删除用户
+         *     速率限制：20次/小时
          */
         delete: operations["delete_user_api_v1_users__user_id__delete"];
         options?: never;
@@ -1254,6 +1286,7 @@ export interface paths {
          * Init System Data
          * @description 初始化系统数据，包括默认角色和管理员用户
          *     注意：使用 def 避免 sync DB 阻塞
+         *     速率限制：3次/小时
          */
         post: operations["init_system_data_api_v1_users_init_data_post"];
         delete?: never;
@@ -1301,12 +1334,14 @@ export interface paths {
         /**
          * Update Role
          * @description 更新角色信息
+         *     速率限制：100次/小时
          */
         put: operations["update_role_api_v1_roles__role_id__put"];
         post?: never;
         /**
          * Delete Role
          * @description 删除角色
+         *     速率限制：20次/小时
          */
         delete: operations["delete_role_api_v1_roles__role_id__delete"];
         options?: never;
@@ -1586,7 +1621,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove Competitor */
+        /**
+         * Remove Competitor
+         * @description 删除竞品
+         *     速率限制：20次/小时
+         */
         delete: operations["remove_competitor_api_v1_monitor_communities__community_id__competitors__competitor_id__delete"];
         options?: never;
         head?: never;
@@ -5084,6 +5123,13 @@ export interface operations {
                     "application/json": components["schemas"]["DictionaryResponse"];
                 };
             };
+            /** @description 不支持的字典类型参数 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -6406,7 +6452,7 @@ export interface operations {
     };
     list_marketing_projects_api_v1_admin_l4_marketing_projects_get: {
         parameters: {
-            query: {
+            query?: {
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页大小 */
@@ -6419,8 +6465,6 @@ export interface operations {
                 consultant_id?: string | null;
                 /** @description 小区ID */
                 community_id?: string | null;
-                args: unknown;
-                kwargs: unknown;
             };
             header?: never;
             path?: never;
@@ -6450,10 +6494,7 @@ export interface operations {
     };
     create_marketing_project_api_v1_admin_l4_marketing_projects_post: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -6486,10 +6527,7 @@ export interface operations {
     };
     get_marketing_project_api_v1_admin_l4_marketing_projects__project_id__get: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6521,10 +6559,7 @@ export interface operations {
     };
     update_marketing_project_api_v1_admin_l4_marketing_projects__project_id__put: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6560,10 +6595,7 @@ export interface operations {
     };
     delete_marketing_project_api_v1_admin_l4_marketing_projects__project_id__delete: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6593,13 +6625,11 @@ export interface operations {
     };
     list_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_get: {
         parameters: {
-            query: {
+            query?: {
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页大小 */
                 page_size?: number;
-                args: unknown;
-                kwargs: unknown;
             };
             header?: never;
             path: {
@@ -6632,10 +6662,7 @@ export interface operations {
     };
     create_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_post: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6671,10 +6698,7 @@ export interface operations {
     };
     update_marketing_media_api_v1_admin_l4_marketing_media__media_id__put: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 媒体ID */
@@ -6710,10 +6734,7 @@ export interface operations {
     };
     delete_marketing_media_api_v1_admin_l4_marketing_media__media_id__delete: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 媒体ID */
@@ -6743,10 +6764,7 @@ export interface operations {
     };
     update_media_sort_order_api_v1_admin_l4_marketing_projects__project_id__media_sort_order_put: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6782,7 +6800,7 @@ export interface operations {
     };
     list_available_projects_api_v1_admin_l4_marketing_available_projects_get: {
         parameters: {
-            query: {
+            query?: {
                 /** @description 小区名称筛选 */
                 community_name?: string | null;
                 /** @description 项目状态筛选 */
@@ -6791,8 +6809,6 @@ export interface operations {
                 page?: number;
                 /** @description 每页大小 */
                 page_size?: number;
-                args: unknown;
-                kwargs: unknown;
             };
             header?: never;
             path?: never;
@@ -6822,10 +6838,7 @@ export interface operations {
     };
     get_l3_project_detail_api_v1_admin_l4_marketing_available_projects__project_id__get: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
@@ -6857,10 +6870,7 @@ export interface operations {
     };
     import_from_l3_project_api_v1_admin_l4_marketing_projects_import_from_l3__project_id__post: {
         parameters: {
-            query: {
-                args: unknown;
-                kwargs: unknown;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description 项目ID */
