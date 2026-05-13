@@ -167,16 +167,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         failure_type="system_error"
     )
 
-    # 根据 debug 模式决定是否返回详细错误信息
-    from settings import settings
-
-    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    if settings.debug:
-        error_message = f"{str(exc)}\n\n{error_traceback}"
-    else:
-        error_message = "服务器内部错误，请稍后重试"
-
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": error_message}
+        content={"detail": "服务器内部错误，请稍后重试"}
     )

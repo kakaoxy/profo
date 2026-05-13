@@ -6,6 +6,8 @@
 - 外部 API 调用 (Async) -> 供 async 路由调用
 """
 import logging
+import time
+import uuid
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -168,6 +170,37 @@ class AuthService:
             "connect_redirect": 1
         }
         return settings.wechat_auth_url_base + "?" + urlencode(params) + "#wechat_redirect"
+
+    _temp_code_store: dict[str, dict[str, object]] = {}
+    _code_ttl: int = 60
+
+    @classmethod
+    def _cleanup_expired_codes(cls) -> None:
+        now = time.time()
+        active_codes = {k: v for k, v in cls._temp_code_store.items() if v["expires_at"] > now}
+        cls._temp_code_store = active_codes
+
+    @classmethod
+    def store_temp_token(cls, access_token: str, refresh_token: str) -> str:
+        cls._cleanup_expired_codes()
+
+        now = time.time()
+        code = str(uuid.uuid4())
+        cls._temp_code_store[code] = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_at": now + cls._code_ttl,
+        }
+        return code
+
+    @classmethod
+    def exchange_temp_code(cls, code: str) -> dict[str, object]:
+        cls._cleanup_expired_codes()
+
+        entry = cls._temp_code_store.pop(code, None)
+        if entry is None:
+            raise AuthenticationError("授权码无效")
+        return entry
 
     @staticmethod
     async def fetch_wechat_access_token(code: str) -> dict[str, object]:
