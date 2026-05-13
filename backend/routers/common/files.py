@@ -80,6 +80,8 @@ def upload_file(
 
         return FileUploadResponse(url=url, filename=filename)
 
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("文件上传失败")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="文件上传失败，请稍后重试")

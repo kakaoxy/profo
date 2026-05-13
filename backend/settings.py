@@ -50,11 +50,12 @@ class Settings(BaseSettings):
     # 文件上传配置
     upload_dir: str = "static/uploads"
     max_upload_size: int = 100 * 1024 * 1024  # 100MB
-    # 支持的文件类型：图片、PDF、Excel、Word文档（合同和发票）
+    # 支持的文件类型：图片、PDF、Excel、Word文档、Markdown
     allowed_extensions: set[str] = {
-        '.jpg', '.jpeg', '.png', '.pdf', 
-        '.xlsx', '.xls', '.csv',  # Excel
-        '.doc', '.docx'  # Word文档
+        '.jpg', '.jpeg', '.png', '.pdf',
+        '.xlsx', '.xls', '.csv',        # Excel
+        '.doc', '.docx',                 # Word文档
+        '.md',                           # Markdown
     }
     allowed_mime_types: set[str] = {
         'image/jpeg',
@@ -65,6 +66,7 @@ class Settings(BaseSettings):
         'text/csv',  # .csv
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',  # .docx
         'application/msword',  # .doc
+        'text/markdown',  # .md
     }
     
     # 分页配置
