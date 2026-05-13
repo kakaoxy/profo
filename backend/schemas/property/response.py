@@ -1,11 +1,35 @@
 """
 房源响应模型
 """
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
 from ..response import PaginatedResponse
+import logging
+
+logger = logging.getLogger(__name__)
+
+PROPERTY_EXPIRATION_DAYS = 30
+
+def _compute_display_status(property_obj) -> str:
+    raw_status = property_obj.status.value
+    if raw_status != "在售":
+        return raw_status
+    if property_obj.updated_at is None:
+        logger.warning(f"房源 {property_obj.source_property_id} 的 updated_at 为空，跳过过期判断")
+        return raw_status
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=PROPERTY_EXPIRATION_DAYS)
+    updated_at = property_obj.updated_at
+    if updated_at.tzinfo is None:
+        updated_at = updated_at.replace(tzinfo=timezone.utc)
+    days_since = (now - updated_at).days
+    is_expired = updated_at < cutoff
+    logger.debug(f"过期判断 | 房源={property_obj.source_property_id} | updated_at={updated_at} | days_since={days_since}天 | cutoff={cutoff} | is_expired={is_expired}")
+    if is_expired:
+        return "过期"
+    return "在售"
 
 
 class PropertyResponse(BaseModel):
@@ -135,7 +159,7 @@ class PropertyResponse(BaseModel):
             id=property_obj.id,
             data_source=property_obj.data_source,
             source_property_id=property_obj.source_property_id,
-            status=property_obj.status.value,
+            status=_compute_display_status(property_obj),
             community_id=property_obj.community_id,
             community_name=community.name,
             district=community.district,
@@ -272,7 +296,7 @@ class PropertyDetailResponse(BaseModel):
             id=property_obj.id,
             data_source=property_obj.data_source,
             source_property_id=property_obj.source_property_id,
-            status=property_obj.status.value,
+            status=_compute_display_status(property_obj),
             community_id=property_obj.community_id,
             community_name=community.name,
             district=community.district,

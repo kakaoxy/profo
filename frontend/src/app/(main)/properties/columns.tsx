@@ -282,7 +282,9 @@ export const columns: ColumnDef<Property>[] = [
                 ? "default"
                 : status === "成交"
                   ? "secondary"
-                  : "outline"
+                  : status === "过期"
+                    ? "destructive"
+                    : "outline"
             }
           >
             {status}

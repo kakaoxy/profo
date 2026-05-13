@@ -7,10 +7,13 @@ from typing import Optional, List
 
 from sqlalchemy.orm import Query
 from sqlalchemy import or_, and_
+from datetime import datetime, timedelta, timezone
 
 from models import PropertyCurrent, Community, PropertyStatus
 
 logger = logging.getLogger(__name__)
+
+PROPERTY_EXPIRATION_DAYS = 30
 
 
 def apply_filters(
@@ -51,10 +54,20 @@ def apply_filters(
     """
     # 状态筛选
     if status:
-        valid_statuses = ["在售", "成交"]
+        valid_statuses = ["在售", "成交", "过期"]
         if status in valid_statuses:
             if status == "在售":
-                query = query.filter(PropertyCurrent.status == PropertyStatus.FOR_SALE)
+                cutoff = datetime.now(timezone.utc) - timedelta(days=PROPERTY_EXPIRATION_DAYS)
+                query = query.filter(
+                    PropertyCurrent.status == PropertyStatus.FOR_SALE,
+                    PropertyCurrent.updated_at >= cutoff
+                )
+            elif status == "过期":
+                cutoff = datetime.now(timezone.utc) - timedelta(days=PROPERTY_EXPIRATION_DAYS)
+                query = query.filter(
+                    PropertyCurrent.status == PropertyStatus.FOR_SALE,
+                    PropertyCurrent.updated_at < cutoff
+                )
             elif status == "成交":
                 query = query.filter(PropertyCurrent.status == PropertyStatus.SOLD)
         else:
@@ -75,7 +88,7 @@ def apply_filters(
     # 价格范围筛选
     if min_price is not None or max_price is not None:
         # 根据状态选择价格字段
-        if status == "在售":
+        if status in ("在售", "过期"):
             if min_price is not None:
                 query = query.filter(PropertyCurrent.listed_price_wan >= min_price)
             if max_price is not None:

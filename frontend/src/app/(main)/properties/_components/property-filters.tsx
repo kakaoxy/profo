@@ -66,7 +66,7 @@ export function PropertyFilters() {
         <div className="space-y-2">
           <Label className="text-xs font-medium text-muted-foreground">房源状态</Label>
           <div className="flex gap-2">
-            {["", "在售", "成交"].map((s) => (
+            {["", "在售", "成交", "过期"].map((s) => (
               <Button
                 key={s}
                 variant={status === s ? "default" : "outline"}

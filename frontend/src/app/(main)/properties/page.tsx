@@ -51,6 +51,14 @@ export default async function PropertiesPage(props: PageProps) {
     return <div className="p-8 text-error">连接后端失败，请稍后重试</div>;
   }
 
+  console.log("=== 房源列表 API 返回 ===");
+  console.log("总数:", data?.total, "当前页:", data?.page);
+  if (data?.items) {
+    data.items.forEach((item, i) => {
+      console.log(`  [${i}] id=${item.id} status="${item.status}" updated_at=${item.updated_at} community=${item.community_name}`);
+    });
+  }
+
   return (
     <div className="h-screen flex flex-col bg-card">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b bg-background gap-2">
