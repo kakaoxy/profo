@@ -2,7 +2,7 @@
 房源导入服务
 处理房源数据的导入、更新和历史快照记录
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -146,7 +146,7 @@ class PropertyImporter:
             updated = True
             
         if updated:
-            community.updated_at = datetime.now()
+            community.updated_at = datetime.now(timezone.utc)
             # flush 不是必须的，commit 会处理，但在长事务中 flush 可以保持状态一致
             db.flush() 
 
@@ -159,8 +159,8 @@ class PropertyImporter:
             business_circle=data.business_circle,
             total_properties=0,
             is_active=True,
-            created_at=datetime.now(),
-            updated_at=datetime.now()
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
         )
         db.add(new_community)
         db.flush() # 获取 ID
@@ -186,7 +186,7 @@ class PropertyImporter:
         new_property = PropertyCurrent(
             data_source=data.data_source,
             source_property_id=data.source_property_id,
-            created_at=datetime.now(),
+            created_at=datetime.now(timezone.utc),
             is_active=True
         )
         self._map_data_to_property(new_property, data, community_id, user_id)
@@ -229,7 +229,7 @@ class PropertyImporter:
         prop.heating_method = data.heating_method
         prop.listing_remarks = data.listing_remarks
         prop.owner_id = user_id
-        prop.updated_at = datetime.now()
+        prop.updated_at = datetime.now(timezone.utc)
 
     def create_history_snapshot(self, property_obj: PropertyCurrent,
                                  change_type: ChangeType, db: Session) -> None:
@@ -246,7 +246,7 @@ class PropertyImporter:
             data_source=property_obj.data_source,
             source_property_id=property_obj.source_property_id,
             change_type=change_type,
-            captured_at=datetime.now(),
+            captured_at=datetime.now(timezone.utc),
             # 显式列出需要保留的历史字段，避免遗漏
             status=property_obj.status,
             community_id=property_obj.community_id,
@@ -339,7 +339,7 @@ class PropertyImporter:
                     media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
                     url=url,
                     sort_order=index,  # 按去重后的顺序排序
-                    created_at=datetime.now()
+                    created_at=datetime.now(timezone.utc)
                 )
                 media_records.append(media_record)
             
