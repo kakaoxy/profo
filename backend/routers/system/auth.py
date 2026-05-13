@@ -190,7 +190,7 @@ def exchange_token(
         entry = AuthService.exchange_temp_code(exchange_data.code)
     except AuthenticationError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.message,
         )
     return {
