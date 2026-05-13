@@ -13,7 +13,7 @@ from settings import settings
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
 from common import limiter
-from utils.file_security import sanitize_filename
+from utils.file_security import sanitize_filename, get_safe_file_path
 
 router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
@@ -38,14 +38,13 @@ def upload_file(
     速率限制：50次/小时（防止资源耗尽攻击）
     """
     try:
-        ext = os.path.splitext(file.filename)[1].lower()
+        safe_name = sanitize_filename(file.filename)
+        ext = os.path.splitext(safe_name)[1].lower()
         if ext not in settings.allowed_extensions:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}"
             )
-
-        sanitize_filename(file.filename)
 
         file.file.seek(0, 2)
         file_size = file.file.tell()
@@ -72,7 +71,7 @@ def upload_file(
         filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
         upload_path = Path(settings.upload_dir)
         upload_path.mkdir(parents=True, exist_ok=True)
-        file_path = upload_path / filename
+        file_path = get_safe_file_path(settings.upload_dir, filename)
 
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
