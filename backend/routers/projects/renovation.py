@@ -49,7 +49,8 @@ def get_renovation_photos(
 ) -> RenovationPhotoListResponse:
     """获取改造阶段照片"""
     photos = service.get_renovation_photos(project_id, stage)
-    return RenovationPhotoListResponse(items=photos, total=len(photos))
+    items = [RenovationPhotoResponse.model_validate(p) for p in photos]
+    return RenovationPhotoListResponse(items=items, total=len(items))
 
 
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
