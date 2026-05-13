@@ -64,6 +64,10 @@ def init_admin_user():
             print(f"   密码: {result['temp_admin']['temp_password']}")
         print("   角色: 管理员")
         print("=" * 60)
+        print("   ⚠️  安全提醒：请立即登录系统修改此临时密码！")
+        print("   ⚠️  此密码仅在本次终端会话中可见，不会再次显示。")
+        print("   ⚠️  如密码遗失，请重新运行本脚本重置。")
+        print("=" * 60)
 
         return True
 

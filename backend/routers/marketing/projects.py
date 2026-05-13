@@ -5,10 +5,8 @@ L4 市场营销层路由
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path, Request
-from sqlalchemy.orm import Session
 
-from db import get_db
-from dependencies.auth import require_roles
+from dependencies.auth import require_roles, DbSessionDep
 from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
     MarketingMediaService as L4MarketingMediaService,
@@ -42,14 +40,12 @@ router = APIRouter(
 # 依赖注入类型别名
 # ============================================================================
 
-DbSession = Annotated[Session, Depends(get_db)]
 
-
-def get_project_service(db: DbSession) -> L4MarketingProjectService:
+def get_project_service(db: DbSessionDep) -> L4MarketingProjectService:
     return L4MarketingProjectService(db)
 
 
-def get_media_service(db: DbSession) -> L4MarketingMediaService:
+def get_media_service(db: DbSessionDep) -> L4MarketingMediaService:
     return L4MarketingMediaService(db)
 
 

@@ -8,9 +8,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.concurrency import run_in_threadpool
 from slowapi.util import get_remote_address
-from sqlalchemy.orm import Session
 
-from db import get_db
 from models import User
 from settings import settings
 from schemas.user import (
@@ -24,13 +22,12 @@ from schemas.user import (
     ApiKeyCreateResponse,
     ApiKeyInfoResponse,
 )
-from dependencies.auth import get_current_active_user
+from dependencies.auth import get_current_active_user, DbSessionDep
 from services.system import AuthService, ApiKeyService
 from services.system.exceptions import AuthenticationError, ResourceNotFoundError
 from common import limiter
 
 
-DBSessionDep = Annotated[Session, Depends(get_db)]
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,7 +44,7 @@ def get_rate_key(request: Request, username: str = "") -> str:
 def login_for_access_token(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> TokenResponse:
     """
     OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
@@ -85,7 +82,7 @@ def login_for_access_token(
 def login(
     request: Request,
     login_data: Annotated[LoginRequest, Body()],
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> TokenResponse:
     """
     用户名密码登录 (Sync - Run in threadpool by FastAPI)
@@ -111,7 +108,7 @@ def login(
 def refresh_access_token(
     request: Request,
     refresh_data: Annotated[RefreshTokenRequest, Body()],
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> TokenResponse:
     """
     刷新令牌 (Sync - Run in threadpool by FastAPI)
@@ -136,7 +133,7 @@ def wechat_authorize(
 async def wechat_callback(
     code: Annotated[str, Query(description="微信授权码")],
     state: Annotated[str, Query(description="状态参数")],
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> RedirectResponse:
     """
     微信授权回调 (Async for HTTP, run_in_threadpool for DB)
@@ -180,7 +177,7 @@ async def wechat_callback(
 def exchange_token(
     request: Request,
     exchange_data: Annotated[ExchangeTokenRequest, Body()],
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> dict[str, object]:
     """
     用一次性授权码兑换 Token
@@ -206,7 +203,7 @@ def exchange_token(
 async def wechat_app_login(
     request: Request,
     login_data: Annotated[WechatLoginRequest, Body()],
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> TokenResponse:
     """
     微信小程序登录 (Async for HTTP, run_in_threadpool for DB)
@@ -247,7 +244,7 @@ async def get_current_user_info(
 @router.post("/api-key", response_model=ApiKeyCreateResponse)
 def create_api_key(
     current_user: CurrentUserDep,
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> ApiKeyCreateResponse:
     """
     生成新的 API Key
@@ -266,7 +263,7 @@ def create_api_key(
 @router.get("/api-key", response_model=ApiKeyInfoResponse | None)
 def get_api_key_info(
     current_user: CurrentUserDep,
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> ApiKeyInfoResponse | None:
     """
     获取当前用户的 API Key 信息
@@ -291,7 +288,7 @@ def get_api_key_info(
 def delete_api_key(
     request: Request,
     current_user: CurrentUserDep,
-    db: DBSessionDep
+    db: DbSessionDep
 ) -> None:
     """
     撤销当前用户的 API Key

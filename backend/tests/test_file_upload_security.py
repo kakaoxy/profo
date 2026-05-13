@@ -133,6 +133,7 @@ class TestUploadFileIntegration:
             mock_file.file.seek = MagicMock()
 
             mock_request = MagicMock(spec=Request)
+            mock_request.url_for.return_value = "/static/uploads/20240101_abc12345.jpg"
 
             mock_shutil.copyfileobj = MagicMock()
 
