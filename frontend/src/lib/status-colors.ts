@@ -205,10 +205,6 @@ export function getLeadStatusBadgeClass(status: LeadStatus | string): string {
  * 获取项目状态的 Tailwind 类名
  */
 export function getProjectStatusClassName(status: string): string {
-  if (status === "过期") {
-    return "bg-destructive text-white hover:opacity-90";
-  }
-
   const mapped = PROJECT_STATUS_MAPPING[status];
   if (!mapped) return "bg-muted text-muted-foreground";
 
@@ -228,10 +224,6 @@ export function getProjectStatusClassName(status: string): string {
  * 获取项目状态的 Badge 样式
  */
 export function getProjectStatusBadgeClass(status: string): string {
-  if (status === "过期") {
-    return "bg-destructive text-white";
-  }
-
   const mapped = PROJECT_STATUS_MAPPING[status];
   if (!mapped) return "bg-muted text-muted-foreground";
 
