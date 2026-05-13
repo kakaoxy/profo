@@ -114,22 +114,7 @@ def get_task_status(
             detail="无权查看此任务"
         )
     
-    return ImportTaskStatusResponse(
-        task_id=task.id,
-        status=task.status,
-        filename=task.filename,
-        total_records=task.total_records,
-        processed_records=task.processed_records,
-        success_count=task.success_count,
-        failed_count=task.failed_count,
-        progress_percent=task.progress_percent,
-        failed_file_url=task.failed_file_url,
-        error_message=task.error_message,
-        created_at=task.created_at,
-        started_at=task.started_at,
-        completed_at=task.completed_at,
-        processing_duration=task.processing_duration
-    )
+    return ImportTaskStatusResponse.model_validate(task)
 
 
 @router.get("/tasks", response_model=list[ImportTaskStatusResponse])
@@ -148,22 +133,7 @@ def list_tasks(
     tasks = task_service.get_user_tasks(current_user.id, db, status=status, limit=limit)
     
     return [
-        ImportTaskStatusResponse(
-            task_id=task.id,
-            status=task.status,
-            filename=task.filename,
-            total_records=task.total_records,
-            processed_records=task.processed_records,
-            success_count=task.success_count,
-            failed_count=task.failed_count,
-            progress_percent=task.progress_percent,
-            failed_file_url=task.failed_file_url,
-            error_message=task.error_message,
-            created_at=task.created_at,
-            started_at=task.started_at,
-            completed_at=task.completed_at,
-            processing_duration=task.processing_duration
-        )
+        ImportTaskStatusResponse.model_validate(task)
         for task in tasks
     ]
 

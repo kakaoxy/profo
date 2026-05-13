@@ -49,21 +49,7 @@ def get_renovation_photos(
 ) -> RenovationPhotoListResponse:
     """获取改造阶段照片"""
     photos = service.get_renovation_photos(project_id, stage)
-    items = [
-        RenovationPhotoResponse(
-            id=photo.id,
-            project_id=photo.project_id,
-            renovation_id=photo.renovation_id,
-            stage=photo.stage,
-            url=photo.url,
-            filename=photo.filename,
-            description=photo.description,
-            created_at=photo.created_at,
-            updated_at=photo.updated_at,
-        )
-        for photo in photos
-    ]
-    return RenovationPhotoListResponse(items=items, total=len(items))
+    return RenovationPhotoListResponse(items=photos, total=len(photos))
 
 
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
