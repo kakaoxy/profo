@@ -23,7 +23,6 @@ def get_cashflow_service(db: Session = Depends(get_db)) -> CashFlowService:
 
 
 CashFlowServiceDep = Annotated[CashFlowService, Depends(get_cashflow_service)]
-DbSessionDep = Annotated[Session, Depends(get_db)]
 
 
 # ========== 现金流管理 ==========

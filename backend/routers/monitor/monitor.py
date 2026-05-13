@@ -1,9 +1,7 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, Path, Query, HTTPException, status, Request
-from sqlalchemy.orm import Session
 
-from db import get_db
-from dependencies.auth import CurrentInternalUserDep
+from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.monitor import (
     AddCompetitorRequest,
     AIStrategyRequest,
@@ -19,7 +17,6 @@ from common import limiter
 
 router = APIRouter(prefix="/monitor")
 
-DbSessionDep = Annotated[Session, Depends(get_db)]
 CommunityIdPath = Annotated[str, Path(description="小区ID")]
 CompetitorIdPath = Annotated[str, Path(description="竞品小区ID")]
 

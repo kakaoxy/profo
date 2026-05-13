@@ -5,10 +5,8 @@ L4 市场营销层导入路由
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
-from sqlalchemy.orm import Session
 
-from db import get_db
-from dependencies.auth import require_roles
+from dependencies.auth import require_roles, DbSessionDep
 from services.marketing import (
     MarketingQueryService as L4MarketingQueryService,
     MarketingImportService as L4MarketingImportService,
@@ -30,16 +28,15 @@ router = APIRouter(
 # 依赖注入类型别名
 # ============================================================================
 
-DbSession = Annotated[Session, Depends(get_db)]
 QueryServiceDep = Annotated[L4MarketingQueryService, Depends(lambda db: L4MarketingQueryService(db))]
 ImportServiceDep = Annotated[L4MarketingImportService, Depends(lambda db: L4MarketingImportService(db))]
 
 
-def get_query_service(db: DbSession) -> L4MarketingQueryService:
+def get_query_service(db: DbSessionDep) -> L4MarketingQueryService:
     return L4MarketingQueryService(db)
 
 
-def get_import_service(db: DbSession) -> L4MarketingImportService:
+def get_import_service(db: DbSessionDep) -> L4MarketingImportService:
     return L4MarketingImportService(db)
 
 

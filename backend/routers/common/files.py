@@ -7,7 +7,7 @@ import uuid
 import filetype
 import logging
 from datetime import datetime
-from pathlib import Path, PurePath
+from pathlib import Path
 from pydantic import BaseModel
 from settings import settings
 from db import get_db
@@ -76,7 +76,7 @@ def upload_file(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        url = f"/{PurePath(settings.upload_dir).as_posix()}/{filename}"
+        url = request.url_for("static", path=f"uploads/{filename}")
 
         return FileUploadResponse(url=url, filename=filename)
 
