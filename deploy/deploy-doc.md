@@ -163,9 +163,7 @@ cp /root/profo/deploy/.env.frontend.production /root/profo/frontend/.env.local
 
 该文件核心是：
 
-- `NEXT_PUBLIC_API_URL=https://你的域名`
-
-> 原理：前端会把 `/api/*` 请求重写到 `${NEXT_PUBLIC_API_URL}/api/*`，再由 Nginx 反向代理到后端 8000 端口。
+- `NEXT_PUBLIC_API_URL`：同服务器部署无需设置（前端用相对路径，服务端直连 127.0.0.1:8000）
 
 ---
 
@@ -184,7 +182,6 @@ cp /root/profo/deploy/.env.frontend.production /root/profo/frontend/.env.local
 
 - `SERVER_HOST`：服务器域名或 IP
 - `REMOTE_PATH`：默认 `/root/profo`
-- `NEXT_PUBLIC_API_URL`：生产域名（HTTPS）
 
 ### 5.2 执行部署（Windows）
 

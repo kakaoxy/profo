@@ -18,9 +18,6 @@ REM ==================== 构建前端 ====================
 echo [INFO] 构建前端...
 cd /d "%~dp0..\frontend"
 
-REM 设置生产环境变量
-set NEXT_PUBLIC_API_URL=https://fangmengchina.com
-
 call pnpm build
 if errorlevel 1 (
     echo [ERROR] 前端构建失败
