@@ -129,8 +129,8 @@ def merge_communities(
 @router.post("/communities", response_model=CommunityResponse)
 @limiter.limit("100/hour")
 def create_community(
-    request_obj: Request,
-    request: CommunityCreateRequest,
+    request: Request,
+    body: CommunityCreateRequest,
     db: DbSessionDep,
     current_user: CurrentOperatorUserDep,
 ) -> CommunityResponse:
@@ -142,7 +142,7 @@ def create_community(
     from sqlalchemy.exc import IntegrityError
     
     # 1. 检查是否已存在同名小区（不区分大小写）
-    existing = _find_existing_community_by_name(db, request.name)
+    existing = _find_existing_community_by_name(db, body.name)
     
     if existing:
         logger.info(f"小区已存在，直接返回: {existing.name} (ID: {existing.id})")
@@ -151,9 +151,9 @@ def create_community(
     # 2. 创建新小区
     new_community = Community(
         id=str(uuid.uuid4()),
-        name=request.name.strip(),
-        district=request.district,
-        business_circle=request.business_circle,
+        name=body.name.strip(),
+        district=body.district,
+        business_circle=body.business_circle,
         city_id=None,
         avg_price_wan=None,
         total_properties=0,
@@ -170,9 +170,9 @@ def create_community(
         logger.info(f"创建新小区成功: {new_community.name} (ID: {new_community.id})")
     except IntegrityError as e:
         db.rollback()
-        logger.warning(f"创建小区时发生唯一约束冲突: {request.name}, 错误: {str(e)}")
+        logger.warning(f"创建小区时发生唯一约束冲突: {body.name}, 错误: {str(e)}")
         # 并发情况下可能另一个请求已创建，再次尝试查找
-        existing = _find_existing_community_by_name(db, request.name)
+        existing = _find_existing_community_by_name(db, body.name)
         if existing:
             return CommunityQueryService._build_response(existing)
         raise HTTPException(status_code=500, detail="创建小区失败")
