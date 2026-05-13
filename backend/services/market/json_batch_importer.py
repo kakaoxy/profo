@@ -3,7 +3,6 @@ JSON 批量导入服务
 处理 JSON 数组的批量房源数据推送
 """
 import logging
-from typing import List
 
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -15,6 +14,8 @@ from utils.error_formatters import format_validation_error
 
 logger = logging.getLogger(__name__)
 
+MAX_BATCH_SIZE = 10000
+
 
 class JSONBatchImporter:
     """JSON 批量导入处理器"""
@@ -22,15 +23,16 @@ class JSONBatchImporter:
     def __init__(self):
         self.importer = PropertyImporter()
 
-    def batch_import_json(self, properties: List[dict], db: Session, user_id: str) -> PushResult:
+    def batch_import_json(self, properties: list[dict], db: Session, user_id: str) -> PushResult:
         """
         批量导入 JSON 数组
 
         流程:
-        1. 遍历 JSON 数组
-        2. 逐条验证并导入
-        3. 收集失败记录和错误详情
-        4. 返回处理结果统计
+        1. 校验批量大小
+        2. 遍历 JSON 数组
+        3. 逐条验证并导入
+        4. 收集失败记录和错误详情
+        5. 返回处理结果统计
 
         Args:
             properties: 原始房源数据字典列表
@@ -39,8 +41,13 @@ class JSONBatchImporter:
 
         Returns:
             PushResult: 推送结果统计
+
+        Raises:
+            ValueError: 批量大小超过限制
         """
         total = len(properties)
+        if total > MAX_BATCH_SIZE:
+            raise ValueError(f"单次推送最多支持 {MAX_BATCH_SIZE} 条记录，当前 {total} 条")
         success = 0
         failed = 0
         errors = []
@@ -65,11 +72,10 @@ class JSONBatchImporter:
                         failed += 1
                         errors.append({
                             'index': index,
-                            'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
+                            'source_property_id': self._extract_source_id(raw_data),
                             'reason': result.error
                         })
 
-                        # 记录到 failed_records 表
                         self._save_failed_record_raw(raw_data, result.error)
 
                 except ValidationError as e:
@@ -77,11 +83,10 @@ class JSONBatchImporter:
                     error_msg = self._format_validation_error(e)
                     errors.append({
                         'index': index,
-                        'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
+                        'source_property_id': self._extract_source_id(raw_data),
                         'reason': error_msg
                     })
 
-                    # 记录到 failed_records 表
                     self._save_failed_record_raw(raw_data, error_msg)
 
                     logger.warning(f"第 {index} 条记录验证失败: {error_msg}")
@@ -91,7 +96,7 @@ class JSONBatchImporter:
                     error_msg = f"处理失败: {str(e)}"
                     errors.append({
                         'index': index,
-                        'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
+                        'source_property_id': self._extract_source_id(raw_data),
                         'reason': error_msg
                     })
 
@@ -105,18 +110,31 @@ class JSONBatchImporter:
             logger.info(f"JSON 推送处理完成并已提交: 总数={total}, 成功={success}, 失败={failed}")
 
         except Exception as e:
-            # 统一回滚
             db.rollback()
-            logger.error(f"JSON 推送处理失败，已回滚: {e}", exc_info=True)
+            logger.error(
+                f"JSON 推送提交失败，已回滚全部数据 (原始统计: 成功={success}, 失败={failed}): {e}",
+                exc_info=True
+            )
             
-            # 将所有记录标记为失败
+            rollback_errors = []
+            for idx, raw_data in enumerate(properties):
+                source_id = self._extract_source_id(raw_data)
+                if idx < len(errors) and errors[idx].get('reason'):
+                    rollback_errors.append({
+                        'index': idx,
+                        'source_property_id': source_id,
+                        'reason': errors[idx]['reason']
+                    })
+                else:
+                    rollback_errors.append({
+                        'index': idx,
+                        'source_property_id': source_id,
+                        'reason': f"批次提交失败(原成功记录已回滚): {str(e)}"
+                    })
+
             failed = total
             success = 0
-            errors = [{
-                'index': idx,
-                'source_property_id': raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown')),
-                'reason': f"批次处理失败: {str(e)}"
-            } for idx, raw_data in enumerate(properties)]
+            errors = rollback_errors
 
         return PushResult(
             total=total,
@@ -124,6 +142,9 @@ class JSONBatchImporter:
             failed=failed,
             errors=errors
         )
+
+    def _extract_source_id(self, raw_data: dict) -> str:
+        return raw_data.get('房源ID', raw_data.get('source_property_id', 'unknown'))
 
     def _format_validation_error(self, error: ValidationError) -> str:
         """
