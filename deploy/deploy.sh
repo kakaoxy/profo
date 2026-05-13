@@ -33,9 +33,6 @@ if ! command -v pnpm &> /dev/null; then
     exit 1
 fi
 
-# 设置生产环境变量
-export NEXT_PUBLIC_API_URL="https://fangmengchina.com"
-
 # 构建
 pnpm build
 log_info "前端构建完成"
