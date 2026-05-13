@@ -213,10 +213,17 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
               resolve(null);
             }
           } else {
-            const errorMsg =
-              xhr.status === 401
-                ? "登录已过期，请刷新页面后重试"
-                : `上传失败 (${xhr.status})`;
+            let errorMsg: string;
+            if (xhr.status === 401) {
+              errorMsg = "登录已过期，请刷新页面后重试";
+            } else {
+              try {
+                const errorBody = JSON.parse(xhr.responseText);
+                errorMsg = errorBody.detail || `上传失败 (${xhr.status})`;
+              } catch {
+                errorMsg = `上传失败 (${xhr.status})`;
+              }
+            }
             const error = new Error(errorMsg);
             toast.error(`${processedFile.name}: ${errorMsg}`);
             setFiles((prev) =>
