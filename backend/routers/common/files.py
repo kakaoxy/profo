@@ -76,7 +76,7 @@ def upload_file(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        url = request.url_for("static", path=f"uploads/{filename}")
+        url = f"/static/uploads/{filename}"
 
         return FileUploadResponse(url=url, filename=filename)
 
