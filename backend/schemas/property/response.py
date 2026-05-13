@@ -2,17 +2,20 @@
 房源响应模型
 """
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict
 
 from ..response import PaginatedResponse
 import logging
 
+if TYPE_CHECKING:
+    from models.property.property import PropertyCurrent
+
 logger = logging.getLogger(__name__)
 
 PROPERTY_EXPIRATION_DAYS = 30
 
-def _compute_display_status(property_obj) -> str:
+def _compute_display_status(property_obj: "PropertyCurrent") -> str:
     raw_status = property_obj.status.value
     if raw_status != "在售":
         return raw_status
