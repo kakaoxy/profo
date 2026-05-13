@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from models import User
+from settings import settings
 from schemas.user import (
     LoginRequest,
     TokenResponse,
@@ -19,6 +20,7 @@ from schemas.user import (
     UserResponse,
     WechatLoginRequest,
     WechatAuthUrlResponse,
+    ExchangeTokenRequest,
     ApiKeyCreateResponse,
     ApiKeyInfoResponse,
 )
@@ -162,9 +164,41 @@ async def wechat_callback(
     # 4. Sync (Blocking): 生成令牌 -> 放入线程池 (虽然计算量不大，但涉及 DB commit)
     result = await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
     
-    # 5. 重定向
-    frontend_url = f"http://localhost:3000/login?token={result['access_token']}&refresh_token={result['refresh_token']}"
+    # 5. 生成一次性授权码，存储 token
+    code = AuthService.store_temp_token(
+        access_token=result["access_token"],
+        refresh_token=result["refresh_token"],
+    )
+
+    # 6. 重定向仅传授权码
+    frontend_url = f"http://localhost:3000/login?code={code}"
     return RedirectResponse(url=frontend_url, status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/exchange-token")
+@limiter.limit("10/minute")
+def exchange_token(
+    request: Request,
+    exchange_data: Annotated[ExchangeTokenRequest, Body()],
+    db: DBSessionDep
+) -> dict[str, object]:
+    """
+    用一次性授权码兑换 Token
+    速率限制：10次/分钟
+    """
+    try:
+        entry = AuthService.exchange_temp_code(exchange_data.code)
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=e.message,
+        )
+    return {
+        "access_token": entry["access_token"],
+        "refresh_token": entry["refresh_token"],
+        "token_type": "bearer",
+        "expires_in": settings.jwt_access_token_expire_minutes * 60,
+    }
 
 
 @router.post("/wechat/login", response_model=TokenResponse)
