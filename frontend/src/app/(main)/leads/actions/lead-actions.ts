@@ -14,6 +14,26 @@ type LeadCreatePayload =
 type LeadUpdatePayload =
   operations["update_lead_api_v1_leads__lead_id__put"]["requestBody"]["content"]["application/json"];
 
+function toLeadPayload(data: Partial<Lead>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  if (data.communityName !== undefined) payload.community_name = data.communityName;
+  if (data.communityId !== undefined) payload.community_id = data.communityId;
+  if (data.layout !== undefined) payload.layout = data.layout;
+  if (data.orientation !== undefined) payload.orientation = data.orientation;
+  if (data.floorInfo !== undefined) payload.floor_info = data.floorInfo;
+  if (data.area !== undefined) payload.area = data.area;
+  if (data.totalPrice !== undefined) payload.total_price = data.totalPrice;
+  if (data.unitPrice !== undefined) payload.unit_price = data.unitPrice;
+  if (data.evalPrice !== undefined) payload.eval_price = data.evalPrice;
+  if (data.district !== undefined) payload.district = data.district;
+  if (data.businessArea !== undefined) payload.business_area = data.businessArea;
+  if (data.remarks !== undefined) payload.remarks = data.remarks;
+  if (data.images !== undefined) payload.images = data.images;
+  if (data.status !== undefined) payload.status = data.status;
+  if (data.auditReason !== undefined) payload.audit_reason = data.auditReason;
+  return payload;
+}
+
 export async function createLeadAction(
   data: Omit<Lead, "id" | "createdAt">
 ): Promise<ActionResult<Lead>> {
@@ -21,22 +41,10 @@ export async function createLeadAction(
     const client = await fetchClient();
 
     const payload: LeadCreatePayload = {
-      community_name: data.communityName,
-      community_id: data.communityId,
+      ...toLeadPayload(data),
       is_hot: 0,
-      layout: data.layout,
-      orientation: data.orientation,
-      floor_info: data.floorInfo,
-      area: data.area,
-      total_price: data.totalPrice,
-      unit_price: data.unitPrice,
-      eval_price: data.evalPrice,
-      district: data.district,
-      business_area: data.businessArea,
-      remarks: data.remarks,
       images: data.images || [],
-      status: data.status,
-    };
+    } as LeadCreatePayload;
 
     const { data: responseData, error } = await client.POST("/api/v1/leads/", {
       body: payload,
@@ -85,27 +93,7 @@ export async function updateLeadAction(
   try {
     const client = await fetchClient();
 
-    const payload: LeadUpdatePayload = {};
-    if (data.communityName !== undefined)
-      payload.community_name = data.communityName;
-    if (data.communityId !== undefined)
-      payload.community_id = data.communityId;
-    if (data.layout !== undefined) payload.layout = data.layout;
-    if (data.orientation !== undefined) payload.orientation = data.orientation;
-    if (data.floorInfo !== undefined) payload.floor_info = data.floorInfo;
-    if (data.area !== undefined) payload.area = data.area;
-    if (data.totalPrice !== undefined) payload.total_price = data.totalPrice;
-    if (data.unitPrice !== undefined) payload.unit_price = data.unitPrice;
-    if (data.evalPrice !== undefined) payload.eval_price = data.evalPrice;
-    if (data.district !== undefined) payload.district = data.district;
-    if (data.businessArea !== undefined)
-      payload.business_area = data.businessArea;
-    if (data.remarks !== undefined) payload.remarks = data.remarks;
-    if (data.images !== undefined) payload.images = data.images;
-    if (data.status !== undefined)
-      payload.status = data.status as components["schemas"]["LeadStatus"];
-    if (data.auditReason !== undefined)
-      payload.audit_reason = data.auditReason;
+    const payload: LeadUpdatePayload = toLeadPayload(data) as LeadUpdatePayload;
 
     const { data: responseData, error } = await client.PUT(
       "/api/v1/leads/{lead_id}",

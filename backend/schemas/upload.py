@@ -4,7 +4,7 @@
 """
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class UploadResult(BaseModel):
@@ -24,7 +24,7 @@ class ImportTaskCreateResponse(BaseModel):
 
 class ImportTaskStatusResponse(BaseModel):
     """导入任务状态响应"""
-    task_id: str = Field(..., description="任务ID")
+    task_id: str = Field(..., validation_alias="id", description="任务ID")
     status: str = Field(..., description="任务状态: pending/processing/completed/failed/cancelled")
     filename: str = Field(..., description="原始文件名")
     
@@ -44,6 +44,8 @@ class ImportTaskStatusResponse(BaseModel):
     started_at: Optional[datetime] = Field(None, description="开始处理时间")
     completed_at: Optional[datetime] = Field(None, description="完成时间")
     processing_duration: Optional[float] = Field(None, description="处理时长(秒)")
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PushResult(BaseModel):
