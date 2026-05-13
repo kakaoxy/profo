@@ -3,7 +3,7 @@
 处理房源数据的导入、更新和历史快照记录
 """
 from datetime import datetime
-from typing import Optional, Tuple, Any, List, Union
+from dataclasses import dataclass
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import logging
@@ -12,12 +12,20 @@ from models import (
     Community, CommunityAlias, PropertyCurrent, PropertyHistory,
     PropertyStatus, ChangeType, PropertyMedia, MediaType
 )
-from schemas import PropertyIngestionModel, ImportResult, UploadResult, PushResult, BatchImportResult, FloorInfo
+from schemas import PropertyIngestionModel, ImportResult
 from utils.error_formatters import format_database_error
 from services.system import save_failed_record
 from .parser import FloorParser
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _CommunityData:
+    community_name: str
+    city_id: int | None = None
+    district: str | None = None
+    business_circle: str | None = None
 
 
 class PropertyImporter:
@@ -34,12 +42,22 @@ class PropertyImporter:
             db: 数据库会话
             user_id: 用户ID（可选，默认为空字符串）
             
-        Note: 此方法不再内部调用 db.commit()，事务管理由调用方负责
+        Note: 
+            此方法不再内部调用 db.commit()，事务管理由调用方负责。
+            使用 savepoint (begin_nested) 保护单条记录，失败时仅回滚到 savepoint，
+            不影响同批次中其他记录的 session 状态。
         """
         try:
-            return self._process_import_transaction(data, db, user_id)
+            nested = db.begin_nested()
+            try:
+                result = self._process_import_transaction(data, db, user_id)
+                nested.commit()
+                return result
+            except Exception as e:
+                nested.rollback()
+                return self._handle_import_error(e, data)
         except Exception as e:
-            return self._handle_import_error(e, data, db)
+            return self._handle_import_error(e, data)
 
     def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
         """处理核心导入逻辑（不包含事务提交，由调用方管理事务）"""
@@ -62,7 +80,7 @@ class PropertyImporter:
 
         return ImportResult(success=True, property_id=property_id, error=None)
 
-    def find_or_create_community(self, data: Union[PropertyIngestionModel, str], db: Session,
+    def find_or_create_community(self, data: PropertyIngestionModel | str, db: Session,
                                   city_id: int = None, district: str = None, business_circle: str = None) -> str:
         """查找或创建小区
         
@@ -79,14 +97,7 @@ class PropertyImporter:
         # 处理向后兼容：支持直接传入小区名称字符串
         if isinstance(data, str):
             name = data.strip()
-            # 创建简单的数据对象用于兼容
-            class SimpleData:
-                def __init__(self, name, city_id=None, district=None, business_circle=None):
-                    self.community_name = name
-                    self.city_id = city_id
-                    self.district = district
-                    self.business_circle = business_circle
-            data = SimpleData(name, city_id, district, business_circle)
+            data = _CommunityData(name, city_id, district, business_circle)
         else:
             name = data.community_name.strip()
         
@@ -100,7 +111,7 @@ class PropertyImporter:
         # 2. 创建新小区
         return self._create_community(name, data, db)
 
-    def _find_community_by_name_or_alias(self, name: str, db: Session) -> Optional[Community]:
+    def _find_community_by_name_or_alias(self, name: str, db: Session) -> Community | None:
         """通过名称或别名查找小区对象"""
         # 直接匹配
         community = db.query(Community).filter(
@@ -113,12 +124,12 @@ class PropertyImporter:
         # 别名匹配
         alias = db.query(CommunityAlias).filter(CommunityAlias.alias_name == name).first()
         if alias:
-            return db.query(Community).get(alias.community_id)
+            return db.get(Community, alias.community_id)
             
         return None
 
     def _update_community_info_if_needed(self, community: Community,
-                                       data: Union[PropertyIngestionModel, Any], db: Session) -> None:
+                                       data: PropertyIngestionModel | _CommunityData, db: Session) -> None:
         """如果信息缺失，更新小区补充信息"""
         updated = False
         
@@ -139,7 +150,7 @@ class PropertyImporter:
             # flush 不是必须的，commit 会处理，但在长事务中 flush 可以保持状态一致
             db.flush() 
 
-    def _create_community(self, name: str, data: Union[PropertyIngestionModel, Any], db: Session) -> str:
+    def _create_community(self, name: str, data: PropertyIngestionModel | _CommunityData, db: Session) -> str:
         """创建新的小区记录"""
         new_community = Community(
             name=name,
@@ -156,7 +167,7 @@ class PropertyImporter:
         logger.info(f"创建新小区: {name} (ID: {new_community.id})")
         return new_community.id
 
-    def _get_existing_property(self, data: PropertyIngestionModel, db: Session) -> Optional[PropertyCurrent]:
+    def _get_existing_property(self, data: PropertyIngestionModel, db: Session) -> PropertyCurrent | None:
         return db.query(PropertyCurrent).filter(
             PropertyCurrent.data_source == data.data_source,
             PropertyCurrent.source_property_id == data.source_property_id
@@ -257,8 +268,7 @@ class PropertyImporter:
         if existing.status.value != data.status.value:
             return ChangeType.STATUS_CHANGE
         
-        # 使用 Enum 或常量代替 "在售"
-        is_for_sale = (data.status.value == PropertyStatus.FOR_SALE.value) if hasattr(PropertyStatus, 'FOR_SALE') else (data.status == "在售")
+        is_for_sale = data.status.value == PropertyStatus.FOR_SALE.value
         
         if is_for_sale:
             if existing.listed_price_wan != data.listed_price_wan:
@@ -269,10 +279,11 @@ class PropertyImporter:
         
         return ChangeType.INFO_CHANGE
 
-    def _handle_import_error(self, e: Exception, data: PropertyIngestionModel, db: Session) -> ImportResult:
-        """统一的异常处理逻辑"""
-        db.rollback()
+    def _handle_import_error(self, e: Exception, data: PropertyIngestionModel) -> ImportResult:
+        """统一的异常处理逻辑
         
+        Note: 事务回滚由 import_property 中的 savepoint 处理，此方法仅负责错误记录。
+        """
         error_msg = format_database_error(e) if isinstance(e, SQLAlchemyError) else str(e)
         failure_type = "database_error" if isinstance(e, SQLAlchemyError) else "import_error"
         if isinstance(e, IntegrityError):
