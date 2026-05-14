@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MoreHorizontal, SquarePen, Trash2, KeyRound } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormatDate } from "@/lib/formatters";
 import { toast } from "sonner";
 
 import {
@@ -114,12 +114,10 @@ export function UserTable({ data, onEdit, onResetPassword }: UserTableProps) {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{user.phone || "-"}</TableCell>
                 <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                  {format(new Date(user.created_at), "yyyy-MM-dd")}
+                  {safeFormatDate(user.created_at, "yyyy-MM-dd")}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                  {user.last_login_at 
-                    ? format(new Date(user.last_login_at), "MM-dd HH:mm") 
-                    : "-"}
+                  {safeFormatDate(user.last_login_at, "MM-dd HH:mm")}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

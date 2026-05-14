@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
-import { format } from "date-fns";
+import { safeFormatDate } from "@/lib/formatters";
 import { toast } from "sonner";
 
 import {
@@ -107,7 +107,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                  {format(new Date(role.updated_at), "MM-dd HH:mm")}
+                  {safeFormatDate(role.updated_at, "MM-dd HH:mm")}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

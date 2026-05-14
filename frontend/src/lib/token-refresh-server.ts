@@ -1,8 +1,6 @@
 /**
  * 服务端Token刷新管理器
- * 解决并发刷新竞争问题和Token同步问题
- *
- * 使用全局缓存来跟踪刷新状态和结果
+ * 每个请求独立读取自己的 cookie，不跨用户共享 token
  */
 
 import { cookies } from "next/headers";
@@ -11,153 +9,94 @@ interface RefreshResult {
   access_token: string;
   refresh_token: string;
   expires_in: number;
-  timestamp: number;
 }
-
-// 使用全局变量存储刷新状态和结果（在服务端跨请求共享）
-declare global {
-  var __tokenRefreshState: {
-    isRefreshing: boolean;
-    refreshPromise: Promise<RefreshResult | null> | null;
-    lastResult: RefreshResult | null;
-  };
-}
-
-// 检查是否在服务端环境
-const isServer = typeof window === "undefined" && typeof global !== "undefined";
-
-// 初始化全局状态（仅在服务端）
-if (isServer && !global.__tokenRefreshState) {
-  global.__tokenRefreshState = {
-    isRefreshing: false,
-    refreshPromise: null,
-    lastResult: null,
-  };
-}
-
-// 客户端使用临时对象（不会被实际使用，因为服务端函数会在服务端执行）
-const refreshState = isServer
-  ? global.__tokenRefreshState
-  : {
-      isRefreshing: false,
-      refreshPromise: null,
-      lastResult: null,
-    };
-
-// Token有效期缓冲时间（毫秒），提前刷新
-const TOKEN_REFRESH_BUFFER = 60 * 1000; // 1分钟
 
 /**
- * 检查缓存的token是否仍然有效
+ * 从 Cookie 中读取 access_token
+ * 每次请求独立读取，不使用全局缓存避免跨用户串号
  */
-function isCachedTokenValid(): boolean {
-  if (!refreshState.lastResult) return false;
-  const elapsed = Date.now() - refreshState.lastResult.timestamp;
-  const expiresInMs = refreshState.lastResult.expires_in * 1000;
-  // 如果token还有效（考虑缓冲时间）
-  return elapsed < expiresInMs - TOKEN_REFRESH_BUFFER;
+export async function getAccessTokenFromCookie(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get("access_token")?.value ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * 服务端Token刷新函数
- * 使用全局锁防止并发刷新竞争
+ * 使用当前请求的 refresh_token cookie 向 /auth/refresh 换取新的 token pair
+ * 不缓存结果，每次调用独立读取 cookie 并刷新
  */
 export async function refreshTokenServer(): Promise<RefreshResult | null> {
-  // 1. 如果有缓存的有效token，直接返回
-  if (isCachedTokenValid()) {
-    console.log("✅ [Server] 使用缓存的有效token");
-    return refreshState.lastResult;
-  }
+  try {
+    const cookieStore = await cookies();
+    const refreshToken = cookieStore.get("refresh_token")?.value;
 
-  // 2. 如果正在刷新中，等待刷新结果
-  if (refreshState.isRefreshing && refreshState.refreshPromise) {
-    console.log("⏳ [Server] 等待正在进行的刷新...");
-    return refreshState.refreshPromise;
-  }
-
-  // 3. 开始新的刷新流程
-  refreshState.isRefreshing = true;
-
-  refreshState.refreshPromise = (async (): Promise<RefreshResult | null> => {
-    try {
-      const cookieStore = await cookies();
-      const refreshToken = cookieStore.get("refresh_token")?.value;
-
-      if (!refreshToken) {
-        console.warn("🔁 [Server] 无 refresh_token，无法刷新");
-        return null;
-      }
-
-      // 动态导入避免循环依赖
-      const { apiPaths, getApiUrl } = await import("./config");
-
-      const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (!response.ok) {
-        console.error("🔁 [Server] Token 刷新失败，状态码:", response.status);
-        // 刷新失败，清除全局缓存
-        refreshState.lastResult = null;
-        return null;
-      }
-
-      const data: RefreshResult = await response.json();
-
-      // 缓存刷新结果
-      const result: RefreshResult = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_in: data.expires_in,
-        timestamp: Date.now(),
-      };
-
-      refreshState.lastResult = result;
-
-      // [修复] 不再直接设置 cookies，避免客户端/服务端状态不一致
-      // Cookie 更新统一通过 /api/auth/refresh 路由处理
-      // 服务端仅缓存 token 供 Server Component 使用
-      console.log("✅ [Server] 成功刷新 token（仅缓存，不设置 cookie）");
-      return result;
-    } catch (error) {
-      console.error("🔁 [Server] 刷新 Token 时发生网络错误:", error);
-      refreshState.lastResult = null;
+    if (!refreshToken) {
+      console.warn("🔁 [Server] 无 refresh_token，无法刷新");
       return null;
-    } finally {
-      refreshState.isRefreshing = false;
-      // 延迟清除promise，让其他等待的请求能获取结果
-      setTimeout(() => {
-        refreshState.refreshPromise = null;
-      }, 100);
     }
-  })();
 
-  return refreshState.refreshPromise;
+    // 动态导入避免循环依赖
+    const { apiPaths, getApiUrl } = await import("./config");
+
+    const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      console.error("🔁 [Server] Token 刷新失败，状态码:", response.status);
+      return null;
+    }
+
+    const data: RefreshResult = await response.json();
+
+    // 将新 token 写回 Cookie，确保后续请求能读到有效 token
+    cookieStore.set("access_token", data.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: data.expires_in,
+      sameSite: "lax",
+    });
+
+    cookieStore.set("refresh_token", data.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: "lax",
+    });
+
+    console.log("✅ [Server] 成功刷新 token，已写回 Cookie");
+    return data;
+  } catch (error) {
+    console.error("🔁 [Server] 刷新 Token 时发生网络错误:", error);
+    return null;
+  }
 }
 
 /**
- * 获取当前有效的access_token
- * 优先使用缓存，必要时刷新
+ * 获取当前有效的 access_token
+ * 优先读取 cookie，不命中时尝试 refresh_token 换新
  */
 export async function getValidAccessToken(): Promise<string | null> {
-  // 首先检查缓存
-  if (isCachedTokenValid()) {
-    return refreshState.lastResult!.access_token;
-  }
+  const cookieToken = await getAccessTokenFromCookie();
+  if (cookieToken) return cookieToken;
 
-  // 尝试刷新
   const result = await refreshTokenServer();
   return result?.access_token ?? null;
 }
 
 /**
- * 清除Token缓存（用于登出或刷新失败时）
+ * 忽略 cookie 中的 access_token，强制用 refresh_token 换取新 token
+ * 用于 401 后的重试场景
  */
-export function clearTokenCache(): void {
-  refreshState.lastResult = null;
-  refreshState.isRefreshing = false;
-  refreshState.refreshPromise = null;
-  console.log("🗑️ [Server] Token缓存已清除");
+export async function forceRefreshToken(): Promise<string | null> {
+  const result = await refreshTokenServer();
+  return result?.access_token ?? null;
 }
