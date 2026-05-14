@@ -2,47 +2,28 @@ import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getClientApiUrl } from "./config";
 
-// 防止并发刷新
-let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
-
 /**
- * 尝试刷新 Token (客户端版本，调用 Server Action)
+ * 尝试刷新 Token（客户端版本，调用 /api/auth/refresh 路由）
+ * 不缓存刷新 promise，每个调用独立执行，避免并发竞态导致误判
  */
 async function tryRefreshTokenClient(): Promise<boolean> {
-  // 如果已经在刷新中，等待刷新结果
-  if (isRefreshing && refreshPromise) {
-    return refreshPromise;
-  }
+  try {
+    const response = await fetch("/api/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+    });
 
-  isRefreshing = true;
-  refreshPromise = (async () => {
-    try {
-      // 调用后端 API 进行刷新 (需要 refresh_token 在 cookie 中)
-      // 由于 refresh_token 是 httpOnly，客户端无法直接读取
-      // 我们需要通过后端 API 路由来处理
-      const response = await fetch("/api/auth/refresh", {
-        method: "POST",
-        credentials: "include", // 重要：携带 cookies
-      });
-
-      if (!response.ok) {
-        console.error("🔁 [Client] Token 刷新失败，状态码:", response.status);
-        return false;
-      }
-
-      console.log("✅ [Client] 成功刷新 Token");
-      return true;
-    } catch (error) {
-      console.error("🔁 [Client] 刷新 Token 时发生错误:", error);
+    if (!response.ok) {
+      console.error("🔁 [Client] Token 刷新失败，状态码:", response.status);
       return false;
-    } finally {
-      isRefreshing = false;
-      refreshPromise = null;
     }
-  })();
 
-  return refreshPromise;
+    console.log("✅ [Client] 成功刷新 Token");
+    return true;
+  } catch (error) {
+    console.error("🔁 [Client] 刷新 Token 时发生错误:", error);
+    return false;
+  }
 }
 
 /**

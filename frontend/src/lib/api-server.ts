@@ -3,6 +3,7 @@ import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getApiUrl } from "./config";
 import { getAccessTokenFromCookie, refreshTokenServer } from "./token-refresh-server";
+import { redirect } from "next/navigation";
 
 /**
  * 仅限服务端组件 (Server Components) 和 Server Actions 使用
@@ -51,8 +52,8 @@ export async function fetchClient() {
       const result = await refreshTokenServer();
 
       if (!result?.access_token) {
-        console.error("🔁 [Server] Token 刷新失败，需要重新登录");
-        return response;
+        console.error("🔁 [Server] Token 刷新失败，跳转登录页");
+        redirect("/login");
       }
 
       token = result.access_token;
