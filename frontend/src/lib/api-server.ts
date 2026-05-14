@@ -37,7 +37,11 @@ export async function fetchClient() {
     while (retries <= MAX_RETRIES) {
       const response = await makeRequest(token);
 
-      if (response.status !== 401 || retries >= MAX_RETRIES) {
+      if (response.status !== 401) {
+        return response;
+      }
+
+      if (retries >= MAX_RETRIES) {
         return response;
       }
 
