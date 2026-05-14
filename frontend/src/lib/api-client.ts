@@ -9,7 +9,7 @@ let refreshPromise: Promise<boolean> | null = null;
  * 尝试刷新 Token（客户端版本，调用 /api/auth/refresh 路由）
  * 使用单例 Promise 避免并发刷新竞态
  */
-async function tryRefreshTokenClient(): Promise<boolean> {
+function tryRefreshTokenClient(): Promise<boolean> {
   // 如果已有正在进行的刷新请求，直接复用
   if (refreshPromise) {
     console.log("🔁 [Client] 复用正在进行的 Token 刷新请求");
