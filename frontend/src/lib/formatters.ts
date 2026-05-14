@@ -1,10 +1,29 @@
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
 /**
  * 格式化工具函数
  * 统一处理价格、面积等数值的格式化显示
  */
+
+/**
+ * 安全地格式化日期字符串，防止 "Invalid time value" 错误
+ * 当输入为空或无效时返回 fallback
+ */
+export function safeFormatDate(
+  dateStr: string | null | undefined,
+  fmt: string,
+  fallback = "-"
+): string {
+  if (!dateStr) return fallback;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return fallback;
+    return format(d, fmt, { locale: zhCN });
+  } catch {
+    return fallback;
+  }
+}
 
 /**
  * 格式化总价显示
