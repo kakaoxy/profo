@@ -2,7 +2,7 @@
 C端公开房源展示路由
 房源列表、详情、顾问联系方式、成交案例、平台统计
 """
-from typing import Annotated, Optional, List
+from typing import Optional
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -10,7 +10,6 @@ from sqlalchemy import func, and_, desc, case
 
 from dependencies.auth import DbSessionDep
 from models import L4MarketingProject, L4MarketingMedia, User
-from services.marketing.project import MarketingProjectService
 from schemas.l4_marketing.enums import PublishStatus, MarketingProjectStatus
 from settings import settings
 from utils.formatters import mask_phone, escape_like
@@ -259,7 +258,7 @@ def get_project_detail(
         tags=project.tags or [],
         project_status=project.project_status,
         decoration_style=project.decoration_style,
-        description=project.description,
+        description=None,
         media=media_items,
         renovation_stages=renovation_stages,
         consultant=consultant_info,
@@ -299,7 +298,7 @@ def get_consultant_contact(
         if consultant:
             return PublicConsultantContact(
                 phone=mask_phone(consultant.phone) or "",
-                wechat_number=consultant.wechat_number if hasattr(consultant, 'wechat_number') and consultant.wechat_number else "",
+                wechat_number=getattr(consultant, 'wechat_number', None) or "",
                 nickname=consultant.nickname or "",
             )
 
@@ -365,6 +364,13 @@ def get_platform_stats(
             )
         ).label("current_month_sold"),
     ).first()
+
+    if not stats:
+        return PublicPlatformStats(
+            total_owners=0,
+            on_sale_count=0,
+            current_month_sold=0,
+        )
 
     return PublicPlatformStats(
         total_owners=stats.total_owners or 0,

@@ -1,7 +1,7 @@
 """
 C端公开小区搜索路由
 """
-from typing import Optional, List
+from typing import List
 
 from fastapi import APIRouter, Query, Request
 

@@ -3,7 +3,8 @@ C端公开接口 Pydantic Schema
 """
 from typing import Optional, List, Literal
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+import re
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class PublicRegisterRequest(BaseModel):
@@ -14,11 +15,21 @@ class PublicRegisterRequest(BaseModel):
     )
     password: str = Field(
         min_length=8, max_length=255,
-        pattern=r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$",
         description="密码(≥8位，需含大小写字母和数字)"
     )
     nickname: Optional[str] = Field(None, max_length=100, description="昵称")
     phone: Optional[str] = Field(None, max_length=20, pattern=r"^1[3-9]\d{9}$", description="手机号")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_complexity(cls, v: str) -> str:
+        if not re.search(r"[a-z]", v):
+            raise ValueError("密码必须包含至少一个小写字母")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("密码必须包含至少一个大写字母")
+        if not re.search(r"\d", v):
+            raise ValueError("密码必须包含至少一个数字")
+        return v
 
 
 class PublicUserInfo(BaseModel):

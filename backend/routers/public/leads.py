@@ -4,12 +4,10 @@ C端公开线索（卖房估价）路由
 """
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
-from fastapi import Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from dependencies.auth import DbSessionDep, CurrentCustomerUserDep
 from models import Lead, LeadFollowUp
-from models.common import FollowUpMethod
 from services.leads.core import LeadService
 from schemas.lead import LeadCreate
 from common import limiter
