@@ -223,7 +223,7 @@ class TestPublicRegister:
             "username": "conflict_user",
             "password": "Test123!",
         })
-        assert response.status_code == 409
+        assert response.status_code == 400
         assert "用户名已被占用" in response.json()["detail"]
 
     def test_register_phone_conflict(self, app_data):
@@ -238,7 +238,7 @@ class TestPublicRegister:
             "password": "Test123!",
             "phone": "13900009999",
         })
-        assert response.status_code == 409
+        assert response.status_code == 400
         assert "手机号已被绑定" in response.json()["detail"]
 
     def test_register_validation_error(self, app_data):
@@ -276,7 +276,7 @@ class TestPublicProfile:
         client, db = app_data
         token, user = _create_customer_token(db, "profile_user", "13900003333")
         response = client.put(
-            "/api/v1/public/auth/profile",
+            "/api/v1/public/users/profile",
             json={"nickname": "新昵称"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -289,7 +289,7 @@ class TestPublicProfile:
         client, db = app_data
         token, user = _create_customer_token(db, "mask_user", "13900004444")
         response = client.put(
-            "/api/v1/public/auth/profile",
+            "/api/v1/public/users/profile",
             json={"nickname": "测试"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -304,7 +304,7 @@ class TestPublicPhone:
         client, db = app_data
         token, user = _create_customer_token(db, "phone_user", "13900005555")
         response = client.put(
-            "/api/v1/public/auth/phone",
+            "/api/v1/public/users/phone",
             json={"phone": "13900006666", "password": "Test123!"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -315,7 +315,7 @@ class TestPublicPhone:
         client, db = app_data
         token, user = _create_customer_token(db, "phone_wrong_pwd", "13900007777")
         response = client.put(
-            "/api/v1/public/auth/phone",
+            "/api/v1/public/users/phone",
             json={"phone": "13900008888", "password": "WrongPassword1!"},
             headers={"Authorization": f"Bearer {token}"},
         )
@@ -327,11 +327,11 @@ class TestPublicPhone:
         _create_customer_token(db, "phone_bound_user1", "13900009998")
         token2, user2 = _create_customer_token(db, "phone_bound_user2", "13900009997")
         response = client.put(
-            "/api/v1/public/auth/phone",
+            "/api/v1/public/users/phone",
             json={"phone": "13900009998", "password": "Test123!"},
             headers={"Authorization": f"Bearer {token2}"},
         )
-        assert response.status_code == 409
+        assert response.status_code == 400
         assert "手机号已被其他账号绑定" in response.json()["detail"]
 
 
@@ -815,11 +815,11 @@ class TestPublicRateLimits:
         assert hasattr(logout, '__wrapped__')
 
     def test_update_profile_has_rate_limit(self):
-        from routers.public.auth import update_profile
+        from routers.public.users import update_profile
         assert hasattr(update_profile, '__wrapped__')
 
     def test_update_phone_has_rate_limit(self):
-        from routers.public.auth import update_phone
+        from routers.public.users import update_phone
         assert hasattr(update_phone, '__wrapped__')
 
     def test_get_projects_has_rate_limit(self):
