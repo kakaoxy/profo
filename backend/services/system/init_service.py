@@ -46,6 +46,13 @@ class SystemInitService:
                 "code": "user",
                 "description": "仅拥有数据查看权限",
                 "permissions": ["view_data"]
+            },
+            {
+                "id": "customer-role",
+                "name": "C端用户",
+                "code": "customer",
+                "description": "C端注册用户，可浏览房源、提交估价",
+                "permissions": ["view_data"]
             }
         ]
 

@@ -87,6 +87,11 @@ class Settings(BaseSettings):
     jwt_secret_key_old: Optional[str] = None  # 旧密钥（用于密钥轮换过渡期）
     jwt_key_rotation_enabled: bool = False  # 是否启用密钥轮换
     
+    # C端公开接口默认顾问配置
+    default_consultant_phone: str = "400-xxx-xxxx"
+    default_consultant_wechat: str = "400-xxx-xxxx"
+    default_consultant_nickname: str = "Profo客服"
+
     # 微信配置
     wechat_appid: str  # 微信AppID (Required from env)
     wechat_secret: str  # 微信AppSecret (Required from env)

@@ -174,7 +174,7 @@ def require_roles(required_roles: list[str]):
     Returns:
         依赖函数，用于检查用户角色
     """
-    def role_checker(user: CurrentActiveUserDep) -> User:
+    async def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role.code not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -189,6 +189,7 @@ CurrentAdminUserDep = Annotated[User, Depends(require_roles(["admin"]))]
 CurrentOperatorUserDep = Annotated[User, Depends(require_roles(["admin", "operator"]))]
 CurrentNormalUserDep = Annotated[User, Depends(require_roles(["admin", "operator", "user"]))]
 CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operator"]))]
+CurrentCustomerUserDep = Annotated[User, Depends(require_roles(["customer"]))]
 
 
 __all__ = [
@@ -200,6 +201,7 @@ __all__ = [
     "CurrentOperatorUserDep",
     "CurrentNormalUserDep",
     "CurrentInternalUserDep",
+    "CurrentCustomerUserDep",
     "ApiKeyAuthDep",
     # 依赖函数
     "get_current_user",
