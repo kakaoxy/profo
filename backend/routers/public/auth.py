@@ -4,13 +4,12 @@ C端公开认证路由
 """
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request, status
-from sqlalchemy.orm import joinedload
+from fastapi import APIRouter, Request, status
 
 from dependencies.auth import DbSessionDep, CurrentCustomerUserDep
 from models import User, Role
 from services.system.auth import AuthService
-from services.system.exceptions import ConflictError, ValidationError
+from services.system.exceptions import AuthenticationError, ConflictError, ValidationError
 from utils.auth import get_password_hash, verify_password
 from utils.formatters import mask_phone
 from common import limiter
@@ -114,7 +113,6 @@ def update_profile(
     """C端用户修改昵称"""
     current_user.nickname = body.nickname
     db.commit()
-    db.refresh(current_user)
 
     return PublicUserProfileResponse(
         id=current_user.id,
@@ -143,10 +141,7 @@ def update_phone(
 ):
     """C端用户修改手机号，需密码确认身份"""
     if not verify_password(body.password, current_user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="密码错误"
-        )
+        raise AuthenticationError("密码错误")
 
     existing_phone = db.query(User).filter(
         User.phone == body.phone,
@@ -157,6 +152,5 @@ def update_phone(
 
     current_user.phone = body.phone
     db.commit()
-    db.refresh(current_user)
 
     return PublicPhoneResponse(phone=mask_phone(current_user.phone))

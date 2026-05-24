@@ -12,18 +12,36 @@ from fastapi.testclient import TestClient
 
 from models import User, Role, L4MarketingProject, L4MarketingMedia, Lead, LeadFollowUp, Community
 from models.common import LeadStatus, FollowUpMethod
+from db import get_db
 from utils.auth import get_password_hash, create_access_token
 
 
 @pytest.fixture(scope="module")
 def test_app():
+    from sqlalchemy import create_engine, event
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
     db_path = os.path.join(os.path.dirname(__file__), "test_public.db")
     if os.path.exists(db_path):
         os.unlink(db_path)
-    os.environ["DATABASE_URL"] = f"sqlite:///{db_path}"
+
+    engine = create_engine(
+        f"sqlite:///{db_path}",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    def _enable_sqlite_fk(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    event.listen(engine, "connect", _enable_sqlite_fk)
+
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     from models import Base
-    from db import engine, SessionLocal
 
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
@@ -50,6 +68,16 @@ def test_app():
     db.commit()
 
     from main import app
+
+    def _get_test_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = _get_test_db
+
     client = TestClient(app, raise_server_exceptions=False)
 
     yield client, db
@@ -57,6 +85,7 @@ def test_app():
     db.close()
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
+    app.dependency_overrides.clear()
     if os.path.exists(db_path):
         try:
             os.unlink(db_path)
