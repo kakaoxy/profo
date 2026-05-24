@@ -33,7 +33,7 @@ from routers.marketing import projects_router as marketing_projects_router, impo
 from routers.system import auth_router, users_router, roles_router
 from routers.common import files_router, upload_router, push_router
 from routers.monitor import monitor_router
-from routers.public import public_auth_router, public_projects_router, public_leads_router, public_communities_router
+from routers.public import public_auth_router, public_users_router, public_projects_router, public_leads_router, public_communities_router
 
 
 logger = logging.getLogger(__name__)
@@ -156,6 +156,7 @@ app.include_router(monitor_router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
 
 # ==================== C端公开接口模块 (Public) ====================
 app.include_router(public_auth_router, prefix=API_V1_PREFIX)
+app.include_router(public_users_router, prefix=API_V1_PREFIX)
 app.include_router(public_projects_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
