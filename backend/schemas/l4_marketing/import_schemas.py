@@ -3,7 +3,6 @@ L4 项目导入相关 Pydantic Schema
 用于从L3项目导入数据创建营销房源
 """
 from typing import Optional, List
-from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
 

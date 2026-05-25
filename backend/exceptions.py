@@ -21,21 +21,6 @@
 """
 import warnings
 
-from services.system.exceptions import (
-    ServiceException as ProfoException,
-    ServiceException as DatabaseException,
-    ServiceException as DateProcessingException,
-    ResourceNotFoundError as ResourceNotFoundException,
-    ValidationError as ValidationException,
-    ValidationError as DateFormatException,
-    ValidationError as DateParsingException,
-    ValidationError as PasswordValidationException,
-    AuthenticationError as AuthenticationException,
-    PermissionDeniedError as PermissionDeniedException,
-    FileProcessingError as FileProcessingException,
-    BusinessLogicError as BusinessLogicException,
-    ConflictError as DuplicateRecordException,
-)
 
 warnings.warn(
     "exceptions 模块已弃用，请改用 services.system.exceptions",

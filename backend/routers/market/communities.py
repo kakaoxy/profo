@@ -4,7 +4,7 @@
 处理小区查询、搜索和合并操作
 """
 from fastapi import APIRouter, Query, HTTPException, Request
-from typing import Annotated, Optional
+from typing import Annotated
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 

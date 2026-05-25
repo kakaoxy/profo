@@ -103,7 +103,7 @@ class ProjectResponseBuilder:
 
         contract = self.db.query(ProjectContract).filter(
             ProjectContract.project_id == project_id,
-            ProjectContract.is_deleted == False
+            ProjectContract.is_deleted.is_(False)
         ).first()
 
         if not contract:
@@ -130,7 +130,7 @@ class ProjectResponseBuilder:
 
         owner = self.db.query(ProjectOwner).filter(
             ProjectOwner.project_id == project_id,
-            ProjectOwner.is_deleted == False
+            ProjectOwner.is_deleted.is_(False)
         ).first()
 
         if not owner:
@@ -149,7 +149,7 @@ class ProjectResponseBuilder:
 
         sale = self.db.query(ProjectSale).filter(
             ProjectSale.project_id == project_id,
-            ProjectSale.is_deleted == False
+            ProjectSale.is_deleted.is_(False)
         ).first()
 
         if not sale:

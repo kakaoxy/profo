@@ -30,6 +30,7 @@ __all__ = [
     "get_property_service",
     # 小区服务
     "CommunityQueryService",
+    "_find_existing_community_by_name",
     # 导入服务
     "PropertyImporter",
     "CSVBatchImporter",

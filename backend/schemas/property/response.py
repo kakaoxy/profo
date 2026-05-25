@@ -3,7 +3,7 @@
 """
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, TYPE_CHECKING
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from ..response import PaginatedResponse
 import logging
@@ -323,6 +323,7 @@ class PropertyDetailResponse(BaseModel):
             sold_date=property_obj.sold_date,
             transaction_duration_days=transaction_duration_days,
             transaction_duration_display=transaction_duration_display,
+            discount_rate_display=discount_rate_display,
             property_type=property_obj.property_type,
             build_year=property_obj.build_year,
             building_structure=property_obj.building_structure,

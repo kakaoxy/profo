@@ -36,7 +36,7 @@ class MarketingMediaService:
         query = self.db.query(L4MarketingMedia).filter(
             and_(
                 L4MarketingMedia.marketing_project_id == marketing_project_id,
-                L4MarketingMedia.is_deleted == False
+                L4MarketingMedia.is_deleted.is_(False)
             )
         )
 
@@ -61,7 +61,7 @@ class MarketingMediaService:
         return self.db.query(L4MarketingMedia).filter(
             and_(
                 L4MarketingMedia.id == media_id,
-                L4MarketingMedia.is_deleted == False
+                L4MarketingMedia.is_deleted.is_(False)
             )
         ).first()
 
@@ -171,7 +171,7 @@ class MarketingMediaService:
             and_(
                 L4MarketingMedia.id.in_(media_ids),
                 L4MarketingMedia.marketing_project_id == project_id,
-                L4MarketingMedia.is_deleted == False
+                L4MarketingMedia.is_deleted.is_(False)
             )
         ).all()
 

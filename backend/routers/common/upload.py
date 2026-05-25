@@ -2,35 +2,34 @@
 CSV 文件上传路由
 处理 CSV 文件的上传、异步导入任务管理
 """
+import os
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, status, Request, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import os
-import logging
 
 from schemas import (
     ImportTaskCreateResponse,
     ImportTaskStatusResponse
 )
-
-
-class CancelTaskResponse(BaseModel):
-    """取消任务响应"""
-    message: str
-    task_id: str
 from services.system.exceptions import FileProcessingError, ResourceNotFoundError
 from dependencies.auth import DbSessionDep, CurrentInternalUserDep
 from services.market import (
     get_import_task_service,
     start_import_task
 )
-from models import User, PropertyImportTask, ImportTaskStatus
-from sqlalchemy.orm import Session
+from models import ImportTaskStatus
 from utils.file_security import get_safe_file_path, is_safe_path
 from common import limiter, RateLimits
 from settings import settings
+
+
+class CancelTaskResponse(BaseModel):
+    """取消任务响应"""
+    message: str
+    task_id: str
 
 logger = logging.getLogger(__name__)
 
@@ -61,17 +60,14 @@ async def create_import_task(
 
     logger.info(f"接收到 CSV 文件: {file.filename}, 用户: {current_user.id}")
 
-    # 创建导入任务
     task_service = get_import_task_service()
     task = await task_service.create_task(file, current_user.id, db)
 
-    # 启动后台处理任务，添加错误处理避免任务永久等待
     try:
         start_import_task(task.id)
         logger.info(f"导入任务已创建并启动: {task.id}")
     except Exception as e:
         logger.error(f"启动导入任务失败: {task.id}, 错误: {e}")
-        # 更新任务状态为失败，避免任务处于永久等待状态
         task_service.update_task_status(
             task.id,
             ImportTaskStatus.FAILED,
@@ -107,7 +103,6 @@ def get_task_status(
     if not task:
         raise ResourceNotFoundError("任务不存在")
     
-    # 检查权限（只能查看自己的任务）
     if task.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -171,12 +166,10 @@ def download_failed_file(
     注意：使用 def 避免文件操作阻塞
     已修复：使用安全的文件路径验证，防止目录遍历攻击
     """
-    # 使用配置中的上传目录
     temp_dir = os.path.join(os.getcwd(), settings.import_upload_dir)
     os.makedirs(temp_dir, exist_ok=True)
 
     try:
-        # 使用安全的文件路径获取函数，防止目录遍历攻击
         filepath = get_safe_file_path(temp_dir, filename)
     except ValueError as e:
         logger.warning(f"检测到非法文件名尝试: {filename}, 错误: {e}")
@@ -185,11 +178,9 @@ def download_failed_file(
             detail="无效的文件名"
         )
 
-    # 二次验证：确保文件存在且不是目录
     if not os.path.exists(filepath) or os.path.isdir(filepath):
         raise ResourceNotFoundError("文件不存在或已过期")
 
-    # 三次验证：确保文件确实在安全目录内（防御性编程）
     if not is_safe_path(temp_dir, filepath):
         logger.error(f"路径安全检查失败: {filepath}")
         raise HTTPException(
@@ -197,7 +188,6 @@ def download_failed_file(
             detail="访问被拒绝"
         )
 
-    # 清理后的安全文件名
     safe_filename = os.path.basename(str(filepath))
 
     return FileResponse(

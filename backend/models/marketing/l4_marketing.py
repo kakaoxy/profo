@@ -7,7 +7,6 @@ from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Nume
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Optional, List
 
 from ..common.base import BaseModel
 

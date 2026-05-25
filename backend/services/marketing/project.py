@@ -37,7 +37,7 @@ class MarketingProjectService:
             基础查询对象
         """
         query = self.db.query(L4MarketingProject).filter(
-            L4MarketingProject.is_deleted == False
+            L4MarketingProject.is_deleted.is_(False)
         )
 
         if publish_status is not None:
@@ -171,7 +171,7 @@ class MarketingProjectService:
         return self.db.query(L4MarketingProject).filter(
             and_(
                 L4MarketingProject.id == project_id,
-                L4MarketingProject.is_deleted == False
+                L4MarketingProject.is_deleted.is_(False)
             )
         ).first()
 

@@ -159,7 +159,7 @@ class ProjectCoreService:
         """
         project = self.db.query(Project).filter(
             Project.id == project_id,
-            Project.is_deleted == False
+            Project.is_deleted.is_(False)
         ).first()
 
         if not project:
@@ -182,7 +182,7 @@ class ProjectCoreService:
         """
         project = self.db.query(Project).filter(
             Project.id == project_id,
-            Project.is_deleted == False
+            Project.is_deleted.is_(False)
         ).first()
 
         if not project:
@@ -209,7 +209,7 @@ class ProjectCoreService:
         """
         project = self.db.query(Project).filter(
             Project.id == project_id,
-            Project.is_deleted == False
+            Project.is_deleted.is_(False)
         ).first()
 
         if not project:
@@ -229,7 +229,7 @@ class ProjectCoreService:
         stats = self.db.query(
             Project.status,
             func.count(Project.id)
-        ).filter(Project.is_deleted == False).group_by(Project.status).all()
+        ).filter(Project.is_deleted.is_(False)).group_by(Project.status).all()
 
         result = {
             "signing": 0,

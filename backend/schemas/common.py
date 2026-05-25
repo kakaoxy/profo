@@ -3,7 +3,7 @@
 包含分页响应、历史记录、失败记录、楼层解析等通用模型
 """
 from datetime import datetime
-from typing import Optional, Any, TypeVar, Generic, List
+from typing import Optional, TypeVar, Generic, List
 from pydantic import BaseModel, Field, ConfigDict
 
 

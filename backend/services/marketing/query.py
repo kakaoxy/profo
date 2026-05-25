@@ -4,7 +4,7 @@ L4 市场营销层查询服务
 """
 from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import select, and_, desc
+from sqlalchemy import and_, desc
 
 from models import Project
 from schemas.l4_marketing.import_schemas import L3ProjectBriefResponse
@@ -39,7 +39,7 @@ class MarketingQueryService:
             (项目列表, 总记录数)
         """
         query = self.db.query(Project).filter(
-            Project.is_deleted == False
+            Project.is_deleted.is_(False)
         )
 
         # 小区名称筛选
@@ -92,7 +92,7 @@ class MarketingQueryService:
         return self.db.query(Project).filter(
             and_(
                 Project.id == project_id,
-                Project.is_deleted == False
+                Project.is_deleted.is_(False)
             )
         ).first()
 
@@ -108,7 +108,7 @@ class MarketingQueryService:
         return self.db.query(Project).filter(
             and_(
                 Project.id == project_id,
-                Project.is_deleted == False
+                Project.is_deleted.is_(False)
             )
         ).first() is not None
 

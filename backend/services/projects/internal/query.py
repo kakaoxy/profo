@@ -49,7 +49,7 @@ class ProjectQueryService:
         Raises:
             ResourceNotFoundError: 项目不存在时抛出404错误
         """
-        query = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False)
+        query = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False))
 
         if include_all:
             # 完整加载：预加载所有关联关系
@@ -89,7 +89,7 @@ class ProjectQueryService:
         Returns:
             项目存在返回True，否则返回False
         """
-        return self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first() is not None
+        return self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first() is not None
 
     def get_by_status(
         self,
@@ -112,7 +112,7 @@ class ProjectQueryService:
         Returns:
             包含项目列表和分页信息的字典
         """
-        query = self.db.query(Project).filter(Project.is_deleted == False)
+        query = self.db.query(Project).filter(Project.is_deleted.is_(False))
 
         if status:
             query = query.filter(Project.status == status)

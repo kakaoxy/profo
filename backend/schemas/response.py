@@ -2,7 +2,7 @@
 统一 API 响应模型
 遵循 AGENTS.md 规范：直接返回 Pydantic 模型，不使用 code/msg/data 包装器
 """
-from typing import Generic, TypeVar, Optional, Any, List
+from typing import Generic, TypeVar, List
 from pydantic import BaseModel, Field
 
 

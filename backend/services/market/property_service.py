@@ -30,7 +30,7 @@ class PropertyService:
         """
         property_obj = db.query(PropertyCurrent).filter(
             PropertyCurrent.id == property_id,
-            PropertyCurrent.is_active == True
+            PropertyCurrent.is_active.is_(True)
         ).first()
         if not property_obj:
             raise ValueError("房源不存在")

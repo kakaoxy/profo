@@ -2,7 +2,7 @@
 销售交易模型
 """
 from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey, Index
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy.orm import Session
 
 from ..common.base import BaseModel
 

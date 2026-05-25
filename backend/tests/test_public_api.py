@@ -5,13 +5,11 @@ C端公开接口集成测试
 import pytest
 import asyncio
 import os
-from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone
+from unittest.mock import MagicMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from models import User, Role, L4MarketingProject, L4MarketingMedia, Lead, LeadFollowUp, Community
-from models.common import LeadStatus, FollowUpMethod
+from models import User, Role, L4MarketingProject, Lead, Community
 from db import get_db
 from utils.auth import get_password_hash, create_access_token
 

@@ -26,6 +26,11 @@ from .projects import (
 from .common import files_router
 
 __all__ = [
+    # 市场情报
+    'properties_router',
+    'communities_router',
+    # 线索管理
+    'leads_router',
     # 项目相关
     'projects_router',
     'cashflow_router',

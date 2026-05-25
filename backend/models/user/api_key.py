@@ -2,8 +2,8 @@
 API Key 模型
 用于用户通过 API Key 访问受保护接口
 """
-from datetime import datetime, timezone, timedelta
-from sqlalchemy import Column, String, DateTime, Index, ForeignKey
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, DateTime, Index
 from sqlalchemy.orm import relationship
 
 from ..common.base import BaseModel

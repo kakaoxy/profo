@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, List
+from typing import Annotated, Optional
 from fastapi import APIRouter, Path, Query, Request
 from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep

@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session

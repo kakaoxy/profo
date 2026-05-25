@@ -3,11 +3,11 @@
 提供市场分析、竞品监控、趋势数据等功能
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, and_, desc, extract, distinct, tuple_
-from typing import List, Optional
+from sqlalchemy import func
+from typing import List
 from datetime import datetime, timedelta
 
-from models import PropertyCurrent, PropertyHistory, Community, CommunityCompetitor, PropertyStatus, Project
+from models import PropertyCurrent, Community, CommunityCompetitor, PropertyStatus
 from schemas.monitor import (
     FloorStats, TrendData, CompetitorResponse, RiskPoints, AIStrategyResponse,
     NeighborhoodRadarItem, NeighborhoodRadarResponse, MarketSentimentResponse,
@@ -138,10 +138,10 @@ class MonitorService:
                 "listing_price": 0
             }
             
-        for l in listings:
-            if l.month not in data_map:
-                data_map[l.month] = {"month": l.month, "deal_price": 0, "volume": 0, "listing_price": 0}
-            data_map[l.month]["listing_price"] = round(l.avg_list_price, 0) if l.avg_list_price else 0
+        for listing in listings:
+            if listing.month not in data_map:
+                data_map[listing.month] = {"month": listing.month, "deal_price": 0, "volume": 0, "listing_price": 0}
+            data_map[listing.month]["listing_price"] = round(listing.avg_list_price, 0) if listing.avg_list_price else 0
             
         return sorted([TrendData(**v) for v in data_map.values()], key=lambda x: x.month)
 
@@ -285,7 +285,8 @@ class MonitorService:
         # 处理挂牌数据
         for row in listing_query:
             cid = row.community_id
-            if cid not in all_stats: continue
+            if cid not in all_stats:
+                continue
             src = (row.data_source or "").lower()
             count = row.count
             avg = row.avg_price or 0
@@ -301,7 +302,8 @@ class MonitorService:
         # 处理成交数据
         for row in deal_query:
             cid = row.community_id
-            if cid not in all_stats: continue
+            if cid not in all_stats:
+                continue
             src = (row.data_source or "").lower()
             count = row.count
             avg = row.avg_price or 0

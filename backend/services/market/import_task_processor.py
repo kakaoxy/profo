@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from models import PropertyImportTask, ImportTaskStatus
+from models import ImportTaskStatus
 from schemas import PropertyIngestionModel
 from services.market.importer import PropertyImporter
 from services.market.import_task_service import get_import_task_service, UPLOAD_DIR
