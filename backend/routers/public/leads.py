@@ -124,7 +124,7 @@ def get_my_leads(
                 status_color=status_color,
                 created_at=lead.created_at,
                 updated_at=lead.updated_at,
-            )
+            ),
         )
 
     return PublicLeadListResponse(

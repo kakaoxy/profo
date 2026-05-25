@@ -30,7 +30,7 @@ class ProjectContract(BaseModel):
     extension_period = Column(Integer, nullable=True, comment="顺延期(天)")
     extension_rent = Column(Numeric(15, 2), nullable=True, comment="顺延期租金(元/月)")
     cost_assumption_type = Column(
-        String(20), nullable=True, comment="税费及佣金承担方类型: meifangbao/owner/respective/other"
+        String(20), nullable=True, comment="税费及佣金承担方类型: meifangbao/owner/respective/other",
     )
     cost_assumption_other = Column(String(50), nullable=True, comment="税费及佣金承担方其他说明")
     planned_handover_date = Column(DateTime, nullable=True, comment="业主交房时间")

@@ -16,7 +16,7 @@ from ._project_sale import ProjectSale
 from ._project_status_log import ProjectStatusLog
 
 Project.contract = relationship(
-    "ProjectContract", back_populates="project", uselist=False, cascade="all, delete-orphan"
+    "ProjectContract", back_populates="project", uselist=False, cascade="all, delete-orphan",
 )
 Project.owners = relationship("ProjectOwner", back_populates="project", cascade="all, delete-orphan")
 Project.sale = relationship("ProjectSale", back_populates="project", uselist=False, cascade="all, delete-orphan")
@@ -26,7 +26,7 @@ Project.interactions = relationship("ProjectInteraction", back_populates="projec
 Project.finance_records = relationship("FinanceRecord", back_populates="project", cascade="all, delete-orphan")
 Project.status_logs = relationship("ProjectStatusLog", back_populates="project", cascade="all, delete-orphan")
 Project.renovation = relationship(
-    "ProjectRenovation", back_populates="project", uselist=False, cascade="all, delete-orphan"
+    "ProjectRenovation", back_populates="project", uselist=False, cascade="all, delete-orphan",
 )
 Project.renovation_photos = relationship("RenovationPhoto", back_populates="project", cascade="all, delete-orphan")
 

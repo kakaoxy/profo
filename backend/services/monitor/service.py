@@ -111,7 +111,7 @@ class MonitorService:
                     deal_avg_price=deal_price,
                     current_count=c_data.count if c_data else 0,
                     current_avg_price=current_price,
-                )
+                ),
             )
 
         # 4. Inventory Months 计算
@@ -236,7 +236,7 @@ class MonitorService:
                         community_name=c.name,
                         avg_price=stats["avg_price"],
                         on_sale_count=stats["count"],
-                    )
+                    ),
                 )
         return results
 
@@ -449,7 +449,7 @@ class MonitorService:
                     deal_avg_price=stats["deal_avg_price"],
                     spread_percent=round(spread_percent, 1),
                     spread_label=spread_label,
-                )
+                ),
             )
 
         # 本案排在最后

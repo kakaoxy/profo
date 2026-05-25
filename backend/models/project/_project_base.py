@@ -13,7 +13,7 @@ class Project(BaseModel):
 
     name = Column(String(700), nullable=False, comment="项目名称(自动生成:小区名称+地址)")
     community_id = Column(
-        String(36), ForeignKey("communities.id", ondelete="SET NULL"), nullable=True, comment="小区ID"
+        String(36), ForeignKey("communities.id", ondelete="SET NULL"), nullable=True, comment="小区ID",
     )
     community_name = Column(String(200), nullable=False, comment="小区名称")
     address = Column(String(500), nullable=False, comment="物业地址")
@@ -31,7 +31,7 @@ class Project(BaseModel):
         comment="项目状态",
     )
     renovation_stage = Column(
-        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段"
+        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段",
     )
 
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")

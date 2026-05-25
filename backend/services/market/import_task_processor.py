@@ -208,7 +208,7 @@ class ImportTaskProcessor:
                         "row_number": global_index,
                         "data": row,
                         "error": validation_result["error"],
-                    }
+                    },
                 )
                 self.failed_handler.save_failed_record_sync(row, validation_result["error"], task_id)
                 processed += 1
@@ -224,7 +224,7 @@ class ImportTaskProcessor:
                         "row_number": global_index,
                         "data": row,
                         "error": import_result["error"],
-                    }
+                    },
                 )
                 self.failed_handler.save_failed_record_sync(
                     row,

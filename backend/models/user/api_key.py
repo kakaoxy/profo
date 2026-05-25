@@ -38,7 +38,7 @@ class ApiKey(BaseModel):
 
     # 关联关系
     user = relationship(
-        "User", primaryjoin="ApiKey.user_id == User.id", foreign_keys="[ApiKey.user_id]", uselist=False, viewonly=True
+        "User", primaryjoin="ApiKey.user_id == User.id", foreign_keys="[ApiKey.user_id]", uselist=False, viewonly=True,
     )
 
     # 索引

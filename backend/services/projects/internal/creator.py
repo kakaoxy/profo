@@ -141,7 +141,7 @@ class ProjectCreator:
                 project_data.owner_name,
                 project_data.owner_phone,
                 project_data.owner_id_card,
-            ]
+            ],
         ):
             owner = ProjectOwner(
                 id=str(uuid.uuid4()),

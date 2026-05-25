@@ -73,7 +73,7 @@ class JSONBatchImporter:
                                 "index": index,
                                 "source_property_id": self._extract_source_id(raw_data),
                                 "reason": result.error,
-                            }
+                            },
                         )
 
                         self._save_failed_record_raw(raw_data, result.error)
@@ -86,7 +86,7 @@ class JSONBatchImporter:
                             "index": index,
                             "source_property_id": self._extract_source_id(raw_data),
                             "reason": error_msg,
-                        }
+                        },
                     )
 
                     self._save_failed_record_raw(raw_data, error_msg)
@@ -101,7 +101,7 @@ class JSONBatchImporter:
                             "index": index,
                             "source_property_id": self._extract_source_id(raw_data),
                             "reason": error_msg,
-                        }
+                        },
                     )
 
                     self._save_failed_record_raw(raw_data, error_msg)
@@ -128,7 +128,7 @@ class JSONBatchImporter:
                             "index": idx,
                             "source_property_id": source_id,
                             "reason": errors[idx]["reason"],
-                        }
+                        },
                     )
                 else:
                     rollback_errors.append(
@@ -136,7 +136,7 @@ class JSONBatchImporter:
                             "index": idx,
                             "source_property_id": source_id,
                             "reason": f"批次提交失败(原成功记录已回滚): {e!s}",
-                        }
+                        },
                     )
 
             failed = total

@@ -181,7 +181,7 @@ class CSVBatchImporter:
                                 "row_number": global_index,
                                 "data": row,
                                 "error": error_msg,
-                            }
+                            },
                         )
                         self._save_failed_record(row, error_msg, db)
                         logger.warning("第 %s 行验证失败: %s", global_index, error_msg)
@@ -193,7 +193,7 @@ class CSVBatchImporter:
                                 "row_number": global_index,
                                 "data": row,
                                 "error": error_msg,
-                            }
+                            },
                         )
                         self._save_failed_record(row, error_msg, db)
                         logger.exception("第 %s 行验证异常: %s", global_index, error_msg)
@@ -216,7 +216,7 @@ class CSVBatchImporter:
                                         "row_number": global_index,
                                         "data": original_row,
                                         "error": result.error,
-                                    }
+                                    },
                                 )
                         except Exception as e:  # noqa: PERF203
                             batch_failed_count += 1
@@ -226,7 +226,7 @@ class CSVBatchImporter:
                                     "row_number": global_index,
                                     "data": original_row,
                                     "error": error_msg,
-                                }
+                                },
                             )
                             logger.exception("第 %s 行导入异常: %s", global_index, error_msg)
 
@@ -259,7 +259,7 @@ class CSVBatchImporter:
                                 "row_number": _global_index,
                                 "data": original_row,
                                 "error": error_msg,
-                            }
+                            },
                         )
                         try:
                             self._save_failed_record(original_row, error_msg, db)

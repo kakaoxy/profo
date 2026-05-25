@@ -86,7 +86,7 @@ def check_jwt_configuration() -> None:
         logger.error("   JWT_SECRET_KEY=your-secure-random-key-here")
         logger.error("\n生成安全密钥命令：")
         logger.error(
-            '   python -c "from utils.jwt_validator import generate_secure_jwt_key; print(generate_secure_jwt_key())"'
+            '   python -c "from utils.jwt_validator import generate_secure_jwt_key; print(generate_secure_jwt_key())"',
         )
         sys.exit(1)
 
