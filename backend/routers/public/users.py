@@ -9,7 +9,7 @@ from models import User
 from services.system.exceptions import AuthenticationError, ValidationError
 from utils.auth import verify_password
 from utils.formatters import mask_phone
-from common import limiter
+from common import limiter, RateLimits
 from schemas.public import (
     PublicProfileUpdate,
     PublicUserProfileResponse,
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/public/users", tags=["public-users"])
     summary="修改用户资料",
     description="C端用户修改自己的昵称",
 )
-@limiter.limit("20/minute")
+@limiter.limit(RateLimits.PUBLIC_PROFILE_UPDATE)
 def update_profile(
     request: Request,
     body: PublicProfileUpdate,
@@ -55,7 +55,7 @@ def update_profile(
     summary="修改手机号",
     description="C端用户修改手机号，需密码确认身份",
 )
-@limiter.limit("10/hour")
+@limiter.limit(RateLimits.PUBLIC_PHONE_UPDATE)
 def update_phone(
     request: Request,
     body: PublicPhoneUpdate,

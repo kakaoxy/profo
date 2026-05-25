@@ -20,7 +20,7 @@ from schemas.community import (
 from services.market import CommunityMerger
 from services.market.community_service import CommunityQueryService, _find_existing_community_by_name
 from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSessionDep
-from common import limiter
+from common import limiter, RateLimits
 from datetime import datetime, timezone
 import uuid
 
@@ -73,7 +73,7 @@ def get_dictionaries(
 
 
 @router.post("/communities/merge", response_model=CommunityMergeResponse)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.COMMUNITY_MERGE)
 def merge_communities(
     request: Request,
     merge_request: CommunityMergeRequest,
@@ -127,7 +127,7 @@ def merge_communities(
 
 
 @router.post("/communities", response_model=CommunityResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.COMMUNITY_CREATE)
 def create_community(
     request: Request,
     body: CommunityCreateRequest,

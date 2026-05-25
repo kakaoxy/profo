@@ -4,13 +4,13 @@ from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import SalesRolesUpdate, SalesRecordCreate, SalesRecordResponse, ProjectResponse
 from schemas.project.sales import SalesRecordListResponse
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter()
 
 
 @router.put("/{project_id}/selling/roles", response_model=ProjectResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.SALES_UPDATE)
 def update_sales_roles(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
@@ -76,7 +76,7 @@ def get_sales_records(
 
 
 @router.delete("/{project_id}/selling/records/{record_id}", status_code=204)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.SALES_DELETE)
 def delete_sales_record(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],

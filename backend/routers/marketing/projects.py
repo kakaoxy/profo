@@ -27,7 +27,7 @@ from schemas.l4_marketing import (
     L4SyncResponse,
     L4RefreshResponse,
 )
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
@@ -102,7 +102,7 @@ async def list_marketing_projects(
     status_code=status.HTTP_201_CREATED,
     summary="创建独立营销项目"
 )
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.MARKETING_CREATE)
 async def create_marketing_project(
     request: Request,
     data: L4MarketingProjectCreate,
@@ -138,7 +138,7 @@ async def get_marketing_project(
     response_model=L4MarketingProjectResponse,
     summary="更新营销项目"
 )
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
@@ -162,7 +162,7 @@ async def update_marketing_project(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除营销项目"
 )
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.MARKETING_DELETE)
 async def delete_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
@@ -224,7 +224,7 @@ async def create_marketing_media(
     response_model=L4MarketingMediaResponse,
     summary="更新媒体"
 )
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
@@ -248,7 +248,7 @@ async def update_marketing_media(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除媒体"
 )
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.MARKETING_DELETE)
 async def delete_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
@@ -269,7 +269,7 @@ async def delete_marketing_media(
     response_model=L4SyncResponse,
     summary="批量更新媒体排序"
 )
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_media_sort_order(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],

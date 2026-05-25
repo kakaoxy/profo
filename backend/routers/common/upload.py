@@ -29,7 +29,7 @@ from services.market import (
 from models import User, PropertyImportTask, ImportTaskStatus
 from sqlalchemy.orm import Session
 from utils.file_security import get_safe_file_path, is_safe_path
-from common import limiter
+from common import limiter, RateLimits
 from settings import settings
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ router = APIRouter(tags=["upload"])
 
 
 @router.post("/csv", response_model=ImportTaskCreateResponse)
-@limiter.limit("30/hour")
+@limiter.limit(RateLimits.CSV_IMPORT)
 async def create_import_task(
     request: Request,
     file: Annotated[UploadFile, File(description="CSV 文件")],

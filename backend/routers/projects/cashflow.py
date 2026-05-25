@@ -13,7 +13,7 @@ from schemas.project import (
     CashFlowRecordCreate, CashFlowRecordResponse,
     CashFlowResponse
 )
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter(tags=["cashflow"])
 
@@ -54,7 +54,7 @@ def get_project_cashflow(
 
 
 @router.delete("/projects/{project_id}/cashflow/{record_id}", status_code=204)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.CASHFLOW_DELETE)
 def delete_cashflow_record(
     request: Request,
     service: CashFlowServiceDep,
