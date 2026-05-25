@@ -107,7 +107,7 @@ def get_projects(  # noqa: PLR0913
                 tags=item.tags or [],
                 project_status=item.project_status,
                 decoration_style=item.decoration_style,
-            )
+            ),
         )
 
     return PublicProjectListResponse(
@@ -166,7 +166,7 @@ def get_sold_projects(
                 cover_image=cover_image,
                 sold_days=sold_days,
                 decoration_style=item.decoration_style,
-            )
+            ),
         )
 
     return PublicSoldProjectListResponse(
@@ -343,7 +343,7 @@ def get_platform_stats(
                     ),
                     else_=None,
                 ),
-            )
+            ),
         ).label("total_owners"),
         func.count(
             case(

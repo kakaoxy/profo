@@ -152,7 +152,7 @@ class PropertyImporter:
         return None
 
     def _update_community_info_if_needed(
-        self, community: Community, data: PropertyIngestionModel | _CommunityData, db: Session
+        self, community: Community, data: PropertyIngestionModel | _CommunityData, db: Session,
     ) -> None:
         """如果信息缺失，更新小区补充信息."""
         updated = False
@@ -202,7 +202,7 @@ class PropertyImporter:
         )
 
     def _handle_update(
-        self, existing: PropertyCurrent, data: PropertyIngestionModel, community_id: str, db: Session, user_id: str
+        self, existing: PropertyCurrent, data: PropertyIngestionModel, community_id: str, db: Session, user_id: str,
     ) -> None:
         """处理更新逻辑：快照 + 更新当前表."""
         change_type = self._determine_change_type(existing, data)
