@@ -65,7 +65,7 @@ def get_dictionaries(
 ) -> DictionaryResponse:
     """返回行政区或商圈的去重列表."""
     try:
-        return service.query_dictionaries(db=db, type=dict_type, search=search, limit=limit)
+        return service.query_dictionaries(db=db, dict_type=dict_type, search=search, limit=limit)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

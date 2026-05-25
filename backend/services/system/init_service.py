@@ -21,12 +21,66 @@ class SystemInitService:
 
     def initialize(self, db: Session) -> dict:
         """初始化系统数据，包括默认角色和管理员用户。幂等操作。."""
-        existing_roles = db.query(Role).count()
-        existing_users = db.query(User).filter(User.username == "admin").count()
-        if existing_roles > 0 and existing_users > 0:
+        existing_roles = {r.code for r in db.query(Role).all()}
+        existing_admin = db.query(User).filter(User.username == "admin").first()
+
+        if existing_roles >= {r["code"] for r in self._get_roles_data()} and existing_admin:
             return {"message": "系统数据已初始化"}
 
-        roles_data = [
+        roles_data = self._get_roles_data()
+
+        try:
+            roles = []
+            for role_data in roles_data:
+                if role_data["code"] not in existing_roles:
+                    role = Role(**role_data)
+                    db.add(role)
+                    roles.append(role)
+                else:
+                    roles.append(db.query(Role).filter(Role.code == role_data["code"]).first())
+
+            if not existing_admin:
+                admin_role = next(r for r in roles if r.code == "admin")
+
+                alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+                temp_password = "".join(secrets.choice(alphabet) for _ in range(12))
+                temp_password = "Temp" + temp_password + "9!"
+
+                admin_user = User(
+                    id="admin-user",
+                    username="admin",
+                    password=get_password_hash(temp_password),
+                    nickname="系统管理员",
+                    role_id=admin_role.id,
+                    status="active",
+                    must_change_password=True,
+                )
+
+                db.add(admin_user)
+
+            db.commit()
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.exception("系统初始化失败")
+            return {"error": "系统初始化失败", "details": str(e)}
+
+        if existing_admin:
+            return {"message": "系统数据已初始化（补充了缺失的角色）"}
+
+        return {
+            "message": "系统数据初始化成功",
+            "warning": "请立即使用临时密码登录并修改密码",
+            "temp_admin": {
+                "username": "admin",
+                "temp_password": temp_password,
+                "note": "此密码仅显示一次，请妥善保存。首次登录必须修改密码。",
+            },
+        }
+
+    @staticmethod
+    def _get_roles_data() -> list[dict]:
+        """返回角色种子数据."""
+        return [
             {
                 "id": "admin-role",
                 "name": "管理员",
@@ -56,46 +110,6 @@ class SystemInitService:
                 "permissions": ["view_data"],
             },
         ]
-
-        try:
-            roles = []
-            for role_data in roles_data:
-                role = Role(**role_data)
-                db.add(role)
-                roles.append(role)
-
-            admin_role = next(r for r in roles if r.code == "admin")
-
-            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-            temp_password = "".join(secrets.choice(alphabet) for _ in range(12))
-            temp_password = "Temp" + temp_password + "9!"
-
-            admin_user = User(
-                id="admin-user",
-                username="admin",
-                password=get_password_hash(temp_password),
-                nickname="系统管理员",
-                role_id=admin_role.id,
-                status="active",
-                must_change_password=True,
-            )
-
-            db.add(admin_user)
-            db.commit()
-        except SQLAlchemyError as e:
-            db.rollback()
-            logger.exception("系统初始化失败")
-            return {"error": "系统初始化失败", "details": str(e)}
-
-        return {
-            "message": "系统数据初始化成功",
-            "warning": "请立即使用临时密码登录并修改密码",
-            "temp_admin": {
-                "username": "admin",
-                "temp_password": temp_password,
-                "note": "此密码仅显示一次，请妥善保存。首次登录必须修改密码。",
-            },
-        }
 
 
 init_service = SystemInitService()

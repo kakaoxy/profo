@@ -113,7 +113,10 @@ class ImportTaskService:
         if status in (ImportTaskStatus.COMPLETED, ImportTaskStatus.FAILED, ImportTaskStatus.CANCELLED):
             task.completed_at = datetime.now(timezone.utc)
             if task.started_at:
-                task.processing_duration = (task.completed_at - task.started_at).total_seconds()
+                started = task.started_at
+                if started.tzinfo is None:
+                    started = started.replace(tzinfo=timezone.utc)
+                task.processing_duration = (task.completed_at - started).total_seconds()
 
         if error_message:
             task.error_message = error_message

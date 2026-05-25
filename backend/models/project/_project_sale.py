@@ -33,7 +33,7 @@ class ProjectSale(BaseModel):
 
     def validate_user_references(self, db: Session) -> None:
         """验证销售角色用户ID是否有效."""
-        from backend.models.user.user import User  # noqa: PLC0415
+        from models import User  # noqa: PLC0415
 
         user_fields = [
             ("channel_manager_id", self.channel_manager_id),
