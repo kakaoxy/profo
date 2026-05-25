@@ -4,7 +4,6 @@
 """
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint, Index, Enum as SQLEnum
-from sqlalchemy.orm import relationship
 from ..common.base import Base, MediaType
 
 

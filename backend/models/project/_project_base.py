@@ -1,9 +1,7 @@
 """
 项目主表核心模型
 """
-from sqlalchemy import Column, String, Numeric, Boolean, Enum as SQLEnum, Index, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from sqlalchemy import Column, String, Numeric, Boolean, Enum as SQLEnum, Index, ForeignKey
 
 from ..common.base import BaseModel, ProjectStatus, RenovationStage
 

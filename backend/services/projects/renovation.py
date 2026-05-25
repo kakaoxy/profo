@@ -23,7 +23,7 @@ class RenovationService:
         self.db = db
 
     def _get_project(self, project_id: str) -> Project:
-        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             raise HTTPException(status_code=404, detail="项目不存在")
         return project
@@ -32,7 +32,7 @@ class RenovationService:
         """获取或创建装修记录"""
         renovation = self.db.query(ProjectRenovation).filter(
             ProjectRenovation.project_id == project_id,
-            ProjectRenovation.is_deleted == False
+            ProjectRenovation.is_deleted.is_(False)
         ).first()
 
         if not renovation:
@@ -101,7 +101,7 @@ class RenovationService:
         """获取装修信息"""
         return self.db.query(ProjectRenovation).filter(
             ProjectRenovation.project_id == project_id,
-            ProjectRenovation.is_deleted == False
+            ProjectRenovation.is_deleted.is_(False)
         ).first()
 
     def update_info(self, project_id: str, renovation_data: Dict[str, Any]) -> ProjectRenovation:
@@ -158,7 +158,7 @@ class RenovationService:
         # 获取装修记录ID
         renovation = self.db.query(ProjectRenovation).filter(
             ProjectRenovation.project_id == project_id,
-            ProjectRenovation.is_deleted == False
+            ProjectRenovation.is_deleted.is_(False)
         ).first()
 
         photo = RenovationPhoto(
@@ -178,7 +178,7 @@ class RenovationService:
         """获取改造阶段照片"""
         query = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.project_id == project_id,
-            RenovationPhoto.is_deleted == False
+            RenovationPhoto.is_deleted.is_(False)
         )
         if stage:
             query = query.filter(RenovationPhoto.stage == stage)
@@ -202,7 +202,7 @@ class RenovationService:
 
     def get_contract(self, project_id: str) -> ProjectRenovation:
         """获取装修合同信息"""
-        project = self._get_project(project_id)
+        self._get_project(project_id)
         renovation = self._get_or_create_renovation(project_id)
         return renovation
 

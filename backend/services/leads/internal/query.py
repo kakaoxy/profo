@@ -5,7 +5,7 @@
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy.orm import Session, joinedload, noload
-from sqlalchemy import desc, func
+from sqlalchemy import desc
 
 from models.lead import Lead
 from models.common import LeadStatus

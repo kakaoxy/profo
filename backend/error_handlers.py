@@ -18,7 +18,7 @@ from starlette.concurrency import run_in_threadpool
 from services.system.exceptions import ServiceException
 from utils.error_formatters import format_request_validation_error, format_database_error
 from services.system import save_failed_record
-from utils.security_logger import safe_log_request_body, safe_log_dict
+from utils.security_logger import safe_log_request_body
 
 logger = logging.getLogger(__name__)
 

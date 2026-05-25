@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, Path, Query, HTTPException, status, Request
+from fastapi import APIRouter, Path, Query, HTTPException, status, Request
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.monitor import (

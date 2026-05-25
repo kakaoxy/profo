@@ -2,7 +2,7 @@
 C端公开线索（卖房估价）路由
 提交估价、我的估价列表、估价详情
 """
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
@@ -18,7 +18,6 @@ from schemas.public import (
     PublicLeadListResponse,
     PublicLeadDetail,
     PublicFollowupItem,
-    LeadStatusType,
 )
 
 router = APIRouter(prefix="/public/leads", tags=["public-leads"])

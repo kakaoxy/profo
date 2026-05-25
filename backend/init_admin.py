@@ -51,8 +51,8 @@ def init_admin_user():
             temp_admin = result.get("temp_admin", {})
             print(f"   用户名: {temp_admin.get('username', 'admin')}")
             print(f"   密码: {temp_admin.get('temp_password', '')}")
-            print(f"   角色: 管理员")
-            print(f"   权限: 所有权限")
+            print("   角色: 管理员")
+            print("   权限: 所有权限")
 
         print()
         print("=" * 60)

@@ -21,22 +21,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from db import engine
 from models import Base
 # 导入所有模型以确保注册到 metadata
-from models import (
-    # 房源相关
-    Community, CommunityAlias, CommunityCompetitor, PropertyCurrent, PropertyHistory, PropertyMedia,
-    # 系统相关
-    FailedRecord, PropertyImportTask,
-    # 用户相关
-    User, Role, ApiKey,
-    # 项目相关
-    Project, ProjectContract, ProjectOwner, ProjectSale, ProjectFollowUp,
-    ProjectEvaluation, ProjectInteraction, FinanceRecord, ProjectStatusLog,
-    ProjectRenovation, RenovationPhoto,
-    # 线索相关
-    Lead, LeadFollowUp, LeadPriceHistory,
-    # 市场营销
-    L4MarketingProject, L4MarketingMedia,
-)
 
 
 def init_database():

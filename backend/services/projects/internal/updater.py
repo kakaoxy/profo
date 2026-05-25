@@ -11,7 +11,6 @@ from typing import Dict, Any, TYPE_CHECKING
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.common import ProjectStatus
 from services.utils import parse_date_string
-from services.system.exceptions import ResourceNotFoundError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session

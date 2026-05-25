@@ -14,7 +14,7 @@ from ._project_status_log import ProjectStatusLog
 from ._project_renovation import ProjectRenovation, RenovationPhoto
 
 # 导入关系定义
-from . import project
+from . import project as project  # noqa: F401
 
 __all__ = [
     "Project",

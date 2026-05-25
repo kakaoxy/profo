@@ -2,7 +2,6 @@
 业主信息模型
 """
 from sqlalchemy import Column, String, Text, Boolean, ForeignKey, Index
-from sqlalchemy.orm import relationship
 
 from ..common.base import BaseModel
 

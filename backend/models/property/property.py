@@ -3,9 +3,8 @@
 包含房源当前状态和历史快照表
 """
 from datetime import datetime, timezone
-from typing import Optional
 from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, Boolean, Text,
+    Column, Integer, String, DateTime, Boolean, Text,
     ForeignKey, Index, UniqueConstraint, Enum as SQLEnum, Numeric
 )
 from sqlalchemy.orm import relationship

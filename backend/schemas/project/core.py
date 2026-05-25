@@ -3,11 +3,10 @@ from decimal import Decimal
 from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator
 from models.common import ProjectStatus
+from ..response import PaginatedResponse
 
 if TYPE_CHECKING:
-    from .sales import SalesRecordResponse
-    from .renovation import RenovationPhotoResponse
-    from .contract import SigningMaterial
+    pass
 
 
 def parse_date_string(value: Union[str, datetime, None]) -> Optional[datetime]:
@@ -250,7 +249,6 @@ class ProjectResponse(BaseModel):
 
 
 # 统一分页响应格式 - 继承自 PaginatedResponse
-from ..response import PaginatedResponse
 
 class ProjectListResponse(PaginatedResponse[ProjectResponse]):
     """项目列表响应 - 统一分页格式"""

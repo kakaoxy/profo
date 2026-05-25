@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from models import ApiKey, User
 from settings import settings
-from .exceptions import ResourceNotFoundError, ConflictError, AuthenticationError, ServiceException
+from .exceptions import ResourceNotFoundError, AuthenticationError, ServiceException
 
 logger = logging.getLogger(__name__)
 

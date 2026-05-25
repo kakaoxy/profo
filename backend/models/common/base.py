@@ -5,7 +5,7 @@ import uuid
 import enum
 from datetime import datetime, timezone
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, String, DateTime, func
+from sqlalchemy import Column, String, DateTime
 
 
 Base = declarative_base()

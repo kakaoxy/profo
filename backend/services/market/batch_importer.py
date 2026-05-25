@@ -15,7 +15,6 @@ from pydantic import ValidationError
 
 from schemas import PropertyIngestionModel, UploadResult
 from .importer import PropertyImporter
-from models import FailedRecord
 from services.system.exceptions import FileProcessingError
 from utils.error_formatters import format_validation_error
 from services.system import save_failed_record
@@ -97,7 +96,7 @@ class CSVBatchImporter:
             try:
                 if sniffer.has_header(sample):
                     delimiter = sniffer.sniff(sample, delimiters=',;\t').delimiter
-            except:
+            except csv.Error:
                 pass  # fallback to comma
 
             reader = csv.reader(f, delimiter=delimiter)

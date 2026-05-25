@@ -3,7 +3,7 @@
 处理小区的合并逻辑，包括别名迁移、房源更新及状态变更
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 import logging
@@ -96,7 +96,7 @@ class CommunityMerger:
         
         if existing_count != len(merge_ids):
             # 为了性能，只在出错时查询具体缺少的ID，或者直接报错
-            raise ValueError(f"提供的合并列表中包含无效或已删除的小区 ID")
+            raise ValueError("提供的合并列表中包含无效或已删除的小区 ID")
             
         return primary
 

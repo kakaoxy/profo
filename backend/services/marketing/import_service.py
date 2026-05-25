@@ -39,7 +39,7 @@ class MarketingImportService:
         # 查询项目及其关联数据
         project: Optional[Project] = self.db.query(Project).filter(
             Project.id == project_id,
-            Project.is_deleted == False
+            Project.is_deleted.is_(False)
         ).first()
 
         if not project:
@@ -124,7 +124,7 @@ class MarketingImportService:
         """获取项目可导入的媒体资源"""
         photos: List[RenovationPhoto] = self.db.query(RenovationPhoto).filter(
             RenovationPhoto.project_id == project_id,
-            RenovationPhoto.is_deleted == False
+            RenovationPhoto.is_deleted.is_(False)
         ).order_by(RenovationPhoto.created_at).all()
 
         return [

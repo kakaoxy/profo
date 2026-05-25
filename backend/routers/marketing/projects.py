@@ -25,7 +25,6 @@ from schemas.l4_marketing import (
     MediaSortOrderUpdate,
     # Response schemas
     L4SyncResponse,
-    L4RefreshResponse,
 )
 from common import limiter, RateLimits
 

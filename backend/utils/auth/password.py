@@ -104,7 +104,7 @@ def _truncate_password_safely(password: str, max_bytes: int = 72) -> str:
         except UnicodeDecodeError:
             continue
 
-    logger.warning(f"密码截断时遇到编码问题，使用忽略模式处理")
+    logger.warning("密码截断时遇到编码问题，使用忽略模式处理")
     result = truncated_bytes.decode('utf-8', 'ignore')
     while len(result.encode('utf-8')) > max_bytes and result:
         result = result[:-1]
