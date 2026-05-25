@@ -54,7 +54,7 @@ LeadServiceDep = Annotated[LeadService, Depends(get_lead_service)]
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_CREATE)
 def create_lead(
-    _request: Request,
+    request: Request,
     body: PublicLeadCreate,
     current_user: CurrentCustomerUserDep,
     service: LeadServiceDep,
@@ -95,7 +95,7 @@ def create_lead(
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_my_leads(
-    _request: Request,
+    request: Request,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
@@ -142,7 +142,7 @@ def get_my_leads(
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_lead_detail(
-    _request: Request,
+    request: Request,
     lead_id: str,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,

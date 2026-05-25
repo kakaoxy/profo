@@ -3,7 +3,7 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Numeric, String
 from sqlalchemy.orm import Session
 
-from backend.models.common.base import BaseModel
+from models.common.base import BaseModel
 
 
 class ProjectSale(BaseModel):

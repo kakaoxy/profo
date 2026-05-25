@@ -51,7 +51,7 @@ def get_next_contract_no(
 @router.post("", status_code=status.HTTP_201_CREATED)
 @limiter.limit(RateLimits.PROJECT_CREATE)
 def create_project(
-    _request: Request,
+    request: Request,
     project_data: ProjectCreate,
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
@@ -99,7 +99,7 @@ def get_project_stats(
 @router.get("/export")
 @limiter.limit(RateLimits.PROJECT_EXPORT)
 def export_projects(
-    _request: Request,
+    request: Request,
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
     status: Annotated[str | None, Query(description="项目状态筛选")] = None,
@@ -221,7 +221,7 @@ def get_project(
 @router.put("/{project_id}")
 @limiter.limit(RateLimits.PROJECT_UPDATE)
 def update_project(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     update_data: ProjectUpdate,
     service: ProjectServiceDep,
@@ -240,7 +240,7 @@ def update_project(
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit(RateLimits.PROJECT_DELETE)
 def delete_project(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
@@ -255,7 +255,7 @@ def delete_project(
 @router.put("/{project_id}/status")
 @limiter.limit(RateLimits.PROJECT_STATUS_UPDATE)
 def update_project_status(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     status_update: StatusUpdate,
     service: ProjectServiceDep,

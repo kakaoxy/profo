@@ -36,7 +36,7 @@ router = APIRouter(tags=["upload"])
 @router.post("/csv")
 @limiter.limit(RateLimits.CSV_IMPORT)
 async def create_import_task(
-    _request: Request,
+    request: Request,
     file: Annotated[UploadFile, File(description="CSV 文件")],
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,

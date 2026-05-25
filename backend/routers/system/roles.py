@@ -64,7 +64,7 @@ def create_role(
 @router.put("/{role_id}")
 @limiter.limit(RateLimits.ROLE_UPDATE)
 def update_role(
-    _request: Request,
+    request: Request,
     role_id: str,
     role_data: RoleUpdate,
     db: DbSessionDep,
@@ -80,7 +80,7 @@ def update_role(
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit(RateLimits.ROLE_DELETE)
 def delete_role(
-    _request: Request,
+    request: Request,
     role_id: str,
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,

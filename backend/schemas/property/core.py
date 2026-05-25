@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from backend.schemas.enums import IngestionStatus
+from schemas.enums import IngestionStatus
 
 
 class PropertyIngestionModel(BaseModel):

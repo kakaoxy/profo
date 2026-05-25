@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
-from backend.schemas.response import PaginatedResponse
+from schemas.response import PaginatedResponse
 from models.common import ProjectStatus
 
 _DATE_LEN = 10

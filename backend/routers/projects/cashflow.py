@@ -56,7 +56,7 @@ def get_project_cashflow(
 @router.delete("/projects/{project_id}/cashflow/{record_id}", status_code=204)
 @limiter.limit(RateLimits.CASHFLOW_DELETE)
 def delete_cashflow_record(
-    _request: Request,
+    request: Request,
     service: CashFlowServiceDep,
     _current_user: CurrentInternalUserDep,
     project_id: Annotated[str, Path(description="项目ID")],

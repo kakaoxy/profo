@@ -19,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from backend.models.common.base import Base
+from models.common.base import Base
 
 
 class Community(Base):

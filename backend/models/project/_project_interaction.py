@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Numeric, String, Text
 
-from backend.models.common.base import BaseModel
+from models.common.base import BaseModel
 
 
 class ProjectInteraction(BaseModel):

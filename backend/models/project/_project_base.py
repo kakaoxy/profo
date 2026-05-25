@@ -3,7 +3,7 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 
-from backend.models.common.base import BaseModel, ProjectStatus, RenovationStage
+from models.common.base import BaseModel, ProjectStatus, RenovationStage
 
 
 class Project(BaseModel):

@@ -32,7 +32,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.get("/")
 @limiter.limit(RateLimits.USER_LIST)
 def get_users(  # noqa: PLR0913
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
     username: Annotated[str | None, Query(description="用户名搜索")] = None,
@@ -109,7 +109,7 @@ def get_user(
 @router.post("/", status_code=201)
 @limiter.limit(RateLimits.USER_CREATE)
 def create_user(
-    _request: Request,
+    request: Request,
     user_data: UserCreate,
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
@@ -124,7 +124,7 @@ def create_user(
 @router.put("/{user_id}")
 @limiter.limit(RateLimits.USER_UPDATE)
 def update_user(
-    _request: Request,
+    request: Request,
     user_id: str,
     user_data: UserUpdate,
     db: DbSessionDep,
@@ -140,7 +140,7 @@ def update_user(
 @router.put("/{user_id}/reset-password")
 @limiter.limit(RateLimits.USER_RESET_PASSWORD)
 def reset_user_password(
-    _request: Request,
+    request: Request,
     user_id: str,
     password_data: PasswordResetRequest,
     db: DbSessionDep,
@@ -156,7 +156,7 @@ def reset_user_password(
 @router.delete("/{user_id}", status_code=204)
 @limiter.limit(RateLimits.USER_DELETE)
 def delete_user(
-    _request: Request,
+    request: Request,
     user_id: str,
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
@@ -171,7 +171,7 @@ def delete_user(
 @router.post("/change-password")
 @limiter.limit(RateLimits.USER_CHANGE_PASSWORD)
 def change_password(
-    _request: Request,
+    request: Request,
     password_data: PasswordChange,
     db: DbSessionDep,
     current_user: CurrentActiveUserDep,
@@ -186,7 +186,7 @@ def change_password(
 @router.post("/init-data")
 @limiter.limit(RateLimits.USER_INIT_DATA)
 def init_system_data(
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
 ) -> dict:
     """初始化系统数据，包括默认角色和管理员用户.

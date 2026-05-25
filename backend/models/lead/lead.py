@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
-from backend.models.common.base import Base, FollowUpMethod, LeadStatus
+from models.common.base import Base, FollowUpMethod, LeadStatus
 
 
 class Lead(Base):

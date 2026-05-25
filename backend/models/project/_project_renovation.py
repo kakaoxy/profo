@@ -12,7 +12,7 @@ from sqlalchemy import (
     Text,
 )
 
-from backend.models.common.base import BaseModel
+from models.common.base import BaseModel
 
 
 class ProjectRenovation(BaseModel):

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.schemas.response import PaginatedResponse
+from schemas.response import PaginatedResponse
 
 
 # =======================================

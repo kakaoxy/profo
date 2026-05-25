@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, Index, String
 from sqlalchemy.orm import relationship
 
-from backend.models.common.base import BaseModel
+from models.common.base import BaseModel
 
 
 class ApiKey(BaseModel):

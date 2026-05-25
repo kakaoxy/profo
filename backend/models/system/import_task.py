@@ -8,7 +8,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Float, Index, Integer, String, Text
 
-from backend.models.common.base import Base
+from models.common.base import Base
 
 
 class ImportTaskStatus(str, enum.Enum):

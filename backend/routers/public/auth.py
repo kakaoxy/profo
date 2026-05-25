@@ -43,7 +43,7 @@ def _build_user_info(user: User) -> PublicUserInfo:
 )
 @limiter.limit(RateLimits.PUBLIC_REGISTER)
 def register(
-    _request: Request,
+    request: Request,
     body: PublicRegisterRequest,
     db: DbSessionDep,
 ) -> PublicRegisterResponse:
@@ -94,7 +94,7 @@ def register(
 )
 @limiter.limit(RateLimits.PUBLIC_LOGOUT)
 def logout(
-    _request: Request,
+    request: Request,
     _current_user: CurrentCustomerUserDep,
 ) -> PublicLogoutResponse:
     """C端退出登录，客户端应清除本地存储的token."""

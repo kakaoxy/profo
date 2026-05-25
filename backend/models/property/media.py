@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, Index, Integer, String, UniqueConstraint
 from sqlalchemy import Enum as SQLEnum
 
-from backend.models.common.base import Base, MediaType
+from models.common.base import Base, MediaType
 
 
 class PropertyMedia(Base):

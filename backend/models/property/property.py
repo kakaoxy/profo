@@ -20,7 +20,7 @@ from sqlalchemy import (
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
-from backend.models.common.base import Base, ChangeType, PropertyStatus
+from models.common.base import Base, ChangeType, PropertyStatus
 
 
 class PropertyCurrent(Base):

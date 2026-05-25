@@ -43,7 +43,7 @@ ProjectRenovation.photos = relationship("RenovationPhoto", back_populates="renov
 RenovationPhoto.project = relationship("Project", back_populates="renovation_photos")
 RenovationPhoto.renovation = relationship("ProjectRenovation", back_populates="photos")
 
-from backend.models.user.user import User  # noqa: E402
+from models.user.user import User  # noqa: E402
 
 Project.project_manager = relationship("User", back_populates="managed_projects")
 User.managed_projects = relationship("Project", back_populates="project_manager")

@@ -20,7 +20,7 @@ router = APIRouter(prefix="/public/communities", tags=["public-communities"])
 )
 @limiter.limit(RateLimits.PUBLIC_COMMUNITY_SEARCH)
 def search_communities(
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
     q: Annotated[str, Query(min_length=1, description="搜索关键词")],
     limit: Annotated[int, Query(ge=1, le=100, description="返回条数限制")] = 20,
