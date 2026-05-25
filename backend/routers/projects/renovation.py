@@ -20,7 +20,7 @@ router = APIRouter()
 @router.put("/{project_id}/renovation")
 @limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_stage(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     renovation_data: RenovationUpdate,
     service: ProjectServiceDep,
@@ -63,7 +63,7 @@ def get_renovation_photos(
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
 @limiter.limit(RateLimits.RENOVATION_DELETE)
 def delete_renovation_photo(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     photo_id: Annotated[str, Path(description="照片ID")],
     service: ProjectServiceDep,
@@ -89,7 +89,7 @@ def get_renovation_contract(
 @router.put("/{project_id}/renovation/contract")
 @limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_contract(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     contract_data: RenovationContractUpdate,
     service: ProjectServiceDep,

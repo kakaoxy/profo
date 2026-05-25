@@ -21,7 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, validates
 
-from backend.models.common.base import BaseModel
+from models.common.base import BaseModel
 
 
 class PublishStatus(str, Enum):

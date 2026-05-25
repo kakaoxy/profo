@@ -28,7 +28,7 @@ router = APIRouter(prefix="/public/users", tags=["public-users"])
 )
 @limiter.limit(RateLimits.PUBLIC_PROFILE_UPDATE)
 def update_profile(
-    _request: Request,
+    request: Request,
     body: PublicProfileUpdate,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
@@ -56,7 +56,7 @@ def update_profile(
 )
 @limiter.limit(RateLimits.PUBLIC_PHONE_UPDATE)
 def update_phone(
-    _request: Request,
+    request: Request,
     body: PublicPhoneUpdate,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,

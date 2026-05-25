@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String, Text
 
-from backend.models.common.base import Base
+from models.common.base import Base
 
 
 class FailedRecord(Base):

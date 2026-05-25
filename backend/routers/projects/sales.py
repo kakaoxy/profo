@@ -21,7 +21,7 @@ router = APIRouter()
 @router.put("/{project_id}/selling/roles")
 @limiter.limit(RateLimits.SALES_UPDATE)
 def update_sales_roles(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     roles_data: SalesRolesUpdate,
     service: ProjectServiceDep,
@@ -83,7 +83,7 @@ def get_sales_records(
 @router.delete("/{project_id}/selling/records/{record_id}", status_code=204)
 @limiter.limit(RateLimits.SALES_DELETE)
 def delete_sales_record(
-    _request: Request,
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,

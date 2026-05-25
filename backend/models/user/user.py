@@ -3,7 +3,7 @@
 from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import relationship
 
-from backend.models.common.base import BaseModel
+from models.common.base import BaseModel
 
 
 class Role(BaseModel):

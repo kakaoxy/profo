@@ -122,7 +122,7 @@ def get_lead(
 @router.put("/{lead_id}")
 @limiter.limit(RateLimits.LEAD_UPDATE)
 def update_lead(
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],
@@ -143,7 +143,7 @@ def update_lead(
 @router.delete("/{lead_id}", status_code=204)
 @limiter.limit(RateLimits.LEAD_DELETE)
 def delete_lead(
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],

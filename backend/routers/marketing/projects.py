@@ -96,9 +96,9 @@ async def list_marketing_projects(  # noqa: PLR0913
 )
 @limiter.limit(RateLimits.MARKETING_CREATE)
 async def create_marketing_project(
-    _request: Request,
+    request: Request,
     data: L4MarketingProjectCreate,
-    service: _ProjectServiceDep = Depends(get_project_service),  # noqa: B008, FAST002
+    service: _ProjectServiceDep,
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目.
 
@@ -113,7 +113,7 @@ async def create_marketing_project(
 )
 async def get_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
-    service: _ProjectServiceDep = Depends(get_project_service),  # noqa: B008, FAST002
+    service: _ProjectServiceDep,
 ) -> L4MarketingProjectResponse:
     """获取营销项目详情."""
     item = service.get_project(project_id)
@@ -131,10 +131,10 @@ async def get_marketing_project(
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_marketing_project(
-    _request: Request,
+    request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
-    service: _ProjectServiceDep = Depends(get_project_service),  # noqa: B008, FAST002
+    service: _ProjectServiceDep,
 ) -> L4MarketingProjectResponse:
     """更新营销项目.
 
@@ -156,9 +156,9 @@ async def update_marketing_project(
 )
 @limiter.limit(RateLimits.MARKETING_DELETE)
 async def delete_marketing_project(
-    _request: Request,
+    request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
-    service: _ProjectServiceDep = Depends(get_project_service),  # noqa: B008, FAST002
+    service: _ProjectServiceDep,
 ) -> None:
     """逻辑删除营销项目.
 
@@ -200,7 +200,7 @@ async def list_marketing_media(
 async def create_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingMediaCreate,
-    service: _MediaServiceDep = Depends(get_media_service),  # noqa: B008, FAST002
+    service: _MediaServiceDep,
 ) -> L4MarketingMediaResponse:
     """为营销项目添加媒体."""
     return service.create_media(data, project_id)
@@ -212,10 +212,10 @@ async def create_marketing_media(
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_marketing_media(
-    _request: Request,
+    request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     data: L4MarketingMediaUpdate,
-    service: _MediaServiceDep = Depends(get_media_service),  # noqa: B008, FAST002
+    service: _MediaServiceDep,
 ) -> L4MarketingMediaResponse:
     """更新媒体信息.
 
@@ -237,9 +237,9 @@ async def update_marketing_media(
 )
 @limiter.limit(RateLimits.MARKETING_DELETE)
 async def delete_marketing_media(
-    _request: Request,
+    request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
-    service: _MediaServiceDep = Depends(get_media_service),  # noqa: B008, FAST002
+    service: _MediaServiceDep,
 ) -> None:
     """逻辑删除媒体.
 
@@ -258,10 +258,10 @@ async def delete_marketing_media(
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
 async def update_media_sort_order(
-    _request: Request,
+    request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     sort_updates: list[MediaSortOrderUpdate],
-    service: _MediaServiceDep = Depends(get_media_service),  # noqa: B008, FAST002
+    service: _MediaServiceDep,
 ) -> L4SyncResponse:
     """批量更新媒体排序顺序.
 

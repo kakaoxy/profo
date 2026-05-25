@@ -96,7 +96,7 @@ def add_competitor(
 @router.delete("/communities/{community_id}/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit(RateLimits.MONITOR_DELETE)
 def remove_competitor(
-    _request: Request,
+    request: Request,
     community_id: CommunityIdPath,
     competitor_id: CompetitorIdPath,
     db: DbSessionDep,

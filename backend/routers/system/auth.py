@@ -42,7 +42,7 @@ def get_rate_key(request: Request, username: str = "") -> str:
 @router.post("/token")
 @limiter.limit(RateLimits.AUTH_LOGIN)
 def login_for_access_token(
-    _request: Request,
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbSessionDep,
 ) -> TokenResponse:
@@ -79,7 +79,7 @@ def login_for_access_token(
 @router.post("/login")
 @limiter.limit(RateLimits.AUTH_LOGIN)
 def login(
-    _request: Request,
+    request: Request,
     login_data: Annotated[LoginRequest, Body()],
     db: DbSessionDep,
 ) -> TokenResponse:
@@ -103,7 +103,7 @@ def login(
 @router.post("/refresh")
 @limiter.limit(RateLimits.AUTH_REFRESH)
 def refresh_access_token(
-    _request: Request,
+    request: Request,
     refresh_data: Annotated[RefreshTokenRequest, Body()],
     db: DbSessionDep,
 ) -> TokenResponse:
@@ -161,7 +161,7 @@ async def wechat_callback(
 @router.post("/exchange-token")
 @limiter.limit(RateLimits.AUTH_REFRESH)
 def exchange_token(
-    _request: Request,
+    request: Request,
     exchange_data: Annotated[ExchangeTokenRequest, Body()],
     _db: DbSessionDep,
 ) -> dict[str, object]:
@@ -187,7 +187,7 @@ def exchange_token(
 @router.post("/wechat/login")
 @limiter.limit(RateLimits.AUTH_LOGIN)
 async def wechat_app_login(
-    _request: Request,
+    request: Request,
     login_data: Annotated[WechatLoginRequest, Body()],
     db: DbSessionDep,
 ) -> TokenResponse:
@@ -266,7 +266,7 @@ def get_api_key_info(
 @router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit(RateLimits.AUTH_API_KEY_DELETE)
 def delete_api_key(
-    _request: Request,
+    request: Request,
     current_user: CurrentUserDep,
     db: DbSessionDep,
 ) -> None:

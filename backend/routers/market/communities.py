@@ -73,7 +73,7 @@ def get_dictionaries(
 @router.post("/communities/merge")
 @limiter.limit(RateLimits.COMMUNITY_MERGE)
 def merge_communities(
-    _request: Request,
+    request: Request,
     merge_request: CommunityMergeRequest,
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
@@ -127,7 +127,7 @@ def merge_communities(
 @router.post("/communities")
 @limiter.limit(RateLimits.COMMUNITY_CREATE)
 def create_community(
-    _request: Request,
+    request: Request,
     body: CommunityCreateRequest,
     db: DbSessionDep,
     _current_user: CurrentOperatorUserDep,

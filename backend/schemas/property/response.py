@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from backend.schemas.response import PaginatedResponse
+from schemas.response import PaginatedResponse
 
 if TYPE_CHECKING:
     from models.property.community import Community

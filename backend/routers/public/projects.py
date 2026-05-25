@@ -45,7 +45,7 @@ ALLOWED_SORT_FIELDS = {
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_projects(  # noqa: PLR0913
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
     project_status: Annotated[str | None, Query(description="项目状态筛选")] = None,
     community_name: Annotated[str | None, Query(description="小区名称搜索")] = None,
@@ -125,7 +125,7 @@ def get_projects(  # noqa: PLR0913
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_sold_projects(
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
     community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
@@ -184,7 +184,7 @@ def get_sold_projects(
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_project_detail(
-    _request: Request,
+    request: Request,
     project_id: int,
     db: DbSessionDep,
 ) -> PublicProjectDetail:
@@ -278,7 +278,7 @@ def get_project_detail(
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_consultant_contact(
-    _request: Request,
+    request: Request,
     project_id: int,
     db: DbSessionDep,
 ) -> PublicConsultantContact:
@@ -323,7 +323,7 @@ def get_consultant_contact(
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_platform_stats(
-    _request: Request,
+    request: Request,
     db: DbSessionDep,
 ) -> PublicPlatformStats:
     """获取平台统计数据."""
