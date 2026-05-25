@@ -14,6 +14,8 @@ from ._project_renovation import ProjectRenovation, RenovationPhoto
 from ._project_sale import ProjectSale
 from ._project_status_log import ProjectStatusLog
 
+from . import project as _project_relationships  # noqa: F401
+
 __all__ = [
     "FinanceRecord",
     "Project",
