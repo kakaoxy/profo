@@ -1,13 +1,13 @@
-"""
-财务流水模型
-"""
-from sqlalchemy import Column, String, Numeric, DateTime, Text, ForeignKey, Index
+"""财务流水模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Numeric, String, Text
+
+from backend.models.common.base import BaseModel
 
 
 class FinanceRecord(BaseModel):
-    """财务流水明细表（替换cashflow_records）"""
+    """财务流水明细表（替换cashflow_records）."""
+
     __tablename__ = "finance_records"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")

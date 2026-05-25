@@ -1,19 +1,19 @@
-"""
-L4 市场营销层项目相关 Schema
-"""
+"""L4 市场营销层项目相关 Schema."""
+
 import json
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .enums import PublishStatus, MarketingProjectStatus
+from .enums import MarketingProjectStatus, PublishStatus
 from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
 
 
 class L4MarketingProjectBase(BaseModel):
-    """营销项目基础模型"""
+    """营销项目基础模型."""
+
     # 小区信息
     community_id: str = Field(min_length=1, max_length=36, description="关联小区ID（UUID字符串）")
     community_name: str | None = Field(default=None, max_length=200, description="小区名称(冗余存储)")
@@ -36,20 +36,35 @@ class L4MarketingProjectBase(BaseModel):
 
     # 状态
     publish_status: PublishStatus = Field(default=PublishStatus.DRAFT, description="发布状态: 草稿/发布")
-    project_status: MarketingProjectStatus = Field(default=MarketingProjectStatus.IN_PROGRESS, description="项目状态: 在途/在售/已售")
+    project_status: MarketingProjectStatus = Field(
+        default=MarketingProjectStatus.IN_PROGRESS,
+        description="项目状态: 在途/在售/已售",
+    )
 
     # 关联
-    project_id: str | None = Field(None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，可为空，UUID字符串")
-    consultant_id: str | None = Field(None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
+    project_id: str | None = Field(
+        None,
+        min_length=1,
+        max_length=36,
+        description="关联L3项目ID(软引用)，可为空，UUID字符串",
+    )
+    consultant_id: str | None = Field(
+        None,
+        min_length=1,
+        max_length=36,
+        description="关联顾问ID(软引用User表)，UUID字符串",
+    )
 
 
 class L4MarketingProjectCreate(L4MarketingProjectBase):
-    """创建营销项目请求"""
-    media_files: list[L4MarketingMediaCreate] | None = Field(default=None, description="媒体文件列表，创建项目时同时上传图片")
+    """创建营销项目请求."""
+
+    media_files: list[L4MarketingMediaCreate] | None = Field(default=None, description="媒体文件列表(创建时可上传)")
 
 
 class L4MarketingProjectUpdate(BaseModel):
-    """更新营销项目请求 - 所有字段可选"""
+    """更新营销项目请求 - 所有字段可选."""
+
     # 小区信息
     community_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联小区ID（UUID字符串）")
     community_name: str | None = Field(default=None, max_length=200, description="小区名称(冗余存储)")
@@ -75,17 +90,17 @@ class L4MarketingProjectUpdate(BaseModel):
     project_status: MarketingProjectStatus | None = Field(default=None, description="项目状态: 在途/在售/已售")
 
     # 关联
-    project_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联L3项目ID(软引用)，UUID字符串")
-    consultant_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联顾问ID(软引用User表)，UUID字符串")
+    project_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联L3项目ID(软引用)")
+    consultant_id: str | None = Field(default=None, min_length=1, max_length=36, description="关联顾问ID(软引用)")
 
-    @field_validator('images', 'tags', mode='before')
+    @field_validator("images", "tags", mode="before")
     @classmethod
-    def validate_json_array(cls, v: Any) -> list[str] | None:
-        """验证JSON数组格式字段，支持字符串JSON和列表
+    def parse_json_field_for_update(cls, v: str | list[str] | None) -> list[str] | None:
+        """解析JSON字段（用于更新请求），支持字符串JSON和列表.
 
         - None: 表示不更新该字段（exclude_unset=True 时会排除）
         - list: 正常列表值
-        - str: 尝试解析为JSON数组，解析失败返回空列表
+        - str: 尝试解析为JSON数组，解析失败则不更新
         """
         if v is None:
             return None
@@ -95,18 +110,19 @@ class L4MarketingProjectUpdate(BaseModel):
             try:
                 parsed = json.loads(v)
                 if isinstance(parsed, list):
-                    return parsed
-                return [parsed]
+                    return [str(item) for item in parsed]
+                return [parsed]  # noqa: TRY300
             except json.JSONDecodeError:
                 return []
         return []
 
 
 class L4MarketingProjectResponse(BaseModel):
-    """营销项目响应模型
+    """营销项目响应模型.
 
     数据库使用JSON存储images和tags，前后端统一使用list[str]格式
     """
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -148,10 +164,10 @@ class L4MarketingProjectResponse(BaseModel):
     # 关联数据
     media_files: list[L4MarketingMediaResponse] = Field(default_factory=list)
 
-    @field_validator('images', 'tags', mode='before')
+    @field_validator("images", "tags", mode="before")
     @classmethod
-    def validate_json_array(cls, v: Any) -> list[str]:
-        """验证JSON数组格式字段，将None转换为空列表"""
+    def validate_json_array(cls, v: Any) -> list[str]:  # noqa: ANN401
+        """验证JSON数组格式字段，将None转换为空列表."""
         if v is None:
             return []
         if isinstance(v, list):
@@ -161,15 +177,15 @@ class L4MarketingProjectResponse(BaseModel):
                 parsed = json.loads(v)
                 if isinstance(parsed, list):
                     return parsed
-                return [parsed]
+                return [parsed]  # noqa: TRY300
             except json.JSONDecodeError:
                 return []
         return []
 
-    @field_validator('community_id', 'project_id', 'consultant_id', mode='before')
+    @field_validator("community_id", "project_id", "consultant_id", mode="before")
     @classmethod
-    def validate_id_fields(cls, v: Any) -> str | None:
-        """验证ID字段，支持int和str类型，统一转换为str"""
+    def validate_id_fields(cls, v: Any) -> str | None:  # noqa: ANN401
+        """验证ID字段，支持int和str类型，统一转换为str."""
         if v is None:
             return None
         if isinstance(v, int):

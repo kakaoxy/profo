@@ -1,55 +1,63 @@
-"""
-FastAPI 应用入口
-"""
-import sys
-import os
+"""FastAPI 应用入口."""
+
 import logging
+import sys
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException, RequestValidationError
-from sqlalchemy.exc import SQLAlchemyError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import SQLAlchemyError
 
-from settings import settings
-from db import init_db
 from common import limiter
-from routers.market import properties_router, communities_router
-from routers.leads import leads_router
-from routers.projects import core_router, cashflow_router as project_cashflow_router
-from routers.marketing import projects_router as marketing_projects_router, import_router as marketing_import_router
-from routers.system import auth_router, users_router, roles_router
-from routers.common import files_router, upload_router, push_router
-from routers.monitor import monitor_router
-from routers.public import public_auth_router, public_users_router, public_projects_router, public_leads_router, public_communities_router
-from services.system.exceptions import ServiceException
+from db import init_db
 from error_handlers import (
-    service_exception_handler,
-    validation_exception_handler,
-    sqlalchemy_exception_handler,
+    general_exception_handler,
     http_exception_handler,
-    general_exception_handler
+    service_exception_handler,
+    sqlalchemy_exception_handler,
+    validation_exception_handler,
 )
+from routers.common import files_router, push_router, upload_router
+from routers.leads import leads_router
+from routers.market import communities_router, properties_router
+from routers.marketing import import_router as marketing_import_router
+from routers.marketing import projects_router as marketing_projects_router
+from routers.monitor import monitor_router
+from routers.projects import cashflow_router as project_cashflow_router
+from routers.projects import core_router
+from routers.public import (
+    public_auth_router,
+    public_communities_router,
+    public_leads_router,
+    public_projects_router,
+    public_users_router,
+)
+from routers.system import auth_router, roles_router, users_router
+from services.system.exceptions import ServiceException
+from settings import settings
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+        logging.StreamHandler(sys.stdout),
+    ],
 )
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    应用生命周期管理
-    在应用启动时初始化数据库和验证配置
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """应用生命周期管理.
+
+    在应用启动时初始化数据库和验证配置.
     """
     logger.info("Starting Profo Real Estate Data Center...")
 
@@ -57,18 +65,19 @@ async def lifespan(app: FastAPI):
     logger.info("速率限制器已初始化")
 
     try:
-        from utils.jwt_validator import check_jwt_configuration
+        from utils.jwt_validator import check_jwt_configuration  # noqa: PLC0415
+
         check_jwt_configuration()
         logger.info("JWT配置验证通过")
     except SystemExit:
-        logger.error("JWT配置验证失败，应用无法启动")
+        logger.exception("JWT配置验证失败，应用无法启动")
         sys.exit(1)
-    except Exception as e:
-        logger.error(f"JWT配置验证失败: {e}")
+    except Exception:
+        logger.exception("JWT配置验证失败")
         sys.exit(1)
 
     init_db()
-    logger.info(f"Application started successfully: {settings.app_name} v{settings.app_version}")
+    logger.info("Application started successfully: %s v%s", settings.app_name, settings.app_version)
 
     yield
 
@@ -83,8 +92,8 @@ app = FastAPI(
 )
 
 
-if not os.path.exists("static"):
-    os.makedirs("static")
+if not Path("static").exists():
+    Path("static").mkdir(parents=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -98,22 +107,22 @@ app.add_middleware(
 
 
 @app.get("/")
-async def root():
-    """根路径 - 健康检查"""
+async def root() -> dict[str, str]:
+    """根路径 - 健康检查."""
     return {
         "app": settings.app_name,
         "version": settings.app_version,
         "status": "running",
-        "message": "Welcome to Profo Real Estate Data Center API"
+        "message": "Welcome to Profo Real Estate Data Center API",
     }
 
 
 @app.get("/health")
-async def health_check():
-    """健康检查端点"""
+async def health_check() -> dict[str, str]:
+    """健康检查端点."""
     return {
         "status": "healthy",
-        "database": "connected"
+        "database": "connected",
     }
 
 
@@ -147,22 +156,23 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    """处理速率限制异常"""
+async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """处理速率限制异常."""
     return JSONResponse(
         status_code=429,
         content={
-            "detail": "请求过于频繁，请稍后重试"
+            "detail": "请求过于频繁，请稍后重试",
         },
-        headers={"Retry-After": str(exc.retry_after)}
+        headers={"Retry-After": str(exc.retry_after)},
     )
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="0.0.0.0",  # noqa: S104
         port=8000,
-        reload=settings.debug
+        reload=settings.debug,
     )

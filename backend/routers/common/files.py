@@ -1,58 +1,63 @@
-from typing import Annotated
-from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends, Request
-from sqlalchemy.orm import Session
-import os
+"""文件上传路由模块."""
+
+import logging
 import shutil
 import uuid
-import filetype
-import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Annotated
+
+import filetype
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel
-from settings import settings
+from sqlalchemy.orm import Session
+
+from common import RateLimits, limiter
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
-from common import limiter, RateLimits
-from utils.file_security import sanitize_filename, get_safe_file_path
+from settings import settings
+from utils.file_security import get_safe_file_path, sanitize_filename
 
 router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
 
 
 class FileUploadResponse(BaseModel):
+    """文件上传响应."""
+
     url: str
     filename: str
 
 
-@router.post("/upload", summary="上传文件", response_model=FileUploadResponse)
+@router.post("/upload", summary="上传文件")
 @limiter.limit(RateLimits.FILE_UPLOAD)
 def upload_file(
     request: Request,
-    current_user: CurrentOperatorUserDep,
+    _current_user: CurrentOperatorUserDep,
     file: Annotated[UploadFile, File()],
-    db: Session = Depends(get_db),
+    _db: Annotated[Session, Depends(get_db)],
 ) -> FileUploadResponse:
-    """
-    Handle file upload (Sync - Run in threadpool by FastAPI)
+    """Handle file upload (Sync - Run in threadpool by FastAPI).
+
     Optimized to read only first 2KB for MIME check.
-    速率限制：50次/小时（防止资源耗尽攻击）
+    速率限制：50次/小时（防止资源耗尽攻击）.
     """
     try:
         safe_name = sanitize_filename(file.filename)
-        ext = os.path.splitext(safe_name)[1].lower()
+        ext = Path(safe_name).suffix.lower()
         if ext not in settings.allowed_extensions:
-            raise HTTPException(
+            raise HTTPException(  # noqa: TRY301
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}"
+                detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}",
             )
 
         file.file.seek(0, 2)
         file_size = file.file.tell()
         file.file.seek(0)
         if file_size > settings.max_upload_size:
-            raise HTTPException(
+            raise HTTPException(  # noqa: TRY301
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes"
+                detail=f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes",
             )
 
         header = file.file.read(2048)
@@ -60,20 +65,20 @@ def upload_file(
 
         kind = filetype.guess(header)
         if kind is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无法识别的文件类型")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无法识别的文件类型")  # noqa: TRY301
 
         if kind.mime not in settings.allowed_mime_types:
-             raise HTTPException(
+            raise HTTPException(  # noqa: TRY301
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的文件类型。检测到的MIME类型: {kind.mime}"
+                detail=f"不支持的文件类型。检测到的MIME类型: {kind.mime}",
             )
 
-        filename = f"{datetime.now().strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
+        filename = f"{datetime.now(timezone.utc).strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
         upload_path = Path(settings.upload_dir)
         upload_path.mkdir(parents=True, exist_ok=True)
         file_path = get_safe_file_path(settings.upload_dir, filename)
 
-        with open(file_path, "wb") as buffer:
+        with Path(file_path).open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         url = str(request.url_for("static", path=f"uploads/{filename}"))
@@ -84,4 +89,7 @@ def upload_file(
         raise
     except Exception:
         logger.exception("文件上传失败")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="文件上传失败，请稍后重试")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="文件上传失败，请稍后重试",
+        ) from None

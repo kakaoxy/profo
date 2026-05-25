@@ -1,15 +1,16 @@
-"""
-L4 市场营销层查询参数和响应 Schema
-"""
+"""L4 市场营销层查询参数和响应 Schema."""
+
 from pydantic import BaseModel, Field
 
-from ..common import PaginatedResponse
-from .project import L4MarketingProjectResponse
+from backend.schemas.common import PaginatedResponse
+
 from .media import L4MarketingMediaResponse
+from .project import L4MarketingProjectResponse
 
 
 class L4MarketingProjectQuery(BaseModel):
-    """营销项目查询参数"""
+    """营销项目查询参数."""
+
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=200)
     community_id: str | None = None
@@ -21,17 +22,20 @@ class L4MarketingProjectQuery(BaseModel):
 
 
 class L4SyncResponse(BaseModel):
-    """同步响应"""
+    """同步响应."""
+
     total_synced: int = Field(..., ge=0, description="同步数量")
 
 
 class L4RefreshResponse(BaseModel):
-    """刷新响应"""
+    """刷新响应."""
+
     success: bool
 
 
 class L4MarketingProjectSummary(BaseModel):
-    """营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响"""
+    """营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响."""
+
     total: int = Field(default=0, ge=0, description="项目总数")
     published: int = Field(default=0, ge=0, description="已发布项目数")
     draft: int = Field(default=0, ge=0, description="草稿项目数")
@@ -42,13 +46,13 @@ class L4MarketingProjectSummary(BaseModel):
 
 # 统一分页响应格式 - 继承自 PaginatedResponse
 class L4MarketingProjectListResponse(PaginatedResponse[L4MarketingProjectResponse]):
-    """营销项目列表响应 - 统一分页格式"""
+    """营销项目列表响应 - 统一分页格式."""
+
     summary: L4MarketingProjectSummary = Field(
         default_factory=L4MarketingProjectSummary,
-        description="摘要统计 - 基于当前筛选条件的全量统计，不受分页影响"
+        description="摘要统计 - 基于当前筛选条件的全量统计，不受分页影响",
     )
 
 
 class L4MarketingMediaListResponse(PaginatedResponse[L4MarketingMediaResponse]):
-    """媒体列表响应 - 统一分页格式"""
-    pass
+    """媒体列表响应 - 统一分页格式."""

@@ -1,39 +1,39 @@
+"""C端公开用户路由.
+
+修改资料、修改手机号.
 """
-C端公开用户路由
-修改资料、修改手机号
-"""
+
 from fastapi import APIRouter, Request
 
-from dependencies.auth import DbSessionDep, CurrentCustomerUserDep
+from common import RateLimits, limiter
+from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from models import User
+from schemas.public import (
+    PublicPhoneResponse,
+    PublicPhoneUpdate,
+    PublicProfileUpdate,
+    PublicUserProfileResponse,
+)
 from services.system.exceptions import AuthenticationError, ValidationError
 from utils.auth import verify_password
 from utils.formatters import mask_phone
-from common import limiter, RateLimits
-from schemas.public import (
-    PublicProfileUpdate,
-    PublicUserProfileResponse,
-    PublicPhoneUpdate,
-    PublicPhoneResponse,
-)
 
 router = APIRouter(prefix="/public/users", tags=["public-users"])
 
 
 @router.put(
     "/profile",
-    response_model=PublicUserProfileResponse,
     summary="修改用户资料",
     description="C端用户修改自己的昵称",
 )
 @limiter.limit(RateLimits.PUBLIC_PROFILE_UPDATE)
 def update_profile(
-    request: Request,
+    _request: Request,
     body: PublicProfileUpdate,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
-):
-    """C端用户修改昵称"""
+) -> PublicUserProfileResponse:
+    """C端用户修改昵称."""
     current_user.nickname = body.nickname
     db.commit()
 
@@ -51,27 +51,32 @@ def update_profile(
 
 @router.put(
     "/phone",
-    response_model=PublicPhoneResponse,
     summary="修改手机号",
     description="C端用户修改手机号，需密码确认身份",
 )
 @limiter.limit(RateLimits.PUBLIC_PHONE_UPDATE)
 def update_phone(
-    request: Request,
+    _request: Request,
     body: PublicPhoneUpdate,
     current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
-):
-    """C端用户修改手机号，需密码确认身份"""
+) -> PublicPhoneResponse:
+    """C端用户修改手机号，需密码确认身份."""
     if not verify_password(body.password, current_user.password):
-        raise AuthenticationError("密码错误")
+        msg = "密码错误"
+        raise AuthenticationError(msg)
 
-    existing_phone = db.query(User).filter(
-        User.phone == body.phone,
-        User.id != current_user.id
-    ).first()
+    existing_phone = (
+        db.query(User)
+        .filter(
+            User.phone == body.phone,
+            User.id != current_user.id,
+        )
+        .first()
+    )
     if existing_phone:
-        raise ValidationError("手机号已被其他账号绑定")
+        msg = "手机号已被其他账号绑定"
+        raise ValidationError(msg)
 
     current_user.phone = body.phone
     db.commit()

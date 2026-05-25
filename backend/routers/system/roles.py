@@ -1,85 +1,78 @@
-"""
-角色管理相关路由
-"""
+"""C端角色管理路由."""
+
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status, Request
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
+from common import RateLimits, limiter
+from dependencies.auth import CurrentAdminUserDep, DbSessionDep
 from schemas.user import (
     RoleCreate,
-    RoleUpdate,
-    RoleResponse,
     RoleListResponse,
+    RoleResponse,
+    RoleUpdate,
 )
-from dependencies.auth import DbSessionDep, CurrentAdminUserDep
 from services.system import role_service
-from common import limiter, RateLimits
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
 
-@router.get("/", response_model=RoleListResponse)
-def get_roles(
+@router.get("/")
+def get_roles(  # noqa: PLR0913
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    _current_user: CurrentAdminUserDep,
     name: Annotated[str | None, Query(description="角色名称搜索")] = None,
     code: Annotated[str | None, Query(description="角色代码搜索")] = None,
     is_active: Annotated[bool | None, Query(description="是否激活筛选")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
-):
-    """
-    获取角色列表，支持搜索和筛选
-    """
+) -> RoleListResponse:
+    """获取角色列表，支持搜索和筛选."""
     total, roles = role_service.get_roles(db, name, code, is_active, page, page_size)
-    
+
     return RoleListResponse(
         total=total,
         items=roles,
         page=page,
-        page_size=page_size
+        page_size=page_size,
     )
 
 
-@router.get("/{role_id}", response_model=RoleResponse)
+@router.get("/{role_id}")
 def get_role(
     role_id: str,
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    _current_user: CurrentAdminUserDep,
 ) -> RoleResponse:
-    """
-    获取指定角色信息
-    """
+    """获取指定角色信息."""
     role = role_service.get_role_by_id(db, role_id)
     if not role:
         raise HTTPException(status_code=404, detail="角色不存在")
     return role
 
 
-@router.post("/", response_model=RoleResponse)
+@router.post("/")
 def create_role(
     role_data: RoleCreate,
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    _current_user: CurrentAdminUserDep,
 ) -> RoleResponse:
-    """
-    创建新角色
-    """
+    """创建新角色."""
     return role_service.create_role(db, role_data)
 
 
-@router.put("/{role_id}", response_model=RoleResponse)
+@router.put("/{role_id}")
 @limiter.limit(RateLimits.ROLE_UPDATE)
 def update_role(
-    request: Request,
+    _request: Request,
     role_id: str,
     role_data: RoleUpdate,
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    _current_user: CurrentAdminUserDep,
 ) -> RoleResponse:
-    """
-    更新角色信息
-    速率限制：100次/小时
+    """更新角色信息.
+
+    速率限制：100次/小时.
     """
     return role_service.update_role(db, role_id, role_data)
 
@@ -87,14 +80,13 @@ def update_role(
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit(RateLimits.ROLE_DELETE)
 def delete_role(
-    request: Request,
+    _request: Request,
     role_id: str,
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    _current_user: CurrentAdminUserDep,
 ) -> None:
-    """
-    删除角色
-    速率限制：20次/小时
+    """删除角色.
+
+    速率限制：20次/小时.
     """
     role_service.delete_role(db, role_id)
-    return None

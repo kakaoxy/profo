@@ -1,20 +1,29 @@
+"""房源导入服务.
+
+处理房源数据的导入、更新和历史快照记录.
 """
-房源导入服务
-处理房源数据的导入、更新和历史快照记录
-"""
-from datetime import datetime, timezone
-from dataclasses import dataclass
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
+
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from models import (
-    Community, CommunityAlias, PropertyCurrent, PropertyHistory,
-    PropertyStatus, ChangeType, PropertyMedia, MediaType
+    ChangeType,
+    Community,
+    CommunityAlias,
+    MediaType,
+    PropertyCurrent,
+    PropertyHistory,
+    PropertyMedia,
+    PropertyStatus,
 )
-from schemas import PropertyIngestionModel, ImportResult
-from utils.error_formatters import format_database_error
+from schemas import ImportResult, PropertyIngestionModel
 from services.system import save_failed_record
+from utils.error_formatters import format_database_error
+
 from .parser import FloorParser
 
 logger = logging.getLogger(__name__)
@@ -29,38 +38,41 @@ class _CommunityData:
 
 
 class PropertyImporter:
-    """处理房源数据导入的核心服务"""
-    
-    def __init__(self):
+    """处理房源数据导入的核心服务."""
+
+    def __init__(self) -> None:
+        """初始化导入器."""
         self.floor_parser = FloorParser()
-    
+
     def import_property(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
-        """导入单条房源数据的入口方法
-        
+        """导入单条房源数据的入口方法.
+
         Args:
             data: 房源数据
             db: 数据库会话
             user_id: 用户ID（可选，默认为空字符串）
-            
-        Note: 
+
+        Note:
             此方法不再内部调用 db.commit()，事务管理由调用方负责。
             使用 savepoint (begin_nested) 保护单条记录，失败时仅回滚到 savepoint，
             不影响同批次中其他记录的 session 状态。
+
         """
         try:
             nested = db.begin_nested()
             try:
                 result = self._process_import_transaction(data, db, user_id)
                 nested.commit()
-                return result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 nested.rollback()
                 return self._handle_import_error(e, data)
-        except Exception as e:
+            else:
+                return result
+        except Exception as e:  # noqa: BLE001
             return self._handle_import_error(e, data)
 
     def _process_import_transaction(self, data: PropertyIngestionModel, db: Session, user_id: str = "") -> ImportResult:
-        """处理核心导入逻辑（不包含事务提交，由调用方管理事务）"""
+        """处理核心导入逻辑（不包含事务提交，由调用方管理事务）."""
         community_id = self.find_or_create_community(data, db)
 
         existing_property = self._get_existing_property(data, db)
@@ -76,23 +88,30 @@ class PropertyImporter:
 
         # 注意：移除了 db.commit()，事务提交由外层调用方管理
         # 这样可以确保批次级别的原子性
-        logger.info(f"{action}房源: {data.source_property_id} (ID: {property_id}, 用户ID: {user_id})")
+        logger.info("%s房源: %s (ID: %s, 用户ID: %s)", action, data.source_property_id, property_id, user_id)
 
         return ImportResult(success=True, property_id=property_id, error=None)
 
-    def find_or_create_community(self, data: PropertyIngestionModel | str, db: Session,
-                                  city_id: int = None, district: str = None, business_circle: str = None) -> str:
-        """查找或创建小区
-        
+    def find_or_create_community(
+        self,
+        data: PropertyIngestionModel | str,
+        db: Session,
+        city_id: int | None = None,
+        district: str | None = None,
+        business_circle: str | None = None,
+    ) -> str:
+        """查找或创建小区.
+
         Args:
             data: PropertyIngestionModel 对象或小区名称字符串（向后兼容）
             db: 数据库会话
             city_id: 城市ID（可选，用于向后兼容）
             district: 行政区（可选，用于向后兼容）
             business_circle: 商圈（可选，用于向后兼容）
-            
+
         Returns:
             小区ID
+
         """
         # 处理向后兼容：支持直接传入小区名称字符串
         if isinstance(data, str):
@@ -100,58 +119,63 @@ class PropertyImporter:
             data = _CommunityData(name, city_id, district, business_circle)
         else:
             name = data.community_name.strip()
-        
+
         # 1. 尝试查找 (名称匹配或别名匹配)
         community = self._find_community_by_name_or_alias(name, db)
-        
+
         if community:
             self._update_community_info_if_needed(community, data, db)
             return community.id
-        
+
         # 2. 创建新小区
         return self._create_community(name, data, db)
 
     def _find_community_by_name_or_alias(self, name: str, db: Session) -> Community | None:
-        """通过名称或别名查找小区对象"""
+        """通过名称或别名查找小区对象."""
         # 直接匹配
-        community = db.query(Community).filter(
-            Community.name == name, 
-            Community.is_active.is_(True)
-        ).first()
+        community = (
+            db.query(Community)
+            .filter(
+                Community.name == name,
+                Community.is_active.is_(True),
+            )
+            .first()
+        )
         if community:
             return community
-            
+
         # 别名匹配
         alias = db.query(CommunityAlias).filter(CommunityAlias.alias_name == name).first()
         if alias:
             return db.get(Community, alias.community_id)
-            
+
         return None
 
-    def _update_community_info_if_needed(self, community: Community,
-                                       data: PropertyIngestionModel | _CommunityData, db: Session) -> None:
-        """如果信息缺失，更新小区补充信息"""
+    def _update_community_info_if_needed(
+        self, community: Community, data: PropertyIngestionModel | _CommunityData, db: Session
+    ) -> None:
+        """如果信息缺失，更新小区补充信息."""
         updated = False
-        
+
         if data.city_id is not None and community.city_id is None:
             community.city_id = data.city_id
             updated = True
-            
+
         if data.district and not community.district:
             community.district = data.district
             updated = True
-            
+
         if data.business_circle and not community.business_circle:
             community.business_circle = data.business_circle
             updated = True
-            
+
         if updated:
             community.updated_at = datetime.now(timezone.utc)
             # flush 不是必须的，commit 会处理，但在长事务中 flush 可以保持状态一致
-            db.flush() 
+            db.flush()
 
     def _create_community(self, name: str, data: PropertyIngestionModel | _CommunityData, db: Session) -> str:
-        """创建新的小区记录"""
+        """创建新的小区记录."""
         new_community = Community(
             name=name,
             city_id=data.city_id,
@@ -160,45 +184,62 @@ class PropertyImporter:
             total_properties=0,
             is_active=True,
             created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            updated_at=datetime.now(timezone.utc),
         )
         db.add(new_community)
-        db.flush() # 获取 ID
-        logger.info(f"创建新小区: {name} (ID: {new_community.id})")
+        db.flush()  # 获取 ID
+        logger.info("创建新小区: %s (ID: %s)", name, new_community.id)
         return new_community.id
 
     def _get_existing_property(self, data: PropertyIngestionModel, db: Session) -> PropertyCurrent | None:
-        return db.query(PropertyCurrent).filter(
-            PropertyCurrent.data_source == data.data_source,
-            PropertyCurrent.source_property_id == data.source_property_id
-        ).first()
+        return (
+            db.query(PropertyCurrent)
+            .filter(
+                PropertyCurrent.data_source == data.data_source,
+                PropertyCurrent.source_property_id == data.source_property_id,
+            )
+            .first()
+        )
 
-    def _handle_update(self, existing: PropertyCurrent, data: PropertyIngestionModel,
-                       community_id: str, db: Session, user_id: str) -> None:
-        """处理更新逻辑：快照 + 更新当前表"""
+    def _handle_update(
+        self, existing: PropertyCurrent, data: PropertyIngestionModel, community_id: str, db: Session, user_id: str
+    ) -> None:
+        """处理更新逻辑：快照 + 更新当前表."""
         change_type = self._determine_change_type(existing, data)
         self._create_history_snapshot(existing, change_type, db)
         self._map_data_to_property(existing, data, community_id, user_id)
         self._save_property_media(data, db)
 
-    def _handle_creation(self, data: PropertyIngestionModel, community_id: str, db: Session, user_id: str) -> PropertyCurrent:
-        """处理创建逻辑"""
+    def _handle_creation(
+        self,
+        data: PropertyIngestionModel,
+        community_id: str,
+        db: Session,
+        user_id: str,
+    ) -> PropertyCurrent:
+        """处理创建逻辑."""
         new_property = PropertyCurrent(
             data_source=data.data_source,
             source_property_id=data.source_property_id,
             created_at=datetime.now(timezone.utc),
-            is_active=True
+            is_active=True,
         )
         self._map_data_to_property(new_property, data, community_id, user_id)
         db.add(new_property)
-        db.flush() # 确保获取ID，方便后续日志或返回
+        db.flush()  # 确保获取ID，方便后续日志或返回
         self._save_property_media(data, db)
         return new_property
 
-    def _map_data_to_property(self, prop: PropertyCurrent, data: PropertyIngestionModel, community_id: str, user_id: str) -> None:
-        """
-        统一的数据映射方法
-        同时用于 Create 和 Update，消除代码重复
+    def _map_data_to_property(
+        self,
+        prop: PropertyCurrent,
+        data: PropertyIngestionModel,
+        community_id: str,
+        user_id: str,
+    ) -> None:
+        """统一的数据映射方法.
+
+        同时用于 Create 和 Update，消除代码重复.
         """
         floor_info = self.floor_parser.parse_floor(data.floor_original)
 
@@ -231,17 +272,15 @@ class PropertyImporter:
         prop.owner_id = user_id
         prop.updated_at = datetime.now(timezone.utc)
 
-    def create_history_snapshot(self, property_obj: PropertyCurrent,
-                                 change_type: ChangeType, db: Session) -> None:
-        """创建历史快照（公有方法，向后兼容）
-        
+    def create_history_snapshot(self, property_obj: PropertyCurrent, change_type: ChangeType, db: Session) -> None:
+        """创建历史快照（公有方法，向后兼容）.
+
         Note: 此方法不再内部调用 db.commit()，事务管理由调用方负责
         """
         self._create_history_snapshot(property_obj, change_type, db)
 
-    def _create_history_snapshot(self, property_obj: PropertyCurrent,
-                                 change_type: ChangeType, db: Session) -> None:
-        """创建历史快照（内部实现）"""
+    def _create_history_snapshot(self, property_obj: PropertyCurrent, change_type: ChangeType, db: Session) -> None:
+        """创建历史快照（内部实现）."""
         history = PropertyHistory(
             data_source=property_obj.data_source,
             source_property_id=property_obj.source_property_id,
@@ -258,65 +297,63 @@ class PropertyImporter:
             sold_date=property_obj.sold_date,
             floor_original=property_obj.floor_original,
             orientation=property_obj.orientation,
-            decoration=property_obj.decoration
+            decoration=property_obj.decoration,
         )
         db.add(history)
-        logger.debug(f"创建历史快照: {property_obj.source_property_id} ({change_type.value})")
+        logger.debug("创建历史快照: %s (%s)", property_obj.source_property_id, change_type.value)
 
-    def _determine_change_type(self, existing: PropertyCurrent, 
-                               data: PropertyIngestionModel) -> ChangeType:
+    def _determine_change_type(self, existing: PropertyCurrent, data: PropertyIngestionModel) -> ChangeType:
         if existing.status.value != data.status.value:
             return ChangeType.STATUS_CHANGE
-        
+
         is_for_sale = data.status.value == PropertyStatus.FOR_SALE.value
-        
+
         if is_for_sale:
             if existing.listed_price_wan != data.listed_price_wan:
                 return ChangeType.PRICE_CHANGE
-        else:
-            if existing.sold_price_wan != data.sold_price_wan:
-                return ChangeType.PRICE_CHANGE
-        
+        elif existing.sold_price_wan != data.sold_price_wan:
+            return ChangeType.PRICE_CHANGE
+
         return ChangeType.INFO_CHANGE
 
     def _handle_import_error(self, e: Exception, data: PropertyIngestionModel) -> ImportResult:
-        """统一的异常处理逻辑
-        
+        """统一的异常处理逻辑.
+
         Note: 事务回滚由 import_property 中的 savepoint 处理，此方法仅负责错误记录。
         """
         error_msg = format_database_error(e) if isinstance(e, SQLAlchemyError) else str(e)
         failure_type = "database_error" if isinstance(e, SQLAlchemyError) else "import_error"
         if isinstance(e, IntegrityError):
             failure_type = "database_integrity_error"
-            
-        logger.error(f"导入失败 - {data.source_property_id}: {error_msg}")
-        
+
+        logger.error("导入失败 - %s: %s", data.source_property_id, error_msg)
+
         save_failed_record(
             data=data.model_dump(by_alias=True),
             error_message=error_msg,
             failure_type=failure_type,
-            data_source=data.data_source
+            data_source=data.data_source,
         )
-        
+
         return ImportResult(
             success=False,
             property_id=None,
-            error=error_msg
+            error=error_msg,
         )
 
     def _save_property_media(self, data: PropertyIngestionModel, db: Session) -> None:
-        """保存房源图片链接到 property_media 表"""
+        """保存房源图片链接到 property_media 表."""
         if not data.image_urls:
-            logger.debug(f"房源 {data.source_property_id} 没有图片链接，跳过媒体资源保存")
+            logger.debug("房源 %s 没有图片链接，跳过媒体资源保存", data.source_property_id)
             return
-            
+
         try:
             # 删除该房源现有的所有图片记录（确保更新时不会重复）
             db.query(PropertyMedia).filter(
                 PropertyMedia.data_source == data.data_source,
-                PropertyMedia.source_property_id == data.source_property_id
+                PropertyMedia.source_property_id == data.source_property_id,
             ).delete()
-            
+
             # 对URL进行去重处理，保持原始顺序
             seen_urls = set()
             unique_urls = []
@@ -326,10 +363,15 @@ class PropertyImporter:
                     if url_stripped not in seen_urls:
                         seen_urls.add(url_stripped)
                         unique_urls.append(url_stripped)
-            
+
             if len(unique_urls) < len(data.image_urls):
-                logger.debug(f"房源 {data.source_property_id} 发现重复图片链接，已去重: {len(data.image_urls)} -> {len(unique_urls)}")
-            
+                logger.debug(
+                    "房源 %s 发现重复图片链接，已去重: %s -> %s",
+                    data.source_property_id,
+                    len(data.image_urls),
+                    len(unique_urls),
+                )
+
             # 批量插入新的图片记录
             media_records = []
             for index, url in enumerate(unique_urls):
@@ -339,14 +381,14 @@ class PropertyImporter:
                     media_type=MediaType.OTHER,  # 统一作为"其他"类型，前端自行选择展示
                     url=url,
                     sort_order=index,  # 按去重后的顺序排序
-                    created_at=datetime.now(timezone.utc)
+                    created_at=datetime.now(timezone.utc),
                 )
                 media_records.append(media_record)
-            
+
             if media_records:
                 db.bulk_save_objects(media_records)
-                logger.info(f"保存房源 {data.source_property_id} 的图片链接: {len(media_records)} 张")
-                
-        except Exception as e:
+                logger.info("保存房源 %s 的图片链接: %s 张", data.source_property_id, len(media_records))
+
+        except Exception as e:  # noqa: BLE001
             # 图片保存失败不影响主流程，记录警告即可
-            logger.warning(f"保存房源 {data.source_property_id} 图片链接失败: {str(e)}")
+            logger.warning("保存房源 %s 图片链接失败: %s", data.source_property_id, e)

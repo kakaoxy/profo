@@ -1,13 +1,13 @@
-"""
-项目跟进和评估模型
-"""
-from sqlalchemy import Column, String, Numeric, DateTime, Text, ForeignKey, Index
+"""项目跟进和评估模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Numeric, String, Text
+
+from backend.models.common.base import BaseModel
 
 
 class ProjectFollowUp(BaseModel):
-    """项目跟进记录表"""
+    """项目跟进记录表."""
+
     __tablename__ = "project_follow_ups"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
@@ -24,7 +24,8 @@ class ProjectFollowUp(BaseModel):
 
 
 class ProjectEvaluation(BaseModel):
-    """项目评估记录表"""
+    """项目评估记录表."""
+
     __tablename__ = "project_evaluations"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")

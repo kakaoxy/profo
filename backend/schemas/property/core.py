@@ -1,34 +1,35 @@
-"""
-房源核心接收模型
-"""
+"""房源核心接收模型."""
+
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
-from ..enums import IngestionStatus
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from backend.schemas.enums import IngestionStatus
 
 
 class PropertyIngestionModel(BaseModel):
+    """统一的数据接收模型，支持 CSV 和 JSON.
+
+    使用 Field 的 alias 参数支持中文字段名.
     """
-    统一的数据接收模型，支持 CSV 和 JSON
-    使用 Field 的 alias 参数支持中文字段名
-    """
-    
+
     # 核心唯一标识
     data_source: str = Field(..., alias="数据源", description="数据来源平台")
     source_property_id: str = Field(..., alias="房源ID", description="来源平台的房源ID")
-    
+
     # 核心业务字段
     status: IngestionStatus = Field(..., alias="状态", description="房源状态")
     community_name: str = Field(..., alias="小区名", min_length=1, description="小区名称")
-    
+
     # 户型信息
     rooms: int = Field(..., ge=0, alias="室", description="室数量")
     halls: int = Field(default=0, ge=0, alias="厅", description="厅数量")
     baths: int = Field(default=0, ge=0, alias="卫", description="卫生间数量")
     orientation: str = Field(..., alias="朝向", description="房屋朝向")
-    
+
     # 楼层信息
     floor_original: str = Field(..., alias="楼层", description="原始楼层字符串")
-    
+
     # 面积信息
     build_area: float = Field(..., gt=0, alias="面积", description="建筑面积(㎡)")
     inner_area: float | None = Field(None, gt=0, alias="套内面积", description="套内面积(㎡)")
@@ -64,60 +65,69 @@ class PropertyIngestionModel(BaseModel):
     city_id: int | None = Field(None, alias="城市ID", description="城市ID")
     district: str | None = Field(None, alias="行政区", description="行政区")
     business_circle: str | None = Field(None, alias="商圈", description="商圈")
-    
-    @field_validator('community_name', 'data_source', 'source_property_id', 'orientation', 'floor_original', mode='before')
+
+    @field_validator(
+        "community_name",
+        "data_source",
+        "source_property_id",
+        "orientation",
+        "floor_original",
+        mode="before",
+    )
     @classmethod
-    def strip_whitespace(cls, v):
-        """自动去除字符串字段的首尾空格"""
+    def strip_whitespace(cls, v: str) -> str:
+        """自动去除字符串字段的首尾空格."""
         if isinstance(v, str):
             return v.strip()
         return v
-    
-    @field_validator('elevator', mode='before')
+
+    @field_validator("elevator", mode="before")
     @classmethod
-    def parse_elevator(cls, v):
-        """解析电梯字段，支持中文"是"/"否"和布尔值"""
-        if v is None or v == '':
+    def parse_elevator(cls, v: str | None) -> bool | None:
+        """解析电梯字段，支持中文"是"/"否"和布尔值."""
+        if v is None or v == "":
             return None
         if isinstance(v, bool):
             return v
         if isinstance(v, str):
             v = v.strip().lower()
-            if v in ('是', '有', 'yes', 'true', '1'):
+            if v in ("是", "有", "yes", "true", "1"):
                 return True
-            if v in ('否', '无', 'no', 'false', '0'):
+            if v in ("否", "无", "no", "false", "0"):
                 return False
         return None
 
-    @field_validator('image_urls', mode='before')
+    @field_validator("image_urls", mode="before")
     @classmethod
-    def validate_image_urls(cls, v):
-        """验证图片URL列表"""
+    def validate_image_urls(cls, v: str | list[str] | None) -> list[str] | None:
+        """验证图片URL列表."""
         if v is None:
             return v
         if isinstance(v, str):
-            # 如果是字符串，按逗号分割
-            return [url.strip() for url in v.split(',') if url.strip()]
+            return [url.strip() for url in v.split(",") if url.strip()]
         if isinstance(v, list):
-            # 如果是列表，过滤空值
             return [url.strip() for url in v if url and url.strip()]
         return v
-    
-    @model_validator(mode='after')
-    def validate_fields_based_on_status(self):
-        """根据状态动态验证必填字段"""
+
+    @model_validator(mode="after")
+    def validate_fields_based_on_status(self) -> "PropertyIngestionModel":
+        """根据状态动态验证必填字段."""
         if self.status == IngestionStatus.FOR_SALE:
             if self.listed_price_wan is None or self.listed_price_wan <= 0:
-                raise ValueError("在售房源必须提供有效的挂牌价(万)")
+                msg = "在售房源必须提供有效的挂牌价(万)"
+                raise ValueError(msg)
             if self.listed_date is None:
-                raise ValueError("在售房源必须提供上架时间")
+                msg = "在售房源必须提供上架时间"
+                raise ValueError(msg)
         elif self.status == IngestionStatus.SOLD:
             if self.sold_price_wan is None or self.sold_price_wan <= 0:
-                raise ValueError("成交房源必须提供有效的成交价(万)")
+                msg = "成交房源必须提供有效的成交价(万)"
+                raise ValueError(msg)
             if self.sold_date is None:
-                raise ValueError("成交房源必须提供成交时间")
+                msg = "成交房源必须提供成交时间"
+                raise ValueError(msg)
         return self
-    
+
     model_config = ConfigDict(
         populate_by_name=True,
         str_strip_whitespace=True,

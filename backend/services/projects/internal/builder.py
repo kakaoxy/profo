@@ -1,14 +1,22 @@
-"""
-项目响应构建器模块
-负责将项目模型及其关联数据构建为API响应格式
+"""项目响应构建器模块.
+
+负责将项目模型及其关联数据构建为API响应格式.
 """
 
-from typing import Dict, Any, TYPE_CHECKING
+from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
-from models import FinanceRecord
+from models import (
+    FinanceRecord,
+    ProjectContract,
+    ProjectInteraction,
+    ProjectOwner,
+    ProjectRenovation,
+    ProjectSale,
+)
 from models.common import CashFlowType
 
 if TYPE_CHECKING:
@@ -16,28 +24,27 @@ if TYPE_CHECKING:
 
 
 class ProjectResponseBuilder:
-    """
-    项目响应数据构建器
+    """项目响应数据构建器.
 
     负责将Project模型及其关联数据转换为API响应格式。
     支持构建完整的项目详情响应，包括合同、业主、销售、财务等信息。
 
     Attributes:
         db: SQLAlchemy数据库会话
+
     """
 
-    def __init__(self, db: Session):
-        """
-        初始化响应构建器
+    def __init__(self, db: Session) -> None:
+        """初始化响应构建器.
 
         Args:
             db: SQLAlchemy数据库会话
+
         """
         self.db = db
 
-    def build(self, project: "Project") -> Dict[str, Any]:
-        """
-        构建完整的项目响应数据
+    def build(self, project: "Project") -> dict[str, Any]:
+        """构建完整的项目响应数据.
 
         将项目模型及其关联数据组合成完整的响应字典，包含：
         - 项目基础信息
@@ -54,6 +61,7 @@ class ProjectResponseBuilder:
 
         Returns:
             包含完整项目信息的字典
+
         """
         response = self._build_base_info(project)
         response.update(self._build_contract_info(project.id))
@@ -66,8 +74,8 @@ class ProjectResponseBuilder:
 
         return response
 
-    def _build_base_info(self, project: "Project") -> Dict[str, Any]:
-        """构建项目基础信息"""
+    def _build_base_info(self, project: "Project") -> dict[str, Any]:
+        """构建项目基础信息."""
         result = {
             "id": project.id,
             "name": project.name or project.generate_name(),
@@ -97,14 +105,16 @@ class ProjectResponseBuilder:
 
         return result
 
-    def _build_contract_info(self, project_id: str) -> Dict[str, Any]:
-        """构建合同信息"""
-        from models import ProjectContract
-
-        contract = self.db.query(ProjectContract).filter(
-            ProjectContract.project_id == project_id,
-            ProjectContract.is_deleted.is_(False)
-        ).first()
+    def _build_contract_info(self, project_id: str) -> dict[str, Any]:
+        """构建合同信息."""
+        contract = (
+            self.db.query(ProjectContract)
+            .filter(
+                ProjectContract.project_id == project_id,
+                ProjectContract.is_deleted.is_(False),
+            )
+            .first()
+        )
 
         if not contract:
             return {}
@@ -112,26 +122,30 @@ class ProjectResponseBuilder:
         return {
             "contract_no": contract.contract_no,
             "signing_price": float(contract.signing_price) if contract.signing_price is not None else None,
-            "signing_date": contract.signing_date.strftime('%Y-%m-%d') if contract.signing_date else None,
+            "signing_date": contract.signing_date.strftime("%Y-%m-%d") if contract.signing_date else None,
             "signing_period": contract.signing_period,
             "extension_period": contract.extension_period,
             "extension_rent": float(contract.extension_rent) if contract.extension_rent is not None else None,
             "cost_assumption_type": contract.cost_assumption_type,
             "cost_assumption_other": contract.cost_assumption_other,
-            "planned_handover_date": contract.planned_handover_date.strftime('%Y-%m-%d') if contract.planned_handover_date else None,
+            "planned_handover_date": (
+                contract.planned_handover_date.strftime("%Y-%m-%d") if contract.planned_handover_date else None
+            ),
             "other_agreements": contract.other_agreements,
             "signing_materials": contract.signing_materials,
             "contract_status": contract.contract_status,
         }
 
-    def _build_owner_info(self, project_id: str) -> Dict[str, Any]:
-        """构建业主信息"""
-        from models import ProjectOwner
-
-        owner = self.db.query(ProjectOwner).filter(
-            ProjectOwner.project_id == project_id,
-            ProjectOwner.is_deleted.is_(False)
-        ).first()
+    def _build_owner_info(self, project_id: str) -> dict[str, Any]:
+        """构建业主信息."""
+        owner = (
+            self.db.query(ProjectOwner)
+            .filter(
+                ProjectOwner.project_id == project_id,
+                ProjectOwner.is_deleted.is_(False),
+            )
+            .first()
+        )
 
         if not owner:
             return {}
@@ -143,22 +157,24 @@ class ProjectResponseBuilder:
             "owner_info": owner.owner_info,
         }
 
-    def _build_sale_info(self, project_id: str) -> Dict[str, Any]:
-        """构建销售信息"""
-        from models import ProjectSale
-
-        sale = self.db.query(ProjectSale).filter(
-            ProjectSale.project_id == project_id,
-            ProjectSale.is_deleted.is_(False)
-        ).first()
+    def _build_sale_info(self, project_id: str) -> dict[str, Any]:
+        """构建销售信息."""
+        sale = (
+            self.db.query(ProjectSale)
+            .filter(
+                ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
+            )
+            .first()
+        )
 
         if not sale:
             return {}
 
         return {
-            "listing_date": sale.listing_date.strftime('%Y-%m-%d') if sale.listing_date else None,
+            "listing_date": sale.listing_date.strftime("%Y-%m-%d") if sale.listing_date else None,
             "list_price": float(sale.list_price) if sale.list_price else None,
-            "sold_date": sale.sold_date.strftime('%Y-%m-%d') if sale.sold_date else None,
+            "sold_date": sale.sold_date.strftime("%Y-%m-%d") if sale.sold_date else None,
             "sold_price": float(sale.sold_price) if sale.sold_price else None,
             "transaction_status": sale.transaction_status,
             "channel_manager_id": sale.channel_manager_id,
@@ -166,11 +182,15 @@ class ProjectResponseBuilder:
             "negotiator_id": sale.negotiator_id,
         }
 
-    def _build_finance_info(self, project_id: str) -> Dict[str, Any]:
-        """构建财务统计信息"""
-        finance_records = self.db.query(FinanceRecord).filter(
-            FinanceRecord.project_id == project_id
-        ).all()
+    def _build_finance_info(self, project_id: str) -> dict[str, Any]:
+        """构建财务统计信息."""
+        finance_records = (
+            self.db.query(FinanceRecord)
+            .filter(
+                FinanceRecord.project_id == project_id,
+            )
+            .all()
+        )
 
         total_income = Decimal(0)
         total_expense = Decimal(0)
@@ -191,20 +211,22 @@ class ProjectResponseBuilder:
             "roi": roi,
         }
 
-    def _build_interactions(self, project_id: str) -> Dict[str, Any]:
-        """构建互动记录（销售记录）"""
-        from models import ProjectInteraction
-
-        interactions = self.db.query(ProjectInteraction).filter(
-            ProjectInteraction.project_id == project_id
-        ).order_by(ProjectInteraction.interaction_at.desc()).all()
+    def _build_interactions(self, project_id: str) -> dict[str, Any]:
+        """构建互动记录（销售记录）."""
+        interactions = (
+            self.db.query(ProjectInteraction)
+            .filter(
+                ProjectInteraction.project_id == project_id,
+            )
+            .order_by(ProjectInteraction.interaction_at.desc())
+            .all()
+        )
 
         if not interactions:
             return {}
 
-        sales_records = []
-        for interaction in interactions:
-            sales_records.append({
+        sales_records = [
+            {
                 "id": interaction.id,
                 "project_id": interaction.project_id,
                 "record_type": interaction.record_type,
@@ -213,18 +235,19 @@ class ProjectResponseBuilder:
                 "price": float(interaction.price) if interaction.price else None,
                 "notes": interaction.content,
                 "created_at": interaction.created_at.isoformat() if interaction.created_at else None,
-            })
+            }
+            for interaction in interactions
+        ]
 
         return {"sales_records": sales_records}
 
-    def _build_renovation_photos(self, project: "Project") -> Dict[str, Any]:
-        """构建装修照片（蜕变影像）"""
+    def _build_renovation_photos(self, project: "Project") -> dict[str, Any]:
+        """构建装修照片（蜕变影像）."""
         if not project.renovation_photos:
             return {}
 
-        renovation_photos = []
-        for photo in project.renovation_photos:
-            renovation_photos.append({
+        renovation_photos = [
+            {
                 "id": photo.id,
                 "project_id": photo.project_id,
                 "stage": photo.stage,
@@ -232,18 +255,21 @@ class ProjectResponseBuilder:
                 "filename": photo.filename,
                 "description": photo.description,
                 "created_at": photo.created_at.isoformat() if photo.created_at else None,
-            })
+            }
+            for photo in project.renovation_photos
+        ]
 
         return {"renovation_photos": renovation_photos}
 
-    def _build_stage_dates(self, project_id: str) -> Dict[str, Any]:
-        """构建阶段日期映射（用于蜕变影像展示）"""
-        from models import ProjectRenovation
-        from datetime import datetime
-
-        renovation = self.db.query(ProjectRenovation).filter(
-            ProjectRenovation.project_id == project_id
-        ).first()
+    def _build_stage_dates(self, project_id: str) -> dict[str, Any]:
+        """构建阶段日期映射（用于蜕变影像展示）."""
+        renovation = (
+            self.db.query(ProjectRenovation)
+            .filter(
+                ProjectRenovation.project_id == project_id,
+            )
+            .first()
+        )
 
         if not renovation or not renovation.stage_completed_dates:
             return {}
@@ -258,6 +284,6 @@ class ProjectResponseBuilder:
                 if isinstance(date_value, str):
                     stage_dates[stage_name] = date_value
                 elif isinstance(date_value, datetime):
-                    stage_dates[stage_name] = date_value.strftime('%Y-%m-%d')
+                    stage_dates[stage_name] = date_value.strftime("%Y-%m-%d")
 
         return {"renovation_stage_dates": stage_dates} if stage_dates else {}

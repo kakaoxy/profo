@@ -1,5 +1,4 @@
-"""
-系统服务模块
+"""系统服务模块.
 
 提供认证、用户管理、角色管理和错误记录等系统级功能。
 
@@ -8,22 +7,22 @@
     from services.system import save_failed_record
 """
 
-from .auth import AuthService
-from .user import UserService, user_service
-from .role import RoleService, role_service
-from .error import save_failed_record
 from .api_key import ApiKeyService, api_key_service
+from .auth import AuthService
+from .error import save_failed_record
 from .init_service import SystemInitService, init_service
+from .role import RoleService, role_service
+from .user import UserService, user_service
 
 __all__ = [
+    "ApiKeyService",
     "AuthService",
-    "UserService",
-    "user_service",
     "RoleService",
+    "SystemInitService",
+    "UserService",
+    "api_key_service",
+    "init_service",
     "role_service",
     "save_failed_record",
-    "ApiKeyService",
-    "api_key_service",
-    "SystemInitService",
-    "init_service",
+    "user_service",
 ]

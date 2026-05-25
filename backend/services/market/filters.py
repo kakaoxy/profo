@@ -1,38 +1,37 @@
-"""
-房源查询筛选条件构建器
-处理房源数据查询的各种筛选条件
-"""
-import logging
-from typing import Optional, List
+"""房源查询筛选条件构建器.
 
-from sqlalchemy.orm import Query
-from sqlalchemy import or_, and_
+处理房源数据查询的各种筛选条件.
+"""
+
+import logging
 from datetime import datetime, timedelta, timezone
 
-from models import PropertyCurrent, Community, PropertyStatus
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Query
+
+from models import Community, PropertyCurrent, PropertyStatus
 
 logger = logging.getLogger(__name__)
 
 PROPERTY_EXPIRATION_DAYS = 30
 
 
-def apply_filters(
+def apply_filters(  # noqa: C901, PLR0912, PLR0913, PLR0915
     query: Query,
-    status: Optional[str] = None,
-    community_name: Optional[str] = None,
-    districts: Optional[List[str]] = None,
-    business_circles: Optional[List[str]] = None,
-    orientations: Optional[List[str]] = None,
-    floor_levels: Optional[List[str]] = None,
-    min_price: Optional[float] = None,
-    max_price: Optional[float] = None,
-    min_area: Optional[float] = None,
-    max_area: Optional[float] = None,
-    rooms: Optional[List[int]] = None,
-    rooms_gte: Optional[int] = None
+    status: str | None = None,
+    community_name: str | None = None,
+    districts: list[str] | None = None,
+    business_circles: list[str] | None = None,
+    orientations: list[str] | None = None,
+    floor_levels: list[str] | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    min_area: float | None = None,
+    max_area: float | None = None,
+    rooms: list[int] | None = None,
+    rooms_gte: int | None = None,
 ) -> Query:
-    """
-    应用筛选条件到查询对象
+    """应用筛选条件到查询对象.
 
     Args:
         query: SQLAlchemy 查询对象
@@ -51,6 +50,7 @@ def apply_filters(
 
     Returns:
         Query: 应用筛选后的查询对象
+
     """
     # 状态筛选
     if status:
@@ -60,18 +60,18 @@ def apply_filters(
                 cutoff = datetime.now(timezone.utc) - timedelta(days=PROPERTY_EXPIRATION_DAYS)
                 query = query.filter(
                     PropertyCurrent.status == PropertyStatus.FOR_SALE,
-                    PropertyCurrent.updated_at >= cutoff
+                    PropertyCurrent.updated_at >= cutoff,
                 )
             elif status == "过期":
                 cutoff = datetime.now(timezone.utc) - timedelta(days=PROPERTY_EXPIRATION_DAYS)
                 query = query.filter(
                     PropertyCurrent.status == PropertyStatus.FOR_SALE,
-                    PropertyCurrent.updated_at < cutoff
+                    PropertyCurrent.updated_at < cutoff,
                 )
             elif status == "成交":
                 query = query.filter(PropertyCurrent.status == PropertyStatus.SOLD)
         else:
-            logger.warning(f"未知状态筛选值: {status}，有效值为: {valid_statuses}")
+            logger.warning("未知状态筛选值: %s，有效值为: %s", status, valid_statuses)
 
     # 小区名称模糊搜索
     if community_name:
@@ -105,15 +105,15 @@ def apply_filters(
                 price_conditions.append(
                     or_(
                         PropertyCurrent.listed_price_wan >= min_price,
-                        PropertyCurrent.sold_price_wan >= min_price
-                    )
+                        PropertyCurrent.sold_price_wan >= min_price,
+                    ),
                 )
             if max_price is not None:
                 price_conditions.append(
                     or_(
                         PropertyCurrent.listed_price_wan <= max_price,
-                        PropertyCurrent.sold_price_wan <= max_price
-                    )
+                        PropertyCurrent.sold_price_wan <= max_price,
+                    ),
                 )
             if price_conditions:
                 query = query.filter(and_(*price_conditions))
@@ -136,10 +136,7 @@ def apply_filters(
 
     # 朝向筛选（包含任意关键字）
     if orientations:
-        orientation_conditions = []
-        for ori in orientations:
-            if ori:
-                orientation_conditions.append(PropertyCurrent.orientation.like(f"%{ori}%"))
+        orientation_conditions = [PropertyCurrent.orientation.like(f"%{ori}%") for ori in orientations if ori]
         if orientation_conditions:
             query = query.filter(or_(*orientation_conditions))
 

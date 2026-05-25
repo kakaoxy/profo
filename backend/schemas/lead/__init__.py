@@ -1,25 +1,29 @@
-"""
-Leads Management Pydantic Schemas
-"""
-from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+"""Leads Management Pydantic Schemas."""
 
-from models.common import LeadStatus, FollowUpMethod
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from models.common import FollowUpMethod, LeadStatus
 
 
 # ----------------------
 # Follow Up Schemas
 # ----------------------
 class FollowUpBase(BaseModel):
+    """跟进记录基础模型."""
+
     method: FollowUpMethod
     content: str
 
 
 class FollowUpCreate(FollowUpBase):
-    pass
+    """创建跟进记录请求."""
 
 
 class FollowUpResponse(FollowUpBase):
+    """跟进记录响应."""
+
     id: str
     lead_id: str
     followed_at: datetime
@@ -33,15 +37,19 @@ class FollowUpResponse(FollowUpBase):
 # Price History Schemas
 # ----------------------
 class PriceHistoryBase(BaseModel):
+    """价格历史基础模型."""
+
     price: float
     remark: str | None = None
 
 
 class PriceHistoryCreate(PriceHistoryBase):
-    pass
+    """创建价格历史请求."""
 
 
 class PriceHistoryResponse(PriceHistoryBase):
+    """价格历史响应."""
+
     id: str
     lead_id: str
     recorded_at: datetime
@@ -55,6 +63,8 @@ class PriceHistoryResponse(PriceHistoryBase):
 # Lead Schemas
 # ----------------------
 class LeadBase(BaseModel):
+    """线索基础模型."""
+
     community_name: str
     community_id: str | None = None
     is_hot: int = 0
@@ -65,20 +75,24 @@ class LeadBase(BaseModel):
     total_price: float | None = None
     unit_price: float | None = None
     eval_price: float | None = None
-    
+
     district: str | None = None
     business_area: str | None = None
     remarks: str | None = None
-    
+
     source_property_id: int | None = None
 
 
 class LeadCreate(LeadBase):
+    """创建线索请求."""
+
     status: LeadStatus | None = LeadStatus.PENDING_ASSESSMENT
     images: list[str] = []
 
 
 class LeadUpdate(BaseModel):
+    """更新线索请求."""
+
     community_name: str | None = None
     community_id: str | None = None
     is_hot: int | None = None
@@ -89,10 +103,10 @@ class LeadUpdate(BaseModel):
     total_price: float | None = None
     unit_price: float | None = None
     eval_price: float | None = None
-    
+
     status: LeadStatus | None = None
     audit_reason: str | None = None
-    
+
     images: list[str] | None = None
     district: str | None = None
     business_area: str | None = None
@@ -102,17 +116,19 @@ class LeadUpdate(BaseModel):
 
 
 class LeadResponse(LeadBase):
+    """线索响应."""
+
     id: str
     status: LeadStatus
     audit_reason: str | None = None
     auditor_id: str | None = None
     audit_time: datetime | None = None
-    
+
     images: list[str] = []
-    
+
     creator_id: str | None = None
     creator_name: str | None = None
-    
+
     last_follow_up_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
@@ -121,6 +137,8 @@ class LeadResponse(LeadBase):
 
 
 class PaginatedLeadResponse(BaseModel):
+    """分页线索响应."""
+
     items: list[LeadResponse]
     total: int
     page: int
@@ -131,10 +149,11 @@ class PaginatedLeadResponse(BaseModel):
 # 列表展示专用 Schema (性能优化)
 # ----------------------
 class LeadListItem(BaseModel):
+    """列表展示专用 Schema.
+
+    不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题.
     """
-    列表展示专用 Schema
-    不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题
-    """
+
     id: str
     community_name: str
     community_id: str | None = None
@@ -163,7 +182,8 @@ class LeadListItem(BaseModel):
 
 
 class PaginatedLeadListResponse(BaseModel):
-    """列表分页响应 - 使用 LeadListItem 避免性能问题"""
+    """列表分页响应 - 使用 LeadListItem 避免性能问题."""
+
     items: list[LeadListItem]
     total: int
     page: int
@@ -174,7 +194,8 @@ class PaginatedLeadListResponse(BaseModel):
 # 漏斗统计 Schema
 # ----------------------
 class LeadFunnelResponse(BaseModel):
-    """线索漏斗统计响应"""
+    """线索漏斗统计响应."""
+
     total: int = Field(..., description="线索总数")
     evaluating: int = Field(..., description="评估中数量")
     rejected: int = Field(..., description="已驳回数量")
@@ -187,18 +208,18 @@ __all__ = [
     "FollowUpBase",
     "FollowUpCreate",
     "FollowUpResponse",
+    # Lead
+    "LeadBase",
+    "LeadCreate",
+    # Funnel
+    "LeadFunnelResponse",
+    "LeadListItem",
+    "LeadResponse",
+    "LeadUpdate",
+    "PaginatedLeadListResponse",
+    "PaginatedLeadResponse",
     # Price History
     "PriceHistoryBase",
     "PriceHistoryCreate",
     "PriceHistoryResponse",
-    # Lead
-    "LeadBase",
-    "LeadCreate",
-    "LeadUpdate",
-    "LeadResponse",
-    "PaginatedLeadResponse",
-    "LeadListItem",
-    "PaginatedLeadListResponse",
-    # Funnel
-    "LeadFunnelResponse",
 ]

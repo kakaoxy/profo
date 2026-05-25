@@ -1,26 +1,32 @@
-"""
-房源响应模型
-"""
+"""房源响应模型."""
+
+import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel
 
-from ..response import PaginatedResponse
-import logging
+from backend.schemas.response import PaginatedResponse
 
 if TYPE_CHECKING:
+    from models.property.community import Community
     from models.property.property import PropertyCurrent
 
 logger = logging.getLogger(__name__)
 
 PROPERTY_EXPIRATION_DAYS = 30
 
+
 def _compute_display_status(property_obj: "PropertyCurrent") -> str:
+    """计算房源显示状态.
+
+    对"在售"状态的房源，检查更新时间是否超过30天，若超过则显示为"过期".
+    """
     raw_status = property_obj.status.value
     if raw_status != "在售":
         return raw_status
     if property_obj.updated_at is None:
-        logger.warning(f"房源 {property_obj.source_property_id} 的 updated_at 为空，跳过过期判断")
+        logger.warning("房源 %s 的 updated_at 为空，跳过过期判断", property_obj.source_property_id)
         return raw_status
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(days=PROPERTY_EXPIRATION_DAYS)
@@ -29,135 +35,134 @@ def _compute_display_status(property_obj: "PropertyCurrent") -> str:
         updated_at = updated_at.replace(tzinfo=timezone.utc)
     days_since = (now - updated_at).days
     is_expired = updated_at < cutoff
-    logger.debug(f"过期判断 | 房源={property_obj.source_property_id} | updated_at={updated_at} | days_since={days_since}天 | cutoff={cutoff} | is_expired={is_expired}")
+    logger.debug(
+        "过期判断 | 房源=%s | updated_at=%s | days_since=%s天 | cutoff=%s | is_expired=%s",
+        property_obj.source_property_id,
+        updated_at,
+        days_since,
+        cutoff,
+        is_expired,
+    )
     if is_expired:
         return "过期"
     return "在售"
 
 
+def _has_complete_layout(property_obj: "PropertyCurrent") -> bool:
+    """检查是否有完整的户型信息（室、厅、卫）."""
+    return (
+        property_obj.halls is not None
+        and property_obj.halls > 0
+        and property_obj.baths is not None
+        and property_obj.baths > 0
+    )
+
+
+def _has_valid_floor_info(property_obj: "PropertyCurrent") -> bool:
+    """检查是否有有效的楼层信息."""
+    return (
+        property_obj.floor_number
+        and property_obj.total_floors
+        and property_obj.floor_number > 0
+        and property_obj.total_floors > 0
+    )
+
+
+def _calculate_unit_price(total_price: float, build_area: float) -> float:
+    """计算单价（元/平米）."""
+    return (total_price * 10000 / build_area) if build_area > 0 else 0
+
+
+def _get_picture_links(
+    property_obj: "PropertyCurrent",
+    preloaded_media: list | None = None,
+) -> list[str]:
+    """获取图片链接."""
+    image_types = {"interior", "exterior", "floor_plan", "other"}
+
+    if preloaded_media:
+        return [media.url for media in preloaded_media if media.media_type.value in image_types]
+
+    if hasattr(property_obj, "property_media") and property_obj.property_media:
+        return [media.url for media in property_obj.property_media if media.media_type.value in image_types]
+
+    return []
+
+
 class PropertyResponse(BaseModel):
-    """房源列表响应模型，包含计算字段"""
-    
+    """房源列表响应模型，包含计算字段."""
+
     id: int
     data_source: str
     source_property_id: str
     status: str
-    
-    # 小区信息
+
     community_id: str
     community_name: str
-    district: Optional[str] = None
-    business_circle: Optional[str] = None
-    
-    # 户型信息
+    district: str | None = None
+    business_circle: str | None = None
+
     rooms: int
     halls: int
     baths: int
     layout_display: str
     orientation: str
-    
-    # 楼层信息
+
     floor_display: str
-    floor_level: Optional[str] = None
-    
-    # 面积信息
+    floor_level: str | None = None
+
     build_area: float
-    inner_area: Optional[float] = None
-    
-    # 价格信息
-    total_price: float  # 根据状态返回 listed_price_wan 或 sold_price_wan
-    unit_price: float  # 计算字段: total_price / build_area
-    
-    # 时间信息
-    listed_date: Optional[datetime] = None
-    sold_date: Optional[datetime] = None
-    transaction_duration_days: Optional[int] = None  # 成交周期(天)
-    
-    # 建筑信息
-    property_type: Optional[str] = None
-    build_year: Optional[int] = None
-    decoration: Optional[str] = None
-    elevator: Optional[bool] = None
-    
-    # 图片信息
-    picture_links: Optional[List[str]] = None
-    
-    # 元数据
+    inner_area: float | None = None
+
+    total_price: float
+    unit_price: float
+
+    listed_date: datetime | None = None
+    sold_date: datetime | None = None
+    transaction_duration_days: int | None = None
+
+    property_type: str | None = None
+    build_year: int | None = None
+    decoration: str | None = None
+    elevator: bool | None = None
+
+    picture_links: list[str] | None = None
+
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = {
-        "from_attributes": True
+        "from_attributes": True,
     }
-    
-    @staticmethod
-    def _has_complete_layout(property_obj) -> bool:
-        """检查是否有完整的户型信息（室、厅、卫）"""
-        return (
-            property_obj.halls is not None and property_obj.halls > 0 and
-            property_obj.baths is not None and property_obj.baths > 0
-        )
-
-    @staticmethod
-    def _has_valid_floor_info(property_obj) -> bool:
-        """检查是否有有效的楼层信息"""
-        return (
-            property_obj.floor_number and property_obj.total_floors and
-            property_obj.floor_number > 0 and property_obj.total_floors > 0
-        )
-
-    @staticmethod
-    def _calculate_unit_price(total_price: float, build_area: float) -> float:
-        """计算单价（元/平米）"""
-        return (total_price * 10000 / build_area) if build_area > 0 else 0
-
-    @staticmethod
-    def _get_picture_links(property_obj, preloaded_media=None):
-        """
-        获取图片链接
-        """
-        # 定义图片类型的枚举值
-        IMAGE_TYPES = {"interior", "exterior", "floor_plan", "other"}
-        
-        # 从预加载数据获取图片链接
-        if preloaded_media:
-            return [media.url for media in preloaded_media
-                   if media.media_type.value in IMAGE_TYPES]
-        
-        # 如果没有预加载数据，尝试从关系属性获取
-        if hasattr(property_obj, 'property_media') and property_obj.property_media:
-            return [media.url for media in property_obj.property_media
-                   if media.media_type.value in IMAGE_TYPES]
-        
-        return []
 
     @classmethod
-    def from_orm_with_calculations(cls, property_obj, community, preloaded_media=None):
-        # 确定总价
+    def from_orm_with_calculations(
+        cls,
+        property_obj: "PropertyCurrent",
+        community: "Community",
+        preloaded_media: list | None = None,
+    ) -> "PropertyResponse":
+        """从ORM对象创建响应模型，包含计算字段."""
         if property_obj.status.value == "在售":
             total_price = property_obj.listed_price_wan or 0
         else:
             total_price = property_obj.sold_price_wan or 0
-        
-        # 计算单价
-        unit_price = cls._calculate_unit_price(total_price, property_obj.build_area)
-        
-        # 计算成交周期
+
+        unit_price = _calculate_unit_price(total_price, property_obj.build_area)
+
         transaction_duration_days = None
         if property_obj.status.value == "成交" and property_obj.listed_date and property_obj.sold_date:
             duration = property_obj.sold_date - property_obj.listed_date
             transaction_duration_days = duration.days
-        
-        # 户型展示
+
         layout_display = f"{property_obj.rooms}室"
-        if cls._has_complete_layout(property_obj):
+        if _has_complete_layout(property_obj):
             layout_display = f"{property_obj.rooms}室{property_obj.halls}厅{property_obj.baths}卫"
 
-        # 楼层展示
         floor_display = property_obj.floor_original or "暂无数据"
-        if cls._has_valid_floor_info(property_obj):
+        if _has_valid_floor_info(property_obj):
             floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}层"
-        
+
         return cls(
             id=property_obj.id,
             data_source=property_obj.data_source,
@@ -187,93 +192,97 @@ class PropertyResponse(BaseModel):
             elevator=property_obj.elevator,
             created_at=property_obj.created_at,
             updated_at=property_obj.updated_at,
-            picture_links=cls._get_picture_links(property_obj, preloaded_media)
+            picture_links=_get_picture_links(property_obj, preloaded_media),
         )
 
 
 class PropertyDetailResponse(BaseModel):
-    """房源详情响应模型，包含所有字段"""
-    
+    """房源详情响应模型，包含所有字段."""
+
     id: int
     data_source: str
     source_property_id: str
     status: str
-    
-    # 小区信息
+
     community_id: str
     community_name: str
-    district: Optional[str] = None
-    business_circle: Optional[str] = None
+    district: str | None = None
+    business_circle: str | None = None
 
-    # 户型信息
     rooms: int
     halls: int
     baths: int
     layout_display: str
     orientation: str
 
-    # 楼层信息
     floor_original: str
     floor_display: str
-    floor_number: Optional[int] = None
-    total_floors: Optional[int] = None
-    floor_level: Optional[str] = None
+    floor_number: int | None = None
+    total_floors: int | None = None
+    floor_level: str | None = None
 
-    # 面积信息
     build_area: float
-    inner_area: Optional[float] = None
+    inner_area: float | None = None
 
-    # 价格信息
-    listed_price_wan: Optional[float] = None
-    sold_price_wan: Optional[float] = None
+    listed_price_wan: float | None = None
+    sold_price_wan: float | None = None
     unit_price: float
-    transaction_duration_display: Optional[str] = None
-    discount_rate_display: Optional[str] = None
-    
-    # 时间信息
-    listed_date: Optional[datetime] = None
-    sold_date: Optional[datetime] = None
-    transaction_duration_days: Optional[int] = None
-    
-    # 建筑信息
-    property_type: Optional[str] = None
-    build_year: Optional[int] = None
-    building_structure: Optional[str] = None
-    decoration: Optional[str] = None
-    elevator: Optional[bool] = None
-    
-    # 产权信息
-    ownership_type: Optional[str] = None
-    ownership_years: Optional[int] = None
-    last_transaction: Optional[str] = None
-    
-    # 其他信息
-    heating_method: Optional[str] = None
-    listing_remarks: Optional[str] = None
-    
-    # 图片信息
-    picture_links: Optional[List[str]] = None
-    
-    # 元数据
+    transaction_duration_display: str | None = None
+    discount_rate_display: str | None = None
+
+    listed_date: datetime | None = None
+    sold_date: datetime | None = None
+    transaction_duration_days: int | None = None
+
+    property_type: str | None = None
+    build_year: int | None = None
+    building_structure: str | None = None
+    decoration: str | None = None
+    elevator: bool | None = None
+
+    ownership_type: str | None = None
+    ownership_years: int | None = None
+    last_transaction: str | None = None
+
+    heating_method: str | None = None
+    listing_remarks: str | None = None
+
+    picture_links: list[str] | None = None
+
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = {
-        "from_attributes": True
+        "from_attributes": True,
     }
 
     @staticmethod
-    def _has_valid_discount_data(property_obj) -> bool:
-        """检查是否有有效的议价数据来计算折扣率"""
+    def _has_valid_discount_data(property_obj: "PropertyCurrent") -> bool:
+        """检查是否有有效的议价数据来计算折扣率."""
         return (
-            property_obj.listed_price_wan and property_obj.listed_price_wan > 0 and
-            property_obj.sold_price_wan and property_obj.sold_price_wan >= 0
+            property_obj.listed_price_wan
+            and property_obj.listed_price_wan > 0
+            and property_obj.sold_price_wan
+            and property_obj.sold_price_wan >= 0
         )
 
     @classmethod
-    def from_orm_with_calculations(cls, property_obj, community):
-        total_price = property_obj.listed_price_wan or 0 if property_obj.status.value == "在售" else property_obj.sold_price_wan or 0
-        unit_price = (total_price * 10000 / property_obj.build_area) if property_obj.build_area and property_obj.build_area > 0 else 0
+    def from_orm_with_calculations(
+        cls,
+        property_obj: "PropertyCurrent",
+        community: "Community",
+    ) -> "PropertyDetailResponse":
+        """从ORM对象创建详情响应模型，包含计算字段."""
+        total_price = (
+            property_obj.listed_price_wan or 0
+            if property_obj.status.value == "在售"
+            else property_obj.sold_price_wan or 0
+        )
+        unit_price = (
+            (total_price * 10000 / property_obj.build_area)
+            if property_obj.build_area and property_obj.build_area > 0
+            else 0
+        )
 
         transaction_duration_days = None
         transaction_duration_display = None
@@ -283,11 +292,11 @@ class PropertyDetailResponse(BaseModel):
             transaction_duration_display = f"{duration.days}天"
 
         layout_display = f"{property_obj.rooms}室"
-        if PropertyResponse._has_complete_layout(property_obj):
+        if _has_complete_layout(property_obj):
             layout_display = f"{property_obj.rooms}室{property_obj.halls}厅{property_obj.baths}卫"
 
         floor_display = property_obj.floor_original or "暂无数据"
-        if PropertyResponse._has_valid_floor_info(property_obj):
+        if _has_valid_floor_info(property_obj):
             floor_display = f"{property_obj.floor_number}/{property_obj.total_floors}层"
 
         discount_rate_display = None
@@ -335,10 +344,9 @@ class PropertyDetailResponse(BaseModel):
             heating_method=property_obj.heating_method,
             listing_remarks=property_obj.listing_remarks,
             created_at=property_obj.created_at,
-            updated_at=property_obj.updated_at
+            updated_at=property_obj.updated_at,
         )
 
 
 class PaginatedPropertyResponse(PaginatedResponse[PropertyResponse]):
-    """分页房源列表响应 - 统一分页格式"""
-    pass
+    """分页房源列表响应 - 统一分页格式."""

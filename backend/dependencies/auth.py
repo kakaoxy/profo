@@ -1,18 +1,18 @@
-"""
-认证相关依赖注入函数
-"""
-from typing import Annotated, Optional
+"""认证相关依赖注入函数."""  # noqa: INP001
 
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer
+from collections.abc import Callable
+from typing import Annotated
+
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 
 from db import get_db
 from models import User
+from services.system import ApiKeyService
 from settings import settings
 from utils.auth import validate_token
-from services.system import ApiKeyService
 
 # OAuth2密码承载器，用于从请求头中获取token
 oauth2_scheme = OAuth2PasswordBearer(
@@ -28,9 +28,9 @@ async def require_api_key(
     request: Request,
     db: DbSessionDep,
 ) -> User:
-    """
-    仅通过 API Key 认证用户
-    不接受 JWT Token，专用于机器对机器的 API 调用
+    """仅通过 API Key 认证用户.
+
+    不接受 JWT Token，专用于机器对机器的 API 调用.
 
     Args:
         request: FastAPI请求对象
@@ -41,6 +41,7 @@ async def require_api_key(
 
     Raises:
         HTTPException: 401 Unauthorized - API Key 无效或缺失
+
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -55,10 +56,9 @@ async def require_api_key(
 
     try:
         # 使用run_in_threadpool调用同步的数据库操作
-        user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
-        return user
-    except Exception:
-        raise credentials_exception
+        return await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+    except Exception:  # noqa: BLE001
+        raise credentials_exception from None
 
 
 # API Key 认证依赖类型
@@ -68,13 +68,13 @@ ApiKeyAuthDep = Annotated[User, Depends(require_api_key)]
 async def get_current_user(
     request: Request,
     db: DbSessionDep,
-    token_from_header: Optional[str] = Depends(oauth2_scheme),
+    token_from_header: str | None = Depends(oauth2_scheme),
 ) -> User:
-    """
-    获取当前用户
+    """获取当前用户.
+
     支持多种认证方式（按优先级）：
     1. JWT Token (Authorization Header Bearer 或 access_token cookie)
-    2. API Key (X-API-Key Header)
+    2. API Key (X-API-Key Header).
 
     Args:
         request: FastAPI请求对象
@@ -86,6 +86,7 @@ async def get_current_user(
 
     Raises:
         HTTPException: 401 Unauthorized - 令牌无效或用户不存在
+
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -123,10 +124,9 @@ async def get_current_user(
     if api_key:
         try:
             # 使用run_in_threadpool调用同步的数据库操作
-            user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
-            return user
-        except Exception:
-            raise credentials_exception
+            return await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+        except Exception:  # noqa: BLE001
+            raise credentials_exception from None
 
     # 没有任何认证信息
     raise credentials_exception
@@ -139,8 +139,7 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 async def get_current_active_user(
     current_user: CurrentUserDep,
 ) -> User:
-    """
-    获取当前活跃用户
+    """获取当前活跃用户.
 
     Args:
         current_user: 当前用户对象
@@ -150,11 +149,12 @@ async def get_current_active_user(
 
     Raises:
         HTTPException: 403 Forbidden - 用户未激活
+
     """
     if current_user.status != "active":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="用户未激活"
+            detail="用户未激活",
         )
 
     return current_user
@@ -164,23 +164,25 @@ async def get_current_active_user(
 CurrentActiveUserDep = Annotated[User, Depends(get_current_active_user)]
 
 
-def require_roles(required_roles: list[str]):
-    """
-    角色检查依赖工厂函数
+def require_roles(required_roles: list[str]) -> Callable[..., User]:
+    """角色检查依赖工厂函数.
 
     Args:
         required_roles: 允许的角色列表
 
     Returns:
         依赖函数，用于检查用户角色
+
     """
+
     async def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role.code not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="权限不足"
+                detail="权限不足",
             )
         return user
+
     return role_checker
 
 
@@ -193,19 +195,19 @@ CurrentCustomerUserDep = Annotated[User, Depends(require_roles(["customer"]))]
 
 
 __all__ = [
-    # 类型别名
-    "DbSessionDep",
-    "CurrentUserDep",
+    "ApiKeyAuthDep",
     "CurrentActiveUserDep",
     "CurrentAdminUserDep",
-    "CurrentOperatorUserDep",
-    "CurrentNormalUserDep",
-    "CurrentInternalUserDep",
     "CurrentCustomerUserDep",
-    "ApiKeyAuthDep",
+    "CurrentInternalUserDep",
+    "CurrentNormalUserDep",
+    "CurrentOperatorUserDep",
+    "CurrentUserDep",
+    # 类型别名
+    "DbSessionDep",
+    "get_current_active_user",
     # 依赖函数
     "get_current_user",
-    "get_current_active_user",
-    "require_roles",
     "require_api_key",
+    "require_roles",
 ]

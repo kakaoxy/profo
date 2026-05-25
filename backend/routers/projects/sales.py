@@ -1,76 +1,81 @@
-from typing import Annotated, Optional
+"""项目销售相关路由."""
+
+from typing import Annotated
+
 from fastapi import APIRouter, Path, Query, Request
-from dependencies.projects import ProjectServiceDep
+
+from common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep
-from schemas.project import SalesRolesUpdate, SalesRecordCreate, SalesRecordResponse, ProjectResponse
+from dependencies.projects import ProjectServiceDep
+from schemas.project import (
+    ProjectResponse,
+    SalesRecordCreate,
+    SalesRecordResponse,
+    SalesRolesUpdate,
+)
 from schemas.project.sales import SalesRecordListResponse
-from common import limiter, RateLimits
 
 router = APIRouter()
 
 
-@router.put("/{project_id}/selling/roles", response_model=ProjectResponse)
+@router.put("/{project_id}/selling/roles")
 @limiter.limit(RateLimits.SALES_UPDATE)
 def update_sales_roles(
-    request: Request,
+    _request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     roles_data: SalesRolesUpdate,
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
-):
-    """更新销售角色
-    速率限制：100次/小时
+    _current_user: CurrentInternalUserDep,
+) -> ProjectResponse:
+    """更新销售角色.
+
+    速率限制：100次/小时.
     """
-    project = service.update_sales_roles(project_id, roles_data)
-    return project
+    return service.update_sales_roles(project_id, roles_data)
 
 
-@router.post("/{project_id}/selling/viewings", response_model=SalesRecordResponse, status_code=201)
+@router.post("/{project_id}/selling/viewings", status_code=201)
 def create_viewing_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
-):
-    """创建带看记录"""
-    record = service.create_sales_record(project_id, record_data)
-    return record
+    _current_user: CurrentInternalUserDep,
+) -> SalesRecordResponse:
+    """创建带看记录."""
+    return service.create_sales_record(project_id, record_data)
 
 
-@router.post("/{project_id}/selling/offers", response_model=SalesRecordResponse, status_code=201)
+@router.post("/{project_id}/selling/offers", status_code=201)
 def create_offer_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
-):
-    """创建出价记录"""
-    record = service.create_sales_record(project_id, record_data)
-    return record
+    _current_user: CurrentInternalUserDep,
+) -> SalesRecordResponse:
+    """创建出价记录."""
+    return service.create_sales_record(project_id, record_data)
 
 
-@router.post("/{project_id}/selling/negotiations", response_model=SalesRecordResponse, status_code=201)
+@router.post("/{project_id}/selling/negotiations", status_code=201)
 def create_negotiation_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
-):
-    """创建面谈记录"""
-    record = service.create_sales_record(project_id, record_data)
-    return record
+    _current_user: CurrentInternalUserDep,
+) -> SalesRecordResponse:
+    """创建面谈记录."""
+    return service.create_sales_record(project_id, record_data)
 
 
-@router.get("/{project_id}/selling/records", response_model=SalesRecordListResponse)
+@router.get("/{project_id}/selling/records")
 def get_sales_records(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
-    record_type: Annotated[Optional[str], Query(description="记录类型筛选")] = None,
+    _current_user: CurrentInternalUserDep,
+    record_type: Annotated[str | None, Query(description="记录类型筛选")] = None,
 ) -> SalesRecordListResponse:
-    """获取销售记录"""
+    """获取销售记录."""
     records = service.get_sales_records(project_id, record_type)
-    # 将字典列表转换为 Pydantic 模型
     items = [SalesRecordResponse.model_validate(r) for r in records]
     return SalesRecordListResponse(items=items, total=len(items))
 
@@ -78,14 +83,14 @@ def get_sales_records(
 @router.delete("/{project_id}/selling/records/{record_id}", status_code=204)
 @limiter.limit(RateLimits.SALES_DELETE)
 def delete_sales_record(
-    request: Request,
+    _request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,
-    current_user: CurrentInternalUserDep,
-):
-    """删除销售记录
-    速率限制：20次/小时
+    _current_user: CurrentInternalUserDep,
+) -> None:
+    """删除销售记录.
+
+    速率限制：20次/小时.
     """
     service.delete_sales_record(project_id, record_id)
-    return None

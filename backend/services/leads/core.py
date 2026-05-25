@@ -1,22 +1,23 @@
-"""
-线索核心服务
-负责线索的创建、更新、删除，组合查询和关联服务
-"""
-from datetime import datetime
-from typing import Optional, Dict, Any
-import uuid
+"""线索核心服务.
 
-from sqlalchemy.orm import Session
+负责线索的创建、更新、删除，组合查询和关联服务.
+"""
+
+import uuid
+from datetime import datetime, timezone
+from typing import Any
+
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
 from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
-from .internal import LeadQueryService, LeadPriceService
+
+from .internal import LeadPriceService, LeadQueryService
 
 
 class LeadService:
-    """
-    线索核心业务服务
+    """线索核心业务服务.
 
     负责线索的全生命周期管理，采用组件化设计，内部组合使用各子服务模块。
 
@@ -24,22 +25,22 @@ class LeadService:
         db: SQLAlchemy数据库会话
         query_service: 查询服务组件
         price_service: 价格服务组件
+
     """
 
-    def __init__(self, db: Session):
-        """
-        初始化线索业务服务
+    def __init__(self, db: Session) -> None:
+        """初始化线索业务服务.
 
         Args:
             db: SQLAlchemy数据库会话
+
         """
         self.db = db
         self.query_service = LeadQueryService(db)
         self.price_service = LeadPriceService(db)
 
     def create_lead(self, lead_data: LeadCreate, creator_id: str) -> Lead:
-        """
-        创建线索
+        """创建线索.
 
         Args:
             lead_data: 线索创建数据
@@ -47,6 +48,7 @@ class LeadService:
 
         Returns:
             创建成功的线索对象
+
         """
         db_lead = Lead(
             **lead_data.model_dump(),
@@ -66,21 +68,20 @@ class LeadService:
         self.db.refresh(db_lead)
         return db_lead
 
-    def get_lead(self, lead_id: str) -> Optional[Lead]:
-        """
-        获取单个线索详情
+    def get_lead(self, lead_id: str) -> Lead | None:
+        """获取单个线索详情.
 
         Args:
             lead_id: 线索ID
 
         Returns:
             线索对象，不存在时返回None
+
         """
         return self.query_service.get_by_id(lead_id)
 
     def get_lead_or_404(self, lead_id: str) -> Lead:
-        """
-        获取线索，不存在时抛出404错误
+        """获取线索，不存在时抛出404错误.
 
         Args:
             lead_id: 线索ID
@@ -90,25 +91,25 @@ class LeadService:
 
         Raises:
             HTTPException: 404 当线索不存在时
+
         """
         lead = self.get_lead(lead_id)
         if not lead:
             raise HTTPException(status_code=404, detail="Lead not found")
         return lead
 
-    def get_leads(
+    def get_leads(  # noqa: PLR0913
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None,
-        statuses: Optional[list] = None,
-        district: Optional[str] = None,
-        creator_id: Optional[str] = None,
-        layout: Optional[str] = None,
-        floor: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        获取线索列表（分页）
+        search: str | None = None,
+        statuses: list | None = None,
+        district: str | None = None,
+        creator_id: str | None = None,
+        layout: str | None = None,
+        floor: str | None = None,
+    ) -> dict[str, Any]:
+        """获取线索列表（分页）.
 
         Args:
             page: 页码
@@ -122,6 +123,7 @@ class LeadService:
 
         Returns:
             包含线索列表和分页信息的字典
+
         """
         return self.query_service.get_list(
             page=page,
@@ -135,8 +137,7 @@ class LeadService:
         )
 
     def update_lead(self, lead_id: str, update_data: LeadUpdate, updater_id: str) -> Lead:
-        """
-        更新线索信息
+        """更新线索信息.
 
         Args:
             lead_id: 线索ID
@@ -148,6 +149,7 @@ class LeadService:
 
         Raises:
             HTTPException: 404 当线索不存在时
+
         """
         lead = self.get_lead_or_404(lead_id)
         update_dict = update_data.model_dump(exclude_unset=True)
@@ -164,21 +166,21 @@ class LeadService:
         for field, value in update_dict.items():
             setattr(lead, field, value)
 
-        lead.updated_at = datetime.now()
+        lead.updated_at = datetime.now(timezone.utc)
         self.db.add(lead)
         self.db.commit()
         self.db.refresh(lead)
         return lead
 
     def delete_lead(self, lead_id: str) -> None:
-        """
-        删除线索
+        """删除线索.
 
         Args:
             lead_id: 线索ID
 
         Raises:
             HTTPException: 404 当线索不存在时
+
         """
         lead = self.get_lead_or_404(lead_id)
         self.db.delete(lead)
