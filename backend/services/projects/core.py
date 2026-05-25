@@ -103,7 +103,7 @@ class ProjectCoreService:
             项目响应数据，不存在时返回None
 
         """
-        project = self.query_service.get_by_id(project_id, include_all)
+        project = self.query_service.get_by_id(project_id, include_all=include_all)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def get_projects(

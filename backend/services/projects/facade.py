@@ -65,7 +65,7 @@ class ProjectService:
 
     def get_project(self, project_id: str, include_all: bool = False) -> ProjectResponse | None:  # noqa: FBT001, FBT002
         """获取项目详情."""
-        return self._core_service.get_project(project_id, include_all)
+        return self._core_service.get_project(project_id, include_all=include_all)
 
     def get_projects(
         self,
