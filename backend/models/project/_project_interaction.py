@@ -1,13 +1,13 @@
-"""
-互动过程模型
-"""
-from sqlalchemy import Column, String, Numeric, DateTime, Text, ForeignKey, Index
+"""互动过程模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Numeric, String, Text
+
+from backend.models.common.base import BaseModel
 
 
 class ProjectInteraction(BaseModel):
-    """互动过程明细表（替换sales_records）"""
+    """互动过程明细表（替换sales_records）."""
+
     __tablename__ = "project_interactions"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")

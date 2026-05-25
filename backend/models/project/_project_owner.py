@@ -1,13 +1,13 @@
-"""
-业主信息模型
-"""
-from sqlalchemy import Column, String, Text, Boolean, ForeignKey, Index
+"""业主信息模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import Boolean, Column, ForeignKey, Index, String, Text
+
+from backend.models.common.base import BaseModel
 
 
 class ProjectOwner(BaseModel):
-    """业主信息表"""
+    """业主信息表."""
+
     __tablename__ = "project_owners"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
@@ -20,6 +20,4 @@ class ProjectOwner(BaseModel):
 
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
-    __table_args__ = (
-        Index("idx_owner_project", "project_id"),
-    )
+    __table_args__ = (Index("idx_owner_project", "project_id"),)

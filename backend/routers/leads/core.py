@@ -1,34 +1,30 @@
-"""
-线索核心 CRUD 路由
-"""
-from typing import Annotated, Optional
+"""线索核心 CRUD 路由."""
+
+from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
+from common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from models.common import LeadStatus
 from schemas.lead import (
     LeadCreate,
-    LeadUpdate,
-    LeadResponse,
-    PaginatedLeadListResponse,
-    LeadListItem,
     LeadFunnelResponse,
+    LeadListItem,
+    LeadResponse,
+    LeadUpdate,
+    PaginatedLeadListResponse,
 )
 from services.leads import LeadService
-from common import limiter, RateLimits
 
 router = APIRouter()
 
+_MAX_IMAGE_LENGTH = 500
 
-def _lead_to_list_item(lead) -> LeadListItem:
-    """将 Lead ORM 对象转换为 LeadListItem"""
-    # 过滤错误存储的大型数据（如 base64 图片），只保留正常的 URL（通常 < 500 字符）
-    safe_images = []
-    if lead.images:
-        for img in lead.images:
-            if isinstance(img, str) and len(img) < 500:
-                safe_images.append(img)
+
+def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
+    """将 Lead ORM 对象转换为 LeadListItem."""
+    safe_images = [img for img in (lead.images or []) if isinstance(img, str) and len(img) < _MAX_IMAGE_LENGTH]
 
     return LeadListItem(
         id=lead.id,
@@ -59,22 +55,22 @@ def _lead_to_list_item(lead) -> LeadListItem:
     )
 
 
-@router.get("/", response_model=PaginatedLeadListResponse)
-def get_leads(
+@router.get("/")
+def get_leads(  # noqa: PLR0913
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 20,
-    search: Annotated[Optional[str], Query(description="小区名称搜索")] = None,
-    statuses: Annotated[Optional[list[LeadStatus]], Query(description="状态筛选")] = None,
-    district: Annotated[Optional[str], Query(description="行政区筛选")] = None,
-    creator_id: Annotated[Optional[str], Query(description="创建人筛选")] = None,
-    layout: Annotated[Optional[str], Query(description="户型筛选")] = None,
-    floor: Annotated[Optional[str], Query(description="楼层筛选")] = None,
+    search: Annotated[str | None, Query(description="小区名称搜索")] = None,
+    statuses: Annotated[list[LeadStatus] | None, Query(description="状态筛选")] = None,
+    district: Annotated[str | None, Query(description="行政区筛选")] = None,
+    creator_id: Annotated[str | None, Query(description="创建人筛选")] = None,
+    layout: Annotated[str | None, Query(description="户型筛选")] = None,
+    floor: Annotated[str | None, Query(description="楼层筛选")] = None,
 ) -> PaginatedLeadListResponse:
-    """
-    获取线索列表
-    使用手动序列化避免 ORM 关系遍历导致的性能问题
+    """获取线索列表.
+
+    使用手动序列化避免 ORM 关系遍历导致的性能问题.
     """
     service = LeadService(db)
     result = service.get_leads(
@@ -88,7 +84,6 @@ def get_leads(
         floor=floor,
     )
 
-    # 手动序列化为 Pydantic 模型，避免 ORM 关系遍历
     items = [_lead_to_list_item(lead) for lead in result["items"]]
 
     return PaginatedLeadListResponse(
@@ -99,48 +94,47 @@ def get_leads(
     )
 
 
-@router.post("/", response_model=LeadResponse)
+@router.post("/")
 def create_lead(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     lead_in: LeadCreate,
-):
-    """创建线索"""
+) -> LeadResponse:
+    """创建线索."""
     service = LeadService(db)
     db_lead = service.create_lead(lead_in, current_user.id)
 
-    # 避免查询 for creator
     db_lead.creator = current_user
     return db_lead
 
 
-@router.get("/{lead_id}", response_model=LeadResponse)
+@router.get("/{lead_id}")
 def get_lead(
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],
-):
-    """获取单个线索详情"""
+) -> LeadResponse:
+    """获取单个线索详情."""
     service = LeadService(db)
     return service.get_lead_or_404(lead_id)
 
 
-@router.put("/{lead_id}", response_model=LeadResponse)
+@router.put("/{lead_id}")
 @limiter.limit(RateLimits.LEAD_UPDATE)
 def update_lead(
-    request: Request,
+    _request: Request,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],
     lead_in: LeadUpdate,
-):
-    """更新线索
-    速率限制：100次/小时
+) -> LeadResponse:
+    """更新线索.
+
+    速率限制：100次/小时.
     """
     service = LeadService(db)
     lead = service.update_lead(lead_id, lead_in, current_user.id)
 
-    # 确保 creator 关系已加载
     if not lead.creator:
         lead.creator = current_user
     return lead
@@ -149,27 +143,25 @@ def update_lead(
 @router.delete("/{lead_id}", status_code=204)
 @limiter.limit(RateLimits.LEAD_DELETE)
 def delete_lead(
-    request: Request,
+    _request: Request,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],
-):
-    """删除线索
-    速率限制：20次/小时
+) -> None:
+    """删除线索.
+
+    速率限制：20次/小时.
     """
     service = LeadService(db)
     service.delete_lead(lead_id)
-    return None
 
 
-@router.get("/stats/funnel", response_model=LeadFunnelResponse)
+@router.get("/stats/funnel")
 def get_leads_funnel(
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> LeadFunnelResponse:
-    """
-    获取线索漏斗统计数据
-    """
+    """获取线索漏斗统计数据."""
     service = LeadService(db)
     stats = service.query_service.get_funnel_stats()
     return LeadFunnelResponse(**stats)

@@ -1,38 +1,44 @@
-"""
-统一错误处理中间件和处理器
+"""统一错误处理中间件和处理器.
+
 提供友好的中文错误信息和失败记录保存
-符合 AGENTS.md 规范：错误统一 {"detail":"..."} via HTTPException
+符合 AGENTS.md 规范：错误统一 {"detail":"..."} via HTTPException.
 """
+
+import json
+import logging
+import traceback
+
 from fastapi import Request, status
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError, HTTPException
 from sqlalchemy.exc import (
     IntegrityError,
     SQLAlchemyError,
 )
-import logging
-import json
-import traceback
 from starlette.concurrency import run_in_threadpool
 
-from services.system.exceptions import ServiceException
-from utils.error_formatters import format_request_validation_error, format_database_error
 from services.system import save_failed_record
+from services.system.exceptions import ServiceException
+from utils.error_formatters import (
+    format_database_error,
+    format_request_validation_error,
+)
 from utils.security_logger import safe_log_request_body
 
 logger = logging.getLogger(__name__)
 
 # ==================== 公共函数 ====================
 
+
 async def save_failed_record_safely(
     request: Request,
     error_message: str,
     failure_type: str,
-    data_source: str | None = None
+    data_source: str | None = None,
 ) -> None:
-    """
-    安全地保存失败记录
-    统一处理请求体解析和脱敏逻辑，避免代码重复
+    """安全地保存失败记录.
+
+    统一处理请求体解析和脱敏逻辑，避免代码重复.
     """
     try:
         if request.method in ["POST", "PUT", "PATCH"]:
@@ -46,82 +52,87 @@ async def save_failed_record_safely(
                         data=safe_body,
                         error_message=error_message,
                         failure_type=failure_type,
-                        data_source=data_source
+                        data_source=data_source,
                     )
-    except Exception as e:
-        logger.warning(f"保存失败记录时出错: {str(e)}")
+    except Exception as e:  # noqa: BLE001
+        logger.warning("保存失败记录时出错: %s", e)
 
 
 # ==================== 异常处理器函数 ====================
 
-async def service_exception_handler(request: Request, exc: ServiceException) -> JSONResponse:
+
+async def service_exception_handler(_request: Request, exc: ServiceException) -> JSONResponse:
+    """处理服务层业务异常.
+
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
     """
-    处理服务层业务异常
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    """
-    logger.warning(f"服务层业务异常: {exc.status_code} - {exc.message}")
+    logger.warning("服务层业务异常: %s - %s", exc.status_code, exc.message)
 
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.message}
+        content={"detail": exc.message},
     )
 
 
 async def validation_exception_handler(
     request: Request,
-    exc: RequestValidationError
+    exc: RequestValidationError,
 ) -> JSONResponse:
-    """
-    处理请求验证错误
+    """处理请求验证错误.
+
     符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    已修复：使用安全日志记录，脱敏敏感信息
+    已修复：使用安全日志记录，脱敏敏感信息.
     """
     error_message = format_request_validation_error(exc)
 
-    # 使用安全日志记录请求体（脱敏敏感字段）
     safe_body = None
     try:
         if request.method in ["POST", "PUT", "PATCH"]:
             body = await request.body()
             if body:
                 safe_body = safe_log_request_body(body)
-    except Exception:
-        pass
+    except Exception:  # noqa: BLE001
+        logger.debug("无法解析请求体", exc_info=True)
 
     if safe_body:
-        logger.warning(f"请求验证失败: {error_message}, 请求体: {json.dumps(safe_body, ensure_ascii=False)}, 原始错误: {exc.errors()}")
+        logger.warning(
+            "请求验证失败: %s, 请求体: %s, 原始错误: %s",
+            error_message,
+            json.dumps(safe_body, ensure_ascii=False),
+            exc.errors(),
+        )
     else:
-        logger.warning(f"请求验证失败: {error_message}, 原始错误: {exc.errors()}")
+        logger.warning("请求验证失败: %s, 原始错误: %s", error_message, exc.errors())
 
     # 尝试保存失败记录（使用脱敏后的数据）
     await save_failed_record_safely(
         request=request,
         error_message=error_message,
-        failure_type="request_validation_error"
+        failure_type="request_validation_error",
     )
 
     # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": f"请求参数验证失败: {error_message}"}
+        content={"detail": f"请求参数验证失败: {error_message}"},
     )
 
 
 async def sqlalchemy_exception_handler(
-    request: Request,
-    exc: SQLAlchemyError
+    _request: Request,
+    exc: SQLAlchemyError,
 ) -> JSONResponse:
-    """
-    处理数据库错误
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    """处理数据库错误.
+
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
     """
     error_message = format_database_error(exc)
 
-    logger.error(f"数据库错误: {error_message} - {str(exc)}")
+    logger.error("数据库错误: %s - %s", error_message, exc)
 
     # 根据错误类型确定状态码
     if isinstance(exc, IntegrityError):
-        if 'UNIQUE constraint failed' in str(exc):
+        if "UNIQUE constraint failed" in str(exc):
             status_code = status.HTTP_409_CONFLICT
         else:
             status_code = status.HTTP_400_BAD_REQUEST
@@ -131,43 +142,42 @@ async def sqlalchemy_exception_handler(
     # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
     return JSONResponse(
         status_code=status_code,
-        content={"detail": error_message}
+        content={"detail": error_message},
     )
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    """
-    处理 HTTP 异常
+async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
+    """处理 HTTP 异常.
+
     FastAPI 的 HTTPException 默认格式已经是 {"detail": "..."}
-    直接透传，保持格式一致
+    直接透传，保持格式一致.
     """
-    logger.warning(f"HTTP 异常: {exc.status_code} - {exc.detail}")
+    logger.warning("HTTP 异常: %s - %s", exc.status_code, exc.detail)
 
     # HTTPException 默认就是 {"detail": "..."} 格式，直接透传
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail}
+        content={"detail": exc.detail},
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """
-    处理通用异常（兜底处理）
+    """处理通用异常（兜底处理）.
+
     符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    已修复：使用安全日志记录请求体，脱敏敏感信息
+    已修复：使用安全日志记录请求体，脱敏敏感信息.
     """
-    # 记录完整的错误堆栈
     error_traceback = traceback.format_exc()
-    logger.error(f"未处理的异常: {str(exc)}\n{error_traceback}")
+    logger.error("未处理的异常: %s\n%s", exc, error_traceback)
 
     # 尝试保存失败记录（使用脱敏后的数据）
     await save_failed_record_safely(
         request=request,
         error_message=str(exc),
-        failure_type="system_error"
+        failure_type="system_error",
     )
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "服务器内部错误，请稍后重试"}
+        content={"detail": "服务器内部错误，请稍后重试"},
     )

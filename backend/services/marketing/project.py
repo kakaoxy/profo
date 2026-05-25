@@ -1,31 +1,40 @@
-"""
-L4 市场营销层项目服务
-职责: 营销项目管理
-"""
-from typing import List, Tuple, Optional
-from sqlalchemy.orm import Session, Query
-from sqlalchemy import and_, desc
+"""L4 市场营销层项目服务.
 
-from models import L4MarketingProject, L4MarketingMedia
-from schemas.l4_marketing import L4MarketingProjectCreate, L4MarketingProjectUpdate, L4MarketingProjectSummary
-from schemas.l4_marketing.enums import PublishStatus, MarketingProjectStatus
+职责: 营销项目管理.
+"""
+
+from sqlalchemy import and_, desc
+from sqlalchemy.orm import Query, Session
+
+from models import L4MarketingMedia, L4MarketingProject
+from schemas.l4_marketing import (
+    L4MarketingProjectCreate,
+    L4MarketingProjectSummary,
+    L4MarketingProjectUpdate,
+)
+from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus
 
 
 class MarketingProjectService:
-    """L4 营销项目服务"""
+    """L4 营销项目服务."""
 
     def __init__(self, db: Session) -> None:
+        """初始化项目服务.
+
+        Args:
+            db: SQLAlchemy数据库会话
+
+        """
         self.db: Session = db
 
     def _build_base_query(
         self,
-        publish_status: Optional[PublishStatus] = None,
-        project_status: Optional[MarketingProjectStatus] = None,
-        consultant_id: Optional[str] = None,
-        community_id: Optional[str] = None,
+        publish_status: PublishStatus | None = None,
+        project_status: MarketingProjectStatus | None = None,
+        consultant_id: str | None = None,
+        community_id: str | None = None,
     ) -> Query:
-        """
-        构建基础查询 - 抽离复用的筛选逻辑
+        """构建基础查询 - 抽离复用的筛选逻辑.
 
         Args:
             publish_status: 发布状态筛选
@@ -35,9 +44,10 @@ class MarketingProjectService:
 
         Returns:
             基础查询对象
+
         """
         query = self.db.query(L4MarketingProject).filter(
-            L4MarketingProject.is_deleted.is_(False)
+            L4MarketingProject.is_deleted.is_(False),
         )
 
         if publish_status is not None:
@@ -54,17 +64,16 @@ class MarketingProjectService:
 
         return query
 
-    def get_projects(
+    def get_projects(  # noqa: PLR0913
         self,
         skip: int = 0,
         limit: int = 20,
-        publish_status: Optional[PublishStatus] = None,
-        project_status: Optional[MarketingProjectStatus] = None,
-        consultant_id: Optional[str] = None,
-        community_id: Optional[str] = None,
-    ) -> Tuple[List[L4MarketingProject], int]:
-        """
-        获取营销项目列表
+        publish_status: PublishStatus | None = None,
+        project_status: MarketingProjectStatus | None = None,
+        consultant_id: str | None = None,
+        community_id: str | None = None,
+    ) -> tuple[list[L4MarketingProject], int]:
+        """获取营销项目列表.
 
         Args:
             skip: 跳过记录数
@@ -76,6 +85,7 @@ class MarketingProjectService:
 
         Returns:
             (项目列表, 总记录数)
+
         """
         query = self._build_base_query(
             publish_status=publish_status,
@@ -86,22 +96,26 @@ class MarketingProjectService:
 
         total: int = query.count()
 
-        items: List[L4MarketingProject] = query.order_by(
-            desc(L4MarketingProject.sort_order),
-            desc(L4MarketingProject.created_at)
-        ).offset(skip).limit(limit).all()
+        items: list[L4MarketingProject] = (
+            query.order_by(
+                desc(L4MarketingProject.sort_order),
+                desc(L4MarketingProject.created_at),
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
         return items, total
 
     def get_projects_summary(
         self,
-        publish_status: Optional[PublishStatus] = None,
-        project_status: Optional[MarketingProjectStatus] = None,
-        consultant_id: Optional[str] = None,
-        community_id: Optional[str] = None,
+        publish_status: PublishStatus | None = None,
+        project_status: MarketingProjectStatus | None = None,
+        consultant_id: str | None = None,
+        community_id: str | None = None,
     ) -> L4MarketingProjectSummary:
-        """
-        获取营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响
+        """获取营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响.
 
         Args:
             publish_status: 发布状态筛选
@@ -111,6 +125,7 @@ class MarketingProjectService:
 
         Returns:
             摘要统计对象
+
         """
         query = self._build_base_query(
             publish_status=publish_status,
@@ -124,10 +139,10 @@ class MarketingProjectService:
         # 仅在未指定发布状态筛选时，分别统计各发布状态数量
         if publish_status is None:
             published: int = query.filter(
-                L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value
+                L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
             ).count()
             draft: int = query.filter(
-                L4MarketingProject.publish_status == PublishStatus.DRAFT.value
+                L4MarketingProject.publish_status == PublishStatus.DRAFT.value,
             ).count()
         else:
             published = total if publish_status == PublishStatus.PUBLISHED else 0
@@ -136,13 +151,13 @@ class MarketingProjectService:
         # 仅在未指定项目状态筛选时，分别统计各项目状态数量
         if project_status is None:
             for_sale: int = query.filter(
-                L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value
+                L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value,
             ).count()
             sold: int = query.filter(
-                L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value
+                L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value,
             ).count()
             in_progress: int = query.filter(
-                L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value
+                L4MarketingProject.project_status == MarketingProjectStatus.IN_PROGRESS.value,
             ).count()
         else:
             for_sale = total if project_status == MarketingProjectStatus.FOR_SALE else 0
@@ -158,29 +173,32 @@ class MarketingProjectService:
             in_progress=in_progress,
         )
 
-    def get_project(self, project_id: int) -> Optional[L4MarketingProject]:
-        """
-        获取单个营销项目详情
+    def get_project(self, project_id: int) -> L4MarketingProject | None:
+        """获取单个营销项目详情.
 
         Args:
             project_id: 营销项目ID
 
         Returns:
             营销项目对象或None
+
         """
-        return self.db.query(L4MarketingProject).filter(
-            and_(
-                L4MarketingProject.id == project_id,
-                L4MarketingProject.is_deleted.is_(False)
+        return (
+            self.db.query(L4MarketingProject)
+            .filter(
+                and_(
+                    L4MarketingProject.id == project_id,
+                    L4MarketingProject.is_deleted.is_(False),
+                ),
             )
-        ).first()
+            .first()
+        )
 
     def create_project(
         self,
-        data: L4MarketingProjectCreate
+        data: L4MarketingProjectCreate,
     ) -> L4MarketingProject:
-        """
-        创建独立营销项目
+        """创建独立营销项目.
 
         项目和媒体文件在同一个事务中创建，确保数据一致性。
 
@@ -189,10 +207,11 @@ class MarketingProjectService:
 
         Returns:
             创建的营销项目
+
         """
         media_files = data.media_files
 
-        project_data = data.model_dump(exclude={'media_files'})
+        project_data = data.model_dump(exclude={"media_files"})
         db_obj = L4MarketingProject(**project_data)
         self.db.add(db_obj)
 
@@ -210,7 +229,7 @@ class MarketingProjectService:
                     renovation_stage=media_data.renovation_stage,
                     description=media_data.description,
                     sort_order=media_data.sort_order if media_data.sort_order is not None else idx,
-                    origin_media_id=media_data.origin_media_id
+                    origin_media_id=media_data.origin_media_id,
                 )
                 self.db.add(media_obj)
 
@@ -221,10 +240,9 @@ class MarketingProjectService:
     def update_project(
         self,
         project_id: int,
-        data: L4MarketingProjectUpdate
-    ) -> Optional[L4MarketingProject]:
-        """
-        更新营销项目
+        data: L4MarketingProjectUpdate,
+    ) -> L4MarketingProject | None:
+        """更新营销项目.
 
         Args:
             project_id: 营销项目ID
@@ -232,6 +250,7 @@ class MarketingProjectService:
 
         Returns:
             更新后的营销项目或None
+
         """
         db_obj = self.get_project(project_id)
         if not db_obj:
@@ -239,10 +258,22 @@ class MarketingProjectService:
 
         update_data = data.model_dump(exclude_unset=True)
         allowed_fields = {
-            'community_id', 'community_name', 'layout', 'orientation',
-            'floor_info', 'area', 'total_price', 'title', 'images',
-            'sort_order', 'tags', 'decoration_style', 'publish_status',
-            'project_status', 'project_id', 'consultant_id'
+            "community_id",
+            "community_name",
+            "layout",
+            "orientation",
+            "floor_info",
+            "area",
+            "total_price",
+            "title",
+            "images",
+            "sort_order",
+            "tags",
+            "decoration_style",
+            "publish_status",
+            "project_status",
+            "project_id",
+            "consultant_id",
         }
         # unit_price 由 area 和 total_price 自动计算，不允许直接修改
 
@@ -255,14 +286,14 @@ class MarketingProjectService:
         return db_obj
 
     def delete_project(self, project_id: int) -> bool:
-        """
-        逻辑删除营销项目
+        """逻辑删除营销项目.
 
         Args:
             project_id: 营销项目ID
 
         Returns:
             是否删除成功
+
         """
         db_obj = self.get_project(project_id)
         if not db_obj:

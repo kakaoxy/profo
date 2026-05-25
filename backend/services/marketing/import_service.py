@@ -1,32 +1,44 @@
+"""L4 市场营销层导入服务.
+
+负责从L3项目导入数据到L4营销房源.
 """
-L4 市场营销层导入服务
-负责从L3项目导入数据到L4营销房源
-"""
-from typing import Optional, List
+
+import re
 from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
-from models import Project, RenovationPhoto, Community
+from models import Community, Project, RenovationPhoto
 from schemas.l4_marketing.import_schemas import (
+    ImportableMediaResponse,
     L3ProjectImportResponse,
-    ImportableMediaResponse
 )
+
+_ROOM_NUMBER_MIN_LENGTH = 3
+_ROOM_NUMBER_FLOOR_OFFSET = 2
+_FLOOR_MAX = 100
 
 
 class MarketingImportService:
-    """L4营销导入服务
-    
+    """L4营销导入服务.
+
     负责从L3项目导入数据，实现写时复制(CoW)模式
     """
 
     def __init__(self, db: Session) -> None:
+        """初始化导入服务.
+
+        Args:
+            db: SQLAlchemy数据库会话
+
+        """
         self.db: Session = db
 
     def import_from_l3_project(
         self,
-        project_id: str
-    ) -> Optional[L3ProjectImportResponse]:
-        """从L3项目导入数据
+        project_id: str,
+    ) -> L3ProjectImportResponse | None:
+        """从L3项目导入数据.
 
         采用写时复制模式，将L3项目数据转换为L4营销房源初始数据
 
@@ -35,12 +47,17 @@ class MarketingImportService:
 
         Returns:
             导入数据响应，项目不存在返回None
+
         """
         # 查询项目及其关联数据
-        project: Optional[Project] = self.db.query(Project).filter(
-            Project.id == project_id,
-            Project.is_deleted.is_(False)
-        ).first()
+        project: Project | None = (
+            self.db.query(Project)
+            .filter(
+                Project.id == project_id,
+                Project.is_deleted.is_(False),
+            )
+            .first()
+        )
 
         if not project:
             return None
@@ -63,7 +80,13 @@ class MarketingImportService:
         floor_info = self._extract_floor_info(project.address)
 
         # 获取项目状态
-        status = project.status.value if hasattr(project.status, 'value') else str(project.status) if project.status else None
+        status = (
+            project.status.value
+            if hasattr(project.status, "value")
+            else str(project.status)
+            if project.status
+            else None
+        )
 
         return L3ProjectImportResponse(
             project_id=project_id,
@@ -79,20 +102,24 @@ class MarketingImportService:
             tags=None,
             decoration_style=None,
             status=status,
-            available_media=available_media
+            available_media=available_media,
         )
 
-    def _get_community_id(self, community_name: Optional[str]) -> Optional[str]:
-        """根据小区名称获取小区ID（UUID字符串）"""
+    def _get_community_id(self, community_name: str | None) -> str | None:
+        """根据小区名称获取小区ID（UUID字符串）."""
         if not community_name:
             return None
-        community: Optional[Community] = self.db.query(Community).filter(
-            Community.name == community_name
-        ).first()
+        community: Community | None = (
+            self.db.query(Community)
+            .filter(
+                Community.name == community_name,
+            )
+            .first()
+        )
         return community.id if community else None
 
-    def _get_total_price(self, project: Project) -> Optional[Decimal]:
-        """获取总价（优先使用签约价格）"""
+    def _get_total_price(self, project: Project) -> Decimal | None:
+        """获取总价（优先使用签约价格）."""
         if project.contract and project.contract.signing_price:
             return project.contract.signing_price
         if project.sale and project.sale.list_price:
@@ -101,16 +128,16 @@ class MarketingImportService:
 
     def _calculate_unit_price(
         self,
-        area: Optional[Decimal],
-        total_price: Optional[Decimal]
-    ) -> Optional[Decimal]:
-        """计算单价"""
-        if area and total_price and area > Decimal('0'):
+        area: Decimal | None,
+        total_price: Decimal | None,
+    ) -> Decimal | None:
+        """计算单价."""
+        if area and total_price and area > Decimal(0):
             return total_price / area
         return None
 
     def _generate_title(self, project: Project) -> str:
-        """生成标题"""
+        """生成标题."""
         parts = []
         if project.community_name:
             parts.append(project.community_name)
@@ -120,12 +147,17 @@ class MarketingImportService:
             parts.append(project.orientation)
         return " ".join(parts) if parts else "未命名房源"
 
-    def _get_available_media(self, project_id: str) -> List[ImportableMediaResponse]:
-        """获取项目可导入的媒体资源"""
-        photos: List[RenovationPhoto] = self.db.query(RenovationPhoto).filter(
-            RenovationPhoto.project_id == project_id,
-            RenovationPhoto.is_deleted.is_(False)
-        ).order_by(RenovationPhoto.created_at).all()
+    def _get_available_media(self, project_id: str) -> list[ImportableMediaResponse]:
+        """获取项目可导入的媒体资源."""
+        photos: list[RenovationPhoto] = (
+            self.db.query(RenovationPhoto)
+            .filter(
+                RenovationPhoto.project_id == project_id,
+                RenovationPhoto.is_deleted.is_(False),
+            )
+            .order_by(RenovationPhoto.created_at)
+            .all()
+        )
 
         return [
             ImportableMediaResponse(
@@ -135,13 +167,13 @@ class MarketingImportService:
                 photo_category="renovation",
                 renovation_stage=photo.stage,
                 description=photo.description,
-                sort_order=idx
+                sort_order=idx,
             )
             for idx, photo in enumerate(photos)
         ]
 
-    def _extract_floor_info(self, address: Optional[str]) -> Optional[str]:
-        """从地址中提取楼层信息
+    def _extract_floor_info(self, address: str | None) -> str | None:
+        """从地址中提取楼层信息.
 
         尝试从地址中解析楼层信息，例如：
         - "1号楼2单元301室" -> "3层"
@@ -152,41 +184,40 @@ class MarketingImportService:
 
         Returns:
             提取的楼层信息，无法提取时返回None
+
         """
         if not address:
             return None
 
-        import re
-
         # 匹配房间号模式：通常是3-4位数字，前1-2位表示楼层
         # 如 301 -> 3层, 1502 -> 15层, 0801 -> 8层
         patterns = [
-            r'(\d+)号楼.*?(\d+)单元(\d{3,4})室',  # 1号楼2单元301室
-            r'(\d+)栋.*?(\d+)单元(\d{3,4})室',   # 1栋2单元301室
-            r'(\d+)[栋号楼].*?(\d{3,4})[室号]',    # 1号楼301室
-            r'(\d{3,4})室',                       # 301室
+            r"(\d+)号楼.*?(\d+)单元(\d{3,4})室",  # 1号楼2单元301室
+            r"(\d+)栋.*?(\d+)单元(\d{3,4})室",  # 1栋2单元301室
+            r"(\d+)[栋号楼].*?(\d{3,4})[室号]",  # 1号楼301室
+            r"(\d{3,4})室",  # 301室
         ]
 
         for pattern in patterns:
             match = re.search(pattern, address)
             if match:
                 groups = match.groups()
-                if len(groups) >= 3:
+                if len(groups) >= _ROOM_NUMBER_MIN_LENGTH:
                     room_number = groups[2]
-                elif len(groups) >= 2:
+                elif len(groups) >= _ROOM_NUMBER_FLOOR_OFFSET:
                     room_number = groups[1]
                 else:
                     room_number = groups[0]
 
                 # 根据房间号计算楼层
-                if len(room_number) >= 3:
+                if len(room_number) >= _ROOM_NUMBER_MIN_LENGTH:
                     floor = room_number[:-2]  # 去掉后两位，前面是楼层
                     try:
                         floor_num = int(floor)
                         # 确保楼层数 >= 1，处理如 '001' 这种特殊情况
-                        if floor_num == 0 and len(room_number) == 3:
+                        if floor_num == 0 and len(room_number) == _ROOM_NUMBER_MIN_LENGTH:
                             floor_num = 1  # 3位房间号且楼层为0时，默认为1层
-                        if 1 <= floor_num <= 100:
+                        if 1 <= floor_num <= _FLOOR_MAX:
                             return f"{floor_num}层"
                     except ValueError:
                         continue

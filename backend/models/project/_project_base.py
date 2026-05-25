@@ -1,17 +1,20 @@
-"""
-项目主表核心模型
-"""
-from sqlalchemy import Column, String, Numeric, Boolean, Enum as SQLEnum, Index, ForeignKey
+"""项目主表核心模型."""
 
-from ..common.base import BaseModel, ProjectStatus, RenovationStage
+from sqlalchemy import Boolean, Column, ForeignKey, Index, Numeric, String
+from sqlalchemy import Enum as SQLEnum
+
+from backend.models.common.base import BaseModel, ProjectStatus, RenovationStage
 
 
 class Project(BaseModel):
-    """项目主表 - 仅保留核心基础信息"""
+    """项目主表 - 仅保留核心基础信息."""
+
     __tablename__ = "projects"
 
     name = Column(String(700), nullable=False, comment="项目名称(自动生成:小区名称+地址)")
-    community_id = Column(String(36), ForeignKey("communities.id", ondelete="SET NULL"), nullable=True, comment="小区ID")
+    community_id = Column(
+        String(36), ForeignKey("communities.id", ondelete="SET NULL"), nullable=True, comment="小区ID"
+    )
     community_name = Column(String(200), nullable=False, comment="小区名称")
     address = Column(String(500), nullable=False, comment="物业地址")
 
@@ -21,8 +24,15 @@ class Project(BaseModel):
     layout = Column(String(50), nullable=True, comment="户型(展示用)")
     orientation = Column(String(50), nullable=True, comment="朝向")
 
-    status = Column(SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x]), nullable=False, default=ProjectStatus.SIGNING, comment="项目状态")
-    renovation_stage = Column(SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段")
+    status = Column(
+        SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=ProjectStatus.SIGNING,
+        comment="项目状态",
+    )
+    renovation_stage = Column(
+        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段"
+    )
 
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
@@ -33,13 +43,13 @@ class Project(BaseModel):
         Index("idx_project_community", "community_id"),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)
         if not self.name or self.name == "未命名项目":
             self.name = self.generate_name()
 
     def generate_name(self) -> str:
-        """自动生成项目名称: 小区名称 + 地址"""
+        """自动生成项目名称: 小区名称 + 地址."""
         parts = []
         if self.community_name:
             parts.append(self.community_name)

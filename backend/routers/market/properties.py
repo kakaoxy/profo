@@ -1,90 +1,91 @@
+"""房源查询路由.
+
+处理房源数据的查询、筛选、排序和分页.
 """
-房源查询路由
-处理房源数据的查询、筛选、排序和分页
-"""
-from datetime import datetime as dt
-from typing import Optional, List, Annotated, Tuple
-from fastapi import APIRouter, Depends, Query, Path, HTTPException
-from fastapi.responses import StreamingResponse
-import logging
+
 import csv
 import io
+import logging
+from datetime import datetime as dt
+from datetime import timezone
+from typing import Annotated
 
-from utils.param_parser import parse_comma_separated_list
-from utils.query_params import PropertyExportParams
-from schemas import PaginatedPropertyResponse, PropertyDetailResponse, CommunitySearchResponse
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi.responses import StreamingResponse
+
 from dependencies.auth import (
-    DbSessionDep,
     CurrentInternalUserDep,
+    DbSessionDep,
+)
+from models import Community, PropertyCurrent
+from models.common.base import MediaType
+from schemas import (
+    CommunitySearchResponse,
+    PaginatedPropertyResponse,
+    PropertyDetailResponse,
 )
 from services.market import (
     PropertyQueryService,
-    get_property_query_service,
     PropertyService,
+    get_property_query_service,
     get_property_service,
 )
-from models import PropertyCurrent, Community
-from models.common.base import MediaType
-
+from utils.param_parser import parse_comma_separated_list
+from utils.query_params import PropertyExportParams
 
 logger = logging.getLogger(__name__)
 
-# 定义服务依赖类型别名
 PropertyServiceDep = Annotated[PropertyQueryService, Depends(get_property_query_service)]
 DetailServiceDep = Annotated[PropertyService, Depends(get_property_service)]
 
 router = APIRouter(tags=["市场情报-房源查询"])
 
 
-@router.get("/communities/search", response_model=list[CommunitySearchResponse])
+@router.get("/communities/search")
 def search_communities(
     q: Annotated[str, Query(min_length=1, description="搜索关键词")],
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     detail_service: DetailServiceDep,
 ) -> list[CommunitySearchResponse]:
-    """Search communities by name"""
+    """Search communities by name."""
     return detail_service.search_communities(db, q)
 
 
-@router.get("", response_model=PaginatedPropertyResponse)
-def get_properties(
+@router.get("")
+def get_properties(  # noqa: PLR0913
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
-    status: Annotated[Optional[str], Query(description="房源状态: 在售 | 成交")] = None,
-    community_name: Annotated[Optional[str], Query(description="小区名称（模糊搜索）")] = None,
-    districts: Annotated[Optional[str], Query(description="行政区，逗号分隔，例如: 徐汇,静安")] = None,
-    business_circles: Annotated[Optional[str], Query(description="商圈，逗号分隔，例如: 五角场,中关村")] = None,
-    orientations: Annotated[Optional[str], Query(description="朝向关键词，逗号分隔，例如: 南,东南")] = None,
-    floor_levels: Annotated[Optional[str], Query(description="楼层级别，逗号分隔: 低楼层,中楼层,高楼层")] = None,
-    min_price: Annotated[Optional[float], Query(ge=0, description="最低价格（万）")] = None,
-    max_price: Annotated[Optional[float], Query(ge=0, description="最高价格（万）")] = None,
-    min_area: Annotated[Optional[float], Query(ge=0, description="最小面积（㎡）")] = None,
-    max_area: Annotated[Optional[float], Query(ge=0, description="最大面积（㎡）")] = None,
-    rooms: Annotated[Optional[str], Query(description="室数量，逗号分隔，例如: 1,2,3")] = None,
-    rooms_gte: Annotated[Optional[int], Query(ge=0, description="最少室数量，例如: 5 表示5室以上")] = None,
+    status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
+    community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
+    districts: Annotated[str | None, Query(description="行政区，逗号分隔，例如: 徐汇,静安")] = None,
+    business_circles: Annotated[str | None, Query(description="商圈，逗号分隔，例如: 五角场,中关村")] = None,
+    orientations: Annotated[str | None, Query(description="朝向关键词，逗号分隔，例如: 南,东南")] = None,
+    floor_levels: Annotated[str | None, Query(description="楼层级别，逗号分隔: 低楼层,中楼层,高楼层")] = None,
+    min_price: Annotated[float | None, Query(ge=0, description="最低价格（万）")] = None,
+    max_price: Annotated[float | None, Query(ge=0, description="最高价格（万）")] = None,
+    min_area: Annotated[float | None, Query(ge=0, description="最小面积（㎡）")] = None,
+    max_area: Annotated[float | None, Query(ge=0, description="最大面积（㎡）")] = None,
+    rooms: Annotated[str | None, Query(description="室数量，逗号分隔，例如: 1,2,3")] = None,
+    rooms_gte: Annotated[int | None, Query(ge=0, description="最少室数量，例如: 5 表示5室以上")] = None,
     sort_by: Annotated[str, Query(description="排序字段")] = "updated_at",
     sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc",
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50
+    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> PaginatedPropertyResponse:
-    """
-    查询房源列表
-    
+    """查询房源列表.
+
     支持多维度筛选、排序和分页
     """
-    # 解析 rooms 参数
     rooms_list = _parse_rooms_param(rooms)
 
-    # 解析多选参数
     districts_list = parse_comma_separated_list(districts)
     business_circles_list = parse_comma_separated_list(business_circles)
     orientations_list = parse_comma_separated_list(orientations)
     floor_levels_list = parse_comma_separated_list(floor_levels)
-    
-    # 执行查询
-    result = service.query_properties(
+
+    return service.query_properties(
         db=db,
         status=status,
         community_name=community_name,
@@ -101,48 +102,41 @@ def get_properties(
         sort_by=sort_by,
         sort_order=sort_order,
         page=page,
-        page_size=page_size
+        page_size=page_size,
     )
-    
-    return result
 
 
-# 静态路径必须在动态路径之前定义
 @router.get("/export")
-def export_properties(
+def export_properties(  # noqa: PLR0913
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
-    status: Annotated[Optional[str], Query(description="房源状态: 在售 | 成交")] = None,
-    community_name: Annotated[Optional[str], Query(description="小区名称（模糊搜索）")] = None,
-    districts: Annotated[Optional[str], Query(description="行政区，逗号分隔")] = None,
-    business_circles: Annotated[Optional[str], Query(description="商圈，逗号分隔")] = None,
-    orientations: Annotated[Optional[str], Query(description="朝向关键词，逗号分隔")] = None,
-    floor_levels: Annotated[Optional[str], Query(description="楼层级别，逗号分隔")] = None,
-    min_price: Annotated[Optional[float], Query(ge=0, description="最低价格（万）")] = None,
-    max_price: Annotated[Optional[float], Query(ge=0, description="最高价格（万）")] = None,
-    min_area: Annotated[Optional[float], Query(ge=0, description="最小面积（㎡）")] = None,
-    max_area: Annotated[Optional[float], Query(ge=0, description="最大面积（㎡）")] = None,
-    rooms: Annotated[Optional[str], Query(description="室数量，逗号分隔，例如: 1,2,3")] = None,
-    rooms_gte: Annotated[Optional[int], Query(ge=0, description="最少室数量")] = None,
+    status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
+    community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
+    districts: Annotated[str | None, Query(description="行政区，逗号分隔")] = None,
+    business_circles: Annotated[str | None, Query(description="商圈，逗号分隔")] = None,
+    orientations: Annotated[str | None, Query(description="朝向关键词，逗号分隔")] = None,
+    floor_levels: Annotated[str | None, Query(description="楼层级别，逗号分隔")] = None,
+    min_price: Annotated[float | None, Query(ge=0, description="最低价格（万）")] = None,
+    max_price: Annotated[float | None, Query(ge=0, description="最高价格（万）")] = None,
+    min_area: Annotated[float | None, Query(ge=0, description="最小面积（㎡）")] = None,
+    max_area: Annotated[float | None, Query(ge=0, description="最大面积（㎡）")] = None,
+    rooms: Annotated[str | None, Query(description="室数量，逗号分隔，例如: 1,2,3")] = None,
+    rooms_gte: Annotated[int | None, Query(ge=0, description="最少室数量")] = None,
     sort_by: Annotated[str, Query(description="排序字段")] = "updated_at",
-    sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc"
+    sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc",
 ) -> StreamingResponse:
-    """
-    导出房源数据为 CSV 文件
-    
+    """导出房源数据为 CSV 文件.
+
     使用与查询接口相同的筛选和排序参数，但移除分页限制，导出所有匹配的记录
     """
-    # 解析 rooms 参数
     rooms_list = _parse_rooms_param(rooms)
-    
-    # 解析多选参数
+
     districts_list = parse_comma_separated_list(districts)
     business_circles_list = parse_comma_separated_list(business_circles)
     orientations_list = parse_comma_separated_list(orientations)
     floor_levels_list = parse_comma_separated_list(floor_levels)
 
-    # 创建导出参数对象
     export_params = PropertyExportParams(
         status=status,
         community_name=community_name,
@@ -157,45 +151,44 @@ def export_properties(
         rooms=rooms_list,
         rooms_gte=rooms_gte,
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
     )
 
     properties = service.query_properties_for_export(
         db=db,
-        params=export_params
+        params=export_params,
     )
-    
+
     return _generate_csv_response(properties)
 
 
-# 动态路径必须放在静态路径之后
-@router.get("/{id}", response_model=PropertyDetailResponse)
+@router.get("/{property_id}")
 def get_property_detail(
-    id: Annotated[int, Path(ge=1, description="房源ID")],
+    property_id: Annotated[int, Path(ge=1, description="房源ID")],
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     detail_service: DetailServiceDep,
 ) -> PropertyDetailResponse:
-    """获取房源详情"""
+    """获取房源详情."""
     try:
-        return detail_service.get_detail(db, id)
+        return detail_service.get_detail(db, property_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
-def _parse_rooms_param(rooms: Optional[str]) -> Optional[List[int]]:
-    """解析 rooms 参数为整数列表"""
+def _parse_rooms_param(rooms: str | None) -> list[int] | None:
+    """解析 rooms 参数为整数列表."""
     if not rooms:
         return None
     try:
-        return [int(r.strip()) for r in rooms.split(',') if r.strip()]
+        return [int(r.strip()) for r in rooms.split(",") if r.strip()]
     except ValueError:
-        logger.warning(f"无效的 rooms 参数: {rooms}")
+        logger.warning("无效的 rooms 参数: %s", rooms)
         return None
 
 
-def _format_datetime(value) -> str:
-    """格式化日期时间为字符串"""
+def _format_datetime(value: object) -> str:
+    """格式化日期时间为字符串."""
     if value is None:
         return ""
     if isinstance(value, dt):
@@ -203,8 +196,8 @@ def _format_datetime(value) -> str:
     return str(value)
 
 
-def _format_bool(value) -> str:
-    """格式化布尔值为大写英文字符串"""
+def _format_bool(value: object) -> str:
+    """格式化布尔值为大写英文字符串."""
     if value is True:
         return "TRUE"
     if value is False:
@@ -212,8 +205,8 @@ def _format_bool(value) -> str:
     return ""
 
 
-def _format_list(value) -> str:
-    """格式化列表为逗号分隔的字符串"""
+def _format_list(value: object) -> str:
+    """格式化列表为逗号分隔的字符串."""
     if not value:
         return ""
     if isinstance(value, list):
@@ -221,32 +214,36 @@ def _format_list(value) -> str:
     return str(value)
 
 
-def _get_image_urls(prop) -> str:
-    """从 property_media 关系中获取图片URL列表"""
+def _get_image_urls(prop: PropertyCurrent) -> str:
+    """从 property_media 关系中获取图片URL列表."""
     if not hasattr(prop, "property_media") or not prop.property_media:
         return ""
 
-    IMAGE_TYPES = {MediaType.INTERIOR.value, MediaType.EXTERIOR.value, MediaType.FLOOR_PLAN.value, MediaType.OTHER.value}
+    image_types = {
+        MediaType.INTERIOR.value,
+        MediaType.EXTERIOR.value,
+        MediaType.FLOOR_PLAN.value,
+        MediaType.OTHER.value,
+    }
 
     urls = []
     for media in prop.property_media:
         if hasattr(media, "media_type"):
             media_type_value = media.media_type.value
-            if media_type_value in IMAGE_TYPES and media.url:
+            if media_type_value in image_types and media.url:
                 urls.append(media.url)
 
     return ",".join(urls) if urls else ""
 
 
-def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> StreamingResponse:
-    """
-    生成 CSV 文件流响应
-    格式与批量上传模板保持一致，参考 PropertyIngestionModel 的字段别名
+def _generate_csv_response(results: list[tuple[PropertyCurrent, Community]]) -> StreamingResponse:
+    """生成 CSV 文件流响应.
+
+    格式与批量上传模板保持一致，参考 PropertyIngestionModel 的字段别名.
     """
     output = io.StringIO()
     writer = csv.writer(output)
 
-    # 表头与 PropertyIngestionModel 的 alias 保持一致
     headers = [
         "数据源",
         "房源ID",
@@ -281,7 +278,6 @@ def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> 
     writer.writerow(headers)
 
     for prop, community in results:
-        # 处理朝向字段：如果为空则输出"未知"，避免导入验证失败
         orientation = prop.orientation if prop.orientation and str(prop.orientation).strip() else "未知"
         row = [
             prop.data_source,
@@ -294,21 +290,21 @@ def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> 
             orientation,
             prop.floor_original,
             prop.build_area,
-            prop.inner_area if prop.inner_area else "",
-            prop.listed_price_wan if prop.listed_price_wan else "",
+            prop.inner_area or "",
+            prop.listed_price_wan or "",
             _format_datetime(prop.listed_date),
-            prop.sold_price_wan if prop.sold_price_wan else "",
+            prop.sold_price_wan or "",
             _format_datetime(prop.sold_date),
-            prop.property_type if prop.property_type else "",
-            prop.build_year if prop.build_year else "",
-            prop.building_structure if prop.building_structure else "",
-            prop.decoration if prop.decoration else "",
+            prop.property_type or "",
+            prop.build_year or "",
+            prop.building_structure or "",
+            prop.decoration or "",
             _format_bool(prop.elevator),
-            prop.ownership_type if prop.ownership_type else "",
-            prop.ownership_years if prop.ownership_years else "",
-            prop.last_transaction if prop.last_transaction else "",
-            prop.heating_method if prop.heating_method else "",
-            prop.listing_remarks if prop.listing_remarks else "",
+            prop.ownership_type or "",
+            prop.ownership_years or "",
+            prop.last_transaction or "",
+            prop.heating_method or "",
+            prop.listing_remarks or "",
             _get_image_urls(prop),
             community.city_id if community and hasattr(community, "city_id") else "",
             community.district if community and hasattr(community, "district") else "",
@@ -319,10 +315,10 @@ def _generate_csv_response(results: List[Tuple[PropertyCurrent, Community]]) -> 
     csv_content = output.getvalue()
     output.close()
 
-    timestamp = dt.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = dt.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"properties_export_{timestamp}.csv"
 
-    logger.info(f"导出完成: {len(results)} 条记录, 文件名: {filename}")
+    logger.info("导出完成: %s 条记录, 文件名: %s", len(results), filename)
 
     return StreamingResponse(
         iter([csv_content.encode("utf-8-sig")]),

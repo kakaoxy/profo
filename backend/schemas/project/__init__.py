@@ -1,178 +1,177 @@
-"""
-项目管理相关Schema (聚合入口)
-此模块包含所有与项目功能相关的Pydantic模型
-"""
+"""项目管理相关Schema (聚合入口)
+
+此模块包含所有与项目功能相关的Pydantic模型.
+"""  # noqa: D400, D415
 
 # 1. 导入 Core (基础 CRUD)
+# 6. 导入规范化表 Schema
+from .contract import (
+    ContractBase,
+    ContractCreate,
+    ContractListResponse,
+    ContractResponse,
+    ContractUpdate,
+    SigningMaterial,
+)
 from .core import (
     ProjectBase,
     ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
     ProjectListResponse,
+    ProjectResponse,
     ProjectStatsResponse,
+    ProjectUpdate,
     StatusUpdate,
 )
-
-# 3. 导入 Renovation (装修)
-from .renovation import (
-    RenovationUpdate,
-    RenovationPhotoUpload,
-    RenovationPhotoResponse,
-    RenovationContractUpdate,
-    RenovationContractResponse,
-    RenovationBase,
-    RenovationCreate,
-    RenovationInfoUpdate,
-    RenovationResponse,
-    RenovationListResponse,
-)
-
-# 4. 导入 Sales (销售)
-from .sales import (
-    SalesRolesUpdate,
-    SalesRecordCreate,
-    SalesRecordResponse,
-    ProjectCompleteRequest,
-    SaleBase,
-    SaleCreate,
-    SaleUpdate,
-    SaleResponse,
-    SaleListResponse,
-    InteractionBase,
-    InteractionCreate,
-    InteractionUpdate,
-    InteractionResponse,
-    InteractionListResponse,
+from .evaluation import (
+    EvaluationBase,
+    EvaluationCreate,
+    EvaluationListResponse,
+    EvaluationResponse,
+    EvaluationUpdate,
 )
 
 # 5. 导入 Finance (财务)
 from .finance import (
     CashFlowRecordCreate,
     CashFlowRecordResponse,
-    CashFlowSummary,
     CashFlowResponse,
-    ProjectReportResponse,
+    CashFlowSummary,
     FinanceBase,
     FinanceCreate,
-    FinanceUpdate,
-    FinanceResponse,
     FinanceListResponse,
-)
-
-# 6. 导入规范化表 Schema
-from .contract import (
-    SigningMaterial,
-    ContractBase,
-    ContractCreate,
-    ContractUpdate,
-    ContractResponse,
-    ContractListResponse,
-)
-from .owner import (
-    OwnerBase,
-    OwnerCreate,
-    OwnerUpdate,
-    OwnerResponse,
-    OwnerListResponse,
+    FinanceResponse,
+    FinanceUpdate,
+    ProjectReportResponse,
 )
 from .followup import (
     FollowUpBase,
     FollowUpCreate,
-    FollowUpUpdate,
-    FollowUpResponse,
     FollowUpListResponse,
+    FollowUpResponse,
+    FollowUpUpdate,
 )
-from .evaluation import (
-    EvaluationBase,
-    EvaluationCreate,
-    EvaluationUpdate,
-    EvaluationResponse,
-    EvaluationListResponse,
+from .owner import (
+    OwnerBase,
+    OwnerCreate,
+    OwnerListResponse,
+    OwnerResponse,
+    OwnerUpdate,
+)
+
+# 3. 导入 Renovation (装修)
+from .renovation import (
+    RenovationBase,
+    RenovationContractResponse,
+    RenovationContractUpdate,
+    RenovationCreate,
+    RenovationInfoUpdate,
+    RenovationListResponse,
+    RenovationPhotoResponse,
+    RenovationPhotoUpload,
+    RenovationResponse,
+    RenovationUpdate,
+)
+
+# 4. 导入 Sales (销售)
+from .sales import (
+    InteractionBase,
+    InteractionCreate,
+    InteractionListResponse,
+    InteractionResponse,
+    InteractionUpdate,
+    ProjectCompleteRequest,
+    SaleBase,
+    SaleCreate,
+    SaleListResponse,
+    SaleResponse,
+    SalesRecordCreate,
+    SalesRecordResponse,
+    SalesRolesUpdate,
+    SaleUpdate,
 )
 from .status_log import (
     StatusLogBase,
     StatusLogCreate,
-    StatusLogUpdate,
-    StatusLogResponse,
     StatusLogListResponse,
+    StatusLogResponse,
+    StatusLogUpdate,
 )
 
 __all__ = [
-    # Core
-    "ProjectBase",
-    "ProjectCreate",
-    "ProjectUpdate",
-    "ProjectResponse",
-    "ProjectListResponse",
-    "ProjectStatsResponse",
-    "StatusUpdate",
-    # Renovation
-    "RenovationUpdate",
-    "RenovationPhotoUpload",
-    "RenovationPhotoResponse",
-    "RenovationContractUpdate",
-    "RenovationContractResponse",
-    "RenovationBase",
-    "RenovationCreate",
-    "RenovationInfoUpdate",
-    "RenovationResponse",
-    "RenovationListResponse",
-    # Sales
-    "SalesRolesUpdate",
-    "SalesRecordCreate",
-    "SalesRecordResponse",
-    "ProjectCompleteRequest",
-    "SaleBase",
-    "SaleCreate",
-    "SaleUpdate",
-    "SaleResponse",
-    "SaleListResponse",
-    "InteractionBase",
-    "InteractionCreate",
-    "InteractionUpdate",
-    "InteractionResponse",
-    "InteractionListResponse",
     # Finance
     "CashFlowRecordCreate",
     "CashFlowRecordResponse",
-    "CashFlowSummary",
     "CashFlowResponse",
-    "ProjectReportResponse",
-    "FinanceBase",
-    "FinanceCreate",
-    "FinanceUpdate",
-    "FinanceResponse",
-    "FinanceListResponse",
-    # Contract
-    "SigningMaterial",
+    "CashFlowSummary",
     "ContractBase",
     "ContractCreate",
-    "ContractUpdate",
-    "ContractResponse",
     "ContractListResponse",
-    # Owner
-    "OwnerBase",
-    "OwnerCreate",
-    "OwnerUpdate",
-    "OwnerResponse",
-    "OwnerListResponse",
-    # FollowUp
-    "FollowUpBase",
-    "FollowUpCreate",
-    "FollowUpUpdate",
-    "FollowUpResponse",
-    "FollowUpListResponse",
+    "ContractResponse",
+    "ContractUpdate",
     # Evaluation
     "EvaluationBase",
     "EvaluationCreate",
-    "EvaluationUpdate",
-    "EvaluationResponse",
     "EvaluationListResponse",
+    "EvaluationResponse",
+    "EvaluationUpdate",
+    "FinanceBase",
+    "FinanceCreate",
+    "FinanceListResponse",
+    "FinanceResponse",
+    "FinanceUpdate",
+    # FollowUp
+    "FollowUpBase",
+    "FollowUpCreate",
+    "FollowUpListResponse",
+    "FollowUpResponse",
+    "FollowUpUpdate",
+    "InteractionBase",
+    "InteractionCreate",
+    "InteractionListResponse",
+    "InteractionResponse",
+    "InteractionUpdate",
+    # Owner
+    "OwnerBase",
+    "OwnerCreate",
+    "OwnerListResponse",
+    "OwnerResponse",
+    "OwnerUpdate",
+    # Core
+    "ProjectBase",
+    "ProjectCompleteRequest",
+    "ProjectCreate",
+    "ProjectListResponse",
+    "ProjectReportResponse",
+    "ProjectResponse",
+    "ProjectStatsResponse",
+    "ProjectUpdate",
+    "RenovationBase",
+    "RenovationContractResponse",
+    "RenovationContractUpdate",
+    "RenovationCreate",
+    "RenovationInfoUpdate",
+    "RenovationListResponse",
+    "RenovationPhotoResponse",
+    "RenovationPhotoUpload",
+    "RenovationResponse",
+    # Renovation
+    "RenovationUpdate",
+    "SaleBase",
+    "SaleCreate",
+    "SaleListResponse",
+    "SaleResponse",
+    "SaleUpdate",
+    "SalesRecordCreate",
+    "SalesRecordResponse",
+    # Sales
+    "SalesRolesUpdate",
+    # Contract
+    "SigningMaterial",
     # StatusLog
     "StatusLogBase",
     "StatusLogCreate",
-    "StatusLogUpdate",
-    "StatusLogResponse",
     "StatusLogListResponse",
+    "StatusLogResponse",
+    "StatusLogUpdate",
+    "StatusUpdate",
 ]

@@ -1,5 +1,4 @@
-"""
-业务逻辑服务模块
+"""业务逻辑服务模块.
 
 按照业务领域组织的服务层，包含：
 - market: 市场情报（原L1）
@@ -18,101 +17,99 @@
 """
 
 # Market 模块
+# Leads 模块
+from .leads import (
+    LeadFollowUpService,
+    LeadPriceService,
+    LeadService,
+)
 from .market import (
+    CommunityMerger,
+    CSVBatchImporter,
+    FloorInfo,
+    FloorParser,
+    MergeResult,
+    PropertyImporter,
     PropertyQueryService,
     get_property_query_service,
-    PropertyImporter,
-    CSVBatchImporter,
-    CommunityMerger,
-    MergeResult,
-    FloorParser,
-    FloorInfo,
-)
-
-# Projects 模块
-from .projects import (
-    ProjectService,
-    ProjectCoreService,
-    RenovationService,
-    ProjectRenovationService,
-    SalesService,
-    ProjectSalesService,
-    FinanceService,
-    ProjectFinanceService,
-    CashFlowService,
-    ProjectQueryService,
-    ProjectResponseBuilder,
-    ProjectStateManager,
 )
 
 # Marketing 模块
 from .marketing import (
-    MarketingProjectService,
-    MarketingMediaService,
     MarketingImportService,
+    MarketingMediaService,
+    MarketingProjectService,
     MarketingQueryService,
-)
-
-# System 模块
-from .system import (
-    AuthService,
-    UserService,
-    user_service,
-    RoleService,
-    role_service,
-    save_failed_record,
-)
-
-# Leads 模块
-from .leads import (
-    LeadService,
-    LeadFollowUpService,
-    LeadPriceService,
 )
 
 # Monitor 模块
 from .monitor import MonitorService
 
-__all__ = [
-    # Leads
-    "LeadService",
-    "LeadFollowUpService",
-    "LeadPriceService",
+# Projects 模块
+from .projects import (
+    CashFlowService,
+    FinanceService,
+    ProjectCoreService,
+    ProjectFinanceService,
+    ProjectQueryService,
+    ProjectRenovationService,
+    ProjectResponseBuilder,
+    ProjectSalesService,
+    ProjectService,
+    ProjectStateManager,
+    RenovationService,
+    SalesService,
+)
 
-    # Market
-    "PropertyQueryService",
-    "get_property_query_service",
-    "PropertyImporter",
-    "CSVBatchImporter",
-    "CommunityMerger",
-    "MergeResult",
-    "FloorParser",
-    "FloorInfo",
-    # Projects
-    "ProjectService",
-    "ProjectCoreService",
-    "RenovationService",
-    "ProjectRenovationService",
-    "SalesService",
-    "ProjectSalesService",
-    "FinanceService",
-    "ProjectFinanceService",
-    "CashFlowService",
-    "ProjectQueryService",
-    "ProjectResponseBuilder",
-    "ProjectStateManager",
-    # Marketing
-    "MarketingProjectService",
-    "MarketingMediaService",
-    "MarketingImportService",
-    "MarketingQueryService",
+# System 模块
+from .system import (
+    AuthService,
+    RoleService,
+    UserService,
+    role_service,
+    save_failed_record,
+    user_service,
+)
+
+__all__ = [
     # System
     "AuthService",
-    "UserService",
-    "user_service",
-    "RoleService",
-    "role_service",
-    "save_failed_record",
+    "CSVBatchImporter",
+    "CashFlowService",
+    "CommunityMerger",
+    "FinanceService",
+    "FloorInfo",
+    "FloorParser",
+    "LeadFollowUpService",
+    "LeadPriceService",
+    # Leads
+    "LeadService",
+    "MarketingImportService",
+    "MarketingMediaService",
+    # Marketing
+    "MarketingProjectService",
+    "MarketingQueryService",
+    "MergeResult",
     # Monitor
     "MonitorService",
+    "ProjectCoreService",
+    "ProjectFinanceService",
+    "ProjectQueryService",
+    "ProjectRenovationService",
+    "ProjectResponseBuilder",
+    "ProjectSalesService",
+    # Projects
+    "ProjectService",
+    "ProjectStateManager",
+    "PropertyImporter",
+    # Market
+    "PropertyQueryService",
+    "RenovationService",
+    "RoleService",
+    "SalesService",
+    "UserService",
+    "get_property_query_service",
+    "role_service",
+    "save_failed_record",
+    "user_service",
 ]

@@ -1,16 +1,16 @@
+"""房源查询排序构建器.
+
+处理房源数据查询的排序逻辑.
 """
-房源查询排序构建器
-处理房源数据查询的排序逻辑
-"""
+
+from sqlalchemy import asc, case, desc, func
 from sqlalchemy.orm import Query
-from sqlalchemy import desc, asc, case, func
 
 from models import PropertyCurrent, PropertyStatus
 
 
 def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
-    """
-    应用排序到查询对象
+    """应用排序到查询对象.
 
     Args:
         query: SQLAlchemy 查询对象
@@ -19,6 +19,7 @@ def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
 
     Returns:
         Query: 应用排序后的查询对象
+
     """
     # 映射排序字段
     sort_field_map = {
@@ -33,26 +34,23 @@ def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
         # 前端使用的字段映射
         "total_price": case(
             (PropertyCurrent.status == PropertyStatus.FOR_SALE, PropertyCurrent.listed_price_wan),
-            else_=PropertyCurrent.sold_price_wan
+            else_=PropertyCurrent.sold_price_wan,
         ),
         "unit_price": case(
-            (PropertyCurrent.status == PropertyStatus.FOR_SALE,
-             (PropertyCurrent.listed_price_wan * 10000) / func.nullif(PropertyCurrent.build_area, 0)),
-            else_=(PropertyCurrent.sold_price_wan * 10000) / func.nullif(PropertyCurrent.build_area, 0)
+            (
+                PropertyCurrent.status == PropertyStatus.FOR_SALE,
+                (PropertyCurrent.listed_price_wan * 10000) / func.nullif(PropertyCurrent.build_area, 0),
+            ),
+            else_=(PropertyCurrent.sold_price_wan * 10000) / func.nullif(PropertyCurrent.build_area, 0),
         ),
         "timeline": case(
             (PropertyCurrent.status == PropertyStatus.FOR_SALE, PropertyCurrent.listed_date),
-            else_=PropertyCurrent.sold_date
-        )
+            else_=PropertyCurrent.sold_date,
+        ),
     }
 
     # 获取排序字段
     sort_field = sort_field_map.get(sort_by, PropertyCurrent.updated_at)
 
     # 应用排序方向
-    if sort_order == "asc":
-        query = query.order_by(asc(sort_field))
-    else:
-        query = query.order_by(desc(sort_field))
-
-    return query
+    return query.order_by(asc(sort_field)) if sort_order == "asc" else query.order_by(desc(sort_field))

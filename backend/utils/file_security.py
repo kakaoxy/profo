@@ -1,15 +1,14 @@
+"""文件安全工具模块.
+
+提供文件名清理、路径安全验证等功能，防止目录遍历攻击.
 """
-文件安全工具模块
-提供文件名清理、路径安全验证等功能，防止目录遍历攻击
-"""
-import os
+
 import re
 from pathlib import Path
 
 
 def sanitize_filename(filename: str) -> str:
-    """
-    清理文件名，移除路径遍历字符和危险字符
+    r"""清理文件名，移除路径遍历字符和危险字符.
 
     Args:
         filename: 原始文件名
@@ -26,6 +25,7 @@ def sanitize_filename(filename: str) -> str:
         'safe_.htaccess'
         >>> sanitize_filename("normal-file.txt")
         'normal-file.txt'
+
     """
     # 1. 移除路径分隔符（Unix 和 Windows）
     # 将 \ 和 / 统一替换为统一的占位符，然后分割
@@ -43,7 +43,7 @@ def sanitize_filename(filename: str) -> str:
 
     # 4. 移除危险字符（保留字母、数字、点、连字符、下划线）
     # 但保留点用于文件扩展名
-    filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+    filename = re.sub(r"[^a-zA-Z0-9._-]", "", filename)
 
     # 5. 处理以点开头的文件（隐藏文件风险）
     if filename.startswith("."):
@@ -57,8 +57,7 @@ def sanitize_filename(filename: str) -> str:
 
 
 def is_safe_path(base_dir: str | Path, target_path: str | Path) -> bool:
-    """
-    验证目标路径是否在基础目录内，防止目录遍历
+    """验证目标路径是否在基础目录内，防止目录遍历.
 
     Args:
         base_dir: 基础目录（应为绝对路径）
@@ -76,6 +75,7 @@ def is_safe_path(base_dir: str | Path, target_path: str | Path) -> bool:
         False
         >>> is_safe_path("/app/uploads", "/etc/passwd")
         False
+
     """
     try:
         # 转换为 Path 对象并解析为绝对路径
@@ -90,8 +90,7 @@ def is_safe_path(base_dir: str | Path, target_path: str | Path) -> bool:
 
 
 def get_safe_file_path(base_dir: str | Path, filename: str) -> Path:
-    """
-    获取安全的文件路径，自动清理文件名并验证路径安全
+    """获取安全的文件路径，自动清理文件名并验证路径安全.
 
     Args:
         base_dir: 基础目录
@@ -106,6 +105,7 @@ def get_safe_file_path(base_dir: str | Path, filename: str) -> Path:
     Examples:
         >>> get_safe_file_path("/app/uploads", "document.pdf")
         PosixPath('/app/uploads/document.pdf')
+
     """
     # 1. 清理文件名
     safe_filename = sanitize_filename(filename)
@@ -118,18 +118,19 @@ def get_safe_file_path(base_dir: str | Path, filename: str) -> Path:
     try:
         target_resolved = target.resolve()
     except (OSError, ValueError) as e:
-        raise ValueError(f"无效的文件路径: {filename}") from e
+        msg = f"无效的文件路径: {filename}"
+        raise ValueError(msg) from e
 
     # 4. 验证路径安全
     if not is_safe_path(base, target_resolved):
-        raise ValueError(f"检测到路径遍历攻击，非法文件名: {filename}")
+        msg = f"检测到路径遍历攻击，非法文件名: {filename}"
+        raise ValueError(msg)
 
     return target_resolved
 
 
 def validate_filename_extension(filename: str, allowed_extensions: set[str]) -> bool:
-    """
-    验证文件扩展名是否在允许列表中
+    """验证文件扩展名是否在允许列表中.
 
     Args:
         filename: 文件名
@@ -137,21 +138,22 @@ def validate_filename_extension(filename: str, allowed_extensions: set[str]) -> 
 
     Returns:
         扩展名是否允许
+
     """
     # 提取扩展名并转为小写
-    ext = os.path.splitext(filename)[1].lower()
+    ext = Path(filename).suffix.lower()
     return ext in allowed_extensions
 
 
 def has_traversal_attempt(filename: str) -> bool:
-    """
-    检测文件名是否包含路径遍历尝试
+    """检测文件名是否包含路径遍历尝试.
 
     Args:
         filename: 文件名
 
     Returns:
         如果包含路径遍历尝试返回 True
+
     """
     traversal_patterns = [
         "../",

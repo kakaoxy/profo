@@ -1,13 +1,23 @@
-"""
-装修信息模型
-"""
-from sqlalchemy import Column, String, Numeric, DateTime, Text, Boolean, ForeignKey, Index, JSON
+"""装修信息模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+)
+
+from backend.models.common.base import BaseModel
 
 
 class ProjectRenovation(BaseModel):
-    """装修信息表"""
+    """装修信息表."""
+
     __tablename__ = "project_renovations"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
@@ -45,13 +55,12 @@ class ProjectRenovation(BaseModel):
 
     is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
-    __table_args__ = (
-        Index("idx_renovation_project", "project_id"),
-    )
+    __table_args__ = (Index("idx_renovation_project", "project_id"),)
 
 
 class RenovationPhoto(BaseModel):
-    """改造阶段照片表"""
+    """改造阶段照片表."""
+
     __tablename__ = "renovation_photos"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")

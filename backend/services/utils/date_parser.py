@@ -1,19 +1,17 @@
-"""
-日期解析工具函数
-"""
-from datetime import datetime, date
-from typing import Union, Optional
+"""日期解析工具函数."""
+
+from datetime import date, datetime, timezone
 
 
-def parse_date_string(date_value: Union[str, datetime, date, None]) -> Optional[datetime]:
-    """
-    解析日期字符串或日期对象为 datetime 对象
+def parse_date_string(date_value: str | datetime | date | None) -> datetime | None:
+    """解析日期字符串或日期对象为 datetime 对象.
 
     Args:
         date_value: 日期字符串、datetime 对象、date 对象或 None
 
     Returns:
         datetime 对象或 None
+
     """
     if date_value is None:
         return None
@@ -37,13 +35,13 @@ def parse_date_string(date_value: Union[str, datetime, date, None]) -> Optional[
 
         for fmt in formats:
             try:
-                return datetime.strptime(date_value.strip(), fmt)
-            except ValueError:
+                return datetime.strptime(date_value.strip(), fmt).replace(tzinfo=timezone.utc)
+            except ValueError:  # noqa: PERF203
                 continue
 
         # 如果都失败了，尝试 ISO 格式
         try:
-            return datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+            return datetime.fromisoformat(date_value.replace("Z", "+00:00"))
         except ValueError:
             pass
 

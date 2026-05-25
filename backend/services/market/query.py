@@ -1,16 +1,17 @@
+"""房源查询服务层.
+
+处理房源数据的查询、筛选、排序逻辑.
 """
-房源查询服务层
-处理房源数据的查询、筛选、排序逻辑
-"""
-from typing import Optional, List
+
 import logging
 
-from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
 
-from models import PropertyCurrent, Community
-from schemas import PropertyResponse, PaginatedPropertyResponse
+from models import Community, PropertyCurrent
+from schemas import PaginatedPropertyResponse, PropertyResponse
 from utils.query_params import PropertyExportParams
+
 from .filters import apply_filters
 from .sorting import apply_sorting
 
@@ -18,30 +19,29 @@ logger = logging.getLogger(__name__)
 
 
 class PropertyQueryService:
-    """房源查询服务"""
+    """房源查询服务."""
 
-    def query_properties(
+    def query_properties(  # noqa: PLR0913
         self,
         db: Session,
-        status: Optional[str] = None,
-        community_name: Optional[str] = None,
-        districts: Optional[List[str]] = None,
-        business_circles: Optional[List[str]] = None,
-        orientations: Optional[List[str]] = None,
-        floor_levels: Optional[List[str]] = None,
-        min_price: Optional[float] = None,
-        max_price: Optional[float] = None,
-        min_area: Optional[float] = None,
-        max_area: Optional[float] = None,
-        rooms: Optional[List[int]] = None,
-        rooms_gte: Optional[int] = None,
+        status: str | None = None,
+        community_name: str | None = None,
+        districts: list[str] | None = None,
+        business_circles: list[str] | None = None,
+        orientations: list[str] | None = None,
+        floor_levels: list[str] | None = None,
+        min_price: float | None = None,
+        max_price: float | None = None,
+        min_area: float | None = None,
+        max_area: float | None = None,
+        rooms: list[int] | None = None,
+        rooms_gte: int | None = None,
         sort_by: str = "updated_at",
         sort_order: str = "desc",
         page: int = 1,
-        page_size: int = 50
+        page_size: int = 50,
     ) -> PaginatedPropertyResponse:
-        """
-        查询房源数据（优化版本）
+        """查询房源数据（优化版本）.
 
         Args:
             db: 数据库会话
@@ -64,16 +64,21 @@ class PropertyQueryService:
 
         Returns:
             PaginatedPropertyResponse: 分页查询结果
+
         """
         # 构建基础查询 - 使用 selectinload 优化关联查询
-        query = db.query(PropertyCurrent, Community).join(
-            Community,
-            PropertyCurrent.community_id == Community.id
-        ).filter(PropertyCurrent.is_active.is_(True))
+        query = (
+            db.query(PropertyCurrent, Community)
+            .join(
+                Community,
+                PropertyCurrent.community_id == Community.id,
+            )
+            .filter(PropertyCurrent.is_active.is_(True))
+        )
 
         # 关键优化：使用selectinload预加载图片
         query = query.options(
-            selectinload(PropertyCurrent.property_media)
+            selectinload(PropertyCurrent.property_media),
         )
 
         # 应用筛选条件
@@ -90,7 +95,7 @@ class PropertyQueryService:
             min_area=min_area,
             max_area=max_area,
             rooms=rooms,
-            rooms_gte=rooms_gte
+            rooms_gte=rooms_gte,
         )
 
         # 优化：使用子查询获取总数（避免在大数据集上使用 count()）
@@ -111,28 +116,29 @@ class PropertyQueryService:
         items = []
         for property_obj, community in results:
             item = PropertyResponse.from_orm_with_calculations(
-                property_obj, community,
-                property_obj.property_media  # 传递预加载的图片
+                property_obj,
+                community,
+                property_obj.property_media,  # 传递预加载的图片
             )
             items.append(item)
 
-        logger.info(f"查询完成: 总数={total}, 页码={page}, 每页={page_size}, 返回={len(items)}")
+        logger.info("查询完成: 总数=%s, 页码=%s, 每页=%s, 返回=%s", total, page, page_size, len(items))
 
         return PaginatedPropertyResponse(
             total=total,
             page=page,
             page_size=page_size,
-            items=items
+            items=items,
         )
 
     def query_properties_for_export(
         self,
         db: Session,
-        params: PropertyExportParams
-    ) -> List[tuple[PropertyCurrent, Community]]:
-        """
-        查询房源数据用于导出（无分页限制）
-        返回原始对象以便导出函数可以访问所有字段
+        params: PropertyExportParams,
+    ) -> list[tuple[PropertyCurrent, Community]]:
+        """查询房源数据用于导出（无分页限制）.
+
+        返回原始对象以便导出函数可以访问所有字段.
 
         Args:
             db: 数据库会话
@@ -140,16 +146,21 @@ class PropertyQueryService:
 
         Returns:
             List[tuple[PropertyCurrent, Community]]: 房源和社区原始对象列表
+
         """
         # 构建基础查询
-        query = db.query(PropertyCurrent, Community).join(
-            Community,
-            PropertyCurrent.community_id == Community.id
-        ).filter(PropertyCurrent.is_active.is_(True))
+        query = (
+            db.query(PropertyCurrent, Community)
+            .join(
+                Community,
+                PropertyCurrent.community_id == Community.id,
+            )
+            .filter(PropertyCurrent.is_active.is_(True))
+        )
 
         # 关键优化：使用selectinload预加载图片
         query = query.options(
-            selectinload(PropertyCurrent.property_media)
+            selectinload(PropertyCurrent.property_media),
         )
 
         # 应用筛选条件
@@ -166,20 +177,20 @@ class PropertyQueryService:
             min_area=params.min_area,
             max_area=params.max_area,
             rooms=params.rooms,
-            rooms_gte=params.rooms_gte
+            rooms_gte=params.rooms_gte,
         )
 
         # 应用排序
         query = apply_sorting(query, params.sort_by, params.sort_order)
 
         # 执行查询（无分页限制）
-        results: List[tuple[PropertyCurrent, Community]] = query.all()
+        results: list[tuple[PropertyCurrent, Community]] = query.all()
 
-        logger.info(f"导出查询完成: 总数={len(results)}")
+        logger.info("导出查询完成: 总数=%s", len(results))
         return results
 
 
 # 依赖注入工厂函数
 def get_property_query_service() -> PropertyQueryService:
-    """获取房源查询服务实例"""
+    """获取房源查询服务实例."""
     return PropertyQueryService()

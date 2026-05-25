@@ -1,12 +1,13 @@
-"""
-项目业主相关Schema
-"""
+"""项目业主相关Schema."""
+
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class OwnerBase(BaseModel):
-    """业主基础字段"""
+    """业主基础字段."""
+
     owner_name: str | None = Field(None, max_length=100, description="业主姓名")
     owner_phone: str | None = Field(None, max_length=20, description="业主联系方式")
     owner_id_card: str | None = Field(None, max_length=18, description="业主身份证号")
@@ -17,12 +18,14 @@ class OwnerBase(BaseModel):
 
 
 class OwnerCreate(OwnerBase):
-    """创建业主请求"""
+    """创建业主请求."""
+
     project_id: str = Field(..., description="项目ID")
 
 
 class OwnerUpdate(BaseModel):
-    """更新业主请求"""
+    """更新业主请求."""
+
     owner_name: str | None = None
     owner_phone: str | None = None
     owner_id_card: str | None = None
@@ -33,7 +36,8 @@ class OwnerUpdate(BaseModel):
 
 
 class OwnerResponse(OwnerBase):
-    """业主响应"""
+    """业主响应."""
+
     id: str = Field(..., description="业主ID")
     project_id: str = Field(..., description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
@@ -42,6 +46,7 @@ class OwnerResponse(OwnerBase):
 
 
 class OwnerListResponse(BaseModel):
-    """业主列表响应"""
+    """业主列表响应."""
+
     items: list[OwnerResponse]
     total: int

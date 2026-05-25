@@ -1,13 +1,24 @@
-"""
-签约合同模型
-"""
-from sqlalchemy import Column, String, Integer, Numeric, DateTime, Text, Boolean, ForeignKey, Index, JSON
+"""签约合同模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+
+from backend.models.common.base import BaseModel
 
 
 class ProjectContract(BaseModel):
-    """签约合同表"""
+    """签约合同表."""
+
     __tablename__ = "project_contracts"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
@@ -18,7 +29,9 @@ class ProjectContract(BaseModel):
     signing_period = Column(Integer, nullable=True, comment="合同周期(天)")
     extension_period = Column(Integer, nullable=True, comment="顺延期(天)")
     extension_rent = Column(Numeric(15, 2), nullable=True, comment="顺延期租金(元/月)")
-    cost_assumption_type = Column(String(20), nullable=True, comment="税费及佣金承担方类型: meifangbao/owner/respective/other")
+    cost_assumption_type = Column(
+        String(20), nullable=True, comment="税费及佣金承担方类型: meifangbao/owner/respective/other"
+    )
     cost_assumption_other = Column(String(50), nullable=True, comment="税费及佣金承担方其他说明")
     planned_handover_date = Column(DateTime, nullable=True, comment="业主交房时间")
     other_agreements = Column(Text, nullable=True, comment="其他约定条款")

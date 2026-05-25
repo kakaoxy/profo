@@ -1,14 +1,14 @@
-"""
-销售交易模型
-"""
-from sqlalchemy import Column, String, Numeric, DateTime, Boolean, ForeignKey, Index
+"""销售交易模型."""
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Numeric, String
 from sqlalchemy.orm import Session
 
-from ..common.base import BaseModel
+from backend.models.common.base import BaseModel
 
 
 class ProjectSale(BaseModel):
-    """销售交易表"""
+    """销售交易表."""
+
     __tablename__ = "project_sales"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
@@ -32,8 +32,8 @@ class ProjectSale(BaseModel):
     )
 
     def validate_user_references(self, db: Session) -> None:
-        """验证销售角色用户ID是否有效"""
-        from ..user.user import User
+        """验证销售角色用户ID是否有效."""
+        from backend.models.user.user import User  # noqa: PLC0415
 
         user_fields = [
             ("channel_manager_id", self.channel_manager_id),
@@ -50,4 +50,5 @@ class ProjectSale(BaseModel):
 
         for field_name, user_id in user_fields:
             if user_id and user_id not in existing_ids:
-                raise ValueError(f"无效的用户ID: {user_id} (字段: {field_name})")
+                msg = f"无效的用户ID: {user_id} (字段: {field_name})"
+                raise ValueError(msg)

@@ -1,40 +1,57 @@
+"""L4 市场营销层模型.
+
+对应 mini_projects 小程序项目管理.
 """
-L4 市场营销层模型
-对应 mini_projects 小程序项目管理
-"""
-from enum import Enum
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Integer, Numeric, Index, Boolean, JSON
-from sqlalchemy.orm import relationship, validates
+
 from datetime import datetime, timezone
 from decimal import Decimal
+from enum import Enum
 
-from ..common.base import BaseModel
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.orm import relationship, validates
+
+from backend.models.common.base import BaseModel
 
 
 class PublishStatus(str, Enum):
-    """发布状态枚举"""
+    """发布状态枚举."""
+
     DRAFT = "草稿"
     PUBLISHED = "发布"
 
 
 class MarketingProjectStatus(str, Enum):
-    """营销项目状态枚举"""
-    IN_PROGRESS = "在途"      # 项目进行中，尚未挂牌
-    FOR_SALE = "在售"         # 已挂牌销售
-    SOLD = "已售"             # 已成交
+    """营销项目状态枚举."""
+
+    IN_PROGRESS = "在途"  # 项目进行中，尚未挂牌
+    FOR_SALE = "在售"  # 已挂牌销售
+    SOLD = "已售"  # 已成交
 
 
 class PhotoCategory(str, Enum):
-    """照片分类枚举"""
-    MARKETING = "marketing"      # 营销照片
-    RENOVATION = "renovation"    # 改造照片
+    """照片分类枚举."""
+
+    MARKETING = "marketing"  # 营销照片
+    RENOVATION = "renovation"  # 改造照片
 
 
 class L4MarketingProject(BaseModel):
+    """L4 营销项目表 (原 mini_projects).
+
+    职责: 房源营销展示、历史案例作品集.
     """
-    L4 营销项目表 (原 mini_projects)
-    职责: 房源营销展示、历史案例作品集
-    """
+
     __tablename__ = "l4_marketing_projects"
 
     # 主键 - 整数类型，自增
@@ -42,7 +59,7 @@ class L4MarketingProject(BaseModel):
     id = Column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
 
     # 小区ID - UUID字符串类型，非空，关联小区
-    community_id = Column(String(36), ForeignKey('communities.id'), nullable=False, comment="关联小区ID（UUID字符串）")
+    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="关联小区ID（UUID字符串）")
 
     # 小区名称 - 冗余存储，避免跨层级JOIN查询
     community_name = Column(String(200), nullable=True, comment="小区名称(冗余存储)")
@@ -69,13 +86,13 @@ class L4MarketingProject(BaseModel):
         String(20),
         nullable=False,
         default=PublishStatus.DRAFT,
-        comment="发布状态: 草稿/发布"
+        comment="发布状态: 草稿/发布",
     )
     project_status = Column(
         String(20),
         nullable=False,
         default=MarketingProjectStatus.IN_PROGRESS,
-        comment="项目状态: 在途/在售/已售"
+        comment="项目状态: 在途/在售/已售",
     )
 
     # 软引用关联
@@ -90,14 +107,14 @@ class L4MarketingProject(BaseModel):
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
-        comment="创建时间"
+        comment="创建时间",
     )
     updated_at = Column(
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        comment="更新时间"
+        comment="更新时间",
     )
 
     # 关联关系
@@ -105,7 +122,7 @@ class L4MarketingProject(BaseModel):
         "L4MarketingMedia",
         back_populates="marketing_project",
         cascade="all, delete-orphan",
-        lazy="dynamic"
+        lazy="dynamic",
     )
 
     __table_args__ = (
@@ -118,49 +135,55 @@ class L4MarketingProject(BaseModel):
         Index("idx_l4_marketing_deleted", "is_deleted"),
     )
 
-    def __init__(self, **kwargs):
-        # 计算单价
-        area = kwargs.get('area')
-        total_price = kwargs.get('total_price')
+    def __init__(self, **kwargs: object) -> None:
+        """初始化营销项目，自动计算单价.
+
+        Args:
+            **kwargs: 模型字段参数
+
+        """
+        area = kwargs.get("area")
+        total_price = kwargs.get("total_price")
         if area is not None and total_price is not None:
             if float(area) > 0:
-                kwargs['unit_price'] = Decimal(str(total_price)) / Decimal(str(area))
+                kwargs["unit_price"] = Decimal(str(total_price)) / Decimal(str(area))
             else:
-                kwargs['unit_price'] = Decimal('0')
+                kwargs["unit_price"] = Decimal(0)
         super().__init__(**kwargs)
 
-    def recalculate_unit_price(self):
-        """重新计算单价"""
+    def recalculate_unit_price(self) -> None:
+        """重新计算单价."""
         if self.area and float(self.area) > 0:
             self.unit_price = Decimal(str(self.total_price)) / Decimal(str(self.area))
         else:
-            self.unit_price = Decimal('0')
+            self.unit_price = Decimal(0)
 
-    @validates('total_price')
-    def validate_total_price(self, key, value):
-        """总价变更时重新计算单价"""
+    @validates("total_price")
+    def validate_total_price(self, _key: str, value: object) -> object:
+        """总价变更时重新计算单价."""
         if value is not None and self.area is not None:
             if float(self.area) > 0:
                 self.unit_price = Decimal(str(value)) / Decimal(str(self.area))
             else:
-                self.unit_price = Decimal('0')
+                self.unit_price = Decimal(0)
         return value
 
-    @validates('area')
-    def validate_area(self, key, value):
-        """面积变更时重新计算单价"""
+    @validates("area")
+    def validate_area(self, _key: str, value: object) -> object:
+        """面积变更时重新计算单价."""
         if value is not None and float(value) > 0 and self.total_price is not None:
             self.unit_price = Decimal(str(self.total_price)) / Decimal(str(value))
         else:
-            self.unit_price = Decimal('0')
+            self.unit_price = Decimal(0)
         return value
 
 
 class L4MarketingMedia(BaseModel):
+    """L4 营销媒体资源表 (原 mini_project_photos).
+
+    存储营销项目相关的媒体资源.
     """
-    L4 营销媒体资源表 (原 mini_project_photos)
-    存储营销项目相关的媒体资源
-    """
+
     __tablename__ = "l4_marketing_media"
 
     # 主键 - 整数类型，自增
@@ -171,7 +194,7 @@ class L4MarketingMedia(BaseModel):
         Integer,
         ForeignKey("l4_marketing_projects.id"),
         nullable=False,
-        comment="营销项目ID"
+        comment="营销项目ID",
     )
 
     # 媒体类型
@@ -179,7 +202,7 @@ class L4MarketingMedia(BaseModel):
         String(20),
         nullable=False,
         default="image",
-        comment="媒体类型: image/video"
+        comment="媒体类型: image/video",
     )
 
     # 照片分类
@@ -187,7 +210,7 @@ class L4MarketingMedia(BaseModel):
         String(20),
         nullable=False,
         default=PhotoCategory.MARKETING,
-        comment="照片分类: marketing(营销照片)/renovation(改造照片)"
+        comment="照片分类: marketing(营销照片)/renovation(改造照片)",
     )
 
     # 装修阶段标记（仅改造照片使用）
@@ -212,20 +235,20 @@ class L4MarketingMedia(BaseModel):
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
-        comment="创建时间"
+        comment="创建时间",
     )
     updated_at = Column(
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
-        comment="更新时间"
+        comment="更新时间",
     )
 
     # 关联关系
     marketing_project = relationship(
         "L4MarketingProject",
-        back_populates="media_files"
+        back_populates="media_files",
     )
 
     __table_args__ = (

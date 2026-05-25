@@ -1,13 +1,13 @@
-"""
-项目状态流转日志模型
-"""
-from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Index
+"""项目状态流转日志模型."""
 
-from ..common.base import BaseModel
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
+
+from backend.models.common.base import BaseModel
 
 
 class ProjectStatusLog(BaseModel):
-    """项目状态流转日志表"""
+    """项目状态流转日志表."""
+
     __tablename__ = "project_status_logs"
 
     project_id = Column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")

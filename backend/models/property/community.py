@@ -1,16 +1,30 @@
+"""小区相关模型.
+
+包含Community和CommunityAlias表.
 """
-小区相关模型
-包含Community和CommunityAlias表
-"""
+
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint, Index
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
-from ..common.base import Base
+
+from backend.models.common.base import Base
 
 
 class Community(Base):
-    """小区表"""
+    """小区表."""
+
     __tablename__ = "communities"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -22,12 +36,18 @@ class Community(Base):
     total_properties = Column(Integer, default=0, comment="房源总数")
     is_active = Column(Boolean, default=True, comment="是否激活(软删除)")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False, comment="更新时间")
-    
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        comment="更新时间",
+    )
+
     # 关系
     properties = relationship("PropertyCurrent", back_populates="community")
     aliases = relationship("CommunityAlias", back_populates="community")
-    
+
     # 索引
     __table_args__ = (
         # 地理位置查询索引
@@ -37,13 +57,15 @@ class Community(Base):
         # 活跃状态查询索引
         Index("idx_community_active", "is_active"),
     )
-    
-    def __repr__(self):
+
+    def __repr__(self) -> str:
+        """返回字符串表示."""
         return f"<Community(id={self.id}, name='{self.name}')>"
 
 
 class CommunityAlias(Base):
-    """小区别名表 - 用于小区合并后的别名查找"""
+    """小区别名表 - 用于小区合并后的别名查找."""
+
     __tablename__ = "community_aliases"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -51,32 +73,29 @@ class CommunityAlias(Base):
     alias_name = Column(String(200), nullable=False, comment="别名")
     data_source = Column(String(50), nullable=False, comment="数据来源")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
-    
+
     # 关系
     community = relationship("Community", back_populates="aliases")
-    
-    # 唯一约束: 同一数据源的别名不能重复
-    __table_args__ = (
-        UniqueConstraint("alias_name", "data_source", name="uq_alias_source"),
-    )
-    
-    def __repr__(self):
+
+    __table_args__ = (UniqueConstraint("alias_name", "data_source", name="uq_alias_source"),)
+
+    def __repr__(self) -> str:
+        """返回字符串表示."""
         return f"<CommunityAlias(alias='{self.alias_name}', community_id={self.community_id})>"
 
 
 class CommunityCompetitor(Base):
-    """小区竞品关联表"""
+    """小区竞品关联表."""
+
     __tablename__ = "community_competitors"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="主小区ID")
     competitor_community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="竞品小区ID")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
-    
-    # 唯一约束: 避免重复添加
-    __table_args__ = (
-        UniqueConstraint("community_id", "competitor_community_id", name="uq_community_competitor"),
-    )
-    
-    def __repr__(self):
+
+    __table_args__ = (UniqueConstraint("community_id", "competitor_community_id", name="uq_community_competitor"),)
+
+    def __repr__(self) -> str:
+        """返回字符串表示."""
         return f"<CommunityCompetitor(community_id={self.community_id}, competitor={self.competitor_community_id})>"

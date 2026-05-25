@@ -1,36 +1,38 @@
-"""
-认证服务层
+"""认证服务层.
 
 将业务逻辑从路由中分离，处理并发阻塞问题：
 - 数据库操作 (Sync) -> 供路由层 run_in_threadpool 调用或 def 路由直接调用
 - 外部 API 调用 (Async) -> 供 async 路由调用
 """
+
 import logging
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import ClassVar
 from urllib.parse import urlencode
 
 import httpx
 from sqlalchemy.orm import Session, joinedload
 
-from models import User, Role
+from models import Role, User
 from settings import settings
 from utils.auth import (
-    verify_password,
     create_access_token,
     create_refresh_token,
-    validate_token,
     get_password_hash,
+    validate_token,
+    verify_password,
 )
+
 from .exceptions import AuthenticationError, ValidationError
 
 logger = logging.getLogger(__name__)
 
 
 class AuthService:
-    """
-    认证服务层
+    """认证服务层.
+
     将业务逻辑从路由中分离，处理并发阻塞问题：
     - 数据库操作 (Sync) -> 供路由层 run_in_threadpool 调用或 def 路由直接调用
     - 外部 API 调用 (Async) -> 供 async 路由调用
@@ -38,9 +40,9 @@ class AuthService:
 
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> User:
-        """
-        验证用户名密码 (Sync - Blocking)
-        包含 bcrypt 验证（CPU密集型）
+        """验证用户名密码 (Sync - Blocking).
+
+        包含 bcrypt 验证（CPU密集型）.
 
         Raises:
             AuthenticationError: 用户名或密码错误
@@ -48,16 +50,17 @@ class AuthService:
         Note:
             从返回 User | None 改为抛出异常，保持与服务层其他方法的一致性。
             如需旧行为（返回 None），请使用 try_authenticate_user。
+
         """
         user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
         if not user or not verify_password(password, user.password):
-            raise AuthenticationError("用户名或密码错误")
+            msg = "用户名或密码错误"
+            raise AuthenticationError(msg)
         return user
 
     @staticmethod
     def try_authenticate_user(db: Session, username: str, password: str) -> User | None:
-        """
-        尝试验证用户名密码，失败返回 None 而非抛出异常 (Sync - Blocking)
+        """尝试验证用户名密码，失败返回 None 而非抛出异常 (Sync - Blocking).
 
         向后兼容方法，适用于需要手动处理认证失败的场景。
         新代码推荐使用 authenticate_user 配合 try-except 处理异常。
@@ -71,6 +74,7 @@ class AuthService:
             if user is None:
                 # 处理认证失败
                 pass
+
         """
         try:
             return AuthService.authenticate_user(db, username, password)
@@ -81,30 +85,32 @@ class AuthService:
     def create_tokens_for_user(
         db: Session,
         user: User,
+        *,
         force_temp_token: bool = False,
-        update_login_time: bool = True
+        update_login_time: bool = True,
     ) -> dict[str, object]:
-        """
-        为用户生成令牌 (Sync)
-        处理登录后更新时间、生成 Token 的逻辑
+        """为用户生成令牌 (Sync).
+
+        处理登录后更新时间、生成 Token 的逻辑.
 
         Args:
             db: 数据库会话
             user: 用户对象
             force_temp_token: 是否强制使用临时令牌（用于密码重置）
             update_login_time: 是否更新最后登录时间（刷新token时不应更新）
+
         """
         # 检查是否强制修改密码逻辑
         if force_temp_token and user.must_change_password:
-             # 生成临时 Token logic
+            # 生成临时 Token logic
             temp_expires = timedelta(minutes=10)
             temp_token = create_access_token(
                 data={"sub": user.id, "role": user.role.code, "scope": "reset_password"},
-                expires_delta=temp_expires
+                expires_delta=temp_expires,
             )
             return {
                 "require_password_change": True,
-                "temp_token": temp_token
+                "temp_token": temp_token,
             }
 
         # 更新最后登录时间（仅在登录时更新，刷新token时不更新）
@@ -117,13 +123,13 @@ class AuthService:
         access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
         access_token = create_access_token(
             data={"sub": user.id, "role": user.role.code},
-            expires_delta=access_token_expires
+            expires_delta=access_token_expires,
         )
-        
+
         refresh_token_expires = timedelta(days=settings.jwt_refresh_token_expire_days)
         refresh_token = create_refresh_token(
             data={"sub": user.id},
-            expires_delta=refresh_token_expires
+            expires_delta=refresh_token_expires,
         )
 
         return {
@@ -132,34 +138,38 @@ class AuthService:
             "refresh_token": refresh_token,
             "token_type": "bearer",
             "expires_in": int(access_token_expires.total_seconds()),
-            "user": user
+            "user": user,
         }
+
+    _REFRESH_TOKEN_TYPE = "refresh"  # noqa: S105
 
     @staticmethod
     def refresh_user_token(db: Session, refresh_token: str) -> dict[str, object]:
-        """
-        刷新 Token (Sync)
+        """刷新 Token (Sync).
 
         注意：此方法不在刷新时更新 last_login_at，避免事务冲突
         """
-        payload = validate_token(refresh_token, token_type="refresh")
+        payload = validate_token(refresh_token, token_type=AuthService._REFRESH_TOKEN_TYPE)
         if not payload:
-            raise AuthenticationError("刷新令牌无效")
+            msg = "刷新令牌无效"
+            raise AuthenticationError(msg)
 
         user_id: str = payload.get("sub")
         if user_id is None:
-            raise AuthenticationError("刷新令牌无效")
+            msg = "刷新令牌无效"
+            raise AuthenticationError(msg)
 
         user = db.query(User).filter(User.id == user_id).first()
         if user is None:
-            raise AuthenticationError("用户不存在")
+            msg = "用户不存在"
+            raise AuthenticationError(msg)
 
         # 刷新token时不更新登录时间，避免事务冲突
         return AuthService.create_tokens_for_user(db, user, update_login_time=False)
 
     @staticmethod
     def generate_wechat_auth_url(redirect_uri: str | None = None) -> str:
-        """生成微信授权 URL"""
+        """生成微信授权 URL."""
         callback_url = redirect_uri or settings.wechat_redirect_uri
         params = {
             "appid": settings.wechat_appid,
@@ -167,12 +177,12 @@ class AuthService:
             "response_type": "code",
             "scope": "snsapi_userinfo",
             "state": "wechat_login",
-            "connect_redirect": 1
+            "connect_redirect": 1,
         }
         return settings.wechat_auth_url_base + "?" + urlencode(params) + "#wechat_redirect"
 
-    _temp_code_store: dict[str, dict[str, object]] = {}
-    _code_ttl: int = 60
+    _temp_code_store: ClassVar[dict[str, dict[str, object]]] = {}
+    _code_ttl: ClassVar[int] = 60
 
     @classmethod
     def _cleanup_expired_codes(cls) -> None:
@@ -182,6 +192,7 @@ class AuthService:
 
     @classmethod
     def store_temp_token(cls, access_token: str, refresh_token: str) -> str:
+        """存储临时令牌并返回临时授权码."""
         cls._cleanup_expired_codes()
 
         now = time.time()
@@ -195,82 +206,79 @@ class AuthService:
 
     @classmethod
     def exchange_temp_code(cls, code: str) -> dict[str, object]:
+        """用临时授权码换取令牌."""
         cls._cleanup_expired_codes()
 
         entry = cls._temp_code_store.pop(code, None)
         if entry is None:
-            raise AuthenticationError("授权码无效")
+            msg = "授权码无效"
+            raise AuthenticationError(msg)
         return entry
 
     @staticmethod
     async def fetch_wechat_access_token(code: str) -> dict[str, object]:
-        """
-        获取微信 Access Token (Async - IO Bound)
-        """
+        """获取微信 Access Token (Async - IO Bound)."""
         params = {
             "appid": settings.wechat_appid,
             "secret": settings.wechat_secret,
             "code": code,
-            "grant_type": "authorization_code"
+            "grant_type": "authorization_code",
         }
         async with httpx.AsyncClient() as client:
             response = await client.get(settings.wechat_token_url, params=params)
             data = response.json()
-        
+
         if "errcode" in data:
-             raise ValidationError(f"微信授权失败: {data.get('errmsg')}")
+            msg = f"微信授权失败: {data.get('errmsg')}"
+            raise ValidationError(msg)
         return data
 
     @staticmethod
     async def fetch_wechat_user_info(access_token: str, openid: str) -> dict[str, object]:
-        """
-        获取微信用户信息 (Async - IO Bound)
-        """
+        """获取微信用户信息 (Async - IO Bound)."""
         params = {
             "access_token": access_token,
             "openid": openid,
-            "lang": "zh_CN"
+            "lang": "zh_CN",
         }
         async with httpx.AsyncClient() as client:
             response = await client.get(settings.wechat_userinfo_url, params=params)
             data = response.json()
-            
+
         if "errcode" in data:
-            raise ValidationError(f"获取微信用户信息失败: {data.get('errmsg')}")
+            msg = f"获取微信用户信息失败: {data.get('errmsg')}"
+            raise ValidationError(msg)
         return data
-    
+
     @staticmethod
     async def fetch_wechat_miniapp_session(code: str) -> dict[str, object]:
-        """
-        获取微信小程序 Session (Async - IO Bound)
-        """
+        """获取微信小程序 Session (Async - IO Bound)."""
         params = {
             "appid": settings.wechat_appid,
             "secret": settings.wechat_secret,
             "js_code": code,
-            "grant_type": "authorization_code"
+            "grant_type": "authorization_code",
         }
         async with httpx.AsyncClient() as client:
             response = await client.get(settings.wechat_jscode2session_url, params=params)
             data = response.json()
 
         if "errcode" in data and data["errcode"] != 0:
-             raise ValidationError(f"微信登录失败: {data.get('errmsg')}")
+            msg = f"微信登录失败: {data.get('errmsg')}"
+            raise ValidationError(msg)
         return data
 
     @staticmethod
     def login_or_register_wechat_user(
-        db: Session, 
-        openid: str, 
-        unionid: str | None, 
+        db: Session,
+        openid: str,
+        unionid: str | None,
         user_info: dict[str, object] | None = None,
-        session_key: str | None = None
+        session_key: str | None = None,
     ) -> User:
-        """
-        处理微信用户登录/注册 (Sync - Blocking DB)
-        """
+        """处理微信用户登录/注册 (Sync - Blocking DB)."""
         user = db.query(User).filter(User.wechat_openid == openid).first()
-        
+
         if not user:
             # 注册新用户
             role = db.query(Role).filter(Role.code == "user").first()
@@ -279,15 +287,15 @@ class AuthService:
                     name="普通用户",
                     code="user",
                     description="仅拥有数据查看权限",
-                    permissions=["view_data"]
+                    permissions=["view_data"],
                 )
                 db.add(role)
                 db.commit()
                 db.refresh(role)
-            
+
             nickname = user_info.get("nickname", "微信用户") if user_info else "微信用户"
             avatar = user_info.get("headimgurl") if user_info else None
-            
+
             user = User(
                 username=f"wechat_{openid[:10]}",
                 password=get_password_hash(openid),
@@ -297,7 +305,7 @@ class AuthService:
                 wechat_unionid=unionid,
                 wechat_session_key=session_key,
                 role_id=role.id,
-                status="active"
+                status="active",
             )
             db.add(user)
             db.commit()
@@ -311,9 +319,9 @@ class AuthService:
                 user.wechat_unionid = unionid
             if session_key:
                 user.wechat_session_key = session_key
-                
+
             user.last_login_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(user)
-            
+
         return user

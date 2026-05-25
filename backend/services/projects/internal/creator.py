@@ -1,11 +1,10 @@
-"""
-项目创建服务模块
+"""项目创建服务模块.
 
 负责项目的创建流程，包括基础记录、合同记录和业主记录的创建。
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from models import Project, ProjectContract, ProjectOwner
@@ -18,8 +17,7 @@ if TYPE_CHECKING:
 
 
 class ProjectCreator:
-    """
-    项目创建服务
+    """项目创建服务.
 
     负责项目的全创建流程，包括：
     - 项目基础记录的创建
@@ -28,20 +26,20 @@ class ProjectCreator:
 
     Attributes:
         db: SQLAlchemy数据库会话
+
     """
 
-    def __init__(self, db: "Session"):
-        """
-        初始化项目创建服务
+    def __init__(self, db: "Session") -> None:
+        """初始化项目创建服务.
 
         Args:
             db: SQLAlchemy数据库会话
+
         """
         self.db = db
 
     def create(self, project_data: ProjectCreate) -> Project:
-        """
-        创建项目
+        """创建项目.
 
         同时创建项目基础记录、合同记录和业主记录（如提供）。
         项目创建后状态默认为"签约中"。
@@ -51,9 +49,10 @@ class ProjectCreator:
 
         Returns:
             创建成功的项目模型实例
+
         """
         project_id = str(uuid.uuid4())
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # 1. 创建项目基础记录
         project = self._create_base_project(project_id, project_data, now)
@@ -73,9 +72,9 @@ class ProjectCreator:
         self,
         project_id: str,
         project_data: ProjectCreate,
-        now: datetime
+        now: datetime,
     ) -> Project:
-        """创建项目基础记录"""
+        """创建项目基础记录."""
         project = Project(
             id=project_id,
             community_id=project_data.community_id,
@@ -98,9 +97,9 @@ class ProjectCreator:
         self,
         project_id: str,
         project_data: ProjectCreate,
-        now: datetime
+        now: datetime,
     ) -> None:
-        """创建合同记录"""
+        """创建合同记录."""
         signing_date = parse_date_string(project_data.signing_date)
         planned_handover_date = parse_date_string(project_data.planned_handover_date)
 
@@ -134,14 +133,16 @@ class ProjectCreator:
         self,
         project_id: str,
         project_data: ProjectCreate,
-        now: datetime
+        now: datetime,
     ) -> None:
-        """创建业主记录（如果提供了业主信息）"""
-        if any([
-            project_data.owner_name,
-            project_data.owner_phone,
-            project_data.owner_id_card,
-        ]):
+        """创建业主记录（如果提供了业主信息）."""
+        if any(
+            [
+                project_data.owner_name,
+                project_data.owner_phone,
+                project_data.owner_id_card,
+            ]
+        ):
             owner = ProjectOwner(
                 id=str(uuid.uuid4()),
                 project_id=project_id,

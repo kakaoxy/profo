@@ -1,10 +1,10 @@
+"""共享依赖和配置.
+
+用于避免循环导入.
 """
-共享依赖和配置
-用于避免循环导入
-"""
+
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -14,7 +14,7 @@ limiter = Limiter(
 
 
 class RateLimits:
-    """统一速率限制配置
+    """统一速率限制配置.
 
     所有路由的速率限制值集中管理，避免魔法字符串散布在代码中。
     修改速率限制只需在此处调整，无需逐个文件查找。
@@ -30,8 +30,8 @@ class RateLimits:
     USER_CREATE = "10/hour"
     USER_UPDATE = "100/hour"
     USER_DELETE = "20/hour"
-    USER_RESET_PASSWORD = "5/hour"
-    USER_CHANGE_PASSWORD = "3/minute"
+    USER_RESET_PASSWORD = "5/hour"  # noqa: S105
+    USER_CHANGE_PASSWORD = "3/minute"  # noqa: S105
     USER_INIT_DATA = "3/hour"
 
     # ==================== 角色管理模块 ====================

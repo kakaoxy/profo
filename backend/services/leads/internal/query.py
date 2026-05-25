@@ -1,38 +1,38 @@
-"""
-线索查询服务组件
-负责线索的查询操作
-"""
-from typing import Optional, Dict, Any, List
+"""线索查询服务组件.
 
-from sqlalchemy.orm import Session, joinedload, noload
+负责线索的查询操作.
+"""
+
+from typing import Any
+
 from sqlalchemy import desc
+from sqlalchemy.orm import Session, joinedload, noload
 
-from models.lead import Lead
 from models.common import LeadStatus
+from models.lead import Lead
 
 
 class LeadQueryService:
-    """
-    线索查询服务
+    """线索查询服务.
 
     负责线索的列表查询和单条查询。
 
     Attributes:
         db: SQLAlchemy数据库会话
+
     """
 
-    def __init__(self, db: Session):
-        """
-        初始化查询服务
+    def __init__(self, db: Session) -> None:
+        """初始化查询服务.
 
         Args:
             db: SQLAlchemy数据库会话
+
         """
         self.db = db
 
-    def get_by_id(self, lead_id: str, load_creator: bool = True) -> Optional[Lead]:
-        """
-        根据ID获取线索
+    def get_by_id(self, lead_id: str, *, load_creator: bool = True) -> Lead | None:
+        """根据ID获取线索.
 
         Args:
             lead_id: 线索ID
@@ -40,25 +40,25 @@ class LeadQueryService:
 
         Returns:
             线索对象，不存在时返回None
+
         """
         query = self.db.query(Lead)
         if load_creator:
             query = query.options(joinedload(Lead.creator))
         return query.filter(Lead.id == lead_id).first()
 
-    def get_list(
+    def get_list(  # noqa: PLR0913
         self,
         page: int = 1,
         page_size: int = 20,
-        search: Optional[str] = None,
-        statuses: Optional[List[LeadStatus]] = None,
-        district: Optional[str] = None,
-        creator_id: Optional[str] = None,
-        layout: Optional[str] = None,
-        floor: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """
-        获取线索列表（分页）
+        search: str | None = None,
+        statuses: list[LeadStatus] | None = None,
+        district: str | None = None,
+        creator_id: str | None = None,
+        layout: str | None = None,
+        floor: str | None = None,
+    ) -> dict[str, Any]:
+        """获取线索列表（分页）.
 
         Args:
             page: 页码
@@ -72,6 +72,7 @@ class LeadQueryService:
 
         Returns:
             包含线索列表和分页信息的字典
+
         """
         # 构建查询，优化关系加载
         query = self.db.query(Lead).options(
@@ -97,12 +98,7 @@ class LeadQueryService:
 
         # 计算总数和获取分页数据
         total = query.count()
-        items = (
-            query.order_by(desc(Lead.created_at))
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
+        items = query.order_by(desc(Lead.created_at)).offset((page - 1) * page_size).limit(page_size).all()
 
         return {
             "items": items,
@@ -111,35 +107,51 @@ class LeadQueryService:
             "page_size": page_size,
         }
 
-    def get_funnel_stats(self) -> Dict[str, int]:
-        """
-        获取线索漏斗统计数据
+    def get_funnel_stats(self) -> dict[str, int]:
+        """获取线索漏斗统计数据.
 
         Returns:
             包含各阶段数量的字典
+
         """
         # 获取总数
         total = self.db.query(Lead).count()
 
         # 评估中：待评估 + 待看房
-        evaluating = self.db.query(Lead).filter(
-            Lead.status.in_([LeadStatus.PENDING_ASSESSMENT, LeadStatus.PENDING_VISIT])
-        ).count()
+        evaluating = (
+            self.db.query(Lead)
+            .filter(
+                Lead.status.in_([LeadStatus.PENDING_ASSESSMENT, LeadStatus.PENDING_VISIT]),
+            )
+            .count()
+        )
 
         # 已驳回
-        rejected = self.db.query(Lead).filter(
-            Lead.status == LeadStatus.REJECTED
-        ).count()
+        rejected = (
+            self.db.query(Lead)
+            .filter(
+                Lead.status == LeadStatus.REJECTED,
+            )
+            .count()
+        )
 
         # 带看中：已看房
-        visiting = self.db.query(Lead).filter(
-            Lead.status == LeadStatus.VISITED
-        ).count()
+        visiting = (
+            self.db.query(Lead)
+            .filter(
+                Lead.status == LeadStatus.VISITED,
+            )
+            .count()
+        )
 
         # 已签约
-        signed = self.db.query(Lead).filter(
-            Lead.status == LeadStatus.SIGNED
-        ).count()
+        signed = (
+            self.db.query(Lead)
+            .filter(
+                Lead.status == LeadStatus.SIGNED,
+            )
+            .count()
+        )
 
         return {
             "total": total,

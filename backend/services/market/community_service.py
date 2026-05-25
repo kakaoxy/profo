@@ -1,11 +1,12 @@
+"""小区查询服务.
+
+处理小区的查询、搜索和分页逻辑.
 """
-小区查询服务
-处理小区的查询、搜索和分页逻辑
-"""
+
 import logging
+
+from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
-from typing import Optional
 
 from models.property import Community, PropertyCurrent
 from schemas.community import (
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class CommunityQueryService:
-    """小区查询服务"""
+    """小区查询服务."""
 
     @staticmethod
     def _build_response(community: Community) -> CommunityResponse:
@@ -30,18 +31,17 @@ class CommunityQueryService:
             business_circle=community.business_circle,
             avg_price_wan=community.avg_price_wan,
             total_properties=community.total_properties,
-            created_at=community.created_at
+            created_at=community.created_at,
         )
 
     @staticmethod
     def query_communities(
         db: Session,
-        search: Optional[str] = None,
+        search: str | None = None,
         page: int = 1,
-        page_size: int = 50
+        page_size: int = 50,
     ) -> CommunityListResponse:
-        """
-        查询小区列表
+        """查询小区列表.
 
         Args:
             db: 数据库会话
@@ -51,15 +51,20 @@ class CommunityQueryService:
 
         Returns:
             CommunityListResponse: 分页查询结果
+
         """
-        stmt = db.query(
-            Community,
-            func.count(PropertyCurrent.id).label('property_count')
-        ).outerjoin(
-            PropertyCurrent,
-            (PropertyCurrent.community_id == Community.id) & (PropertyCurrent.is_active.is_(True))
-        ).filter(
-            Community.is_active.is_(True)
+        stmt = (
+            db.query(
+                Community,
+                func.count(PropertyCurrent.id).label("property_count"),
+            )
+            .outerjoin(
+                PropertyCurrent,
+                (PropertyCurrent.community_id == Community.id) & (PropertyCurrent.is_active.is_(True)),
+            )
+            .filter(
+                Community.is_active.is_(True),
+            )
         )
 
         if search:
@@ -87,49 +92,50 @@ class CommunityQueryService:
                 business_circle=community.business_circle,
                 avg_price_wan=community.avg_price_wan,
                 total_properties=p_count,
-                created_at=community.created_at
+                created_at=community.created_at,
             )
             items.append(resp)
 
-        logger.info(f"查询小区完成: 总数={total}, 页码={page}, 每页={page_size}, 返回={len(items)}")
+        logger.info("查询小区完成: 总数=%s, 页码=%s, 每页=%s, 返回=%s", total, page, page_size, len(items))
 
         return CommunityListResponse(
             total=total,
-            items=items
+            items=items,
         )
 
     @staticmethod
     def query_dictionaries(
         db: Session,
-        type: str,
-        search: Optional[str] = None,
+        dict_type: str,
+        search: str | None = None,
         limit: int = 50,
     ) -> DictionaryResponse:
-        """
-        返回行政区或商圈的去重列表
+        """返回行政区或商圈的去重列表.
 
         Args:
             db: 数据库会话
-            type: 字典类型 ("district" | "business_circle")
+            dict_type: 字典类型 ("district" | "business_circle")
             search: 模糊搜索关键词
             limit: 返回数量上限
 
         Returns:
             DictionaryResponse: 字典响应
+
         """
         field_map = {
             "district": Community.district,
-            "business_circle": Community.business_circle
+            "business_circle": Community.business_circle,
         }
 
-        if type not in field_map:
-            raise ValueError(f"不支持的字典类型: {type}，支持的类型: {list(field_map.keys())}")
+        if dict_type not in field_map:
+            msg = f"不支持的字典类型: {dict_type}，支持的类型: {list(field_map.keys())}"
+            raise ValueError(msg)
 
-        target_column = field_map[type]
+        target_column = field_map[dict_type]
 
         query = db.query(distinct(target_column)).filter(
             target_column.isnot(None),
-            target_column != ""
+            target_column != "",
         )
 
         if search:
@@ -140,12 +146,11 @@ class CommunityQueryService:
         results = query.all()
         values = [r[0] for r in results if r[0]]
 
-        return DictionaryResponse(type=type, items=values)
+        return DictionaryResponse(type=dict_type, items=values)
 
 
 def _find_existing_community_by_name(db: Session, name: str) -> Community | None:
-    """
-    根据名称查找已存在的小区（不区分大小写）
+    """根据名称查找已存在的小区（不区分大小写）.
 
     Args:
         db: 数据库会话
@@ -153,8 +158,13 @@ def _find_existing_community_by_name(db: Session, name: str) -> Community | None
 
     Returns:
         找到的小区对象，不存在则返回 None
+
     """
-    return db.query(Community).filter(
-        Community.name.ilike(name),
-        Community.is_active.is_(True)
-    ).first()
+    return (
+        db.query(Community)
+        .filter(
+            Community.name.ilike(name),
+            Community.is_active.is_(True),
+        )
+        .first()
+    )

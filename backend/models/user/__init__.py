@@ -1,9 +1,9 @@
-"""
-用户权限模块
-包含用户和角色管理
+"""用户权限模块.
+
+包含用户和角色管理.
 """
 
-from .user import User, Role
 from .api_key import ApiKey
+from .user import Role, User
 
-__all__ = ['User', 'Role', 'ApiKey']
+__all__ = ["ApiKey", "Role", "User"]

@@ -1,87 +1,84 @@
-# backend/routers/admin.py
-"""
-小区管理路由
-处理小区查询、搜索和合并操作
-"""
-from fastapi import APIRouter, Query, HTTPException, Request
-from typing import Annotated
-from sqlalchemy.exc import SQLAlchemyError
-import logging
+"""小区管理路由.
 
+处理小区查询、搜索和合并操作.
+"""
+
+import logging
+import uuid
+from datetime import datetime, timezone
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, Request
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
+from common import RateLimits, limiter
+from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
 from models.property import Community
 from schemas.community import (
+    CommunityCreateRequest,
     CommunityListResponse,
-    CommunityResponse,
     CommunityMergeRequest,
     CommunityMergeResponse,
+    CommunityResponse,
     DictionaryResponse,
-    CommunityCreateRequest,
 )
 from services.market import CommunityMerger
-from services.market.community_service import CommunityQueryService, _find_existing_community_by_name
-from dependencies.auth import CurrentOperatorUserDep, CurrentAdminUserDep, DbSessionDep
-from common import limiter, RateLimits
-from datetime import datetime, timezone
-import uuid
+from services.market.community_service import (
+    CommunityQueryService,
+    _find_existing_community_by_name,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["L1-小区管理"])
 
-# 将 Service 实例化移出路由，或使用 Dependency 模式（这里保持静态调用即可）
 service = CommunityQueryService()
 
-@router.get("/communities", response_model=CommunityListResponse)
+
+@router.get("/communities")
 def get_communities(
     db: DbSessionDep,
-    current_user: CurrentOperatorUserDep,
+    _current_user: CurrentOperatorUserDep,
     search: Annotated[str | None, Query(description="小区名称搜索（模糊匹配）")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> CommunityListResponse:
-    """
-    查询小区列表
-    """
-    result = service.query_communities(
+    """查询小区列表."""
+    return service.query_communities(
         db=db,
         search=search,
         page=page,
-        page_size=page_size
+        page_size=page_size,
     )
-    return result
 
 
 @router.get(
     "/dictionaries",
-    response_model=DictionaryResponse,
-    responses={400: {"description": "不支持的字典类型参数"}}
+    responses={400: {"description": "不支持的字典类型参数"}},
 )
 def get_dictionaries(
     db: DbSessionDep,
-    current_user: CurrentOperatorUserDep,
-    type: Annotated[str, Query(description="字典类型: district | business_circle")],
+    _current_user: CurrentOperatorUserDep,
+    dict_type: Annotated[str, Query(description="字典类型: district | business_circle")],
     search: Annotated[str | None, Query(description="模糊搜索关键词")] = None,
     limit: Annotated[int, Query(ge=1, le=500, description="返回数量上限")] = 50,
 ) -> DictionaryResponse:
-    """
-    返回行政区或商圈的去重列表
-    """
+    """返回行政区或商圈的去重列表."""
     try:
-        return service.query_dictionaries(db=db, type=type, search=search, limit=limit)
+        return service.query_dictionaries(db=db, type=dict_type, search=search, limit=limit)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.post("/communities/merge", response_model=CommunityMergeResponse)
+@router.post("/communities/merge")
 @limiter.limit(RateLimits.COMMUNITY_MERGE)
 def merge_communities(
-    request: Request,
+    _request: Request,
     merge_request: CommunityMergeRequest,
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    _current_user: CurrentAdminUserDep,
 ) -> CommunityMergeResponse:
-    """
-    合并小区操作
+    """合并小区操作.
 
     参数:
         request: FastAPI HTTP 请求对象（用于速率限制）
@@ -91,64 +88,60 @@ def merge_communities(
 
     速率限制：20次/小时
     """
-    logger.info(f"收到小区合并请求: primary_id={merge_request.primary_id}, merge_ids={merge_request.merge_ids}")
+    logger.info(
+        "收到小区合并请求: primary_id=%s, merge_ids=%s",
+        merge_request.primary_id,
+        merge_request.merge_ids,
+    )
 
-    # 建议：CommunityMerger 也可以通过 Depends 注入，方便管理 DB session 生命周期
-    # 但如果 Merger 内部逻辑简单，直接传递 db 也可以
     merger = CommunityMerger()
 
     try:
-        # 假设 merger 内部处理了事务回滚，如果没有，建议在这里处理
         result = merger.merge_communities(
             primary_id=merge_request.primary_id,
             merge_ids=merge_request.merge_ids,
-            db=db
+            db=db,
         )
 
         if not result.success:
-            raise ValueError(result.message)
+            raise ValueError(result.message)  # noqa: TRY301
 
-        logger.info(f"小区合并成功: {result.message}")
+        logger.info("小区合并成功: %s", result.message)
         return CommunityMergeResponse(
             success=True,
             affected_properties=result.affected_properties,
-            message=result.message
+            message=result.message,
         )
 
     except ValueError as e:
-        logger.warning(f"小区合并业务验证失败: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except SQLAlchemyError as e:
-        logger.error(f"小区合并发生数据库错误: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
-    except Exception as e:
-        logger.error(f"小区合并发生未知错误: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员")
+        logger.warning("小区合并业务验证失败: %s", e)
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except SQLAlchemyError:
+        logger.exception("小区合并发生数据库错误")
+        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员") from None
+    except Exception:
+        logger.exception("小区合并发生未知错误")
+        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员") from None
 
 
-@router.post("/communities", response_model=CommunityResponse)
+@router.post("/communities")
 @limiter.limit(RateLimits.COMMUNITY_CREATE)
 def create_community(
-    request: Request,
+    _request: Request,
     body: CommunityCreateRequest,
     db: DbSessionDep,
-    current_user: CurrentOperatorUserDep,
+    _current_user: CurrentOperatorUserDep,
 ) -> CommunityResponse:
-    """
-    创建新小区
+    """创建新小区.
 
     速率限制：100次/小时
     """
-    from sqlalchemy.exc import IntegrityError
-    
-    # 1. 检查是否已存在同名小区（不区分大小写）
     existing = _find_existing_community_by_name(db, body.name)
-    
+
     if existing:
-        logger.info(f"小区已存在，直接返回: {existing.name} (ID: {existing.id})")
-        return CommunityQueryService._build_response(existing)
-    
-    # 2. 创建新小区
+        logger.info("小区已存在，直接返回: %s (ID: %s)", existing.name, existing.id)
+        return CommunityResponse.model_validate(existing)
+
     new_community = Community(
         id=str(uuid.uuid4()),
         name=body.name.strip(),
@@ -159,30 +152,29 @@ def create_community(
         total_properties=0,
         is_active=True,
         created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
+        updated_at=datetime.now(timezone.utc),
     )
-    
+
     db.add(new_community)
-    
+
     try:
         db.commit()
         db.refresh(new_community)
-        logger.info(f"创建新小区成功: {new_community.name} (ID: {new_community.id})")
+        logger.info("创建新小区成功: %s (ID: %s)", new_community.name, new_community.id)
     except IntegrityError as e:
         db.rollback()
-        logger.warning(f"创建小区时发生唯一约束冲突: {body.name}, 错误: {str(e)}")
-        # 并发情况下可能另一个请求已创建，再次尝试查找
+        logger.warning("创建小区时发生唯一约束冲突: %s, 错误: %s", body.name, e)
         existing = _find_existing_community_by_name(db, body.name)
         if existing:
-            return CommunityQueryService._build_response(existing)
-        raise HTTPException(status_code=500, detail="创建小区失败")
-    except SQLAlchemyError as e:
+            return CommunityResponse.model_validate(existing)
+        raise HTTPException(status_code=500, detail="创建小区失败") from e
+    except SQLAlchemyError:
         db.rollback()
-        logger.error(f"创建小区发生数据库错误: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="创建小区失败")
-    except Exception as e:
+        logger.exception("创建小区发生数据库错误")
+        raise HTTPException(status_code=500, detail="创建小区失败") from None
+    except Exception:
         db.rollback()
-        logger.error(f"创建小区发生未知错误: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="创建小区失败")
-    
-    return CommunityQueryService._build_response(new_community)
+        logger.exception("创建小区发生未知错误")
+        raise HTTPException(status_code=500, detail="创建小区失败") from None
+
+    return CommunityResponse.model_validate(new_community)

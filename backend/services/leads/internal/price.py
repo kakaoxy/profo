@@ -1,45 +1,45 @@
+"""线索价格历史服务组件.
+
+负责价格历史记录的创建和查询.
 """
-线索价格历史服务组件
-负责价格历史记录的创建和查询
-"""
-from typing import Optional, List
+
 import uuid
 
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
 from fastapi import HTTPException
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from models.lead import Lead, LeadPriceHistory
 
 
 class LeadPriceService:
-    """
-    线索价格历史服务
+    """线索价格历史服务.
 
     负责价格历史记录的创建和查询。
 
     Attributes:
         db: SQLAlchemy数据库会话
+
     """
 
-    def __init__(self, db: Session):
-        """
-        初始化价格历史服务
+    def __init__(self, db: Session) -> None:
+        """初始化价格历史服务.
 
         Args:
             db: SQLAlchemy数据库会话
+
         """
         self.db = db
 
-    def get_price_history(self, lead_id: str) -> List[LeadPriceHistory]:
-        """
-        获取线索价格历史记录
+    def get_price_history(self, lead_id: str) -> list[LeadPriceHistory]:
+        """获取线索价格历史记录.
 
         Args:
             lead_id: 线索ID
 
         Returns:
             价格历史记录列表，按记录时间倒序
+
         """
         return (
             self.db.query(LeadPriceHistory)
@@ -52,11 +52,10 @@ class LeadPriceService:
         self,
         lead_id: str,
         price: float,
-        remark: Optional[str],
+        remark: str | None,
         created_by_id: str,
     ) -> LeadPriceHistory:
-        """
-        添加价格记录，同时更新线索的当前总价
+        """添加价格记录，同时更新线索的当前总价.
 
         Args:
             lead_id: 线索ID
@@ -69,6 +68,7 @@ class LeadPriceService:
 
         Raises:
             HTTPException: 404 当线索不存在时
+
         """
         lead = self.db.query(Lead).filter(Lead.id == lead_id).first()
         if not lead:
@@ -97,9 +97,8 @@ class LeadPriceService:
         lead_id: str,
         price: float,
         created_by_id: str,
-    ) -> Optional[LeadPriceHistory]:
-        """
-        创建初始价格记录
+    ) -> LeadPriceHistory | None:
+        """创建初始价格记录.
 
         Args:
             lead_id: 线索ID
@@ -108,6 +107,7 @@ class LeadPriceService:
 
         Returns:
             创建的价格记录对象，如果price为None则返回None
+
         """
         if not price:
             return None

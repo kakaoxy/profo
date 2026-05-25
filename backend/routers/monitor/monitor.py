@@ -1,19 +1,22 @@
-from typing import Annotated, List
-from fastapi import APIRouter, Path, Query, HTTPException, status, Request
+"""市场监控路由."""
 
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Path, Query, Request, status
+
+from common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.monitor import (
     AddCompetitorRequest,
     AIStrategyRequest,
     AIStrategyResponse,
+    CommunityMarketStatsResponse,
     CompetitorResponse,
     MarketSentimentResponse,
     NeighborhoodRadarResponse,
     TrendData,
-    CommunityMarketStatsResponse,
 )
 from services.monitor import MonitorService
-from common import limiter, RateLimits
 
 router = APIRouter(prefix="/monitor")
 
@@ -21,53 +24,54 @@ CommunityIdPath = Annotated[str, Path(description="小区ID")]
 CompetitorIdPath = Annotated[str, Path(description="竞品小区ID")]
 
 
-@router.get("/communities/{community_id}/sentiment", response_model=MarketSentimentResponse)
+@router.get("/communities/{community_id}/sentiment")
 def get_sentiment(
     community_id: CommunityIdPath,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> MarketSentimentResponse:
+    """获取市场情绪数据."""
     return MonitorService.get_market_sentiment(db, community_id)
 
 
-@router.get("/communities/{community_id}/trends", response_model=List[TrendData])
+@router.get("/communities/{community_id}/trends")
 def get_trends(
     community_id: CommunityIdPath,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
     months: Annotated[int, Query(ge=1, le=24)] = 6,
-) -> List[TrendData]:
+) -> list[TrendData]:
+    """获取趋势数据."""
     return MonitorService.get_trends(db, community_id, months)
 
 
-@router.post("/ai-strategy", response_model=AIStrategyResponse)
+@router.post("/ai-strategy")
 def generate_strategy(
     request: AIStrategyRequest,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> AIStrategyResponse:
+    """生成AI策略建议."""
     return MonitorService.generate_ai_strategy(db, request.project_id, request.user_context)
 
 
-@router.get("/communities/{community_id}/radar", response_model=NeighborhoodRadarResponse)
+@router.get("/communities/{community_id}/radar")
 def get_neighborhood_radar(
     community_id: CommunityIdPath,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> NeighborhoodRadarResponse:
-    """获取周边竞品雷达数据，包含分渠道统计"""
+    """获取周边竞品雷达数据，包含分渠道统计."""
     return MonitorService.get_neighborhood_radar(db, community_id)
 
 
-# --- Community Competitor Endpoints (统一放在 monitor_router 下) ---
-
-
-@router.get("/communities/{community_id}/competitors", response_model=List[CompetitorResponse])
+@router.get("/communities/{community_id}/competitors")
 def get_competitors(
     community_id: CommunityIdPath,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
-) -> List[CompetitorResponse]:
+    _current_user: CurrentInternalUserDep,
+) -> list[CompetitorResponse]:
+    """获取竞品列表."""
     return MonitorService.get_competitors(db, community_id)
 
 
@@ -76,29 +80,31 @@ def add_competitor(
     community_id: CommunityIdPath,
     request: AddCompetitorRequest,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> None:
+    """添加竞品小区."""
     added = MonitorService.add_competitor(db, community_id, request.competitor_community_id)
     if added:
         db.commit()
     else:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="竞品小区已存在"
+            detail="竞品小区已存在",
         )
 
 
 @router.delete("/communities/{community_id}/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit(RateLimits.MONITOR_DELETE)
 def remove_competitor(
-    request: Request,
+    _request: Request,
     community_id: CommunityIdPath,
     competitor_id: CompetitorIdPath,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> None:
-    """删除竞品
-    速率限制：20次/小时
+    """删除竞品.
+
+    速率限制：20次/小时.
     """
     removed = MonitorService.remove_competitor(db, community_id, competitor_id)
     if removed:
@@ -106,17 +112,17 @@ def remove_competitor(
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="竞品小区不存在"
+            detail="竞品小区不存在",
         )
 
 
-@router.get("/communities/{community_id}/market-stats", response_model=CommunityMarketStatsResponse)
+@router.get("/communities/{community_id}/market-stats")
 def get_community_market_stats(
     community_id: CommunityIdPath,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: CurrentInternalUserDep,
 ) -> CommunityMarketStatsResponse:
-    """获取小区市场统计数据
+    """获取小区市场统计数据.
 
     用于项目卡片展示的市场数据:
     - on_sale: 竞品在售数量

@@ -1,12 +1,13 @@
-"""
-数据库连接和会话管理
-"""
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import QueuePool
-from typing import Generator
-from settings import settings
+"""数据库连接和会话管理."""
+
 import logging
+from collections.abc import Generator
+
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import QueuePool
+
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,8 @@ logger = logging.getLogger(__name__)
 # 添加性能优化配置
 
 
-def _enable_sqlite_fk(dbapi_conn, connection_record):
-    """启用 SQLite 外键约束"""
+def _enable_sqlite_fk(dbapi_conn, _connection_record: object) -> None:  # noqa: ANN001
+    """启用 SQLite 外键约束."""
     cursor = dbapi_conn.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
@@ -39,7 +40,7 @@ engine = create_engine(
     # 查询优化
     execution_options={
         "compiled_cache": {},  # 启用编译缓存以提高查询性能
-    }
+    },
 )
 
 # 监听连接事件，启用外键约束
@@ -49,21 +50,21 @@ event.listen(engine, "connect", _enable_sqlite_fk)
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=engine,
 )
 
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    获取数据库会话的依赖注入函数
-    
+    """获取数据库会话的依赖注入函数.
+
     用法:
         @app.get("/items")
         def read_items(db: Session = Depends(get_db)):
             return db.query(Item).all()
-    
+
     Yields:
         Session: 数据库会话对象
+
     """
     db = SessionLocal()
     try:
@@ -72,33 +73,32 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def init_db():
-    """
-    初始化数据库 - 创建所有表
+def init_db() -> None:
+    """初始化数据库 - 创建所有表.
 
     注意: 这个函数应该在应用启动时调用一次
     """
-    from models import Base
+    from models import Base  # noqa: PLC0415
+
     Base.metadata.create_all(bind=engine)
 
     logger.info("Database tables created successfully")
 
 
-def drop_all_tables():
-    """
-    删除所有表 (谨慎使用!)
-    
+def drop_all_tables() -> None:
+    """删除所有表 (谨慎使用!).
+
     仅用于开发和测试环境
     """
-    from models import Base
+    from models import Base  # noqa: PLC0415
+
     Base.metadata.drop_all(bind=engine)
     logger.warning("⚠️  所有表已删除")
 
 
-def reset_db():
-    """
-    重置数据库 - 删除所有表并重新创建
-    
+def reset_db() -> None:
+    """重置数据库 - 删除所有表并重新创建.
+
     仅用于开发和测试环境
     """
     drop_all_tables()

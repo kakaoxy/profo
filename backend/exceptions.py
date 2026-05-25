@@ -1,5 +1,4 @@
-"""
-已弃用 — 请改用 services.system.exceptions
+"""已弃用 — 请改用 services.system.exceptions.
 
 此模块中的所有异常类型已统一迁移至 services.system.exceptions.ServiceException 体系。
 为保持向后兼容，此处保留别名重导出，但推荐直接导入新模块。
@@ -19,8 +18,8 @@
     DateParsingException     → ValidationError
     PasswordValidationException → ValidationError
 """
-import warnings
 
+import warnings
 
 warnings.warn(
     "exceptions 模块已弃用，请改用 services.system.exceptions",

@@ -1,54 +1,72 @@
-"""
-Leads Management Models
-"""
+"""Leads Management Models."""
+
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, DateTime, Text, Integer, ForeignKey, Enum as SQLEnum, Index, Numeric, JSON
+
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
-from ..common.base import Base, LeadStatus, FollowUpMethod
+from backend.models.common.base import Base, FollowUpMethod, LeadStatus
+
 
 class Lead(Base):
-    """线索主表"""
+    """线索主表."""
+
     __tablename__ = "leads"
 
     id = Column(String(36), primary_key=True, comment="UUID")
-    
+
     # Core Info
     community_name = Column(String(200), nullable=False, comment="小区名称")
     community_id = Column(String(36), nullable=True, comment="关联小区ID(软引用)")
     is_hot = Column(Integer, default=0, comment="是否热门/关注(0/1)")
-    
+
     # Property Physical Attributes
     layout = Column(String(50), comment="户型(e.g. 2室1厅)")
     orientation = Column(String(50), comment="朝向")
     floor_info = Column(String(50), comment="楼层信息")
     area = Column(Numeric(10, 2), comment="面积(㎡)")
-    
+
     # Price Info
     total_price = Column(Numeric(15, 2), comment="当前授权总价(万)")
     unit_price = Column(Numeric(15, 2), comment="单价(万/㎡)")
     eval_price = Column(Numeric(15, 2), comment="评估价格(万)")
-    
+
     # Status & Workflow
     status = Column(SQLEnum(LeadStatus), default=LeadStatus.PENDING_ASSESSMENT, nullable=False, comment="状态")
     audit_reason = Column(Text, comment="审核/驳回理由")
     auditor_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="审核人ID")
     audit_time = Column(DateTime, nullable=True, comment="审核时间")
-    
+
     # Metadata
     images = Column(JSON, default=list, comment="图片列表")
     district = Column(String(50), comment="行政区")
     business_area = Column(String(50), comment="商圈")
     remarks = Column(Text, comment="备注")
-    
+
     # Linkage
     creator_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="创建人ID")
     source_property_id = Column(Integer, nullable=True, comment="关联房源ID(软引用)")
-    
+
     # Timestamps
     last_follow_up_at = Column(DateTime, nullable=True, comment="最后跟进时间")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), comment="更新时间")
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        comment="更新时间",
+    )
 
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id])
@@ -57,7 +75,8 @@ class Lead(Base):
     price_history = relationship("LeadPriceHistory", back_populates="lead", cascade="all, delete-orphan")
 
     @property
-    def creator_name(self):
+    def creator_name(self) -> str | None:
+        """获取创建人名称."""
         return self.creator.nickname if self.creator else None
 
     __table_args__ = (
@@ -66,44 +85,50 @@ class Lead(Base):
         Index("idx_lead_creator", "creator_id"),
     )
 
+
 class LeadFollowUp(Base):
-    """线索跟进记录"""
+    """线索跟进记录."""
+
     __tablename__ = "lead_followups"
 
     id = Column(String(36), primary_key=True, comment="UUID")
     lead_id = Column(String(36), ForeignKey("leads.id"), nullable=False, comment="线索ID")
-    
+
     method = Column(SQLEnum(FollowUpMethod), nullable=False, comment="跟进方式")
     content = Column(Text, nullable=False, comment="跟进内容")
     followed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="跟进时间")
-    
+
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, comment="跟进人ID")
-    
+
     # Relationships
     lead = relationship("Lead", back_populates="follow_ups")
     created_by = relationship("User")
 
     @property
-    def created_by_name(self):
+    def created_by_name(self) -> str | None:
+        """获取跟进人名称."""
         return self.created_by.nickname if self.created_by else None
 
+
 class LeadPriceHistory(Base):
-    """线索价格历史记录"""
+    """线索价格历史记录."""
+
     __tablename__ = "lead_price_history"
 
     id = Column(String(36), primary_key=True, comment="UUID")
     lead_id = Column(String(36), ForeignKey("leads.id"), nullable=False, comment="线索ID")
-    
+
     price = Column(Numeric(15, 2), nullable=False, comment="授权价格(万)")
     remark = Column(Text, comment="调整备注/原因")
     recorded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="记录时间")
-    
+
     created_by_id = Column(String(36), ForeignKey("users.id"), nullable=False, comment="记录人ID")
-    
+
     # Relationships
     lead = relationship("Lead", back_populates="price_history")
     created_by = relationship("User")
 
     @property
-    def created_by_name(self):
+    def created_by_name(self) -> str | None:
+        """获取记录人名称."""
         return self.created_by.nickname if self.created_by else None
