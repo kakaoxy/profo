@@ -10,7 +10,7 @@ from dependencies.auth import DbSessionDep, CurrentCustomerUserDep
 from models import Lead, LeadFollowUp
 from services.leads.core import LeadService
 from schemas.lead import LeadCreate
-from common import limiter
+from common import limiter, RateLimits
 from schemas.public import (
     PublicLeadCreate,
     PublicLeadResponse,
@@ -51,7 +51,7 @@ LeadServiceDep = Annotated[LeadService, Depends(get_lead_service)]
     summary="提交卖房估价",
     description="C端用户提交卖房估价线索",
 )
-@limiter.limit("10/hour")
+@limiter.limit(RateLimits.PUBLIC_LEAD_CREATE)
 def create_lead(
     request: Request,
     body: PublicLeadCreate,
@@ -93,7 +93,7 @@ def create_lead(
     summary="获取我的估价列表",
     description="获取当前用户创建的线索列表",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_my_leads(
     request: Request,
     current_user: CurrentCustomerUserDep,
@@ -139,7 +139,7 @@ def get_my_leads(
     summary="获取估价详情",
     description="获取指定线索的详细信息，仅能查看自己创建的线索",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_lead_detail(
     request: Request,
     lead_id: str,

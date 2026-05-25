@@ -8,7 +8,7 @@ from fastapi import APIRouter, Query, Request
 from dependencies.auth import DbSessionDep
 from models import Community
 from utils.formatters import escape_like
-from common import limiter
+from common import limiter, RateLimits
 from schemas.public import PublicCommunitySearchItem
 
 router = APIRouter(prefix="/public/communities", tags=["public-communities"])
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/public/communities", tags=["public-communities"])
     summary="搜索小区",
     description="根据关键词搜索小区，无需登录",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_COMMUNITY_SEARCH)
 def search_communities(
     request: Request,
     db: DbSessionDep,

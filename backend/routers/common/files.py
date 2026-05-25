@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from settings import settings
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
-from common import limiter
+from common import limiter, RateLimits
 from utils.file_security import sanitize_filename, get_safe_file_path
 
 router = APIRouter(tags=["文件管理"])
@@ -25,7 +25,7 @@ class FileUploadResponse(BaseModel):
 
 
 @router.post("/upload", summary="上传文件", response_model=FileUploadResponse)
-@limiter.limit("50/hour")
+@limiter.limit(RateLimits.FILE_UPLOAD)
 def upload_file(
     request: Request,
     current_user: CurrentOperatorUserDep,

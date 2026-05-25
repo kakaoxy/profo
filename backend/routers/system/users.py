@@ -23,7 +23,7 @@ from dependencies.auth import (
 )
 from services.system import user_service
 from services.system.init_service import init_service
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/", response_model=UserListResponse)
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.USER_LIST)
 def get_users(
     request: Request,
     db: DbSessionDep,
@@ -109,7 +109,7 @@ def get_user(
 
 
 @router.post("/", response_model=UserResponse, status_code=201)
-@limiter.limit("10/hour")
+@limiter.limit(RateLimits.USER_CREATE)
 def create_user(
     request: Request,
     user_data: UserCreate,
@@ -124,7 +124,7 @@ def create_user(
 
 
 @router.put("/{user_id}", response_model=UserResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.USER_UPDATE)
 def update_user(
     request: Request,
     user_id: str,
@@ -140,7 +140,7 @@ def update_user(
 
 
 @router.put("/{user_id}/reset-password")
-@limiter.limit("5/hour")
+@limiter.limit(RateLimits.USER_RESET_PASSWORD)
 def reset_user_password(
     request: Request,
     user_id: str,
@@ -157,7 +157,7 @@ def reset_user_password(
 
 
 @router.delete("/{user_id}", status_code=204)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.USER_DELETE)
 def delete_user(
     request: Request,
     user_id: str,
@@ -173,7 +173,7 @@ def delete_user(
 
 
 @router.post("/change-password")
-@limiter.limit("3/minute")
+@limiter.limit(RateLimits.USER_CHANGE_PASSWORD)
 def change_password(
     request: Request,
     password_data: PasswordChange,
@@ -191,7 +191,7 @@ def change_password(
 # ==================== 初始化数据 ====================
 
 @router.post("/init-data")
-@limiter.limit("3/hour")
+@limiter.limit(RateLimits.USER_INIT_DATA)
 def init_system_data(
     request: Request,
     db: DbSessionDep,

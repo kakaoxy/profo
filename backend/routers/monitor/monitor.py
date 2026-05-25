@@ -13,7 +13,7 @@ from schemas.monitor import (
     CommunityMarketStatsResponse,
 )
 from services.monitor import MonitorService
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter(prefix="/monitor")
 
@@ -89,7 +89,7 @@ def add_competitor(
 
 
 @router.delete("/communities/{community_id}/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.MONITOR_DELETE)
 def remove_competitor(
     request: Request,
     community_id: CommunityIdPath,

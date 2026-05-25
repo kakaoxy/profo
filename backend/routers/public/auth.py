@@ -10,7 +10,7 @@ from services.system.auth import AuthService
 from services.system.exceptions import ValidationError
 from utils.auth import get_password_hash
 from utils.formatters import mask_phone
-from common import limiter
+from common import limiter, RateLimits
 from schemas.public import (
     PublicRegisterRequest,
     PublicRegisterResponse,
@@ -40,7 +40,7 @@ def _build_user_info(user: User) -> PublicUserInfo:
     summary="C端用户注册",
     description="注册C端用户账号，自动分配customer角色",
 )
-@limiter.limit("10/hour")
+@limiter.limit(RateLimits.PUBLIC_REGISTER)
 def register(request: Request, body: PublicRegisterRequest, db: DbSessionDep):
     """C端用户注册，自动分配customer角色"""
     existing_user = db.query(User).filter(User.username == body.username).first()
@@ -85,7 +85,7 @@ def register(request: Request, body: PublicRegisterRequest, db: DbSessionDep):
     summary="C端退出登录",
     description="C端用户退出登录（当前JWT无状态机制下，服务端不撤销token，客户端应删除本地存储的token）",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_LOGOUT)
 def logout(request: Request, current_user: CurrentCustomerUserDep):
     """C端退出登录，客户端应清除本地存储的token"""
     return PublicLogoutResponse(message="退出登录成功")

@@ -25,7 +25,7 @@ from schemas.user import (
 from dependencies.auth import get_current_active_user, DbSessionDep
 from services.system import AuthService, ApiKeyService
 from services.system.exceptions import AuthenticationError, ResourceNotFoundError
-from common import limiter
+from common import limiter, RateLimits
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
@@ -40,7 +40,7 @@ def get_rate_key(request: Request, username: str = "") -> str:
 
 
 @router.post("/token", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit(RateLimits.AUTH_LOGIN)
 def login_for_access_token(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -78,7 +78,7 @@ def login_for_access_token(
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit(RateLimits.AUTH_LOGIN)
 def login(
     request: Request,
     login_data: Annotated[LoginRequest, Body()],
@@ -104,7 +104,7 @@ def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.AUTH_REFRESH)
 def refresh_access_token(
     request: Request,
     refresh_data: Annotated[RefreshTokenRequest, Body()],
@@ -173,7 +173,7 @@ async def wechat_callback(
 
 
 @router.post("/exchange-token")
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.AUTH_REFRESH)
 def exchange_token(
     request: Request,
     exchange_data: Annotated[ExchangeTokenRequest, Body()],
@@ -199,7 +199,7 @@ def exchange_token(
 
 
 @router.post("/wechat/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit(RateLimits.AUTH_LOGIN)
 async def wechat_app_login(
     request: Request,
     login_data: Annotated[WechatLoginRequest, Body()],
@@ -284,7 +284,7 @@ def get_api_key_info(
 
 
 @router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.AUTH_API_KEY_DELETE)
 def delete_api_key(
     request: Request,
     current_user: CurrentUserDep,

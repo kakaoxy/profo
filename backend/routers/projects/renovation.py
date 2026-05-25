@@ -4,13 +4,13 @@ from dependencies.projects import ProjectServiceDep
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import RenovationUpdate, RenovationPhotoResponse, ProjectResponse
 from schemas.project.renovation import RenovationContractUpdate, RenovationContractResponse, RenovationPhotoListResponse
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter()
 
 
 @router.put("/{project_id}/renovation", response_model=ProjectResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_stage(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
@@ -54,7 +54,7 @@ def get_renovation_photos(
 
 
 @router.delete("/{project_id}/renovation/photos/{photo_id}", status_code=204)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.RENOVATION_DELETE)
 def delete_renovation_photo(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
@@ -81,7 +81,7 @@ def get_renovation_contract(
 
 
 @router.put("/{project_id}/renovation/contract", response_model=RenovationContractResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.RENOVATION_UPDATE)
 def update_renovation_contract(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],

@@ -13,7 +13,7 @@ from schemas.user import (
 )
 from dependencies.auth import DbSessionDep, CurrentAdminUserDep
 from services.system import role_service
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
@@ -69,7 +69,7 @@ def create_role(
 
 
 @router.put("/{role_id}", response_model=RoleResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.ROLE_UPDATE)
 def update_role(
     request: Request,
     role_id: str,
@@ -85,7 +85,7 @@ def update_role(
 
 
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.ROLE_DELETE)
 def delete_role(
     request: Request,
     role_id: str,

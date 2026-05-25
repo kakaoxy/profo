@@ -13,7 +13,7 @@ from models import L4MarketingProject, L4MarketingMedia, User
 from schemas.l4_marketing.enums import PublishStatus, MarketingProjectStatus
 from settings import settings
 from utils.formatters import mask_phone, escape_like
-from common import limiter
+from common import limiter, RateLimits
 from schemas.public import (
     PublicProjectListItem,
     PublicProjectListResponse,
@@ -43,7 +43,7 @@ ALLOWED_SORT_FIELDS = {
     summary="获取房源列表",
     description="获取已发布的房源列表，无需登录",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_projects(
     request: Request,
     db: DbSessionDep,
@@ -125,7 +125,7 @@ def get_projects(
     summary="获取成交案例列表",
     description="获取已成交的房源案例列表，无需登录",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_sold_projects(
     request: Request,
     db: DbSessionDep,
@@ -183,7 +183,7 @@ def get_sold_projects(
     summary="获取房源详情",
     description="获取指定房源的详细信息，无需登录",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_project_detail(
     request: Request,
     project_id: int,
@@ -273,7 +273,7 @@ def get_project_detail(
     summary="获取顾问联系方式",
     description="获取指定房源的顾问联系方式，无需登录",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_consultant_contact(
     request: Request,
     project_id: int,
@@ -315,7 +315,7 @@ def get_consultant_contact(
     summary="获取平台统计数据",
     description="获取平台统计数据，无需登录",
 )
-@limiter.limit("60/minute")
+@limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
 def get_platform_stats(
     request: Request,
     db: DbSessionDep,

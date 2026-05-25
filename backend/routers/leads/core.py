@@ -16,7 +16,7 @@ from schemas.lead import (
     LeadFunnelResponse,
 )
 from services.leads import LeadService
-from common import limiter
+from common import limiter, RateLimits
 
 router = APIRouter()
 
@@ -126,7 +126,7 @@ def get_lead(
 
 
 @router.put("/{lead_id}", response_model=LeadResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.LEAD_UPDATE)
 def update_lead(
     request: Request,
     db: DbSessionDep,
@@ -147,7 +147,7 @@ def update_lead(
 
 
 @router.delete("/{lead_id}", status_code=204)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.LEAD_DELETE)
 def delete_lead(
     request: Request,
     db: DbSessionDep,

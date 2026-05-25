@@ -15,7 +15,7 @@ from schemas.project import (
 from schemas.common import PaginatedResponse
 from .renovation import router as renovation_router
 from .sales import router as sales_router
-from common import limiter
+from common import limiter, RateLimits
 import csv
 import io
 from datetime import datetime
@@ -41,7 +41,7 @@ def get_next_contract_no(
 
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.PROJECT_CREATE)
 def create_project(
     request: Request,
     project_data: ProjectCreate,
@@ -90,7 +90,7 @@ def get_project_stats(
 
 
 @router.get("/export")
-@limiter.limit("10/hour")
+@limiter.limit(RateLimits.PROJECT_EXPORT)
 def export_projects(
     request: Request,
     service: ProjectServiceDep,
@@ -191,7 +191,7 @@ def get_project(
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.PROJECT_UPDATE)
 def update_project(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
@@ -209,7 +209,7 @@ def update_project(
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/hour")
+@limiter.limit(RateLimits.PROJECT_DELETE)
 def delete_project(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
@@ -224,7 +224,7 @@ def delete_project(
 
 
 @router.put("/{project_id}/status", response_model=ProjectResponse)
-@limiter.limit("100/hour")
+@limiter.limit(RateLimits.PROJECT_STATUS_UPDATE)
 def update_project_status(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
