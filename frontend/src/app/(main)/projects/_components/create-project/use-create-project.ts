@@ -151,10 +151,11 @@ export const useCreateProject = ({
     setActiveTab,
     clearDraft,
     onSubmit: form.handleSubmit(onSubmit, (errors) => {
-      if (Object.keys(errors).length === 0) {
+      const snapshot = JSON.parse(JSON.stringify(errors));
+      if (Object.keys(snapshot).length === 0) {
         console.error("[CreateProject] Form validation failed but no specific field errors found");
       } else {
-        console.error("[CreateProject] Form validation errors:", errors);
+        console.error("[CreateProject] Form validation errors:", snapshot);
       }
     }),
     isEditMode,
