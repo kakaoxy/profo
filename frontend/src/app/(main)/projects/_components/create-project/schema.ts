@@ -7,9 +7,9 @@ export type ProjectUpdateReq = components["schemas"]["ProjectUpdate"];
 // 使用 z.union 明确允许 string (输入) 和 number (存储)
 // 配合 use-create-project.ts 中的 resolver 断言，完美解决类型冲突
 const optionalNumber = z
-  .union([z.string(), z.number(), z.undefined()])
+  .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((val) => {
-    if (val === "" || val === undefined) {
+    if (val === "" || val === undefined || val === null) {
       return undefined;
     }
     const num = Number(val);
@@ -48,9 +48,9 @@ export type AttachmentType = z.infer<typeof attachmentSchema>["fileType"];
 
 // 户型房间数验证（正整数）
 const roomNumberSchema = z
-  .union([z.string(), z.number(), z.undefined()])
+  .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((val) => {
-    if (val === "" || val === undefined) {
+    if (val === "" || val === undefined || val === null) {
       return undefined;
     }
     const num = Number(val);
@@ -91,14 +91,13 @@ export const formSchema = z
     // 代理协议 - 合同信息
     contract_no: z.string().min(1, "合同编号不能为空").max(100),
     signing_price: optionalNumber,
-    signing_date: z.date().optional(),
+    signing_date: z.date().nullable().optional(),
     signing_period: optionalNumber,
     extension_period: optionalNumber,
     extension_rent: optionalNumber,
-    // 税费及佣金承担方 - 单选框+其他手动填写
     cost_assumption_type: z.enum(["meifangbao", "owner", "respective", "other"]).default("meifangbao"),
     cost_assumption_other: z.string().max(50).optional(),
-    planned_handover_date: z.date().optional(),
+    planned_handover_date: z.date().nullable().optional(),
     other_agreements: z.string().optional(),
 
     // 业主信息
