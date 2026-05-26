@@ -3,8 +3,11 @@ import type { NextRequest } from "next/server";
 import { apiPaths, getApiUrl } from "@/lib/config";
 
 /**
- * Proxy (原 Middleware)：用于在请求到达渲染层之前主动刷新 Token
+ * Proxy：在请求到达渲染层之前主动刷新 Token
  * 解决 Server Components 渲染阶段无法修改 Cookie 的问题
+ *
+ * Next.js 16 将 middleware.ts 重命名为 proxy.ts，函数名改为 proxy。
+ * Proxy 默认在 Node.js 运行时执行。
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,8 +16,9 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/api/v1/auth") ||
-    pathname.includes("_next") ||
-    pathname.includes("favicon.ico")
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
@@ -22,8 +26,8 @@ export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
-  // 2. 如果没有 refresh_token，直接跳转登录 (除非已经在登录页)
-  if (!refreshToken && !pathname.startsWith("/login")) {
+  // 2. 如果没有 refresh_token，直接跳转登录
+  if (!refreshToken) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -32,7 +36,6 @@ export async function proxy(request: NextRequest) {
 
   if (accessToken) {
     try {
-      // 简单 Base64 解码 JWT payload
       const payloadBase64 = accessToken.split(".")[1];
       if (payloadBase64) {
         const payload = JSON.parse(atob(payloadBase64));
@@ -41,11 +44,9 @@ export async function proxy(request: NextRequest) {
         // 如果剩余时间小于 5 分钟，主动刷新
         if (exp - now < 5 * 60 * 1000) {
           shouldRefresh = true;
-          console.log("🔁 [Middleware] Token 即将过期，触发主动刷新...");
         }
       }
-    } catch (e) {
-        console.error("❌ [Middleware] Token 刷新失败:", e);
+    } catch {
       shouldRefresh = true;
     }
   }
@@ -66,7 +67,6 @@ export async function proxy(request: NextRequest) {
         const data = await response.json();
         const nextResponse = NextResponse.next();
 
-        // 在中间件中更新 Cookie 是安全的
         nextResponse.cookies.set("access_token", data.access_token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
@@ -83,11 +83,20 @@ export async function proxy(request: NextRequest) {
           sameSite: "lax",
         });
 
-        console.log("✅ [Middleware] Token 主动刷新成功");
         return nextResponse;
       }
-    } catch (error) {
-      console.error("❌ [Middleware] Token 刷新失败:", error);
+
+      // 刷新失败且返回 401/403，说明 refresh_token 也无效，跳转登录
+      if (response.status === 401 || response.status === 403) {
+        const redirectResponse = NextResponse.redirect(
+          new URL("/login", request.url)
+        );
+        redirectResponse.cookies.delete("access_token");
+        redirectResponse.cookies.delete("refresh_token");
+        return redirectResponse;
+      }
+    } catch {
+      // 网络错误，继续处理请求，让页面自己处理
     }
   }
 
