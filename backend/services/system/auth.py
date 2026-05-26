@@ -259,13 +259,20 @@ class AuthService:
             "js_code": code,
             "grant_type": "authorization_code",
         }
-        async with httpx.AsyncClient() as client:
-            response = await client.get(settings.wechat_jscode2session_url, params=params)
-            data = response.json()
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(settings.wechat_jscode2session_url, params=params)
+                data = response.json()
+        except httpx.HTTPError as e:
+            msg = f"微信登录请求失败: {e}"
+            raise AuthenticationError(msg) from e
+        except (ValueError, KeyError) as e:
+            msg = f"微信登录响应解析失败: {e}"
+            raise AuthenticationError(msg) from e
 
         if "errcode" in data and data["errcode"] != 0:
             msg = f"微信登录失败: {data.get('errmsg')}"
-            raise ValidationError(msg)
+            raise AuthenticationError(msg)
         return data
 
     @staticmethod
