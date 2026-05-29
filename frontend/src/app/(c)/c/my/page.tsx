@@ -8,28 +8,10 @@ import { LogOut, Pencil } from "lucide-react";
 import { UserAvatar } from "@/components/c/shared/UserAvatar";
 import { LeadListItem } from "@/components/c/lead/LeadListItem";
 import { logoutAction } from "@/lib/api-c/auth";
+import { getUserInfoFromCookie } from "@/lib/api-c/user-info";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
-
-interface UserInfo {
-  nickname: string | null;
-  phone: string | null;
-}
-
-function getUserInfoFromCookie(): UserInfo {
-  if (typeof document === "undefined") return { nickname: null, phone: null };
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("c_user_info="));
-  if (!match) return { nickname: null, phone: null };
-  try {
-    const raw = decodeURIComponent(match.split("=").slice(1).join("="));
-    return JSON.parse(raw) as UserInfo;
-  } catch {
-    return { nickname: null, phone: null };
-  }
-}
 
 interface LeadItem {
   id: string | number;
