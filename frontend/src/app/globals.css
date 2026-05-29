@@ -76,6 +76,17 @@
   --color-progress-start: var(--progress-start);
   --color-progress-middle: var(--progress-middle);
   --color-progress-end: var(--progress-end);
+
+  --color-c-trust-blue: #0F172A;
+  --color-c-action-gold: #D4AF37;
+  --color-c-status-onsale: #0EA5E9;
+  --color-c-status-upcoming: #F59E0B;
+  --color-c-status-sold: #94A3B8;
+  --color-c-surface: #f7f9fb;
+  --color-c-border-subtle: #E2E8F0;
+  --color-c-error: #ba1a1a;
+  --color-c-text-primary: #1E293B;
+  --color-c-text-secondary: #64748B;
 }
 
 :root {

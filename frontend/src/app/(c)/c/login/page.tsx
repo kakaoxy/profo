@@ -1,0 +1,75 @@
+"use client";
+
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { loginAction } from "@/lib/api-c/auth";
+import type { ActionResult } from "@/lib/action-result";
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "";
+
+  const [state, formAction, isPending] = useActionState(
+    loginAction,
+    { success: false, error: "" } as ActionResult<null>
+  );
+
+  return (
+    <section className="px-4 md:px-6 pt-8">
+      <div className="max-w-md mx-auto">
+        <form action={formAction} className="space-y-6">
+          <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
+            {state && !state.success && state.error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-c-error text-sm">
+                {state.error}
+              </div>
+            )}
+            <input type="hidden" name="redirect" value={redirect} />
+            <div className="mb-6">
+              <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">用户名</label>
+              <input
+                type="text"
+                name="username"
+                placeholder="请输入用户名"
+                required
+                className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+              />
+            </div>
+            <div className="mb-8">
+              <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">密码</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="请输入密码"
+                required
+                className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full bg-c-trust-blue text-white h-12 rounded-lg font-bold active:opacity-80 active:scale-95 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPending ? "登录中..." : "登 录"}
+            </button>
+          </div>
+        </form>
+        <div className="text-center mt-8">
+          <p className="text-sm text-c-text-secondary">还没有账号？</p>
+          <Link href="/c/register" className="inline-flex items-center text-c-trust-blue font-bold gap-1 mt-2 hover:underline">
+            前往注册
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function CLoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}

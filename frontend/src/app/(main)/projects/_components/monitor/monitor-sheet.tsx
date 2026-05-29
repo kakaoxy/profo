@@ -4,7 +4,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { useEffect, useState } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 
 const HeroSection = dynamic(
   () => import("./hero-section").then((m) => m.HeroSection),
@@ -48,15 +48,7 @@ export function MonitorSheet() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // 使用 requestAnimationFrame 避免同步 setState 导致的级联渲染
-    const rafId = requestAnimationFrame(() => {
-      setMounted(true);
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, []);
+  const mounted = useMounted();
 
   const monitorId = searchParams.get("monitor_id");
   const rawProjectName = searchParams.get("project_name");

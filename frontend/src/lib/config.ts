@@ -46,6 +46,33 @@ export const apiPaths = {
   properties: {
     export: "/api/v1/properties/export",
   },
+  cAuth: {
+    register: "/api/v1/public/auth/register",
+    login: "/api/v1/public/auth/token",
+    logout: "/api/v1/public/auth/logout",
+    refresh: "/api/v1/public/auth/refresh",
+  },
+  cCommunities: {
+    search: "/api/v1/public/communities/search",
+  },
+  cLeads: {
+    create: "/api/v1/public/leads",
+    mine: "/api/v1/public/leads/mine",
+    detail: "/api/v1/public/leads",
+  },
+  cProjects: {
+    list: "/api/v1/public/projects",
+    sold: "/api/v1/public/projects/sold",
+    detail: "/api/v1/public/projects",
+    consultant: "/api/v1/public/projects",
+  },
+  cStats: {
+    platform: "/api/v1/public/stats/platform",
+  },
+  cUsers: {
+    profile: "/api/v1/public/users/profile",
+    phone: "/api/v1/public/users/phone",
+  },
 } as const;
 
 /**

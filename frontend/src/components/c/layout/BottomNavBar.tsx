@@ -1,0 +1,58 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { Home, MessageCircle, Info, User } from "lucide-react";
+
+const tabs = [
+  { label: "房源", href: "/c", icon: Home },
+  { label: "评估", href: "/c/contact", icon: MessageCircle },
+  { label: "服务", href: "/c/about", icon: Info },
+  { label: "我的", href: "/c/my", icon: User },
+] as const;
+
+interface BottomNavBarProps {
+  visible: boolean;
+}
+
+export function BottomNavBar({ visible }: BottomNavBarProps) {
+  const pathname = usePathname();
+
+  if (!visible) return null;
+
+  return (
+    <nav className="fixed bottom-0 inset-x-0 z-50 h-20 border-t bg-white">
+      <div className="mx-auto flex h-full max-w-[1280px] items-center justify-around px-2">
+        {tabs.map((tab) => {
+          const isActive =
+            tab.href === "/c"
+              ? pathname === "/c"
+              : pathname.startsWith(tab.href);
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className="flex flex-col items-center justify-center gap-1 min-w-[56px]"
+            >
+              <Icon
+                className={`h-5 w-5 ${
+                  isActive ? "text-c-trust-blue" : "text-c-text-secondary"
+                }`}
+              />
+              <span
+                className={`text-xs ${
+                  isActive
+                    ? "font-semibold text-c-trust-blue"
+                    : "text-c-text-secondary"
+                }`}
+              >
+                {tab.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
