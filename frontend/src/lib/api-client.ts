@@ -10,7 +10,10 @@ function tryRefreshTokenClient(): Promise<boolean> {
 
   const promise = (async (): Promise<boolean> => {
     try {
-      const response = await fetch("/api/auth/refresh", {
+      const isCRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/c");
+      const refreshPath = isCRoute ? "/api/auth/c/refresh" : "/api/auth/refresh";
+
+      const response = await fetch(refreshPath, {
         method: "POST",
         credentials: "include",
       });
@@ -87,8 +90,10 @@ const authMiddleware: Middleware = {
       }
 
       if (typeof window !== "undefined") {
+        const isCRoute = window.location.pathname.startsWith("/c");
+        const loginPath = isCRoute ? "/c/login" : "/login";
         if (!window.location.pathname.includes("/login")) {
-          window.location.href = `/login?redirect=${encodeURIComponent(
+          window.location.href = `${loginPath}?redirect=${encodeURIComponent(
             window.location.pathname
           )}`;
         }
