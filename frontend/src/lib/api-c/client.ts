@@ -7,7 +7,7 @@ let refreshPromise: Promise<boolean> | null = null;
 function tryRefreshTokenClient(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
 
-  refreshPromise = (async (): Promise<boolean> => {
+  const promise = (async (): Promise<boolean> => {
     try {
       const response = await fetch("/api/auth/c/refresh", {
         method: "POST",
@@ -21,15 +21,23 @@ function tryRefreshTokenClient(): Promise<boolean> {
       return true;
     } catch {
       return false;
-    } finally {
-      setTimeout(() => {
-        refreshPromise = null;
-      }, 0);
     }
   })();
 
-  return refreshPromise;
+  refreshPromise = promise;
+
+  promise.finally(() => {
+    setTimeout(() => {
+      if (refreshPromise === promise) {
+        refreshPromise = null;
+      }
+    }, 2000);
+  });
+
+  return promise;
 }
+
+const requestBodyStore = new WeakMap<Request, string>();
 
 const credentialsMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -41,6 +49,15 @@ const credentialsMiddleware: Middleware = {
 };
 
 const authMiddleware: Middleware = {
+  async onRequest({ request }) {
+    if (request.body) {
+      const cloned = request.clone();
+      const bodyText = await cloned.text();
+      requestBodyStore.set(request, bodyText);
+    }
+    return request;
+  },
+
   async onResponse({ response, request }) {
     if (response.status === 401) {
       const url = response.url;
@@ -54,20 +71,18 @@ const authMiddleware: Middleware = {
       if (refreshed) {
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        let body: BodyInit | null = null;
-        if (request.body) {
-          body = await request.clone().text();
+        const storedBody = requestBodyStore.get(request);
+        requestBodyStore.delete(request);
+
+        const init: RequestInit = {
+          credentials: "include",
+          signal: request.signal,
+        };
+        if (storedBody !== undefined) {
+          init.body = storedBody;
         }
 
-        return await fetch(request.url, {
-          method: request.method,
-          headers: request.headers,
-          body,
-          credentials: "include",
-          mode: request.mode,
-          cache: request.cache,
-          signal: request.signal,
-        });
+        return await fetch(new Request(request, init));
       }
 
       if (typeof window !== "undefined" && !window.location.pathname.includes("/c/login")) {
