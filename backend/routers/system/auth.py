@@ -196,21 +196,35 @@ async def wechat_app_login(
     Async for HTTP, run_in_threadpool for DB
     速率限制：5次/分钟.
     """
-    auth_data = await AuthService.fetch_wechat_miniapp_session(login_data.code)
+    try:
+        auth_data = await AuthService.fetch_wechat_miniapp_session(login_data.code)
 
-    openid = auth_data.get("openid")
-    session_key = auth_data.get("session_key")
-    unionid = auth_data.get("unionid")
+        openid = auth_data.get("openid")
+        session_key = auth_data.get("session_key")
+        unionid = auth_data.get("unionid")
 
-    user = await run_in_threadpool(
-        AuthService.login_or_register_wechat_user,
-        db=db,
-        openid=openid,
-        unionid=unionid,
-        session_key=session_key,
-    )
+        if not openid:
+            raise HTTPException(  # noqa: TRY301
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="微信登录失败，未获取到用户标识",
+            )
 
-    return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
+        user = await run_in_threadpool(
+            AuthService.login_or_register_wechat_user,
+            db=db,
+            openid=openid,
+            unionid=unionid,
+            session_key=session_key,
+        )
+
+        return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="微信登录失败，请稍后重试",
+        ) from e
 
 
 @router.get("/me")
