@@ -21,6 +21,11 @@ from utils.file_security import get_safe_file_path, sanitize_filename
 router = APIRouter(tags=["文件管理"])
 logger = logging.getLogger(__name__)
 
+TEXT_BASED_EXTENSIONS: dict[str, str] = {
+    ".csv": "text/csv",
+    ".md": "text/markdown",
+}
+
 
 class FileUploadResponse(BaseModel):
     """文件上传响应."""
@@ -65,9 +70,16 @@ def upload_file(
 
         kind = filetype.guess(header)
         if kind is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无法识别的文件类型")  # noqa: TRY301
-
-        if kind.mime not in settings.allowed_mime_types:
+            if ext in TEXT_BASED_EXTENSIONS:
+                guessed_mime = TEXT_BASED_EXTENSIONS[ext]
+                if guessed_mime not in settings.allowed_mime_types:
+                    raise HTTPException(  # noqa: TRY301
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"不支持的文件类型。检测到的MIME类型: {guessed_mime}",
+                    )
+            else:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无法识别的文件类型")  # noqa: TRY301
+        elif kind.mime not in settings.allowed_mime_types:
             raise HTTPException(  # noqa: TRY301
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"不支持的文件类型。检测到的MIME类型: {kind.mime}",

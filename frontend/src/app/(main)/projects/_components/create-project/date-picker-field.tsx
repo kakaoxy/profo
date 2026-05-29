@@ -60,7 +60,7 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
               <Calendar
                 mode="single"
                 selected={field.value instanceof Date ? field.value : undefined}
-                onSelect={field.onChange}
+                onSelect={(date) => field.onChange(date ?? undefined)}
                 disabled={(date) => date < new Date("1900-01-01")}
                 initialFocus
               />
