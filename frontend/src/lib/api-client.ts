@@ -5,18 +5,10 @@ import { getClientApiUrl } from "./config";
 // 全局单例刷新 Promise，防止并发刷新导致 refresh token 被多次使用
 let refreshPromise: Promise<boolean> | null = null;
 
-/**
- * 尝试刷新 Token（客户端版本，调用 /api/auth/refresh 路由）
- * 使用单例 Promise 避免并发刷新竞态
- */
 function tryRefreshTokenClient(): Promise<boolean> {
-  // 如果已有正在进行的刷新请求，直接复用
-  if (refreshPromise) {
-    console.log("🔁 [Client] 复用正在进行的 Token 刷新请求");
-    return refreshPromise;
-  }
+  if (refreshPromise) return refreshPromise;
 
-  refreshPromise = (async (): Promise<boolean> => {
+  const promise = (async (): Promise<boolean> => {
     try {
       const response = await fetch("/api/auth/refresh", {
         method: "POST",
@@ -24,113 +16,77 @@ function tryRefreshTokenClient(): Promise<boolean> {
       });
 
       if (!response.ok) {
-        console.error("🔁 [Client] Token 刷新失败，状态码:", response.status);
         return false;
       }
 
-      console.log("✅ [Client] 成功刷新 Token");
       return true;
-    } catch (error) {
-      console.error("🔁 [Client] 刷新 Token 时发生错误:", error);
+    } catch {
       return false;
-    } finally {
-      // 延迟清除 promise，确保后续请求能获取到最新状态
-      // 使用 setTimeout 避免在 finally 中立即清除导致竞态
-      setTimeout(() => {
-        refreshPromise = null;
-      }, 0);
     }
   })();
 
-  return refreshPromise;
+  refreshPromise = promise;
+
+  promise.finally(() => {
+    setTimeout(() => {
+      if (refreshPromise === promise) {
+        refreshPromise = null;
+      }
+    }, 2000);
+  });
+
+  return promise;
 }
 
-/**
- * 自定义中间件：确保请求携带 credentials
- *
- * [安全修复] 所有请求必须携带 httpOnly Cookie
- */
+const requestBodyStore = new WeakMap<Request, string>();
+
 const credentialsMiddleware: Middleware = {
   async onRequest({ request }) {
-    // 确保请求携带 cookies
-    // 注意：token 已由 httpOnly Cookie 自动携带，无需手动设置 Authorization
-    // 克隆请求并设置 credentials
-    const newRequest = new Request(request, {
+    return new Request(request, {
       credentials: "include",
-      // 保留原始的 signal (AbortController)
       signal: request.signal,
     });
-    return newRequest;
   },
 };
 
-/**
- * 自定义中间件：处理 Token 注入和全局错误拦截
- *
- * [安全修复] 不再从 localStorage 读取 token
- * 改为依赖 httpOnly Cookie 自动携带
- * 中间件仅处理 401 刷新逻辑
- */
 const authMiddleware: Middleware = {
-  // 响应拦截器：全局错误处理 + 自动刷新
+  async onRequest({ request }) {
+    if (request.body) {
+      const cloned = request.clone();
+      const bodyText = await cloned.text();
+      requestBodyStore.set(request, bodyText);
+    }
+    return request;
+  },
+
   async onResponse({ response, request }) {
-    // 处理 401 Unauthorized
     if (response.status === 401) {
       const url = response.url;
 
-      // 豁免名单：refresh 接口本身不应触发刷新循环
       if (url.includes("/auth/refresh")) {
         return response;
       }
 
-      // 豁免 /auth/me 接口的偶发 401
-      if (url.includes("/auth/me") || url.includes("/api/v1/auth/me")) {
-        console.warn("⚠️ 检测到 /auth/me 返回 401，尝试刷新 Token...");
-      }
-
-      // 尝试刷新 Token
-      console.log("🔁 [Client] 检测到 401，尝试刷新 Token...");
       const refreshed = await tryRefreshTokenClient();
 
       if (refreshed) {
-        // 刷新成功，重试原始请求
-        console.log("🔁 [Client] Token 刷新成功，重试原始请求...");
-
-        // [关键修复] 添加短暂延迟确保 cookie 已更新
-        // 浏览器写入 cookie 可能有极短的延迟
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // [关键修复] 重新构造请求，确保携带最新的 cookie
-        // 注意：request.body 可能是 ReadableStream，需要特殊处理
-        let body: BodyInit | null = null;
-        if (request.body) {
-          // 克隆 body，因为 ReadableStream 只能读取一次
-          const clonedRequest = request.clone();
-          body = await clonedRequest.text();
+        const storedBody = requestBodyStore.get(request);
+        requestBodyStore.delete(request);
+
+        const init: RequestInit = {
+          credentials: "include",
+          signal: request.signal,
+        };
+        if (storedBody !== undefined) {
+          init.body = storedBody;
         }
 
-        const retryResponse = await fetch(request.url, {
-          method: request.method,
-          headers: request.headers,
-          body: body,
-          credentials: "include",
-          mode: request.mode,
-          cache: request.cache,
-          // 保留原始的 signal (AbortController)
-          signal: request.signal,
-        });
-
-        return retryResponse;
+        return await fetch(new Request(request, init));
       }
 
-      // 刷新失败，执行登出逻辑
-      console.error("🔒 登录已过期且刷新失败，正在跳转登录页...");
-
       if (typeof window !== "undefined") {
-        // [安全修复] 不再操作 localStorage，仅跳转登录页
-        // 清除操作由服务端 logoutAction 处理
-
-        // 强制跳转回登录页
         if (!window.location.pathname.includes("/login")) {
           window.location.href = `/login?redirect=${encodeURIComponent(
             window.location.pathname
