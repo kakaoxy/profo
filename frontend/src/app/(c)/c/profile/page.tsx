@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Phone } from "lucide-react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/c/shared/UserAvatar";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { updateProfileAction, updatePhoneAction } from "./actions";
 import type { ActionResult } from "@/lib/action-result";
+import { getUserInfoFromCookie } from "@/lib/api-c/user-info";
 
 function maskPhone(phone: string): string {
   if (phone.length >= 7) {
@@ -25,6 +26,7 @@ function maskPhone(phone: string): string {
 export default function CProfilePage() {
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+  const userInfo = useMemo(() => getUserInfoFromCookie(), []);
 
   const [profileState, profileAction, isProfilePending] = useActionState(
     updateProfileAction,
@@ -57,12 +59,12 @@ export default function CProfilePage() {
   const displayNickname =
     profileState.success && profileState.data?.nickname
       ? profileState.data.nickname
-      : "用户";
+      : userInfo.nickname || "用户";
 
   const displayPhone =
     phoneState.success && phoneState.data?.phone
       ? phoneState.data.phone
-      : "";
+      : userInfo.phone || "";
 
   return (
     <div className="px-4 md:px-6 space-y-6">
@@ -91,7 +93,7 @@ export default function CProfilePage() {
             ref={nicknameRef}
             type="text"
             name="nickname"
-            defaultValue=""
+            defaultValue={userInfo.nickname || ""}
             placeholder="请输入昵称"
             maxLength={100}
             className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
