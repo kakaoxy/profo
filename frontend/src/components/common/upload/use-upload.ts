@@ -15,7 +15,6 @@ import type {
   UseUploadReturn,
 } from "./types";
 import {
-  getValidToken,
   getUploadUrl,
   validateFile,
   parseUploadResponse,
@@ -115,14 +114,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         processedFile = result;
       }
 
-      // 3. 获取 token
-      const token = await getValidToken();
-      if (!token) {
-        toast.error("登录已过期，请重新登录");
-        return null;
-      }
-
-      // 4. 创建上传记录
+      // 3. 创建上传记录
       const fileId = generateId();
       const newFile: UploadFile = {
         id: fileId,
@@ -133,7 +125,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
       setFiles((prev) => [...prev, newFile]);
 
-      // 5. 执行上传
+      // 4. 执行上传
       return new Promise((resolve) => {
         const formData = new FormData();
         formData.append("file", processedFile);
@@ -150,7 +142,6 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
         xhr.open("POST", url);
         xhr.withCredentials = true;
-        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
         // 进度监听
         xhr.upload.onprogress = (event) => {
