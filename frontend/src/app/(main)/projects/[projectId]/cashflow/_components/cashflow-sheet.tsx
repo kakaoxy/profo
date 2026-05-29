@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useMounted } from "@/hooks/use-mounted";
 
 import {
   Sheet,
@@ -27,11 +28,7 @@ export function CashFlowSheet() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useMounted();
 
   const projectId = searchParams.get("cashflow_id");
   const rawCommunityName = searchParams.get("community_name");
