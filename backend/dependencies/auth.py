@@ -97,9 +97,9 @@ async def get_current_user(
     # 优先从Header获取JWT token
     token = token_from_header
 
-    # 如果Header没有，从cookie中获取
+    # 如果Header没有，从cookie中获取（支持管理端和C端两种cookie名）
     if token is None:
-        token = request.cookies.get("access_token")
+        token = request.cookies.get("access_token") or request.cookies.get("c_access_token")
 
     # 如果存在JWT token，使用JWT认证
     if token is not None:

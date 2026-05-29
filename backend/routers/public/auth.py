@@ -1,21 +1,26 @@
 """C端公开认证路由.
 
-注册、退出登录.
+注册、登录、刷新令牌、退出登录.
 """
 
-from fastapi import APIRouter, Request, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from common import RateLimits, limiter
-from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
+from dependencies.auth import DbSessionDep, require_roles
 from models import Role, User
 from schemas.public import (
+    PublicLoginResponse,
     PublicLogoutResponse,
+    PublicRefreshTokenRequest,
     PublicRegisterRequest,
     PublicRegisterResponse,
     PublicUserInfo,
 )
 from services.system.auth import AuthService
-from services.system.exceptions import ValidationError
+from services.system.exceptions import AuthenticationError, ValidationError
 from utils.auth import get_password_hash
 from utils.formatters import mask_phone
 
@@ -43,7 +48,7 @@ def _build_user_info(user: User) -> PublicUserInfo:
 )
 @limiter.limit(RateLimits.PUBLIC_REGISTER)
 def register(
-    request: Request,
+    request: Request,  # noqa: ARG001
     body: PublicRegisterRequest,
     db: DbSessionDep,
 ) -> PublicRegisterResponse:
@@ -88,14 +93,80 @@ def register(
 
 
 @router.post(
+    "/token",
+    summary="C端用户登录",
+    description="C端用户使用用户名密码登录，返回JWT令牌",
+)
+@limiter.limit(RateLimits.AUTH_LOGIN)
+def login_for_access_token(
+    request: Request,  # noqa: ARG001
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: DbSessionDep,
+) -> PublicLoginResponse:
+    """C端用户登录，验证用户名密码后返回JWT令牌."""
+    try:
+        user = AuthService.authenticate_user(db, form_data.username, form_data.password)
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+
+    if user.role.code != "customer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="此接口仅限C端用户登录",
+        )
+
+    token_data = AuthService.create_tokens_for_user(db, user)
+
+    return PublicLoginResponse(
+        access_token=token_data["access_token"],
+        refresh_token=token_data["refresh_token"],
+        token_type=token_data["token_type"],
+        expires_in=token_data["expires_in"],
+        user=_build_user_info(user),
+    )
+
+
+@router.post(
+    "/refresh",
+    summary="C端刷新令牌",
+    description="使用refresh_token获取新的access_token",
+)
+@limiter.limit(RateLimits.AUTH_REFRESH)
+def refresh_access_token(
+    request: Request,  # noqa: ARG001
+    refresh_data: PublicRefreshTokenRequest,
+    db: DbSessionDep,
+) -> PublicLoginResponse:
+    """C端刷新令牌，使用refresh_token获取新的access_token."""
+    try:
+        token_data = AuthService.refresh_user_token(db, refresh_data.refresh_token)
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+        ) from e
+
+    return PublicLoginResponse(
+        access_token=token_data["access_token"],
+        refresh_token=token_data["refresh_token"],
+        token_type=token_data["token_type"],
+        expires_in=token_data["expires_in"],
+    )
+
+
+@router.post(
     "/logout",
     summary="C端退出登录",
     description="C端用户退出登录（当前JWT无状态机制下，服务端不撤销token，客户端应删除本地存储的token）",
 )
 @limiter.limit(RateLimits.PUBLIC_LOGOUT)
 def logout(
-    request: Request,
-    _current_user: CurrentCustomerUserDep,
+    request: Request,  # noqa: ARG001
+    _current_user: Annotated[User, Depends(require_roles(["customer"]))],
 ) -> PublicLogoutResponse:
     """C端退出登录，客户端应清除本地存储的token."""
     return PublicLogoutResponse(message="退出登录成功")

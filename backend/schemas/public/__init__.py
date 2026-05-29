@@ -64,6 +64,22 @@ class PublicRegisterResponse(BaseModel):
     user: PublicUserInfo = Field(description="用户信息")
 
 
+class PublicLoginResponse(BaseModel):
+    """C端登录响应."""
+
+    access_token: str = Field(description="访问令牌")
+    refresh_token: str = Field(description="刷新令牌")
+    token_type: str = Field(default="bearer", description="令牌类型")
+    expires_in: int = Field(description="访问令牌过期时间(秒)")
+    user: PublicUserInfo | None = Field(None, description="用户信息")
+
+
+class PublicRefreshTokenRequest(BaseModel):
+    """C端刷新令牌请求."""
+
+    refresh_token: str = Field(description="刷新令牌")
+
+
 class PublicLogoutResponse(BaseModel):
     """C端登出响应."""
 
@@ -343,6 +359,7 @@ __all__ = [
     "PublicLeadListItem",
     "PublicLeadListResponse",
     "PublicLeadResponse",
+    "PublicLoginResponse",
     "PublicLogoutResponse",
     "PublicMediaItem",
     "PublicPhoneResponse",
@@ -352,6 +369,7 @@ __all__ = [
     "PublicProjectDetail",
     "PublicProjectListItem",
     "PublicProjectListResponse",
+    "PublicRefreshTokenRequest",
     "PublicRegisterRequest",
     "PublicRegisterResponse",
     "PublicRenovationStage",
