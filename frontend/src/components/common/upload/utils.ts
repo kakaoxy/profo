@@ -10,65 +10,6 @@ import { formatFileSize } from "@/lib/formatters";
 import type { UploadResponse } from "./types";
 
 /**
- * 尝试刷新 access token
- * 调用 Next.js API 路由 /api/auth/refresh
- */
-export async function tryRefreshToken(): Promise<string | null> {
-  try {
-    const response = await fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data.access_token || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * 获取有效的 access token
- * 优先从 localStorage 获取，过期或不存在则尝试刷新
- */
-export async function getValidToken(): Promise<string | null> {
-  let token = localStorage.getItem("access_token") || localStorage.getItem("token");
-
-  if (token && isTokenExpired(token)) {
-    token = null;
-  }
-
-  if (!token) {
-    token = await tryRefreshToken();
-    if (token) {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("token");
-      localStorage.setItem("access_token", token);
-    }
-  }
-
-  return token;
-}
-
-/**
- * 检查 token 是否过期
- */
-export function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const exp = payload.exp;
-    const now = Math.floor(Date.now() / 1000);
-    return exp < now;
-  } catch {
-    return true;
-  }
-}
-
-/**
  * 获取带完整路径的上传 URL
  */
 export function getUploadUrl(): string {

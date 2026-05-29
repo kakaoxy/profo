@@ -22,9 +22,6 @@ export { FileUploader } from "./file-uploader";
 
 // 工具函数
 export {
-  tryRefreshToken,
-  getValidToken,
-  isTokenExpired,
   getUploadUrl,
   formatFileSize,
   isAllowedFileType,
