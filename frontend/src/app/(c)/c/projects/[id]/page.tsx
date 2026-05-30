@@ -99,13 +99,15 @@ export default function ProjectDetailPage() {
 
   const status = STATUS_MAP[data.project_status] ?? STATUS_MAP["已售"];
 
+  const marketingImages = (data.media ?? [])
+    .filter((m) => m.media_type === "image" && m.photo_category === "marketing" && m.file_url)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((m) => m.file_url);
+
   const carouselImages =
-    data.images && data.images.length > 0
-      ? data.images
-      : (data.media ?? [])
-          .filter((m) => m.media_type === "image" && m.file_url)
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map((m) => m.file_url);
+    marketingImages.length > 0
+      ? marketingImages
+      : (data.images && data.images.length > 0 ? data.images : []);
 
   return (
     <div className="pb-24 md:pb-20">
