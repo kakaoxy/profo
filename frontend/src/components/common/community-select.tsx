@@ -243,7 +243,7 @@ export function CommunitySelect({
           </div>
 
           {/* 搜索结果列表 */}
-          <div className="max-h-[min(50vh,300px)] overflow-y-auto overscroll-contain p-1 -webkit-overflow-scrolling-touch">
+          <div className="max-h-[min(50vh,300px)] overflow-y-auto overscroll-contain p-1 [-webkit-overflow-scrolling:touch]">
             {loading && (
               <div className={cn("flex items-center justify-center py-6", s.loading)}>
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />

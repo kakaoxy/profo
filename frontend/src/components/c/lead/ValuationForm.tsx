@@ -6,6 +6,7 @@ import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { createLeadAction, searchCCommunitiesAction } from "@/app/(c)/c/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
+import { cn } from "@/lib/utils";
 
 const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
 
@@ -17,8 +18,6 @@ const FormItem = ({ label, children, required, className }: { label: string; chi
     {children}
   </div>
 );
-
-import { cn } from "@/lib/utils";
 
 export function ValuationForm() {
   const [state, formAction, isPending] = useActionState(
@@ -111,7 +110,7 @@ export function ValuationForm() {
             <FormItem label="朝向">
               <select
                 name="orientation"
-                className="w-full h-12 border rounded-lg bg-background text-base font-medium text-center appearance-none pl-4 pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23999%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_12px_center] bg-no-repeat"
+                className="w-full h-12 border rounded-lg bg-background text-base font-medium text-center appearance-none pl-4 pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23999%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat"
                 value={formData.orientation}
                 onChange={(e) => updateField("orientation", e.target.value)}
               >
