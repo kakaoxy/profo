@@ -38,6 +38,25 @@ ALLOWED_SORT_FIELDS = {
 }
 
 
+def _resolve_cover_image(db: DbSessionDep, item: L4MarketingProject) -> str | None:
+    images = item.images or []
+    cover_image = images[0] if images else None
+    if not cover_image:
+        first_media = (
+            db.query(L4MarketingMedia)
+            .filter(
+                L4MarketingMedia.marketing_project_id == item.id,
+                L4MarketingMedia.is_deleted.is_(False),
+                L4MarketingMedia.media_type == "image",
+            )
+            .order_by(L4MarketingMedia.sort_order)
+            .first()
+        )
+        if first_media:
+            cover_image = first_media.file_url
+    return cover_image
+
+
 @router.get(
     "/projects",
     summary="获取房源列表",
@@ -90,22 +109,7 @@ def get_projects(  # noqa: PLR0913
 
     result_items = []
     for item in items:
-        images = item.images or []
-        cover_image = images[0] if images else None
-
-        if not cover_image:
-            first_media = (
-                db.query(L4MarketingMedia)
-                .filter(
-                    L4MarketingMedia.marketing_project_id == item.id,
-                    L4MarketingMedia.is_deleted.is_(False),
-                    L4MarketingMedia.media_type == "image",
-                )
-                .order_by(L4MarketingMedia.sort_order)
-                .first()
-            )
-            if first_media:
-                cover_image = first_media.file_url
+        cover_image = _resolve_cover_image(db, item)
 
         result_items.append(
             PublicProjectListItem(
@@ -162,22 +166,7 @@ def get_sold_projects(
 
     result_items = []
     for item in items:
-        images = item.images or []
-        cover_image = images[0] if images else None
-
-        if not cover_image:
-            first_media = (
-                db.query(L4MarketingMedia)
-                .filter(
-                    L4MarketingMedia.marketing_project_id == item.id,
-                    L4MarketingMedia.is_deleted.is_(False),
-                    L4MarketingMedia.media_type == "image",
-                )
-                .order_by(L4MarketingMedia.sort_order)
-                .first()
-            )
-            if first_media:
-                cover_image = first_media.file_url
+        cover_image = _resolve_cover_image(db, item)
 
         sold_days = None
         if item.updated_at and item.created_at:
