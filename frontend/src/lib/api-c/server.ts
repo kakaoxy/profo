@@ -44,21 +44,26 @@ async function cRefreshTokenServer(): Promise<CRefreshResult | null> {
 
     const data: CRefreshResult = await response.json();
 
-    cookieStore.set("c_access_token", data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: data.expires_in,
-      sameSite: "lax",
-    });
+    try {
+      cookieStore.set("c_access_token", data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: data.expires_in,
+        sameSite: "lax",
+      });
 
-    cookieStore.set("c_refresh_token", data.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-      sameSite: "lax",
-    });
+      cookieStore.set("c_refresh_token", data.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+      });
+    } catch {
+      // Server Component 上下文中无法修改 cookie（仅 Server Action / Route Handler 可写）
+      // 此时仍返回刷新后的 token 供当前请求使用，后续页面导航由 middleware 处理 cookie 刷新
+    }
 
     return data;
   } catch {

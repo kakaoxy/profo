@@ -55,24 +55,27 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
 
     const data: RefreshResult = await response.json();
 
-    // 将新 token 写回 Cookie，确保后续请求能读到有效 token
-    cookieStore.set("access_token", data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: data.expires_in,
-      sameSite: "lax",
-    });
+    try {
+      cookieStore.set("access_token", data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: data.expires_in,
+        sameSite: "lax",
+      });
 
-    cookieStore.set("refresh_token", data.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: "lax",
-    });
+      cookieStore.set("refresh_token", data.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+      });
+    } catch {
+      // Server Component 上下文中无法修改 cookie（仅 Server Action / Route Handler 可写）
+      // 此时仍返回刷新后的 token 供当前请求使用，后续页面导航由 middleware 处理 cookie 刷新
+    }
 
-    console.log("✅ [Server] 成功刷新 token，已写回 Cookie");
     return data;
   } catch (error) {
     console.error("🔁 [Server] 刷新 Token 时发生网络错误:", error);
