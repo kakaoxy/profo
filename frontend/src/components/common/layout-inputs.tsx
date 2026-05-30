@@ -106,17 +106,16 @@ export function LayoutInputs({
     }
   };
 
-  // 样式配置
   const styles = {
     default: {
       container: "space-y-1.5",
-      label: "text-[10px] font-bold text-muted-foreground ml-1",
+      label: "text-[10px] sm:text-xs font-bold text-muted-foreground ml-1",
       required: "text-error",
       inputWrapper: "relative flex-1",
       input:
-        "w-full h-11 px-3 border rounded-lg bg-background text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20",
+        "w-full h-12 px-3 border rounded-lg bg-background text-base font-bold text-center outline-none focus:ring-2 focus:ring-primary/20",
       suffix:
-        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground",
+        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none",
     },
     marketing: {
       container: "space-y-2",
@@ -124,9 +123,9 @@ export function LayoutInputs({
       required: "text-[var(--error)]",
       inputWrapper: "relative flex-1",
       input:
-        "w-full h-11 px-3 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground",
+        "w-full h-12 px-3 border border-[var(--border)]/50 rounded-xl bg-card text-base font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground",
       suffix:
-        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]",
+        "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)] pointer-events-none",
     },
   };
 

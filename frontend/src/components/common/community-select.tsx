@@ -163,7 +163,6 @@ export function CommunitySelect({
     setQuery("");
   };
 
-  // 样式配置
   const styles = {
     default: {
       label: "text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1",
@@ -172,14 +171,14 @@ export function CommunitySelect({
         "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-border hover:bg-muted hover:text-foreground",
       icon: "text-muted-foreground",
       placeholder: "text-muted-foreground font-normal",
-      popover: "w-[400px] p-0 rounded-xl",
+      popover: "w-[min(calc(100vw-2rem),400px)] p-0 rounded-xl",
       input:
-        "w-full px-3 py-2 text-sm bg-muted border rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
+        "w-full px-3 py-2.5 text-base bg-muted border rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
       loading: "text-muted-foreground",
       createButton:
-        "w-full flex items-center gap-2 p-3 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
+        "w-full flex items-center gap-2 p-3.5 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
       resultItem:
-        "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-muted transition-colors group text-left",
+        "w-full flex items-center justify-between p-3.5 text-sm rounded-lg hover:bg-muted active:bg-muted transition-colors group text-left",
       resultItemActive: "bg-muted text-primary font-bold",
       resultName: "font-bold text-foreground",
       resultMeta: "text-[10px] text-muted-foreground flex items-center gap-1",
@@ -192,14 +191,14 @@ export function CommunitySelect({
         "w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-[var(--border)]/50 hover:bg-[var(--primary)] hover:text-[var(--foreground)] bg-card",
       icon: "text-[var(--muted-foreground)]",
       placeholder: "text-[var(--muted-foreground)] font-normal",
-      popover: "w-[400px] p-0 rounded-xl",
+      popover: "w-[min(calc(100vw-2rem),400px)] p-0 rounded-xl",
       input:
-        "w-full px-3 py-2 text-sm bg-primary/5 border border-[var(--border)]/30 rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
+        "w-full px-3 py-2.5 text-base bg-primary/5 border border-[var(--border)]/30 rounded-lg outline-none focus:ring-2 focus:ring-primary/20",
       loading: "text-[var(--muted-foreground)]",
       createButton:
-        "w-full flex items-center gap-2 p-3 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
+        "w-full flex items-center gap-2 p-3.5 text-sm text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors font-bold",
       resultItem:
-        "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-primary/10 transition-colors group text-left",
+        "w-full flex items-center justify-between p-3.5 text-sm rounded-lg hover:bg-primary/10 active:bg-primary/10 transition-colors group text-left",
       resultItemActive: "bg-primary/10 text-primary font-bold",
       resultName: "font-bold text-[var(--foreground)]",
       resultMeta: "text-[10px] text-[var(--muted-foreground)] flex items-center gap-1",
@@ -232,7 +231,7 @@ export function CommunitySelect({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className={s.popover} align="start">
+        <PopoverContent className={s.popover} align="start" sideOffset={8} avoidCollisions={true} collisionPadding={16}>
           {/* 搜索输入框 */}
           <div className={cn("p-2 border-b", variant === "marketing" && "border-(--border)/20")}>
             <input
@@ -244,7 +243,7 @@ export function CommunitySelect({
           </div>
 
           {/* 搜索结果列表 */}
-          <div className="max-h-[300px] overflow-y-auto p-1">
+          <div className="max-h-[min(50vh,300px)] overflow-y-auto overscroll-contain p-1 -webkit-overflow-scrolling-touch">
             {loading && (
               <div className={cn("flex items-center justify-center py-6", s.loading)}>
                 <Loader2 className="h-5 w-5 animate-spin mr-2" />
