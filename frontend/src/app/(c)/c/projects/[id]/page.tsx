@@ -99,6 +99,14 @@ export default function ProjectDetailPage() {
 
   const status = STATUS_MAP[data.project_status] ?? STATUS_MAP["已售"];
 
+  const carouselImages =
+    data.images && data.images.length > 0
+      ? data.images
+      : (data.media ?? [])
+          .filter((m) => m.media_type === "image" && m.file_url)
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((m) => m.file_url);
+
   return (
     <div className="pb-24 md:pb-20">
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 pointer-events-none">
@@ -112,7 +120,7 @@ export default function ProjectDetailPage() {
           <Share className="w-5 h-5" />
         </button>
       </nav>
-      <ImageCarousel images={data.images ?? []} />
+      <ImageCarousel images={carouselImages} />
 
       <section className="px-4 pt-4 space-y-2">
         <span

@@ -94,18 +94,33 @@ export function getClientApiUrl(path: string): string {
 
 /**
  * 获取图片/文件的完整 URL
- * - 已是绝对 URL（http/https/blob）→ 直接返回
+ * - 绝对 URL 指向后端 → 转为相对路径，通过 Next.js rewrites / Nginx 代理访问
+ * - 绝对 URL 指向外部域名 → 直接返回
+ * - blob:/data: URL → 直接返回
  * - 相对路径 → 生产环境直接返回相对路径（Nginx 代理 /static/），
  *   开发环境拼接后端地址
  */
 export function getFileUrl(url: string | undefined | null): string {
   if (!url) return "";
 
-  if (
-    url.startsWith("blob:") ||
-    url.startsWith("http") ||
-    url.startsWith("https")
-  ) {
+  if (url.startsWith("blob:") || url.startsWith("data:")) {
+    return url;
+  }
+
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    try {
+      const parsed = new URL(url);
+      const backendHosts = [
+        "127.0.0.1:8000",
+        "localhost:8000",
+        "fangmengchina.com",
+      ];
+      if (backendHosts.includes(parsed.host)) {
+        return parsed.pathname;
+      }
+    } catch {
+      // invalid URL, return as-is
+    }
     return url;
   }
 

@@ -92,6 +92,21 @@ def get_projects(  # noqa: PLR0913
     for item in items:
         images = item.images or []
         cover_image = images[0] if images else None
+
+        if not cover_image:
+            first_media = (
+                db.query(L4MarketingMedia)
+                .filter(
+                    L4MarketingMedia.marketing_project_id == item.id,
+                    L4MarketingMedia.is_deleted.is_(False),
+                    L4MarketingMedia.media_type == "image",
+                )
+                .order_by(L4MarketingMedia.sort_order)
+                .first()
+            )
+            if first_media:
+                cover_image = first_media.file_url
+
         result_items.append(
             PublicProjectListItem(
                 id=item.id,
@@ -149,6 +164,21 @@ def get_sold_projects(
     for item in items:
         images = item.images or []
         cover_image = images[0] if images else None
+
+        if not cover_image:
+            first_media = (
+                db.query(L4MarketingMedia)
+                .filter(
+                    L4MarketingMedia.marketing_project_id == item.id,
+                    L4MarketingMedia.is_deleted.is_(False),
+                    L4MarketingMedia.media_type == "image",
+                )
+                .order_by(L4MarketingMedia.sort_order)
+                .first()
+            )
+            if first_media:
+                cover_image = first_media.file_url
+
         sold_days = None
         if item.updated_at and item.created_at:
             delta = item.updated_at - item.created_at
@@ -248,6 +278,14 @@ def get_project_detail(
                 phone=mask_phone(consultant.phone),
             )
 
+    project_images = project.images or []
+    if not project_images:
+        project_images = [
+            m.file_url
+            for m in media_items
+            if m.media_type == "image" and m.file_url
+        ]
+
     return PublicProjectDetail(
         id=project.id,
         community_name=project.community_name,
@@ -258,7 +296,7 @@ def get_project_detail(
         total_price=float(project.total_price),
         unit_price=float(project.unit_price),
         title=project.title,
-        images=project.images or [],
+        images=project_images,
         tags=project.tags or [],
         project_status=project.project_status,
         decoration_style=project.decoration_style,
