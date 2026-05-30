@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { getFileUrl } from "@/lib/config";
 
+const isDev = process.env.NODE_ENV === "development";
+
 interface ProjectCardProps {
   id: number;
   communityName: string | null;
@@ -53,13 +55,22 @@ export function ProjectCard({
       <div className="bg-white rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_8px_30px_rgba(15,23,42,0.08)] transition-all">
         <div className="relative aspect-video bg-gray-100">
           {coverImage ? (
-            <Image
-              src={getFileUrl(coverImage)}
-              alt={communityName ?? layout}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
+            isDev ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={getFileUrl(coverImage)}
+                alt={communityName ?? layout}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={getFileUrl(coverImage)}
+                alt={communityName ?? layout}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            )
           ) : (
             <div className="flex items-center justify-center h-full text-c-text-secondary text-sm">
               暂无图片

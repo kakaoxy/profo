@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { getFileUrl } from "@/lib/config";
 
+const isDev = process.env.NODE_ENV === "development";
+
 interface RenovationStage {
   stage: string;
   photo_count: number;
@@ -73,13 +75,22 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
               <div key={stage.stage} className="shrink-0 w-40">
                 <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 mb-2">
                   {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={stage.stage}
-                      fill
-                      className="object-cover"
-                      sizes="160px"
-                    />
+                    isDev ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageUrl}
+                        alt={stage.stage}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={imageUrl}
+                        alt={stage.stage}
+                        fill
+                        className="object-cover"
+                        sizes="160px"
+                      />
+                    )
                   ) : (
                     <div className="flex items-center justify-center h-full text-c-text-secondary text-xs">
                       暂无图片
@@ -127,13 +138,22 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                           key={item.id}
                           className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
                         >
-                          <Image
-                            src={imageUrl}
-                            alt={item.description ?? stage.stage}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                          />
+                          {isDev ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={imageUrl}
+                              alt={item.description ?? stage.stage}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Image
+                              src={imageUrl}
+                              alt={item.description ?? stage.stage}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                            />
+                          )}
                         </div>
                       );
                     })}

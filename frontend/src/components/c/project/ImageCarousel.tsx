@@ -5,6 +5,8 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getFileUrl } from "@/lib/config";
 
+const isDev = process.env.NODE_ENV === "development";
+
 interface ImageCarouselProps {
   images: string[];
 }
@@ -27,14 +29,23 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
 
   return (
     <div className="relative w-full aspect-video bg-gray-100 overflow-hidden">
-      <Image
-        src={getFileUrl(images[current])}
-        alt={`图片 ${current + 1}`}
-        fill
-        className="object-cover"
-        sizes="100vw"
-        priority
-      />
+      {isDev ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={getFileUrl(images[current])}
+          alt={`图片 ${current + 1}`}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <Image
+          src={getFileUrl(images[current])}
+          alt={`图片 ${current + 1}`}
+          fill
+          className="object-cover"
+          sizes="100vw"
+          priority
+        />
+      )}
 
       {images.length > 1 && (
         <>

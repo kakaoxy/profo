@@ -162,6 +162,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/v1/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/static") ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
