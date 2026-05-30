@@ -27,26 +27,16 @@ export interface Community {
  * 社区选择组件Props
  */
 export interface CommunitySelectProps {
-  /** 当前选中的社区名称 */
   value: string;
-  /**
-   * 选择回调
-   * @param community - 选中的社区完整数据
-   * @param isNew - 是否为新创建的社区
-   */
   onChange: (community: Community, isNew?: boolean) => void;
-  /** 占位提示文本 */
   placeholder?: string;
-  /** 标签文本 */
   label?: string;
-  /** 是否禁用 */
   disabled?: boolean;
-  /** 自定义类名 */
   className?: string;
-  /** 样式变体 */
   variant?: "default" | "marketing";
-  /** 是否显示创建新社区选项 */
   allowCreate?: boolean;
+  onSearch?: (query: string) => Promise<Community[]>;
+  onCreate?: (data: { name: string; district?: string | null; business_circle?: string | null }) => Promise<{ id: string; name: string; district: string | null; business_circle: string | null } | null>;
 }
 
 /**
@@ -89,6 +79,8 @@ export function CommunitySelect({
   className,
   variant = "default",
   allowCreate = true,
+  onSearch,
+  onCreate,
 }: CommunitySelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -110,7 +102,9 @@ export function CommunitySelect({
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const data = await searchCommunitiesAction(query);
+        const data = onSearch
+          ? await onSearch(query)
+          : await searchCommunitiesAction(query);
         setResults(data);
       } catch (err) {
         console.error("搜索小区失败:", err);
@@ -123,7 +117,7 @@ export function CommunitySelect({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, open]);
+  }, [query, open, onSearch]);
 
   // 选择已有小区
   const handleSelect = (community: Community) => {
@@ -137,11 +131,13 @@ export function CommunitySelect({
     if (!query) return;
 
     // 调用后端接口创建小区
-    const result = await createCommunityAction({
-      name: query,
-      district: null,
-      business_circle: null,
-    });
+    const result = onCreate
+      ? await onCreate({ name: query, district: null, business_circle: null })
+      : await createCommunityAction({
+          name: query,
+          district: null,
+          business_circle: null,
+        });
 
     if (result) {
       // 创建成功，返回真实的小区数据
@@ -238,7 +234,7 @@ export function CommunitySelect({
         </PopoverTrigger>
         <PopoverContent className={s.popover} align="start">
           {/* 搜索输入框 */}
-          <div className={cn("p-2 border-b", variant === "marketing" && "border-[var(--border)]/20")}>
+          <div className={cn("p-2 border-b", variant === "marketing" && "border-(--border)/20")}>
             <input
               className={s.input}
               placeholder="输入关键词搜索..."

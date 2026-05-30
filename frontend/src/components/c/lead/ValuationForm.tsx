@@ -1,14 +1,22 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Smartphone } from "lucide-react";
-import { CommunitySearchInput } from "./CommunitySearchInput";
-import { createLeadAction } from "@/app/(c)/c/valuation/actions";
+import { useActionState, useState, useMemo } from "react";
+import { Smartphone, Ruler } from "lucide-react";
+import { CommunitySelect } from "@/components/common/community-select";
+import { LayoutInputs } from "@/components/common/layout-inputs";
+import { createLeadAction, searchCCommunitiesAction } from "@/app/(c)/c/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
 
-const LAYOUT_OPTIONS = ["一室一厅", "两室一厅", "三室两厅", "四室两厅", "其他"];
+const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
 
-const ORIENTATION_OPTIONS = ["东", "南", "西", "北", "东南", "东北", "西南", "西北"];
+const FormItem = ({ label, children, required }: { label: string; children?: React.ReactNode; required?: boolean }) => (
+  <div className="space-y-1.5">
+    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">
+      {label} {required && <span className="text-error">*</span>}
+    </label>
+    {children}
+  </div>
+);
 
 export function ValuationForm() {
   const [state, formAction, isPending] = useActionState(
@@ -16,7 +24,32 @@ export function ValuationForm() {
     { success: false, error: "" } as ActionResult<{ id: string }>
   );
 
-  const [communityName, setCommunityName] = useState("");
+  const [formData, setFormData] = useState({
+    communityId: "",
+    communityName: "",
+    district: "",
+    businessArea: "",
+    layout: "2室1厅1卫",
+    orientation: "南",
+    currentFloor: "",
+    totalFloor: "",
+    area: "",
+    remarks: "",
+  });
+
+  const floorInfo = useMemo(() => {
+    if (formData.currentFloor && formData.totalFloor) {
+      return `${formData.currentFloor}/${formData.totalFloor}层`;
+    }
+    if (formData.currentFloor) {
+      return `${formData.currentFloor}层`;
+    }
+    return "";
+  }, [formData.currentFloor, formData.totalFloor]);
+
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <form action={formAction} className="space-y-6">
@@ -27,86 +60,100 @@ export function ValuationForm() {
           </div>
         )}
 
-        <div>
-          <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
-            小区名称 <span className="text-c-error">*</span>
-          </label>
-          <CommunitySearchInput
-            value={communityName}
-            onChange={setCommunityName}
-            onSelect={() => {}}
-          />
-          <input type="hidden" name="community_name" value={communityName} required />
-        </div>
+        <CommunitySelect
+          value={formData.communityName}
+          label="小区名称"
+          onChange={(community) =>
+            setFormData((prev) => ({
+              ...prev,
+              communityId: community.id,
+              communityName: community.name,
+              district: community.district || prev.district,
+              businessArea: community.businessCircle || prev.businessArea,
+            }))
+          }
+          onSearch={searchCCommunitiesAction}
+          allowCreate={false}
+        />
+        <input type="hidden" name="community_id" value={formData.communityId} />
+        <input type="hidden" name="community_name" value={formData.communityName} />
+        <input type="hidden" name="district" value={formData.district} />
+        <input type="hidden" name="business_area" value={formData.businessArea} />
 
-        <div>
-          <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
-            户型
-          </label>
-          <select
-            name="layout"
-            className="w-full h-12 px-4 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
-          >
-            <option value="">请选择户型</option>
-            {LAYOUT_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </div>
+        <LayoutInputs
+          value={formData.layout}
+          onChange={(l) => updateField("layout", l)}
+          label="房源户型"
+        />
+        <input type="hidden" name="layout" value={formData.layout} />
 
-        <div>
-          <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
-            楼层
-          </label>
-          <input
-            name="floor_info"
-            type="text"
-            placeholder="如：中楼层/共18层"
-            className="w-full h-12 px-4 rounded-lg border border-c-border-subtle bg-c-surface text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
-          />
-        </div>
+        <div className="bg-muted p-6 rounded-2xl space-y-6 border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Ruler className="h-4 w-4 text-muted-foreground" />
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">物理指标</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormItem label="面积 (㎡)" required>
+              <input
+                type="number"
+                step="0.1"
+                name="area"
+                className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-bold bg-background"
+                value={formData.area}
+                onChange={(e) => updateField("area", e.target.value)}
+                placeholder="请输入面积"
+              />
+            </FormItem>
 
-        <div>
-          <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
-            面积（㎡） <span className="text-c-error">*</span>
-          </label>
-          <input
-            name="area"
-            type="number"
-            step="0.01"
-            placeholder="请输入面积"
-            className="w-full h-12 px-4 rounded-lg border border-c-border-subtle bg-c-surface text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
-          />
-        </div>
+            <FormItem label="朝向">
+              <select
+                name="orientation"
+                className="w-full h-11 border rounded-lg bg-background text-sm font-medium"
+                value={formData.orientation}
+                onChange={(e) => updateField("orientation", e.target.value)}
+              >
+                {ORIENTATION_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            </FormItem>
 
-        <div>
-          <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
-            朝向
-          </label>
-          <select
-            name="orientation"
-            className="w-full h-12 px-4 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
-          >
-            <option value="">请选择朝向</option>
-            {ORIENTATION_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+            <FormItem label="楼层/总高">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    placeholder="1"
+                    className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center bg-background"
+                    value={formData.currentFloor}
+                    onChange={(e) => updateField("currentFloor", e.target.value)}
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background">层</span>
+                </div>
+                <span className="text-muted-foreground/50">/</span>
+                <div className="relative flex-1">
+                  <input
+                    placeholder="6"
+                    className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center"
+                    value={formData.totalFloor}
+                    onChange={(e) => updateField("totalFloor", e.target.value)}
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background">总</span>
+                </div>
+              </div>
+            </FormItem>
+          </div>
         </div>
+        <input type="hidden" name="floor_info" value={floorInfo} />
 
-        <div>
-          <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
-            备注
-          </label>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">补充信息</label>
           <textarea
             name="remarks"
             rows={3}
             placeholder="补充说明，如装修情况、学区等"
-            className="w-full px-4 py-3 rounded-lg border border-c-border-subtle bg-c-surface text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all resize-none"
+            className="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm transition-all"
+            value={formData.remarks}
+            onChange={(e) => updateField("remarks", e.target.value)}
           />
         </div>
       </div>
