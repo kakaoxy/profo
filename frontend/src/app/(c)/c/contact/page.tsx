@@ -9,38 +9,11 @@ import { SoldProjectCard } from "@/components/c/project/SoldProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
+import { publicFetcher } from "@/lib/swr";
+import type { components } from "@/lib/api-types";
 
-interface SoldProject {
-  id: number;
-  community_name: string | null;
-  layout: string;
-  area: number;
-  total_price: number;
-  unit_price: number;
-  title: string;
-  cover_image: string | null;
-  sold_days: number | null;
-  decoration_style: string | null;
-}
-
-interface SoldListResponse {
-  items: SoldProject[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-interface PlatformStats {
-  total_owners: number;
-  on_sale_count: number;
-  current_month_sold: number;
-}
-
-const fetcher = (url: string) =>
-  fetch(url).then((r) => {
-    if (!r.ok) throw new Error("Failed to fetch");
-    return r.json();
-  });
+type SoldListResponse = components["schemas"]["PublicSoldProjectListResponse"];
+type PlatformStats = components["schemas"]["PublicPlatformStats"];
 
 export default function ContactPage() {
   const [search, setSearch] = useState("");
@@ -56,12 +29,12 @@ export default function ContactPage() {
 
   const { data: soldData, isLoading: soldLoading, error: soldError, mutate: mutateSold } = useSWR<SoldListResponse>(
     soldUrl,
-    fetcher
+    publicFetcher
   );
 
   const { data: statsData, isLoading: statsLoading } = useSWR<PlatformStats>(
     "/api/v1/public/stats/platform",
-    fetcher
+    publicFetcher
   );
 
   return (
@@ -151,15 +124,15 @@ export default function ContactPage() {
               <SoldProjectCard
                 key={project.id}
                 id={project.id}
-                communityName={project.community_name}
+                communityName={project.community_name ?? null}
                 layout={project.layout}
                 area={project.area}
                 totalPrice={project.total_price}
                 unitPrice={project.unit_price}
                 title={project.title}
-                coverImage={project.cover_image}
-                soldDays={project.sold_days}
-                decorationStyle={project.decoration_style}
+                coverImage={project.cover_image ?? null}
+                soldDays={project.sold_days ?? null}
+                decorationStyle={project.decoration_style ?? null}
               />
             ))}
           </div>

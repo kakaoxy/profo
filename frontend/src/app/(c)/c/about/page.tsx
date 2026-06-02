@@ -14,11 +14,10 @@ import { PainPointCard } from "@/components/c/shared/PainPointCard";
 import { CTAButton } from "@/components/c/shared/CTAButton";
 import { StatsCard } from "@/components/c/shared/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { publicFetcher } from "@/lib/swr";
+import type { components } from "@/lib/api-types";
 
-interface PlatformStats {
-  on_sale_count: number;
-  current_month_sold: number;
-}
+type PlatformStats = components["schemas"]["PublicPlatformStats"];
 
 const painPoints = [
   {
@@ -80,7 +79,7 @@ const processSteps = [
 export default function AboutPage() {
   const { data: statsData, isLoading } = useSWR<PlatformStats>(
     "/api/v1/public/stats/platform",
-    (url: string) => fetch(url).then((r) => r.json())
+    publicFetcher
   );
 
   return (

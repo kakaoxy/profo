@@ -1,11 +1,24 @@
 "use server";
 
+import { z } from "zod";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { ActionResult, createErrorResult } from "@/lib/action-result";
 import { transformCommunitySearchSafe } from "@/lib/api-transforms";
 import type { Community } from "@/components/common/community-select";
+
+const createLeadSchema = z.object({
+  community_id: z.string().nullable().optional(),
+  community_name: z.string().min(1, "小区名称不能为空"),
+  district: z.string().nullable().optional(),
+  business_area: z.string().nullable().optional(),
+  layout: z.string().nullable().optional(),
+  area: z.number().nullable().optional(),
+  floor_info: z.string().nullable().optional(),
+  orientation: z.string().nullable().optional(),
+  remarks: z.string().nullable().optional(),
+});
 
 export async function searchCCommunitiesAction(query: string): Promise<Community[]> {
   try {
@@ -27,7 +40,8 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
   if (!token) {
     return createErrorResult("请先登录");
   }
-  const payload = {
+
+  const raw = {
     community_id: (formData.get("community_id") as string) || null,
     community_name: formData.get("community_name") as string,
     district: (formData.get("district") as string) || null,
@@ -38,6 +52,10 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
     orientation: (formData.get("orientation") as string) || null,
     remarks: (formData.get("remarks") as string) || null,
   };
+
+  const parsed = createLeadSchema.safeParse(raw);
+  if (!parsed.success) return createErrorResult(parsed.error.issues[0].message);
+
   try {
     const response = await fetch(getApiUrl(apiPaths.cLeads.create), {
       method: "POST",
@@ -45,7 +63,7 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(parsed.data),
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

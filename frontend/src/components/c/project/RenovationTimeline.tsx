@@ -15,11 +15,11 @@ interface RenovationStage {
 interface MediaItem {
   id: number;
   file_url: string;
-  thumbnail_url: string | null;
+  thumbnail_url?: string | null;
   media_type: string;
   photo_category: string;
-  renovation_stage: string | null;
-  description: string | null;
+  renovation_stage?: string | null;
+  description?: string | null;
   sort_order: number;
 }
 
