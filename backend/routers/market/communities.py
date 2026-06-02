@@ -140,7 +140,7 @@ def create_community(
 
     if existing:
         logger.info("小区已存在，直接返回: %s (ID: %s)", existing.name, existing.id)
-        return CommunityResponse.model_validate(existing)
+        return CommunityQueryService.build_response_from_community(existing)
 
     new_community = Community(
         id=str(uuid.uuid4()),
@@ -166,7 +166,7 @@ def create_community(
         logger.warning("创建小区时发生唯一约束冲突: %s, 错误: %s", body.name, e)
         existing = _find_existing_community_by_name(db, body.name)
         if existing:
-            return CommunityResponse.model_validate(existing)
+            return CommunityQueryService.build_response_from_community(existing)
         raise HTTPException(status_code=500, detail="创建小区失败") from e
     except SQLAlchemyError:
         db.rollback()
@@ -177,4 +177,4 @@ def create_community(
         logger.exception("创建小区发生未知错误")
         raise HTTPException(status_code=500, detail="创建小区失败") from None
 
-    return CommunityResponse.model_validate(new_community)
+    return CommunityQueryService.build_response_from_community(new_community)

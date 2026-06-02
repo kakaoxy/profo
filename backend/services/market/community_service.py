@@ -35,6 +35,10 @@ class CommunityQueryService:
         )
 
     @staticmethod
+    def build_response_from_community(community: Community) -> CommunityResponse:
+        return CommunityResponse.model_validate(community)
+
+    @staticmethod
     def query_communities(
         db: Session,
         search: str | None = None,
