@@ -55,7 +55,7 @@ export function PropertyDetailSheet() {
         // ✅ 改为调用 Server Action
         const detail = await getPropertyDetailAction(parseInt(propertyId));
 
-        setData(detail);
+        setData(detail ?? null);
       } catch (err) {
         console.error(err);
         setError("无法加载房源数据，请稍后重试。");

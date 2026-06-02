@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Phone } from "lucide-react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/c/shared/UserAvatar";
@@ -26,7 +26,7 @@ function maskPhone(phone: string): string {
 export default function CProfilePage() {
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
-  const userInfo = useMemo(() => getUserInfoFromCookie(), []);
+  const userInfo = getUserInfoFromCookie();
 
   const [profileState, profileAction, isProfilePending] = useActionState(
     updateProfileAction,

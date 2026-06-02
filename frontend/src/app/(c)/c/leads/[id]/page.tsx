@@ -8,39 +8,10 @@ import { FollowUpList } from "@/components/c/lead/FollowUpList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/c/shared/ErrorState";
 import { ShieldAlert } from "lucide-react";
+import { fetcher, ForbiddenError } from "@/lib/swr";
+import type { components } from "@/lib/api-types";
 
-interface LeadDetail {
-  id: string;
-  community_name: string;
-  layout: string | null;
-  area: number | null;
-  floor_info: string | null;
-  orientation: string | null;
-  remarks: string | null;
-  created_at: string;
-  eval_price: number | null;
-  status_color: string;
-  follow_ups: {
-    id: string;
-    method: string;
-    content: string;
-    followed_at: string;
-  }[];
-}
-
-class ForbiddenError extends Error {
-  constructor() {
-    super("FORBIDDEN");
-    this.name = "ForbiddenError";
-  }
-}
-
-async function fetchLeadDetail<T>(url: string): Promise<T> {
-  const res = await fetch(url, { credentials: "include" });
-  if (res.status === 403) throw new ForbiddenError();
-  if (!res.ok) throw new Error("Failed to fetch");
-  return res.json();
-}
+type LeadDetail = components["schemas"]["PublicLeadDetail"];
 
 function ForbiddenState() {
   const router = useRouter();
@@ -65,7 +36,7 @@ export default function LeadDetailPage() {
 
   const { data, error, isLoading, mutate } = useSWR<LeadDetail>(
     id ? `/api/v1/public/leads/${id}` : null,
-    fetchLeadDetail
+    fetcher
   );
 
   if (isLoading) {
@@ -101,16 +72,16 @@ export default function LeadDetailPage() {
     <div className="px-4 md:px-6 py-8 space-y-6">
       <LeadInfoCard
         communityName={data.community_name}
-        layout={data.layout}
-        area={data.area}
-        floorInfo={data.floor_info}
-        orientation={data.orientation}
-        remarks={data.remarks}
+        layout={data.layout ?? null}
+        area={data.area ?? null}
+        floorInfo={data.floor_info ?? null}
+        orientation={data.orientation ?? null}
+        remarks={data.remarks ?? null}
         createdAt={formattedDate}
       />
 
       <SystemEstimateCard
-        evalPrice={data.eval_price}
+        evalPrice={data.eval_price ?? null}
         statusColor={data.status_color}
         createdAt={formattedDate}
       />

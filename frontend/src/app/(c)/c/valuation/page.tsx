@@ -1,5 +1,3 @@
-"use client";
-
 import { ValuationForm } from "@/components/c/lead/ValuationForm";
 import { ValuationSidebar } from "@/components/c/lead/ValuationSidebar";
 

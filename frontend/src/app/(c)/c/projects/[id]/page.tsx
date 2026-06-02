@@ -9,6 +9,11 @@ import { RenovationTimeline } from "@/components/c/project/RenovationTimeline";
 import { ConsultantBar } from "@/components/c/project/ConsultantBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/c/shared/ErrorState";
+import { publicFetcher } from "@/lib/swr";
+import type { components } from "@/lib/api-types";
+
+type ProjectDetail = components["schemas"]["PublicProjectDetail"];
+type ConsultantInfo = components["schemas"]["PublicConsultantContact"];
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   "在售": {
@@ -25,42 +30,6 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
   },
 };
 
-interface ProjectDetail {
-  id: number;
-  community_name: string | null;
-  layout: string;
-  orientation: string;
-  area: number;
-  total_price: number;
-  unit_price: number;
-  floor_info: string;
-  decoration_style: string | null;
-  project_status: string;
-  images: string[];
-  renovation_stages: { stage: string; photo_count: number }[];
-  media: {
-    id: number;
-    file_url: string;
-    thumbnail_url: string | null;
-    media_type: string;
-    photo_category: string;
-    renovation_stage: string | null;
-    description: string | null;
-    sort_order: number;
-  }[];
-}
-
-interface ConsultantInfo {
-  wechat_number: string;
-  phone: string;
-}
-
-async function fetchJSON<T>(url: string): Promise<T> {
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) throw new Error("Failed to fetch");
-  return res.json();
-}
-
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -68,12 +37,12 @@ export default function ProjectDetailPage() {
 
   const { data, error, isLoading, mutate } = useSWR<ProjectDetail>(
     id ? `/api/v1/public/projects/${id}` : null,
-    fetchJSON
+    publicFetcher
   );
 
   const { data: consultant } = useSWR<ConsultantInfo>(
     id ? `/api/v1/public/projects/${id}/consultant` : null,
-    fetchJSON
+    publicFetcher
   );
 
   if (isLoading) {
@@ -141,7 +110,7 @@ export default function ProjectDetailPage() {
           unitPrice={data.unit_price}
           orientation={data.orientation}
           floorInfo={data.floor_info}
-          decorationStyle={data.decoration_style}
+          decorationStyle={data.decoration_style ?? null}
           layout={data.layout}
           area={data.area}
         />

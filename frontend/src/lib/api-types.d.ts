@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * Root
-         * @description 根路径 - 健康检查
+         * @description 根路径 - 健康检查.
          */
         get: operations["root__get"];
         put?: never;
@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * Health Check
-         * @description 健康检查端点
+         * @description 健康检查端点.
          */
         get: operations["health_check_health_get"];
         put?: never;
@@ -53,7 +53,7 @@ export interface paths {
         };
         /**
          * Search Communities
-         * @description Search communities by name
+         * @description Search communities by name.
          */
         get: operations["search_communities_api_v1_properties_communities_search_get"];
         put?: never;
@@ -73,7 +73,7 @@ export interface paths {
         };
         /**
          * Get Properties
-         * @description 查询房源列表
+         * @description 查询房源列表.
          *
          *     支持多维度筛选、排序和分页
          */
@@ -95,7 +95,7 @@ export interface paths {
         };
         /**
          * Export Properties
-         * @description 导出房源数据为 CSV 文件
+         * @description 导出房源数据为 CSV 文件.
          *
          *     使用与查询接口相同的筛选和排序参数，但移除分页限制，导出所有匹配的记录
          */
@@ -108,7 +108,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/properties/{id}": {
+    "/api/v1/properties/{property_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -117,9 +117,9 @@ export interface paths {
         };
         /**
          * Get Property Detail
-         * @description 获取房源详情
+         * @description 获取房源详情.
          */
-        get: operations["get_property_detail_api_v1_properties__id__get"];
+        get: operations["get_property_detail_api_v1_properties__property_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -137,13 +137,13 @@ export interface paths {
         };
         /**
          * Get Communities
-         * @description 查询小区列表
+         * @description 查询小区列表.
          */
         get: operations["get_communities_api_v1_admin_communities_get"];
         put?: never;
         /**
          * Create Community
-         * @description 创建新小区
+         * @description 创建新小区.
          *
          *     速率限制：100次/小时
          */
@@ -163,7 +163,7 @@ export interface paths {
         };
         /**
          * Get Dictionaries
-         * @description 返回行政区或商圈的去重列表
+         * @description 返回行政区或商圈的去重列表.
          */
         get: operations["get_dictionaries_api_v1_admin_dictionaries_get"];
         put?: never;
@@ -185,7 +185,7 @@ export interface paths {
         put?: never;
         /**
          * Merge Communities
-         * @description 合并小区操作
+         * @description 合并小区操作.
          *
          *     参数:
          *         request: FastAPI HTTP 请求对象（用于速率限制）
@@ -211,14 +211,15 @@ export interface paths {
         };
         /**
          * Get Leads
-         * @description 获取线索列表
-         *     使用手动序列化避免 ORM 关系遍历导致的性能问题
+         * @description 获取线索列表.
+         *
+         *     使用手动序列化避免 ORM 关系遍历导致的性能问题.
          */
         get: operations["get_leads_api_v1_leads__get"];
         put?: never;
         /**
          * Create Lead
-         * @description 创建线索
+         * @description 创建线索.
          */
         post: operations["create_lead_api_v1_leads__post"];
         delete?: never;
@@ -236,20 +237,22 @@ export interface paths {
         };
         /**
          * Get Lead
-         * @description 获取单个线索详情
+         * @description 获取单个线索详情.
          */
         get: operations["get_lead_api_v1_leads__lead_id__get"];
         /**
          * Update Lead
-         * @description 更新线索
-         *     速率限制：100次/小时
+         * @description 更新线索.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_lead_api_v1_leads__lead_id__put"];
         post?: never;
         /**
          * Delete Lead
-         * @description 删除线索
-         *     速率限制：20次/小时
+         * @description 删除线索.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_lead_api_v1_leads__lead_id__delete"];
         options?: never;
@@ -266,7 +269,7 @@ export interface paths {
         };
         /**
          * Get Leads Funnel
-         * @description 获取线索漏斗统计数据
+         * @description 获取线索漏斗统计数据.
          */
         get: operations["get_leads_funnel_api_v1_leads_stats_funnel_get"];
         put?: never;
@@ -286,13 +289,13 @@ export interface paths {
         };
         /**
          * Get Follow Ups
-         * @description 获取线索的跟进记录列表
+         * @description 获取线索的跟进记录列表.
          */
         get: operations["get_follow_ups_api_v1_leads__lead_id__follow_ups_get"];
         put?: never;
         /**
          * Add Follow Up
-         * @description 添加跟进记录
+         * @description 添加跟进记录.
          */
         post: operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"];
         delete?: never;
@@ -310,14 +313,15 @@ export interface paths {
         };
         /**
          * Get Price History
-         * @description 获取线索价格历史记录
+         * @description 获取线索价格历史记录.
          */
         get: operations["get_price_history_api_v1_leads__lead_id__prices_get"];
         put?: never;
         /**
          * Add Price Record
-         * @description 添加价格记录（如二次授权）
-         *     同时更新线索的当前总价
+         * @description 添加价格记录（如二次授权）.
+         *
+         *     同时更新线索的当前总价.
          */
         post: operations["add_price_record_api_v1_leads__lead_id__prices_post"];
         delete?: never;
@@ -336,8 +340,9 @@ export interface paths {
         get?: never;
         /**
          * Update Renovation Stage
-         * @description 更新改造阶段
-         *     速率限制：100次/小时
+         * @description 更新改造阶段.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_renovation_stage_api_v1_projects__project_id__renovation_put"];
         post?: never;
@@ -356,13 +361,13 @@ export interface paths {
         };
         /**
          * Get Renovation Photos
-         * @description 获取改造阶段照片
+         * @description 获取改造阶段照片.
          */
         get: operations["get_renovation_photos_api_v1_projects__project_id__renovation_photos_get"];
         put?: never;
         /**
          * Upload Renovation Photo
-         * @description 上传改造阶段照片
+         * @description 上传改造阶段照片.
          */
         post: operations["upload_renovation_photo_api_v1_projects__project_id__renovation_photos_post"];
         delete?: never;
@@ -383,8 +388,9 @@ export interface paths {
         post?: never;
         /**
          * Delete Renovation Photo
-         * @description 删除改造阶段照片
-         *     速率限制：20次/小时
+         * @description 删除改造阶段照片.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_renovation_photo_api_v1_projects__project_id__renovation_photos__photo_id__delete"];
         options?: never;
@@ -401,13 +407,14 @@ export interface paths {
         };
         /**
          * Get Renovation Contract
-         * @description 获取装修合同信息
+         * @description 获取装修合同信息.
          */
         get: operations["get_renovation_contract_api_v1_projects__project_id__renovation_contract_get"];
         /**
          * Update Renovation Contract
-         * @description 更新装修合同信息
-         *     速率限制：100次/小时
+         * @description 更新装修合同信息.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_renovation_contract_api_v1_projects__project_id__renovation_contract_put"];
         post?: never;
@@ -427,8 +434,9 @@ export interface paths {
         get?: never;
         /**
          * Update Sales Roles
-         * @description 更新销售角色
-         *     速率限制：100次/小时
+         * @description 更新销售角色.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_sales_roles_api_v1_projects__project_id__selling_roles_put"];
         post?: never;
@@ -449,7 +457,7 @@ export interface paths {
         put?: never;
         /**
          * Create Viewing Record
-         * @description 创建带看记录
+         * @description 创建带看记录.
          */
         post: operations["create_viewing_record_api_v1_projects__project_id__selling_viewings_post"];
         delete?: never;
@@ -469,7 +477,7 @@ export interface paths {
         put?: never;
         /**
          * Create Offer Record
-         * @description 创建出价记录
+         * @description 创建出价记录.
          */
         post: operations["create_offer_record_api_v1_projects__project_id__selling_offers_post"];
         delete?: never;
@@ -489,7 +497,7 @@ export interface paths {
         put?: never;
         /**
          * Create Negotiation Record
-         * @description 创建面谈记录
+         * @description 创建面谈记录.
          */
         post: operations["create_negotiation_record_api_v1_projects__project_id__selling_negotiations_post"];
         delete?: never;
@@ -507,7 +515,7 @@ export interface paths {
         };
         /**
          * Get Sales Records
-         * @description 获取销售记录
+         * @description 获取销售记录.
          */
         get: operations["get_sales_records_api_v1_projects__project_id__selling_records_get"];
         put?: never;
@@ -530,8 +538,9 @@ export interface paths {
         post?: never;
         /**
          * Delete Sales Record
-         * @description 删除销售记录
-         *     速率限制：20次/小时
+         * @description 删除销售记录.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_sales_record_api_v1_projects__project_id__selling_records__record_id__delete"];
         options?: never;
@@ -548,7 +557,7 @@ export interface paths {
         };
         /**
          * Get Next Contract No
-         * @description 获取下一个合同编号
+         * @description 获取下一个合同编号.
          *
          *     格式: MFB-年月-4位自增序号，如 MFB-202604-0001
          *     后端生成保证唯一性，避免前端竞态条件
@@ -571,14 +580,15 @@ export interface paths {
         };
         /**
          * Get Projects
-         * @description 获取项目列表
+         * @description 获取项目列表.
          */
         get: operations["get_projects_api_v1_projects_get"];
         put?: never;
         /**
          * Create Project
-         * @description 创建项目
-         *     速率限制：100次/小时
+         * @description 创建项目.
+         *
+         *     速率限制：100次/小时.
          */
         post: operations["create_project_api_v1_projects_post"];
         delete?: never;
@@ -596,7 +606,7 @@ export interface paths {
         };
         /**
          * Get Project Stats
-         * @description 获取项目统计
+         * @description 获取项目统计.
          */
         get: operations["get_project_stats_api_v1_projects_stats_get"];
         put?: never;
@@ -616,7 +626,7 @@ export interface paths {
         };
         /**
          * Export Projects
-         * @description 导出项目数据为 CSV 文件
+         * @description 导出项目数据为 CSV 文件.
          *
          *     支持按状态和小区名称筛选，导出所有匹配记录（无分页限制）
          *     速率限制：10次/小时
@@ -639,20 +649,22 @@ export interface paths {
         };
         /**
          * Get Project
-         * @description 获取项目详情
+         * @description 获取项目详情.
          */
         get: operations["get_project_api_v1_projects__project_id__get"];
         /**
          * Update Project
-         * @description 更新项目信息
-         *     速率限制：100次/小时
+         * @description 更新项目信息.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_project_api_v1_projects__project_id__put"];
         post?: never;
         /**
          * Delete Project
-         * @description 删除项目
-         *     速率限制：20次/小时
+         * @description 删除项目.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_project_api_v1_projects__project_id__delete"];
         options?: never;
@@ -670,8 +682,9 @@ export interface paths {
         get?: never;
         /**
          * Update Project Status
-         * @description 更新项目状态
-         *     速率限制：100次/小时
+         * @description 更新项目状态.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_project_status_api_v1_projects__project_id__status_put"];
         post?: never;
@@ -692,7 +705,7 @@ export interface paths {
         put?: never;
         /**
          * Complete Project
-         * @description 完成项目
+         * @description 完成项目.
          */
         post: operations["complete_project_api_v1_projects__project_id__complete_post"];
         delete?: never;
@@ -710,7 +723,7 @@ export interface paths {
         };
         /**
          * Get Project Report
-         * @description 获取项目报告
+         * @description 获取项目报告.
          */
         get: operations["get_project_report_api_v1_projects__project_id__report_get"];
         put?: never;
@@ -730,13 +743,13 @@ export interface paths {
         };
         /**
          * Get Project Cashflow
-         * @description 获取项目现金流明细和汇总
+         * @description 获取项目现金流明细和汇总.
          */
         get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
         put?: never;
         /**
          * Create Cashflow Record
-         * @description 创建现金流记录
+         * @description 创建现金流记录.
          */
         post: operations["create_cashflow_record_api_v1_projects__project_id__cashflow_post"];
         delete?: never;
@@ -757,8 +770,9 @@ export interface paths {
         post?: never;
         /**
          * Delete Cashflow Record
-         * @description 删除现金流记录
-         *     速率限制：20次/小时
+         * @description 删除现金流记录.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
         options?: never;
@@ -775,14 +789,15 @@ export interface paths {
         };
         /**
          * 获取营销项目列表
-         * @description 获取营销项目列表 - 统一分页格式，包含摘要统计
+         * @description 获取营销项目列表 - 统一分页格式，包含摘要统计.
          */
         get: operations["list_marketing_projects_api_v1_admin_l4_marketing_projects_get"];
         put?: never;
         /**
          * 创建独立营销项目
-         * @description 创建独立营销项目 (不关联 L3 项目)
-         *     速率限制：100次/小时
+         * @description 创建独立营销项目.
+         *
+         *     速率限制：100次/小时.
          */
         post: operations["create_marketing_project_api_v1_admin_l4_marketing_projects_post"];
         delete?: never;
@@ -800,20 +815,22 @@ export interface paths {
         };
         /**
          * 获取营销项目详情
-         * @description 获取营销项目详情
+         * @description 获取营销项目详情.
          */
         get: operations["get_marketing_project_api_v1_admin_l4_marketing_projects__project_id__get"];
         /**
          * 更新营销项目
-         * @description 更新营销项目
-         *     速率限制：100次/小时
+         * @description 更新营销项目.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_marketing_project_api_v1_admin_l4_marketing_projects__project_id__put"];
         post?: never;
         /**
          * 删除营销项目
-         * @description 逻辑删除营销项目
-         *     速率限制：20次/小时
+         * @description 逻辑删除营销项目.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_marketing_project_api_v1_admin_l4_marketing_projects__project_id__delete"];
         options?: never;
@@ -830,13 +847,13 @@ export interface paths {
         };
         /**
          * 获取媒体列表
-         * @description 获取营销项目的媒体列表
+         * @description 获取营销项目的媒体列表.
          */
         get: operations["list_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_get"];
         put?: never;
         /**
          * 添加媒体
-         * @description 为营销项目添加媒体
+         * @description 为营销项目添加媒体.
          */
         post: operations["create_marketing_media_api_v1_admin_l4_marketing_projects__project_id__media_post"];
         delete?: never;
@@ -855,15 +872,17 @@ export interface paths {
         get?: never;
         /**
          * 更新媒体
-         * @description 更新媒体信息
-         *     速率限制：100次/小时
+         * @description 更新媒体信息.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_marketing_media_api_v1_admin_l4_marketing_media__media_id__put"];
         post?: never;
         /**
          * 删除媒体
-         * @description 逻辑删除媒体
-         *     速率限制：20次/小时
+         * @description 逻辑删除媒体.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_marketing_media_api_v1_admin_l4_marketing_media__media_id__delete"];
         options?: never;
@@ -881,8 +900,9 @@ export interface paths {
         get?: never;
         /**
          * 批量更新媒体排序
-         * @description 批量更新媒体排序顺序
-         *     速率限制：100次/小时
+         * @description 批量更新媒体排序顺序.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_media_sort_order_api_v1_admin_l4_marketing_projects__project_id__media_sort_order_put"];
         post?: never;
@@ -901,7 +921,7 @@ export interface paths {
         };
         /**
          * 获取可关联的L3项目列表
-         * @description 获取可用于关联的L3项目列表
+         * @description 获取可用于关联的L3项目列表.
          *
          *     用于在创建营销房源时选择关联的L3项目
          */
@@ -923,7 +943,7 @@ export interface paths {
         };
         /**
          * 获取L3项目详情
-         * @description 获取单个L3项目详情
+         * @description 获取单个L3项目详情.
          *
          *     用于项目选择器中预览项目信息
          */
@@ -947,7 +967,7 @@ export interface paths {
         put?: never;
         /**
          * 从L3项目导入数据
-         * @description 从L3项目导入数据
+         * @description 从L3项目导入数据.
          *
          *     根据L3项目ID获取可导入的数据，用于创建营销房源
          *     采用写时复制(CoW)模式，L4独立存储数据
@@ -970,8 +990,10 @@ export interface paths {
         put?: never;
         /**
          * Login For Access Token
-         * @description OAuth2 兼容的 token 获取接口 (Sync - Run in threadpool by FastAPI)
-         *     速率限制：5次/分钟
+         * @description OAuth2 兼容的 token 获取接口.
+         *
+         *     Sync - Run in threadpool by FastAPI
+         *     速率限制：5次/分钟.
          */
         post: operations["login_for_access_token_api_v1_auth_token_post"];
         delete?: never;
@@ -991,8 +1013,10 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description 用户名密码登录 (Sync - Run in threadpool by FastAPI)
-         *     速率限制：5次/分钟
+         * @description 用户名密码登录.
+         *
+         *     Sync - Run in threadpool by FastAPI
+         *     速率限制：5次/分钟.
          */
         post: operations["login_api_v1_auth_login_post"];
         delete?: never;
@@ -1012,8 +1036,10 @@ export interface paths {
         put?: never;
         /**
          * Refresh Access Token
-         * @description 刷新令牌 (Sync - Run in threadpool by FastAPI)
-         *     速率限制：10次/分钟
+         * @description 刷新令牌.
+         *
+         *     Sync - Run in threadpool by FastAPI
+         *     速率限制：10次/分钟.
          */
         post: operations["refresh_access_token_api_v1_auth_refresh_post"];
         delete?: never;
@@ -1031,7 +1057,7 @@ export interface paths {
         };
         /**
          * Wechat Authorize
-         * @description 生成微信登录授权URL
+         * @description 生成微信登录授权URL.
          */
         get: operations["wechat_authorize_api_v1_auth_wechat_authorize_get"];
         put?: never;
@@ -1051,7 +1077,7 @@ export interface paths {
         };
         /**
          * Wechat Callback
-         * @description 微信授权回调 (Async for HTTP, run_in_threadpool for DB)
+         * @description 微信授权回调 (Async for HTTP, run_in_threadpool for DB).
          */
         get: operations["wechat_callback_api_v1_auth_wechat_callback_get"];
         put?: never;
@@ -1073,8 +1099,9 @@ export interface paths {
         put?: never;
         /**
          * Exchange Token
-         * @description 用一次性授权码兑换 Token
-         *     速率限制：10次/分钟
+         * @description 用一次性授权码兑换 Token.
+         *
+         *     速率限制：10次/分钟.
          */
         post: operations["exchange_token_api_v1_auth_exchange_token_post"];
         delete?: never;
@@ -1094,8 +1121,10 @@ export interface paths {
         put?: never;
         /**
          * Wechat App Login
-         * @description 微信小程序登录 (Async for HTTP, run_in_threadpool for DB)
-         *     速率限制：5次/分钟
+         * @description 微信小程序登录.
+         *
+         *     Async for HTTP, run_in_threadpool for DB
+         *     速率限制：5次/分钟.
          */
         post: operations["wechat_app_login_api_v1_auth_wechat_login_post"];
         delete?: never;
@@ -1113,7 +1142,7 @@ export interface paths {
         };
         /**
          * Get Current User Info
-         * @description 获取当前用户信息
+         * @description 获取当前用户信息.
          */
         get: operations["get_current_user_info_api_v1_auth_me_get"];
         put?: never;
@@ -1133,22 +1162,25 @@ export interface paths {
         };
         /**
          * Get Api Key Info
-         * @description 获取当前用户的 API Key 信息
-         *     不返回完整的 Key，只返回前缀和状态信息
+         * @description 获取当前用户的 API Key 信息.
+         *
+         *     不返回完整的 Key，只返回前缀和状态信息.
          */
         get: operations["get_api_key_info_api_v1_auth_api_key_get"];
         put?: never;
         /**
          * Create Api Key
-         * @description 生成新的 API Key
+         * @description 生成新的 API Key.
+         *
          *     每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
-         *     Key 仅显示一次，请妥善保存
+         *     Key 仅显示一次，请妥善保存.
          */
         post: operations["create_api_key_api_v1_auth_api_key_post"];
         /**
          * Delete Api Key
-         * @description 撤销当前用户的 API Key
-         *     速率限制：20次/小时
+         * @description 撤销当前用户的 API Key.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_api_key_api_v1_auth_api_key_delete"];
         options?: never;
@@ -1165,15 +1197,17 @@ export interface paths {
         };
         /**
          * Get Users
-         * @description 获取用户列表，支持搜索和筛选
-         *     速率限制：60次/分钟
+         * @description 获取用户列表，支持搜索和筛选.
+         *
+         *     速率限制：60次/分钟.
          */
         get: operations["get_users_api_v1_users__get"];
         put?: never;
         /**
          * Create User
-         * @description 创建新用户
-         *     速率限制：10次/小时（防止批量创建用户攻击）
+         * @description 创建新用户.
+         *
+         *     速率限制：10次/小时（防止批量创建用户攻击）.
          */
         post: operations["create_user_api_v1_users__post"];
         delete?: never;
@@ -1191,7 +1225,7 @@ export interface paths {
         };
         /**
          * Get Users Simple
-         * @description 获取简化用户列表（仅包含ID和昵称），用于下拉选择
+         * @description 获取简化用户列表（仅包含ID和昵称），用于下拉选择.
          */
         get: operations["get_users_simple_api_v1_users_simple_get"];
         put?: never;
@@ -1211,7 +1245,7 @@ export interface paths {
         };
         /**
          * Get Current User
-         * @description 获取当前登录用户信息
+         * @description 获取当前登录用户信息.
          */
         get: operations["get_current_user_api_v1_users_me_get"];
         put?: never;
@@ -1231,20 +1265,22 @@ export interface paths {
         };
         /**
          * Get User
-         * @description 获取指定用户信息
+         * @description 获取指定用户信息.
          */
         get: operations["get_user_api_v1_users__user_id__get"];
         /**
          * Update User
-         * @description 更新用户信息
-         *     速率限制：100次/小时
+         * @description 更新用户信息.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_user_api_v1_users__user_id__put"];
         post?: never;
         /**
          * Delete User
-         * @description 删除用户
-         *     速率限制：20次/小时
+         * @description 删除用户.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_user_api_v1_users__user_id__delete"];
         options?: never;
@@ -1262,8 +1298,9 @@ export interface paths {
         get?: never;
         /**
          * Reset User Password
-         * @description 重置用户密码
-         *     速率限制：5次/小时（防止密码重置滥用）
+         * @description 重置用户密码.
+         *
+         *     速率限制：5次/小时（防止密码重置滥用）.
          */
         put: operations["reset_user_password_api_v1_users__user_id__reset_password_put"];
         post?: never;
@@ -1284,8 +1321,9 @@ export interface paths {
         put?: never;
         /**
          * Change Password
-         * @description 修改当前用户密码
-         *     速率限制：3次/分钟（防止暴力破解密码）
+         * @description 修改当前用户密码.
+         *
+         *     速率限制：3次/分钟（防止暴力破解密码）.
          */
         post: operations["change_password_api_v1_users_change_password_post"];
         delete?: never;
@@ -1305,9 +1343,10 @@ export interface paths {
         put?: never;
         /**
          * Init System Data
-         * @description 初始化系统数据，包括默认角色和管理员用户
+         * @description 初始化系统数据，包括默认角色和管理员用户.
+         *
          *     注意：使用 def 避免 sync DB 阻塞
-         *     速率限制：3次/小时
+         *     速率限制：3次/小时.
          */
         post: operations["init_system_data_api_v1_users_init_data_post"];
         delete?: never;
@@ -1325,13 +1364,13 @@ export interface paths {
         };
         /**
          * Get Roles
-         * @description 获取角色列表，支持搜索和筛选
+         * @description 获取角色列表，支持搜索和筛选.
          */
         get: operations["get_roles_api_v1_roles__get"];
         put?: never;
         /**
          * Create Role
-         * @description 创建新角色
+         * @description 创建新角色.
          */
         post: operations["create_role_api_v1_roles__post"];
         delete?: never;
@@ -1349,20 +1388,22 @@ export interface paths {
         };
         /**
          * Get Role
-         * @description 获取指定角色信息
+         * @description 获取指定角色信息.
          */
         get: operations["get_role_api_v1_roles__role_id__get"];
         /**
          * Update Role
-         * @description 更新角色信息
-         *     速率限制：100次/小时
+         * @description 更新角色信息.
+         *
+         *     速率限制：100次/小时.
          */
         put: operations["update_role_api_v1_roles__role_id__put"];
         post?: never;
         /**
          * Delete Role
-         * @description 删除角色
-         *     速率限制：20次/小时
+         * @description 删除角色.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["delete_role_api_v1_roles__role_id__delete"];
         options?: never;
@@ -1381,7 +1422,7 @@ export interface paths {
         put?: never;
         /**
          * Create Import Task
-         * @description 上传 CSV 文件并创建异步导入任务
+         * @description 上传 CSV 文件并创建异步导入任务.
          *
          *     流程：
          *     1. 验证文件格式和大小
@@ -1407,7 +1448,7 @@ export interface paths {
         };
         /**
          * Get Task Status
-         * @description 查询导入任务状态和进度
+         * @description 查询导入任务状态和进度.
          *
          *     前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次
          */
@@ -1429,7 +1470,7 @@ export interface paths {
         };
         /**
          * List Tasks
-         * @description 获取当前用户的导入任务列表
+         * @description 获取当前用户的导入任务列表.
          *
          *     默认返回最近 10 条任务，按创建时间倒序排列
          */
@@ -1453,7 +1494,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel Task
-         * @description 取消导入任务
+         * @description 取消导入任务.
          *
          *     只能取消 pending 或 processing 状态的任务
          */
@@ -1473,9 +1514,10 @@ export interface paths {
         };
         /**
          * Download Failed File
-         * @description 下载失败记录文件
+         * @description 下载失败记录文件.
+         *
          *     注意：使用 def 避免文件操作阻塞
-         *     已修复：使用安全的文件路径验证，防止目录遍历攻击
+         *     已修复：使用安全的文件路径验证，防止目录遍历攻击.
          */
         get: operations["download_failed_file_api_v1_upload_download__filename__get"];
         put?: never;
@@ -1497,7 +1539,7 @@ export interface paths {
         put?: never;
         /**
          * Push Properties
-         * @description JSON 数据推送接口
+         * @description JSON 数据推送接口.
          *
          *     接收 JSON 数组，批量导入房源数据。
          *     **需要通过 X-API-Key Header 进行认证。**
@@ -1532,9 +1574,10 @@ export interface paths {
         put?: never;
         /**
          * 上传文件
-         * @description Handle file upload (Sync - Run in threadpool by FastAPI)
+         * @description Handle file upload (Sync - Run in threadpool by FastAPI).
+         *
          *     Optimized to read only first 2KB for MIME check.
-         *     速率限制：50次/小时（防止资源耗尽攻击）
+         *     速率限制：50次/小时（防止资源耗尽攻击）.
          */
         post: operations["upload_file_api_v1_files_upload_post"];
         delete?: never;
@@ -1550,7 +1593,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Sentiment */
+        /**
+         * Get Sentiment
+         * @description 获取市场情绪数据.
+         */
         get: operations["get_sentiment_api_v1_monitor_communities__community_id__sentiment_get"];
         put?: never;
         post?: never;
@@ -1567,7 +1613,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Trends */
+        /**
+         * Get Trends
+         * @description 获取趋势数据.
+         */
         get: operations["get_trends_api_v1_monitor_communities__community_id__trends_get"];
         put?: never;
         post?: never;
@@ -1586,7 +1635,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate Strategy */
+        /**
+         * Generate Strategy
+         * @description 生成AI策略建议.
+         */
         post: operations["generate_strategy_api_v1_monitor_ai_strategy_post"];
         delete?: never;
         options?: never;
@@ -1603,7 +1655,7 @@ export interface paths {
         };
         /**
          * Get Neighborhood Radar
-         * @description 获取周边竞品雷达数据，包含分渠道统计
+         * @description 获取周边竞品雷达数据，包含分渠道统计.
          */
         get: operations["get_neighborhood_radar_api_v1_monitor_communities__community_id__radar_get"];
         put?: never;
@@ -1621,10 +1673,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Competitors */
+        /**
+         * Get Competitors
+         * @description 获取竞品列表.
+         */
         get: operations["get_competitors_api_v1_monitor_communities__community_id__competitors_get"];
         put?: never;
-        /** Add Competitor */
+        /**
+         * Add Competitor
+         * @description 添加竞品小区.
+         */
         post: operations["add_competitor_api_v1_monitor_communities__community_id__competitors_post"];
         delete?: never;
         options?: never;
@@ -1644,8 +1702,9 @@ export interface paths {
         post?: never;
         /**
          * Remove Competitor
-         * @description 删除竞品
-         *     速率限制：20次/小时
+         * @description 删除竞品.
+         *
+         *     速率限制：20次/小时.
          */
         delete: operations["remove_competitor_api_v1_monitor_communities__community_id__competitors__competitor_id__delete"];
         options?: never;
@@ -1662,7 +1721,7 @@ export interface paths {
         };
         /**
          * Get Community Market Stats
-         * @description 获取小区市场统计数据
+         * @description 获取小区市场统计数据.
          *
          *     用于项目卡片展示的市场数据:
          *     - on_sale: 竞品在售数量
@@ -1680,18 +1739,324 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * C端用户注册
+         * @description 注册C端用户账号，自动分配customer角色
+         */
+        post: operations["register_api_v1_public_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/auth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * C端用户登录
+         * @description C端用户使用用户名密码登录，返回JWT令牌
+         */
+        post: operations["login_for_access_token_api_v1_public_auth_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * C端刷新令牌
+         * @description 使用refresh_token获取新的access_token
+         */
+        post: operations["refresh_access_token_api_v1_public_auth_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * C端退出登录
+         * @description C端用户退出登录（当前JWT无状态机制下，服务端不撤销token，客户端应删除本地存储的token）
+         */
+        post: operations["logout_api_v1_public_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/users/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 修改用户资料
+         * @description C端用户修改自己的昵称
+         */
+        put: operations["update_profile_api_v1_public_users_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/users/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 修改手机号
+         * @description C端用户修改手机号，需密码确认身份
+         */
+        put: operations["update_phone_api_v1_public_users_phone_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取房源列表
+         * @description 获取已发布的房源列表，无需登录
+         */
+        get: operations["get_projects_api_v1_public_projects_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects/sold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取成交案例列表
+         * @description 获取已成交的房源案例列表，无需登录
+         */
+        get: operations["get_sold_projects_api_v1_public_projects_sold_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取房源详情
+         * @description 获取指定房源的详细信息，无需登录
+         */
+        get: operations["get_project_detail_api_v1_public_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/projects/{project_id}/consultant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取顾问联系方式
+         * @description 获取指定房源的顾问联系方式，无需登录
+         */
+        get: operations["get_consultant_contact_api_v1_public_projects__project_id__consultant_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/stats/platform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取平台统计数据
+         * @description 获取平台统计数据，无需登录
+         */
+        get: operations["get_platform_stats_api_v1_public_stats_platform_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 提交卖房估价
+         * @description C端用户提交卖房估价线索
+         */
+        post: operations["create_lead_api_v1_public_leads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取我的估价列表
+         * @description 获取当前用户创建的线索列表
+         */
+        get: operations["get_my_leads_api_v1_public_leads_mine_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取估价详情
+         * @description 获取指定线索的详细信息，仅能查看自己创建的线索
+         */
+        get: operations["get_lead_detail_api_v1_public_leads__lead_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/communities/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 搜索小区
+         * @description 根据关键词搜索小区，无需登录
+         */
+        get: operations["search_communities_api_v1_public_communities_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AIStrategyRequest */
+        /**
+         * AIStrategyRequest
+         * @description AI策略请求.
+         */
         AIStrategyRequest: {
             /** Project Id */
             project_id: string;
             /** User Context */
             user_context: string;
         };
-        /** AIStrategyResponse */
+        /**
+         * AIStrategyResponse
+         * @description AI策略响应.
+         */
         AIStrategyResponse: {
             /** Report Markdown */
             report_markdown: string;
@@ -1699,14 +2064,17 @@ export interface components {
             /** Action Plan */
             action_plan: string[];
         };
-        /** AddCompetitorRequest */
+        /**
+         * AddCompetitorRequest
+         * @description 添加竞品请求模型.
+         */
         AddCompetitorRequest: {
             /** Competitor Community Id */
             competitor_community_id: string;
         };
         /**
          * ApiKeyCreateResponse
-         * @description API Key 创建响应模型
+         * @description API Key 创建响应模型.
          */
         ApiKeyCreateResponse: {
             /**
@@ -1733,7 +2101,7 @@ export interface components {
         };
         /**
          * ApiKeyInfoResponse
-         * @description API Key 信息响应模型
+         * @description API Key 信息响应模型.
          */
         ApiKeyInfoResponse: {
             /**
@@ -1772,6 +2140,7 @@ export interface components {
         Body_create_import_task_api_v1_upload_csv_post: {
             /**
              * File
+             * Format: binary
              * @description CSV 文件
              */
             file: string;
@@ -1782,10 +2151,7 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /**
-             * Password
-             * Format: password
-             */
+            /** Password */
             password: string;
             /**
              * Scope
@@ -1794,20 +2160,38 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
+            /** Client Secret */
+            client_secret?: string | null;
+        };
+        /** Body_login_for_access_token_api_v1_public_auth_token_post */
+        Body_login_for_access_token_api_v1_public_auth_token_post: {
+            /** Grant Type */
+            grant_type?: string | null;
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
             /**
-             * Client Secret
-             * Format: password
+             * Scope
+             * @default
              */
+            scope: string;
+            /** Client Id */
+            client_id?: string | null;
+            /** Client Secret */
             client_secret?: string | null;
         };
         /** Body_upload_file_api_v1_files_upload_post */
         Body_upload_file_api_v1_files_upload_post: {
-            /** File */
+            /**
+             * File
+             * Format: binary
+             */
             file: string;
         };
         /**
          * CancelTaskResponse
-         * @description 取消任务响应
+         * @description 取消任务响应.
          */
         CancelTaskResponse: {
             /** Message */
@@ -1817,13 +2201,13 @@ export interface components {
         };
         /**
          * CashFlowCategory
-         * @description 现金流分类枚举
+         * @description 现金流分类枚举.
          * @enum {string}
          */
         CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
         /**
          * CashFlowRecordCreate
-         * @description 创建现金流
+         * @description 创建现金流.
          */
         CashFlowRecordCreate: {
             type: components["schemas"]["CashFlowType"];
@@ -1842,7 +2226,7 @@ export interface components {
         };
         /**
          * CashFlowRecordResponse
-         * @description 现金流记录响应 - 适配新的FinanceRecord表
+         * @description 现金流记录响应 - 适配新的FinanceRecord表.
          */
         CashFlowRecordResponse: {
             /** Id */
@@ -1884,20 +2268,33 @@ export interface components {
             /**
              * Date
              * Format: date-time
+             * @description 兼容旧字段 date（返回 record_date）.
              */
             readonly date: string;
-            /** Description */
+            /**
+             * Description
+             * @description 兼容旧字段 description（返回 remark）.
+             */
             readonly description: string | null;
-            /** Related Stage */
+            /**
+             * Related Stage
+             * @description 兼容旧字段 related_stage（始终返回 None）.
+             */
             readonly related_stage: string | null;
         };
-        /** CashFlowResponse */
+        /**
+         * CashFlowResponse
+         * @description 现金流响应.
+         */
         CashFlowResponse: {
             /** Records */
             records: components["schemas"]["CashFlowRecordResponse"][];
             summary: components["schemas"]["CashFlowSummary"];
         };
-        /** CashFlowSummary */
+        /**
+         * CashFlowSummary
+         * @description 现金流摘要.
+         */
         CashFlowSummary: {
             /** Total Income */
             total_income: string;
@@ -1920,13 +2317,13 @@ export interface components {
         };
         /**
          * CashFlowType
-         * @description 现金流类型枚举
+         * @description 现金流类型枚举.
          * @enum {string}
          */
         CashFlowType: "income" | "expense";
         /**
          * CommunityCreateRequest
-         * @description 创建小区请求
+         * @description 创建小区请求.
          */
         CommunityCreateRequest: {
             /**
@@ -1947,7 +2344,7 @@ export interface components {
         };
         /**
          * CommunityListResponse
-         * @description 小区列表响应
+         * @description 小区列表响应.
          */
         CommunityListResponse: {
             /** Total */
@@ -1957,7 +2354,7 @@ export interface components {
         };
         /**
          * CommunityMarketStatsResponse
-         * @description 小区市场统计数据响应
+         * @description 小区市场统计数据响应.
          *
          *     用于项目卡片展示的市场数据:
          *     - on_sale: 竞品在售数量
@@ -1999,7 +2396,7 @@ export interface components {
         };
         /**
          * CommunityMergeRequest
-         * @description 小区合并请求
+         * @description 小区合并请求.
          */
         CommunityMergeRequest: {
             /**
@@ -2015,7 +2412,7 @@ export interface components {
         };
         /**
          * CommunityMergeResponse
-         * @description 小区合并响应
+         * @description 小区合并响应.
          */
         CommunityMergeResponse: {
             /** Success */
@@ -2027,7 +2424,7 @@ export interface components {
         };
         /**
          * CommunityResponse
-         * @description 小区响应模型
+         * @description 小区响应模型.
          */
         CommunityResponse: {
             /** Id */
@@ -2052,7 +2449,7 @@ export interface components {
         };
         /**
          * CommunitySearchResponse
-         * @description 小区搜索响应模型 - 精简字段用于搜索建议
+         * @description 小区搜索响应模型 - 精简字段用于搜索建议.
          */
         CommunitySearchResponse: {
             /** Id */
@@ -2064,7 +2461,10 @@ export interface components {
             /** Business Circle */
             business_circle?: string | null;
         };
-        /** CompetitorResponse */
+        /**
+         * CompetitorResponse
+         * @description 竞品响应.
+         */
         CompetitorResponse: {
             /** Community Id */
             community_id: string;
@@ -2077,7 +2477,7 @@ export interface components {
         };
         /**
          * DictionaryResponse
-         * @description 字典响应模型
+         * @description 字典响应模型.
          */
         DictionaryResponse: {
             /** Type */
@@ -2087,7 +2487,7 @@ export interface components {
         };
         /**
          * ExchangeTokenRequest
-         * @description 临时授权码兑换 Token 请求模型
+         * @description 临时授权码兑换 Token 请求模型.
          */
         ExchangeTokenRequest: {
             /**
@@ -2096,14 +2496,20 @@ export interface components {
              */
             code: string;
         };
-        /** FileUploadResponse */
+        /**
+         * FileUploadResponse
+         * @description 文件上传响应.
+         */
         FileUploadResponse: {
             /** Url */
             url: string;
             /** Filename */
             filename: string;
         };
-        /** FloorStats */
+        /**
+         * FloorStats
+         * @description 楼层统计数据模型.
+         */
         FloorStats: {
             /** Type */
             type: string;
@@ -2116,7 +2522,10 @@ export interface components {
             /** Current Avg Price */
             current_avg_price: number;
         };
-        /** FollowUpCreate */
+        /**
+         * FollowUpCreate
+         * @description 创建跟进记录请求.
+         */
         FollowUpCreate: {
             method: components["schemas"]["FollowUpMethod"];
             /** Content */
@@ -2124,11 +2533,14 @@ export interface components {
         };
         /**
          * FollowUpMethod
-         * @description 跟进方式枚举
+         * @description 跟进方式枚举.
          * @enum {string}
          */
         FollowUpMethod: "phone" | "wechat" | "face" | "visit";
-        /** FollowUpResponse */
+        /**
+         * FollowUpResponse
+         * @description 跟进记录响应.
+         */
         FollowUpResponse: {
             method: components["schemas"]["FollowUpMethod"];
             /** Content */
@@ -2154,7 +2566,7 @@ export interface components {
         };
         /**
          * ImportTaskCreateResponse
-         * @description 导入任务创建响应
+         * @description 导入任务创建响应.
          */
         ImportTaskCreateResponse: {
             /**
@@ -2176,7 +2588,7 @@ export interface components {
         };
         /**
          * ImportTaskStatusResponse
-         * @description 导入任务状态响应
+         * @description 导入任务状态响应.
          */
         ImportTaskStatusResponse: {
             /**
@@ -2258,7 +2670,7 @@ export interface components {
         };
         /**
          * ImportableMediaResponse
-         * @description 可导入的媒体资源信息
+         * @description 可导入的媒体资源信息.
          */
         ImportableMediaResponse: {
             /**
@@ -2300,7 +2712,7 @@ export interface components {
         };
         /**
          * L3ProjectBriefResponse
-         * @description L3项目精简信息 - 用于列表展示
+         * @description L3项目精简信息 - 用于列表展示.
          */
         L3ProjectBriefResponse: {
             /**
@@ -2346,7 +2758,7 @@ export interface components {
         };
         /**
          * L3ProjectImportResponse
-         * @description 从L3项目导入的数据响应
+         * @description 从L3项目导入的数据响应.
          */
         L3ProjectImportResponse: {
             /**
@@ -2422,7 +2834,7 @@ export interface components {
         };
         /**
          * L3ProjectListResponse
-         * @description L3项目列表响应 - 统一分页格式
+         * @description L3项目列表响应 - 统一分页格式.
          */
         L3ProjectListResponse: {
             /** Items */
@@ -2445,7 +2857,7 @@ export interface components {
         };
         /**
          * L4MarketingMediaCreate
-         * @description 创建媒体请求
+         * @description 创建媒体请求.
          */
         L4MarketingMediaCreate: {
             /**
@@ -2492,7 +2904,7 @@ export interface components {
         };
         /**
          * L4MarketingMediaListResponse
-         * @description 媒体列表响应 - 统一分页格式
+         * @description 媒体列表响应 - 统一分页格式.
          */
         L4MarketingMediaListResponse: {
             /**
@@ -2518,7 +2930,7 @@ export interface components {
         };
         /**
          * L4MarketingMediaResponse
-         * @description 媒体响应模型
+         * @description 媒体响应模型.
          */
         L4MarketingMediaResponse: {
             /**
@@ -2575,7 +2987,7 @@ export interface components {
         };
         /**
          * L4MarketingMediaUpdate
-         * @description 更新媒体请求
+         * @description 更新媒体请求.
          */
         L4MarketingMediaUpdate: {
             /** @description 照片分类 */
@@ -2591,7 +3003,7 @@ export interface components {
         };
         /**
          * L4MarketingProjectCreate
-         * @description 创建营销项目请求
+         * @description 创建营销项目请求.
          */
         L4MarketingProjectCreate: {
             /**
@@ -2677,13 +3089,13 @@ export interface components {
             consultant_id?: string | null;
             /**
              * Media Files
-             * @description 媒体文件列表，创建项目时同时上传图片
+             * @description 媒体文件列表(创建时可上传)
              */
             media_files?: components["schemas"]["L4MarketingMediaCreate"][] | null;
         };
         /**
          * L4MarketingProjectListResponse
-         * @description 营销项目列表响应 - 统一分页格式
+         * @description 营销项目列表响应 - 统一分页格式.
          */
         L4MarketingProjectListResponse: {
             /**
@@ -2711,7 +3123,7 @@ export interface components {
         };
         /**
          * L4MarketingProjectResponse
-         * @description 营销项目响应模型
+         * @description 营销项目响应模型.
          *
          *     数据库使用JSON存储images和tags，前后端统一使用list[str]格式
          */
@@ -2776,7 +3188,7 @@ export interface components {
         };
         /**
          * L4MarketingProjectSummary
-         * @description 营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响
+         * @description 营销项目摘要统计 - 基于筛选条件的全量统计，不受分页影响.
          */
         L4MarketingProjectSummary: {
             /**
@@ -2818,7 +3230,7 @@ export interface components {
         };
         /**
          * L4MarketingProjectUpdate
-         * @description 更新营销项目请求 - 所有字段可选
+         * @description 更新营销项目请求 - 所有字段可选.
          */
         L4MarketingProjectUpdate: {
             /**
@@ -2863,18 +3275,18 @@ export interface components {
             project_status?: components["schemas"]["MarketingProjectStatus"] | null;
             /**
              * Project Id
-             * @description 关联L3项目ID(软引用)，UUID字符串
+             * @description 关联L3项目ID(软引用)
              */
             project_id?: string | null;
             /**
              * Consultant Id
-             * @description 关联顾问ID(软引用User表)，UUID字符串
+             * @description 关联顾问ID(软引用)
              */
             consultant_id?: string | null;
         };
         /**
          * L4SyncResponse
-         * @description 同步响应
+         * @description 同步响应.
          */
         L4SyncResponse: {
             /**
@@ -2883,7 +3295,10 @@ export interface components {
              */
             total_synced: number;
         };
-        /** LeadCreate */
+        /**
+         * LeadCreate
+         * @description 创建线索请求.
+         */
         LeadCreate: {
             /** Community Name */
             community_name: string;
@@ -2926,7 +3341,7 @@ export interface components {
         };
         /**
          * LeadFunnelResponse
-         * @description 线索漏斗统计响应
+         * @description 线索漏斗统计响应.
          */
         LeadFunnelResponse: {
             /**
@@ -2957,8 +3372,9 @@ export interface components {
         };
         /**
          * LeadListItem
-         * @description 列表展示专用 Schema
-         *     不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题
+         * @description 列表展示专用 Schema.
+         *
+         *     不使用 from_attributes，手动构造以避免 ORM 关系遍历导致的性能问题.
          */
         LeadListItem: {
             /** Id */
@@ -3023,7 +3439,10 @@ export interface components {
              */
             updated_at: string;
         };
-        /** LeadResponse */
+        /**
+         * LeadResponse
+         * @description 线索响应.
+         */
         LeadResponse: {
             /** Community Name */
             community_name: string;
@@ -3089,11 +3508,14 @@ export interface components {
         };
         /**
          * LeadStatus
-         * @description 线索状态枚举
+         * @description 线索状态枚举.
          * @enum {string}
          */
         LeadStatus: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
-        /** LeadUpdate */
+        /**
+         * LeadUpdate
+         * @description 更新线索请求.
+         */
         LeadUpdate: {
             /** Community Name */
             community_name?: string | null;
@@ -3131,7 +3553,7 @@ export interface components {
         };
         /**
          * LoginRequest
-         * @description 登录请求模型
+         * @description 登录请求模型.
          */
         LoginRequest: {
             /**
@@ -3145,7 +3567,10 @@ export interface components {
              */
             password: string;
         };
-        /** MarketSentimentResponse */
+        /**
+         * MarketSentimentResponse
+         * @description 市场情绪响应.
+         */
         MarketSentimentResponse: {
             /** Floor Stats */
             floor_stats: components["schemas"]["FloorStats"][];
@@ -3154,13 +3579,13 @@ export interface components {
         };
         /**
          * MarketingProjectStatus
-         * @description 营销项目状态枚举
+         * @description 营销项目状态枚举.
          * @enum {string}
          */
         MarketingProjectStatus: "在途" | "在售" | "已售";
         /**
          * MediaSortOrderUpdate
-         * @description 媒体排序更新项
+         * @description 媒体排序更新项.
          */
         MediaSortOrderUpdate: {
             /**
@@ -3176,13 +3601,13 @@ export interface components {
         };
         /**
          * MediaType
-         * @description 媒体类型
+         * @description 媒体类型.
          * @enum {string}
          */
         MediaType: "image" | "video";
         /**
          * NeighborhoodRadarItem
-         * @description 周边竞品雷达单项数据
+         * @description 周边竞品雷达单项数据.
          */
         NeighborhoodRadarItem: {
             /** Community Id */
@@ -3214,7 +3639,7 @@ export interface components {
         };
         /**
          * NeighborhoodRadarResponse
-         * @description 周边竞品雷达响应
+         * @description 周边竞品雷达响应.
          */
         NeighborhoodRadarResponse: {
             /** Items */
@@ -3222,7 +3647,7 @@ export interface components {
         };
         /**
          * PaginatedLeadListResponse
-         * @description 列表分页响应 - 使用 LeadListItem 避免性能问题
+         * @description 列表分页响应 - 使用 LeadListItem 避免性能问题.
          */
         PaginatedLeadListResponse: {
             /** Items */
@@ -3236,7 +3661,7 @@ export interface components {
         };
         /**
          * PaginatedPropertyResponse
-         * @description 分页房源列表响应 - 统一分页格式
+         * @description 分页房源列表响应 - 统一分页格式.
          * @example {
          *       "items": [
          *         {
@@ -3298,7 +3723,7 @@ export interface components {
         };
         /**
          * PasswordChange
-         * @description 密码修改模型
+         * @description 密码修改模型.
          */
         PasswordChange: {
             /**
@@ -3314,7 +3739,7 @@ export interface components {
         };
         /**
          * PasswordResetRequest
-         * @description 密码重置请求模型
+         * @description 密码重置请求模型.
          */
         PasswordResetRequest: {
             /**
@@ -3325,18 +3750,24 @@ export interface components {
         };
         /**
          * PhotoCategory
-         * @description 照片分类
+         * @description 照片分类.
          * @enum {string}
          */
         PhotoCategory: "marketing" | "renovation";
-        /** PriceHistoryCreate */
+        /**
+         * PriceHistoryCreate
+         * @description 创建价格历史请求.
+         */
         PriceHistoryCreate: {
             /** Price */
             price: number;
             /** Remark */
             remark?: string | null;
         };
-        /** PriceHistoryResponse */
+        /**
+         * PriceHistoryResponse
+         * @description 价格历史响应.
+         */
         PriceHistoryResponse: {
             /** Price */
             price: number;
@@ -3358,7 +3789,7 @@ export interface components {
         };
         /**
          * ProjectCompleteRequest
-         * @description 确认成交请求
+         * @description 确认成交请求.
          */
         ProjectCompleteRequest: {
             /** Sold Price */
@@ -3371,7 +3802,7 @@ export interface components {
         };
         /**
          * ProjectCreate
-         * @description 创建项目请求模型 - 已适配规范化表结构
+         * @description 创建项目请求模型 - 已适配规范化表结构.
          */
         ProjectCreate: {
             /**
@@ -3502,7 +3933,7 @@ export interface components {
         };
         /**
          * ProjectReportResponse
-         * @description 财务报表 - 适配新的规范化表结构
+         * @description 财务报表 - 适配新的规范化表结构.
          */
         ProjectReportResponse: {
             /** Project Id */
@@ -3542,8 +3973,9 @@ export interface components {
         };
         /**
          * ProjectResponse
-         * @description 项目完整响应模型 - 适配新的规范化表结构
-         *     业务日期字段使用字符串类型 (YYYY-MM-DD) 避免时区问题
+         * @description 项目完整响应模型 - 适配新的规范化表结构.
+         *
+         *     业务日期字段使用字符串类型 (YYYY-MM-DD) 避免时区问题.
          */
         ProjectResponse: {
             /**
@@ -3693,7 +4125,10 @@ export interface components {
             /** @description 项目负责人 */
             project_manager?: components["schemas"]["UserBrief"] | null;
         };
-        /** ProjectStatsResponse */
+        /**
+         * ProjectStatsResponse
+         * @description 项目统计响应.
+         */
         ProjectStatsResponse: {
             /** Signing */
             signing: number;
@@ -3706,13 +4141,13 @@ export interface components {
         };
         /**
          * ProjectStatus
-         * @description 项目主状态枚举
+         * @description 项目主状态枚举.
          * @enum {string}
          */
         ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "deleted";
         /**
          * ProjectUpdate
-         * @description 更新项目请求模型 (所有字段可选) - 已适配规范化表结构
+         * @description 更新项目请求模型 (所有字段可选) - 已适配规范化表结构.
          */
         ProjectUpdate: {
             /**
@@ -3783,7 +4218,7 @@ export interface components {
         };
         /**
          * PropertyDetailResponse
-         * @description 房源详情响应模型，包含所有字段
+         * @description 房源详情响应模型，包含所有字段.
          */
         PropertyDetailResponse: {
             /** Id */
@@ -3877,7 +4312,7 @@ export interface components {
         };
         /**
          * PropertyResponse
-         * @description 房源列表响应模型，包含计算字段
+         * @description 房源列表响应模型，包含计算字段.
          */
         PropertyResponse: {
             /** Id */
@@ -3946,14 +4381,984 @@ export interface components {
             updated_at: string;
         };
         /**
+         * PublicCommunitySearchItem
+         * @description C端小区搜索项.
+         */
+        PublicCommunitySearchItem: {
+            /**
+             * Id
+             * @description 小区ID
+             */
+            id: string;
+            /**
+             * Name
+             * @description 小区名称
+             */
+            name: string;
+            /**
+             * District
+             * @description 行政区
+             */
+            district?: string | null;
+            /**
+             * Business Circle
+             * @description 商圈
+             */
+            business_circle?: string | null;
+        };
+        /**
+         * PublicConsultantContact
+         * @description C端顾问联系方式.
+         */
+        PublicConsultantContact: {
+            /**
+             * Phone
+             * @description 手机号(脱敏)
+             */
+            phone: string;
+            /**
+             * Wechat Number
+             * @description 微信号
+             */
+            wechat_number: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname: string;
+        };
+        /**
+         * PublicConsultantInfo
+         * @description C端顾问信息.
+         */
+        PublicConsultantInfo: {
+            /**
+             * Nickname
+             * @description 顾问昵称
+             */
+            nickname?: string | null;
+            /**
+             * Phone
+             * @description 顾问手机号(脱敏)
+             */
+            phone?: string | null;
+        };
+        /**
+         * PublicFollowupItem
+         * @description C端跟进记录项.
+         */
+        PublicFollowupItem: {
+            /**
+             * Id
+             * @description 跟进记录ID
+             */
+            id: string;
+            /**
+             * Method
+             * @description 跟进方式
+             */
+            method: string;
+            /**
+             * Content
+             * @description 跟进内容
+             */
+            content: string;
+            /**
+             * Followed At
+             * Format: date-time
+             * @description 跟进时间
+             */
+            followed_at: string;
+        };
+        /**
+         * PublicLeadCreate
+         * @description C端线索创建请求.
+         */
+        PublicLeadCreate: {
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Remarks
+             * @description 备注
+             */
+            remarks?: string | null;
+        };
+        /**
+         * PublicLeadDetail
+         * @description C端线索详情.
+         */
+        PublicLeadDetail: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Total Price
+             * @description 当前授权总价(万)
+             */
+            total_price?: number | null;
+            /**
+             * Unit Price
+             * @description 单价(万/㎡)
+             */
+            unit_price?: number | null;
+            /**
+             * Eval Price
+             * @description 评估价格(万)
+             */
+            eval_price?: number | null;
+            /**
+             * Status
+             * @description 状态代码
+             * @enum {string}
+             */
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            /**
+             * Status Display
+             * @description 状态显示名称
+             */
+            status_display: string;
+            /**
+             * Status Color
+             * @description 状态颜色
+             */
+            status_color: string;
+            /**
+             * Remarks
+             * @description 备注
+             */
+            remarks?: string | null;
+            /**
+             * Follow Ups
+             * @description 跟进记录
+             */
+            follow_ups?: components["schemas"]["PublicFollowupItem"][];
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * PublicLeadListItem
+         * @description C端线索列表项.
+         */
+        PublicLeadListItem: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Total Price
+             * @description 当前授权总价(万)
+             */
+            total_price?: number | null;
+            /**
+             * Status
+             * @description 状态代码
+             * @enum {string}
+             */
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            /**
+             * Status Display
+             * @description 状态显示名称
+             */
+            status_display: string;
+            /**
+             * Status Color
+             * @description 状态颜色
+             */
+            status_color: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * PublicLeadListResponse
+         * @description C端线索列表响应.
+         */
+        PublicLeadListResponse: {
+            /**
+             * Items
+             * @description 线索列表
+             */
+            items: components["schemas"]["PublicLeadListItem"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * PublicLeadResponse
+         * @description C端线索响应.
+         */
+        PublicLeadResponse: {
+            /**
+             * Id
+             * @description 线索ID
+             */
+            id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout?: string | null;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area?: number | null;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info?: string | null;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation?: string | null;
+            /**
+             * Total Price
+             * @description 当前授权总价(万)
+             */
+            total_price?: number | null;
+            /**
+             * Unit Price
+             * @description 单价(万/㎡)
+             */
+            unit_price?: number | null;
+            /**
+             * Eval Price
+             * @description 评估价格(万)
+             */
+            eval_price?: number | null;
+            /**
+             * Status
+             * @description 状态
+             * @enum {string}
+             */
+            status: "pending_assessment" | "pending_visit" | "rejected" | "visited" | "signed";
+            /**
+             * Remarks
+             * @description 备注
+             */
+            remarks?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * PublicLoginResponse
+         * @description C端登录响应.
+         */
+        PublicLoginResponse: {
+            /**
+             * Access Token
+             * @description 访问令牌
+             */
+            access_token: string;
+            /**
+             * Refresh Token
+             * @description 刷新令牌
+             */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @description 令牌类型
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Expires In
+             * @description 访问令牌过期时间(秒)
+             */
+            expires_in: number;
+            /** @description 用户信息 */
+            user?: components["schemas"]["PublicUserInfo"] | null;
+        };
+        /**
+         * PublicLogoutResponse
+         * @description C端登出响应.
+         */
+        PublicLogoutResponse: {
+            /**
+             * Message
+             * @description 提示信息
+             */
+            message: string;
+        };
+        /**
+         * PublicMediaItem
+         * @description C端媒体项.
+         */
+        PublicMediaItem: {
+            /**
+             * Id
+             * @description 媒体ID
+             */
+            id: number;
+            /**
+             * File Url
+             * @description 文件URL
+             */
+            file_url: string;
+            /**
+             * Thumbnail Url
+             * @description 缩略图URL
+             */
+            thumbnail_url?: string | null;
+            /**
+             * Media Type
+             * @description 媒体类型
+             */
+            media_type: string;
+            /**
+             * Photo Category
+             * @description 照片分类
+             */
+            photo_category: string;
+            /**
+             * Renovation Stage
+             * @description 装修阶段
+             */
+            renovation_stage?: string | null;
+            /**
+             * Description
+             * @description 描述
+             */
+            description?: string | null;
+            /**
+             * Sort Order
+             * @description 排序
+             */
+            sort_order: number;
+        };
+        /**
+         * PublicPhoneResponse
+         * @description C端手机号响应.
+         */
+        PublicPhoneResponse: {
+            /**
+             * Phone
+             * @description 手机号(脱敏)
+             */
+            phone: string;
+        };
+        /**
+         * PublicPhoneUpdate
+         * @description C端手机号更新请求.
+         */
+        PublicPhoneUpdate: {
+            /**
+             * Phone
+             * @description 新手机号
+             */
+            phone: string;
+            /**
+             * Password
+             * @description 当前密码确认身份
+             */
+            password: string;
+        };
+        /**
+         * PublicPlatformStats
+         * @description C端平台统计.
+         */
+        PublicPlatformStats: {
+            /**
+             * Total Owners
+             * @description 业主总数
+             */
+            total_owners: number;
+            /**
+             * On Sale Count
+             * @description 在售房源数
+             */
+            on_sale_count: number;
+            /**
+             * Current Month Sold
+             * @description 本月成交数
+             */
+            current_month_sold: number;
+        };
+        /**
+         * PublicProfileUpdate
+         * @description C端个人信息更新请求.
+         */
+        PublicProfileUpdate: {
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname: string;
+        };
+        /**
+         * PublicProjectDetail
+         * @description C端项目详情.
+         */
+        PublicProjectDetail: {
+            /**
+             * Id
+             * @description 项目ID
+             */
+            id: number;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout: string;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation: string;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info: string;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area: number;
+            /**
+             * Total Price
+             * @description 总价(万元)
+             */
+            total_price: number;
+            /**
+             * Unit Price
+             * @description 单价(万元/m²)
+             */
+            unit_price: number;
+            /**
+             * Title
+             * @description 标题
+             */
+            title: string;
+            /**
+             * Images
+             * @description 图片URL列表
+             */
+            images?: string[];
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[];
+            /**
+             * Project Status
+             * @description 项目状态
+             */
+            project_status: string;
+            /**
+             * Decoration Style
+             * @description 装修风格
+             */
+            decoration_style?: string | null;
+            /**
+             * Description
+             * @description 描述
+             */
+            description?: string | null;
+            /**
+             * Media
+             * @description 媒体列表
+             */
+            media?: components["schemas"]["PublicMediaItem"][];
+            /**
+             * Renovation Stages
+             * @description 改造阶段
+             */
+            renovation_stages?: components["schemas"]["PublicRenovationStage"][];
+            /** @description 顾问信息 */
+            consultant?: components["schemas"]["PublicConsultantInfo"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * PublicProjectListItem
+         * @description C端项目列表项.
+         */
+        PublicProjectListItem: {
+            /**
+             * Id
+             * @description 项目ID
+             */
+            id: number;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout: string;
+            /**
+             * Orientation
+             * @description 朝向
+             */
+            orientation: string;
+            /**
+             * Floor Info
+             * @description 楼层信息
+             */
+            floor_info: string;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area: number;
+            /**
+             * Total Price
+             * @description 总价(万元)
+             */
+            total_price: number;
+            /**
+             * Unit Price
+             * @description 单价(万元/m²)
+             */
+            unit_price: number;
+            /**
+             * Title
+             * @description 标题
+             */
+            title: string;
+            /**
+             * Cover Image
+             * @description 封面图URL
+             */
+            cover_image?: string | null;
+            /**
+             * Tags
+             * @description 标签列表
+             */
+            tags?: string[];
+            /**
+             * Project Status
+             * @description 项目状态
+             */
+            project_status: string;
+            /**
+             * Decoration Style
+             * @description 装修风格
+             */
+            decoration_style?: string | null;
+        };
+        /**
+         * PublicProjectListResponse
+         * @description C端项目列表响应.
+         */
+        PublicProjectListResponse: {
+            /**
+             * Items
+             * @description 项目列表
+             */
+            items: components["schemas"]["PublicProjectListItem"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * PublicRefreshTokenRequest
+         * @description C端刷新令牌请求.
+         */
+        PublicRefreshTokenRequest: {
+            /**
+             * Refresh Token
+             * @description 刷新令牌
+             */
+            refresh_token: string;
+        };
+        /**
+         * PublicRegisterRequest
+         * @description C端用户注册请求.
+         */
+        PublicRegisterRequest: {
+            /**
+             * Username
+             * @description 用户名(4-30位字母/数字/下划线)
+             */
+            username: string;
+            /**
+             * Password
+             * @description 密码(≥8位，需含大小写字母和数字)
+             */
+            password: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname?: string | null;
+            /**
+             * Phone
+             * @description 手机号
+             */
+            phone?: string | null;
+        };
+        /**
+         * PublicRegisterResponse
+         * @description C端注册响应.
+         */
+        PublicRegisterResponse: {
+            /**
+             * Access Token
+             * @description 访问令牌
+             */
+            access_token: string;
+            /**
+             * Refresh Token
+             * @description 刷新令牌
+             */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @description 令牌类型
+             * @default bearer
+             */
+            token_type: string;
+            /**
+             * Expires In
+             * @description 访问令牌过期时间(秒)
+             */
+            expires_in: number;
+            /** @description 用户信息 */
+            user: components["schemas"]["PublicUserInfo"];
+        };
+        /**
+         * PublicRenovationStage
+         * @description C端改造阶段.
+         */
+        PublicRenovationStage: {
+            /**
+             * Stage
+             * @description 阶段名称
+             */
+            stage: string;
+            /**
+             * Photo Count
+             * @description 照片数量
+             */
+            photo_count: number;
+        };
+        /**
+         * PublicSoldProjectItem
+         * @description C端已售项目项.
+         */
+        PublicSoldProjectItem: {
+            /**
+             * Id
+             * @description 项目ID
+             */
+            id: number;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name?: string | null;
+            /**
+             * Layout
+             * @description 户型
+             */
+            layout: string;
+            /**
+             * Area
+             * @description 面积(m²)
+             */
+            area: number;
+            /**
+             * Total Price
+             * @description 总价(万元)
+             */
+            total_price: number;
+            /**
+             * Unit Price
+             * @description 单价(万元/m²)
+             */
+            unit_price: number;
+            /**
+             * Title
+             * @description 标题
+             */
+            title: string;
+            /**
+             * Cover Image
+             * @description 封面图URL
+             */
+            cover_image?: string | null;
+            /**
+             * Sold Days
+             * @description 成交天数
+             */
+            sold_days?: number | null;
+            /**
+             * Decoration Style
+             * @description 装修风格
+             */
+            decoration_style?: string | null;
+        };
+        /**
+         * PublicSoldProjectListResponse
+         * @description C端已售项目列表响应.
+         */
+        PublicSoldProjectListResponse: {
+            /**
+             * Items
+             * @description 成交案例列表
+             */
+            items: components["schemas"]["PublicSoldProjectItem"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * PublicUserInfo
+         * @description C端用户信息.
+         */
+        PublicUserInfo: {
+            /**
+             * Id
+             * @description 用户ID
+             */
+            id: string;
+            /**
+             * Username
+             * @description 用户名
+             */
+            username: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname?: string | null;
+            /**
+             * Phone
+             * @description 手机号(脱敏)
+             */
+            phone?: string | null;
+            /**
+             * Avatar
+             * @description 头像
+             */
+            avatar?: string | null;
+            /**
+             * Status
+             * @description 用户状态
+             */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+        };
+        /**
+         * PublicUserProfileResponse
+         * @description C端用户个人资料响应.
+         */
+        PublicUserProfileResponse: {
+            /**
+             * Id
+             * @description 用户ID
+             */
+            id: string;
+            /**
+             * Username
+             * @description 用户名
+             */
+            username: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname?: string | null;
+            /**
+             * Phone
+             * @description 手机号(脱敏)
+             */
+            phone?: string | null;
+            /**
+             * Avatar
+             * @description 头像
+             */
+            avatar?: string | null;
+            /**
+             * Status
+             * @description 用户状态
+             */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
          * PublishStatus
-         * @description 发布状态枚举
+         * @description 发布状态枚举.
          * @enum {string}
          */
         PublishStatus: "草稿" | "发布";
         /**
          * PushResult
-         * @description JSON推送结果
+         * @description JSON推送结果.
          */
         PushResult: {
             /**
@@ -3975,19 +5380,17 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: {
-                [key: string]: unknown;
-            }[];
+            errors?: Record<string, never>[];
         };
         /**
          * RecordType
-         * @description 销售记录类型枚举
+         * @description 销售记录类型枚举.
          * @enum {string}
          */
         RecordType: "viewing" | "offer" | "negotiation";
         /**
          * RefreshTokenRequest
-         * @description 刷新令牌请求模型
+         * @description 刷新令牌请求模型.
          */
         RefreshTokenRequest: {
             /**
@@ -3998,7 +5401,7 @@ export interface components {
         };
         /**
          * RenovationContractResponse
-         * @description 装修合同信息响应模型
+         * @description 装修合同信息响应模型.
          */
         RenovationContractResponse: {
             /** Id */
@@ -4062,7 +5465,7 @@ export interface components {
         };
         /**
          * RenovationContractUpdate
-         * @description 更新装修合同信息请求模型
+         * @description 更新装修合同信息请求模型.
          */
         RenovationContractUpdate: {
             /**
@@ -4178,7 +5581,7 @@ export interface components {
         };
         /**
          * RenovationPhotoListResponse
-         * @description 照片列表响应
+         * @description 照片列表响应.
          */
         RenovationPhotoListResponse: {
             /** Items */
@@ -4188,7 +5591,7 @@ export interface components {
         };
         /**
          * RenovationPhotoResponse
-         * @description 照片响应
+         * @description 照片响应.
          */
         RenovationPhotoResponse: {
             /** Id */
@@ -4215,13 +5618,13 @@ export interface components {
         };
         /**
          * RenovationStage
-         * @description 改造子阶段枚举
+         * @description 改造子阶段枚举.
          * @enum {string}
          */
         RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "安装" | "交付" | "已完成";
         /**
          * RenovationUpdate
-         * @description 更新改造阶段请求模型
+         * @description 更新改造阶段请求模型.
          */
         RenovationUpdate: {
             /** @description 改造子阶段 */
@@ -4232,7 +5635,10 @@ export interface components {
              */
             stage_completed_at?: string | null;
         };
-        /** RiskPoints */
+        /**
+         * RiskPoints
+         * @description 风险点.
+         */
         RiskPoints: {
             /** Profit Critical Price */
             profit_critical_price: number;
@@ -4241,7 +5647,7 @@ export interface components {
         };
         /**
          * RoleCreate
-         * @description 角色创建模型
+         * @description 角色创建模型.
          */
         RoleCreate: {
             /**
@@ -4267,7 +5673,7 @@ export interface components {
         };
         /**
          * RoleListResponse
-         * @description 角色列表响应模型
+         * @description 角色列表响应模型.
          * @example {
          *       "items": [
          *         {
@@ -4306,7 +5712,7 @@ export interface components {
         };
         /**
          * RoleResponse
-         * @description 角色响应模型
+         * @description 角色响应模型.
          */
         RoleResponse: {
             /**
@@ -4354,7 +5760,7 @@ export interface components {
         };
         /**
          * RoleUpdate
-         * @description 角色更新模型
+         * @description 角色更新模型.
          */
         RoleUpdate: {
             /**
@@ -4385,7 +5791,7 @@ export interface components {
         };
         /**
          * SalesRecordCreate
-         * @description 创建销售记录
+         * @description 创建销售记录.
          */
         SalesRecordCreate: {
             record_type: components["schemas"]["RecordType"];
@@ -4394,9 +5800,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -4417,7 +5821,7 @@ export interface components {
         };
         /**
          * SalesRecordListResponse
-         * @description 销售记录列表响应
+         * @description 销售记录列表响应.
          */
         SalesRecordListResponse: {
             /** Items */
@@ -4427,7 +5831,7 @@ export interface components {
         };
         /**
          * SalesRecordResponse
-         * @description 销售记录响应 - 兼容 ProjectInteraction 模型字段映射
+         * @description 销售记录响应 - 兼容 ProjectInteraction 模型字段映射.
          */
         SalesRecordResponse: {
             /** Id */
@@ -4441,9 +5845,7 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: {
-                [key: string]: unknown;
-            } | null;
+            customer_info?: Record<string, never> | null;
             /**
              * Record Date
              * Format: date-time
@@ -4469,7 +5871,7 @@ export interface components {
         };
         /**
          * SalesRolesUpdate
-         * @description 更新销售角色 - 使用用户ID而非文本
+         * @description 更新销售角色 - 使用用户ID而非文本.
          */
         SalesRolesUpdate: {
             /**
@@ -4488,7 +5890,10 @@ export interface components {
              */
             negotiator_id?: string | null;
         };
-        /** StatusUpdate */
+        /**
+         * StatusUpdate
+         * @description 项目状态更新请求.
+         */
         StatusUpdate: {
             status: components["schemas"]["ProjectStatus"];
             /**
@@ -4504,7 +5909,7 @@ export interface components {
         };
         /**
          * TokenResponse
-         * @description 令牌响应模型
+         * @description 令牌响应模型.
          */
         TokenResponse: {
             /**
@@ -4530,7 +5935,10 @@ export interface components {
             /** @description 用户信息 */
             user: components["schemas"]["UserResponse"];
         };
-        /** TrendData */
+        /**
+         * TrendData
+         * @description 趋势数据模型.
+         */
         TrendData: {
             /** Month */
             month: string;
@@ -4543,7 +5951,7 @@ export interface components {
         };
         /**
          * UserBrief
-         * @description 用户简要信息 - 用于关联对象展示
+         * @description 用户简要信息 - 用于关联对象展示.
          */
         UserBrief: {
             /**
@@ -4569,7 +5977,7 @@ export interface components {
         };
         /**
          * UserCreate
-         * @description 用户创建模型
+         * @description 用户创建模型.
          */
         UserCreate: {
             /**
@@ -4605,7 +6013,7 @@ export interface components {
         };
         /**
          * UserListResponse
-         * @description 用户列表响应模型
+         * @description 用户列表响应模型.
          * @example {
          *       "items": [
          *         {
@@ -4644,7 +6052,7 @@ export interface components {
         };
         /**
          * UserResponse
-         * @description 用户响应模型
+         * @description 用户响应模型.
          */
         UserResponse: {
             /**
@@ -4704,7 +6112,7 @@ export interface components {
         };
         /**
          * UserSimpleListResponse
-         * @description 简化用户列表响应模型
+         * @description 简化用户列表响应模型.
          * @example {
          *       "items": [
          *         {
@@ -4743,7 +6151,7 @@ export interface components {
         };
         /**
          * UserSimpleResponse
-         * @description 简化用户响应模型 - 用于下拉选择
+         * @description 简化用户响应模型 - 用于下拉选择.
          */
         UserSimpleResponse: {
             /**
@@ -4764,7 +6172,7 @@ export interface components {
         };
         /**
          * UserUpdate
-         * @description 用户更新模型
+         * @description 用户更新模型.
          */
         UserUpdate: {
             /**
@@ -4801,14 +6209,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
         /**
          * WechatAuthUrlResponse
-         * @description 微信授权 URL 响应模型
+         * @description 微信授权 URL 响应模型.
          */
         WechatAuthUrlResponse: {
             /**
@@ -4819,7 +6223,7 @@ export interface components {
         };
         /**
          * WechatLoginRequest
-         * @description 微信登录请求模型
+         * @description 微信登录请求模型.
          */
         WechatLoginRequest: {
             /**
@@ -4852,7 +6256,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
         };
@@ -4872,7 +6278,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
         };
@@ -5029,13 +6437,13 @@ export interface operations {
             };
         };
     };
-    get_property_detail_api_v1_properties__id__get: {
+    get_property_detail_api_v1_properties__property_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description 房源ID */
-                id: number;
+                property_id: number;
             };
             cookie?: never;
         };
@@ -5134,7 +6542,7 @@ export interface operations {
         parameters: {
             query: {
                 /** @description 字典类型: district | business_circle */
-                type: string;
+                dict_type: string;
                 /** @description 模糊搜索关键词 */
                 search?: string | null;
                 /** @description 返回数量上限 */
@@ -7069,7 +8477,7 @@ export interface operations {
                 /** @description 微信授权码 */
                 code: string;
                 /** @description 状态参数 */
-                state: string;
+                _state: string;
             };
             header?: never;
             path?: never;
@@ -7116,9 +8524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -7492,9 +8898,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -7527,9 +8931,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -7558,9 +8960,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": Record<string, never>;
                 };
             };
         };
@@ -7902,9 +9302,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
+                "application/json": Record<string, never>[];
             };
         };
         responses: {
@@ -8211,6 +9609,493 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommunityMarketStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_api_v1_public_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicRegisterResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_for_access_token_api_v1_public_auth_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_login_for_access_token_api_v1_public_auth_token_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_access_token_api_v1_public_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicRefreshTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_v1_public_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLogoutResponse"];
+                };
+            };
+        };
+    };
+    update_profile_api_v1_public_users_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUserProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_phone_api_v1_public_users_phone_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicPhoneUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_projects_api_v1_public_projects_get: {
+        parameters: {
+            query?: {
+                /** @description 项目状态筛选 */
+                project_status?: string | null;
+                /** @description 小区名称搜索 */
+                community_name?: string | null;
+                /** @description 户型筛选 */
+                layout?: string | null;
+                /** @description 最低总价(万) */
+                min_price?: number | null;
+                /** @description 最高总价(万) */
+                max_price?: number | null;
+                /** @description 最小面积(m²) */
+                min_area?: number | null;
+                /** @description 最大面积(m²) */
+                max_area?: number | null;
+                /** @description 排序字段 */
+                sort_by?: string | null;
+                /** @description 排序方向 asc/desc */
+                sort_order?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProjectListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sold_projects_api_v1_public_projects_sold_get: {
+        parameters: {
+            query?: {
+                /** @description 小区名称筛选 */
+                community_name?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicSoldProjectListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_detail_api_v1_public_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProjectDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_consultant_contact_api_v1_public_projects__project_id__consultant_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicConsultantContact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_platform_stats_api_v1_public_stats_platform_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlatformStats"];
+                };
+            };
+        };
+    };
+    create_lead_api_v1_public_leads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicLeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLeadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_leads_api_v1_public_leads_mine_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lead_detail_api_v1_public_leads__lead_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLeadDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_communities_api_v1_public_communities_search_get: {
+        parameters: {
+            query: {
+                /** @description 搜索关键词 */
+                q: string;
+                /** @description 返回条数限制 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCommunitySearchItem"][];
                 };
             };
             /** @description Validation Error */

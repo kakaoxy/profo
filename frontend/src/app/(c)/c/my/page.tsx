@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
@@ -12,49 +12,25 @@ import { getUserInfoFromCookie } from "@/lib/api-c/user-info";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
+import { fetcher, AuthError } from "@/lib/swr";
+import type { components } from "@/lib/api-types";
 
-interface LeadItem {
-  id: string | number;
-  community_name: string;
-  layout: string | null;
-  area: number | null;
-  status: string;
-  status_display: string;
-  status_color: string;
-  created_at: string;
-}
-
-interface LeadListResponse {
-  items: LeadItem[];
-  total: number;
-}
-
-async function fetchWithAuth<T>(url: string): Promise<T> {
-  const response = await fetch(url, { credentials: "include" });
-  if (response.status === 401) {
-    throw new Error("AUTH_REQUIRED");
-  }
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "请求失败" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
-  }
-  return response.json();
-}
+type LeadListResponse = components["schemas"]["PublicLeadListResponse"];
 
 export default function CMyPage() {
   const router = useRouter();
-  const userInfo = useMemo(() => getUserInfoFromCookie(), []);
+  const userInfo = getUserInfoFromCookie();
 
   const displayName = userInfo.nickname || "用户";
   const displayPhone = userInfo.phone || "未设置手机号";
 
   const { data, error, isLoading, mutate } = useSWR<LeadListResponse>(
     "/api/v1/public/leads/mine",
-    fetchWithAuth
+    fetcher
   );
 
   useEffect(() => {
-    if (error?.message === "AUTH_REQUIRED") {
+    if (error instanceof AuthError) {
       router.replace("/c/login?redirect=/c/my");
     }
   }, [error, router]);
@@ -107,8 +83,8 @@ export default function CMyPage() {
                 key={lead.id}
                 id={String(lead.id)}
                 communityName={lead.community_name}
-                layout={lead.layout}
-                area={lead.area}
+                layout={lead.layout ?? null}
+                area={lead.area ?? null}
                 status={lead.status}
                 statusDisplay={lead.status_display}
                 statusColor={lead.status_color}

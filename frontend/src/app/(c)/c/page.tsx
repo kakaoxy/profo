@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useState, useRef } from "react";
+import { Suspense, useCallback, useState } from "react";
 import useSWR from "swr";
 import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
 import { SlidersHorizontal } from "lucide-react";
@@ -11,36 +11,12 @@ import { ProjectCard } from "@/components/c/project/ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
+import { publicFetcher } from "@/lib/swr";
+import type { components } from "@/lib/api-types";
 
-interface ProjectItem {
-  id: number;
-  community_name: string | null;
-  layout: string;
-  orientation: string;
-  area: number;
-  total_price: number;
-  unit_price: number;
-  title: string;
-  cover_image: string | null;
-  tags: string[];
-  project_status: string;
-  decoration_style: string | null;
-}
+type ProjectListResponse = components["schemas"]["PublicProjectListResponse"];
 
-interface ProjectListResponse {
-  items: ProjectItem[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-async function fetchProjects(url: string): Promise<ProjectListResponse> {
-  const response = await fetch(url, { credentials: "include" });
-  if (!response.ok) {
-    throw new Error("Failed to fetch projects");
-  }
-  return response.json();
-}
+const EMPTY_TAGS: string[] = [];
 
 export default function CPage() {
   return (
@@ -109,7 +85,6 @@ function CPageContent() {
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterKey, setFilterKey] = useState(0);
-  const isFilterOpenRef = useRef(false);
 
   const pageSize = 9;
 
@@ -132,7 +107,7 @@ function CPageContent() {
 
   const { data, error, isLoading, mutate } = useSWR<ProjectListResponse>(
     url,
-    fetchProjects,
+    publicFetcher,
     { keepPreviousData: true }
   );
 
@@ -188,10 +163,7 @@ function CPageContent() {
           onClick={() => {
             const nextOpen = !isFilterOpen;
             setIsFilterOpen(nextOpen);
-            if (nextOpen && !isFilterOpenRef.current) {
-              setFilterKey((k) => k + 1);
-            }
-            isFilterOpenRef.current = nextOpen;
+            if (nextOpen) setFilterKey((k) => k + 1);
           }}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-colors ${
             hasActiveFilters
@@ -267,17 +239,17 @@ function CPageContent() {
                 <ProjectCard
                   key={project.id}
                   id={project.id}
-                  communityName={project.community_name}
+                  communityName={project.community_name ?? null}
                   layout={project.layout}
                   orientation={project.orientation}
                   area={project.area}
                   totalPrice={project.total_price}
                   unitPrice={project.unit_price}
                   title={project.title}
-                  coverImage={project.cover_image}
-                  tags={project.tags ?? []}
+                  coverImage={project.cover_image ?? null}
+                  tags={project.tags ?? EMPTY_TAGS}
                   projectStatus={project.project_status}
-                  decorationStyle={project.decoration_style}
+                  decorationStyle={project.decoration_style ?? null}
                 />
               ))}
             </div>
