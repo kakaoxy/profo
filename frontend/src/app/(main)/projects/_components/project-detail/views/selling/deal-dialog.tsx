@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Gavel } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +26,8 @@ interface DealDialogProps {
 }
 
 export function DealDialog({ project, onSuccess }: DealDialogProps) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  useEffect(() => { setDate(new Date()); }, []);
   const [price, setPrice] = useState("");
 
   const handleConfirm = async () => {

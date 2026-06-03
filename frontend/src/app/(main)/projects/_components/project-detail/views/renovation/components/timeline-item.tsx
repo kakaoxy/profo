@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CheckCircle2, CircleDot, Circle } from "lucide-react";
@@ -43,7 +43,8 @@ export function TimelineItem({
 }: TimelineItemProps) {
   const router = useRouter();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  useEffect(() => { setSelectedDate(new Date()); }, []);
 
   const { uploadQueue, handleUpload } = useRenovationUpload({
     projectId: project.id,

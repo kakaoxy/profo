@@ -19,7 +19,8 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
   // [新增] 用于存储照片总数的状态
   const [photoCount, setPhotoCount] = useState(0);
   // 使用 state 存储 today，避免 SSR 和客户端时间不一致导致的 hydration 错误
-  const [today] = useState<Date>(() => new Date());
+  const [today, setToday] = useState<Date | null>(null);
+  useEffect(() => { setToday(new Date()); }, []);
 
   // 1. 计算倒计时逻辑
   const handoverDate = project.planned_handover_date
@@ -27,7 +28,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
     : new Date();
 
   const deadlineDate = addDays(handoverDate, 65);
-  const daysLeft = differenceInDays(deadlineDate, today);
+  const daysLeft = today ? differenceInDays(deadlineDate, today) : 0;
 
   let daysColor = "text-success";
   if (daysLeft < 10) daysColor = "text-error animate-pulse";

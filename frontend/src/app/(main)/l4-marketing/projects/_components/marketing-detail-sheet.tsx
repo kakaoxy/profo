@@ -121,7 +121,7 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
   if (!project) return null;
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent className="w-full sm:max-w-3xl flex flex-col p-0 transition-all duration-300">
         <SheetTitle className="sr-only">营销项目详情 - {project.title}</SheetTitle>
         <SheetDescription className="sr-only">
