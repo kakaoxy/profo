@@ -66,7 +66,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
       <div className="flex flex-col md:flex-row">
         
         {/* 左侧：核心价格区 (35% 宽度) - 高亮背景 */}
-        <div className="w-full md:w-[35%] bg-gradient-to-br from-error/5 to-status-pending/5 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border relative overflow-hidden group">
+        <div className="w-full md:w-[35%] bg-linear-to-br from-error/5 to-status-pending/5 p-6 flex flex-col justify-center border-b md:border-b-0 md:border-r border-border relative overflow-hidden group">
           {/* 背景装饰印花 */}
           <Coins className="absolute -right-4 -bottom-4 w-24 h-24 text-error/10 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
           
