@@ -257,7 +257,8 @@ class ProjectCoreService:
         }
 
         for status, count in stats:
-            if status in result:
-                result[status] = count
+            status_key = status.value if hasattr(status, "value") else str(status)
+            if status_key in result:
+                result[status_key] = count
 
         return result

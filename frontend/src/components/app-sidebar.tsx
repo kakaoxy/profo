@@ -78,7 +78,7 @@ const data: { navMain: NavItem[] } = {
       isActive: true,
     },
     {
-      title: "市场情报",
+      title: "房源管理",
       url: "#",
       icon: Building2,
       items: [

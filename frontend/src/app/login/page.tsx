@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { loginAction, changePasswordAction } from "./actions"; // 引入两个 Action
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,12 @@ import {
 import { toast } from "sonner"; // 引入 toast
 
 export default function LoginPage() {
+  // 登录表单验证错误
+  const [validationErrors, setValidationErrors] = useState<{
+    username?: string;
+    password?: string;
+  }>({});
+
   // 登录表单状态
   const [loginState, loginFormAction, isLoginPending] = useActionState(
     loginAction,
@@ -117,7 +123,24 @@ export default function LoginPage() {
               <CardTitle className="text-2xl">系统登录</CardTitle>
               <CardDescription>请输入您的管理员账号</CardDescription>
             </CardHeader>
-            <form action={loginFormAction}>
+            <form
+              action={loginFormAction}
+              noValidate
+              onSubmit={(e) => {
+                const formData = new FormData(e.currentTarget);
+                const username = formData.get("username") as string;
+                const password = formData.get("password") as string;
+                const errors: { username?: string; password?: string } = {};
+                if (!username.trim()) errors.username = "请输入用户名";
+                if (!password) errors.password = "请输入密码";
+                if (Object.keys(errors).length > 0) {
+                  e.preventDefault();
+                  setValidationErrors(errors);
+                  return;
+                }
+                setValidationErrors({});
+              }}
+            >
               <CardContent className="grid gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="username">用户名</Label>
@@ -126,9 +149,20 @@ export default function LoginPage() {
                     id="username"
                     name="username"
                     type="text"
-                    placeholder="admin"
+                    placeholder="请输入用户名"
                     required
+                    onChange={() =>
+                      setValidationErrors((prev) => ({
+                        ...prev,
+                        username: undefined,
+                      }))
+                    }
                   />
+                  {validationErrors.username && (
+                    <div className="text-sm text-error font-medium">
+                      {validationErrors.username}
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="password">密码</Label>
@@ -136,8 +170,20 @@ export default function LoginPage() {
                     id="password"
                     name="password"
                     type="password"
+                    placeholder="请输入密码"
                     required
+                    onChange={() =>
+                      setValidationErrors((prev) => ({
+                        ...prev,
+                        password: undefined,
+                      }))
+                    }
                   />
+                  {validationErrors.password && (
+                    <div className="text-sm text-error font-medium">
+                      {validationErrors.password}
+                    </div>
+                  )}
                 </div>
                 {loginState?.error && (
                   <div className="text-sm text-error font-medium">
