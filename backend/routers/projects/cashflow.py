@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Request
 from sqlalchemy.orm import Session
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from db import get_db
 from dependencies.auth import CurrentInternalUserDep
 from schemas.project import (
@@ -15,7 +15,7 @@ from schemas.project import (
 )
 from services import CashFlowService
 
-router = APIRouter(tags=["cashflow"])
+router = APIRouter()
 
 
 _get_db_dep = Depends(get_db)
@@ -29,7 +29,7 @@ def get_cashflow_service(db: Session = _get_db_dep) -> CashFlowService:
 CashFlowServiceDep = Annotated[CashFlowService, Depends(get_cashflow_service)]
 
 
-@router.post("/projects/{project_id}/cashflow", status_code=201)
+@router.post("/{project_id}/cashflow", status_code=201)
 def create_cashflow_record(
     record_data: CashFlowRecordCreate,
     service: CashFlowServiceDep,
@@ -40,7 +40,7 @@ def create_cashflow_record(
     return service.create_cashflow_record(project_id, record_data)
 
 
-@router.get("/projects/{project_id}/cashflow")
+@router.get("/{project_id}/cashflow")
 def get_project_cashflow(
     service: CashFlowServiceDep,
     _current_user: CurrentInternalUserDep,
@@ -53,7 +53,7 @@ def get_project_cashflow(
     return CashFlowResponse(records=records, summary=summary)
 
 
-@router.delete("/projects/{project_id}/cashflow/{record_id}", status_code=204)
+@router.delete("/{project_id}/cashflow/{record_id}", status_code=204)
 @limiter.limit(RateLimits.CASHFLOW_DELETE)
 def delete_cashflow_record(
     request: Request,

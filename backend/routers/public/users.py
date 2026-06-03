@@ -5,7 +5,7 @@
 
 from fastapi import APIRouter, Request
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from models import User
 from schemas.public import (

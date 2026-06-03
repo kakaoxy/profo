@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 PropertyServiceDep = Annotated[PropertyQueryService, Depends(get_property_query_service)]
 DetailServiceDep = Annotated[PropertyService, Depends(get_property_service)]
 
-router = APIRouter(tags=["市场情报-房源查询"])
+router = APIRouter(prefix="/properties", tags=["properties"])
 
 
 @router.get("/communities/search")

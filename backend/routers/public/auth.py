@@ -8,7 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, require_roles
 from models import Role, User
 from schemas.public import (

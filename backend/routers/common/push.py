@@ -17,7 +17,7 @@ from services.system.exceptions import BusinessLogicError, ValidationError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/push", tags=["push"])
 
 _MAX_PUSH_RECORDS = 10000
 

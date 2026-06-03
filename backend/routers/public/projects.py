@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import and_, case, desc, func
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep
 from models import L4MarketingMedia, L4MarketingProject, User
 from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus

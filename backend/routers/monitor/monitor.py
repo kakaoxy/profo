@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query, Request, status
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.monitor import (
     AddCompetitorRequest,
@@ -18,7 +18,7 @@ from schemas.monitor import (
 )
 from services.monitor import MonitorService
 
-router = APIRouter(prefix="/monitor")
+router = APIRouter(prefix="/monitor", tags=["monitor"])
 
 CommunityIdPath = Annotated[str, Path(description="小区ID")]
 CompetitorIdPath = Annotated[str, Path(description="竞品小区ID")]

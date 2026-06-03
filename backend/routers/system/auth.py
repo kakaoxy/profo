@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.util import get_remote_address
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, get_current_active_user
 from models import User
 from schemas.user import (

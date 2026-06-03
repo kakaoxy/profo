@@ -3,11 +3,12 @@
 import enum
 import uuid
 from datetime import datetime, timezone
-
 from sqlalchemy import Column, DateTime, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """SQLAlchemy 2.0 声明式基类."""
 
 
 class PropertyStatus(str, enum.Enum):
@@ -28,7 +29,7 @@ class ChangeType(str, enum.Enum):
 class MediaType(str, enum.Enum):
     """媒体类型枚举."""
 
-    FLOOR_PLAN = "floor_plan"  # 户型图
+    FLOOR_PLAN = "floor_plan"  # 戶型图
     INTERIOR = "interior"  # 室内图
     EXTERIOR = "exterior"  # 外观图
     OTHER = "other"

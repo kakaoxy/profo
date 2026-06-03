@@ -9,7 +9,6 @@ from .renovation import router as renovation_router
 from .sales import router as sales_router
 
 __all__ = [
-    "cashflow_router",
     "core_router",
     "renovation_router",
     "sales_router",

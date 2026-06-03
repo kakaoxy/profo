@@ -12,8 +12,9 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep
+from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
 from schemas.common import PaginatedResponse
 from schemas.project import (
@@ -26,11 +27,13 @@ from schemas.project import (
     StatusUpdate,
 )
 
+from .cashflow import router as cashflow_router
 from .renovation import router as renovation_router
 from .sales import router as sales_router
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
+router.include_router(cashflow_router, tags=["cashflow"])
 router.include_router(renovation_router, tags=["renovation"])
 router.include_router(sales_router, tags=["sales"])
 
@@ -67,23 +70,22 @@ def create_project(
 def get_projects(
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
+    pagination: PaginationDep,
     status: Annotated[str | None, Query(description="项目状态筛选")] = None,
     community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表."""
     result = service.get_projects(
         status_filter=status,
         community_name=community_name,
-        page=page,
-        page_size=page_size,
+        page=pagination["page"],
+        page_size=pagination["page_size"],
     )
     return PaginatedResponse(
         items=result["items"],
         total=result["total"],
-        page=page,
-        page_size=page_size,
+        page=pagination["page"],
+        page_size=pagination["page_size"],
     )
 
 

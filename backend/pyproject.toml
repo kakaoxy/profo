@@ -59,3 +59,6 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[tool.fastapi]
+entrypoint = "main:app"

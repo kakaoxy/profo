@@ -12,13 +12,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
 from settings import settings
 from utils.file_security import get_safe_file_path, sanitize_filename
 
-router = APIRouter(tags=["文件管理"])
+router = APIRouter(prefix="/files", tags=["files"])
 logger = logging.getLogger(__name__)
 
 TEXT_BASED_EXTENSIONS: dict[str, str] = {

@@ -4,8 +4,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, DbSessionDep
+from dependencies.common import PaginationDep
 from schemas.user import (
     RoleCreate,
     RoleListResponse,
@@ -21,20 +22,19 @@ router = APIRouter(prefix="/roles", tags=["roles"])
 def get_roles(  # noqa: PLR0913
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
+    pagination: PaginationDep,
     name: Annotated[str | None, Query(description="角色名称搜索")] = None,
     code: Annotated[str | None, Query(description="角色代码搜索")] = None,
     is_active: Annotated[bool | None, Query(description="是否激活筛选")] = None,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> RoleListResponse:
     """获取角色列表，支持搜索和筛选."""
-    total, roles = role_service.get_roles(db, name, code, is_active, page, page_size)
+    total, roles = role_service.get_roles(db, name, code, is_active, pagination["page"], pagination["page_size"])
 
     return RoleListResponse(
         total=total,
         items=roles,
-        page=page,
-        page_size=page_size,
+        page=pagination["page"],
+        page_size=pagination["page_size"],
     )
 
 

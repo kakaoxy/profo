@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, require_roles
 from schemas.l4_marketing import (
     L4MarketingMediaCreate,
@@ -30,7 +30,7 @@ from services.marketing import (
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
-    tags=["L4-Marketing"],
+    tags=["l4-marketing"],
     dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 

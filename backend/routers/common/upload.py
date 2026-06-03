@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, 
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from models import ImportTaskStatus
 from schemas import ImportTaskCreateResponse, ImportTaskStatusResponse
@@ -30,7 +30,7 @@ class CancelTaskResponse(BaseModel):
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["upload"])
+router = APIRouter(prefix="/upload", tags=["upload"])
 
 
 @router.post("/csv")

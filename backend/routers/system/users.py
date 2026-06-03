@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import (
     CurrentActiveUserDep,
     CurrentAdminUserDep,
