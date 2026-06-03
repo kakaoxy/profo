@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wallet, TrendingUp, CalendarDays, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Project } from "../../../../types";
@@ -13,7 +13,8 @@ export function HeroMetrics({ project }: { project: Project }) {
   const roi = Number(project.roi) || 0;
 
   // 使用 state 存储 today，避免 SSR 和客户端时间不一致导致的 hydration 错误
-  const [today] = useState<Date | null>(() => new Date());
+  const [today, setToday] = useState<Date | null>(null);
+  useEffect(() => { setToday(new Date()); }, []);
 
   // 计算资金占用天数
   // 逻辑与 cashflow 保持一致：开工取签约日期或创建日期，售出取成交日期或今天

@@ -69,6 +69,7 @@ export function MonitorSheet() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent
         side="right"
+        showCloseButton={false}
         className="w-full sm:max-w-none p-0 flex flex-col h-full border-l border-border shadow-xl overflow-hidden outline-none"
       >
         {/* Sticky Header */}

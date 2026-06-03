@@ -41,7 +41,7 @@ export function AddRecordDialog({
   defaultTab,
 }: AddRecordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [person, setPerson] = useState("");
   const [price, setPrice] = useState("");
   const [content, setContent] = useState("");
@@ -107,7 +107,7 @@ export function AddRecordDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>

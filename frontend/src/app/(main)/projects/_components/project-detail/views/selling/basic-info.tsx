@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { format, addDays, differenceInDays } from "date-fns";
 import { Project } from "../../../../types";
@@ -21,7 +21,8 @@ interface SellingBasicInfoProps {
 
 export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
   // 使用 state 存储 today，避免 SSR 和客户端时间不一致导致的 hydration 错误
-  const [today] = useState<Date | null>(() => new Date());
+  const [today, setToday] = useState<Date | null>(null);
+  useEffect(() => { setToday(new Date()); }, []);
 
   // 1. 计算倒计时
   // 公式：交房日期 + 签约周期(天) + 延长期(月*30) - 今天

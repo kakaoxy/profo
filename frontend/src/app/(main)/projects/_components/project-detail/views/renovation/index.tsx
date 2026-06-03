@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Store, Calendar as CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -32,8 +32,9 @@ interface RenovationViewProps {
 }
 
 export function RenovationView({ project, onRefresh, onListingSuccess }: RenovationViewProps) {
-  const [listingDate, setListingDate] = useState<Date | undefined>(new Date());
+  const [listingDate, setListingDate] = useState<Date | undefined>(undefined);
   const [listPrice, setListPrice] = useState<string>("");
+  useEffect(() => { setListingDate(new Date()); }, []);
 
   // 定义完工逻辑
   const handleCompletion = async () => {

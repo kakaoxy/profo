@@ -49,7 +49,7 @@ export function AddRecordDialog({
 
   // 表单状态
   const [type, setType] = useState<TransactionType>("expense");
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
@@ -104,7 +104,7 @@ export function AddRecordDialog({
     type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle>记一笔</DialogTitle>
