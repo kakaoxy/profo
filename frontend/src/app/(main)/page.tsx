@@ -62,7 +62,7 @@ function MonitorSectionSkeleton() {
           </button>
         </div>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar">
+      <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar min-w-0">
         <ProjectCardListSkeleton />
         {/* 添加项目卡片占位 */}
         <div className="w-[280px] shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-[400px]">
@@ -106,7 +106,7 @@ function MonitorSection() {
         </div>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar">
+      <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar min-w-0">
         <Suspense fallback={<ProjectCardListSkeleton />}>
           <DashboardProjectsWrapper />
         </Suspense>
