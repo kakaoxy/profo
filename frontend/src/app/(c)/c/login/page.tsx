@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useActionState } from "react";
+import { Suspense, useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { loginAction } from "@/lib/api-c/auth";
@@ -15,10 +15,33 @@ function LoginForm() {
     { success: false, error: "" } as ActionResult<null>
   );
 
+  const [validationErrors, setValidationErrors] = useState<{
+    username?: string;
+    password?: string;
+  }>({});
+
   return (
     <section className="px-4 md:px-6 pt-8">
       <div className="max-w-md mx-auto">
-        <form action={formAction} className="space-y-6">
+        <form
+          action={formAction}
+          className="space-y-6"
+          noValidate
+          onSubmit={(e) => {
+            const formData = new FormData(e.currentTarget);
+            const username = formData.get("username") as string;
+            const password = formData.get("password") as string;
+            const errors: { username?: string; password?: string } = {};
+            if (!username.trim()) errors.username = "请输入用户名";
+            if (!password) errors.password = "请输入密码";
+            if (Object.keys(errors).length > 0) {
+              e.preventDefault();
+              setValidationErrors(errors);
+              return;
+            }
+            setValidationErrors({});
+          }}
+        >
           <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
             {state && !state.success && state.error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-c-error text-sm">
@@ -34,7 +57,15 @@ function LoginForm() {
                 placeholder="请输入用户名"
                 required
                 className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+                onChange={() =>
+                  setValidationErrors((prev) => ({ ...prev, username: undefined }))
+                }
               />
+              {validationErrors.username && (
+                <div className="mt-1.5 text-sm text-c-error font-medium">
+                  {validationErrors.username}
+                </div>
+              )}
             </div>
             <div className="mb-8">
               <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">密码</label>
@@ -44,7 +75,15 @@ function LoginForm() {
                 placeholder="请输入密码"
                 required
                 className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+                onChange={() =>
+                  setValidationErrors((prev) => ({ ...prev, password: undefined }))
+                }
               />
+              {validationErrors.password && (
+                <div className="mt-1.5 text-sm text-c-error font-medium">
+                  {validationErrors.password}
+                </div>
+              )}
             </div>
             <button
               type="submit"

@@ -64,8 +64,14 @@ export function ProjectDetailSheet({
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="w-[calc(100%-1rem)] sm:max-w-3xl flex flex-col p-0 transition-all duration-300">
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <SheetContent
+          className="w-[calc(100%-1rem)] sm:max-w-3xl flex flex-col p-0 transition-all duration-300"
+          onPointerDownOutside={(e) => {
+            e.preventDefault();
+            onClose();
+          }}
+        >
           <SheetTitle className="sr-only">项目详情 - {project.name}</SheetTitle>
           <SheetDescription className="sr-only">
             查看和管理项目 {project.name} 的详细信息、装修进度及销售状态。
