@@ -145,9 +145,9 @@ class TestUploadFileIntegration:
 
             result = upload_file(
                 request=mock_request,
-                current_user=MagicMock(),
+                _current_user=MagicMock(),
                 file=mock_file,
-                db=MagicMock(),
+                _db=MagicMock(),
             )
 
         mock_get_safe.assert_called_once()
