@@ -24,10 +24,10 @@ function LoginForm() {
     <section className="px-4 md:px-6 pt-8">
       <div className="max-w-md mx-auto">
         <form
-          action={formAction}
           className="space-y-6"
           noValidate
           onSubmit={(e) => {
+            e.preventDefault();
             const formData = new FormData(e.currentTarget);
             const username = formData.get("username") as string;
             const password = formData.get("password") as string;
@@ -35,11 +35,11 @@ function LoginForm() {
             if (!username.trim()) errors.username = "请输入用户名";
             if (!password) errors.password = "请输入密码";
             if (Object.keys(errors).length > 0) {
-              e.preventDefault();
               setValidationErrors(errors);
               return;
             }
             setValidationErrors({});
+            formAction(formData);
           }}
         >
           <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
