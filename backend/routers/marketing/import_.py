@@ -22,7 +22,7 @@ from services.marketing import (
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
-    tags=["L4-Marketing-Import"],
+    tags=["l4-marketing-import"],
     dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep
 from models import Community
 from schemas.public import PublicCommunitySearchItem

@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
 
-from common import limiter
+from utils.common import limiter
 from db import init_db
 from error_handlers import (
     general_exception_handler,
@@ -29,7 +29,6 @@ from routers.market import communities_router, properties_router
 from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
 from routers.monitor import monitor_router
-from routers.projects import cashflow_router as project_cashflow_router
 from routers.projects import core_router
 from routers.public import (
     public_auth_router,
@@ -89,6 +88,30 @@ app = FastAPI(
     version=settings.app_version,
     description="轻量级、本地化、高性能的房产数据仓库系统",
     lifespan=lifespan,
+    openapi_tags=[
+        {"name": "projects", "description": "项目管理 - 签约、装修、销售全流程"},
+        {"name": "cashflow", "description": "现金流管理"},
+        {"name": "properties", "description": "市场情报 - 房源查询与导出"},
+        {"name": "communities", "description": "市场情报 - 小区管理与合并"},
+        {"name": "leads", "description": "线索管理 - 卖房估价"},
+        {"name": "l4-marketing", "description": "L4 市场营销 - 营销房源管理"},
+        {"name": "l4-marketing-import", "description": "L4 市场营销 - 数据导入"},
+        {"name": "auth", "description": "认证授权 - 登录、令牌、API Key"},
+        {"name": "users", "description": "用户管理"},
+        {"name": "roles", "description": "角色管理"},
+        {"name": "upload", "description": "文件上传与导入任务"},
+        {"name": "push", "description": "JSON 数据推送"},
+        {"name": "files", "description": "文件管理"},
+        {"name": "monitor", "description": "市场监控与竞品分析"},
+        {"name": "public-auth", "description": "C端公开 - 认证"},
+        {"name": "public-users", "description": "C端公开 - 用户资料"},
+        {"name": "public-projects", "description": "C端公开 - 房源展示"},
+        {"name": "public-leads", "description": "C端公开 - 卖房估价"},
+        {"name": "public-communities", "description": "C端公开 - 小区搜索"},
+    ],
+    contact={
+        "name": "ProFo Team",
+    },
 )
 
 
@@ -128,20 +151,19 @@ async def health_check() -> dict[str, str]:
 
 API_V1_PREFIX = f"{settings.api_prefix}/v1"
 
-app.include_router(properties_router, prefix=f"{API_V1_PREFIX}/properties", tags=["properties"])
-app.include_router(communities_router, prefix=f"{API_V1_PREFIX}/admin", tags=["communities"])
-app.include_router(leads_router, prefix=f"{API_V1_PREFIX}", tags=["leads"])
-app.include_router(core_router, prefix=f"{API_V1_PREFIX}", tags=["projects"])
-app.include_router(project_cashflow_router, prefix=f"{API_V1_PREFIX}", tags=["cashflow"])
-app.include_router(marketing_projects_router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing"])
-app.include_router(marketing_import_router, prefix=f"{API_V1_PREFIX}", tags=["l4-marketing-import"])
-app.include_router(auth_router, prefix=API_V1_PREFIX, tags=["auth"])
-app.include_router(users_router, prefix=API_V1_PREFIX, tags=["users"])
-app.include_router(roles_router, prefix=API_V1_PREFIX, tags=["roles"])
-app.include_router(upload_router, prefix=f"{API_V1_PREFIX}/upload", tags=["upload"])
-app.include_router(push_router, prefix=f"{API_V1_PREFIX}/push", tags=["push"])
-app.include_router(files_router, prefix=f"{API_V1_PREFIX}/files", tags=["files"])
-app.include_router(monitor_router, prefix=f"{API_V1_PREFIX}", tags=["monitor"])
+app.include_router(properties_router, prefix=API_V1_PREFIX)
+app.include_router(communities_router, prefix=API_V1_PREFIX)
+app.include_router(leads_router, prefix=API_V1_PREFIX)
+app.include_router(core_router, prefix=API_V1_PREFIX)
+app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)
+app.include_router(marketing_import_router, prefix=API_V1_PREFIX)
+app.include_router(auth_router, prefix=API_V1_PREFIX)
+app.include_router(users_router, prefix=API_V1_PREFIX)
+app.include_router(roles_router, prefix=API_V1_PREFIX)
+app.include_router(upload_router, prefix=API_V1_PREFIX)
+app.include_router(push_router, prefix=API_V1_PREFIX)
+app.include_router(files_router, prefix=API_V1_PREFIX)
+app.include_router(monitor_router, prefix=API_V1_PREFIX)
 app.include_router(public_auth_router, prefix=API_V1_PREFIX)
 app.include_router(public_users_router, prefix=API_V1_PREFIX)
 app.include_router(public_projects_router, prefix=API_V1_PREFIX)

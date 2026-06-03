@@ -11,8 +11,9 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from common import RateLimits, limiter
+from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
+from dependencies.common import PaginationDep
 from models.property import Community
 from schemas.community import (
     CommunityCreateRequest,
@@ -30,7 +31,7 @@ from services.market.community_service import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["L1-小区管理"])
+router = APIRouter(prefix="/admin", tags=["communities"])
 
 service = CommunityQueryService()
 
@@ -39,16 +40,15 @@ service = CommunityQueryService()
 def get_communities(
     db: DbSessionDep,
     _current_user: CurrentOperatorUserDep,
+    pagination: PaginationDep,
     search: Annotated[str | None, Query(description="小区名称搜索（模糊匹配）")] = None,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> CommunityListResponse:
     """查询小区列表."""
     return service.query_communities(
         db=db,
         search=search,
-        page=page,
-        page_size=page_size,
+        page=pagination["page"],
+        page_size=pagination["page_size"],
     )
 
 
