@@ -124,9 +124,9 @@ export default function LoginPage() {
               <CardDescription>请输入您的管理员账号</CardDescription>
             </CardHeader>
             <form
-              action={loginFormAction}
               noValidate
               onSubmit={(e) => {
+                e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 const username = formData.get("username") as string;
                 const password = formData.get("password") as string;
@@ -134,11 +134,11 @@ export default function LoginPage() {
                 if (!username.trim()) errors.username = "请输入用户名";
                 if (!password) errors.password = "请输入密码";
                 if (Object.keys(errors).length > 0) {
-                  e.preventDefault();
                   setValidationErrors(errors);
                   return;
                 }
                 setValidationErrors({});
+                loginFormAction(formData);
               }}
             >
               <CardContent className="grid gap-4">
