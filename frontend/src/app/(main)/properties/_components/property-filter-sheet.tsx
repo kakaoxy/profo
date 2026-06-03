@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -23,6 +24,7 @@ export function PropertyFilterSheet() {
       <SheetContent side="left" className="w-[280px] p-0">
         <SheetHeader className="px-4 py-3 border-b">
           <SheetTitle className="text-base">筛选条件</SheetTitle>
+          <SheetDescription>按条件筛选房源列表</SheetDescription>
         </SheetHeader>
         <div className="p-4 overflow-y-auto h-[calc(100vh-60px)]">
           <PropertyFilters />
