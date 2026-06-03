@@ -64,7 +64,7 @@ export function AlertCardSkeleton() {
 
 export function ProjectCardSkeleton() {
   return (
-    <div className="w-[280px] shrink-0 bg-card rounded-xl border border-border overflow-hidden animate-pulse">
+    <div className="w-full sm:w-[280px] sm:shrink-0 bg-card rounded-xl border border-border overflow-hidden animate-pulse">
       <div className="p-4 border-b border-border bg-muted">
         <div className="flex justify-between items-start mb-1">
           <div className="h-4 w-16 bg-muted rounded" />

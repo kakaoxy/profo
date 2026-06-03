@@ -151,6 +151,8 @@ export default function LoginPage() {
                     type="text"
                     placeholder="请输入用户名"
                     required
+                    aria-invalid={!!validationErrors.username}
+                    className={validationErrors.username ? "border-error focus-visible:ring-error" : ""}
                     onChange={() =>
                       setValidationErrors((prev) => ({
                         ...prev,
@@ -172,6 +174,8 @@ export default function LoginPage() {
                     type="password"
                     placeholder="请输入密码"
                     required
+                    aria-invalid={!!validationErrors.password}
+                    className={validationErrors.password ? "border-error focus-visible:ring-error" : ""}
                     onChange={() =>
                       setValidationErrors((prev) => ({
                         ...prev,
