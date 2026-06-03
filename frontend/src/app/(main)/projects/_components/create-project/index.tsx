@@ -80,7 +80,7 @@ export function CreateProjectDialog({
 
       <DialogContent className="sm:max-w-[750px] p-0 gap-0 overflow-hidden h-[85vh] flex flex-col">
         {/* --- Header --- */}
-        <DialogHeader className="px-6 py-4 border-b bg-card flex-shrink-0">
+        <DialogHeader className="px-6 py-4 border-b bg-card shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle>{project ? "编辑项目" : "新建项目"}</DialogTitle>
@@ -133,7 +133,7 @@ export function CreateProjectDialog({
                 className="flex-1 flex flex-col overflow-hidden"
               >
                 {/* Tabs 导航 */}
-                <div className="px-6 pt-4 flex-shrink-0">
+                <div className="px-6 pt-4 shrink-0">
                 <TabsList className="grid w-full grid-cols-4 gap-1">
                     <TabsTrigger value="basic">基础信息</TabsTrigger>
                     <TabsTrigger value="agency">代理协议</TabsTrigger>
@@ -165,7 +165,7 @@ export function CreateProjectDialog({
               </Tabs>
 
               {/* --- Footer --- */}
-              <DialogFooter className="px-6 py-4 border-t bg-card flex-shrink-0">
+              <DialogFooter className="px-6 py-4 border-t bg-card shrink-0">
                 <Button
                   type="button"
                   variant="outline"
