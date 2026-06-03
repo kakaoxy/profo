@@ -56,7 +56,8 @@ function LoginForm() {
                 name="username"
                 placeholder="请输入用户名"
                 required
-                className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+                aria-invalid={!!validationErrors.username}
+                className={`w-full bg-c-surface border rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 transition-all ${validationErrors.username ? "border-c-error focus:ring-c-error/20" : "border-c-border-subtle focus:ring-c-trust-blue/20"}`}
                 onChange={() =>
                   setValidationErrors((prev) => ({ ...prev, username: undefined }))
                 }
@@ -74,7 +75,8 @@ function LoginForm() {
                 name="password"
                 placeholder="请输入密码"
                 required
-                className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+                aria-invalid={!!validationErrors.password}
+                className={`w-full bg-c-surface border rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 transition-all ${validationErrors.password ? "border-c-error focus:ring-c-error/20" : "border-c-border-subtle focus:ring-c-trust-blue/20"}`}
                 onChange={() =>
                   setValidationErrors((prev) => ({ ...prev, password: undefined }))
                 }

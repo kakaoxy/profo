@@ -21,7 +21,7 @@ export async function ProjectCardList({
   return (
     <>
       {projects.map((project) => (
-        <div key={project.id} className="w-[280px] shrink-0">
+        <div key={project.id} className="w-full sm:w-[280px] sm:shrink-0">
           <ProjectCardClient
             project={project}
             marketData={

@@ -42,7 +42,7 @@ function DashboardHeader() {
 // 项目监控区域骨架屏
 function MonitorSectionSkeleton() {
   return (
-    <section className="mb-8">
+    <section className="mb-8 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-on-surface dark:text-white">
           重点监控项目
@@ -62,10 +62,10 @@ function MonitorSectionSkeleton() {
           </button>
         </div>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar min-w-0">
+      <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-4 pt-2 sm:custom-scrollbar min-w-0">
         <ProjectCardListSkeleton />
         {/* 添加项目卡片占位 */}
-        <div className="w-[280px] shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-[400px]">
+        <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-[400px]">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5">
             <Plus className="w-8 h-8" />
           </div>
@@ -81,7 +81,7 @@ function MonitorSectionSkeleton() {
 // 项目监控区域组件
 function MonitorSection() {
   return (
-    <section className="mb-8">
+    <section className="mb-8 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-on-surface dark:text-white">
           重点监控项目
@@ -106,14 +106,14 @@ function MonitorSection() {
         </div>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-2 custom-scrollbar min-w-0">
+      <div className="flex flex-col sm:flex-row gap-4 sm:overflow-x-auto pb-4 pt-2 sm:custom-scrollbar min-w-0">
         <Suspense fallback={<ProjectCardListSkeleton />}>
           <DashboardProjectsWrapper />
         </Suspense>
 
         <CreateProjectDialog
           trigger={
-            <div className="w-[280px] shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-all min-h-[400px]">
+            <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-all min-h-[400px]">
               <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                 <Plus className="w-8 h-8" />
               </div>
