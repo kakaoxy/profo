@@ -186,7 +186,7 @@ export default function CRegisterPage() {
                   id="phone"
                   type="tel"
                   name="phone"
-                  placeholder="请输入11位手机号"
+                  placeholder="请输入11位手机号（选填）"
                   pattern="1[3-9]\d{9}"
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-c-border-subtle focus:border-c-trust-blue focus:ring-0 transition-all text-base text-c-text-primary placeholder:text-c-text-secondary outline-none"
                 />
