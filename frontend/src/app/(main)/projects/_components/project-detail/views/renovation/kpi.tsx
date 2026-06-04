@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useCurrentDate } from "@/hooks/use-current-date";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -18,9 +19,7 @@ interface RenovationKPIsProps {
 export function RenovationKPIs({ project }: RenovationKPIsProps) {
   // [新增] 用于存储照片总数的状态
   const [photoCount, setPhotoCount] = useState(0);
-  // 使用 state 存储 today，避免 SSR 和客户端时间不一致导致的 hydration 错误
-  const [today, setToday] = useState<Date | null>(null);
-  useEffect(() => { setToday(new Date()); }, []);
+  const today = useCurrentDate();
 
   // 1. 计算倒计时逻辑
   const handoverDate = project.planned_handover_date

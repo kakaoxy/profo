@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useCurrentDate } from "@/hooks/use-current-date";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Gavel } from "lucide-react";
 import { toast } from "sonner";
@@ -26,8 +27,12 @@ interface DealDialogProps {
 }
 
 export function DealDialog({ project, onSuccess }: DealDialogProps) {
+  const initialDate = useCurrentDate();
   const [date, setDate] = useState<Date | undefined>(undefined);
-  useEffect(() => { setDate(new Date()); }, []);
+  // 客户端首次渲染时设置默认日期
+  if (date === undefined && initialDate) {
+    setDate(initialDate);
+  }
   const [price, setPrice] = useState("");
 
   const handleConfirm = async () => {
