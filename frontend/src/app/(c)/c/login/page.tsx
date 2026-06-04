@@ -171,12 +171,11 @@ function LoginForm() {
                 >
                   密码
                 </label>
-                <Link
-                  className="text-[12px] leading-[16px] font-bold text-c-trust-blue hover:underline tracking-[0.05em] uppercase"
-                  href="#"
+                <span
+                  className="text-[12px] leading-[16px] font-bold text-c-trust-blue hover:underline tracking-[0.05em] uppercase cursor-pointer"
                 >
                   忘记密码?
-                </Link>
+                </span>
               </div>
               <div className="relative">
                 <input
@@ -215,6 +214,7 @@ function LoginForm() {
               <input
                 className="w-4 h-4 rounded border-c-border-subtle text-c-trust-blue focus:ring-c-trust-blue"
                 id="remember"
+                name="remember"
                 type="checkbox"
               />
               <label
