@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useCurrentDate } from "@/hooks/use-current-date";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,8 +26,12 @@ interface HandoverDialogProps {
 
 export function HandoverDialog({ project, onSuccess }: HandoverDialogProps) {
   // 我们只在这里管理"日期"这个表单状态
+  const initialDate = useCurrentDate();
   const [date, setDate] = useState<Date | undefined>(undefined);
-  useEffect(() => { setDate(new Date()); }, []);
+  // 客户端首次渲染时设置默认日期
+  if (date === undefined && initialDate) {
+    setDate(initialDate);
+  }
 
   const handleConfirm = async () => {
     // 1. 表单校验
