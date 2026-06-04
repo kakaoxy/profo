@@ -3,12 +3,12 @@ import type { paths } from "./api-types";
 import { getClientApiUrl } from "./config";
 
 // 全局单例刷新 Promise，防止并发刷新导致 refresh token 被多次使用
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<string | null> | null = null;
 
-function tryRefreshTokenClient(): Promise<boolean> {
+export function tryRefreshTokenClient(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
-  const promise = (async (): Promise<boolean> => {
+  const promise = (async (): Promise<string | null> => {
     try {
       const isCRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/c");
       const refreshPath = isCRoute ? "/api/auth/c/refresh" : "/api/auth/refresh";
@@ -19,12 +19,13 @@ function tryRefreshTokenClient(): Promise<boolean> {
       });
 
       if (!response.ok) {
-        return false;
+        return null;
       }
 
-      return true;
+      const data = await response.json();
+      return data.access_token ?? null;
     } catch {
-      return false;
+      return null;
     }
   })();
 
@@ -70,17 +71,19 @@ const authMiddleware: Middleware = {
         return response;
       }
 
-      const refreshed = await tryRefreshTokenClient();
+      const newToken = await tryRefreshTokenClient();
 
-      if (refreshed) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-
+      if (newToken) {
         const storedBody = requestBodyStore.get(request);
         requestBodyStore.delete(request);
+
+        const headers = new Headers(request.headers);
+        headers.set("Authorization", `Bearer ${newToken}`);
 
         const init: RequestInit = {
           credentials: "include",
           signal: request.signal,
+          headers,
         };
         if (storedBody !== undefined) {
           init.body = storedBody;
