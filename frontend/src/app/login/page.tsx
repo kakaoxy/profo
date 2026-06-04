@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useEffect, useState } from "react";
 import { loginAction, changePasswordAction } from "./actions"; // 引入两个 Action
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,7 +138,9 @@ export default function LoginPage() {
                   return;
                 }
                 setValidationErrors({});
-                loginFormAction(formData);
+                startTransition(() => {
+                  loginFormAction(formData);
+                });
               }}
             >
               <CardContent className="grid gap-4">

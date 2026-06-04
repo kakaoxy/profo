@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useActionState, useState } from "react";
+import { Suspense, startTransition, useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { loginAction } from "@/lib/api-c/auth";
@@ -39,7 +39,9 @@ function LoginForm() {
               return;
             }
             setValidationErrors({});
-            formAction(formData);
+            startTransition(() => {
+              formAction(formData);
+            });
           }}
         >
           <div className="bg-white rounded-xl p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
