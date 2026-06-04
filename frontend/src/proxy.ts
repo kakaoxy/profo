@@ -94,48 +94,54 @@ export default async function proxy(request: NextRequest) {
     const accessTokenExpired = accessToken ? isTokenExpired(accessToken) : true;
 
     if (accessTokenExpired && refreshToken && !isTokenExpired(refreshToken, 0)) {
-      try {
-        const response = await fetch(getApiUrl(apiPaths.cAuth.refresh), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        });
+      // 仅对 HTML 页面请求执行 proxy 层刷新，避免并发 API 请求多次触发刷新
+      // 客户端 API 请求的 401 由 api-client.ts / swr.ts 的刷新重试机制处理
+      const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
 
-        if (response.ok) {
-          const data = await response.json();
-          const nextResponse = NextResponse.next();
-
-          nextResponse.cookies.set("c_access_token", data.access_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-            maxAge: data.expires_in || 36000,
-            sameSite: "lax",
+      if (isHtmlRequest) {
+        try {
+          const response = await fetch(getApiUrl(apiPaths.cAuth.refresh), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken }),
           });
 
-          if (data.refresh_token) {
-            nextResponse.cookies.set("c_refresh_token", data.refresh_token, {
+          if (response.ok) {
+            const data = await response.json();
+            const nextResponse = NextResponse.next();
+
+            nextResponse.cookies.set("c_access_token", data.access_token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               path: "/",
-              maxAge: 60 * 60 * 24 * 7,
+              maxAge: data.expires_in || 36000,
               sameSite: "lax",
             });
+
+            if (data.refresh_token) {
+              nextResponse.cookies.set("c_refresh_token", data.refresh_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 7,
+                sameSite: "lax",
+              });
+            }
+
+            return addSecurityHeaders(nextResponse);
           }
 
-          return addSecurityHeaders(nextResponse);
+          if (response.status === 401 || response.status === 403) {
+            const redirectResponse = NextResponse.redirect(
+              new URL("/c/login", request.url)
+            );
+            redirectResponse.cookies.delete("c_access_token");
+            redirectResponse.cookies.delete("c_refresh_token");
+            return redirectResponse;
+          }
+        } catch {
+          // network error, continue processing
         }
-
-        if (response.status === 401 || response.status === 403) {
-          const redirectResponse = NextResponse.redirect(
-            new URL("/c/login", request.url)
-          );
-          redirectResponse.cookies.delete("c_access_token");
-          redirectResponse.cookies.delete("c_refresh_token");
-          return redirectResponse;
-        }
-      } catch {
-        // network error, continue processing
       }
     }
   }
@@ -174,7 +180,11 @@ export default async function proxy(request: NextRequest) {
 
   const shouldRefresh = !accessToken || isTokenExpired(accessToken);
 
-  if (shouldRefresh && refreshToken) {
+  // 仅对 HTML 页面请求执行 proxy 层刷新，避免并发 API 请求多次触发刷新
+  // 客户端 API 请求的 401 由 api-client.ts / swr.ts 的刷新重试机制处理
+  const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
+
+  if (shouldRefresh && refreshToken && isHtmlRequest) {
     try {
       const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
         method: "POST",

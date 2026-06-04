@@ -28,11 +28,9 @@ interface DealDialogProps {
 
 export function DealDialog({ project, onSuccess }: DealDialogProps) {
   const initialDate = useCurrentDate();
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  // 客户端首次渲染时设置默认日期
-  if (date === undefined && initialDate) {
-    setDate(initialDate);
-  }
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  // 派生值：用户未选择时默认今天，SSR 时为 undefined 避免 hydration 不匹配
+  const date = selectedDate ?? initialDate ?? undefined;
   const [price, setPrice] = useState("");
 
   const handleConfirm = async () => {
@@ -102,7 +100,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={setDate}
+                onSelect={setSelectedDate}
                 initialFocus
               />
             </PopoverContent>
