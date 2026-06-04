@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { usePathname } from "next/navigation";
 import { TopAppBar } from "@/components/c/layout/TopAppBar";
@@ -14,11 +14,13 @@ const TITLE_MAP: Record<string, string> = {
 };
 
 const BOTTOM_NAV_VISIBLE_PATHS = new Set(["/c", "/c/my", "/c/about", "/c/contact"]);
+const AUTH_PATHS = new Set(["/c/login", "/c/register"]);
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isProjectDetail = /^\/c\/projects\/[^/]+$/.test(pathname);
+  const isAuthPage = AUTH_PATHS.has(pathname);
 
   const isMainRoute = pathname === "/c" || pathname === "/c/my";
   const topBarVariant = isMainRoute ? "main" : "back";
@@ -28,6 +30,19 @@ export default function ClientShell({ children }: { children: React.ReactNode })
     (isProjectDetail ? "房源详情" : pathname.match(/^\/c\/leads\/[^/]+$/) ? "估价详情" : "");
 
   const bottomNavVisible = BOTTOM_NAV_VISIBLE_PATHS.has(pathname);
+
+  // Auth pages: full-screen split layout on desktop, standard mobile layout
+  if (isAuthPage) {
+    return (
+      <div className="min-h-dvh bg-c-surface">
+        {/* Mobile: show TopAppBar; Desktop: hide it */}
+        <div className="md:hidden">
+          <TopAppBar variant={topBarVariant} title={topBarTitle} />
+        </div>
+        <main className="md:min-h-dvh">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-c-surface">
