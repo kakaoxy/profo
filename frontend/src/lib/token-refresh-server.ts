@@ -72,8 +72,9 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
         sameSite: "lax",
       });
     } catch {
+      // Proxy 层（proxy.ts）已是 cookie 更新的主要路径
       // Server Component 上下文中无法修改 cookie（仅 Server Action / Route Handler 可写）
-      // 此时仍返回刷新后的 token 供当前请求使用，后续页面导航由 middleware 处理 cookie 刷新
+      console.warn("🔁 [Server] Server Component 无法写入 cookie，由 Proxy 层处理 cookie 更新");
     }
 
     return data;

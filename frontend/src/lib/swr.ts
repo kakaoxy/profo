@@ -1,3 +1,5 @@
+import { tryRefreshTokenClient } from "./api-client";
+
 export class AuthError extends Error {
   constructor() {
     super("AUTH_REQUIRED");
@@ -14,7 +16,22 @@ export class ForbiddenError extends Error {
 
 export async function fetcher<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
-  if (res.status === 401) throw new AuthError();
+  if (res.status === 401) {
+    const newToken = await tryRefreshTokenClient();
+    if (newToken) {
+      const retryRes = await fetch(url, {
+        credentials: "include",
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+      if (retryRes.status === 401 || retryRes.status === 403) throw new AuthError();
+      if (!retryRes.ok) {
+        const error = await retryRes.json().catch(() => ({ detail: "请求失败" }));
+        throw new Error(error.detail || `HTTP ${retryRes.status}`);
+      }
+      return retryRes.json();
+    }
+    throw new AuthError();
+  }
   if (res.status === 403) throw new ForbiddenError();
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: "请求失败" }));

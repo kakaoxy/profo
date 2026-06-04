@@ -2,14 +2,15 @@
 import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getApiUrl } from "./config";
-import { getAccessTokenFromCookie, refreshTokenServer } from "./token-refresh-server";
+import { getAccessTokenFromCookie } from "./token-refresh-server";
 import { redirect } from "next/navigation";
 
 /**
  * 仅限服务端组件 (Server Components) 和 Server Actions 使用
  * 每个请求独立从 httpOnly cookie 读取 access_token，消除并发竞态。
  *
- * 注意：不缓存 token 在闭包中，避免多请求共享可变状态。
+ * Proxy 层（proxy.ts）已保证 cookie 中 token 有效，
+ * 此处仅从 cookie 读取，保留 401 重试一次作为兜底。
  */
 /** 最大重试次数，防止极端情况下反复刷新 */
 const MAX_RETRIES = 1;
@@ -47,16 +48,15 @@ export async function fetchClient() {
       }
 
       retries++;
-      console.log(`🔁 [Server] 检测到 401，尝试刷新 Token... (第 ${retries} 次)`);
+      console.log(`🔁 [Server] 检测到 401，重新读取 cookie token... (第 ${retries} 次)`);
 
-      const result = await refreshTokenServer();
+      // Proxy 层已保证 cookie 有效，重新从 cookie 读取 token
+      token = await getAccessTokenFromCookie();
 
-      if (!result?.access_token) {
-        console.error("🔁 [Server] Token 刷新失败，跳转登录页");
+      if (!token) {
+        console.error("🔁 [Server] Cookie 中无有效 token，跳转登录页");
         redirect("/login");
       }
-
-      token = result.access_token;
     }
 
     // 理论上不会到达这里，但 TypeScript 需要返回值
