@@ -240,3 +240,10 @@
     overflow-x: hidden;
   }
 }
+
+/* C-side: hide bottom nav on desktop */
+@media (min-width: 768px) {
+  nav.fixed.bottom-0.h-20 {
+    display: none !important;
+  }
+}
