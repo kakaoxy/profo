@@ -224,7 +224,6 @@ export default function AboutPage() {
               className="object-cover opacity-60"
               src="/about/hero-bg.jpg"
               fill
-              priority
               sizes="100vw"
               unoptimized
             />
