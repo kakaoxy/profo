@@ -5,9 +5,9 @@
 
 import logging
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
-from models import Community, PropertyCurrent, PropertyMedia
+from models import Community, PropertyCurrent
 from schemas import CommunitySearchResponse, PropertyDetailResponse
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,10 @@ class PropertyService:
         """
         property_obj = (
             db.query(PropertyCurrent)
+            .options(
+                joinedload(PropertyCurrent.community),
+                selectinload(PropertyCurrent.property_media),
+            )
             .filter(
                 PropertyCurrent.id == property_id,
                 PropertyCurrent.is_active.is_(True),
@@ -42,23 +46,15 @@ class PropertyService:
             msg = "房源不存在"
             raise ValueError(msg)
 
-        community = db.query(Community).filter(Community.id == property_obj.community_id).first()
-        if not community:
+        if not property_obj.community:
             msg = "关联小区不存在"
             raise ValueError(msg)
 
-        detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, community)
+        detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, property_obj.community)
 
-        picture_links = (
-            db.query(PropertyMedia.url)
-            .filter(
-                PropertyMedia.data_source == property_obj.data_source,
-                PropertyMedia.source_property_id == property_obj.source_property_id,
-            )
-            .order_by(PropertyMedia.sort_order)
-            .all()
-        )
-        detail.picture_links = [link[0] for link in picture_links] if picture_links else []
+        detail.picture_links = [
+            media.url for media in property_obj.property_media if media.url
+        ]
 
         return detail
 

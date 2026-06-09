@@ -1,8 +1,6 @@
 "use client";
 
-/* 此文件超过250行，不拆分理由：移动端与PC端布局共享同一份数据和逻辑，
-   拆分为多个组件会增加数据传递复杂度且无复用价值 */
-
+import { useState } from "react";
 import useSWR from "swr";
 import {
   Home,
@@ -14,6 +12,7 @@ import {
   BadgeCheck,
   Share2,
   Globe,
+  ImageIcon,
 } from "lucide-react";
 import { HeroCard } from "@/components/c/shared/HeroCard";
 import { PainPointCard } from "@/components/c/shared/PainPointCard";
@@ -22,7 +21,6 @@ import { StatsCard } from "@/components/c/shared/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicFetcher } from "@/lib/swr";
 import type { components } from "@/lib/api-types";
-import Image from "next/image";
 import Link from "next/link";
 
 type PlatformStats = components["schemas"]["PublicPlatformStats"];
@@ -108,6 +106,8 @@ export default function AboutPage() {
     "/api/v1/public/stats/platform",
     publicFetcher
   );
+  const [heroError, setHeroError] = useState(false);
+  const [dashboardError, setDashboardError] = useState(false);
 
   return (
     <>
@@ -219,14 +219,20 @@ export default function AboutPage() {
         {/* Hero Section */}
         <section className="relative flex h-[819px] w-full items-center overflow-hidden bg-[#131b2e]">
           <div className="absolute inset-0 z-0">
-            <Image
-              alt="Modern Luxury Interior"
-              className="object-cover opacity-60"
-              src="/about/hero-bg.jpg"
-              fill
-              sizes="100vw"
-              unoptimized
-            />
+            {heroError ? (
+              <div className="flex h-full w-full items-center justify-center bg-[#131b2e]">
+                <ImageIcon className="h-16 w-16 text-white/20" />
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt="Modern Luxury Interior"
+                className="h-full w-full object-cover opacity-60"
+                src="/c/about/hero-bg.jpg"
+                fetchPriority="high"
+                onError={() => setHeroError(true)}
+              />
+            )}
           </div>
           <div className="relative z-10 mx-auto w-full max-w-[1280px] px-6">
             <div className="max-w-2xl text-white">
@@ -416,14 +422,20 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="relative aspect-square w-full flex-1">
-              <Image
-                alt="Data Analytics Dashboard"
-                className="rounded-2xl object-cover"
-                src="/about/dashboard.jpg"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                unoptimized
-              />
+              {dashboardError ? (
+                <div className="flex h-full w-full items-center justify-center rounded-2xl bg-c-trust-blue/50">
+                  <ImageIcon className="h-16 w-16 text-white/20" />
+                </div>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+              <img
+                  alt="Data Analytics Dashboard"
+                  className="h-full w-full rounded-2xl object-cover"
+                  src="/c/about/dashboard.jpg"
+                  loading="lazy"
+                  onError={() => setDashboardError(true)}
+                />
+              )}
               <div className="absolute -bottom-6 -right-6 max-w-xs rounded-xl border border-white/20 bg-white/80 p-6 shadow-xl backdrop-blur-[12px] max-lg:hidden text-c-trust-blue">
                 <div className="mb-2 flex items-center gap-2">
                   <BadgeCheck className="h-5 w-5 text-green-600" />
