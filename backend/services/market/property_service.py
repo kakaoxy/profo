@@ -53,7 +53,7 @@ class PropertyService:
         detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, property_obj.community)
 
         detail.picture_links = [
-            media.url for media in property_obj.property_media if media.url
+            media.url for media in sorted(property_obj.property_media, key=lambda m: m.sort_order) if media.url
         ]
 
         return detail
