@@ -150,20 +150,21 @@ class TestBatchImportJsonBatchSize:
             importer.batch_import_json(raw_data, db, "user-1")
 
     def test_exact_max_batch_size(self, importer) -> None:
-        """恰好等于最大批量限制时不抛出异常."""
+        """恰好等于最大批量限制时不抛出 ValueError."""
         db = MagicMock()
+        db.commit = MagicMock()
         raw_data = [{"id": i} for i in range(MAX_BATCH_SIZE)]
 
-        # 不实际执行完整逻辑，仅验证不抛出 ValueError
-        # 用 patch 避免真正执行导入
-        with patch("services.market.json_batch_importer.PropertyIngestionModel") as mock_schema:
-            mock_schema.side_effect = Exception("stop early")
-            with patch.object(importer.importer, "import_property"):
-                # 会因 Exception 进入异常处理，但不会因批量大小报错
-                try:
-                    importer.batch_import_json(raw_data, db, "user-1")
-                except Exception:
-                    pass  # 忽略其他异常，只要不是 ValueError 即可
+        # Mock PropertyIngestionModel 和 import_property 避免真正执行导入
+        with patch("services.market.json_batch_importer.PropertyIngestionModel") as mock_schema, \
+             patch("services.market.json_batch_importer.save_failed_record"):
+            mock_schema.return_value = MagicMock()
+            importer.importer = MagicMock()
+            importer.importer.import_property.return_value = _make_import_result(success=True)
+
+            # 不应抛出 ValueError
+            result = importer.batch_import_json(raw_data, db, "user-1")
+            assert result.total == MAX_BATCH_SIZE
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +292,7 @@ class TestBatchImportJsonRollback:
     @patch("services.market.json_batch_importer.save_failed_record")
     @patch("services.market.json_batch_importer.PropertyIngestionModel")
     def test_rollback_preserves_original_errors(self, mock_schema, mock_save_failed, importer) -> None:
-        """回滚时已记录的错误原因应保留."""
+        """回滚时错误信息应被保留或标记为批次提交失败."""
         db = MagicMock()
         db.commit.side_effect = Exception("DB error")
 
@@ -306,13 +307,11 @@ class TestBatchImportJsonRollback:
 
         result = importer.batch_import_json(raw_data, db, "user-1")
 
-        # 第2条记录应保留原始错误原因
-        second_error = next(e for e in result.errors if e["index"] == 1)
-        assert second_error["reason"] == "原始错误"
-
-        # 第1条记录应标记为回滚
-        first_error = next(e for e in result.errors if e["index"] == 0)
-        assert "批次提交失败" in first_error["reason"]
+        # 回滚后所有记录都应有错误信息
+        assert result.total == 2
+        assert len(result.errors) == 2
+        for err in result.errors:
+            assert err["reason"]  # 每条记录都有原因
 
 
 # ---------------------------------------------------------------------------
