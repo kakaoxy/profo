@@ -5,6 +5,30 @@ import { useDebouncedCallback } from "use-debounce";
 import { Lead, FilterState, LeadTabValue } from "../types";
 import { getLeadsAction } from "../actions";
 
+/** 解析楼层信息，返回"低"/"中"/"高"/"未知" */
+export function getFloorCategory(floorInfo: string): string {
+  try {
+    const match = floorInfo.match(/(\d+)\/(\d+)层/);
+    if (!match) return "未知";
+    const current = parseInt(match[1]);
+    const total = parseInt(match[2]);
+    const ratio = current / total;
+    if (ratio <= 0.33) return "低";
+    if (ratio <= 0.66) return "中";
+    return "高";
+  } catch {
+    return "未知";
+  }
+}
+
+/** 解析户型信息，返回房间数分类 */
+export function getLayoutRooms(layout: string): string {
+  const match = layout.match(/(\d+)室/);
+  if (!match) return "其他";
+  const rooms = parseInt(match[1]);
+  return rooms >= 5 ? "4+" : rooms.toString();
+}
+
 export function useLeadsFilter(initialLeads: Lead[]) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [filters, setFiltersState] = useState<FilterState>({
@@ -17,28 +41,6 @@ export function useLeadsFilter(initialLeads: Lead[]) {
   });
   const [isPending, startTransition] = useTransition();
   const latestFetchIdRef = useRef(0);
-
-  const getFloorCategory = useCallback((floorInfo: string): string => {
-    try {
-      const match = floorInfo.match(/(\d+)\/(\d+)层/);
-      if (!match) return "未知";
-      const current = parseInt(match[1]);
-      const total = parseInt(match[2]);
-      const ratio = current / total;
-      if (ratio <= 0.33) return "低";
-      if (ratio <= 0.66) return "中";
-      return "高";
-    } catch {
-      return "未知";
-    }
-  }, []);
-
-  const getLayoutRooms = useCallback((layout: string): string => {
-    const match = layout.match(/(\d+)室/);
-    if (!match) return "其他";
-    const rooms = parseInt(match[1]);
-    return rooms >= 5 ? "4+" : rooms.toString();
-  }, []);
 
   const debouncedRefetch = useDebouncedCallback((nextFilters: FilterState) => {
     const fetchId = ++latestFetchIdRef.current;
@@ -107,7 +109,7 @@ export function useLeadsFilter(initialLeads: Lead[]) {
 
       return searchMatch && statusMatch && creatorMatch && layoutMatch && floorMatch;
     });
-  }, [leads, filters, getLayoutRooms, getFloorCategory]);
+  }, [leads, filters]);
 
   /**
    * 设置活动 Tab（状态过滤）

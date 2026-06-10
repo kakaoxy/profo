@@ -33,6 +33,11 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "httpx>=0.25.0",
     "ruff>=0.15.14",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.12.0",
+    "factory-boy>=3.3.0",
+    "faker>=25.0.0",
+    "pytest-xdist>=3.5.0",
 ]
 
 [tool.hatch.envs.default]
@@ -59,6 +64,31 @@ ignore = [
 quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=. --cov-report=term-missing --cov-branch"
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+    "alembic/*",
+    "*/migrations/*",
+    "init_admin.py",
+    "init_db.py",
+    "conftest.py",
+]
+source = ["."]
+
+[tool.coverage.report]
+fail_under = 55
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
 
 [tool.fastapi]
 entrypoint = "main:app"
