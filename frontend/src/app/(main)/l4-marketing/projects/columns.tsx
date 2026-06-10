@@ -62,7 +62,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
           {imageUrl ? (
-            <div className="relative w-20 h-14 rounded-lg flex-shrink-0 border border-border overflow-hidden">
+            <div className="relative w-20 h-14 rounded-lg shrink-0 border border-border overflow-hidden">
               {isDev ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -81,7 +81,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
               )}
             </div>
           ) : (
-            <div className="w-20 h-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground flex-shrink-0 border border-border">
+            <div className="w-20 h-14 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0 border border-border">
               无图
             </div>
           )}
