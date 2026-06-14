@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import DateTime, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel
@@ -14,7 +14,7 @@ class ProjectInteraction(BaseModel):
 
     __tablename__ = "project_interactions"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
 
     record_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="互动类型")
     interaction_target: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="互动对象")

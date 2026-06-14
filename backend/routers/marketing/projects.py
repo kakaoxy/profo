@@ -54,7 +54,7 @@ _MediaServiceDep = Annotated[L4MarketingMediaService, Depends(get_media_service)
     "/projects",
     summary="获取营销项目列表",
 )
-async def list_marketing_projects(  # noqa: PLR0913
+def list_marketing_projects(  # noqa: PLR0913
     service: _ProjectServiceDep,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 20,
@@ -96,7 +96,7 @@ async def list_marketing_projects(  # noqa: PLR0913
     summary="创建独立营销项目",
 )
 @limiter.limit(RateLimits.MARKETING_CREATE)
-async def create_marketing_project(
+def create_marketing_project(
     request: Request,
     data: L4MarketingProjectCreate,
     service: _ProjectServiceDep,
@@ -112,7 +112,7 @@ async def create_marketing_project(
     "/projects/{project_id}",
     summary="获取营销项目详情",
 )
-async def get_marketing_project(
+def get_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _ProjectServiceDep,
 ) -> L4MarketingProjectResponse:
@@ -128,7 +128,7 @@ async def get_marketing_project(
     summary="更新营销项目",
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
-async def update_marketing_project(
+def update_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
@@ -150,7 +150,7 @@ async def update_marketing_project(
     summary="删除营销项目",
 )
 @limiter.limit(RateLimits.MARKETING_DELETE)
-async def delete_marketing_project(
+def delete_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _ProjectServiceDep,
@@ -167,7 +167,7 @@ async def delete_marketing_project(
     "/projects/{project_id}/media",
     summary="获取媒体列表",
 )
-async def list_marketing_media(
+def list_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _MediaServiceDep,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
@@ -189,7 +189,7 @@ async def list_marketing_media(
     status_code=status.HTTP_201_CREATED,
     summary="添加媒体",
 )
-async def create_marketing_media(
+def create_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingMediaCreate,
     service: _MediaServiceDep,
@@ -203,7 +203,7 @@ async def create_marketing_media(
     summary="更新媒体",
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
-async def update_marketing_media(
+def update_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     data: L4MarketingMediaUpdate,
@@ -225,7 +225,7 @@ async def update_marketing_media(
     summary="删除媒体",
 )
 @limiter.limit(RateLimits.MARKETING_DELETE)
-async def delete_marketing_media(
+def delete_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     service: _MediaServiceDep,
@@ -243,7 +243,7 @@ async def delete_marketing_media(
     summary="批量更新媒体排序",
 )
 @limiter.limit(RateLimits.MARKETING_UPDATE)
-async def update_media_sort_order(
+def update_media_sort_order(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     sort_updates: list[MediaSortOrderUpdate],

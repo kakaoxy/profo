@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import BaseModel
@@ -24,8 +24,8 @@ class Role(BaseModel):
     # 状态
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活")
 
-    # 关联关系
-    users = relationship("User", back_populates="role", cascade="all, delete-orphan")
+    # 关联关系（逻辑外键，级联由Service处理）
+    users = relationship("User", back_populates="role", primaryjoin="foreign(User.role_id) == Role.id")
 
     def __repr__(self) -> str:
         """返回字符串表示."""
@@ -49,8 +49,8 @@ class User(BaseModel):
     wechat_unionid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信UnionID")
     wechat_session_key: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="微信会话密钥")
 
-    # 角色关联
-    role_id: Mapped[str] = mapped_column(String(36), ForeignKey("roles.id"), nullable=False, comment="角色ID")
+    # 角色关联（逻辑外键，级联由Service处理）
+    role_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="角色ID(逻辑外键)")
 
     # 状态
     status: Mapped[str] = mapped_column(String(20), default="active", comment="用户状态: active/inactive/banned")
@@ -58,7 +58,7 @@ class User(BaseModel):
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否必须修改密码")
 
     # 关联关系
-    role = relationship("Role", back_populates="users")
+    role = relationship("Role", back_populates="users", foreign_keys=[role_id], primaryjoin="foreign(User.role_id) == Role.id")
 
     # 索引
     __table_args__ = (

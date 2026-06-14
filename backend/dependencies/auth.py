@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from db import get_db
 from models import User
 from services.system import ApiKeyService
 from services.system.auth import AuthService
+from services.system.exceptions import AuthenticationError, PermissionDeniedError
 from settings import settings
 from utils.auth import validate_token
 
@@ -41,25 +42,19 @@ async def require_api_key(
         User: 当前用户对象
 
     Raises:
-        HTTPException: 401 Unauthorized - API Key 无效或缺失
+        AuthenticationError: 401 Unauthorized - API Key 无效或缺失
 
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="需要提供有效的 API Key",
-        headers={"WWW-Authenticate": "ApiKey"},
-    )
-
     # 只接受 X-API-Key Header
     api_key = request.headers.get("X-API-Key")
     if not api_key:
-        raise credentials_exception
+        raise AuthenticationError("需要提供有效的 API Key")
 
     try:
         # 使用run_in_threadpool调用同步的数据库操作
         return await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
     except Exception:  # noqa: BLE001
-        raise credentials_exception from None
+        raise AuthenticationError("API Key 无效") from None
 
 
 # API Key 认证依赖类型
@@ -86,15 +81,9 @@ async def get_current_user(
         User: 当前用户对象
 
     Raises:
-        HTTPException: 401 Unauthorized - 令牌无效或用户不存在
+        AuthenticationError: 401 Unauthorized - 令牌无效或用户不存在
 
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无法验证凭据",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
     # 优先从Header获取JWT token
     token = token_from_header
 
@@ -106,17 +95,17 @@ async def get_current_user(
     if token is not None:
         payload = validate_token(token)
         if not payload:
-            raise credentials_exception
+            raise AuthenticationError("无法验证凭据")
 
         # 获取用户ID
         user_id = payload.get("sub")
         if not isinstance(user_id, str):
-            raise credentials_exception
+            raise AuthenticationError("无法验证凭据")
 
         # 通过Service层获取用户，预加载角色关系
         user = await run_in_threadpool(AuthService.get_user_by_id, db, user_id)
         if user is None:
-            raise credentials_exception
+            raise AuthenticationError("无法验证凭据")
 
         return user
 
@@ -127,10 +116,10 @@ async def get_current_user(
             # 使用run_in_threadpool调用同步的数据库操作
             return await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
         except Exception:  # noqa: BLE001
-            raise credentials_exception from None
+            raise AuthenticationError("API Key 无效") from None
 
     # 没有任何认证信息
-    raise credentials_exception
+    raise AuthenticationError("无法验证凭据")
 
 
 # 当前用户依赖类型
@@ -149,14 +138,11 @@ async def get_current_active_user(
         User: 当前活跃用户对象
 
     Raises:
-        HTTPException: 403 Forbidden - 用户未激活
+        PermissionDeniedError: 403 Forbidden - 用户未激活
 
     """
     if current_user.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="用户未激活",
-        )
+        raise PermissionDeniedError("用户未激活")
 
     return current_user
 
@@ -178,10 +164,7 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
 
     async def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role.code not in required_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="权限不足",
-            )
+            raise PermissionDeniedError("权限不足")
         return user
 
     return role_checker

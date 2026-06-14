@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import DateTime, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel
@@ -14,7 +14,7 @@ class ProjectFollowUp(BaseModel):
 
     __tablename__ = "project_follow_ups"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
 
     follow_up_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="跟进方式")
     content: Mapped[str | None] = mapped_column(Text, nullable=True, comment="跟进详情")
@@ -32,7 +32,7 @@ class ProjectEvaluation(BaseModel):
 
     __tablename__ = "project_evaluations"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
 
     evaluation_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="评估类型")
     evaluation_price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="评估价格(万)")

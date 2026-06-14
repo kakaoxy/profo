@@ -45,7 +45,7 @@ def get_import_service(db: DbSessionDep) -> L4MarketingImportService:
     "/available-projects",
     summary="获取可关联的L3项目列表",
 )
-async def list_available_projects(
+def list_available_projects(
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
     community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
     status: Annotated[str | None, Query(description="项目状态筛选")] = None,
@@ -74,7 +74,7 @@ async def list_available_projects(
     "/available-projects/{project_id}",
     summary="获取L3项目详情",
 )
-async def get_l3_project_detail(
+def get_l3_project_detail(
     project_id: Annotated[str, Path(description="项目ID")],
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
 ) -> L3ProjectBriefResponse:
@@ -102,7 +102,7 @@ async def get_l3_project_detail(
     "/projects/import-from-l3/{project_id}",
     summary="从L3项目导入数据",
 )
-async def import_from_l3_project(
+def import_from_l3_project(
     project_id: Annotated[str, Path(description="项目ID")],
     query_service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
     import_service: Annotated[L4MarketingImportService, Depends(get_import_service)],

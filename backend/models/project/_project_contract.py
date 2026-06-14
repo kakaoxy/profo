@@ -7,7 +7,6 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
-    ForeignKey,
     Index,
     Integer,
     Numeric,
@@ -24,7 +23,7 @@ class ProjectContract(BaseModel):
 
     __tablename__ = "project_contracts"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, comment="项目ID(逻辑外键)")
 
     contract_no: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="合同编号")
     signing_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="签约价格(万)")

@@ -11,12 +11,12 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from db import get_db
 from models import Community, L4MarketingProject, Lead, Role, User
+from services.system.exceptions import PermissionDeniedError
 from utils.auth import create_access_token, get_password_hash
 
 
@@ -144,7 +144,7 @@ class TestCurrentCustomerUserDep:
         user.status = "active"
         user.role = MagicMock(spec=Role)
         user.role.code = "customer"
-        result = role_checker(user)
+        result = asyncio.run(role_checker(user))
         assert result == user
 
     def test_admin_role_user_rejected(self) -> None:
@@ -155,9 +155,8 @@ class TestCurrentCustomerUserDep:
         user.status = "active"
         user.role = MagicMock(spec=Role)
         user.role.code = "admin"
-        with pytest.raises(HTTPException) as exc_info:
-            role_checker(user)
-        assert exc_info.value.status_code == 403
+        with pytest.raises(PermissionDeniedError):
+            asyncio.run(role_checker(user))
 
     def test_operator_role_user_rejected(self) -> None:
         from dependencies.auth import require_roles
@@ -167,9 +166,8 @@ class TestCurrentCustomerUserDep:
         user.status = "active"
         user.role = MagicMock(spec=Role)
         user.role.code = "operator"
-        with pytest.raises(HTTPException) as exc_info:
-            role_checker(user)
-        assert exc_info.value.status_code == 403
+        with pytest.raises(PermissionDeniedError):
+            asyncio.run(role_checker(user))
 
     def test_inactive_customer_user_rejected(self) -> None:
         from dependencies.auth import get_current_active_user
@@ -178,9 +176,8 @@ class TestCurrentCustomerUserDep:
         user.status = "inactive"
         user.role = MagicMock(spec=Role)
         user.role.code = "customer"
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(PermissionDeniedError):
             asyncio.run(get_current_active_user(user))
-        assert exc_info.value.status_code == 403
 
     def test_current_customer_user_dep_exists(self) -> None:
         from dependencies.auth import CurrentCustomerUserDep
