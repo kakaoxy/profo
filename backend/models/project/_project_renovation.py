@@ -7,7 +7,6 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
-    ForeignKey,
     Index,
     Numeric,
     String,
@@ -23,7 +22,7 @@ class ProjectRenovation(BaseModel):
 
     __tablename__ = "project_renovations"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, unique=True, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, comment="项目ID(逻辑外键)")
 
     renovation_company: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="合作装修公司")
 
@@ -66,8 +65,8 @@ class RenovationPhoto(BaseModel):
 
     __tablename__ = "renovation_photos"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
-    renovation_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("project_renovations.id"), nullable=True, comment="装修记录ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
+    renovation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="装修记录ID(逻辑外键)")
 
     stage: Mapped[str] = mapped_column(String(20), nullable=False, comment="改造阶段")
     url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片URL")

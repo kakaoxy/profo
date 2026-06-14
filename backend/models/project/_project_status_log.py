@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel
@@ -13,7 +13,7 @@ class ProjectStatusLog(BaseModel):
 
     __tablename__ = "project_status_logs"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
 
     old_status: Mapped[str] = mapped_column(String(20), nullable=False, comment="变更前状态")
     new_status: Mapped[str] = mapped_column(String(20), nullable=False, comment="变更后状态")

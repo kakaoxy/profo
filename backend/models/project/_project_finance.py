@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import DateTime, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel
@@ -14,7 +14,7 @@ class FinanceRecord(BaseModel):
 
     __tablename__ = "finance_records"
 
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
 
     type: Mapped[str] = mapped_column(String(20), nullable=False, comment="流水类型：income/expense")
     category: Mapped[str] = mapped_column(String(50), nullable=False, comment="费用类别")

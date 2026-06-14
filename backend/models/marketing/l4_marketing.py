@@ -11,7 +11,6 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
-    ForeignKey,
     Index,
     Integer,
     Numeric,
@@ -57,8 +56,8 @@ class L4MarketingProject(BaseModel):
     # 注意：继承的BaseModel使用String(36) UUID，我们需要覆盖它
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
 
-    # 小区ID - UUID字符串类型，非空，关联小区
-    community_id: Mapped[str] = mapped_column(String(36), ForeignKey("communities.id"), nullable=False, comment="关联小区ID（UUID字符串）")
+    # 小区ID - UUID字符串类型，非空，逻辑外键
+    community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联小区ID(逻辑外键)")
 
     # 小区名称 - 冗余存储，避免跨层级JOIN查询
     community_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="小区名称(冗余存储)")
@@ -116,11 +115,11 @@ class L4MarketingProject(BaseModel):
         comment="更新时间",
     )
 
-    # 关联关系
+    # 关联关系（逻辑外键，级联由Service处理）
     media_files = relationship(
         "L4MarketingMedia",
         back_populates="marketing_project",
-        cascade="all, delete-orphan",
+        primaryjoin="L4MarketingProject.id == foreign(L4MarketingMedia.marketing_project_id)",
         lazy="dynamic",
     )
 
@@ -188,12 +187,11 @@ class L4MarketingMedia(BaseModel):
     # 主键 - 整数类型，自增
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="媒体ID")
 
-    # 关联营销项目 - 整数外键
+    # 关联营销项目 - 整数逻辑外键
     marketing_project_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("l4_marketing_projects.id"),
         nullable=False,
-        comment="营销项目ID",
+        comment="营销项目ID(逻辑外键)",
     )
 
     # 媒体类型
@@ -248,6 +246,8 @@ class L4MarketingMedia(BaseModel):
     marketing_project = relationship(
         "L4MarketingProject",
         back_populates="media_files",
+        foreign_keys=[marketing_project_id],
+        primaryjoin="L4MarketingProject.id == foreign(L4MarketingMedia.marketing_project_id)",
     )
 
     __table_args__ = (

@@ -3,12 +3,13 @@
 用于封装复杂的查询参数，避免函数参数过多.
 """
 
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass
-class PropertyQueryParams:
+class PropertyQueryParams(BaseModel):
     """房源查询参数对象."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     # 基础筛选条件
     status: str | None = None
@@ -63,9 +64,10 @@ class PropertyQueryParams:
         return bool(self.floor_levels)
 
 
-@dataclass
-class PropertyExportParams:
+class PropertyExportParams(BaseModel):
     """房源导出参数对象."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     # 基础筛选条件
     status: str | None = None

@@ -145,7 +145,7 @@ def exchange_token(
     request: Request,
     exchange_data: Annotated[ExchangeTokenRequest, Body()],
     _db: DbSessionDep,
-) -> dict[str, object]:
+) -> TokenResponse:
     """用一次性授权码兑换 Token.
 
     速率限制：10次/分钟.
@@ -154,12 +154,12 @@ def exchange_token(
         entry = AuthService.exchange_temp_code(exchange_data.code)
     except AuthenticationError:
         raise
-    return {
-        "access_token": entry["access_token"],
-        "refresh_token": entry["refresh_token"],
-        "token_type": "bearer",
-        "expires_in": settings.jwt_access_token_expire_minutes * 60,
-    }
+    return TokenResponse(
+        access_token=entry["access_token"],
+        refresh_token=entry["refresh_token"],
+        token_type="bearer",
+        expires_in=settings.jwt_access_token_expire_minutes * 60,
+    )
 
 
 @router.post("/wechat/login")
