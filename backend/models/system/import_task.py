@@ -6,7 +6,8 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import DateTime, Float, Index, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import Base
 
@@ -29,34 +30,34 @@ class PropertyImportTask(Base):
 
     __tablename__ = "property_import_tasks"
 
-    id: str = Column(String(36), primary_key=True, comment="任务ID (UUID)")
-    user_id: int = Column(Integer, nullable=False, index=True, comment="创建用户ID")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, comment="任务ID (UUID)")
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True, comment="创建用户ID")
 
     # 任务状态
-    status: str = Column(String(20), default=ImportTaskStatus.PENDING.value, nullable=False, comment="任务状态")
+    status: Mapped[str] = mapped_column(String(20), default=ImportTaskStatus.PENDING.value, nullable=False, comment="任务状态")
 
     # 文件信息
-    filename: str = Column(String(255), nullable=False, comment="原始文件名")
-    file_path: str = Column(String(500), nullable=False, comment="文件存储路径")
-    file_size: int = Column(Integer, nullable=True, comment="文件大小(字节)")
+    filename: Mapped[str] = mapped_column(String(255), nullable=False, comment="原始文件名")
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False, comment="文件存储路径")
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="文件大小(字节)")
 
     # 处理进度
-    total_records: int = Column(Integer, default=0, comment="总记录数")
-    processed_records: int = Column(Integer, default=0, comment="已处理记录数")
-    success_count: int = Column(Integer, default=0, comment="成功导入数")
-    failed_count: int = Column(Integer, default=0, comment="失败记录数")
-    progress_percent: float = Column(Float, default=0.0, comment="进度百分比(0-100)")
+    total_records: Mapped[int] = mapped_column(Integer, default=0, comment="总记录数")
+    processed_records: Mapped[int] = mapped_column(Integer, default=0, comment="已处理记录数")
+    success_count: Mapped[int] = mapped_column(Integer, default=0, comment="成功导入数")
+    failed_count: Mapped[int] = mapped_column(Integer, default=0, comment="失败记录数")
+    progress_percent: Mapped[float] = mapped_column(Float, default=0.0, comment="进度百分比(0-100)")
 
     # 结果信息
-    failed_file_url: str | None = Column(String(500), nullable=True, comment="失败记录文件URL")
-    error_message: str | None = Column(Text, nullable=True, comment="错误信息(失败时)")
+    failed_file_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="失败记录文件URL")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True, comment="错误信息(失败时)")
 
     # 时间戳
-    created_at: datetime = Column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
-    started_at: datetime | None = Column(DateTime, nullable=True, comment="开始处理时间")
-    completed_at: datetime | None = Column(DateTime, nullable=True, comment="完成时间")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="开始处理时间")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="完成时间")
 
-    processing_duration: float | None = Column(Float, nullable=True, comment="处理时长(秒)")
+    processing_duration: Mapped[float | None] = mapped_column(Float, nullable=True, comment="处理时长(秒)")
 
     __table_args__ = (
         Index("idx_import_task_user_status", "user_id", "status", "created_at"),

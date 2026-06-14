@@ -5,8 +5,8 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Index, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime, Index, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import BaseModel
 
@@ -22,19 +22,19 @@ class ApiKey(BaseModel):
     __tablename__ = "api_keys"
 
     # 关联用户（软引用，不设物理外键约束）
-    user_id = Column(String(36), nullable=False, comment="用户ID")
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="用户ID")
 
     # Key 信息
-    key_prefix = Column(String(8), nullable=False, comment="Key前缀(显示用)")
-    key_hash = Column(String(64), nullable=False, comment="Key的SHA-256哈希值")
+    key_prefix: Mapped[str] = mapped_column(String(8), nullable=False, comment="Key前缀(显示用)")
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="Key的SHA-256哈希值")
 
     # 状态: active(有效), revoked(已撤销)
-    status = Column(String(20), default="active", nullable=False, comment="Key状态")
+    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False, comment="Key状态")
 
     # 时间戳
-    last_used_at = Column(DateTime, nullable=True, comment="最后使用时间")
-    expires_at = Column(DateTime, nullable=True, comment="过期时间")
-    deleted_at = Column(DateTime, nullable=True, comment="删除时间(软删除)")
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最后使用时间")
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="过期时间")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="删除时间(软删除)")
 
     # 关联关系
     user = relationship(

@@ -16,7 +16,7 @@ from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
-from schemas.common import PaginatedResponse
+from schemas.response import PaginatedResponse
 from schemas.project import (
     ProjectCompleteRequest,
     ProjectCreate,
@@ -79,14 +79,14 @@ def get_projects(
     result = service.get_projects(
         status_filter=status,
         community_name=community_name,
-        page=pagination["page"],
-        page_size=pagination["page_size"],
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
     return PaginatedResponse(
         items=result["items"],
         total=result["total"],
-        page=pagination["page"],
-        page_size=pagination["page_size"],
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

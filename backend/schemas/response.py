@@ -5,7 +5,7 @@
 
 from typing import Generic, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")
 
@@ -27,8 +27,9 @@ class PaginatedResponse(BaseModel, Generic[T]):
     page: int = Field(..., description="当前页码")
     page_size: int = Field(..., description="每页数量")
 
-    model_config = {
-        "json_schema_extra": {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "examples": [
                 {
                     "items": [{"id": "1"}, {"id": "2"}],
@@ -38,4 +39,4 @@ class PaginatedResponse(BaseModel, Generic[T]):
                 },
             ],
         },
-    }
+    )

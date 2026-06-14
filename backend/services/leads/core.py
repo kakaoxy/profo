@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 
 from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
-from services.system.exceptions import ResourceNotFoundError
+from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
 
-from .internal import LeadPriceService, LeadQueryService
+from .internal import LeadFollowUpService, LeadPriceService, LeadQueryService
 
 
 class LeadService:
@@ -38,6 +38,7 @@ class LeadService:
         self.db = db
         self.query_service = LeadQueryService(db)
         self.price_service = LeadPriceService(db)
+        self.followup_service = LeadFollowUpService(db)
 
     def create_lead(self, lead_data: LeadCreate, creator_id: str) -> Lead:
         """创建线索.
@@ -185,3 +186,50 @@ class LeadService:
         lead = self.get_lead_or_404(lead_id)
         self.db.delete(lead)
         self.db.commit()
+
+    def get_my_leads(self, user_id: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:
+        """获取当前用户创建的线索列表（分页）.
+
+        Args:
+            user_id: 用户ID
+            page: 页码
+            page_size: 每页数量
+
+        Returns:
+            包含线索列表和分页信息的字典
+
+        """
+        return self.query_service.get_list(
+            page=page,
+            page_size=page_size,
+            creator_id=user_id,
+        )
+
+    def get_lead_detail(self, lead_id: str, user_id: str) -> dict[str, Any]:
+        """获取线索详情（含跟进记录），并校验归属权.
+
+        Args:
+            lead_id: 线索ID
+            user_id: 当前用户ID
+
+        Returns:
+            包含线索对象和跟进记录列表的字典
+
+        Raises:
+            ResourceNotFoundError: 当线索不存在时
+            PermissionDeniedError: 当用户无权查看时
+
+        """
+        lead = self.query_service.get_by_id(lead_id, load_creator=False)
+        if not lead:
+            raise ResourceNotFoundError("线索不存在")
+
+        if lead.creator_id != user_id:
+            raise PermissionDeniedError("无权查看该线索")
+
+        follow_ups = self.followup_service.get_follow_ups(lead_id)
+
+        return {
+            "lead": lead,
+            "follow_ups": follow_ups,
+        }

@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -26,7 +26,7 @@ from schemas.user import (
     WechatLoginRequest,
 )
 from services.system import ApiKeyService, AuthService
-from services.system.exceptions import AuthenticationError, ResourceNotFoundError
+from services.system.exceptions import AuthenticationError, BusinessLogicError, ResourceNotFoundError
 from settings import settings
 
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
@@ -51,26 +51,13 @@ def login_for_access_token(
     Sync - Run in threadpool by FastAPI
     速率限制：5次/分钟.
     """
-    try:
-        user = AuthService.authenticate_user(db, form_data.username, form_data.password)
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=e.message,
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+    user = AuthService.authenticate_user(db, form_data.username, form_data.password)
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
     if result.get("require_password_change"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "code": "HTTP_403",
-                "message": "首次登录必须修改密码",
-                "temp_token": result["temp_token"],
-            },
-            headers={"X-Must-Change-Password": "true"},
+        raise BusinessLogicError(
+            "首次登录必须修改密码",
         )
 
     return result
@@ -88,14 +75,7 @@ def login(
     Sync - Run in threadpool by FastAPI
     速率限制：5次/分钟.
     """
-    try:
-        user = AuthService.authenticate_user(db, login_data.username, login_data.password)
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=e.message,
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+    user = AuthService.authenticate_user(db, login_data.username, login_data.password)
 
     return AuthService.create_tokens_for_user(db, user, force_temp_token=False)
 
@@ -193,29 +173,24 @@ async def wechat_app_login(
     Async for HTTP, run_in_threadpool for DB
     速率限制：5次/分钟.
     """
-    try:
-        auth_data = await AuthService.fetch_wechat_miniapp_session(login_data.code)
+    auth_data = await AuthService.fetch_wechat_miniapp_session(login_data.code)
 
-        openid = auth_data.get("openid")
-        session_key = auth_data.get("session_key")
-        unionid = auth_data.get("unionid")
+    openid = auth_data.get("openid")
+    session_key = auth_data.get("session_key")
+    unionid = auth_data.get("unionid")
 
-        if not openid:
-            raise AuthenticationError("微信登录失败，未获取到用户标识")
+    if not openid:
+        raise AuthenticationError("微信登录失败，未获取到用户标识")
 
-        user = await run_in_threadpool(
-            AuthService.login_or_register_wechat_user,
-            db=db,
-            openid=openid,
-            unionid=unionid,
-            session_key=session_key,
-        )
+    user = await run_in_threadpool(
+        AuthService.login_or_register_wechat_user,
+        db=db,
+        openid=openid,
+        unionid=unionid,
+        session_key=session_key,
+    )
 
-        return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
-    except HTTPException:
-        raise
-    except Exception:
-        raise AuthenticationError("微信登录失败，请稍后重试")
+    return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
 
 
 @router.get("/me")

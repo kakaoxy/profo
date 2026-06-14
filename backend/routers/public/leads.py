@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
-from models import Lead, LeadFollowUp
 from schemas.lead import LeadCreate
 from schemas.public import (
     PublicFollowupItem,
@@ -20,7 +19,6 @@ from schemas.public import (
     PublicLeadResponse,
 )
 from services.leads.core import LeadService
-from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
 
 router = APIRouter(prefix="/public/leads", tags=["public-leads"])
 
@@ -98,19 +96,15 @@ def create_lead(
 def get_my_leads(
     request: Request,
     current_user: CurrentCustomerUserDep,
-    db: DbSessionDep,
+    service: LeadServiceDep,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
 ) -> PublicLeadListResponse:
     """获取当前用户创建的线索列表（此路由必须在 /{lead_id} 之前定义以避免路径冲突）."""
-    query = db.query(Lead).filter(Lead.creator_id == current_user.id)
-
-    total = query.count()
-
-    leads = query.order_by(Lead.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    result = service.get_my_leads(user_id=current_user.id, page=page, page_size=page_size)
 
     items = []
-    for lead in leads:
+    for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, status_color = _get_status_display(status_code)
         items.append(
@@ -130,9 +124,9 @@ def get_my_leads(
 
     return PublicLeadListResponse(
         items=items,
-        total=total,
-        page=page,
-        page_size=page_size,
+        total=result["total"],
+        page=result["page"],
+        page_size=result["page_size"],
     )
 
 
@@ -146,24 +140,12 @@ def get_lead_detail(
     request: Request,
     lead_id: str,
     current_user: CurrentCustomerUserDep,
-    db: DbSessionDep,
+    service: LeadServiceDep,
 ) -> PublicLeadDetail:
     """获取指定线索的详细信息，仅能查看自己创建的线索."""
-    lead = db.query(Lead).filter(Lead.id == lead_id).first()
-    if not lead:
-        raise ResourceNotFoundError("线索不存在")
-
-    if lead.creator_id != current_user.id:
-        raise PermissionDeniedError("无权查看该线索")
-
-    follow_ups = (
-        db.query(LeadFollowUp)
-        .filter(
-            LeadFollowUp.lead_id == lead_id,
-        )
-        .order_by(LeadFollowUp.followed_at.desc())
-        .all()
-    )
+    result = service.get_lead_detail(lead_id=lead_id, user_id=current_user.id)
+    lead = result["lead"]
+    follow_ups = result["follow_ups"]
 
     followup_items = [
         PublicFollowupItem(

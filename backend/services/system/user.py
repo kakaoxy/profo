@@ -152,6 +152,27 @@ class UserService:
         db.commit()
         return {"message": "密码修改成功"}
 
+    def check_phone_taken_by_other(self, db: Session, phone: str, exclude_user_id: int) -> None:
+        """检查手机号是否已被其他用户绑定.
+
+        Args:
+            db: 数据库会话
+            phone: 手机号
+            exclude_user_id: 排除的用户ID
+
+        Raises:
+            ValidationError: 手机号已被其他账号绑定
+
+        """
+        existing = (
+            db.query(User)
+            .filter(User.phone == phone, User.id != exclude_user_id)
+            .first()
+        )
+        if existing:
+            msg = "手机号已被其他账号绑定"
+            raise ValidationError(msg)
+
     def list_users_simple(
         self,
         db: Session,
