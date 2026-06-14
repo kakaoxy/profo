@@ -157,7 +157,6 @@ class ApiKeyService:
 
             api_key.revoke()
             db.commit()
-            db.refresh(api_key)
         except SQLAlchemyError as e:
             db.rollback()
             if settings.debug:
