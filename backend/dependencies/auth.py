@@ -176,7 +176,7 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
 
     """
 
-    def role_checker(user: CurrentActiveUserDep) -> User:
+    async def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role.code not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
