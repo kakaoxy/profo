@@ -58,6 +58,7 @@ def login_for_access_token(
     if result.get("require_password_change"):
         raise BusinessLogicError(
             "首次登录必须修改密码",
+            headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
         )
 
     return result

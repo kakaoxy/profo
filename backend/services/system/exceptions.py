@@ -108,11 +108,12 @@ class FileProcessingError(ServiceException):
 class BusinessLogicError(ServiceException):
     """业务逻辑错误（422）."""
 
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, *, headers: dict[str, str] | None = None) -> None:
         """初始化业务逻辑错误.
 
         Args:
             message: 错误消息
+            headers: 额外的HTTP响应头
 
         """
-        super().__init__(message, status_code=422)
+        super().__init__(message, status_code=422, headers=headers)
