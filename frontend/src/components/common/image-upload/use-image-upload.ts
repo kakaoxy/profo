@@ -40,6 +40,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
   const [items, setItems] = useState<ImageItem[]>(defaultValue ?? []);
   const itemsRef = useRef(items);
   const onChangeRef = useRef(onChange);
+  const isInitialRender = useRef(true);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -49,19 +50,25 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     onChangeRef.current = onChange;
   }, [onChange]);
 
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+    onChangeRef.current?.(items);
+  }, [items]);
+
   const isUploading = useMemo(
     () => items.some((item) => item.status === "uploading"),
     [items]
   );
 
   const updateItem = useCallback((id: string, patch: Partial<ImageItem>) => {
-    setItems((prev) => {
-      const next = prev.map((item) =>
+    setItems((prev) =>
+      prev.map((item) =>
         item.id === id ? { ...item, ...patch } : item
-      );
-      onChangeRef.current?.(next);
-      return next;
-    });
+      )
+    );
   }, []);
 
   const { upload: baseUpload, cancelAll: baseCancelAll } = useUpload({
@@ -146,11 +153,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         };
       });
 
-      setItems((prev) => {
-        const next = [...prev, ...newItems];
-        onChangeRef.current?.(next);
-        return next;
-      });
+      setItems((prev) => [...prev, ...newItems]);
 
       baseUpload(filesToUpload);
     },
@@ -163,11 +166,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
       if (item?.objectUrl) {
         URL.revokeObjectURL(item.objectUrl);
       }
-      setItems((prev) => {
-        const next = prev.filter((i) => i.id !== id);
-        onChangeRef.current?.(next);
-        return next;
-      });
+      setItems((prev) => prev.filter((i) => i.id !== id));
     },
     []
   );
@@ -181,11 +180,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
         URL.revokeObjectURL(item.objectUrl);
       }
 
-      setItems((prev) => {
-        const next = prev.filter((i) => i.id !== id);
-        onChangeRef.current?.(next);
-        return next;
-      });
+      setItems((prev) => prev.filter((i) => i.id !== id));
 
       upload([item.file]);
     },
