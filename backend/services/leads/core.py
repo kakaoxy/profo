@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
+from settings import settings
 
 from .internal import LeadFollowUpService, LeadPriceService, LeadQueryService
 
@@ -102,7 +103,7 @@ class LeadService:
     def get_leads(  # noqa: PLR0913
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int | None = None,
         search: str | None = None,
         statuses: list | None = None,
         district: str | None = None,
@@ -126,9 +127,10 @@ class LeadService:
             包含线索列表和分页信息的字典
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         return self.query_service.get_list(
             page=page,
-            page_size=page_size,
+            page_size=effective_page_size,
             search=search,
             statuses=statuses,
             district=district,
@@ -187,7 +189,7 @@ class LeadService:
         self.db.delete(lead)
         self.db.commit()
 
-    def get_my_leads(self, user_id: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:
+    def get_my_leads(self, user_id: str, page: int = 1, page_size: int | None = None) -> dict[str, Any]:
         """获取当前用户创建的线索列表（分页）.
 
         Args:
@@ -199,9 +201,10 @@ class LeadService:
             包含线索列表和分页信息的字典
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         return self.query_service.get_list(
             page=page,
-            page_size=page_size,
+            page_size=effective_page_size,
             creator_id=user_id,
         )
 

@@ -20,6 +20,7 @@ from schemas.community import (
 )
 from schemas.public import PublicCommunitySearchItem
 from services.system.exceptions import ConflictError, ServiceException, ValidationError
+from settings import settings
 from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ class CommunityQueryService:
         db: Session,
         search: str | None = None,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> CommunityListResponse:
         """查询小区列表.
 
@@ -89,6 +90,7 @@ class CommunityQueryService:
             CommunityListResponse: 分页查询结果
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         stmt = (
             db.query(
                 Community,
@@ -114,7 +116,7 @@ class CommunityQueryService:
             count_query = count_query.filter(Community.name.like(f"%{search}%"))
         total = count_query.scalar()
 
-        stmt = stmt.order_by(Community.name).offset((page - 1) * page_size).limit(page_size)
+        stmt = stmt.order_by(Community.name).offset((page - 1) * effective_page_size).limit(effective_page_size)
 
         results = stmt.all()
 
@@ -132,7 +134,7 @@ class CommunityQueryService:
             )
             items.append(resp)
 
-        logger.info("查询小区完成: 总数=%s, 页码=%s, 每页=%s, 返回=%s", total, page, page_size, len(items))
+        logger.info("查询小区完成: 总数=%s, 页码=%s, 每页=%s, 返回=%s", total, page, effective_page_size, len(items))
 
         return CommunityListResponse(
             total=total,

@@ -14,6 +14,7 @@ from dependencies.auth import (
     CurrentInternalUserDep,
     DbSessionDep,
 )
+from dependencies.common import PaginationDep
 from schemas.user import (
     PasswordChange,
     PasswordResetRequest,
@@ -36,12 +37,11 @@ def get_users(  # noqa: PLR0913
     request: Request,
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
+    pagination: PaginationDep,
     username: Annotated[str | None, Query(description="用户名搜索")] = None,
     nickname: Annotated[str | None, Query(description="昵称搜索")] = None,
     role_id: Annotated[str | None, Query(description="角色ID筛选")] = None,
     status: Annotated[str | None, Query(description="用户状态筛选")] = None,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> UserListResponse:
     """获取用户列表，支持搜索和筛选.
 
@@ -53,15 +53,15 @@ def get_users(  # noqa: PLR0913
         nickname,
         role_id,
         status,
-        page,
-        page_size,
+        pagination.page,
+        pagination.page_size,
     )
 
     return UserListResponse(
         total=total,
         items=users,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

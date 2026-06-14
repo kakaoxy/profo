@@ -74,3 +74,8 @@ class RenovationPhoto(BaseModel):
     description: Mapped[str | None] = mapped_column(Text, nullable=True, comment="描述")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
+    __table_args__ = (
+        Index("idx_renovation_photo_project", "project_id"),
+        Index("idx_renovation_photo_project_stage", "project_id", "stage"),
+    )

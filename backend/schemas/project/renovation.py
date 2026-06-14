@@ -20,7 +20,7 @@ from models.common import RenovationStage
 class RenovationUpdate(BaseModel):
     """更新改造阶段请求模型."""
 
-    renovation_stage: RenovationStage = Field(..., description="改造子阶段")
+    renovation_stage: RenovationStage = Field(description="改造子阶段")
     stage_completed_at: datetime | None = Field(None, description="阶段完成时间")
     model_config = ConfigDict(from_attributes=True)
 
@@ -173,7 +173,7 @@ class RenovationBase(BaseModel):
 class RenovationCreate(RenovationBase):
     """创建装修记录请求."""
 
-    project_id: str = Field(..., description="项目ID")
+    project_id: str = Field(description="项目ID")
 
 
 class RenovationInfoUpdate(BaseModel):
@@ -206,8 +206,8 @@ class RenovationInfoUpdate(BaseModel):
 class RenovationResponse(RenovationBase):
     """装修记录响应."""
 
-    id: str = Field(..., description="装修记录ID")
-    project_id: str = Field(..., description="项目ID")
+    id: str = Field(description="装修记录ID")
+    project_id: str = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime

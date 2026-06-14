@@ -16,6 +16,7 @@ from .contract import (
 from .core import (
     ProjectBase,
     ProjectCreate,
+    ProjectFilter,
     ProjectListResponse,
     ProjectResponse,
     ProjectStatsResponse,
@@ -140,6 +141,7 @@ __all__ = [
     "ProjectBase",
     "ProjectCompleteRequest",
     "ProjectCreate",
+    "ProjectFilter",
     "ProjectListResponse",
     "ProjectReportResponse",
     "ProjectResponse",

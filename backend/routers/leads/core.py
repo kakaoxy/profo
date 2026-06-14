@@ -6,6 +6,7 @@ from fastapi import APIRouter, Path, Query, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
+from dependencies.common import PaginationDep
 from models.common import LeadStatus
 from schemas.lead import (
     LeadCreate,
@@ -59,8 +60,7 @@ def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
 def get_leads(  # noqa: PLR0913
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 20,
+    pagination: PaginationDep,
     search: Annotated[str | None, Query(description="小区名称搜索")] = None,
     statuses: Annotated[list[LeadStatus] | None, Query(description="状态筛选")] = None,
     district: Annotated[str | None, Query(description="行政区筛选")] = None,
@@ -74,8 +74,8 @@ def get_leads(  # noqa: PLR0913
     """
     service = LeadService(db)
     result = service.get_leads(
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         search=search,
         statuses=statuses,
         district=district,
@@ -89,8 +89,8 @@ def get_leads(  # noqa: PLR0913
     return PaginatedLeadListResponse(
         items=items,
         total=result["total"],
-        page=result["page"],
-        page_size=result["page_size"],
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

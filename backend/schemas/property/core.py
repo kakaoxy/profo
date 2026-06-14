@@ -7,6 +7,32 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from schemas.enums import IngestionStatus
 
 
+class PropertyFilter(BaseModel):
+    """房源筛选参数.
+
+    注意: 由于路由中列表字段(districts, business_circles等)使用逗号分隔字符串
+    并通过 parse_comma_separated_list 解析，Depends() 方式无法直接处理，
+    因此路由暂不使用此 Schema 作为 Depends 参数，仅作文档和未来用途。
+    """
+
+    status: str | None = Field(None, description="房源状态: 在售 | 成交")
+    community_name: str | None = Field(None, description="小区名称（模糊搜索）")
+    districts: list[str] | None = Field(None, description="行政区列表")
+    business_circles: list[str] | None = Field(None, description="商圈列表")
+    orientations: list[str] | None = Field(None, description="朝向列表")
+    floor_levels: list[str] | None = Field(None, description="楼层级别列表")
+    min_price: float | None = Field(None, ge=0, description="最低价格（万）")
+    max_price: float | None = Field(None, ge=0, description="最高价格（万）")
+    min_area: float | None = Field(None, ge=0, description="最小面积（㎡）")
+    max_area: float | None = Field(None, ge=0, description="最大面积（㎡）")
+    rooms: list[int] | None = Field(None, description="室数量列表")
+    rooms_gte: int | None = Field(None, ge=0, description="最少室数量")
+    sort_by: str = Field("updated_at", description="排序字段")
+    sort_order: str = Field("desc", description="排序方向: asc | desc")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PropertyIngestionModel(BaseModel):
     """统一的数据接收模型，支持 CSV 和 JSON.
 
@@ -14,24 +40,24 @@ class PropertyIngestionModel(BaseModel):
     """
 
     # 核心唯一标识
-    data_source: str = Field(..., alias="数据源", description="数据来源平台")
-    source_property_id: str = Field(..., alias="房源ID", description="来源平台的房源ID")
+    data_source: str = Field(alias="数据源", description="数据来源平台")
+    source_property_id: str = Field(alias="房源ID", description="来源平台的房源ID")
 
     # 核心业务字段
-    status: IngestionStatus = Field(..., alias="状态", description="房源状态")
-    community_name: str = Field(..., alias="小区名", min_length=1, description="小区名称")
+    status: IngestionStatus = Field(alias="状态", description="房源状态")
+    community_name: str = Field(alias="小区名", min_length=1, description="小区名称")
 
     # 户型信息
-    rooms: int = Field(..., ge=0, alias="室", description="室数量")
+    rooms: int = Field(ge=0, alias="室", description="室数量")
     halls: int = Field(default=0, ge=0, alias="厅", description="厅数量")
     baths: int = Field(default=0, ge=0, alias="卫", description="卫生间数量")
-    orientation: str = Field(..., alias="朝向", description="房屋朝向")
+    orientation: str = Field(alias="朝向", description="房屋朝向")
 
     # 楼层信息
-    floor_original: str = Field(..., alias="楼层", description="原始楼层字符串")
+    floor_original: str = Field(alias="楼层", description="原始楼层字符串")
 
     # 面积信息
-    build_area: float = Field(..., gt=0, alias="面积", description="建筑面积(㎡)")
+    build_area: float = Field(gt=0, alias="面积", description="建筑面积(㎡)")
     inner_area: float | None = Field(None, gt=0, alias="套内面积", description="套内面积(㎡)")
 
     # 动态必填字段 - 在售

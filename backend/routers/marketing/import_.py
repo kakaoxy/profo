@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, status
 
 from dependencies.auth import DbSessionDep, require_roles
+from dependencies.common import PaginationDep
 from schemas.l4_marketing.import_schemas import (
     L3ProjectBriefResponse,
     L3ProjectImportResponse,
@@ -47,10 +48,9 @@ def get_import_service(db: DbSessionDep) -> L4MarketingImportService:
 )
 def list_available_projects(
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
+    pagination: PaginationDep,
     community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
     status: Annotated[str | None, Query(description="项目状态筛选")] = None,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 20,
 ) -> L3ProjectListResponse:
     """获取可用于关联的L3项目列表.
 
@@ -59,14 +59,14 @@ def list_available_projects(
     items, total = service.get_available_l3_projects(
         community_name=community_name,
         status=status,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
     return L3ProjectListResponse(
         items=items,
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

@@ -5,6 +5,8 @@
 
 from pydantic import BaseModel, ConfigDict
 
+from settings import settings
+
 
 class PropertyQueryParams(BaseModel):
     """房源查询参数对象."""
@@ -37,7 +39,7 @@ class PropertyQueryParams(BaseModel):
 
     # 分页参数
     page: int = 1
-    page_size: int = 50
+    page_size: int = settings.default_page_size
 
     def has_price_filter(self) -> bool:
         """是否有价格筛选条件."""

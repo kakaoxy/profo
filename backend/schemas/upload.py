@@ -11,26 +11,26 @@ from pydantic import BaseModel, ConfigDict, Field
 class UploadResult(BaseModel):
     """CSV上传结果."""
 
-    total: int = Field(..., description="总记录数")
-    success: int = Field(..., description="成功导入数")
-    failed: int = Field(..., description="失败记录数")
+    total: int = Field(description="总记录数")
+    success: int = Field(description="成功导入数")
+    failed: int = Field(description="失败记录数")
     failed_file_url: str | None = Field(None, description="失败记录CSV下载链接")
 
 
 class ImportTaskCreateResponse(BaseModel):
     """导入任务创建响应."""
 
-    task_id: str = Field(..., description="任务ID")
-    status: str = Field(..., description="任务状态")
+    task_id: str = Field(description="任务ID")
+    status: str = Field(description="任务状态")
     message: str = Field(default="导入任务已创建", description="提示信息")
 
 
 class ImportTaskStatusResponse(BaseModel):
     """导入任务状态响应."""
 
-    task_id: str = Field(..., validation_alias="id", description="任务ID")
-    status: str = Field(..., description="任务状态: pending/processing/completed/failed/cancelled")
-    filename: str = Field(..., description="原始文件名")
+    task_id: str = Field(validation_alias="id", description="任务ID")
+    status: str = Field(description="任务状态: pending/processing/completed/failed/cancelled")
+    filename: str = Field(description="原始文件名")
 
     # 进度信息
     total_records: int = Field(default=0, description="总记录数")
@@ -44,7 +44,7 @@ class ImportTaskStatusResponse(BaseModel):
     error_message: str | None = Field(None, description="错误信息")
 
     # 时间信息
-    created_at: datetime = Field(..., description="创建时间")
+    created_at: datetime = Field(description="创建时间")
     started_at: datetime | None = Field(None, description="开始处理时间")
     completed_at: datetime | None = Field(None, description="完成时间")
     processing_duration: float | None = Field(None, description="处理时长(秒)")
@@ -55,9 +55,9 @@ class ImportTaskStatusResponse(BaseModel):
 class PushResult(BaseModel):
     """JSON推送结果."""
 
-    total: int = Field(..., description="总记录数")
-    success: int = Field(..., description="成功导入数")
-    failed: int = Field(..., description="失败记录数")
+    total: int = Field(description="总记录数")
+    success: int = Field(description="成功导入数")
+    failed: int = Field(description="失败记录数")
     errors: list[dict] = Field(default_factory=list, description="错误详情列表")
 
 

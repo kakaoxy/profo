@@ -17,6 +17,7 @@ from dependencies.auth import (
     CurrentInternalUserDep,
     DbSessionDep,
 )
+from dependencies.common import PaginationDep
 from models import Community, PropertyCurrent
 from models.common.base import MediaType
 from schemas import (
@@ -58,6 +59,7 @@ def get_properties(  # noqa: PLR0913
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
+    pagination: PaginationDep,
     status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
     districts: Annotated[str | None, Query(description="行政区，逗号分隔，例如: 徐汇,静安")] = None,
@@ -72,8 +74,6 @@ def get_properties(  # noqa: PLR0913
     rooms_gte: Annotated[int | None, Query(ge=0, description="最少室数量，例如: 5 表示5室以上")] = None,
     sort_by: Annotated[str, Query(description="排序字段")] = "updated_at",
     sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc",
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页数量")] = 50,
 ) -> PaginatedPropertyResponse:
     """查询房源列表.
 
@@ -102,8 +102,8 @@ def get_properties(  # noqa: PLR0913
         rooms_gte=rooms_gte,
         sort_by=sort_by,
         sort_order=sort_order,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

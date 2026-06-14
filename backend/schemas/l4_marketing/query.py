@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from schemas.response import PaginatedResponse
+from settings import settings
 
 from .media import L4MarketingMediaResponse
 from .project import L4MarketingProjectResponse
@@ -12,7 +13,7 @@ class L4MarketingProjectQuery(BaseModel):
     """营销项目查询参数."""
 
     page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=20, ge=1, le=200)
+    page_size: int = Field(default=settings.default_page_size, ge=1, le=200)
     community_id: str | None = None
     publish_status: str | None = None
     project_status: str | None = None
@@ -24,7 +25,7 @@ class L4MarketingProjectQuery(BaseModel):
 class L4SyncResponse(BaseModel):
     """同步响应."""
 
-    total_synced: int = Field(..., ge=0, description="同步数量")
+    total_synced: int = Field(ge=0, description="同步数量")
 
 
 class L4RefreshResponse(BaseModel):

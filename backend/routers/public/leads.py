@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
+from dependencies.common import PaginationDep
 from schemas.lead import LeadCreate
 from schemas.public import (
     PublicFollowupItem,
@@ -97,11 +98,10 @@ def get_my_leads(
     request: Request,
     current_user: CurrentCustomerUserDep,
     service: LeadServiceDep,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
+    pagination: PaginationDep,
 ) -> PublicLeadListResponse:
     """获取当前用户创建的线索列表（此路由必须在 /{lead_id} 之前定义以避免路径冲突）."""
-    result = service.get_my_leads(user_id=current_user.id, page=page, page_size=page_size)
+    result = service.get_my_leads(user_id=current_user.id, page=pagination.page, page_size=pagination.page_size)
 
     items = []
     for lead in result["items"]:

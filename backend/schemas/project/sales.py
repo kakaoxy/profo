@@ -70,7 +70,7 @@ class SalesRecordResponse(BaseModel):
     customer_name: str | None = Field(None, validation_alias=AliasChoices("customer_name", "interaction_target"))
     customer_phone: str | None = None
     customer_info: dict[str, Any] | None = None
-    record_date: datetime = Field(..., validation_alias=AliasChoices("record_date", "interaction_at"))
+    record_date: datetime = Field(validation_alias=AliasChoices("record_date", "interaction_at"))
     record_time: str | None = None
     price: Decimal | None = None
     notes: str | None = Field(None, validation_alias=AliasChoices("notes", "content"))
@@ -92,11 +92,9 @@ class ProjectCompleteRequest(BaseModel):
     """确认成交请求."""
 
     sold_price: Decimal = Field(
-        ...,
         validation_alias=AliasChoices("sold_price", "soldPrice"),
     )
     sold_date: datetime = Field(
-        ...,
         validation_alias=AliasChoices("sold_date", "soldDate"),
     )
 
@@ -127,7 +125,7 @@ class SaleBase(BaseModel):
 class SaleCreate(SaleBase):
     """创建销售记录请求."""
 
-    project_id: str = Field(..., description="项目ID")
+    project_id: str = Field(description="项目ID")
 
 
 class SaleUpdate(BaseModel):
@@ -146,8 +144,8 @@ class SaleUpdate(BaseModel):
 class SaleResponse(SaleBase):
     """销售记录响应."""
 
-    id: str = Field(..., description="销售ID")
-    project_id: str = Field(..., description="项目ID")
+    id: str = Field(description="销售ID")
+    project_id: str = Field(description="项目ID")
     is_deleted: bool = Field(default=False, description="逻辑删除标记")
     created_at: datetime
     updated_at: datetime

@@ -24,6 +24,7 @@ from schemas.project.sales import (
     SalesRecordCreate,
     SalesRolesUpdate,
 )
+from settings import settings
 
 # 导入拆分后的子服务
 from .core import ProjectCoreService
@@ -72,10 +73,11 @@ class ProjectService:
         status_filter: str | None = None,
         community_name: str | None = None,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> dict[str, Any]:
         """获取项目列表."""
-        return self._core_service.get_projects(status_filter, community_name, page, page_size)
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
+        return self._core_service.get_projects(status_filter, community_name, page, effective_page_size)
 
     def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目."""

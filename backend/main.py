@@ -91,9 +91,13 @@ app = FastAPI(
     openapi_tags=[
         {"name": "projects", "description": "项目管理 - 签约、装修、销售全流程"},
         {"name": "cashflow", "description": "现金流管理"},
+        {"name": "renovation", "description": "装修阶段管理"},
+        {"name": "sales", "description": "销售记录管理"},
         {"name": "properties", "description": "市场情报 - 房源查询与导出"},
         {"name": "communities", "description": "市场情报 - 小区管理与合并"},
         {"name": "leads", "description": "线索管理 - 卖房估价"},
+        {"name": "lead-followups", "description": "线索跟进记录"},
+        {"name": "lead-prices", "description": "线索价格历史"},
         {"name": "l4-marketing", "description": "L4 市场营销 - 营销房源管理"},
         {"name": "l4-marketing-import", "description": "L4 市场营销 - 数据导入"},
         {"name": "auth", "description": "认证授权 - 登录、令牌、API Key"},

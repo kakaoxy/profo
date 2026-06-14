@@ -40,6 +40,15 @@ def parse_date_string(value: str | datetime | None) -> datetime | None:
     return None
 
 
+class ProjectFilter(BaseModel):
+    """项目筛选参数."""
+
+    status: str | None = Field(None, description="项目状态筛选")
+    community_name: str | None = Field(None, description="小区名称筛选")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProjectBase(BaseModel):
     """项目基础字段 - 适配新的规范化表结构."""
 
@@ -61,7 +70,7 @@ class ProjectBase(BaseModel):
 class UserBrief(BaseModel):
     """用户简要信息 - 用于关联对象展示."""
 
-    id: str = Field(..., description="用户ID")
+    id: str = Field(description="用户ID")
     nickname: str | None = Field(None, description="昵称")
     avatar: str | None = Field(None, description="头像")
     username: str | None = Field(None, description="用户名")
@@ -73,14 +82,14 @@ class ProjectCreate(BaseModel):
     """创建项目请求模型 - 已适配规范化表结构."""
 
     community_id: str | None = Field(None, max_length=36, description="小区ID")
-    community_name: str = Field(..., max_length=200, description="小区名称")
-    address: str = Field(..., max_length=500, description="物业地址")
+    community_name: str = Field(max_length=200, description="小区名称")
+    address: str = Field(max_length=500, description="物业地址")
     area: Decimal | None = Field(None, description="产证面积(m²)")
     layout: str | None = Field(None, max_length=50, description="户型")
     orientation: str | None = Field(None, max_length=50, description="朝向")
     project_manager_id: str | None = Field(None, description="项目负责人ID")
 
-    contract_no: str = Field(..., max_length=100, description="合同编号")
+    contract_no: str = Field(max_length=100, description="合同编号")
     signing_price: Decimal | None = Field(None, description="签约价格(万)")
     signing_date: str | None = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
     signing_period: int | None = Field(None, description="合同周期(天)")
@@ -170,9 +179,9 @@ class ProjectResponse(BaseModel):
     业务日期字段使用字符串类型 (YYYY-MM-DD) 避免时区问题.
     """
 
-    id: str = Field(..., description="项目ID")
+    id: str = Field(description="项目ID")
     name: str | None = Field(None, description="项目名称")
-    status: str = Field(..., description="项目状态")
+    status: str = Field(description="项目状态")
     created_at: datetime
     updated_at: datetime
 

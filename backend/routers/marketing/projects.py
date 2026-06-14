@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, require_roles
+from dependencies.common import PaginationDep
 from schemas.l4_marketing import (
     L4MarketingMediaCreate,
     L4MarketingMediaListResponse,
@@ -56,8 +57,7 @@ _MediaServiceDep = Annotated[L4MarketingMediaService, Depends(get_media_service)
 )
 def list_marketing_projects(  # noqa: PLR0913
     service: _ProjectServiceDep,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 20,
+    pagination: PaginationDep,
     publish_status: Annotated[str | None, Query(description="发布状态: 草稿/发布")] = None,
     project_status: Annotated[str | None, Query(description="项目状态: 在途/在售/已售")] = None,
     consultant_id: Annotated[str | None, Query(description="顾问ID")] = None,
@@ -71,10 +71,10 @@ def list_marketing_projects(  # noqa: PLR0913
         community_id=community_id,
     )
 
-    skip = (page - 1) * page_size
+    skip = (pagination.page - 1) * pagination.page_size
     items, total = service.get_projects(
         skip=skip,
-        limit=page_size,
+        limit=pagination.page_size,
         publish_status=publish_status,
         project_status=project_status,
         consultant_id=consultant_id,
@@ -84,8 +84,8 @@ def list_marketing_projects(  # noqa: PLR0913
     return L4MarketingProjectListResponse(
         items=items,
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         summary=summary,
     )
 
@@ -170,17 +170,16 @@ def delete_marketing_project(
 def list_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _MediaServiceDep,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=200, description="每页大小")] = 100,
+    pagination: PaginationDep,
 ) -> L4MarketingMediaListResponse:
     """获取营销项目的媒体列表."""
-    skip = (page - 1) * page_size
-    items, total = service.get_media_list(project_id, skip=skip, limit=page_size)
+    skip = (pagination.page - 1) * pagination.page_size
+    items, total = service.get_media_list(project_id, skip=skip, limit=pagination.page_size)
     return L4MarketingMediaListResponse(
         items=items,
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

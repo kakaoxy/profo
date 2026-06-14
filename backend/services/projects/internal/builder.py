@@ -43,34 +43,30 @@ class ProjectResponseBuilder:
         """
         self.db = db
 
-    def build(self, project: "Project") -> dict[str, Any]:
-        """构建完整的项目响应数据.
+    def build(self, project: "Project", *, slim: bool = False) -> dict[str, Any]:
+        """构建项目响应数据.
 
-        将项目模型及其关联数据组合成完整的响应字典，包含：
-        - 项目基础信息
-        - 合同信息
-        - 业主信息
-        - 销售信息
-        - 财务统计
-        - 互动记录
-        - 装修照片
-        - 阶段日期映射
+        将项目模型及其关联数据组合成完整的响应字典.
 
         Args:
             project: Project模型实例
+            slim: 是否使用精简模式（列表页使用，跳过财务/互动/阶段日期等重量级查询）
 
         Returns:
-            包含完整项目信息的字典
+            包含项目信息的字典
 
         """
         response = self._build_base_info(project)
         response.update(self._build_contract_info(project.id))
         response.update(self._build_owner_info(project.id))
         response.update(self._build_sale_info(project.id))
-        response.update(self._build_finance_info(project.id))
-        response.update(self._build_interactions(project.id))
+
+        if not slim:
+            response.update(self._build_finance_info(project.id))
+            response.update(self._build_interactions(project.id))
+            response.update(self._build_stage_dates(project.id))
+
         response.update(self._build_renovation_photos(project))
-        response.update(self._build_stage_dates(project.id))
 
         return response
 

@@ -104,6 +104,10 @@ class LeadFollowUp(Base):
     lead = relationship("Lead", back_populates="follow_ups", foreign_keys=[lead_id], primaryjoin="foreign(LeadFollowUp.lead_id) == Lead.id")
     created_by = relationship("User", foreign_keys=[created_by_id], primaryjoin="foreign(LeadFollowUp.created_by_id) == User.id")
 
+    __table_args__ = (
+        Index("idx_lead_followup_lead", "lead_id"),
+    )
+
     @property
     def created_by_name(self) -> str | None:
         """获取跟进人名称."""
@@ -127,6 +131,10 @@ class LeadPriceHistory(Base):
     # Relationships
     lead = relationship("Lead", back_populates="price_history", foreign_keys=[lead_id], primaryjoin="foreign(LeadPriceHistory.lead_id) == Lead.id")
     created_by = relationship("User", foreign_keys=[created_by_id], primaryjoin="foreign(LeadPriceHistory.created_by_id) == User.id")
+
+    __table_args__ = (
+        Index("idx_lead_price_history_lead", "lead_id"),
+    )
 
     @property
     def created_by_name(self) -> str | None:

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from models import Project
 from services.system.exceptions import ResourceNotFoundError
+from settings import settings
 
 
 class ProjectQueryService:
@@ -97,7 +98,7 @@ class ProjectQueryService:
         status: str | None = None,
         community_name: str | None = None,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> list[Project]:
         """分页获取项目列表.
 
@@ -113,6 +114,7 @@ class ProjectQueryService:
             包含项目列表和分页信息的字典
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(Project).filter(Project.is_deleted.is_(False))
 
         if status:
@@ -135,8 +137,8 @@ class ProjectQueryService:
             query.order_by(
                 Project.created_at.desc(),
             )
-            .offset((page - 1) * page_size)
-            .limit(page_size)
+            .offset((page - 1) * effective_page_size)
+            .limit(effective_page_size)
             .all()
         )
 
@@ -144,5 +146,5 @@ class ProjectQueryService:
             "items": projects,
             "total": total,
             "page": page,
-            "page_size": page_size,
+            "page_size": effective_page_size,
         }
