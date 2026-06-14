@@ -41,8 +41,8 @@ def get_communities(
     return service.query_communities(
         db=db,
         search=search,
-        page=pagination["page"],
-        page_size=pagination["page_size"],
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

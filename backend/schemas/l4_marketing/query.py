@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from schemas.common import PaginatedResponse
+from schemas.response import PaginatedResponse
 
 from .media import L4MarketingMediaResponse
 from .project import L4MarketingProjectResponse

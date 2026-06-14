@@ -10,7 +10,6 @@ from enum import Enum
 from sqlalchemy import (
     JSON,
     Boolean,
-    Column,
     DateTime,
     ForeignKey,
     Index,
@@ -19,7 +18,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from models.common.base import BaseModel
 
@@ -56,39 +55,39 @@ class L4MarketingProject(BaseModel):
 
     # 主键 - 整数类型，自增
     # 注意：继承的BaseModel使用String(36) UUID，我们需要覆盖它
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="营销项目ID")
 
     # 小区ID - UUID字符串类型，非空，关联小区
-    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="关联小区ID（UUID字符串）")
+    community_id: Mapped[str] = mapped_column(String(36), ForeignKey("communities.id"), nullable=False, comment="关联小区ID（UUID字符串）")
 
     # 小区名称 - 冗余存储，避免跨层级JOIN查询
-    community_name = Column(String(200), nullable=True, comment="小区名称(冗余存储)")
+    community_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="小区名称(冗余存储)")
 
     # 户型信息
-    layout = Column(String(100), nullable=False, comment="户型，如：三室两厅")
-    orientation = Column(String(50), nullable=False, comment="朝向，如：南北通透")
-    floor_info = Column(String(100), nullable=False, comment="楼层信息，如：15/28层")
+    layout: Mapped[str] = mapped_column(String(100), nullable=False, comment="户型，如：三室两厅")
+    orientation: Mapped[str] = mapped_column(String(50), nullable=False, comment="朝向，如：南北通透")
+    floor_info: Mapped[str] = mapped_column(String(100), nullable=False, comment="楼层信息，如：15/28层")
 
     # 面积与价格
-    area = Column(Numeric(10, 2), nullable=False, comment="面积(m²)，保留两位小数")
-    total_price = Column(Numeric(12, 2), nullable=False, comment="总价(万元)，保留两位小数")
-    unit_price = Column(Numeric(12, 2), nullable=False, comment="单价(万元/m²)，自动计算，保留两位小数")
+    area: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, comment="面积(m²)，保留两位小数")
+    total_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, comment="总价(万元)，保留两位小数")
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, comment="单价(万元/m²)，自动计算，保留两位小数")
 
     # 营销信息
-    title = Column(String(255), nullable=False, comment="标题，最大长度255")
-    images = Column(JSON, default=list, comment="图片URL列表，JSON数组")
-    sort_order = Column(Integer, nullable=False, default=0, comment="排序权重，默认0")
-    tags = Column(JSON, default=list, comment="标签列表，JSON数组")
-    decoration_style = Column(String(100), nullable=True, comment="装修风格，最大长度100")
+    title: Mapped[str] = mapped_column(String(255), nullable=False, comment="标题，最大长度255")
+    images: Mapped[list] = mapped_column(JSON, default=list, comment="图片URL列表，JSON数组")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="排序权重，默认0")
+    tags: Mapped[list] = mapped_column(JSON, default=list, comment="标签列表，JSON数组")
+    decoration_style: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="装修风格，最大长度100")
 
     # 状态控制
-    publish_status = Column(
+    publish_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default=PublishStatus.DRAFT,
         comment="发布状态: 草稿/发布",
     )
-    project_status = Column(
+    project_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default=MarketingProjectStatus.IN_PROGRESS,
@@ -96,20 +95,20 @@ class L4MarketingProject(BaseModel):
     )
 
     # 软引用关联
-    project_id = Column(String(36), nullable=True, comment="关联L3项目ID(软引用)，可为空表示独立项目")
-    consultant_id = Column(String(36), nullable=True, comment="关联顾问ID(软引用User表)，User表id为String(36) UUID")
+    project_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="关联L3项目ID(软引用)，可为空表示独立项目")
+    consultant_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="关联顾问ID(软引用User表)，User表id为String(36) UUID")
 
     # 逻辑删除
-    is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     # 时间戳（覆盖基类，使用数据库默认值）
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="创建时间",
     )
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
@@ -187,10 +186,10 @@ class L4MarketingMedia(BaseModel):
     __tablename__ = "l4_marketing_media"
 
     # 主键 - 整数类型，自增
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="媒体ID")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="媒体ID")
 
     # 关联营销项目 - 整数外键
-    marketing_project_id = Column(
+    marketing_project_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("l4_marketing_projects.id"),
         nullable=False,
@@ -198,7 +197,7 @@ class L4MarketingMedia(BaseModel):
     )
 
     # 媒体类型
-    media_type = Column(
+    media_type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="image",
@@ -206,7 +205,7 @@ class L4MarketingMedia(BaseModel):
     )
 
     # 照片分类
-    photo_category = Column(
+    photo_category: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default=PhotoCategory.MARKETING,
@@ -214,30 +213,30 @@ class L4MarketingMedia(BaseModel):
     )
 
     # 装修阶段标记（仅改造照片使用）
-    renovation_stage = Column(String(50), nullable=True, comment="装修阶段: 拆除/水电/木瓦/油漆/安装/交付/other")
+    renovation_stage: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="装修阶段: 拆除/水电/木瓦/油漆/安装/交付/other")
 
     # 来源 A: 关联 L3 项目照片 (标记机制，URL 实时查询)
-    origin_media_id = Column(Integer, nullable=True, comment="来源媒体ID(L3层)")
+    origin_media_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="来源媒体ID(L3层)")
 
     # 来源 B: 独立上传 (直接存储 URL)
-    file_url = Column(Text, nullable=False, comment="文件URL")
-    thumbnail_url = Column(Text, nullable=True, comment="缩略图URL")
+    file_url: Mapped[str] = mapped_column(Text, nullable=False, comment="文件URL")
+    thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True, comment="缩略图URL")
 
     # 描述信息
-    description = Column(Text, nullable=True, comment="描述")
-    sort_order = Column(Integer, nullable=False, default=0, comment="排序")
+    description: Mapped[str | None] = mapped_column(Text, nullable=True, comment="描述")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="排序")
 
     # 逻辑删除
-    is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     # 时间戳
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="创建时间",
     )
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),

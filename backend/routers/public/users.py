@@ -7,14 +7,14 @@ from fastapi import APIRouter, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
-from models import User
 from schemas.public import (
     PublicPhoneResponse,
     PublicPhoneUpdate,
     PublicProfileUpdate,
     PublicUserProfileResponse,
 )
-from services.system.exceptions import AuthenticationError, ValidationError
+from services.system.exceptions import AuthenticationError
+from services.system.user import user_service
 from utils.auth import verify_password
 from utils.formatters import mask_phone
 
@@ -66,17 +66,7 @@ def update_phone(
         msg = "密码错误"
         raise AuthenticationError(msg)
 
-    existing_phone = (
-        db.query(User)
-        .filter(
-            User.phone == body.phone,
-            User.id != current_user.id,
-        )
-        .first()
-    )
-    if existing_phone:
-        msg = "手机号已被其他账号绑定"
-        raise ValidationError(msg)
+    user_service.check_phone_taken_by_other(db, body.phone, current_user.id)
 
     current_user.phone = body.phone
     db.commit()

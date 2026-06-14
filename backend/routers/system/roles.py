@@ -29,13 +29,13 @@ def get_roles(  # noqa: PLR0913
     is_active: Annotated[bool | None, Query(description="是否激活筛选")] = None,
 ) -> RoleListResponse:
     """获取角色列表，支持搜索和筛选."""
-    total, roles = role_service.get_roles(db, name, code, is_active, pagination["page"], pagination["page_size"])
+    total, roles = role_service.get_roles(db, name, code, is_active, pagination.page, pagination.page_size)
 
     return RoleListResponse(
         total=total,
         items=roles,
-        page=pagination["page"],
-        page_size=pagination["page_size"],
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

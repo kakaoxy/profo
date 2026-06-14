@@ -1,29 +1,13 @@
 """通用Schema
 
-包含分页响应、历史记录、失败记录、楼层解析等通用模型.
+包含历史记录、失败记录、楼层解析等通用模型.
 """  # noqa: D400, D415
 
 from datetime import datetime
-from typing import Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
-T = TypeVar("T")
-
-
-class PaginatedResponse(BaseModel, Generic[T]):
-    """统一分页响应格式.
-
-    符合 AGENTS.md 规范第 29 条:
-    列表接口必须返回 items/total/page/page_size 固定结构
-    """
-
-    items: list[T] = Field(..., description="数据列表")
-    total: int = Field(..., description="总记录数")
-    page: int = Field(..., description="当前页码")
-    page_size: int = Field(..., description="每页数量")
-
-    model_config = ConfigDict(from_attributes=True)
+from schemas.response import PaginatedResponse
 
 
 class FloorInfo(BaseModel):

@@ -18,7 +18,9 @@ from schemas.community import (
     CommunityResponse,
     DictionaryResponse,
 )
+from schemas.public import PublicCommunitySearchItem
 from services.system.exceptions import ConflictError, ServiceException, ValidationError
+from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,44 @@ class CommunityQueryService:
     @staticmethod
     def build_response_from_community(community: Community) -> CommunityResponse:
         return CommunityResponse.model_validate(community)
+
+    @staticmethod
+    def search_public_communities(
+        db: Session,
+        keyword: str,
+        limit: int = 20,
+    ) -> list[PublicCommunitySearchItem]:
+        """C端公开搜索小区.
+
+        Args:
+            db: 数据库会话
+            keyword: 搜索关键词
+            limit: 返回条数限制
+
+        Returns:
+            list[PublicCommunitySearchItem]: 搜索结果列表
+
+        """
+        communities = (
+            db.query(Community)
+            .filter(
+                Community.is_active.is_(True),
+                Community.name.like(f"%{escape_like(keyword)}%"),
+            )
+            .order_by(Community.name)
+            .limit(limit)
+            .all()
+        )
+
+        return [
+            PublicCommunitySearchItem(
+                id=c.id,
+                name=c.name,
+                district=c.district,
+                business_circle=c.business_circle,
+            )
+            for c in communities
+        ]
 
     @staticmethod
     def query_communities(

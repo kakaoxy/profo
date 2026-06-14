@@ -8,30 +8,36 @@
 class ServiceException(Exception):  # noqa: N818
     """服务层基础异常."""
 
-    def __init__(self, message: str, status_code: int = 400) -> None:
+    def __init__(self, message: str, status_code: int = 400, headers: dict[str, str] | None = None) -> None:
         """初始化服务异常.
 
         Args:
             message: 错误消息
             status_code: HTTP状态码
+            headers: 额外的HTTP响应头
 
         """
         self.message = message
         self.status_code = status_code
+        self.headers = headers
         super().__init__(self.message)
 
 
 class AuthenticationError(ServiceException):
     """认证错误（401）."""
 
-    def __init__(self, message: str = "认证失败") -> None:
+    def __init__(self, message: str = "认证失败", *, headers: dict[str, str] | None = None) -> None:
         """初始化认证错误.
 
         Args:
             message: 错误消息
+            headers: 额外的HTTP响应头（默认包含WWW-Authenticate）
 
         """
-        super().__init__(message, status_code=401)
+        default_headers = {"WWW-Authenticate": "Bearer"}
+        if headers:
+            default_headers.update(headers)
+        super().__init__(message, status_code=401, headers=default_headers)
 
 
 class PermissionDeniedError(ServiceException):
