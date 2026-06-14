@@ -173,6 +173,40 @@ class UserService:
             msg = "手机号已被其他账号绑定"
             raise ValidationError(msg)
 
+    def update_nickname(self, db: Session, user: User, nickname: str) -> User:
+        """更新用户昵称.
+
+        Args:
+            db: 数据库会话
+            user: 用户对象
+            nickname: 新昵称
+
+        Returns:
+            User: 更新后的用户对象
+
+        """
+        user.nickname = nickname
+        db.commit()
+        db.refresh(user)
+        return user
+
+    def update_phone(self, db: Session, user: User, phone: str) -> User:
+        """更新用户手机号.
+
+        Args:
+            db: 数据库会话
+            user: 用户对象
+            phone: 新手机号
+
+        Returns:
+            User: 更新后的用户对象
+
+        """
+        user.phone = phone
+        db.commit()
+        db.refresh(user)
+        return user
+
     def list_users_simple(
         self,
         db: Session,

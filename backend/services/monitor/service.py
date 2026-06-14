@@ -242,7 +242,10 @@ class MonitorService:
 
     @staticmethod
     def add_competitor(db: Session, community_id: str, competitor_id: str) -> bool:
-        """添加竞品小区，返回是否成功添加."""
+        """添加竞品小区，返回是否成功添加.
+
+        内部自动提交事务.
+        """
         exists = (
             db.query(CommunityCompetitor)
             .filter(
@@ -254,12 +257,16 @@ class MonitorService:
         if not exists:
             new_comp = CommunityCompetitor(community_id=community_id, competitor_community_id=competitor_id)
             db.add(new_comp)
+            db.commit()
             return True
         return False
 
     @staticmethod
     def remove_competitor(db: Session, community_id: str, competitor_id: str) -> bool:
-        """移除竞品小区，返回是否成功移除."""
+        """移除竞品小区，返回是否成功移除.
+
+        内部自动提交事务.
+        """
         result = (
             db.query(CommunityCompetitor)
             .filter(
@@ -268,6 +275,8 @@ class MonitorService:
             )
             .delete(synchronize_session=False)
         )
+        if result > 0:
+            db.commit()
         return result > 0
 
     @staticmethod

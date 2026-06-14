@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import Community, PropertyCurrent
 from schemas import CommunitySearchResponse, PropertyDetailResponse
+from services.system.exceptions import ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class PropertyService:
             PropertyDetailResponse: 房源详情
 
         Raises:
-            ValueError: 房源不存在或已删除
+            ResourceNotFoundError: 房源不存在或已删除
 
         """
         property_obj = (
@@ -44,11 +45,11 @@ class PropertyService:
         )
         if not property_obj:
             msg = "房源不存在"
-            raise ValueError(msg)
+            raise ResourceNotFoundError(msg)
 
         if not property_obj.community:
             msg = "关联小区不存在"
-            raise ValueError(msg)
+            raise ResourceNotFoundError(msg)
 
         detail = PropertyDetailResponse.from_orm_with_calculations(property_obj, property_obj.community)
 

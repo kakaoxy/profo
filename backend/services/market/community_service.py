@@ -165,7 +165,7 @@ class CommunityQueryService:
 
         if dict_type not in field_map:
             msg = f"不支持的字典类型: {dict_type}，支持的类型: {list(field_map.keys())}"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         target_column = field_map[dict_type]
 

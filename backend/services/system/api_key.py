@@ -131,31 +131,38 @@ class ApiKeyService:
     def revoke_api_key(db: Session, user_id: str) -> None:
         """撤销用户的 API Key（软删除）.
 
-        注意：调用方需要自行提交事务.
-
         Args:
             db: 数据库会话
             user_id: 用户ID
 
         Raises:
             ResourceNotFoundError: 用户没有有效的 API Key
+            ServiceException: 数据库操作失败
 
         """
-        api_key = (
-            db.query(ApiKey)
-            .filter(
-                ApiKey.user_id == user_id,
-                ApiKey.status == "active",
-                ApiKey.deleted_at.is_(None),
+        try:
+            api_key = (
+                db.query(ApiKey)
+                .filter(
+                    ApiKey.user_id == user_id,
+                    ApiKey.status == "active",
+                    ApiKey.deleted_at.is_(None),
+                )
+                .first()
             )
-            .first()
-        )
 
-        if not api_key:
-            msg = "没有找到有效的 API Key"
-            raise ResourceNotFoundError(msg)
+            if not api_key:
+                msg = "没有找到有效的 API Key"
+                raise ResourceNotFoundError(msg)
 
-        api_key.revoke()
+            api_key.revoke()
+            db.commit()
+            db.refresh(api_key)
+        except SQLAlchemyError as e:
+            db.rollback()
+            if settings.debug:
+                logger.exception("API Key撤销失败")
+            raise ServiceException(_API_KEY_GEN_FAILED) from e
 
     @staticmethod
     def authenticate_by_api_key(db: Session, api_key: str) -> User:

@@ -85,9 +85,7 @@ def add_competitor(
 ) -> None:
     """添加竞品小区."""
     added = MonitorService.add_competitor(db, community_id, request.competitor_community_id)
-    if added:
-        db.commit()
-    else:
+    if not added:
         raise ConflictError("竞品小区已存在")
 
 
@@ -105,9 +103,7 @@ def remove_competitor(
     速率限制：20次/小时.
     """
     removed = MonitorService.remove_competitor(db, community_id, competitor_id)
-    if removed:
-        db.commit()
-    else:
+    if not removed:
         raise ResourceNotFoundError("竞品小区不存在")
 
 
