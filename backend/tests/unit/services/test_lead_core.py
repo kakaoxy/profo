@@ -1,11 +1,11 @@
 """LeadService 单元测试."""
 
 import pytest
-from fastapi import HTTPException
 
 from models import Lead, LeadPriceHistory, Role, User
 from schemas.lead import LeadCreate, LeadUpdate
 from services.leads.core import LeadService
+from services.system.exceptions import ResourceNotFoundError
 from utils.auth import get_password_hash
 
 
@@ -134,13 +134,11 @@ class TestGetLeadOr404:
         assert found.id == created.id
 
     def test_non_existent_raises_404(self, db_session) -> None:
-        """不存在的线索ID应抛出 HTTPException(404)."""
+        """不存在的线索ID应抛出 ResourceNotFoundError."""
         _seed_user(db_session)
         svc = LeadService(db_session)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.get_lead_or_404("non-existent-id")
-        assert exc_info.value.status_code == 404
-        assert exc_info.value.detail == "Lead not found"
 
 
 # ---------------------------------------------------------------------------
@@ -211,12 +209,11 @@ class TestUpdateLead:
         assert updated.id == created.id
 
     def test_non_existent_raises_404(self, db_session) -> None:
-        """更新不存在的线索应抛出 HTTPException(404)."""
+        """更新不存在的线索应抛出 ResourceNotFoundError."""
         user = _seed_user(db_session)
         svc = LeadService(db_session)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.update_lead("non-existent-id", LeadUpdate(community_name="x"), updater_id=user.id)
-        assert exc_info.value.status_code == 404
 
     def test_price_change_records_history(self, db_session) -> None:
         """价格变更时应记录价格历史."""
@@ -268,9 +265,8 @@ class TestDeleteLead:
         assert svc.get_lead(created.id) is None
 
     def test_non_existent_raises_404(self, db_session) -> None:
-        """删除不存在的线索应抛出 HTTPException(404)."""
+        """删除不存在的线索应抛出 ResourceNotFoundError."""
         _seed_user(db_session)
         svc = LeadService(db_session)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.delete_lead("non-existent-id")
-        assert exc_info.value.status_code == 404

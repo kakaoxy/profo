@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Path, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
@@ -17,6 +17,7 @@ from schemas.monitor import (
     TrendData,
 )
 from services.monitor import MonitorService
+from services.system.exceptions import ConflictError, ResourceNotFoundError
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 
@@ -87,10 +88,7 @@ def add_competitor(
     if added:
         db.commit()
     else:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="竞品小区已存在",
-        )
+        raise ConflictError("竞品小区已存在")
 
 
 @router.delete("/communities/{community_id}/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -110,10 +108,7 @@ def remove_competitor(
     if removed:
         db.commit()
     else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="竞品小区不存在",
-        )
+        raise ResourceNotFoundError("竞品小区不存在")
 
 
 @router.get("/communities/{community_id}/market-stats")

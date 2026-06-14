@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from models import (
@@ -29,6 +28,7 @@ from schemas.project.sales import SalesRecordCreate, SalesRolesUpdate
 from services.projects.finance import FinanceService
 from services.projects.renovation import RenovationService
 from services.projects.sales import SalesService
+from services.system.exceptions import BusinessLogicError, ResourceNotFoundError, ValidationError
 
 
 # ---------------------------------------------------------------------------
@@ -216,9 +216,8 @@ class TestFinanceServiceGetReport:
     def test_nonexistent_project_raises_404(self, db_session: Session) -> None:
         """不存在的项目应抛出 404."""
         svc = FinanceService(db_session)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.get_report("nonexistent-id")
-        assert exc_info.value.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -253,18 +252,16 @@ class TestSalesServiceUpdateRoles:
         svc = SalesService(db_session)
         roles_data = SalesRolesUpdate(channel_manager_id="nonexistent-user")
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ValidationError):
             svc.update_roles(project.id, roles_data)
-        assert exc_info.value.status_code == 400
 
     def test_nonexistent_project_raises_404(self, db_session: Session) -> None:
         """不存在的项目应抛出 404."""
         svc = SalesService(db_session)
         roles_data = SalesRolesUpdate(channel_manager_id=None)
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.update_roles("nonexistent-id", roles_data)
-        assert exc_info.value.status_code == 404
 
 
 class TestSalesServiceCreateRecord:
@@ -299,9 +296,8 @@ class TestSalesServiceCreateRecord:
             record_date=datetime.now(timezone.utc),
         )
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessLogicError):
             svc.create_record(project.id, record_data)
-        assert exc_info.value.status_code == 400
 
     def test_nonexistent_project_raises_404(self, db_session: Session) -> None:
         """不存在的项目应抛出 404."""
@@ -312,9 +308,8 @@ class TestSalesServiceCreateRecord:
             record_date=datetime.now(timezone.utc),
         )
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.create_record("nonexistent-id", record_data)
-        assert exc_info.value.status_code == 404
 
 
 class TestSalesServiceGetRecords:
@@ -424,9 +419,8 @@ class TestRenovationServiceUpdateStage:
             renovation_stage=RenovationStage.DEMOLITION,
         )
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessLogicError):
             svc.update_stage(project.id, renovation_data)
-        assert exc_info.value.status_code == 400
 
     def test_nonexistent_project_raises_404(self, db_session: Session) -> None:
         """不存在的项目应抛出 404."""
@@ -435,9 +429,8 @@ class TestRenovationServiceUpdateStage:
             renovation_stage=RenovationStage.DEMOLITION,
         )
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.update_stage("nonexistent-id", renovation_data)
-        assert exc_info.value.status_code == 404
 
     def test_creates_renovation_record_on_first_update(self, db_session: Session) -> None:
         """首次更新时应自动创建装修记录."""
@@ -533,24 +526,22 @@ class TestRenovationServiceAddPhoto:
         project = _create_project(db_session, status=ProjectStatus.SIGNING.value)
 
         svc = RenovationService(db_session)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(BusinessLogicError):
             svc.add_photo(
                 project_id=project.id,
                 stage=RenovationStage.DEMOLITION.value,
                 url="https://example.com/photo.jpg",
             )
-        assert exc_info.value.status_code == 400
 
     def test_nonexistent_project_raises_404(self, db_session: Session) -> None:
         """不存在的项目应抛出 404."""
         svc = RenovationService(db_session)
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ResourceNotFoundError):
             svc.add_photo(
                 project_id="nonexistent-id",
                 stage=RenovationStage.DEMOLITION.value,
                 url="https://example.com/photo.jpg",
             )
-        assert exc_info.value.status_code == 404
 
 
 class TestRenovationServiceGetPhotos:

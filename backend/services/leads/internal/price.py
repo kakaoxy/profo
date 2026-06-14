@@ -5,11 +5,11 @@
 
 import uuid
 
-from fastapi import HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from models.lead import Lead, LeadPriceHistory
+from services.system.exceptions import ResourceNotFoundError
 
 
 class LeadPriceService:
@@ -67,12 +67,12 @@ class LeadPriceService:
             创建的价格记录对象
 
         Raises:
-            HTTPException: 404 当线索不存在时
+            ResourceNotFoundError: 当线索不存在时
 
         """
         lead = self.db.query(Lead).filter(Lead.id == lead_id).first()
         if not lead:
-            raise HTTPException(status_code=404, detail="Lead not found")
+            raise ResourceNotFoundError("线索不存在")
 
         # 创建价格记录
         rec = LeadPriceHistory(

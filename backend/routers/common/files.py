@@ -8,13 +8,14 @@ from pathlib import Path
 from typing import Annotated
 
 import filetype
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from utils.common import RateLimits, limiter
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
+from services.system.exceptions import FileProcessingError, ValidationError
 from settings import settings
 from utils.file_security import get_safe_file_path, sanitize_filename
 
@@ -51,19 +52,13 @@ def upload_file(
         safe_name = sanitize_filename(file.filename)
         ext = Path(safe_name).suffix.lower()
         if ext not in settings.allowed_extensions:
-            raise HTTPException(  # noqa: TRY301
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}",
-            )
+            raise ValidationError(f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}")
 
         file.file.seek(0, 2)
         file_size = file.file.tell()
         file.file.seek(0)
         if file_size > settings.max_upload_size:
-            raise HTTPException(  # noqa: TRY301
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes",
-            )
+            raise ValidationError(f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes")
 
         header = file.file.read(2048)
         file.file.seek(0)
@@ -73,17 +68,11 @@ def upload_file(
             if ext in TEXT_BASED_EXTENSIONS:
                 guessed_mime = TEXT_BASED_EXTENSIONS[ext]
                 if guessed_mime not in settings.allowed_mime_types:
-                    raise HTTPException(  # noqa: TRY301
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"不支持的文件类型。检测到的MIME类型: {guessed_mime}",
-                    )
+                    raise ValidationError(f"不支持的文件类型。检测到的MIME类型: {guessed_mime}")
             else:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无法识别的文件类型")  # noqa: TRY301
+                raise ValidationError("无法识别的文件类型")
         elif kind.mime not in settings.allowed_mime_types:
-            raise HTTPException(  # noqa: TRY301
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"不支持的文件类型。检测到的MIME类型: {kind.mime}",
-            )
+            raise ValidationError(f"不支持的文件类型。检测到的MIME类型: {kind.mime}")
 
         filename = f"{datetime.now(timezone.utc).strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
         upload_path = Path(settings.upload_dir)
@@ -97,11 +86,8 @@ def upload_file(
 
         return FileUploadResponse(url=url, filename=filename)
 
-    except HTTPException:
+    except (ValidationError, FileProcessingError):
         raise
     except Exception:
         logger.exception("文件上传失败")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="文件上传失败，请稍后重试",
-        ) from None
+        raise FileProcessingError("文件上传失败，请稍后重试")

@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, File, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -16,7 +16,7 @@ from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from models import ImportTaskStatus
 from schemas import ImportTaskCreateResponse, ImportTaskStatusResponse
 from services.market import get_import_task_service, start_import_task
-from services.system.exceptions import FileProcessingError, ResourceNotFoundError
+from services.system.exceptions import FileProcessingError, PermissionDeniedError, ResourceNotFoundError, ValidationError
 from settings import settings
 from utils.file_security import get_safe_file_path, is_safe_path
 
@@ -71,10 +71,7 @@ async def create_import_task(
             db,
             error_message=f"启动后台处理任务失败: {task.id}",
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="导入任务启动失败，请稍后重试",
-        ) from None
+        raise FileProcessingError("导入任务启动失败，请稍后重试")
 
     return ImportTaskCreateResponse(
         task_id=task.id,
@@ -101,10 +98,7 @@ def get_task_status(
         raise ResourceNotFoundError(msg)
 
     if task.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权查看此任务",
-        )
+        raise PermissionDeniedError("无权查看此任务")
 
     return ImportTaskStatusResponse.model_validate(task)
 
@@ -143,10 +137,7 @@ def cancel_task(
     success = task_service.cancel_task(task_id, current_user.id, db)
 
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="任务不存在或无法取消（只能取消待处理或处理中的任务）",
-        )
+        raise ValidationError("任务不存在或无法取消（只能取消待处理或处理中的任务）")
 
     return CancelTaskResponse(message="任务已取消", task_id=task_id)
 
@@ -168,10 +159,7 @@ def download_failed_file(
         filepath = get_safe_file_path(str(temp_dir), filename)
     except ValueError as e:
         logger.warning("检测到非法文件名尝试: %s, 错误: %s", filename, e)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="无效的文件名",
-        ) from e
+        raise ValidationError("无效的文件名")
 
     file_path = Path(filepath)
     if not file_path.exists() or file_path.is_dir():
@@ -180,10 +168,7 @@ def download_failed_file(
 
     if not is_safe_path(str(temp_dir), filepath):
         logger.error("路径安全检查失败: %s", filepath)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="访问被拒绝",
-        )
+        raise PermissionDeniedError("访问被拒绝")
 
     safe_filename = file_path.name
 

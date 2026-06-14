@@ -5,12 +5,12 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, require_roles
-from models import Role, User
+from models import User
 from schemas.public import (
     PublicLoginResponse,
     PublicLogoutResponse,
@@ -20,8 +20,7 @@ from schemas.public import (
     PublicUserInfo,
 )
 from services.system.auth import AuthService
-from services.system.exceptions import AuthenticationError, ValidationError
-from utils.auth import get_password_hash
+from services.system.exceptions import PermissionDeniedError
 from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public/auth", tags=["public-auth"])
@@ -53,33 +52,13 @@ def register(
     db: DbSessionDep,
 ) -> PublicRegisterResponse:
     """C端用户注册，自动分配customer角色."""
-    existing_user = db.query(User).filter(User.username == body.username).first()
-    if existing_user:
-        msg = "用户名已被占用"
-        raise ValidationError(msg)
-
-    if body.phone:
-        existing_phone = db.query(User).filter(User.phone == body.phone).first()
-        if existing_phone:
-            msg = "手机号已被绑定"
-            raise ValidationError(msg)
-
-    customer_role = db.query(Role).filter(Role.code == "customer").first()
-    if not customer_role:
-        msg = "系统未初始化customer角色"
-        raise ValidationError(msg)
-
-    db_user = User(
+    db_user = AuthService.register_public_user(
+        db,
         username=body.username,
-        password=get_password_hash(body.password),
-        nickname=body.nickname or body.username,
+        password=body.password,
         phone=body.phone,
-        role_id=customer_role.id,
-        status="active",
+        nickname=body.nickname,
     )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
 
     token_data = AuthService.create_tokens_for_user(db, db_user)
 
@@ -104,20 +83,10 @@ def login_for_access_token(
     db: DbSessionDep,
 ) -> PublicLoginResponse:
     """C端用户登录，验证用户名密码后返回JWT令牌."""
-    try:
-        user = AuthService.authenticate_user(db, form_data.username, form_data.password)
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=e.message,
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+    user = AuthService.authenticate_user(db, form_data.username, form_data.password)
 
     if user.role.code != "customer":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="此接口仅限C端用户登录",
-        )
+        raise PermissionDeniedError("此接口仅限C端用户登录")
 
     token_data = AuthService.create_tokens_for_user(db, user)
 
@@ -142,13 +111,7 @@ def refresh_access_token(
     db: DbSessionDep,
 ) -> PublicLoginResponse:
     """C端刷新令牌，使用refresh_token获取新的access_token."""
-    try:
-        token_data = AuthService.refresh_user_token(db, refresh_data.refresh_token)
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=e.message,
-        ) from e
+    token_data = AuthService.refresh_user_token(db, refresh_data.refresh_token)
 
     return PublicLoginResponse(
         access_token=token_data["access_token"],

@@ -5,8 +5,9 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Index, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, Index, Integer, String, UniqueConstraint
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import Base, MediaType
 
@@ -16,16 +17,16 @@ class PropertyMedia(Base):
 
     __tablename__ = "property_media"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
-    data_source = Column(String(50), nullable=False, comment="数据来源")
-    source_property_id = Column(String(100), nullable=False, comment="来源平台的房源ID")
+    data_source: Mapped[str] = mapped_column(String(50), nullable=False, comment="数据来源")
+    source_property_id: Mapped[str] = mapped_column(String(100), nullable=False, comment="来源平台的房源ID")
 
-    media_type = Column(SQLEnum(MediaType), nullable=False, comment="媒体类型")
-    url = Column(String(500), nullable=False, comment="媒体URL")
-    description = Column(String(200), nullable=True, comment="描述")
-    sort_order = Column(Integer, default=0, comment="排序")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
+    media_type: Mapped[MediaType] = mapped_column(SQLEnum(MediaType), nullable=False, comment="媒体类型")
+    url: Mapped[str] = mapped_column(String(500), nullable=False, comment="媒体URL")
+    description: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="描述")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, comment="排序")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
 
     __table_args__ = (
         UniqueConstraint("data_source", "source_property_id", "url", name="uq_property_media_url"),

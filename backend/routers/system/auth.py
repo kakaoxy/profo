@@ -171,11 +171,8 @@ def exchange_token(
     """
     try:
         entry = AuthService.exchange_temp_code(exchange_data.code)
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=e.message,
-        ) from e
+    except AuthenticationError:
+        raise
     return {
         "access_token": entry["access_token"],
         "refresh_token": entry["refresh_token"],
@@ -204,10 +201,7 @@ async def wechat_app_login(
         unionid = auth_data.get("unionid")
 
         if not openid:
-            raise HTTPException(  # noqa: TRY301
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="微信登录失败，未获取到用户标识",
-            )
+            raise AuthenticationError("微信登录失败，未获取到用户标识")
 
         user = await run_in_threadpool(
             AuthService.login_or_register_wechat_user,
@@ -220,11 +214,8 @@ async def wechat_app_login(
         return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="微信登录失败，请稍后重试",
-        ) from e
+    except Exception:
+        raise AuthenticationError("微信登录失败，请稍后重试")
 
 
 @router.get("/me")
@@ -291,8 +282,5 @@ def delete_api_key(
     try:
         ApiKeyService.revoke_api_key(db, str(current_user.id))
         db.commit()
-    except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        ) from e
+    except ResourceNotFoundError:
+        raise

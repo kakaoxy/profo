@@ -25,7 +25,7 @@ from utils.auth import (
     verify_password,
 )
 
-from .exceptions import AuthenticationError, ValidationError
+from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,77 @@ class AuthService:
     - 数据库操作 (Sync) -> 供路由层 run_in_threadpool 调用或 def 路由直接调用
     - 外部 API 调用 (Async) -> 供 async 路由调用
     """
+
+    @staticmethod
+    def register_public_user(
+        db: Session,
+        username: str,
+        password: str,
+        phone: str | None = None,
+        nickname: str | None = None,
+    ) -> User:
+        """注册C端公开用户 (Sync - Blocking DB).
+
+        检查用户名/手机号唯一性，分配customer角色，创建用户.
+
+        Args:
+            db: 数据库会话
+            username: 用户名
+            password: 明文密码（内部加密存储）
+            phone: 手机号（可选）
+            nickname: 昵称（可选，默认使用username）
+
+        Returns:
+            User: 新创建的用户对象
+
+        Raises:
+            ConflictError: 用户名或手机号已被占用
+            ResourceNotFoundError: 系统未初始化customer角色
+
+        """
+        existing_user = db.query(User).filter(User.username == username).first()
+        if existing_user:
+            msg = "用户名已被占用"
+            raise ConflictError(msg)
+
+        if phone:
+            existing_phone = db.query(User).filter(User.phone == phone).first()
+            if existing_phone:
+                msg = "手机号已被绑定"
+                raise ConflictError(msg)
+
+        customer_role = db.query(Role).filter(Role.code == "customer").first()
+        if not customer_role:
+            msg = "系统未初始化customer角色"
+            raise ResourceNotFoundError(msg)
+
+        db_user = User(
+            username=username,
+            password=get_password_hash(password),
+            nickname=nickname or username,
+            phone=phone,
+            role_id=customer_role.id,
+            status="active",
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+
+        return db_user
+
+    @staticmethod
+    def get_user_by_id(db: Session, user_id: str) -> User | None:
+        """根据ID获取用户，预加载角色关系 (Sync - Blocking DB).
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+
+        Returns:
+            User | None: 用户对象，不存在时返回 None
+
+        """
+        return db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
 
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> User:

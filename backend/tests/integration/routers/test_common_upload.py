@@ -145,7 +145,7 @@ class TestUploadCsv:
             f"{API_PREFIX}/csv",
             files={"file": _make_csv_file("data.csv", b"col1\nval1\n")},
         )
-        assert resp.status_code == 500
+        assert resp.status_code == 400
 
         mock_service.update_task_status.assert_called_once()
 

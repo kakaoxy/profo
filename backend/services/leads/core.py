@@ -7,11 +7,11 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
+from services.system.exceptions import ResourceNotFoundError
 
 from .internal import LeadPriceService, LeadQueryService
 
@@ -81,7 +81,7 @@ class LeadService:
         return self.query_service.get_by_id(lead_id)
 
     def get_lead_or_404(self, lead_id: str) -> Lead:
-        """获取线索，不存在时抛出404错误.
+        """获取线索，不存在时抛出ResourceNotFoundError.
 
         Args:
             lead_id: 线索ID
@@ -90,12 +90,12 @@ class LeadService:
             线索对象
 
         Raises:
-            HTTPException: 404 当线索不存在时
+            ResourceNotFoundError: 当线索不存在时
 
         """
         lead = self.get_lead(lead_id)
         if not lead:
-            raise HTTPException(status_code=404, detail="Lead not found")
+            raise ResourceNotFoundError("线索不存在")
         return lead
 
     def get_leads(  # noqa: PLR0913
@@ -148,7 +148,7 @@ class LeadService:
             更新后的线索对象
 
         Raises:
-            HTTPException: 404 当线索不存在时
+            ResourceNotFoundError: 当线索不存在时
 
         """
         lead = self.get_lead_or_404(lead_id)
@@ -179,7 +179,7 @@ class LeadService:
             lead_id: 线索ID
 
         Raises:
-            HTTPException: 404 当线索不存在时
+            ResourceNotFoundError: 当线索不存在时
 
         """
         lead = self.get_lead_or_404(lead_id)

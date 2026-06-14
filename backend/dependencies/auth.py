@@ -6,11 +6,12 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from db import get_db
 from models import User
 from services.system import ApiKeyService
+from services.system.auth import AuthService
 from settings import settings
 from utils.auth import validate_token
 
@@ -112,8 +113,8 @@ async def get_current_user(
         if not isinstance(user_id, str):
             raise credentials_exception
 
-        # 从数据库获取用户，预加载角色关系
-        user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
+        # 通过Service层获取用户，预加载角色关系
+        user = await run_in_threadpool(AuthService.get_user_by_id, db, user_id)
         if user is None:
             raise credentials_exception
 
@@ -175,7 +176,7 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
 
     """
 
-    async def role_checker(user: CurrentActiveUserDep) -> User:
+    def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role.code not in required_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

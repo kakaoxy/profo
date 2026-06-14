@@ -9,7 +9,7 @@ import io
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from utils.common import RateLimits, limiter
@@ -26,6 +26,7 @@ from schemas.project import (
     ProjectUpdate,
     StatusUpdate,
 )
+from services.system.exceptions import ResourceNotFoundError
 
 from .cashflow import router as cashflow_router
 from .renovation import router as renovation_router
@@ -218,7 +219,7 @@ def get_project(
     """获取项目详情."""
     project = service.get_project(project_id, include_all=full)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise ResourceNotFoundError("项目不存在")
     return project
 
 
@@ -237,7 +238,7 @@ def update_project(
     """
     project = service.update_project(project_id, update_data)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise ResourceNotFoundError("项目不存在")
     return project
 
 
@@ -271,7 +272,7 @@ def update_project_status(
     """
     project = service.update_status(project_id, status_update)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise ResourceNotFoundError("项目不存在")
     return project
 
 
@@ -285,7 +286,7 @@ def complete_project(
     """完成项目."""
     project = service.complete_project(project_id, complete_data)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise ResourceNotFoundError("项目不存在")
     return project
 
 
@@ -298,5 +299,5 @@ def get_project_report(
     """获取项目报告."""
     report = service.get_project_report(project_id)
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise ResourceNotFoundError("报告不存在")
     return report
