@@ -34,18 +34,17 @@ def update_profile(
     db: DbSessionDep,
 ) -> PublicUserProfileResponse:
     """C端用户修改昵称."""
-    current_user.nickname = body.nickname
-    db.commit()
+    updated_user = user_service.update_nickname(db, current_user, body.nickname)
 
     return PublicUserProfileResponse(
-        id=current_user.id,
-        username=current_user.username,
-        nickname=current_user.nickname,
-        phone=mask_phone(current_user.phone),
-        avatar=current_user.avatar,
-        status=current_user.status,
-        created_at=current_user.created_at,
-        updated_at=current_user.updated_at,
+        id=updated_user.id,
+        username=updated_user.username,
+        nickname=updated_user.nickname,
+        phone=mask_phone(updated_user.phone),
+        avatar=updated_user.avatar,
+        status=updated_user.status,
+        created_at=updated_user.created_at,
+        updated_at=updated_user.updated_at,
     )
 
 
@@ -67,8 +66,6 @@ def update_phone(
         raise AuthenticationError(msg)
 
     user_service.check_phone_taken_by_other(db, body.phone, current_user.id)
+    updated_user = user_service.update_phone(db, current_user, body.phone)
 
-    current_user.phone = body.phone
-    db.commit()
-
-    return PublicPhoneResponse(phone=mask_phone(current_user.phone))
+    return PublicPhoneResponse(phone=mask_phone(updated_user.phone))

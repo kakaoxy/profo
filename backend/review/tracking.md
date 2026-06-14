@@ -2,9 +2,17 @@
 
 ## 统计概览
 - 总问题数: 86
-- 🔴 严重: 14 (已修复: 14)
-- 🟡 中等: 52 (已修复: 23, 延期: 29)
+- 🔴 严重: 14 (已修复: 14, 验证通过: 14)
+- 🟡 中等: 52 (已修复: 25, 延期: 27)
 - 🟢 轻微: 20 (已修复: 0, 延期: 20)
+
+## 验证日期: 2026-06-14
+
+### 验证结果摘要
+- **严重问题**: 14/14 全部验证通过
+- **中等问题**: 28/30 验证通过，2个重新打开并修复
+- **额外发现**: 3处路由层违规问题已修复
+- **测试覆盖**: 948 测试全部通过，覆盖率 83.65%
 
 ## 问题清单
 
@@ -23,7 +31,7 @@
 | S01-011 | routers/system/auth.py | E1 | 🟡 | 已关闭 | 批次2 | 01 | 验证时已修复 |
 | S01-012 | routers/system/auth.py | A6,D1 | 🟡 | 已关闭 | 批次2 | 01 | exchange_token返回类型已修复 |
 | S01-013 | routers/system/auth.py | A6,D1 | 🟢 | 延期 | 批次3 | 01 | 低优先级 |
-| S01-014 | routers/system/auth.py | A4 | 🟡 | 已关闭 | 批次2 | 01 | 验证时已修复 |
+| S01-014 | routers/system/auth.py | A4 | 🟡 | 已关闭 | 批次2 | 01 | 验证时修复(db.commit移至Service) |
 | S01-015 | routers/system/auth.py | E1,E5 | 🟡 | 已关闭 | 批次2 | 01 | 验证时已修复 |
 | S02-001 | models/lead/lead.py | H1 | 🔴 | 已关闭 | 批次1 | 02 | 验证时已修复(Mapped[]) |
 | S02-002 | models/lead/lead.py | H2 | 🔴 | 已关闭 | 批次1 | 02 | ForeignKey→逻辑外键+foreign() |
@@ -54,7 +62,7 @@
 | S04-006 | services/projects/finance.py | G2 | 🟡 | 延期 | 批次2 | 04 | 需评估async影响 |
 | S04-007 | routers/projects/cashflow.py,renovation.py,sales.py | A2 | 🟡 | 延期 | 批次2 | 04 | 子路由prefix/tags |
 | S04-008 | routers/projects/cashflow.py | B1 | 🟢 | 已关闭 | 批次3 | 04 | 验证时已修复(PaginationParams) |
-| S05-001 | services/market/property_service.py,community_service.py | E1 | 🟡 | 已关闭 | 批次2 | 05 | 验证时已修复 |
+| S05-001 | services/market/property_service.py,community_service.py | E1 | 🟡 | 已关闭 | 批次2 | 05 | ValueError→ResourceNotFoundError/ValidationError |
 | S05-002 | routers/market/properties.py | A4 | 🟡 | 已关闭 | 批次2 | 05 | 验证时已修复 |
 | S05-003 | routers/market/properties.py | C1 | 🟡 | 延期 | 批次2 | 05 | 需创建Filter Schema |
 | S05-004 | routers/market/communities.py | A4 | 🔴 | 已关闭 | 批次1 | 05 | 验证时已修复 |
@@ -130,3 +138,28 @@
 
 ### 低优先级（20个）
 - 批次3轻微问题及低影响中等问题，延至下个迭代周期
+
+---
+
+## 本次验证修复记录 (2026-06-14)
+
+### 额外发现并修复的问题
+
+| 编号 | 文件 | 问题描述 | 修复方式 |
+|------|------|----------|----------|
+| NEW-001 | routers/monitor/monitor.py | add_competitor/remove_competitor 路由层直接 db.commit() | 移至 MonitorService 内部提交 |
+| NEW-002 | routers/public/users.py | update_profile/update_phone 路由层直接 db.commit() | 创建 UserService.update_nickname/update_phone 方法 |
+| NEW-003 | services/system/api_key.py | revoke_api_key 文档注明调用方需自行提交，导致路由层违规 | Service 内部提交事务 |
+
+### 重新打开并修复的问题
+
+| 编号 | 问题 | 修复方式 |
+|------|------|----------|
+| S01-014 | routers/system/auth.py delete_api_key 直接 db.commit() | ApiKeyService.revoke_api_key 内部提交 |
+| S05-001 | property_service.py 抛 ValueError | 替换为 ResourceNotFoundError |
+| S05-001 | community_service.py 抛 ValueError | 替换为 ValidationError |
+
+### 测试更新
+
+- 更新 tests/unit/services/test_community_service.py: 测试用例从 ValueError 改为 ValidationError
+- 全部 948 测试通过，覆盖率 83.65%

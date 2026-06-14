@@ -255,8 +255,4 @@ def delete_api_key(
 
     速率限制：20次/小时.
     """
-    try:
-        ApiKeyService.revoke_api_key(db, str(current_user.id))
-        db.commit()
-    except ResourceNotFoundError:
-        raise
+    ApiKeyService.revoke_api_key(db, str(current_user.id))

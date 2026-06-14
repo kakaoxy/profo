@@ -187,10 +187,11 @@ class TestQueryDictionaries:
         # filter 被调用两次：非空过滤 + 搜索过滤
         assert query.filter.call_count == 2
 
-    def test_invalid_dict_type_raises_value_error(self) -> None:
-        """不支持的 dict_type 应抛出 ValueError."""
+    def test_invalid_dict_type_raises_validation_error(self) -> None:
+        """不支持的 dict_type 应抛出 ValidationError."""
+        from services.system.exceptions import ValidationError
         db = MagicMock()
-        with pytest.raises(ValueError, match="不支持的字典类型"):
+        with pytest.raises(ValidationError, match="不支持的字典类型"):
             CommunityQueryService.query_dictionaries(db, dict_type="invalid")
 
 
