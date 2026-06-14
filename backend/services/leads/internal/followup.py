@@ -6,12 +6,12 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from models.common import FollowUpMethod
 from models.lead import Lead, LeadFollowUp
+from services.system.exceptions import ResourceNotFoundError
 
 
 class LeadFollowUpService:
@@ -52,13 +52,13 @@ class LeadFollowUpService:
             创建的跟进记录对象
 
         Raises:
-            HTTPException: 404 当线索不存在时
+            ResourceNotFoundError: 当线索不存在时
 
         """
         # 检查线索是否存在
         lead = self.db.query(Lead).filter(Lead.id == lead_id).first()
         if not lead:
-            raise HTTPException(status_code=404, detail="Lead not found")
+            raise ResourceNotFoundError("线索不存在")
 
         db_follow = LeadFollowUp(
             id=str(uuid.uuid4()),

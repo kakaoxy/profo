@@ -9,13 +9,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from models import Project, ProjectRenovation, RenovationPhoto
 from models.common import ProjectStatus
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
+from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 
 
 class RenovationService:
@@ -33,7 +33,7 @@ class RenovationService:
     def _get_project(self, project_id: str) -> Project:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
+            raise ResourceNotFoundError("项目不存在")
         return project
 
     def _get_or_create_renovation(self, project_id: str) -> ProjectRenovation:
@@ -72,10 +72,7 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="当前状态不允许更新改造进度",
-            )
+            raise BusinessLogicError("当前状态不允许更新改造进度")
 
         # 获取或创建装修记录
         renovation = self._get_or_create_renovation(project_id)
@@ -131,10 +128,7 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="当前状态不允许更新装修信息",
-            )
+            raise BusinessLogicError("当前状态不允许更新装修信息")
 
         renovation = self._get_or_create_renovation(project_id)
 
@@ -166,10 +160,7 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="当前状态不允许上传装修照片",
-            )
+            raise BusinessLogicError("当前状态不允许上传装修照片")
 
         # 获取装修记录ID
         renovation = (
@@ -216,10 +207,7 @@ class RenovationService:
         )
 
         if not photo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="照片不存在",
-            )
+            raise ResourceNotFoundError("照片不存在")
 
         photo.is_deleted = True
         self.db.commit()
@@ -244,10 +232,7 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="当前状态不允许更新装修合同信息",
-            )
+            raise BusinessLogicError("当前状态不允许更新装修合同信息")
 
         renovation = self._get_or_create_renovation(project_id)
 

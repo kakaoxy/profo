@@ -10,8 +10,91 @@ from sqlalchemy.orm import Session
 
 from models import Role, User
 from services.system.auth import AuthService
-from services.system.exceptions import AuthenticationError, ValidationError
+from services.system.exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
 from utils.auth import create_access_token, create_refresh_token, get_password_hash
+
+
+# ---------------------------------------------------------------------------
+# register_public_user
+# ---------------------------------------------------------------------------
+
+
+class TestRegisterPublicUser:
+    """register_public_user 测试."""
+
+    def test_success_creates_user_with_customer_role(self, seeded_db: dict) -> None:
+        """成功注册应创建用户并分配customer角色."""
+        db = seeded_db["session"]
+        user = AuthService.register_public_user(
+            db,
+            username="newcustomer",
+            password="TestPass123",
+            phone="13800001111",
+            nickname="测试C端用户",
+        )
+
+        assert user is not None
+        assert user.username == "newcustomer"
+        assert user.nickname == "测试C端用户"
+        assert user.phone == "13800001111"
+        assert user.status == "active"
+
+        # 验证角色为 customer
+        role = db.query(Role).filter(Role.id == user.role_id).first()
+        assert role is not None
+        assert role.code == "customer"
+
+    def test_success_without_phone_and_nickname(self, seeded_db: dict) -> None:
+        """不提供手机号和昵称时应使用默认值."""
+        db = seeded_db["session"]
+        user = AuthService.register_public_user(
+            db,
+            username="simpleuser",
+            password="TestPass123",
+        )
+
+        assert user.phone is None
+        assert user.nickname == "simpleuser"  # 默认使用username
+
+    def test_raises_conflict_error_for_duplicate_username(self, seeded_db: dict) -> None:
+        """重复用户名应抛出 ConflictError."""
+        db = seeded_db["session"]
+        AuthService.register_public_user(db, username="dupuser", password="TestPass123")
+
+        with pytest.raises(ConflictError, match="用户名已被占用"):
+            AuthService.register_public_user(db, username="dupuser", password="OtherPass456")
+
+    def test_raises_conflict_error_for_duplicate_phone(self, seeded_db: dict) -> None:
+        """重复手机号应抛出 ConflictError."""
+        db = seeded_db["session"]
+        AuthService.register_public_user(
+            db, username="user1", password="TestPass123", phone="13900001111",
+        )
+
+        with pytest.raises(ConflictError, match="手机号已被绑定"):
+            AuthService.register_public_user(
+                db, username="user2", password="TestPass456", phone="13900001111",
+            )
+
+    def test_raises_resource_not_found_error_when_no_customer_role(self, db_session: Session) -> None:
+        """没有customer角色时应抛出 ResourceNotFoundError."""
+        db = db_session
+        # 不创建任何角色
+
+        with pytest.raises(ResourceNotFoundError, match="系统未初始化customer角色"):
+            AuthService.register_public_user(db, username="norole", password="TestPass123")
+
+    def test_password_is_hashed(self, seeded_db: dict) -> None:
+        """密码应被加密存储，不存储明文."""
+        db = seeded_db["session"]
+        plain_password = "MySecretPass123"
+        user = AuthService.register_public_user(
+            db, username="hashtest", password=plain_password,
+        )
+
+        assert user.password != plain_password
+        from utils.auth import verify_password
+        assert verify_password(plain_password, user.password)
 
 
 # ---------------------------------------------------------------------------

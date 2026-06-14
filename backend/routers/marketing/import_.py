@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
 from dependencies.auth import DbSessionDep, require_roles
 from schemas.l4_marketing.import_schemas import (
@@ -19,6 +19,7 @@ from services.marketing import (
 from services.marketing import (
     MarketingQueryService as L4MarketingQueryService,
 )
+from services.system.exceptions import ResourceNotFoundError, ServiceException
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
@@ -83,10 +84,7 @@ async def get_l3_project_detail(
     """
     project = service.get_l3_project_for_import(project_id)
     if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在或已删除",
-        )
+        raise ResourceNotFoundError("项目不存在或已删除")
 
     return L3ProjectBriefResponse(
         id=project.id,
@@ -115,16 +113,10 @@ async def import_from_l3_project(
     采用写时复制(CoW)模式，L4独立存储数据
     """
     if not query_service.check_project_exists(project_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在或已删除",
-        )
+        raise ResourceNotFoundError("项目不存在或已删除")
 
     result = import_service.import_from_l3_project(project_id)
     if not result:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="导入数据失败",
-        )
+        raise ServiceException("导入数据失败")
 
     return result

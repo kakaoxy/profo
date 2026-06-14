@@ -10,7 +10,7 @@ from datetime import datetime as dt
 from datetime import timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import StreamingResponse
 
 from dependencies.auth import (
@@ -30,6 +30,7 @@ from services.market import (
     get_property_query_service,
     get_property_service,
 )
+from services.system.exceptions import ResourceNotFoundError
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
 
@@ -173,7 +174,7 @@ def get_property_detail(
     try:
         return detail_service.get_detail(db, property_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise ResourceNotFoundError(str(e)) from e
 
 
 def _parse_rooms_param(rooms: str | None) -> list[int] | None:

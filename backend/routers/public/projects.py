@@ -3,16 +3,12 @@
 房源列表、详情、顾问联系方式、成交案例、平台统计.
 """
 
-from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
-from sqlalchemy import and_, case, desc, func
+from fastapi import APIRouter, Query, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep
-from models import L4MarketingMedia, L4MarketingProject, User
-from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus
 from schemas.public import (
     PublicConsultantContact,
     PublicConsultantInfo,
@@ -25,36 +21,12 @@ from schemas.public import (
     PublicSoldProjectItem,
     PublicSoldProjectListResponse,
 )
+from services.marketing.public import PublicProjectService
+from services.system.exceptions import ResourceNotFoundError
 from settings import settings
-from utils.formatters import escape_like, mask_phone
+from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public", tags=["public-projects"])
-
-ALLOWED_SORT_FIELDS = {
-    "created_at": L4MarketingProject.created_at,
-    "total_price": L4MarketingProject.total_price,
-    "unit_price": L4MarketingProject.unit_price,
-    "area": L4MarketingProject.area,
-}
-
-
-def _resolve_cover_image(db: DbSessionDep, item: L4MarketingProject) -> str | None:
-    images = item.images or []
-    cover_image = images[0] if images else None
-    if not cover_image:
-        first_media = (
-            db.query(L4MarketingMedia)
-            .filter(
-                L4MarketingMedia.marketing_project_id == item.id,
-                L4MarketingMedia.is_deleted.is_(False),
-                L4MarketingMedia.media_type == "image",
-            )
-            .order_by(L4MarketingMedia.sort_order)
-            .first()
-        )
-        if first_media:
-            cover_image = first_media.file_url
-    return cover_image
 
 
 @router.get(
@@ -79,38 +51,24 @@ def get_projects(  # noqa: PLR0913
     page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
 ) -> PublicProjectListResponse:
     """获取已发布的房源列表."""
-    query = db.query(L4MarketingProject).filter(
-        L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
-        L4MarketingProject.is_deleted.is_(False),
+    svc = PublicProjectService(db)
+    items, total = svc.get_published_projects(
+        project_status=project_status,
+        community_name=community_name,
+        layout=layout,
+        min_price=min_price,
+        max_price=max_price,
+        min_area=min_area,
+        max_area=max_area,
+        sort_by=sort_by or "created_at",
+        sort_order=sort_order or "desc",
+        page=page,
+        page_size=page_size,
     )
-
-    if project_status:
-        query = query.filter(L4MarketingProject.project_status == project_status)
-    if community_name:
-        query = query.filter(L4MarketingProject.community_name.like(f"%{escape_like(community_name)}%"))
-    if layout:
-        query = query.filter(L4MarketingProject.layout == layout)
-    if min_price is not None:
-        query = query.filter(L4MarketingProject.total_price >= min_price)
-    if max_price is not None:
-        query = query.filter(L4MarketingProject.total_price <= max_price)
-    if min_area is not None:
-        query = query.filter(L4MarketingProject.area >= min_area)
-    if max_area is not None:
-        query = query.filter(L4MarketingProject.area <= max_area)
-
-    total = query.count()
-
-    sort_column = ALLOWED_SORT_FIELDS.get(sort_by or "created_at", L4MarketingProject.created_at)
-    query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
-
-    offset = (page - 1) * page_size
-    items = query.offset(offset).limit(page_size).all()
 
     result_items = []
     for item in items:
-        cover_image = _resolve_cover_image(db, item)
-
+        cover_image = svc.resolve_cover_image(item)
         result_items.append(
             PublicProjectListItem(
                 id=item.id,
@@ -151,22 +109,16 @@ def get_sold_projects(
     page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
 ) -> PublicSoldProjectListResponse:
     """获取已成交的房源案例列表."""
-    query = db.query(L4MarketingProject).filter(
-        L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value,
-        L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
-        L4MarketingProject.is_deleted.is_(False),
+    svc = PublicProjectService(db)
+    items, total = svc.get_sold_projects(
+        community_name=community_name,
+        page=page,
+        page_size=page_size,
     )
-
-    if community_name:
-        query = query.filter(L4MarketingProject.community_name.like(f"%{escape_like(community_name)}%"))
-
-    total = query.count()
-
-    items = query.order_by(desc(L4MarketingProject.created_at)).offset((page - 1) * page_size).limit(page_size).all()
 
     result_items = []
     for item in items:
-        cover_image = _resolve_cover_image(db, item)
+        cover_image = svc.resolve_cover_image(item)
 
         sold_days = None
         if item.updated_at and item.created_at:
@@ -208,32 +160,13 @@ def get_project_detail(
     db: DbSessionDep,
 ) -> PublicProjectDetail:
     """获取指定房源的详细信息."""
-    project = (
-        db.query(L4MarketingProject)
-        .filter(
-            and_(
-                L4MarketingProject.id == project_id,
-                L4MarketingProject.is_deleted.is_(False),
-            ),
-        )
-        .first()
-    )
+    svc = PublicProjectService(db)
+    project = svc.get_project_detail(project_id)
 
     if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在",
-        )
+        raise ResourceNotFoundError("项目不存在")
 
-    media_list = (
-        db.query(L4MarketingMedia)
-        .filter(
-            L4MarketingMedia.marketing_project_id == project_id,
-            L4MarketingMedia.is_deleted.is_(False),
-        )
-        .order_by(L4MarketingMedia.sort_order)
-        .all()
-    )
+    media_list = svc.get_project_media(project_id)
 
     media_items = [
         PublicMediaItem(
@@ -260,7 +193,7 @@ def get_project_detail(
 
     consultant_info = None
     if project.consultant_id:
-        consultant = db.query(User).filter(User.id == project.consultant_id).first()
+        consultant = svc.get_consultant(project.consultant_id)
         if consultant:
             consultant_info = PublicConsultantInfo(
                 nickname=consultant.nickname,
@@ -310,25 +243,14 @@ def get_consultant_contact(
     db: DbSessionDep,
 ) -> PublicConsultantContact:
     """获取指定房源的顾问联系方式."""
-    project = (
-        db.query(L4MarketingProject)
-        .filter(
-            and_(
-                L4MarketingProject.id == project_id,
-                L4MarketingProject.is_deleted.is_(False),
-            ),
-        )
-        .first()
-    )
+    svc = PublicProjectService(db)
+    project = svc.get_project_detail(project_id)
 
     if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在",
-        )
+        raise ResourceNotFoundError("项目不存在")
 
     if project.consultant_id:
-        consultant = db.query(User).filter(User.id == project.consultant_id).first()
+        consultant = svc.get_consultant(project.consultant_id)
         if consultant:
             return PublicConsultantContact(
                 phone=mask_phone(consultant.phone) or "",
@@ -354,61 +276,11 @@ def get_platform_stats(
     db: DbSessionDep,
 ) -> PublicPlatformStats:
     """获取平台统计数据."""
-    now = datetime.now(timezone.utc)
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-    stats = db.query(
-        func.count(
-            func.distinct(
-                case(
-                    (
-                        and_(
-                            L4MarketingProject.is_deleted.is_(False),
-                            L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
-                        ),
-                        L4MarketingProject.community_id,
-                    ),
-                    else_=None,
-                ),
-            ),
-        ).label("total_owners"),
-        func.count(
-            case(
-                (
-                    and_(
-                        L4MarketingProject.is_deleted.is_(False),
-                        L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
-                        L4MarketingProject.project_status == MarketingProjectStatus.FOR_SALE.value,
-                    ),
-                    L4MarketingProject.id,
-                ),
-                else_=None,
-            ),
-        ).label("on_sale_count"),
-        func.count(
-            case(
-                (
-                    and_(
-                        L4MarketingProject.is_deleted.is_(False),
-                        L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value,
-                        L4MarketingProject.updated_at >= month_start,
-                    ),
-                    L4MarketingProject.id,
-                ),
-                else_=None,
-            ),
-        ).label("current_month_sold"),
-    ).first()
-
-    if not stats:
-        return PublicPlatformStats(
-            total_owners=0,
-            on_sale_count=0,
-            current_month_sold=0,
-        )
+    svc = PublicProjectService(db)
+    total_owners, on_sale_count, current_month_sold = svc.get_platform_stats()
 
     return PublicPlatformStats(
-        total_owners=stats.total_owners or 0,
-        on_sale_count=stats.on_sale_count or 0,
-        current_month_sold=stats.current_month_sold or 0,
+        total_owners=total_owners,
+        on_sale_count=on_sale_count,
+        current_month_sold=current_month_sold,
     )

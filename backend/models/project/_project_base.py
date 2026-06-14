@@ -1,7 +1,10 @@
 """项目主表核心模型."""
 
-from sqlalchemy import Boolean, Column, ForeignKey, Index, Numeric, String
+from decimal import Decimal
+
+from sqlalchemy import Boolean, Index, Numeric, String
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel, ProjectStatus, RenovationStage
 
@@ -11,30 +14,28 @@ class Project(BaseModel):
 
     __tablename__ = "projects"
 
-    name = Column(String(700), nullable=False, comment="项目名称(自动生成:小区名称+地址)")
-    community_id = Column(
-        String(36), ForeignKey("communities.id", ondelete="SET NULL"), nullable=True, comment="小区ID",
-    )
-    community_name = Column(String(200), nullable=False, comment="小区名称")
-    address = Column(String(500), nullable=False, comment="物业地址")
+    name: Mapped[str] = mapped_column(String(700), nullable=False, comment="项目名称(自动生成:小区名称+地址)")
+    community_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="小区ID")
+    community_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="小区名称")
+    address: Mapped[str] = mapped_column(String(500), nullable=False, comment="物业地址")
 
-    project_manager_id = Column(String(36), ForeignKey("users.id"), nullable=True, comment="项目负责人ID")
+    project_manager_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="项目负责人ID")
 
-    area = Column(Numeric(10, 2), nullable=True, comment="产证面积(m²)")
-    layout = Column(String(50), nullable=True, comment="户型(展示用)")
-    orientation = Column(String(50), nullable=True, comment="朝向")
+    area: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="产证面积(m²)")
+    layout: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="户型(展示用)")
+    orientation: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="朝向")
 
-    status = Column(
+    status: Mapped[ProjectStatus] = mapped_column(
         SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=ProjectStatus.SIGNING,
         comment="项目状态",
     )
-    renovation_stage = Column(
+    renovation_stage: Mapped[RenovationStage | None] = mapped_column(
         SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段",
     )
 
-    is_deleted = Column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     __table_args__ = (
         Index("idx_project_status", "status"),

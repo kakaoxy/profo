@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, DbSessionDep
@@ -14,6 +14,7 @@ from schemas.user import (
     RoleUpdate,
 )
 from services.system import role_service
+from services.system.exceptions import ResourceNotFoundError
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
@@ -47,7 +48,7 @@ def get_role(
     """获取指定角色信息."""
     role = role_service.get_role_by_id(db, role_id)
     if not role:
-        raise HTTPException(status_code=404, detail="角色不存在")
+        raise ResourceNotFoundError("角色不存在")
     return role
 
 

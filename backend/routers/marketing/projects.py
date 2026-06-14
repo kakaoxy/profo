@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, require_roles
@@ -27,6 +27,7 @@ from services.marketing import (
 from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
 )
+from services.system.exceptions import ResourceNotFoundError
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
@@ -118,10 +119,7 @@ async def get_marketing_project(
     """获取营销项目详情."""
     item = service.get_project(project_id)
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在",
-        )
+        raise ResourceNotFoundError("项目不存在")
     return item
 
 
@@ -142,10 +140,7 @@ async def update_marketing_project(
     """
     item = service.update_project(project_id, data)
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在",
-        )
+        raise ResourceNotFoundError("项目不存在")
     return item
 
 
@@ -165,10 +160,7 @@ async def delete_marketing_project(
     速率限制：20次/小时.
     """
     if not service.delete_project(project_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="项目不存在",
-        )
+        raise ResourceNotFoundError("项目不存在")
 
 
 @router.get(
@@ -223,10 +215,7 @@ async def update_marketing_media(
     """
     item = service.update_media(media_id, data)
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="媒体不存在",
-        )
+        raise ResourceNotFoundError("媒体不存在")
     return item
 
 
@@ -246,10 +235,7 @@ async def delete_marketing_media(
     速率限制：20次/小时.
     """
     if not service.delete_media(media_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="媒体不存在",
-        )
+        raise ResourceNotFoundError("媒体不存在")
 
 
 @router.put(

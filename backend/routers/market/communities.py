@@ -4,17 +4,13 @@
 """
 
 import logging
-import uuid
-from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from fastapi import APIRouter, Query, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
 from dependencies.common import PaginationDep
-from models.property import Community
 from schemas.community import (
     CommunityCreateRequest,
     CommunityListResponse,
@@ -24,10 +20,8 @@ from schemas.community import (
     DictionaryResponse,
 )
 from services.market import CommunityMerger
-from services.market.community_service import (
-    CommunityQueryService,
-    _find_existing_community_by_name,
-)
+from services.market.community_service import CommunityQueryService
+from services.system.exceptions import ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +61,7 @@ def get_dictionaries(
     try:
         return service.query_dictionaries(db=db, dict_type=dict_type, search=search, limit=limit)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise ValidationError(str(e)) from e
 
 
 @router.post("/communities/merge")
@@ -115,13 +109,10 @@ def merge_communities(
 
     except ValueError as e:
         logger.warning("小区合并业务验证失败: %s", e)
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except SQLAlchemyError:
-        logger.exception("小区合并发生数据库错误")
-        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员") from None
+        raise ValidationError(str(e)) from e
     except Exception:
         logger.exception("小区合并发生未知错误")
-        raise HTTPException(status_code=500, detail="合并操作失败，请联系管理员") from None
+        raise ServiceException("合并操作失败，请联系管理员")
 
 
 @router.post("/communities")
@@ -136,45 +127,4 @@ def create_community(
 
     速率限制：100次/小时
     """
-    existing = _find_existing_community_by_name(db, body.name)
-
-    if existing:
-        logger.info("小区已存在，直接返回: %s (ID: %s)", existing.name, existing.id)
-        return CommunityQueryService.build_response_from_community(existing)
-
-    new_community = Community(
-        id=str(uuid.uuid4()),
-        name=body.name.strip(),
-        district=body.district,
-        business_circle=body.business_circle,
-        city_id=None,
-        avg_price_wan=None,
-        total_properties=0,
-        is_active=True,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    )
-
-    db.add(new_community)
-
-    try:
-        db.commit()
-        db.refresh(new_community)
-        logger.info("创建新小区成功: %s (ID: %s)", new_community.name, new_community.id)
-    except IntegrityError as e:
-        db.rollback()
-        logger.warning("创建小区时发生唯一约束冲突: %s, 错误: %s", body.name, e)
-        existing = _find_existing_community_by_name(db, body.name)
-        if existing:
-            return CommunityQueryService.build_response_from_community(existing)
-        raise HTTPException(status_code=500, detail="创建小区失败") from e
-    except SQLAlchemyError:
-        db.rollback()
-        logger.exception("创建小区发生数据库错误")
-        raise HTTPException(status_code=500, detail="创建小区失败") from None
-    except Exception:
-        db.rollback()
-        logger.exception("创建小区发生未知错误")
-        raise HTTPException(status_code=500, detail="创建小区失败") from None
-
-    return CommunityQueryService.build_response_from_community(new_community)
+    return service.create_community(db, body)

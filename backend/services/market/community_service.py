@@ -4,16 +4,21 @@
 """
 
 import logging
+import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import distinct, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models.property import Community, PropertyCurrent
 from schemas.community import (
+    CommunityCreateRequest,
     CommunityListResponse,
     CommunityResponse,
     DictionaryResponse,
 )
+from services.system.exceptions import ConflictError, ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +143,62 @@ class CommunityQueryService:
         values = [r[0] for r in results if r[0]]
 
         return DictionaryResponse(type=dict_type, items=values)
+
+    @staticmethod
+    def create_community(db: Session, body: CommunityCreateRequest) -> CommunityResponse:
+        """创建新小区.
+
+        如果同名小区已存在，直接返回已有小区信息.
+
+        Args:
+            db: 数据库会话
+            body: 小区创建请求数据
+
+        Returns:
+            CommunityResponse: 创建的小区响应
+
+        Raises:
+            ServiceException: 数据库操作失败时
+
+        """
+        existing = _find_existing_community_by_name(db, body.name)
+
+        if existing:
+            logger.info("小区已存在，直接返回: %s (ID: %s)", existing.name, existing.id)
+            return CommunityQueryService.build_response_from_community(existing)
+
+        new_community = Community(
+            id=str(uuid.uuid4()),
+            name=body.name.strip(),
+            district=body.district,
+            business_circle=body.business_circle,
+            city_id=None,
+            avg_price_wan=None,
+            total_properties=0,
+            is_active=True,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+        )
+
+        db.add(new_community)
+
+        try:
+            db.commit()
+            db.refresh(new_community)
+            logger.info("创建新小区成功: %s (ID: %s)", new_community.name, new_community.id)
+        except IntegrityError as e:
+            db.rollback()
+            logger.warning("创建小区时发生唯一约束冲突: %s, 错误: %s", body.name, e)
+            existing = _find_existing_community_by_name(db, body.name)
+            if existing:
+                return CommunityQueryService.build_response_from_community(existing)
+            raise ServiceException("创建小区失败") from e
+        except Exception:
+            db.rollback()
+            logger.exception("创建小区发生数据库错误")
+            raise ServiceException("创建小区失败")
+
+        return CommunityQueryService.build_response_from_community(new_community)
 
 
 def _find_existing_community_by_name(db: Session, name: str) -> Community | None:

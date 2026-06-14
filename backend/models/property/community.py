@@ -8,16 +8,14 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     Float,
-    ForeignKey,
     Index,
     Integer,
     String,
     UniqueConstraint,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
 
 from models.common.base import Base
 
@@ -27,16 +25,16 @@ class Community(Base):
 
     __tablename__ = "communities"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = Column(String(200), nullable=False, unique=True, comment="小区名称(标准化)")
-    city_id = Column(Integer, nullable=True, comment="城市ID")
-    district = Column(String(100), nullable=True, comment="行政区")
-    business_circle = Column(String(100), nullable=True, comment="商圈")
-    avg_price_wan = Column(Float, nullable=True, comment="小区均价(万)")
-    total_properties = Column(Integer, default=0, comment="房源总数")
-    is_active = Column(Boolean, default=True, comment="是否激活(软删除)")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
-    updated_at = Column(
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True, comment="小区名称(标准化)")
+    city_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="城市ID")
+    district: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="行政区")
+    business_circle: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="商圈")
+    avg_price_wan: Mapped[float | None] = mapped_column(Float, nullable=True, comment="小区均价(万)")
+    total_properties: Mapped[int] = mapped_column(Integer, default=0, comment="房源总数")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活(软删除)")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
@@ -45,8 +43,8 @@ class Community(Base):
     )
 
     # 关系
-    properties = relationship("PropertyCurrent", back_populates="community")
-    aliases = relationship("CommunityAlias", back_populates="community")
+    properties = relationship("PropertyCurrent", back_populates="community", primaryjoin="Community.id == foreign(PropertyCurrent.community_id)")
+    aliases = relationship("CommunityAlias", back_populates="community", primaryjoin="Community.id == foreign(CommunityAlias.community_id)")
 
     # 索引
     __table_args__ = (
@@ -68,14 +66,14 @@ class CommunityAlias(Base):
 
     __tablename__ = "community_aliases"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="关联的主小区ID")
-    alias_name = Column(String(200), nullable=False, comment="别名")
-    data_source = Column(String(50), nullable=False, comment="数据来源")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联的主小区ID")
+    alias_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="别名")
+    data_source: Mapped[str] = mapped_column(String(50), nullable=False, comment="数据来源")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
 
     # 关系
-    community = relationship("Community", back_populates="aliases")
+    community = relationship("Community", back_populates="aliases", primaryjoin="foreign(CommunityAlias.community_id) == Community.id")
 
     __table_args__ = (UniqueConstraint("alias_name", "data_source", name="uq_alias_source"),)
 
@@ -89,10 +87,10 @@ class CommunityCompetitor(Base):
 
     __tablename__ = "community_competitors"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="主小区ID")
-    competitor_community_id = Column(String(36), ForeignKey("communities.id"), nullable=False, comment="竞品小区ID")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="主小区ID")
+    competitor_community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="竞品小区ID")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
 
     __table_args__ = (UniqueConstraint("community_id", "competitor_community_id", name="uq_community_competitor"),)
 

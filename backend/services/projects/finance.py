@@ -9,12 +9,12 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from fastapi import HTTPException, status
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models import FinanceRecord, Project, ProjectContract, ProjectSale
 from models.common import CashFlowCategory, CashFlowType
+from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +39,12 @@ class FinanceService:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             logger.error("Project not found: %s", project_id)
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="项目不存在",
-            )
+            raise ResourceNotFoundError("项目不存在")
 
         # 验证现金流类型和分类匹配
         try:
             self._validate_category(record_data.type, record_data.category)
-        except HTTPException:
+        except ValidationError:
             logger.exception("Cashflow category validation failed")
             raise
 
@@ -91,10 +88,7 @@ class FinanceService:
             )
         except Exception as e:
             logger.exception("Error getting cashflow records for project %s", project_id)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="获取现金流记录失败",
-            ) from e
+            raise ServiceException("获取现金流记录失败") from e
         else:
             logger.info("Found %d cashflow records for project %s", len(records), project_id)
             return records
@@ -114,10 +108,7 @@ class FinanceService:
 
         if not record:
             logger.error("Cashflow record not found: %s for project %s", record_id, project_id)
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="现金流记录不存在",
-            )
+            raise ResourceNotFoundError("现金流记录不存在")
 
         self.db.delete(record)
         self.db.commit()
@@ -139,7 +130,7 @@ class FinanceService:
             # 1. 获取项目基本信息用于日期计算
             project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
             if not project:
-                raise HTTPException(status_code=404, detail="项目不存在")  # noqa: TRY301
+                raise ResourceNotFoundError("项目不存在")  # noqa: TRY301
 
             # 从 ProjectContract 获取签约日期
             contract = (
@@ -217,10 +208,7 @@ class FinanceService:
             return summary  # noqa: TRY300
         except Exception as e:
             logger.exception("Error calculating cashflow summary for project %s", project_id)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="计算现金流汇总失败",
-            ) from e
+            raise ServiceException("计算现金流汇总失败") from e
 
     def sync_financials(self, project_id: str) -> None:
         """同步计算项目的财务数据，并更新到 Project 表的缓存字段中."""
@@ -272,10 +260,7 @@ class FinanceService:
         """获取项目财务报告."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="项目不存在",
-            )
+            raise ResourceNotFoundError("项目不存在")
 
         # 从 ProjectContract 获取签约价格
         contract = (
@@ -358,16 +343,10 @@ class FinanceService:
         }
 
         if flow_type == CashFlowType.EXPENSE and category not in expense_categories:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"支出类型不能使用分类: {category.value}",
-            )
+            raise ValidationError(f"支出类型不能使用分类: {category.value}")
 
         if flow_type == CashFlowType.INCOME and category not in income_categories:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"收入类型不能使用分类: {category.value}",
-            )
+            raise ValidationError(f"收入类型不能使用分类: {category.value}")
 
     # 别名方法 - 与路由兼容
     def get_cashflow_records(self, project_id: str) -> list[FinanceRecord]:

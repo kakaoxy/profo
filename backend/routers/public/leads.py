@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
@@ -20,6 +20,7 @@ from schemas.public import (
     PublicLeadResponse,
 )
 from services.leads.core import LeadService
+from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
 
 router = APIRouter(prefix="/public/leads", tags=["public-leads"])
 
@@ -150,16 +151,10 @@ def get_lead_detail(
     """获取指定线索的详细信息，仅能查看自己创建的线索."""
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="线索不存在",
-        )
+        raise ResourceNotFoundError("线索不存在")
 
     if lead.creator_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权查看该线索",
-        )
+        raise PermissionDeniedError("无权查看该线索")
 
     follow_ups = (
         db.query(LeadFollowUp)

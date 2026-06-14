@@ -3,7 +3,7 @@
 按功能职责拆分的组件化模块.
 """
 
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import foreign, relationship
 
 from ._project_base import Project
 from ._project_contract import ProjectContract
@@ -45,8 +45,8 @@ RenovationPhoto.renovation = relationship("ProjectRenovation", back_populates="p
 
 from models.user.user import User  # noqa: E402
 
-Project.project_manager = relationship("User", back_populates="managed_projects")
-User.managed_projects = relationship("Project", back_populates="project_manager")
+Project.project_manager = relationship("User", back_populates="managed_projects", primaryjoin="foreign(Project.project_manager_id) == User.id")
+User.managed_projects = relationship("Project", back_populates="project_manager", primaryjoin="foreign(Project.project_manager_id) == User.id")
 
 __all__ = [
     "FinanceRecord",

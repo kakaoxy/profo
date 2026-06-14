@@ -144,7 +144,7 @@ class TestCurrentCustomerUserDep:
         user.status = "active"
         user.role = MagicMock(spec=Role)
         user.role.code = "customer"
-        result = asyncio.run(role_checker(user))
+        result = role_checker(user)
         assert result == user
 
     def test_admin_role_user_rejected(self) -> None:
@@ -156,7 +156,7 @@ class TestCurrentCustomerUserDep:
         user.role = MagicMock(spec=Role)
         user.role.code = "admin"
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(role_checker(user))
+            role_checker(user)
         assert exc_info.value.status_code == 403
 
     def test_operator_role_user_rejected(self) -> None:
@@ -168,7 +168,7 @@ class TestCurrentCustomerUserDep:
         user.role = MagicMock(spec=Role)
         user.role.code = "operator"
         with pytest.raises(HTTPException) as exc_info:
-            asyncio.run(role_checker(user))
+            role_checker(user)
         assert exc_info.value.status_code == 403
 
     def test_inactive_customer_user_rejected(self) -> None:
@@ -248,7 +248,7 @@ class TestPublicRegister:
                 "password": "Test123!",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 409
         assert "用户名已被占用" in response.json()["detail"]
 
     def test_register_phone_conflict(self, app_data: tuple[TestClient, Session]) -> None:
@@ -269,7 +269,7 @@ class TestPublicRegister:
                 "phone": "13900009999",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 409
         assert "手机号已被绑定" in response.json()["detail"]
 
     def test_register_validation_error(self, app_data: tuple[TestClient, Session]) -> None:

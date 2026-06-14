@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, Query, Request, status
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import (
@@ -24,6 +24,7 @@ from schemas.user import (
     UserUpdate,
 )
 from services.system import user_service
+from services.system.exceptions import ResourceNotFoundError, ServiceException
 from services.system.init_service import init_service
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -102,7 +103,7 @@ def get_user(
     """获取指定用户信息."""
     user = user_service.get_user_by_id(db, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+        raise ResourceNotFoundError("用户不存在")
     return user
 
 
@@ -196,8 +197,5 @@ def init_system_data(
     """
     result = init_service.initialize(db)
     if result.get("error"):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=result["error"],
-        )
+        raise ServiceException(result["error"])
     return result
