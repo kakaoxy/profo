@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from models import User
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
+from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
 
 from .exceptions import ConflictError, ResourceNotFoundError, ValidationError
@@ -23,9 +24,10 @@ class UserService:
         role_id: str | None = None,
         user_status: str | None = None,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> tuple[int, list[User]]:
         """获取用户列表."""
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = db.query(User)
 
         if username:
@@ -38,8 +40,8 @@ class UserService:
             query = query.filter(User.status == user_status)
 
         total = query.count()
-        offset = (page - 1) * page_size
-        users = query.order_by(User.created_at.desc()).offset(offset).limit(page_size).all()
+        offset = (page - 1) * effective_page_size
+        users = query.order_by(User.created_at.desc()).offset(offset).limit(effective_page_size).all()
 
         return total, users
 

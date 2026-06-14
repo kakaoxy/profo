@@ -126,7 +126,7 @@ async def get_current_user(
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
-async def get_current_active_user(
+def get_current_active_user(
     current_user: CurrentUserDep,
 ) -> User:
     """获取当前活跃用户.

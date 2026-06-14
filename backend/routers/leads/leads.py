@@ -16,5 +16,5 @@ router = APIRouter(
 )
 
 router.include_router(core_router)
-router.include_router(followups_router)
-router.include_router(prices_router)
+router.include_router(followups_router, tags=["lead-followups"])
+router.include_router(prices_router, tags=["lead-prices"])

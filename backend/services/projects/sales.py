@@ -88,29 +88,8 @@ class SalesService:
         sale.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(project)
-        self.db.refresh(sale)
 
-        # 手动构建响应字典
-        response_data = {
-            "id": project.id,
-            "name": project.name,
-            "status": project.status,
-            "created_at": project.created_at,
-            "updated_at": project.updated_at,
-            "community_name": project.community_name,
-            "address": project.address,
-            "area": str(project.area) if project.area else None,
-            "layout": project.layout,
-            "orientation": project.orientation,
-            "is_deleted": project.is_deleted,
-            "renovation_stage": project.renovation_stage,
-            "channel_manager_id": sale.channel_manager_id,
-            "property_agent_id": sale.property_agent_id,
-            "negotiator_id": sale.negotiator_id,
-            "transaction_status": sale.transaction_status,
-        }
-
-        return ProjectResponse.model_validate(response_data)
+        return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def create_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
         """创建销售记录（互动记录）."""

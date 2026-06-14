@@ -5,16 +5,18 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep
+from dependencies.common import PaginationDep
 from schemas.public import (
     PublicConsultantContact,
     PublicConsultantInfo,
     PublicMediaItem,
     PublicPlatformStats,
     PublicProjectDetail,
+    PublicProjectFilter,
     PublicProjectListItem,
     PublicProjectListResponse,
     PublicRenovationStage,
@@ -38,32 +40,23 @@ router = APIRouter(prefix="/public", tags=["public-projects"])
 def get_projects(  # noqa: PLR0913
     request: Request,
     db: DbSessionDep,
-    project_status: Annotated[str | None, Query(description="项目状态筛选")] = None,
-    community_name: Annotated[str | None, Query(description="小区名称搜索")] = None,
-    layout: Annotated[str | None, Query(description="户型筛选")] = None,
-    min_price: Annotated[float | None, Query(description="最低总价(万)")] = None,
-    max_price: Annotated[float | None, Query(description="最高总价(万)")] = None,
-    min_area: Annotated[float | None, Query(description="最小面积(m²)")] = None,
-    max_area: Annotated[float | None, Query(description="最大面积(m²)")] = None,
-    sort_by: Annotated[str | None, Query(description="排序字段")] = "created_at",
-    sort_order: Annotated[str | None, Query(description="排序方向 asc/desc")] = "desc",
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
+    pagination: PaginationDep,
+    filters: Annotated[PublicProjectFilter, Depends()],
 ) -> PublicProjectListResponse:
     """获取已发布的房源列表."""
     svc = PublicProjectService(db)
     items, total = svc.get_published_projects(
-        project_status=project_status,
-        community_name=community_name,
-        layout=layout,
-        min_price=min_price,
-        max_price=max_price,
-        min_area=min_area,
-        max_area=max_area,
-        sort_by=sort_by or "created_at",
-        sort_order=sort_order or "desc",
-        page=page,
-        page_size=page_size,
+        project_status=filters.project_status,
+        community_name=filters.community_name,
+        layout=filters.layout,
+        min_price=filters.min_price,
+        max_price=filters.max_price,
+        min_area=filters.min_area,
+        max_area=filters.max_area,
+        sort_by=filters.sort_by,
+        sort_order=filters.sort_order,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
     result_items = []
@@ -90,8 +83,8 @@ def get_projects(  # noqa: PLR0913
     return PublicProjectListResponse(
         items=result_items,
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 
@@ -104,16 +97,15 @@ def get_projects(  # noqa: PLR0913
 def get_sold_projects(
     request: Request,
     db: DbSessionDep,
+    pagination: PaginationDep,
     community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
-    page: Annotated[int, Query(ge=1, description="页码")] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 20,
 ) -> PublicSoldProjectListResponse:
     """获取已成交的房源案例列表."""
     svc = PublicProjectService(db)
     items, total = svc.get_sold_projects(
         community_name=community_name,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
     result_items = []
@@ -143,8 +135,8 @@ def get_sold_projects(
     return PublicSoldProjectListResponse(
         items=result_items,
         total=total,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

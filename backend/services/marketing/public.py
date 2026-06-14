@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from models import L4MarketingMedia, L4MarketingProject, User
 from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus
+from settings import settings
 from utils.formatters import escape_like
 
 
@@ -50,9 +51,10 @@ class PublicProjectService:
         sort_by: str = "created_at",
         sort_order: str = "desc",
         page: int = 1,
-        page_size: int = 20,
+        page_size: int | None = None,
     ) -> tuple[list[L4MarketingProject], int]:
         """获取已发布的房源列表."""
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(L4MarketingProject).filter(
             L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
             L4MarketingProject.is_deleted.is_(False),
@@ -84,8 +86,8 @@ class PublicProjectService:
         sort_column = allowed_sort_fields.get(sort_by, L4MarketingProject.created_at)
         query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
 
-        offset = (page - 1) * page_size
-        items = query.offset(offset).limit(page_size).all()
+        offset = (page - 1) * effective_page_size
+        items = query.offset(offset).limit(effective_page_size).all()
 
         return items, total
 
@@ -93,9 +95,10 @@ class PublicProjectService:
         self,
         community_name: str | None = None,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int | None = None,
     ) -> tuple[list[L4MarketingProject], int]:
         """获取已成交的房源案例列表."""
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(L4MarketingProject).filter(
             L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value,
             L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value,
@@ -106,7 +109,7 @@ class PublicProjectService:
             query = query.filter(L4MarketingProject.community_name.like(f"%{escape_like(community_name)}%"))
 
         total = query.count()
-        items = query.order_by(desc(L4MarketingProject.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+        items = query.order_by(desc(L4MarketingProject.created_at)).offset((page - 1) * effective_page_size).limit(effective_page_size).all()
 
         return items, total
 

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload, noload
 
 from models.common import LeadStatus
 from models.lead import Lead
+from settings import settings
 
 
 class LeadQueryService:
@@ -50,7 +51,7 @@ class LeadQueryService:
     def get_list(  # noqa: PLR0913
         self,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int | None = None,
         search: str | None = None,
         statuses: list[LeadStatus] | None = None,
         district: str | None = None,
@@ -74,6 +75,7 @@ class LeadQueryService:
             包含线索列表和分页信息的字典
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         # 构建查询，优化关系加载
         query = self.db.query(Lead).options(
             joinedload(Lead.creator),
@@ -98,13 +100,13 @@ class LeadQueryService:
 
         # 计算总数和获取分页数据
         total = query.count()
-        items = query.order_by(desc(Lead.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+        items = query.order_by(desc(Lead.created_at)).offset((page - 1) * effective_page_size).limit(effective_page_size).all()
 
         return {
             "items": items,
             "total": total,
             "page": page,
-            "page_size": page_size,
+            "page_size": effective_page_size,
         }
 
     def get_funnel_stats(self) -> dict[str, int]:

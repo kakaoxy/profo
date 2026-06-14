@@ -7,6 +7,22 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+class PublicProjectFilter(BaseModel):
+    """C端项目筛选参数."""
+
+    project_status: str | None = Field(None, description="项目状态筛选")
+    community_name: str | None = Field(None, description="小区名称搜索")
+    layout: str | None = Field(None, description="户型筛选")
+    min_price: float | None = Field(None, description="最低总价(万)")
+    max_price: float | None = Field(None, description="最高总价(万)")
+    min_area: float | None = Field(None, description="最小面积(m²)")
+    max_area: float | None = Field(None, description="最大面积(m²)")
+    sort_by: str = Field("created_at", description="排序字段")
+    sort_order: str = Field("desc", description="排序方向 asc/desc")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PublicRegisterRequest(BaseModel):
     """C端用户注册请求."""
 
@@ -367,6 +383,7 @@ __all__ = [
     "PublicPlatformStats",
     "PublicProfileUpdate",
     "PublicProjectDetail",
+    "PublicProjectFilter",
     "PublicProjectListItem",
     "PublicProjectListResponse",
     "PublicRefreshTokenRequest",

@@ -9,7 +9,7 @@ import io
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, Request, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
 from utils.common import RateLimits, limiter
@@ -20,6 +20,7 @@ from schemas.response import PaginatedResponse
 from schemas.project import (
     ProjectCompleteRequest,
     ProjectCreate,
+    ProjectFilter,
     ProjectReportResponse,
     ProjectResponse,
     ProjectStatsResponse,
@@ -72,13 +73,12 @@ def get_projects(
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
     pagination: PaginationDep,
-    status: Annotated[str | None, Query(description="项目状态筛选")] = None,
-    community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
+    filters: Annotated[ProjectFilter, Depends()],
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表."""
     result = service.get_projects(
-        status_filter=status,
-        community_name=community_name,
+        status_filter=filters.status,
+        community_name=filters.community_name,
         page=pagination.page,
         page_size=pagination.page_size,
     )

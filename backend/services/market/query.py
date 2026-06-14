@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from models import Community, PropertyCurrent
 from schemas import PaginatedPropertyResponse, PropertyResponse
+from settings import settings
 from utils.query_params import PropertyExportParams
 
 from .filters import apply_filters
@@ -39,7 +40,7 @@ class PropertyQueryService:
         sort_by: str = "updated_at",
         sort_order: str = "desc",
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> PaginatedPropertyResponse:
         """查询房源数据（优化版本）.
 
@@ -66,6 +67,7 @@ class PropertyQueryService:
             PaginatedPropertyResponse: 分页查询结果
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         # 构建基础查询 - 使用 selectinload 优化关联查询
         query = (
             db.query(PropertyCurrent, Community)
@@ -106,8 +108,8 @@ class PropertyQueryService:
         query = apply_sorting(query, sort_by, sort_order)
 
         # 应用分页
-        offset = (page - 1) * page_size
-        query = query.offset(offset).limit(page_size)
+        offset = (page - 1) * effective_page_size
+        query = query.offset(offset).limit(effective_page_size)
 
         # 执行查询
         results = query.all()
@@ -122,12 +124,12 @@ class PropertyQueryService:
             )
             items.append(item)
 
-        logger.info("查询完成: 总数=%s, 页码=%s, 每页=%s, 返回=%s", total, page, page_size, len(items))
+        logger.info("查询完成: 总数=%s, 页码=%s, 每页=%s, 返回=%s", total, page, effective_page_size, len(items))
 
         return PaginatedPropertyResponse(
             total=total,
             page=page,
-            page_size=page_size,
+            page_size=effective_page_size,
             items=items,
         )
 

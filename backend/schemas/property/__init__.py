@@ -4,7 +4,7 @@
 from schemas.common import FloorInfo, PropertyHistoryResponse
 
 # 2. 导入核心接收模型
-from .core import PropertyIngestionModel
+from .core import PropertyFilter, PropertyIngestionModel
 
 # 3. 导入响应模型
 from .response import (
@@ -20,6 +20,7 @@ __all__ = [
     "PropertyDetailResponse",
     "PropertyHistoryResponse",
     # Core
+    "PropertyFilter",
     "PropertyIngestionModel",
     # Response
     "PropertyResponse",

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from models import Role
 from schemas.user import RoleCreate, RoleUpdate
+from settings import settings
 
 from .exceptions import ConflictError, ResourceNotFoundError
 
@@ -21,9 +22,10 @@ class RoleService:
         code: str | None = None,
         is_active: bool | None = None,  # noqa: FBT001
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> tuple[int, list[Role]]:
         """获取角色列表."""
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = db.query(Role)
 
         if name:
@@ -34,8 +36,8 @@ class RoleService:
             query = query.filter(Role.is_active == is_active)
 
         total = query.count()
-        offset = (page - 1) * page_size
-        roles = query.order_by(Role.name).offset(offset).limit(page_size).all()
+        offset = (page - 1) * effective_page_size
+        roles = query.order_by(Role.name).offset(offset).limit(effective_page_size).all()
 
         return total, roles
 

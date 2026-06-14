@@ -16,6 +16,7 @@ from models import Project
 from models.common import ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, StatusUpdate
 from services.system.exceptions import ResourceNotFoundError
+from settings import settings
 
 from .internal import (
     ContractNumberGenerator,
@@ -111,7 +112,7 @@ class ProjectCoreService:
         status_filter: str | None = None,
         community_name: str | None = None,
         page: int = 1,
-        page_size: int = 50,
+        page_size: int | None = None,
     ) -> dict[str, Any]:
         """获取项目列表.
 
@@ -125,14 +126,15 @@ class ProjectCoreService:
             包含项目列表和分页信息的字典
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         result = self.query_service.get_by_status(
             status=status_filter,
             community_name=community_name,
             page=page,
-            page_size=page_size,
+            page_size=effective_page_size,
         )
 
-        items = [ProjectResponse.model_validate(self.response_builder.build(p)) for p in result["items"]]
+        items = [ProjectResponse.model_validate(self.response_builder.build(p, slim=True)) for p in result["items"]]
 
         return {
             "items": items,

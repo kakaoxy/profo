@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from models import Project
 from schemas.l4_marketing.import_schemas import L3ProjectBriefResponse
+from settings import settings
 
 
 class MarketingQueryService:
@@ -31,7 +32,7 @@ class MarketingQueryService:
         community_name: str | None = None,
         status: str | None = None,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int | None = None,
     ) -> tuple[list[L3ProjectBriefResponse], int]:
         """获取可用于关联的L3项目列表.
 
@@ -45,6 +46,7 @@ class MarketingQueryService:
             (项目列表, 总记录数)
 
         """
+        effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(Project).filter(
             Project.is_deleted.is_(False),
         )
@@ -67,8 +69,8 @@ class MarketingQueryService:
             query.order_by(
                 desc(Project.created_at),
             )
-            .offset((page - 1) * page_size)
-            .limit(page_size)
+            .offset((page - 1) * effective_page_size)
+            .limit(effective_page_size)
             .all()
         )
 

@@ -37,7 +37,7 @@ class CashFlowRecordResponse(BaseModel):
     type: str
     category: str
     amount: Decimal
-    record_date: datetime = Field(..., description="发生日期")  # 新字段名
+    record_date: datetime = Field(description="发生日期")  # 新字段名
     remark: str | None = Field(None, description="备注")  # 新字段名
     operator_id: str | None = Field(None, description="经办人ID")  # 新字段
     created_at: datetime
