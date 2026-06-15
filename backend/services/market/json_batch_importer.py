@@ -93,9 +93,10 @@ class JSONBatchImporter:
 
                     logger.warning("第 %s 条记录验证失败: %s", index, error_msg)
 
-                except Exception:
+                except Exception as e:  # noqa: BLE001
+                    db.rollback()
                     failed += 1
-                    error_msg = "处理失败"
+                    error_msg = f"处理失败: {e!s}"
                     errors.append(
                         {
                             "index": index,
@@ -103,6 +104,23 @@ class JSONBatchImporter:
                             "reason": error_msg,
                         },
                     )
+
+                    # rollback 会清除 session 中所有未提交的变更，
+                    # 之前成功的记录也被回滚，需同步修正统计
+                    if success > 0:
+                        rollback_reason = f"批次回滚(此前 {success} 条成功记录已失效): {e!s}"
+                        failed_indices = {err["index"] for err in errors}
+                        for prev in range(index):
+                            if prev not in failed_indices:
+                                errors.append(
+                                    {
+                                        "index": prev,
+                                        "source_property_id": self._extract_source_id(properties[prev]),
+                                        "reason": rollback_reason,
+                                    },
+                                )
+                        failed += success
+                        success = 0
 
                     self._save_failed_record_raw(raw_data, error_msg)
 
@@ -119,15 +137,17 @@ class JSONBatchImporter:
                 failed,
             )
 
+            error_map = {err["index"]: err for err in errors}
             rollback_errors = []
             for idx, raw_data in enumerate(properties):
                 source_id = self._extract_source_id(raw_data)
-                if idx < len(errors) and errors[idx].get("reason"):
+                existing = error_map.get(idx)
+                if existing and existing.get("reason"):
                     rollback_errors.append(
                         {
                             "index": idx,
                             "source_property_id": source_id,
-                            "reason": errors[idx]["reason"],
+                            "reason": existing["reason"],
                         },
                     )
                 else:
