@@ -22,13 +22,24 @@ import {
 
 export type Property = components["schemas"]["PropertyResponse"];
 
+/** 校验字符串是否为合法的绝对 URL（http/https），过滤数据库中的脏数据如 "q_80" */
+const isValidUrl = (str: string): boolean => {
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 // --- 1. 移植过来的户型图取数逻辑 ---
 const getFloorPlan = (
   dataSource: string | null | undefined,
   links: string[] | null | undefined,
 ): string | null => {
-  // 如果没有图片链接，返回 null (渲染时会显示占位图)
-  if (!links || links.length === 0) {
+  // 过滤脏数据（如 "q_80"），只保留合法 URL
+  const validLinks = links?.filter(isValidUrl);
+  if (!validLinks || validLinks.length === 0) {
     return null;
   }
 
@@ -38,12 +49,12 @@ const getFloorPlan = (
   // 根据数据源选择户型图
   if (source === "贝壳") {
     // 贝壳：优先取包含 'hdic-frame' 的图片链接
-    const hdicFrameImage = links.find((link) =>
+    const hdicFrameImage = validLinks.find((link) =>
       link.toLowerCase().includes("hdic-frame"),
     );
     // 优先级：hdic-frame -> 第3张 -> 第1张
     // 注意：JS数组越界访问返回 undefined，不会报错，逻辑是安全的
-    imageUrl = hdicFrameImage || links[2] || links[0];
+    imageUrl = hdicFrameImage || validLinks[2] || validLinks[0];
 
     // 添加 CDN 裁剪参数
     if (imageUrl && !imageUrl.includes("!m_fill")) {
@@ -51,16 +62,16 @@ const getFloorPlan = (
     }
   } else if (source === "我爱我家") {
     // 我爱我家：优先取包含 'floorPlan' 或 'layout' 的图片链接
-    const floorPlanImage = links.find(
+    const floorPlanImage = validLinks.find(
       (link) =>
         link.toLowerCase().includes("floorplan") ||
         link.toLowerCase().includes("layout"),
     );
     // 优先级：匹配到的 -> 最后一张
-    imageUrl = floorPlanImage || links[links.length - 1];
+    imageUrl = floorPlanImage || validLinks[validLinks.length - 1];
   } else {
     // 其他来源：默认显示第一张图
-    imageUrl = links[0];
+    imageUrl = validLinks[0];
   }
 
   return imageUrl || null;
@@ -134,6 +145,15 @@ const FloorPlanPreview = ({
   dataSource: string | null | undefined;
 }) => {
   const [open, setOpen] = useState(false);
+
+  // 防御性校验：无效 URL 时显示占位图，避免 next/image 崩溃
+  if (!isValidUrl(cover)) {
+    return (
+      <div className="w-10 h-8 sm:w-12 sm:h-9 bg-muted rounded border flex items-center justify-center text-muted-foreground">
+        <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+      </div>
+    );
+  }
 
   return (
     <HoverCard
