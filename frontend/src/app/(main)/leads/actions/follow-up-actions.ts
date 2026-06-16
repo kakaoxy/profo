@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
+import { safeParseDate } from "@/lib/validators";
 import { revalidatePath } from "next/cache";
 import { FollowUpMethod, FollowUp } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
@@ -60,7 +61,7 @@ export async function getLeadFollowUpsAction(
     leadId: f.lead_id,
     method: f.method,
     content: f.content,
-    followUpTime: new Date(f.followed_at).toLocaleString(),
+    followUpTime: safeParseDate(f.followed_at)?.toLocaleString() ?? "-",
     createdBy: f.created_by_name || "Unknown",
   }));
 }
@@ -83,7 +84,7 @@ export async function getLeadPriceHistoryAction(
     leadId: p.lead_id,
     price: p.price,
     remark: p.remark ?? undefined,
-    recordedAt: new Date(p.recorded_at).toLocaleString(),
+    recordedAt: safeParseDate(p.recorded_at)?.toLocaleString() ?? "-",
     createdByName: p.created_by_name ?? undefined,
   }));
 }

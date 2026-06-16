@@ -4,6 +4,7 @@ import { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
+import { safeParseDate } from "@/lib/validators";
 import { getFileUrl } from "./utils";
 import type { MarketingInfoSectionProps } from "./types";
 import type { L4MarketingMedia, L4MarketingProject } from "@/app/(main)/l4-marketing/projects/types";
@@ -165,7 +166,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
         {/* 第四行：创建时间 */}
         <InfoRow
           label="创建时间"
-          value={project.created_at ? new Date(project.created_at).toLocaleDateString("zh-CN") : "-"}
+          value={safeParseDate(project.created_at)?.toLocaleDateString("zh-CN") ?? "-"}
         />
       </div>
     </div>

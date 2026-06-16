@@ -19,18 +19,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { isValidUrl } from "@/lib/validators";
 
 export type Property = components["schemas"]["PropertyResponse"];
-
-/** 校验字符串是否为合法的绝对 URL（http/https），过滤数据库中的脏数据如 "q_80" */
-const isValidUrl = (str: string): boolean => {
-  try {
-    const url = new URL(str);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-};
 
 // --- 1. 移植过来的户型图取数逻辑 ---
 const getFloorPlan = (

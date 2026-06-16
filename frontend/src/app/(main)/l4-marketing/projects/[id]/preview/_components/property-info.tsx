@@ -1,6 +1,7 @@
 "use client";
 
 import { formatArea } from "@/lib/formatters";
+import { safeParseDate } from "@/lib/validators";
 
 interface PropertyInfoProps {
   communityName?: string;
@@ -33,9 +34,7 @@ export function PropertyInfo({
     { label: "项目状态", value: projectStatus },
     {
       label: "更新时间",
-      value: updatedAt
-        ? new Date(updatedAt).toLocaleString("zh-CN")
-        : undefined,
+      value: safeParseDate(updatedAt)?.toLocaleString("zh-CN") ?? undefined,
       className: "text-xs",
     },
   ];

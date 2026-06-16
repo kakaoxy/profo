@@ -80,13 +80,23 @@ export function formatNumber(
 }
 
 /**
- * 格式化相对时间
+ * 格式化相对时间（安全版本）
  * @param date - 日期（Date 或 ISO 字符串）
+ * @param fallback - 无效时的回退值
  * @returns 相对时间字符串，如 "约1小时前"
  */
-export function formatRelativeTime(date: Date | string): string {
+export function formatRelativeTime(
+  date: Date | string | null | undefined,
+  fallback = "-",
+): string {
+  if (!date) return fallback;
   const d = typeof date === "string" ? new Date(date) : date;
-  return formatDistanceToNow(d, { addSuffix: true, locale: zhCN });
+  if (isNaN(d.getTime())) return fallback;
+  try {
+    return formatDistanceToNow(d, { addSuffix: true, locale: zhCN });
+  } catch {
+    return fallback;
+  }
 }
 
 /**

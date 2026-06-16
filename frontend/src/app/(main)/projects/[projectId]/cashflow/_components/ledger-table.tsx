@@ -2,8 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
-import { zhCN } from "date-fns/locale";
+import { safeFormatDate } from "@/lib/formatters";
 import { Download, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -138,12 +137,10 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
                       {record.date ? (
                         <>
                           <span className="font-medium text-foreground">
-                            {format(parseISO(record.date), "yyyy-MM-dd")}
+                            {safeFormatDate(record.date, "yyyy-MM-dd")}
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-0.5">
-                            {format(parseISO(record.date), "EEEE", {
-                              locale: zhCN,
-                            })}
+                            {safeFormatDate(record.date, "EEEE")}
                           </span>
                         </>
                       ) : (

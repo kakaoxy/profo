@@ -3,6 +3,8 @@
 import { useState, useCallback, memo } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { ImageIcon } from "lucide-react";
+import { isValidUrl } from "@/lib/validators";
 import { RenovationPhoto } from "../../../../../types";
 import { getFileUrl } from "../../../utils";
 
@@ -48,23 +50,29 @@ export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
   return (
     <div className="relative aspect-video rounded-lg overflow-hidden bg-card">
       {isVisible ? (
-        <Image
-          src={getFileUrl(photo.url)}
-          alt={photo.description || photo.filename || "装修照片"}
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          loading="lazy"
-          unoptimized
-          className={cn(
-            "object-contain transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0"
-          )}
-          onLoad={() => setIsLoaded(true)}
-        />
+        isValidUrl(getFileUrl(photo.url)) ? (
+          <Image
+            src={getFileUrl(photo.url)}
+            alt={photo.description || photo.filename || "装修照片"}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            loading="lazy"
+            unoptimized
+            className={cn(
+              "object-contain transition-opacity duration-300",
+              isLoaded ? "opacity-100" : "opacity-0"
+            )}
+            onLoad={() => setIsLoaded(true)}
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )
       ) : (
         <LazyPhotoPlaceholder onVisible={() => setIsVisible(true)} />
       )}
-      {!isLoaded && isVisible && (
+      {!isLoaded && isVisible && isValidUrl(getFileUrl(photo.url)) && (
         <div className="absolute inset-0 bg-muted animate-pulse" />
       )}
     </div>

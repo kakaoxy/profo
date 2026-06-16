@@ -13,8 +13,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ImageIcon } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getFileUrl } from "../../../utils";
+import { isValidUrl } from "@/lib/validators";
 import { cn } from "@/lib/utils";
 import { LazyPhoto } from "./lazy-photo";
 
@@ -40,20 +42,26 @@ export const StagePhotoItem = memo(function StagePhotoItem({
         <DialogTrigger asChild>
           <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-border">
             <AspectRatio ratio={4 / 3} className="relative">
-              <Image
-                src={getFileUrl(photo.url)}
-                alt={stageLabel}
-                fill
-                sizes="200px"
-                loading="lazy"
-                unoptimized
-                onLoad={() => setImageLoaded(true)}
-                className={cn(
-                  "object-cover transition-all duration-500 group-hover:scale-110",
-                  imageLoaded ? "opacity-100" : "opacity-0 bg-muted"
-                )}
-              />
-              {!imageLoaded && (
+              {isValidUrl(getFileUrl(photo.url)) ? (
+                <Image
+                  src={getFileUrl(photo.url)}
+                  alt={stageLabel}
+                  fill
+                  sizes="200px"
+                  loading="lazy"
+                  unoptimized
+                  onLoad={() => setImageLoaded(true)}
+                  className={cn(
+                    "object-cover transition-all duration-500 group-hover:scale-110",
+                    imageLoaded ? "opacity-100" : "opacity-0 bg-muted"
+                  )}
+                />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              {!imageLoaded && isValidUrl(getFileUrl(photo.url)) && (
                 <div className="absolute inset-0 bg-muted animate-pulse" />
               )}
             </AspectRatio>

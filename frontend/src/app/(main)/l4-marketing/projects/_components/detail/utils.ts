@@ -18,7 +18,9 @@ import {
 // 格式化日期
 export function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("zh-CN");
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("zh-CN");
 }
 
 // 获取项目状态配置

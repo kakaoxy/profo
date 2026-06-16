@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronRight, ChevronUp, ImageIcon } from "lucide-react";
 import { getFileUrl } from "@/lib/config";
+import { isValidUrl } from "@/lib/validators";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -74,7 +75,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
             return (
               <div key={stage.stage} className="shrink-0 w-40">
                 <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 mb-2">
-                  {imageUrl ? (
+                  {imageUrl && isValidUrl(imageUrl) ? (
                     isDev ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -138,7 +139,8 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                           key={item.id}
                           className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
                         >
-                          {isDev ? (
+                        {isValidUrl(imageUrl) ? (
+                          isDev ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={imageUrl}
@@ -153,7 +155,12 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                               className="object-cover"
                               sizes="(max-width: 768px) 50vw, 33vw"
                             />
-                          )}
+                          )
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="h-5 w-5 text-c-text-secondary" />
+                          </div>
+                        )}
                         </div>
                       );
                     })}

@@ -7,7 +7,8 @@ import { Quote, Copy, Check } from "lucide-react";
 import { Project } from "../../../../../types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { differenceInDays, parseISO, format } from "date-fns";
+import { differenceInDays, parseISO, isValid } from "date-fns";
+import { safeFormatDate } from "@/lib/formatters";
 
 interface SummaryReportProps {
   project: Project;
@@ -27,17 +28,16 @@ export function SummaryReport({ project }: SummaryReportProps) {
   let occupationDays = 0;
   if (signingDate) {
     const start = parseISO(signingDate);
-    const end = soldDateStr ? parseISO(soldDateStr) : (today ?? new Date());
-    occupationDays = Math.max(0, differenceInDays(end, start));
+    if (isValid(start)) {
+      const end = soldDateStr ? parseISO(soldDateStr) : (today ?? new Date());
+      if (isValid(end)) {
+        occupationDays = Math.max(0, differenceInDays(end, start));
+      }
+    }
   }
 
   const formatSimpleDate = useCallback((dStr: string | null | undefined) => {
-    if (!dStr) return "--";
-    try {
-      return format(parseISO(dStr), "yyyy/MM/dd");
-    } catch {
-      return "--";
-    }
+    return safeFormatDate(dStr, "yyyy/MM/dd", "--");
   }, []);
 
   const reportContent = `【项目结案喜报】🎉

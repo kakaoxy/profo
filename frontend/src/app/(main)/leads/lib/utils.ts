@@ -1,5 +1,6 @@
 import { Lead, LeadStatus } from "../types";
 import { components } from "@/lib/api-types";
+import { safeParseDate } from "@/lib/validators";
 
 type BackendLead = components["schemas"]["LeadResponse"];
 
@@ -25,6 +26,6 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     remarks: backendLead.remarks ?? "",
     creatorName: backendLead.creator_name ?? "未知",
     lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
-    createdAt: new Date(backendLead.created_at).toLocaleString(),
+    createdAt: safeParseDate(backendLead.created_at)?.toLocaleString() ?? "-",
   };
 }

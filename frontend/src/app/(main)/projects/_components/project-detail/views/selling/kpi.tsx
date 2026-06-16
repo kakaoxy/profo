@@ -18,6 +18,7 @@ import {
   isWithinInterval,
   parseISO,
   isSameWeek,
+  isValid,
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Project, SalesRecord } from "../../../../types";
@@ -56,6 +57,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
 
     viewings.forEach((record) => {
       const date = parseISO(record.record_date);
+      if (!isValid(date)) return;
       if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
         thisWeekViewingsCount++;
       } else if (
@@ -87,6 +89,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
     let thisWeekBidsCount = 0;
     offers.forEach((record) => {
       const date = parseISO(record.record_date);
+      if (!isValid(date)) return;
       if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
         thisWeekBidsCount++;
       }
@@ -101,6 +104,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
     let thisWeekTalksCount = 0;
     talks.forEach((record) => {
       const date = parseISO(record.record_date);
+      if (!isValid(date)) return;
       if (isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd })) {
         thisWeekTalksCount++;
       }
@@ -116,11 +120,13 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
 
     if (latestTalk) {
       const date = parseISO(latestTalk.record_date);
-      if (isSameWeek(date, currentNow, { weekStartsOn: 1 })) {
-        latestTalkText = "本周";
-      } else {
-        // Format as MM-dd
-        latestTalkText = `${date.getMonth() + 1}月${date.getDate()}日`;
+      if (isValid(date)) {
+        if (isSameWeek(date, currentNow, { weekStartsOn: 1 })) {
+          latestTalkText = "本周";
+        } else {
+          // Format as MM-dd
+          latestTalkText = `${date.getMonth() + 1}月${date.getDate()}日`;
+        }
       }
     }
 

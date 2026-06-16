@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getFileUrl } from "@/lib/config";
+import { isValidUrl } from "@/lib/validators";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -54,7 +55,7 @@ export function ProjectCard({
     <Link href={`/c/projects/${id}`}>
       <div className="bg-white rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_8px_30px_rgba(15,23,42,0.08)] transition-all">
         <div className="relative aspect-video bg-gray-100">
-          {coverImage ? (
+          {coverImage && isValidUrl(getFileUrl(coverImage)) ? (
             isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

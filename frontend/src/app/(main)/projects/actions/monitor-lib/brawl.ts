@@ -1,6 +1,7 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
+import { safeParseDate } from "@/lib/validators";
 import { getProjectDetailAction } from "../core";
 import { BrawlItem, PropertyItem } from "./types";
 import { getCompetitorsAction } from "./competitors";
@@ -225,7 +226,7 @@ export async function getCompetitorsBrawlAction(projectId: string) {
     allItems.sort((a, b) => {
       if (a.is_current) return -1;
       if (b.is_current) return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      return (safeParseDate(b.date)?.getTime() ?? 0) - (safeParseDate(a.date)?.getTime() ?? 0);
     });
 
     return {
@@ -252,7 +253,7 @@ export async function getCompetitorsBrawlByCommunityAction(
     );
 
     items.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      (a, b) => (safeParseDate(b.date)?.getTime() ?? 0) - (safeParseDate(a.date)?.getTime() ?? 0),
     );
 
     return {

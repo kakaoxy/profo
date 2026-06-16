@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { safeParseDate } from "@/lib/validators";
 
 interface LeadListItemProps {
   id: string;
@@ -48,7 +49,7 @@ export function LeadListItem({
             {!layout && area == null && <span>暂无户型信息</span>}
           </div>
           <div className="text-xs text-c-text-secondary mt-1">
-            {new Date(createdAt).toLocaleDateString("zh-CN")}
+            {safeParseDate(createdAt)?.toLocaleDateString("zh-CN") ?? "-"}
           </div>
         </div>
         <ChevronRight className="h-5 w-5 text-c-text-secondary shrink-0" />

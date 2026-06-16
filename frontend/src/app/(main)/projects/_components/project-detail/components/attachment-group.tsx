@@ -22,6 +22,7 @@ import {
   FileImage,
   FileText,
   File,
+  ImageIcon,
 } from "lucide-react";
 import {
   CATEGORY_LABELS,
@@ -29,6 +30,7 @@ import {
   type AttachmentGroupConfig,
 } from "../constants";
 import type { AttachmentInfo, AttachmentHandlers } from "../types";
+import { isValidUrl } from "@/lib/validators";
 
 interface AttachmentGroupProps {
   groupKey: string;
@@ -119,14 +121,20 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
             className="h-10 w-10 rounded overflow-hidden border cursor-pointer relative"
             onClick={() => onPreview(attachment.url, attachment.fileType)}
           >
-            <Image
-              src={attachment.url}
-              alt={attachment.filename}
-              fill
-              sizes="40px"
-              unoptimized
-              className="object-cover"
-            />
+            {isValidUrl(attachment.url) ? (
+              <Image
+                src={attachment.url}
+                alt={attachment.filename}
+                fill
+                sizes="40px"
+                unoptimized
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-muted flex items-center justify-center">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              </div>
+            )}
           </div>
         ) : (
           <div className="h-10 w-10 rounded bg-background border flex items-center justify-center">

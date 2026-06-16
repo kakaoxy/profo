@@ -7,6 +7,7 @@ import { MiniProjectForm } from "../../_components/mini-project-form";
 import Link from "next/link";
 import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { safeParseDate } from "@/lib/validators";
 
 // 路由参数验证 schema
 const paramsSchema = z.object({
@@ -119,7 +120,7 @@ export default async function ProjectEditPage({
                 编辑房源信息
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                最后更新于 {project.updated_at ? new Date(project.updated_at).toLocaleString('zh-CN') : '未知时间'}
+                最后更新于 {safeParseDate(project.updated_at)?.toLocaleString('zh-CN') ?? '未知时间'}
               </p>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
 import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
@@ -62,7 +63,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               <td className="p-4 pl-6">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-16 overflow-hidden rounded-md bg-muted border border-border relative flex items-center justify-center shrink-0">
-                    {lead.images && lead.images.length > 0 ? (
+                    {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
                       <Image
                         src={lead.images[0]}
                         alt={lead.communityName}

@@ -1,5 +1,6 @@
 import { startOfWeek } from "date-fns";
 import { toNumber } from "@/lib/number-utils";
+import { safeParseDate } from "@/lib/validators";
 import type { ApiSalesRecord } from "./project-card-types";
 
 export type { ApiSalesRecord } from "./project-card-types";
@@ -17,13 +18,13 @@ export function getWeekViewStats(viewingRecords: ApiSalesRecord[]) {
   lastWeekEnd.setMilliseconds(-1);
 
   const currentWeekViews = viewingRecords.filter(r => {
-    const d = new Date(r.record_date);
-    return d >= thisWeekStart;
+    const d = safeParseDate(r.record_date);
+    return d !== null && d >= thisWeekStart;
   }).length;
 
   const lastWeekViews = viewingRecords.filter(r => {
-    const d = new Date(r.record_date);
-    return d >= lastWeekStart && d <= lastWeekEnd;
+    const d = safeParseDate(r.record_date);
+    return d !== null && d >= lastWeekStart && d <= lastWeekEnd;
   }).length;
 
   return { currentWeekViews, lastWeekViews };
@@ -33,7 +34,7 @@ export function getOfferStats(offerRecords: ApiSalesRecord[]) {
   const offerCount = offerRecords.length;
 
   const sortedOffers = [...offerRecords].sort(
-    (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime()
+    (a, b) => (safeParseDate(b.record_date)?.getTime() ?? 0) - (safeParseDate(a.record_date)?.getTime() ?? 0)
   );
 
   const offerPrices = sortedOffers
