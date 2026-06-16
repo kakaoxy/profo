@@ -1,6 +1,6 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
+import { safeFormatDate } from "@/lib/formatters";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SalesRecord } from "../../../../../types";
@@ -51,7 +51,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
             {sortedData.map((item) => (
               <TableRow key={item.id} className="text-xs hover:bg-muted">
                 <TableCell className="text-muted-foreground font-mono">
-                  {format(parseISO(item.record_date), "MM-dd HH:mm")}
+                  {safeFormatDate(item.record_date, "MM-dd HH:mm")}
                 </TableCell>
                 <TableCell className="font-medium text-foreground">
                   {item.customer_name}
@@ -111,7 +111,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                   {item.customer_name}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  {format(parseISO(item.record_date), "MM-dd HH:mm")}
+                  {safeFormatDate(item.record_date, "MM-dd HH:mm")}
                 </span>
               </div>
               <button
@@ -137,7 +137,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground font-mono">
-                {format(parseISO(item.record_date), "yyyy/MM/dd HH:mm")}
+                {safeFormatDate(item.record_date, "yyyy/MM/dd HH:mm")}
               </span>
               <button
                 onClick={() => onDelete(item.id)}

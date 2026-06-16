@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
 import { getFileUrl } from "@/lib/config";
+import { isValidUrl } from "@/lib/validators";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -29,22 +30,28 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
 
   return (
     <div className="relative w-full aspect-video bg-gray-100 overflow-hidden">
-      {isDev ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={getFileUrl(images[current])}
-          alt={`图片 ${current + 1}`}
-          className="w-full h-full object-cover"
-        />
+      {isValidUrl(getFileUrl(images[current])) ? (
+        isDev ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={getFileUrl(images[current])}
+            alt={`图片 ${current + 1}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <Image
+            src={getFileUrl(images[current])}
+            alt={`图片 ${current + 1}`}
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority
+          />
+        )
       ) : (
-        <Image
-          src={getFileUrl(images[current])}
-          alt={`图片 ${current + 1}`}
-          fill
-          className="object-cover"
-          sizes="100vw"
-          priority
-        />
+        <div className="w-full h-full flex items-center justify-center">
+          <ImageIcon className="h-8 w-8 text-c-text-secondary" />
+        </div>
       )}
 
       {images.length > 1 && (

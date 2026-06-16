@@ -2,7 +2,7 @@
 
 import { useState, memo } from "react";
 import Image from "next/image";
-import { UploadCloud, Plus, Loader2, Trash2, Eye } from "lucide-react";
+import { UploadCloud, Plus, Loader2, Trash2, Eye, ImageIcon } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getFileUrl } from "../../../utils";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { isValidUrl } from "@/lib/validators";
 
 // [New] Define the structure for a photo currently being uploaded
 export interface UploadingPhoto {
@@ -58,20 +59,26 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
   return (
     <Dialog>
       <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-border">
-          <Image
-          src={getFileUrl(photo.url)}
-          alt={photo.filename || "Renovation Photo"}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
-          loading="lazy"
-          unoptimized
-          onLoad={() => setImageLoaded(true)}
-          className={cn(
-            "object-cover hover:scale-105 transition-all duration-500 cursor-pointer",
-            imageLoaded ? "opacity-100" : "opacity-0"
+          {isValidUrl(getFileUrl(photo.url)) ? (
+            <Image
+              src={getFileUrl(photo.url)}
+              alt={photo.filename || "Renovation Photo"}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
+              loading="lazy"
+              unoptimized
+              onLoad={() => setImageLoaded(true)}
+              className={cn(
+                "object-cover hover:scale-105 transition-all duration-500 cursor-pointer",
+                imageLoaded ? "opacity-100" : "opacity-0"
+              )}
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            </div>
           )}
-        />
-        {!imageLoaded && (
+        {!imageLoaded && isValidUrl(getFileUrl(photo.url)) && (
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
 
@@ -128,15 +135,21 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
           Photo Preview - {photo.filename || "Untitled"}
         </DialogTitle>
         <div className="relative w-full aspect-video">
-          <Image
-            src={getFileUrl(photo.url)}
-            alt="Large Preview"
-            fill
-            sizes="(max-width: 768px) 100vw, 768px"
-            unoptimized
-            className="object-contain rounded-lg shadow-2xl"
-            priority
-          />
+          {isValidUrl(getFileUrl(photo.url)) ? (
+            <Image
+              src={getFileUrl(photo.url)}
+              alt="Large Preview"
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              unoptimized
+              className="object-contain rounded-lg shadow-2xl"
+              priority
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center rounded-lg">
+              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

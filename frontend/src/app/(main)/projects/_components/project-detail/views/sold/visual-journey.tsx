@@ -5,7 +5,7 @@ import { ImageIcon } from "lucide-react";
 import { Project } from "../../../../types";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { RENOVATION_STAGES } from "../../constants";
-import { format, parseISO } from "date-fns";
+import { safeFormatDate } from "@/lib/formatters";
 import { StagePhotoItem } from "./components/stage-photo-item";
 import { SummaryReport } from "./components/summary-report";
 
@@ -61,7 +61,7 @@ export function VisualJourney({ project }: { project: Project }) {
                       </span>
                     </div>
                     <p className="text-[11px] font-mono text-muted-foreground pl-3">
-                      ({stage.date ? format(parseISO(stage.date), "MM/dd") : "--/--"})
+                      ({safeFormatDate(stage.date, "MM/dd", "--/--")})
                     </p>
                   </div>
                 </div>

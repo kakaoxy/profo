@@ -1,12 +1,12 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { L4MarketingProject, MARKETING_PROJECT_STATUS_CONFIG, PUBLISH_STATUS_CONFIG } from "./types";
 import { getFileUrl } from "@/lib/config";
-import { formatPrice, formatUnitPrice, formatArea } from "@/lib/formatters";
+import { isValidUrl } from "@/lib/validators";
+import { formatPrice, formatUnitPrice, formatArea, safeFormatDate } from "@/lib/formatters";
 import { getProjectStatusClassName } from "@/lib/status-colors";
 import { ActionCell } from "./_components/action-cell";
 
@@ -61,7 +61,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
 
       return (
         <div className="flex items-center gap-4 py-1 min-w-[180px]">
-          {imageUrl ? (
+          {imageUrl && isValidUrl(imageUrl) ? (
             <div className="relative w-20 h-14 rounded-lg shrink-0 border border-border overflow-hidden">
               {isDev ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -224,7 +224,7 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
       const date = row.original.updated_at;
       return (
         <span className="hidden xl:block text-sm text-muted-foreground">
-          {date ? format(new Date(date), "yyyy/MM/dd HH:mm") : "-"}
+          {safeFormatDate(date, "yyyy/MM/dd HH:mm")}
         </span>
       );
     },

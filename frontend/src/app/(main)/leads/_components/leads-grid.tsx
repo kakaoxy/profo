@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
 import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
@@ -49,7 +50,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
           >
             {/* Image Area */}
             <div className="relative aspect-[4/3] flex items-center justify-center bg-muted overflow-hidden">
-              {lead.images && lead.images.length > 0 ? (
+              {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
                 <Image
                   src={lead.images[0]}
                   alt={lead.communityName}

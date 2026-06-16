@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
-import { format, parseISO } from "date-fns";
+import { safeFormatDate } from "@/lib/formatters";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CashFlowRecord } from "../types";
@@ -51,7 +51,8 @@ export function TrendChart({ data }: TrendChartProps) {
       // 过滤掉没有日期的记录
       if (!curr.date) return acc;
 
-      const dateKey = format(parseISO(curr.date), "yyyy-MM-dd");
+      const dateKey = safeFormatDate(curr.date, "yyyy-MM-dd");
+      if (dateKey === "-") return acc;
       if (!acc[dateKey]) {
         acc[dateKey] = { date: dateKey, income: 0, expense: 0 };
       }
@@ -96,7 +97,7 @@ export function TrendChart({ data }: TrendChartProps) {
               tick={{ fontSize: 10, fill: colors.label }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(val) => format(parseISO(val), "MM-dd")}
+              tickFormatter={(val) => safeFormatDate(val, "MM-dd")}
             />
             <YAxis
               tick={{ fontSize: 10, fill: colors.label }}

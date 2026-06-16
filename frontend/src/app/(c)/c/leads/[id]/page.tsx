@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/c/shared/ErrorState";
 import { ShieldAlert } from "lucide-react";
 import { fetcher, ForbiddenError } from "@/lib/swr";
+import { safeParseDate } from "@/lib/validators";
 import type { components } from "@/lib/api-types";
 
 type LeadDetail = components["schemas"]["PublicLeadDetail"];
@@ -60,13 +61,14 @@ export default function LeadDetailPage() {
     return <ErrorState onRetry={() => mutate()} />;
   }
 
-  const formattedDate = new Date(data.created_at).toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedDate =
+    safeParseDate(data.created_at)?.toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }) ?? "-";
 
   return (
     <div className="px-4 md:px-6 py-8 space-y-6">
