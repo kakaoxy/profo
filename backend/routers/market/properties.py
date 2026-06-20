@@ -62,6 +62,7 @@ def get_properties(  # noqa: PLR0913
     pagination: PaginationDep,
     status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
+    community_ids: Annotated[str | None, Query(description="小区ID，逗号分隔，例如: uuid1,uuid2")] = None,
     districts: Annotated[str | None, Query(description="行政区，逗号分隔，例如: 徐汇,静安")] = None,
     business_circles: Annotated[str | None, Query(description="商圈，逗号分隔，例如: 五角场,中关村")] = None,
     orientations: Annotated[str | None, Query(description="朝向关键词，逗号分隔，例如: 南,东南")] = None,
@@ -85,11 +86,13 @@ def get_properties(  # noqa: PLR0913
     business_circles_list = parse_comma_separated_list(business_circles)
     orientations_list = parse_comma_separated_list(orientations)
     floor_levels_list = parse_comma_separated_list(floor_levels)
+    community_ids_list = parse_comma_separated_list(community_ids)
 
     return service.query_properties(
         db=db,
         status=status,
         community_name=community_name,
+        community_ids=community_ids_list,
         districts=districts_list,
         business_circles=business_circles_list,
         orientations=orientations_list,
@@ -114,6 +117,7 @@ def export_properties(  # noqa: PLR0913
     service: PropertyServiceDep,
     status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
+    community_ids: Annotated[str | None, Query(description="小区ID，逗号分隔")] = None,
     districts: Annotated[str | None, Query(description="行政区，逗号分隔")] = None,
     business_circles: Annotated[str | None, Query(description="商圈，逗号分隔")] = None,
     orientations: Annotated[str | None, Query(description="朝向关键词，逗号分隔")] = None,
@@ -137,10 +141,12 @@ def export_properties(  # noqa: PLR0913
     business_circles_list = parse_comma_separated_list(business_circles)
     orientations_list = parse_comma_separated_list(orientations)
     floor_levels_list = parse_comma_separated_list(floor_levels)
+    community_ids_list = parse_comma_separated_list(community_ids)
 
     export_params = PropertyExportParams(
         status=status,
         community_name=community_name,
+        community_ids=community_ids_list,
         districts=districts_list,
         business_circles=business_circles_list,
         orientations=orientations_list,

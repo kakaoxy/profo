@@ -20,6 +20,7 @@ def apply_filters(  # noqa: C901, PLR0912, PLR0913, PLR0915
     query: Query,
     status: str | None = None,
     community_name: str | None = None,
+    community_ids: list[str] | None = None,
     districts: list[str] | None = None,
     business_circles: list[str] | None = None,
     orientations: list[str] | None = None,
@@ -37,6 +38,7 @@ def apply_filters(  # noqa: C901, PLR0912, PLR0913, PLR0915
         query: SQLAlchemy 查询对象
         status: 房源状态
         community_name: 小区名称
+        community_ids: 小区ID列表（精确匹配，优先于 community_name）
         districts: 行政区
         business_circles: 商圈
         orientations: 朝向
@@ -76,6 +78,10 @@ def apply_filters(  # noqa: C901, PLR0912, PLR0913, PLR0915
     # 小区名称模糊搜索
     if community_name:
         query = query.filter(Community.name.like(f"%{community_name}%"))
+
+    # 小区ID精确筛选（多选，优先于名称模糊匹配）
+    if community_ids:
+        query = query.filter(PropertyCurrent.community_id.in_(community_ids))
 
     # 行政区筛选（多选）
     if districts:

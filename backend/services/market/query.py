@@ -27,6 +27,7 @@ class PropertyQueryService:
         db: Session,
         status: str | None = None,
         community_name: str | None = None,
+        community_ids: list[str] | None = None,
         districts: list[str] | None = None,
         business_circles: list[str] | None = None,
         orientations: list[str] | None = None,
@@ -48,6 +49,7 @@ class PropertyQueryService:
             db: 数据库会话
             status: 房源状态 ("在售" | "成交" | None)
             community_name: 小区名称（模糊搜索）
+            community_ids: 小区ID列表（精确匹配）
             districts: 行政区列表
             business_circles: 商圈列表
             orientations: 朝向关键字列表（南/北/东西等）
@@ -88,6 +90,7 @@ class PropertyQueryService:
             query,
             status=status,
             community_name=community_name,
+            community_ids=community_ids,
             districts=districts,
             business_circles=business_circles,
             orientations=orientations,
@@ -170,6 +173,7 @@ class PropertyQueryService:
             query,
             status=params.status,
             community_name=params.community_name,
+            community_ids=params.community_ids,
             districts=params.districts,
             business_circles=params.business_circles,
             orientations=params.orientations,

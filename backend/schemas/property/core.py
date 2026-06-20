@@ -17,6 +17,7 @@ class PropertyFilter(BaseModel):
 
     status: str | None = Field(None, description="房源状态: 在售 | 成交")
     community_name: str | None = Field(None, description="小区名称（模糊搜索）")
+    community_ids: list[str] | None = Field(None, description="小区ID列表（精确匹配）")
     districts: list[str] | None = Field(None, description="行政区列表")
     business_circles: list[str] | None = Field(None, description="商圈列表")
     orientations: list[str] | None = Field(None, description="朝向列表")

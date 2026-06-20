@@ -16,6 +16,7 @@ class PropertyQueryParams(BaseModel):
     # 基础筛选条件
     status: str | None = None
     community_name: str | None = None
+    community_ids: list[str] | None = None
 
     # 地理位置筛选
     districts: list[str] | None = None
@@ -74,6 +75,7 @@ class PropertyExportParams(BaseModel):
     # 基础筛选条件
     status: str | None = None
     community_name: str | None = None
+    community_ids: list[str] | None = None
 
     # 地理位置筛选
     districts: list[str] | None = None
@@ -100,6 +102,7 @@ class PropertyExportParams(BaseModel):
         cls,
         status: str | None = None,
         community_name: str | None = None,
+        community_ids: list[str] | None = None,
         districts: list[str] | None = None,
         business_circles: list[str] | None = None,
         orientations: list[str] | None = None,
@@ -117,6 +120,7 @@ class PropertyExportParams(BaseModel):
         return cls(
             status=status,
             community_name=community_name,
+            community_ids=community_ids,
             districts=districts,
             business_circles=business_circles,
             orientations=orientations,

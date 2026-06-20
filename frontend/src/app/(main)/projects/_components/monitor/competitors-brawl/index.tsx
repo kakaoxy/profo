@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Pagination } from "@/components/common/pagination";
 import { SectionHeader } from "../section-header";
 import { FilterBar } from "./filter-bar";
 import { CompetitorsTable } from "./competitors-table";
 import { CompetitorsCard } from "./competitors-card";
-import { useCompetitors, useFilteredItems } from "./use-competitors";
-import type { SortConfig } from "./types";
+import { useCompetitors } from "./use-competitors";
 
 interface CompetitorsBrawlProps {
   projectId?: string;
@@ -36,58 +36,30 @@ export function CompetitorsBrawl({
   communityId,
 }: CompetitorsBrawlProps) {
   const isMobile = useIsMobile();
-  const [statusFilters, setStatusFilters] = useState<("on_sale" | "sold")[]>([
-    "on_sale",
-  ]);
-  const [layoutFilters, setLayoutFilters] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: null,
-    direction: null,
-  });
-
-  const { allItems, counts, loading, error } = useCompetitors({
-    projectId,
-    communityId,
-  });
-
-  const filteredItems = useFilteredItems({
-    allItems,
+  const {
+    counts,
+    displayItems,
+    total,
+    totalPages,
+    initLoading,
+    pageLoading,
+    error,
     statusFilters,
     layoutFilters,
     searchQuery,
     sortConfig,
-  });
+    page,
+    pageSize,
+    toggleStatus,
+    toggleLayout,
+    setSearch,
+    handleSort,
+    setPage,
+    setPageSize,
+  } = useCompetitors({ projectId, communityId });
 
-  const toggleFilter = useCallback((status: "on_sale" | "sold") => {
-    setStatusFilters((prev) => {
-      if (prev.includes(status)) {
-        if (prev.length === 1) return prev;
-        return prev.filter((s) => s !== status);
-      }
-      return [...prev, status];
-    });
-  }, []);
-
-  const toggleLayoutFilter = useCallback((layout: string) => {
-    setLayoutFilters((prev) => {
-      if (prev.includes(layout)) {
-        return prev.filter((l) => l !== layout);
-      }
-      return [...prev, layout];
-    });
-  }, []);
-
-  const handleSort = useCallback((key: "total" | "unit") => {
-    setSortConfig((current) => {
-      if (current.key === key) {
-        if (current.direction === "asc") return { key, direction: "desc" };
-        if (current.direction === "desc") return { key: null, direction: null };
-        return { key, direction: "asc" };
-      }
-      return { key, direction: "asc" };
-    });
-  }, []);
+  // 初始化加载 或 首次分页加载（无旧数据可展示）时显示完整加载动画
+  const showSpinner = initLoading || (pageLoading && displayItems.length === 0);
 
   return (
     <section className="mt-8 pb-10">
@@ -103,13 +75,13 @@ export function CompetitorsBrawl({
           layoutFilters={layoutFilters}
           searchQuery={searchQuery}
           counts={counts}
-          onToggleStatus={toggleFilter}
-          onToggleLayout={toggleLayoutFilter}
-          onSearchChange={setSearchQuery}
+          onToggleStatus={toggleStatus}
+          onToggleLayout={toggleLayout}
+          onSearchChange={setSearch}
         />
 
-        <Card className="border-border shadow-sm overflow-x-auto bg-card min-h-[300px]">
-          {loading ? (
+        <Card className="border-border shadow-sm bg-card min-h-[300px]">
+          {showSpinner ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" />
             </div>
@@ -118,18 +90,40 @@ export function CompetitorsBrawl({
               <AlertCircle className="h-6 w-6 mb-2" />
               <span className="text-sm">{error}</span>
             </div>
-          ) : filteredItems.length === 0 ? (
+          ) : displayItems.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
               暂无数据
             </div>
-          ) : isMobile ? (
-            <CompetitorsCard items={filteredItems} />
           ) : (
-            <CompetitorsTable
-              items={filteredItems}
-              sortConfig={sortConfig}
-              onSort={handleSort}
-            />
+            <>
+              <div
+                className={`overflow-x-auto transition-opacity ${pageLoading ? "opacity-50" : ""}`}
+              >
+                {isMobile ? (
+                  <CompetitorsCard items={displayItems} />
+                ) : (
+                  <CompetitorsTable
+                    items={displayItems}
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                  />
+                )}
+              </div>
+              {total > 0 && (
+                <Pagination
+                  mode="controlled"
+                  currentPage={page}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={total}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  showPageSizeSelector
+                  showFirstLastButtons
+                  className="border-t border-border"
+                />
+              )}
+            </>
           )}
         </Card>
       </div>
