@@ -330,6 +330,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/cashflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Cashflow
+         * @description 获取项目现金流明细和汇总.
+         */
+        get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
+        put?: never;
+        /**
+         * Create Cashflow Record
+         * @description 创建现金流记录.
+         */
+        post: operations["create_cashflow_record_api_v1_projects__project_id__cashflow_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/cashflow/{record_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Cashflow Record
+         * @description 删除现金流记录.
+         *
+         *     速率限制：20次/小时.
+         */
+        delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/renovation": {
         parameters: {
             query?: never;
@@ -729,52 +775,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/cashflow": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Project Cashflow
-         * @description 获取项目现金流明细和汇总.
-         */
-        get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
-        put?: never;
-        /**
-         * Create Cashflow Record
-         * @description 创建现金流记录.
-         */
-        post: operations["create_cashflow_record_api_v1_projects__project_id__cashflow_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/cashflow/{record_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Cashflow Record
-         * @description 删除现金流记录.
-         *
-         *     速率限制：20次/小时.
-         */
-        delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2140,7 +2140,6 @@ export interface components {
         Body_create_import_task_api_v1_upload_csv_post: {
             /**
              * File
-             * Format: binary
              * @description CSV 文件
              */
             file: string;
@@ -2151,7 +2150,10 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /** Password */
+            /**
+             * Password
+             * Format: password
+             */
             password: string;
             /**
              * Scope
@@ -2160,7 +2162,10 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * Format: password
+             */
             client_secret?: string | null;
         };
         /** Body_login_for_access_token_api_v1_public_auth_token_post */
@@ -2169,7 +2174,10 @@ export interface components {
             grant_type?: string | null;
             /** Username */
             username: string;
-            /** Password */
+            /**
+             * Password
+             * Format: password
+             */
             password: string;
             /**
              * Scope
@@ -2178,15 +2186,15 @@ export interface components {
             scope: string;
             /** Client Id */
             client_id?: string | null;
-            /** Client Secret */
+            /**
+             * Client Secret
+             * Format: password
+             */
             client_secret?: string | null;
         };
         /** Body_upload_file_api_v1_files_upload_post */
         Body_upload_file_api_v1_files_upload_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /**
@@ -2905,6 +2913,19 @@ export interface components {
         /**
          * L4MarketingMediaListResponse
          * @description 媒体列表响应 - 统一分页格式.
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
          */
         L4MarketingMediaListResponse: {
             /**
@@ -3096,6 +3117,19 @@ export interface components {
         /**
          * L4MarketingProjectListResponse
          * @description 营销项目列表响应 - 统一分页格式.
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
          */
         L4MarketingProjectListResponse: {
             /**
@@ -3698,7 +3732,22 @@ export interface components {
              */
             page_size: number;
         };
-        /** PaginatedResponse[ProjectResponse] */
+        /**
+         * PaginatedResponse[ProjectResponse]
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
+         */
         PaginatedResponse_ProjectResponse_: {
             /**
              * Items
@@ -5380,7 +5429,9 @@ export interface components {
              * Errors
              * @description 错误详情列表
              */
-            errors?: Record<string, never>[];
+            errors?: {
+                [key: string]: unknown;
+            }[];
         };
         /**
          * RecordType
@@ -5800,7 +5851,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -5845,7 +5898,9 @@ export interface components {
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
-            customer_info?: Record<string, never> | null;
+            customer_info?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Record Date
              * Format: date-time
@@ -6209,6 +6264,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * WechatAuthUrlResponse
@@ -6324,6 +6383,8 @@ export interface operations {
                 status?: string | null;
                 /** @description 小区名称（模糊搜索） */
                 community_name?: string | null;
+                /** @description 小区ID，逗号分隔，例如: uuid1,uuid2 */
+                community_ids?: string | null;
                 /** @description 行政区，逗号分隔，例如: 徐汇,静安 */
                 districts?: string | null;
                 /** @description 商圈，逗号分隔，例如: 五角场,中关村 */
@@ -6386,6 +6447,8 @@ export interface operations {
                 status?: string | null;
                 /** @description 小区名称（模糊搜索） */
                 community_name?: string | null;
+                /** @description 小区ID，逗号分隔 */
+                community_ids?: string | null;
                 /** @description 行政区，逗号分隔 */
                 districts?: string | null;
                 /** @description 商圈，逗号分隔 */
@@ -6617,10 +6680,6 @@ export interface operations {
     get_leads_api_v1_leads__get: {
         parameters: {
             query?: {
-                /** @description 页码 */
-                page?: number;
-                /** @description 每页数量 */
-                page_size?: number;
                 /** @description 小区名称搜索 */
                 search?: string | null;
                 /** @description 状态筛选 */
@@ -6633,6 +6692,10 @@ export interface operations {
                 layout?: string | null;
                 /** @description 楼层筛选 */
                 floor?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
             };
             header?: never;
             path?: never;
@@ -7001,6 +7064,106 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_cashflow_api_v1_projects__project_id__cashflow_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_cashflow_record_api_v1_projects__project_id__cashflow_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashFlowRecordCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 记录ID */
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7463,14 +7626,12 @@ export interface operations {
     get_projects_api_v1_projects_get: {
         parameters: {
             query?: {
-                /** @description 项目状态筛选 */
-                status?: string | null;
-                /** @description 小区名称筛选 */
-                community_name?: string | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
                 page_size?: number;
+                status?: string | null;
+                community_name?: string | null;
             };
             header?: never;
             path?: never;
@@ -7790,113 +7951,9 @@ export interface operations {
             };
         };
     };
-    get_project_cashflow_api_v1_projects__project_id__cashflow_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CashFlowResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_cashflow_record_api_v1_projects__project_id__cashflow_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CashFlowRecordCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CashFlowRecordResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-                /** @description 记录ID */
-                record_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_marketing_projects_api_v1_admin_l4_marketing_projects_get: {
         parameters: {
             query?: {
-                /** @description 页码 */
-                page?: number;
-                /** @description 每页大小 */
-                page_size?: number;
                 /** @description 发布状态: 草稿/发布 */
                 publish_status?: string | null;
                 /** @description 项目状态: 在途/在售/已售 */
@@ -7905,6 +7962,10 @@ export interface operations {
                 consultant_id?: string | null;
                 /** @description 小区ID */
                 community_id?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
             };
             header?: never;
             path?: never;
@@ -8068,7 +8129,7 @@ export interface operations {
             query?: {
                 /** @description 页码 */
                 page?: number;
-                /** @description 每页大小 */
+                /** @description 每页数量 */
                 page_size?: number;
             };
             header?: never;
@@ -8247,7 +8308,7 @@ export interface operations {
                 status?: string | null;
                 /** @description 页码 */
                 page?: number;
-                /** @description 每页大小 */
+                /** @description 每页数量 */
                 page_size?: number;
             };
             header?: never;
@@ -8524,7 +8585,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -8898,7 +8959,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -8931,7 +8994,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -8960,7 +9025,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -9302,7 +9369,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>[];
+                "application/json": {
+                    [key: string]: unknown;
+                }[];
             };
         };
         responses: {
@@ -9810,28 +9879,19 @@ export interface operations {
     get_projects_api_v1_public_projects_get: {
         parameters: {
             query?: {
-                /** @description 项目状态筛选 */
-                project_status?: string | null;
-                /** @description 小区名称搜索 */
-                community_name?: string | null;
-                /** @description 户型筛选 */
-                layout?: string | null;
-                /** @description 最低总价(万) */
-                min_price?: number | null;
-                /** @description 最高总价(万) */
-                max_price?: number | null;
-                /** @description 最小面积(m²) */
-                min_area?: number | null;
-                /** @description 最大面积(m²) */
-                max_area?: number | null;
-                /** @description 排序字段 */
-                sort_by?: string | null;
-                /** @description 排序方向 asc/desc */
-                sort_order?: string | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
                 page_size?: number;
+                project_status?: string | null;
+                community_name?: string | null;
+                layout?: string | null;
+                min_price?: number | null;
+                max_price?: number | null;
+                min_area?: number | null;
+                max_area?: number | null;
+                sort_by?: string;
+                sort_order?: string;
             };
             header?: never;
             path?: never;

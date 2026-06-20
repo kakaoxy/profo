@@ -1,17 +1,29 @@
 "use server";
 
 import { fetchClient } from "@/lib/api-server";
-import { safeParseDate } from "@/lib/validators";
-import { getProjectDetailAction } from "../core";
-import { BrawlItem, PropertyItem } from "./types";
-import { getCompetitorsAction } from "./competitors";
+import { components } from "@/lib/api-types";
 import { extractPaginatedData } from "@/lib/api-helpers";
+import { getProjectDetailAction } from "../core";
+import {
+  getCompetitorsAction,
+  getCompetitorsByCommunityAction,
+} from "./competitors";
+import type {
+  BrawlInitResult,
+  BrawlItem,
+  BrawlPageParams,
+  BrawlPageResult,
+  PropertyItem,
+} from "./types";
 
-function mapPropertyToBrawlItem(
-  p: PropertyItem,
-  status: "on_sale" | "sold",
-): BrawlItem {
-  const isOnSale = status === "on_sale";
+type ProjectResponse = components["schemas"]["ProjectResponse"];
+
+const MAX_COMMUNITIES = 5;
+
+/** 将后端房源映射为竞品肉搏战条目（按 status 字段判定在售/已售）. */
+function mapPropertyToBrawlItem(p: PropertyItem): BrawlItem {
+  const isSold = p.status === "成交";
+  const status = isSold ? "sold" : "on_sale";
   return {
     id: String(p.id),
     community: p.community_name || "",
@@ -25,246 +37,198 @@ function mapPropertyToBrawlItem(
       Math.round(((p.unit_price || 0) * (p.build_area || 0)) / 10000),
     unit: p.unit_price || 0,
     date:
-      (isOnSale
-        ? p.listed_date?.split("T")[0]
-        : p.sold_date?.split("T")[0]) ||
+      (isSold
+        ? p.sold_date?.split("T")[0]
+        : p.listed_date?.split("T")[0]) ||
       p.updated_at?.split("T")[0] ||
       "-",
     source: p.data_source || "未知",
   };
 }
 
-interface CommunityDataResult {
-  items: BrawlItem[];
-  countOnSale: number;
-  countSold: number;
+/** 构造“本项目”对照条目（仅未售且未删除项目）. */
+function buildSelfItem(project: ProjectResponse): BrawlItem | null {
+  // ProjectStatus 枚举: signing | renovating | selling | sold | deleted
+  if (project.status === "sold" || project.status === "deleted") return null;
+  const area = project.area ? Number(project.area) : 0;
+  const listPrice = project.list_price
+    ? Number(project.list_price)
+    : project.signing_price
+      ? Number(project.signing_price)
+      : 0;
+  const unitPrice =
+    area > 0 && listPrice > 0 ? Math.round((listPrice * 10000) / area) : 0;
+  return {
+    id: `Self-${project.id}`,
+    community: project.community_name || "本项目",
+    status: "on_sale",
+    display_status: "挂牌",
+    layout: "-",
+    floor: "中楼层",
+    area,
+    total: listPrice,
+    unit: unitPrice,
+    date: new Date().toISOString().split("T")[0],
+    source: "内部",
+    is_current: true,
+  };
 }
 
-async function fetchCommunityData(
+/** 获取小区集合的在售/已售总数（page_size=1 仅取 total）. */
+async function fetchCounts(
   client: Awaited<ReturnType<typeof fetchClient>>,
-  communityName: string,
-): Promise<CommunityDataResult> {
+  communityIds: string[],
+): Promise<{ on_sale: number; sold: number }> {
+  if (communityIds.length === 0) return { on_sale: 0, sold: 0 };
+  const idsParam = communityIds.join(",");
   const [onSaleRes, soldRes] = await Promise.all([
     client.GET("/api/v1/properties", {
       params: {
         query: {
-          community_name: communityName,
+          community_ids: idsParam,
           status: "在售",
-          page_size: 10,
-          sort_by: "listed_date",
-          sort_order: "desc",
+          page: 1,
+          page_size: 1,
         },
       },
     }),
     client.GET("/api/v1/properties", {
       params: {
         query: {
-          community_name: communityName,
+          community_ids: idsParam,
           status: "成交",
-          page_size: 10,
-          sort_by: "sold_date",
-          sort_order: "desc",
+          page: 1,
+          page_size: 1,
         },
       },
     }),
   ]);
-
-  const onSaleData = extractPaginatedData<PropertyItem>(onSaleRes.data);
-  const soldData = extractPaginatedData<PropertyItem>(soldRes.data);
-
-  const items: BrawlItem[] = [];
-  let countOnSale = 0;
-  let countSold = 0;
-
-  if (onSaleData) {
-    countOnSale = onSaleData.total || 0;
-    items.push(
-      ...(onSaleData.items || []).map((p) =>
-        mapPropertyToBrawlItem(p, "on_sale"),
-      ),
-    );
+  if (onSaleRes.error) {
+    const detail = (onSaleRes.error as { detail?: string }).detail;
+    throw new Error(`获取在售计数失败: ${detail || "未知错误"}`);
   }
-
-  if (soldData) {
-    countSold = soldData.total || 0;
-    items.push(
-      ...(soldData.items || []).map((p) => mapPropertyToBrawlItem(p, "sold")),
-    );
+  if (soldRes.error) {
+    const detail = (soldRes.error as { detail?: string }).detail;
+    throw new Error(`获取成交计数失败: ${detail || "未知错误"}`);
   }
+  const onSale = extractPaginatedData<PropertyItem>(onSaleRes.data);
+  const sold = extractPaginatedData<PropertyItem>(soldRes.data);
+  return { on_sale: onSale?.total ?? 0, sold: sold?.total ?? 0 };
+}
 
-  return { items, countOnSale, countSold };
+type ActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; message: string };
+
+/**
+ * 初始化竞品肉搏战：派生竞品小区集合、在售/已售计数、本项目条目.
+ * 仅在 projectId/communityId 变化时调用一次.
+ */
+export async function getCompetitorsBrawlInitAction(
+  scope: { projectId: string } | { communityId: string },
+): Promise<ActionResult<BrawlInitResult>> {
+  try {
+    let communityIds: string[] = [];
+    let selfItem: BrawlItem | null = null;
+
+    if ("projectId" in scope) {
+      const [projectResult, competitorsResult] = await Promise.all([
+        getProjectDetailAction(scope.projectId, true),
+        getCompetitorsAction(scope.projectId),
+      ]);
+      if (!projectResult.success || !projectResult.data) {
+        return { success: false, message: "获取项目信息失败" };
+      }
+      const project = projectResult.data;
+      if (!project.community_id) {
+        return { success: false, message: "项目未关联小区" };
+      }
+      const competitorIds =
+        competitorsResult.success && competitorsResult.data
+          ? competitorsResult.data.map((c) => c.community_id)
+          : [];
+      communityIds = Array.from(
+        new Set([project.community_id, ...competitorIds]),
+      ).slice(0, MAX_COMMUNITIES);
+      selfItem = buildSelfItem(project);
+    } else {
+      const competitorsResult =
+        await getCompetitorsByCommunityAction(scope.communityId);
+      const competitorIds =
+        competitorsResult.success && competitorsResult.data
+          ? competitorsResult.data.map((c) => c.community_id)
+          : [];
+      communityIds = Array.from(
+        new Set([scope.communityId, ...competitorIds]),
+      ).slice(0, MAX_COMMUNITIES);
+    }
+
+    const client = await fetchClient();
+    const counts = await fetchCounts(client, communityIds);
+
+    return { success: true, data: { communityIds, counts, selfItem } };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "网络错误";
+    console.error("获取竞品初始化数据失败:", e);
+    return { success: false, message };
+  }
 }
 
 /**
- * 通过 community_id 获取小区数据
+ * 分页查询竞品房源（单次后端请求，按 status/rooms/名称/排序过滤）.
  */
-async function fetchCommunityDataById(
-  client: Awaited<ReturnType<typeof fetchClient>>,
-  communityId: string,
-): Promise<CommunityDataResult> {
-  const [onSaleRes, soldRes] = await Promise.all([
-    client.GET("/api/v1/properties", {
-      params: {
-        query: {
-          community_id: communityId,
-          status: "在售",
-          page_size: 10,
-          sort_by: "listed_date",
-          sort_order: "desc",
-        },
-      },
-    }),
-    client.GET("/api/v1/properties", {
-      params: {
-        query: {
-          community_id: communityId,
-          status: "成交",
-          page_size: 10,
-          sort_by: "sold_date",
-          sort_order: "desc",
-        },
-      },
-    }),
-  ]);
-
-  const onSaleData = extractPaginatedData<PropertyItem>(onSaleRes.data);
-  const soldData = extractPaginatedData<PropertyItem>(soldRes.data);
-
-  const items: BrawlItem[] = [];
-  let countOnSale = 0;
-  let countSold = 0;
-
-  if (onSaleData) {
-    countOnSale = onSaleData.total || 0;
-    items.push(
-      ...(onSaleData.items || []).map((p) =>
-        mapPropertyToBrawlItem(p, "on_sale"),
-      ),
-    );
-  }
-
-  if (soldData) {
-    countSold = soldData.total || 0;
-    items.push(
-      ...(soldData.items || []).map((p) => mapPropertyToBrawlItem(p, "sold")),
-    );
-  }
-
-  return { items, countOnSale, countSold };
-}
-
-export async function getCompetitorsBrawlAction(projectId: string) {
+export async function getCompetitorsBrawlPageAction(
+  communityIds: string[],
+  params: BrawlPageParams,
+): Promise<ActionResult<BrawlPageResult>> {
   try {
-    const [projectResult, competitorsResult] = await Promise.all([
-      getProjectDetailAction(projectId, true),
-      getCompetitorsAction(projectId),
-    ]);
-
-    if (!projectResult.success || !projectResult.data) {
-      return { success: false, message: "获取项目信息失败" };
-    }
-    const project = projectResult.data;
-
-    const competitorCommunities =
-      competitorsResult.success && competitorsResult.data
-        ? competitorsResult.data.map((c) => c.community_name)
-        : [];
-
-    const targetCommunities = [
-      project.community_name,
-      ...competitorCommunities,
-    ].filter((name): name is string => Boolean(name));
-    const uniqueCommunities = Array.from(new Set(targetCommunities)).slice(
-      0,
-      5,
-    );
-
-    const client = await fetchClient();
-
-    const results = await Promise.all(
-      uniqueCommunities.map((name) => fetchCommunityData(client, name)),
-    );
-
-    const allItems: BrawlItem[] = [];
-    let countOnSale = 0;
-    let countSold = 0;
-
-    for (const res of results) {
-      allItems.push(...res.items);
-      countOnSale += res.countOnSale;
-      countSold += res.countSold;
-    }
-
-    if (project.status !== "sold" && project.status !== "archived") {
-      const area = project.area ? Number(project.area) : 0;
-      const listPrice = project.list_price
-        ? Number(project.list_price)
-        : project.signing_price
-          ? Number(project.signing_price)
-          : 0;
-      const unitPrice =
-        area > 0 && listPrice > 0 ? Math.round((listPrice * 10000) / area) : 0;
-
-      const projectItem: BrawlItem = {
-        id: `Self-${project.id}`,
-        community: project.community_name || "本项目",
-        status: "on_sale",
-        display_status: "挂牌",
-        layout: "-",
-        floor: "中楼层",
-        area,
-        total: listPrice,
-        unit: unitPrice,
-        date: new Date().toISOString().split("T")[0],
-        source: "内部",
-        is_current: true,
+    if (communityIds.length === 0) {
+      return {
+        success: true,
+        data: {
+          items: [],
+          total: 0,
+          page: params.page,
+          page_size: params.page_size,
+        },
       };
-      allItems.unshift(projectItem);
-      countOnSale += 1;
     }
-
-    allItems.sort((a, b) => {
-      if (a.is_current) return -1;
-      if (b.is_current) return 1;
-      return (safeParseDate(b.date)?.getTime() ?? 0) - (safeParseDate(a.date)?.getTime() ?? 0);
-    });
-
-    return {
-      success: true,
-      data: {
-        items: allItems,
-        counts: { on_sale: countOnSale, sold: countSold },
-      },
-    };
-  } catch (e) {
-    console.error("获取竞品肉搏战异常:", e);
-    return { success: false, message: "网络错误" };
-  }
-}
-
-export async function getCompetitorsBrawlByCommunityAction(
-  communityId: string,
-) {
-  try {
     const client = await fetchClient();
-    const { items, countOnSale, countSold } = await fetchCommunityDataById(
-      client,
-      communityId,
-    );
-
-    items.sort(
-      (a, b) => (safeParseDate(b.date)?.getTime() ?? 0) - (safeParseDate(a.date)?.getTime() ?? 0),
-    );
-
+    const { data, error } = await client.GET("/api/v1/properties", {
+      params: {
+        query: {
+          community_ids: communityIds.join(","),
+          status: params.status,
+          page: params.page,
+          page_size: params.page_size,
+          rooms: params.rooms,
+          community_name: params.community_name,
+          sort_by: params.sort_by,
+          sort_order: params.sort_order,
+        },
+      },
+    });
+    if (error) {
+      const detail = (error as { detail?: string }).detail;
+      return {
+        success: false,
+        message: `获取房源失败: ${detail || "未知错误"}`,
+      };
+    }
+    const pageData = extractPaginatedData<PropertyItem>(data);
+    const items = (pageData?.items ?? []).map(mapPropertyToBrawlItem);
     return {
       success: true,
       data: {
         items,
-        counts: { on_sale: countOnSale, sold: countSold },
+        total: pageData?.total ?? 0,
+        page: params.page,
+        page_size: params.page_size,
       },
     };
   } catch (e) {
-    console.error("获取竞品肉搏战异常:", e);
-    return { success: false, message: "网络错误" };
+    const message = e instanceof Error ? e.message : "网络错误";
+    console.error("获取竞品分页数据失败:", e);
+    return { success: false, message };
   }
 }
