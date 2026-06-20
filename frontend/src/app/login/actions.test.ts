@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createMockCookies } from "@/test/server-action-helpers";
-import { loginAction, changePasswordAction, logoutAction, type LoginState } from "./actions";
+import { loginAction, changePasswordAction, logoutAction } from "./actions";
 
 // ─── 模拟 NEXT_REDIRECT 错误 ────────────────────────────────
 class NextRedirectError extends Error {
@@ -9,11 +9,6 @@ class NextRedirectError extends Error {
     super("NEXT_REDIRECT");
     this.digest = `NEXT_REDIRECT;${path};replace`;
   }
-}
-
-function expectRedirect(fn: () => Promise<unknown>, path: string) {
-  return expect(fn()).rejects.toThrow();
-  // 进一步断言在 catch 中做
 }
 
 async function catchRedirect(fn: () => Promise<unknown>) {

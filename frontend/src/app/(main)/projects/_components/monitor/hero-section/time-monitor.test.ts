@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { calculateTimeMonitor, type TimeMonitor } from "./time-monitor";
 
 describe("calculateTimeMonitor", () => {
-  const realDate = Date;
-
   beforeEach(() => {
     // 固定"今天"为 2026-06-09
     vi.useFakeTimers();

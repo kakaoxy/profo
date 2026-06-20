@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getMarketSentimentAction } from "./market-actions";
+import type { MarketSentimentData } from "@/app/(main)/projects/actions/monitor-lib/types";
 
 vi.mock(
   "@/app/(main)/projects/actions/monitor-lib/sentiment",
@@ -84,7 +85,7 @@ describe("getMarketSentimentAction", () => {
   it("底层接口返回成功但 data 为空时返回 null", async () => {
     mockGetSentimentByCommunity.mockResolvedValue({
       success: true,
-      data: null as any,
+      data: null as unknown as MarketSentimentData,
     });
 
     const result = await getMarketSentimentAction("comm-1");
