@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { mapBackendToFrontend } from "./utils";
 import { LeadStatus } from "../types";
 import type { components } from "@/lib/api-types";

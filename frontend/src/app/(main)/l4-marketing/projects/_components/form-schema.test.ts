@@ -170,8 +170,12 @@ describe("formSchema", () => {
   });
 
   it("可选字段省略时应该通过校验", () => {
-    const { community_name, unit_price, decoration_style, consultant_id, project_id, ...required } =
-      validFormValues;
+    const required = { ...validFormValues };
+    delete required.community_name;
+    delete required.unit_price;
+    delete required.decoration_style;
+    delete required.consultant_id;
+    delete required.project_id;
     const result = formSchema.safeParse(required);
     expect(result.success).toBe(true);
   });

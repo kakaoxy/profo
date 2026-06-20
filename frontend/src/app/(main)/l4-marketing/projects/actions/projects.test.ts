@@ -5,7 +5,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // ---------------------------------------------------------------------------
 
 const { mockClient } = vi.hoisted(() => {
-  const fn = () => Promise.resolve(undefined);
   return {
     mockClient: {
       GET: vi.fn().mockResolvedValue({ data: null, error: null }),
