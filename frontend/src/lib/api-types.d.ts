@@ -202,7 +202,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/leads/": {
+    "/api/v1/leads": {
         parameters: {
             query?: never;
             header?: never;
@@ -1188,7 +1188,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/": {
+    "/api/v1/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -1355,7 +1355,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/roles/": {
+    "/api/v1/roles": {
         parameters: {
             query?: never;
             header?: never;

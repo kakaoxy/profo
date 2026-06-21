@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from schemas.response import PaginatedResponse
 
@@ -131,9 +131,7 @@ class PropertyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = ConfigDict(from_attributes=True)
 
     @classmethod
     def from_orm_with_calculations(
@@ -252,9 +250,7 @@ class PropertyDetailResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = ConfigDict(from_attributes=True)
 
     @staticmethod
     def _has_valid_discount_data(property_obj: "PropertyCurrent") -> bool:

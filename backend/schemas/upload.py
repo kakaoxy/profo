@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from models.system.import_task import ImportTaskStatus
+
 
 class UploadResult(BaseModel):
     """CSV上传结果."""
@@ -21,7 +23,7 @@ class ImportTaskCreateResponse(BaseModel):
     """导入任务创建响应."""
 
     task_id: str = Field(description="任务ID")
-    status: str = Field(description="任务状态")
+    status: ImportTaskStatus = Field(description="任务状态")
     message: str = Field(default="导入任务已创建", description="提示信息")
 
 
@@ -29,7 +31,7 @@ class ImportTaskStatusResponse(BaseModel):
     """导入任务状态响应."""
 
     task_id: str = Field(validation_alias="id", description="任务ID")
-    status: str = Field(description="任务状态: pending/processing/completed/failed/cancelled")
+    status: ImportTaskStatus = Field(description="任务状态: pending/processing/completed/failed/cancelled")
     filename: str = Field(description="原始文件名")
 
     # 进度信息

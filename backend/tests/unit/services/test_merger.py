@@ -435,7 +435,7 @@ class TestTransferExistingAliases:
         assert alias.community_id == 1
 
     def test_deletes_duplicate_alias(self, merger: CommunityMerger) -> None:
-        """重复别名应删除旧记录."""
+        """重复别名应软删除旧记录."""
         db = MagicMock()
         alias = _make_alias_mock(community_id=2, alias_name="别名X")
 
@@ -451,7 +451,7 @@ class TestTransferExistingAliases:
 
         merger._transfer_existing_aliases(db, 2, 1)
 
-        db.delete.assert_called_once_with(alias)
+        assert alias.is_deleted is True
         assert alias.community_id == 2  # 未被修改
 
 

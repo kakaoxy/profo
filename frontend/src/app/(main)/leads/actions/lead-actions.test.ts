@@ -84,7 +84,7 @@ describe("createLeadAction", () => {
       expect(result.data.communityName).toBe("阳光花园");
     }
     expect(mockRevalidatePath).toHaveBeenCalledWith("/leads");
-    expect(mockClient.POST).toHaveBeenCalledWith("/api/v1/leads/", {
+    expect(mockClient.POST).toHaveBeenCalledWith("/api/v1/leads", {
       body: expect.objectContaining({
         community_name: "阳光花园",
         is_hot: 0,
@@ -143,7 +143,7 @@ describe("getLeadsAction", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].communityName).toBe("阳光花园");
-    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/leads/", {
+    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/leads", {
       params: {
         query: expect.objectContaining({ page: 1, page_size: 100 }),
       },
@@ -168,7 +168,7 @@ describe("getLeadsAction", () => {
       floors: [],
     });
 
-    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/leads/", {
+    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/leads", {
       params: {
         query: expect.objectContaining({
           search: "阳光",

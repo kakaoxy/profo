@@ -27,7 +27,7 @@ class ImportTaskService:
         """初始化服务，确保上传目录存在."""
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-    async def create_task(self, file: UploadFile, user_id: int, db: Session) -> PropertyImportTask:
+    async def create_task(self, file: UploadFile, user_id: str, db: Session) -> PropertyImportTask:
         """创建新的导入任务.
 
         1. 保存上传的文件到临时目录
@@ -78,7 +78,7 @@ class ImportTaskService:
 
     def get_user_tasks(
         self,
-        user_id: int,
+        user_id: str,
         db: Session,
         status: str | None = None,
         limit: int = 10,
@@ -151,7 +151,7 @@ class ImportTaskService:
 
         db.commit()
 
-    def cancel_task(self, task_id: str, user_id: int, db: Session) -> bool:
+    def cancel_task(self, task_id: str, user_id: str, db: Session) -> bool:
         """取消任务（仅允许取消待处理或处理中的任务）."""
         task = (
             db.query(PropertyImportTask)

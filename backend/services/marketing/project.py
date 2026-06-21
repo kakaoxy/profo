@@ -12,7 +12,7 @@ from schemas.l4_marketing import (
     L4MarketingProjectSummary,
     L4MarketingProjectUpdate,
 )
-from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 
 
 class MarketingProjectService:

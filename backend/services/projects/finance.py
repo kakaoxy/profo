@@ -82,6 +82,7 @@ class FinanceService:
                 self.db.query(FinanceRecord)
                 .filter(
                     FinanceRecord.project_id == project_id,
+                    FinanceRecord.is_deleted.is_(False),
                 )
                 .order_by(FinanceRecord.record_date.desc(), FinanceRecord.created_at.desc())
                 .all()
@@ -102,6 +103,7 @@ class FinanceService:
             .filter(
                 FinanceRecord.id == record_id,
                 FinanceRecord.project_id == project_id,
+                FinanceRecord.is_deleted.is_(False),
             )
             .first()
         )
@@ -110,7 +112,8 @@ class FinanceService:
             logger.error("Cashflow record not found: %s for project %s", record_id, project_id)
             raise ResourceNotFoundError("现金流记录不存在")
 
-        self.db.delete(record)
+        record.is_deleted = True
+        record.updated_at = datetime.now(timezone.utc)
         self.db.commit()
 
         # 删除成功后，触发财务数据同步计算
@@ -166,7 +169,7 @@ class FinanceService:
                         ),
                     ).label("total_expense"),
                 )
-                .filter(FinanceRecord.project_id == project_id)
+                .filter(FinanceRecord.project_id == project_id, FinanceRecord.is_deleted.is_(False))
                 .first()
             )
 
@@ -234,6 +237,7 @@ class FinanceService:
             .filter(
                 FinanceRecord.project_id == project_id,
                 FinanceRecord.type == "expense",
+                FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
         )
@@ -286,6 +290,7 @@ class FinanceService:
             .filter(
                 FinanceRecord.project_id == project_id,
                 FinanceRecord.type == "income",
+                FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
         )
@@ -296,6 +301,7 @@ class FinanceService:
             .filter(
                 FinanceRecord.project_id == project_id,
                 FinanceRecord.type == "expense",
+                FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
         )

@@ -81,21 +81,9 @@ def get_l3_project_detail(
     """获取单个L3项目详情.
 
     用于项目选择器中预览项目信息
-    """
-    project = service.get_l3_project_for_import(project_id)
-    if not project:
-        raise ResourceNotFoundError("项目不存在或已删除")
 
-    return L3ProjectBriefResponse(
-        id=project.id,
-        name=project.name or "未命名项目",
-        community_name=project.community_name or "",
-        address=project.address or "",
-        area=project.area,
-        layout=project.layout,
-        orientation=project.orientation,
-        status=project.status.value if hasattr(project.status, "value") else str(project.status),
-    )
+    """
+    return service.get_l3_project_for_import(project_id)
 
 
 @router.post(

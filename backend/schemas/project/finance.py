@@ -9,7 +9,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer
 
 from models.common import CashFlowCategory, CashFlowType
 
@@ -34,8 +34,8 @@ class CashFlowRecordResponse(BaseModel):
 
     id: str
     project_id: str
-    type: str
-    category: str
+    type: CashFlowType
+    category: CashFlowCategory
     amount: Decimal
     record_date: datetime = Field(description="发生日期")  # 新字段名
     remark: str | None = Field(None, description="备注")  # 新字段名
@@ -62,7 +62,11 @@ class CashFlowRecordResponse(BaseModel):
         """兼容旧字段 related_stage（始终返回 None）."""
         return None
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+    @field_serializer("amount")
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CashFlowSummary(BaseModel):
@@ -74,7 +78,12 @@ class CashFlowSummary(BaseModel):
     roi: float
     annualized_return: float = 0.0
     holding_days: int = 0
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+
+    @field_serializer("total_income", "total_expense", "net_cash_flow")
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CashFlowResponse(BaseModel):
@@ -109,7 +118,14 @@ class ProjectReportResponse(BaseModel):
     list_price: Decimal | None = None
     signing_price: Decimal | None = None
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={Decimal: float})
+    @field_serializer(
+        "total_investment", "total_income", "net_profit",
+        "sale_price", "list_price", "signing_price",
+    )
+    def serialize_decimal(self, v: Decimal | None) -> float | None:
+        return float(v) if v is not None else None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ========== 规范化财务表 (来自 finance.py) ==========
@@ -118,8 +134,8 @@ class ProjectReportResponse(BaseModel):
 class FinanceBase(BaseModel):
     """财务记录基础字段."""
 
-    type: str = Field(description="流水类型：income/expense")
-    category: str = Field(description="费用类别")
+    type: CashFlowType = Field(description="流水类型：income/expense")
+    category: CashFlowCategory = Field(description="费用类别")
     amount: Decimal = Field(description="金额(元)")
     record_date: datetime = Field(description="发生日期")
     operator_id: str | None = Field(None, description="经办人ID")
@@ -137,8 +153,8 @@ class FinanceCreate(FinanceBase):
 class FinanceUpdate(BaseModel):
     """更新财务记录请求."""
 
-    type: str | None = None
-    category: str | None = None
+    type: CashFlowType | None = None
+    category: CashFlowCategory | None = None
     amount: Decimal | None = None
     record_date: datetime | None = None
     operator_id: str | None = None

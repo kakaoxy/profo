@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from models import User
 from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
@@ -41,12 +42,13 @@ class LeadService:
         self.price_service = LeadPriceService(db)
         self.followup_service = LeadFollowUpService(db)
 
-    def create_lead(self, lead_data: LeadCreate, creator_id: str) -> Lead:
+    def create_lead(self, lead_data: LeadCreate, creator_id: str, *, creator: User | None = None) -> Lead:
         """创建线索.
 
         Args:
             lead_data: 线索创建数据
             creator_id: 创建人ID
+            creator: 创建人对象（可选，用于预加载关联避免 N+1 查询）
 
         Returns:
             创建成功的线索对象
@@ -68,6 +70,8 @@ class LeadService:
 
         self.db.commit()
         self.db.refresh(db_lead)
+        if creator is not None:
+            db_lead.creator = creator
         return db_lead
 
     def get_lead(self, lead_id: str) -> Lead | None:
@@ -139,13 +143,16 @@ class LeadService:
             floor=floor,
         )
 
-    def update_lead(self, lead_id: str, update_data: LeadUpdate, updater_id: str) -> Lead:
+    def update_lead(
+        self, lead_id: str, update_data: LeadUpdate, updater_id: str, *, creator: User | None = None
+    ) -> Lead:
         """更新线索信息.
 
         Args:
             lead_id: 线索ID
             update_data: 更新数据
             updater_id: 更新人ID
+            creator: 创建人对象（可选，用于预加载关联避免 N+1 查询）
 
         Returns:
             更新后的线索对象
@@ -173,6 +180,8 @@ class LeadService:
         self.db.add(lead)
         self.db.commit()
         self.db.refresh(lead)
+        if creator is not None and not lead.creator:
+            lead.creator = creator
         return lead
 
     def delete_lead(self, lead_id: str) -> None:
@@ -186,7 +195,8 @@ class LeadService:
 
         """
         lead = self.get_lead_or_404(lead_id)
-        self.db.delete(lead)
+        lead.is_deleted = True
+        lead.updated_at = datetime.now(timezone.utc)
         self.db.commit()
 
     def get_my_leads(self, user_id: str, page: int = 1, page_size: int | None = None) -> dict[str, Any]:

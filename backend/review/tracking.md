@@ -6,7 +6,7 @@
 - 🟡 中等: 52 (已修复: 42, 延期: 10)
 - 🟢 轻微: 20 (已修复: 14, 延期: 6)
 
-## 验证日期: 2026-06-14
+## 验证日期: 2026-06-21 (第三轮), 2026-06-14 (第一/二轮)
 
 ### 第二轮验证结果摘要 (2026-06-14)
 - **中等问题**: 新增修复 17 个延期问题，剩余 10 个延期（5个需团队决策/基础设施，5个需设计决策）
@@ -30,7 +30,7 @@
 | S01-005 | routers/public/auth.py | A4,E1 | 🟡 | 已关闭 | 批次2 | 01 | 验证时已修复 |
 | S01-006 | dependencies/auth.py | B3 | 🔴 | 已关闭 | 批次1 | 01 | HTTPException→ServiceException |
 | S01-007 | dependencies/auth.py | B2,G1 | 🟡 | 已关闭 | 批次2 | 01 | 验证时已修复(run_in_threadpool) |
-| S01-008 | dependencies/auth.py | B2 | 🟢 | 已关闭 | 批次3 | 01 | async def→def(无await) |
+| S01-008 | dependencies/auth.py | B2 | 🟢 | 已关闭 | 批次3 | 01 | async def→def(无await), role_checker同步化(第三轮验证) |
 | S01-009 | services/system/auth.py | G4 | 🟡 | 已关闭 | 批次2 | 01 | page_size统一使用settings |
 | S01-010 | services/system/auth.py | G2 | 🟡 | 已关闭 | 批次2 | 01 | 评估后确认async/sync设计正确 |
 | S01-011 | routers/system/auth.py | E1 | 🟡 | 已关闭 | 批次2 | 01 | 验证时已修复 |
@@ -49,7 +49,7 @@
 | S02-009 | services/projects/facade.py | B5 | 🟡 | 延期 | 批次2 | 02 | 技术债务，下次改Router时顺带移除 |
 | S02-010 | services/projects/core.py | E1 | 🟡 | 已关闭 | 批次2 | 02 | 验证时已修复 |
 | S02-011 | services/projects/core.py | G2 | 🟢 | 已关闭 | 批次3 | 02 | 评估后确认全同步，无问题 |
-| S02-012 | schemas/project/core.py | C4 | 🟢 | 已关闭 | 批次3 | 02 | Field(...)→Field() |
+| S02-012 | schemas/project/core.py | C4 | 🟢 | 已关闭 | 批次3 | 02 | parse_date_string移至services/utils/date_parser.py(第三轮验证) |
 | S03-001 | services/leads/core.py | E1 | 🔴 | 已关闭 | 批次1 | 03 | 验证时已修复(使用ServiceException) |
 | S03-002 | services/projects/renovation.py | E1 | 🔴 | 已关闭 | 批次1 | 03 | 验证时已修复(使用ServiceException) |
 | S03-003 | routers/leads/core.py | A4 | 🟡 | 已关闭 | 批次2 | 03 | 验证时已修复 |
@@ -57,11 +57,11 @@
 | S03-005 | routers/leads/core.py | A4 | 🟡 | 已关闭 | 批次2 | 03 | 验证时已修复 |
 | S03-006 | routers/leads/core.py,followups.py,prices.py | A2 | 🟡 | 已关闭 | 批次2 | 03 | 子路由添加tags(lead-followups/lead-prices) |
 | S03-007 | services/projects/renovation.py | G2 | 🟢 | 已关闭 | 批次3 | 03 | 评估后确认全同步，无问题 |
-| S03-008 | services/projects/renovation.py | C4 | 🟡 | 已关闭 | 批次2 | 03 | 验证时已修复 |
+| S03-008 | services/projects/renovation.py | C4 | 🟡 | 已关闭 | 批次2 | 03 | hasattr+setattr→字段白名单(第三轮验证) |
 | S03-009 | services/leads/core.py | H1 | 🟢 | 已关闭 | 批次3 | 03 | 验证时已修复 |
 | S04-001 | services/projects/sales.py | E1 | 🔴 | 已关闭 | 批次1 | 04 | 验证时已修复(使用ServiceException) |
 | S04-002 | services/projects/finance.py | E1,E5 | 🔴 | 已关闭 | 批次1 | 04 | 验证时已修复(使用ServiceException) |
-| S04-003 | services/projects/sales.py | C4 | 🟡 | 已关闭 | 批次2 | 04 | 验证时已修复 |
+| S04-003 | services/projects/sales.py | C4 | 🟡 | 已关闭 | 批次2 | 04 | hasattr+setattr→字段白名单(第三轮验证) |
 | S04-004 | services/projects/sales.py | D1 | 🟡 | 已关闭 | 批次2 | 04 | 手动字典→response_builder.build() |
 | S04-005 | services/projects/finance.py | H1 | 🟡 | 已关闭 | 批次2 | 04 | 验证时已修复 |
 | S04-006 | services/projects/finance.py | G2 | 🟡 | 已关闭 | 批次2 | 04 | 评估后确认全同步，无问题 |
@@ -249,3 +249,27 @@
 
 ### 测试结果
 - 全部 948 测试通过，覆盖率 83.75%
+
+---
+
+## 第三轮验证修复记录 (2026-06-21)
+
+### 追踪不一致问题修复（4个）
+
+发现 4 个问题在 tracking.md 中标记为"已关闭"，但代码中实际仍存在问题。本轮逐一修复。
+
+| 编号 | 问题描述 | 实际修复方式 |
+|------|----------|----------|
+| S01-008 | dependencies/auth.py `role_checker` 仍为 `async def`（无 await） | 改为 `def role_checker`，FastAPI 依赖无需 async |
+| S02-012 | schemas/project/core.py 中 `parse_date_string` 工具函数仍定义在 Schema 文件中 | 移除该函数（已存在于 services/utils/date_parser.py），清理 `_DATE_LEN`/`_DATE_DASH_COUNT` 常量及 `timezone` 导入 |
+| S03-008 | services/projects/renovation.py `update_info()`/`update_contract()` 使用 `hasattr()`+`setattr()` 不安全模式 | 改用 `_RENOVATION_ALLOWED_FIELDS` 字段白名单过滤 |
+| S04-003 | services/projects/sales.py `update_roles()` 使用 `hasattr()`+`setattr()` 不安全模式 | 改用 `_SALES_ROLE_FIELDS` 字段白名单过滤 |
+
+### 修改文件汇总
+
+| 文件 | 修改类型 |
+|------|----------|
+| dependencies/auth.py | `async def role_checker` → `def role_checker` |
+| schemas/project/core.py | 移除 `parse_date_string` 函数及相关常量/导入 |
+| services/projects/renovation.py | 添加 `_RENOVATION_ALLOWED_FIELDS` 白名单，`update_info`/`update_contract` 改用白名单过滤 |
+| services/projects/sales.py | 添加 `_SALES_ROLE_FIELDS` 白名单，`update_roles` 改用白名单过滤 |

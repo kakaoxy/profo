@@ -1,13 +1,13 @@
 """L4 市场营销层查询服务.
 
 负责L3项目查询和可关联项目列表获取.
+通过L3 ProjectCoreService 查询，不直接操作L3 Model.
 """
 
-from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
 
-from models import Project
 from schemas.l4_marketing.import_schemas import L3ProjectBriefResponse
+from services.projects.core import ProjectCoreService
 from settings import settings
 
 
@@ -16,6 +16,8 @@ class MarketingQueryService:
 
     负责查询可用于关联的L3项目列表
     以及获取L3项目详情用于数据导入
+
+    通过L3 ProjectCoreService 编排查询，遵循跨层级 Service 编排约束.
     """
 
     def __init__(self, db: Session) -> None:
@@ -26,6 +28,7 @@ class MarketingQueryService:
 
         """
         self.db: Session = db
+        self._l3_service: ProjectCoreService = ProjectCoreService(db)
 
     def get_available_l3_projects(
         self,
@@ -47,34 +50,13 @@ class MarketingQueryService:
 
         """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
-        query = self.db.query(Project).filter(
-            Project.is_deleted.is_(False),
+        result = self._l3_service.get_projects(
+            status_filter=status,
+            community_name=community_name,
+            page=page,
+            page_size=effective_page_size,
         )
 
-        # 小区名称筛选
-        if community_name:
-            query = query.filter(
-                Project.community_name.contains(community_name),
-            )
-
-        # 状态筛选
-        if status:
-            query = query.filter(Project.status == status)
-
-        # 计算总数
-        total: int = query.count()
-
-        # 分页查询
-        projects: list[Project] = (
-            query.order_by(
-                desc(Project.created_at),
-            )
-            .offset((page - 1) * effective_page_size)
-            .limit(effective_page_size)
-            .all()
-        )
-
-        # 转换为响应模型
         items = [
             L3ProjectBriefResponse(
                 id=project.id,
@@ -84,35 +66,40 @@ class MarketingQueryService:
                 area=project.area,
                 layout=project.layout,
                 orientation=project.orientation,
-                status=project.status.value if hasattr(project.status, "value") else str(project.status),
+                status=project.status,
             )
-            for project in projects
+            for project in result["items"]
         ]
 
-        return items, total
+        return items, result["total"]
 
     def get_l3_project_for_import(
         self,
         project_id: str,
-    ) -> Project | None:
+    ) -> L3ProjectBriefResponse:
         """获取用于导入的L3项目详情.
 
         Args:
             project_id: L3项目ID
 
         Returns:
-            Project对象或None（不存在或已删除）
+            L3项目精简信息
+
+        Raises:
+            ResourceNotFoundError: 项目不存在或已删除时抛出404错误
 
         """
-        return (
-            self.db.query(Project)
-            .filter(
-                and_(
-                    Project.id == project_id,
-                    Project.is_deleted.is_(False),
-                ),
-            )
-            .first()
+        project = self._l3_service.get_project(project_id)
+
+        return L3ProjectBriefResponse(
+            id=project.id,
+            name=project.name or "未命名项目",
+            community_name=project.community_name or "",
+            address=project.address or "",
+            area=project.area,
+            layout=project.layout,
+            orientation=project.orientation,
+            status=project.status,
         )
 
     def check_project_exists(self, project_id: str) -> bool:
@@ -125,17 +112,7 @@ class MarketingQueryService:
             存在返回True，否则False
 
         """
-        return (
-            self.db.query(Project)
-            .filter(
-                and_(
-                    Project.id == project_id,
-                    Project.is_deleted.is_(False),
-                ),
-            )
-            .first()
-            is not None
-        )
+        return self._l3_service.exists(project_id)
 
 
 # 向后兼容的别名

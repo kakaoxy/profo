@@ -10,7 +10,10 @@ from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserU
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
 
-from .exceptions import ConflictError, ResourceNotFoundError, ValidationError
+from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
+
+# 允许更新的用户字段白名单（防止设置 password/wechat_*/id 等敏感字段）
+_USER_ALLOWED_FIELDS = {"nickname", "phone", "avatar", "role_id", "status"}
 
 
 class UserService:
@@ -103,7 +106,8 @@ class UserService:
 
         update_data = user_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            setattr(user, field, value)
+            if field in _USER_ALLOWED_FIELDS:
+                setattr(user, field, value)
 
         db.commit()
         db.refresh(user)
@@ -135,7 +139,7 @@ class UserService:
             msg = "用户不存在"
             raise ResourceNotFoundError(msg)
 
-        db.delete(user)
+        user.status = "inactive"
         db.commit()
         return {"message": "用户删除成功"}
 
@@ -208,6 +212,30 @@ class UserService:
         db.commit()
         db.refresh(user)
         return user
+
+    def update_phone_with_verification(self, db: Session, user: User, phone: str, password: str) -> User:
+        """验证密码后更新用户手机号.
+
+        Args:
+            db: 数据库会话
+            user: 当前用户对象
+            phone: 新手机号
+            password: 当前密码（用于身份确认）
+
+        Returns:
+            User: 更新后的用户对象
+
+        Raises:
+            AuthenticationError: 密码错误
+            ValidationError: 手机号已被其他账号绑定
+
+        """
+        if not verify_password(password, user.password):
+            msg = "密码错误"
+            raise AuthenticationError(msg)
+
+        self.check_phone_taken_by_other(db, phone, user.id)
+        return self.update_phone(db, user, phone)
 
     def list_users_simple(
         self,

@@ -19,7 +19,7 @@ from services.system.exceptions import ResourceNotFoundError
 router = APIRouter(prefix="/roles", tags=["roles"])
 
 
-@router.get("/")
+@router.get("")
 def get_roles(  # noqa: PLR0913
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
@@ -52,7 +52,7 @@ def get_role(
     return role
 
 
-@router.post("/")
+@router.post("")
 def create_role(
     role_data: RoleCreate,
     db: DbSessionDep,

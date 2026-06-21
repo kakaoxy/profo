@@ -5,7 +5,6 @@
 目录结构:
 - common.py: 通用模型（分页、基础响应等）
 - response.py: 统一API响应模型
-- enums.py: 枚举类型定义
 - upload.py: 上传和导入相关
 - project/: 项目管理相关
 - property/: 房源管理相关
@@ -36,7 +35,6 @@ from .community import (
     CommunityResponse,
     CommunitySearchResponse,
 )
-from .enums import IngestionStatus, MediaTypeEnum
 
 # 10. L4 Marketing
 from .l4_marketing import (
@@ -59,7 +57,7 @@ from .l4_marketing import (
     L4RefreshResponse,
     L4SyncResponse,
     MarketingProjectStatus,
-    MediaType,
+    L4MediaType,
     PhotoCategory,
     PublishStatus,
 )
@@ -177,7 +175,6 @@ __all__ = [
     "ImportTaskStatusResponse",
     "ImportableMediaResponse",
     # Enums
-    "IngestionStatus",
     "L3ProjectBriefResponse",
     "L3ProjectImportResponse",
     "L3ProjectListResponse",
@@ -203,8 +200,7 @@ __all__ = [
     "LoginRequest",
     "MarketSentimentResponse",
     "MarketingProjectStatus",
-    "MediaType",
-    "MediaTypeEnum",
+    "L4MediaType",
     "NeighborhoodRadarItem",
     "NeighborhoodRadarResponse",
     "PaginatedLeadListResponse",

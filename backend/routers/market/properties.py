@@ -3,11 +3,8 @@
 处理房源数据的查询、筛选、排序和分页.
 """
 
-import csv
-import io
 import logging
 from datetime import datetime as dt
-from datetime import timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
@@ -32,6 +29,7 @@ from services.market import (
     get_property_service,
 )
 from services.system.exceptions import ResourceNotFoundError
+from utils.csv_exporter import generate_csv_response
 from utils.param_parser import parse_comma_separated_list
 from utils.query_params import PropertyExportParams
 
@@ -248,9 +246,6 @@ def _generate_csv_response(results: list[tuple[PropertyCurrent, Community]]) -> 
 
     格式与批量上传模板保持一致，参考 PropertyIngestionModel 的字段别名.
     """
-    output = io.StringIO()
-    writer = csv.writer(output)
-
     headers = [
         "数据源",
         "房源ID",
@@ -282,8 +277,8 @@ def _generate_csv_response(results: list[tuple[PropertyCurrent, Community]]) -> 
         "行政区",
         "商圈",
     ]
-    writer.writerow(headers)
 
+    rows = []
     for prop, community in results:
         orientation = prop.orientation if prop.orientation and str(prop.orientation).strip() else "未知"
         row = [
@@ -317,21 +312,6 @@ def _generate_csv_response(results: list[tuple[PropertyCurrent, Community]]) -> 
             community.district if community and hasattr(community, "district") else "",
             community.business_circle if community and hasattr(community, "business_circle") else "",
         ]
-        writer.writerow(row)
+        rows.append(row)
 
-    csv_content = output.getvalue()
-    output.close()
-
-    timestamp = dt.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"properties_export_{timestamp}.csv"
-
-    logger.info("导出完成: %s 条记录, 文件名: %s", len(results), filename)
-
-    return StreamingResponse(
-        iter([csv_content.encode("utf-8-sig")]),
-        media_type="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}",
-            "Content-Type": "text/csv; charset=utf-8",
-        },
-    )
+    return generate_csv_response(headers, rows, "properties_export")

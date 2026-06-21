@@ -13,9 +13,7 @@ from schemas.public import (
     PublicProfileUpdate,
     PublicUserProfileResponse,
 )
-from services.system.exceptions import AuthenticationError
 from services.system.user import user_service
-from utils.auth import verify_password
 from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public/users", tags=["public-users"])
@@ -61,11 +59,8 @@ def update_phone(
     db: DbSessionDep,
 ) -> PublicPhoneResponse:
     """C端用户修改手机号，需密码确认身份."""
-    if not verify_password(body.password, current_user.password):
-        msg = "密码错误"
-        raise AuthenticationError(msg)
-
-    user_service.check_phone_taken_by_other(db, body.phone, current_user.id)
-    updated_user = user_service.update_phone(db, current_user, body.phone)
+    updated_user = user_service.update_phone_with_verification(
+        db, current_user, body.phone, body.password
+    )
 
     return PublicPhoneResponse(phone=mask_phone(updated_user.phone))

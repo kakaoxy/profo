@@ -6,7 +6,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
@@ -19,7 +19,7 @@ from schemas.community import (
     CommunityResponse,
     DictionaryResponse,
 )
-from services.market import CommunityMerger
+from services.market import CommunityMerger, get_community_service
 from services.market.community_service import CommunityQueryService
 from services.system.exceptions import ServiceException, ValidationError
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["communities"])
 
-service = CommunityQueryService()
+CommunityServiceDep = Annotated[CommunityQueryService, Depends(get_community_service)]
 
 
 @router.get("/communities")
@@ -35,6 +35,7 @@ def get_communities(
     db: DbSessionDep,
     _current_user: CurrentOperatorUserDep,
     pagination: PaginationDep,
+    service: CommunityServiceDep,
     search: Annotated[str | None, Query(description="小区名称搜索（模糊匹配）")] = None,
 ) -> CommunityListResponse:
     """查询小区列表."""
@@ -53,6 +54,7 @@ def get_communities(
 def get_dictionaries(
     db: DbSessionDep,
     _current_user: CurrentOperatorUserDep,
+    service: CommunityServiceDep,
     dict_type: Annotated[str, Query(description="字典类型: district | business_circle")],
     search: Annotated[str | None, Query(description="模糊搜索关键词")] = None,
     limit: Annotated[int, Query(ge=1, le=500, description="返回数量上限")] = 50,
@@ -122,6 +124,7 @@ def create_community(
     body: CommunityCreateRequest,
     db: DbSessionDep,
     _current_user: CurrentOperatorUserDep,
+    service: CommunityServiceDep,
 ) -> CommunityResponse:
     """创建新小区.
 

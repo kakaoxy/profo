@@ -8,7 +8,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from models import ChangeType, MediaType, PropertyStatus
 from schemas import ImportResult, PropertyIngestionModel
-from schemas.enums import IngestionStatus
 from services.market.importer import PropertyImporter, _CommunityData
 
 

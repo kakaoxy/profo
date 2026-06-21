@@ -262,3 +262,9 @@ def _find_existing_community_by_name(db: Session, name: str) -> Community | None
         )
         .first()
     )
+
+
+# 依赖注入工厂函数
+def get_community_service() -> CommunityQueryService:
+    """获取小区查询服务实例."""
+    return CommunityQueryService()

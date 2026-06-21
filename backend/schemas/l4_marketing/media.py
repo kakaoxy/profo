@@ -4,13 +4,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .enums import MediaType, PhotoCategory
+from models.marketing.l4_marketing import L4MediaType, PhotoCategory
 
 
 class L4MarketingMediaBase(BaseModel):
     """营销媒体基础模型."""
 
-    media_type: MediaType = Field(default=MediaType.IMAGE, description="媒体类型: image/video")
+    media_type: L4MediaType = Field(default=L4MediaType.IMAGE, description="媒体类型: image/video")
     photo_category: PhotoCategory = Field(default=PhotoCategory.MARKETING, description="照片分类: marketing/renovation")
     renovation_stage: str | None = Field(default=None, max_length=50, description="装修阶段(仅改造照片)")
     description: str | None = Field(default=None, description="描述")
@@ -20,7 +20,7 @@ class L4MarketingMediaBase(BaseModel):
 class L4MarketingMediaCreate(L4MarketingMediaBase):
     """创建媒体请求."""
 
-    origin_media_id: int | None = Field(default=None, description="来源媒体ID(L3层)")
+    origin_media_id: str | None = Field(default=None, description="来源媒体ID(L3层，UUID字符串)")
     file_url: str = Field(min_length=1, description="文件URL")
     thumbnail_url: str | None = Field(default=None, description="缩略图URL")
 
@@ -42,7 +42,7 @@ class L4MarketingMediaResponse(L4MarketingMediaBase):
 
     id: int
     marketing_project_id: int
-    origin_media_id: int | None = None
+    origin_media_id: str | None = None
     file_url: str
     thumbnail_url: str | None = None
     is_deleted: bool = False

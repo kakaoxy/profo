@@ -3,6 +3,8 @@
 覆盖 /api/v1/projects/ 下的装修阶段、照片、合同、销售角色、销售记录、现金流等端点.
 """
 
+from decimal import Decimal
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -211,8 +213,8 @@ class TestRenovationEndpoints:
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["soft_budget"] == 20000.0
-        assert data["design_fee"] == 3000.0
+        assert Decimal(data["soft_budget"]) == Decimal("20000.00")
+        assert Decimal(data["design_fee"]) == Decimal("3000.00")
 
 
 # ========== 销售管理 ==========

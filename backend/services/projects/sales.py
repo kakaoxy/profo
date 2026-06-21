@@ -23,6 +23,9 @@ from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 
 from .internal import ProjectResponseBuilder
 
+# 允许更新的销售角色字段白名单（防止设置 id/is_deleted 等敏感字段）
+_SALES_ROLE_FIELDS = {"channel_manager_id", "property_agent_id", "negotiator_id"}
+
 
 class SalesService:
     """项目销售服务."""
@@ -46,10 +49,25 @@ class SalesService:
 
     def _validate_user_ids(self, sale: ProjectSale) -> None:
         """验证销售记录中的用户ID是否有效."""
-        try:
-            sale.validate_user_references(self.db)
-        except ValueError as e:
-            raise ValidationError(str(e)) from e
+        from models import User  # noqa: PLC0415
+
+        user_fields = [
+            ("channel_manager_id", sale.channel_manager_id),
+            ("property_agent_id", sale.property_agent_id),
+            ("negotiator_id", sale.negotiator_id),
+        ]
+
+        user_ids = [uid for _, uid in user_fields if uid]
+        if user_ids:
+            existing_users = self.db.query(User.id).filter(User.id.in_(user_ids)).all()
+            existing_ids = {user.id for user in existing_users}
+        else:
+            existing_ids = set()
+
+        for field_name, user_id in user_fields:
+            if user_id and user_id not in existing_ids:
+                msg = f"无效的用户ID: {user_id} (字段: {field_name})"
+                raise ValidationError(msg)
 
     def update_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判)."""
@@ -79,7 +97,7 @@ class SalesService:
         update_dict = roles_data.model_dump(exclude_unset=True, by_alias=False)
 
         for field, value in update_dict.items():
-            if hasattr(sale, field):
+            if field in _SALES_ROLE_FIELDS:
                 setattr(sale, field, value)
 
         # 验证用户ID有效性
@@ -121,6 +139,7 @@ class SalesService:
         """获取销售记录列表（互动记录）."""
         query = self.db.query(ProjectInteraction).filter(
             ProjectInteraction.project_id == project_id,
+            ProjectInteraction.is_deleted.is_(False),
         )
         if record_type:
             query = query.filter(ProjectInteraction.record_type == record_type)
@@ -148,6 +167,7 @@ class SalesService:
             .filter(
                 ProjectInteraction.id == record_id,
                 ProjectInteraction.project_id == project_id,
+                ProjectInteraction.is_deleted.is_(False),
             )
             .first()
         )
@@ -155,7 +175,8 @@ class SalesService:
         if not record:
             raise ResourceNotFoundError("销售记录不存在")
 
-        self.db.delete(record)
+        record.is_deleted = True
+        record.updated_at = datetime.now(timezone.utc)
         self.db.commit()
 
     def complete_project(self, project_id: str, complete_data: ProjectCompleteRequest) -> ProjectResponse:

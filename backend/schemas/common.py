@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from schemas.response import PaginatedResponse
+from models.common import ChangeType, PropertyStatus
 
 
 class FloorInfo(BaseModel):
@@ -22,9 +22,9 @@ class PropertyHistoryResponse(BaseModel):
     """房源历史记录响应."""
 
     id: int
-    change_type: str
+    change_type: ChangeType
     captured_at: datetime
-    status: str
+    status: PropertyStatus
     listed_price_wan: float | None = None
     sold_price_wan: float | None = None
     build_area: float | None = None

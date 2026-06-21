@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import Boolean, DateTime, Index, Numeric, String
-from sqlalchemy.orm import Mapped, Session, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel
 
@@ -33,25 +33,3 @@ class ProjectSale(BaseModel):
         Index("idx_sale_project", "project_id"),
         Index("idx_sale_status", "transaction_status"),
     )
-
-    def validate_user_references(self, db: Session) -> None:
-        """验证销售角色用户ID是否有效."""
-        from models import User  # noqa: PLC0415
-
-        user_fields = [
-            ("channel_manager_id", self.channel_manager_id),
-            ("property_agent_id", self.property_agent_id),
-            ("negotiator_id", self.negotiator_id),
-        ]
-
-        user_ids = [uid for _, uid in user_fields if uid]
-        if user_ids:
-            existing_users = db.query(User.id).filter(User.id.in_(user_ids)).all()
-            existing_ids = {user.id for user in existing_users}
-        else:
-            existing_ids = set()
-
-        for field_name, user_id in user_fields:
-            if user_id and user_id not in existing_ids:
-                msg = f"无效的用户ID: {user_id} (字段: {field_name})"
-                raise ValueError(msg)

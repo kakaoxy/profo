@@ -107,6 +107,18 @@ class ProjectCoreService:
         project = self.query_service.get_by_id(project_id, include_all=include_all)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
+    def exists(self, project_id: str) -> bool:
+        """检查项目是否存在.
+
+        Args:
+            project_id: 项目ID
+
+        Returns:
+            项目存在返回True，否则返回False
+
+        """
+        return self.query_service.exists(project_id)
+
     def get_projects(
         self,
         status_filter: str | None = None,

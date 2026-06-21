@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import DataError, IntegrityError, OperationalError, SQLAlchemyError
 
 
-def format_validation_error(error: ValidationError) -> str:
+def format_validation_error(error: ValidationError) -> str:  # noqa: C901, PLR0912
     """格式化 Pydantic 验证错误为中文友好信息.
 
     Args:
@@ -26,25 +26,29 @@ def format_validation_error(error: ValidationError) -> str:
         error_message = err.get("msg", "")
         error_type = err.get("type", "")
 
-        # 转换为中文友好信息
-        if "missing" in error_type:
+        # 转换为中文友好信息（Pydantic v2 错误类型）
+        if error_type == "missing":
             error_messages.append(f"缺少必填字段: {field}")
-        elif "type_error" in error_type:
-            if "float" in error_type:
-                error_messages.append(f"字段 {field} 必须是数字")
-            elif "int" in error_type:
-                error_messages.append(f"字段 {field} 必须是整数")
-            elif "bool" in error_type:
-                error_messages.append(f"字段 {field} 必须是布尔值")
-            else:
-                error_messages.append(f"字段 {field} 类型错误")
-        elif "value_error" in error_type:
-            if "greater_than" in error_message:
-                error_messages.append(f"字段 {field} 必须大于 0")
-            elif "less_than" in error_message:
-                error_messages.append(f"字段 {field} 超出允许范围")
-            else:
-                error_messages.append(f"字段 {field} 值无效: {error_message}")
+        elif error_type in {"int_parsing", "int_type", "int_from_str"}:
+            error_messages.append(f"字段 {field} 必须是整数")
+        elif error_type in {"float_parsing", "float_type", "float_from_str"}:
+            error_messages.append(f"字段 {field} 必须是数字")
+        elif error_type in {"bool_parsing", "bool_type"}:
+            error_messages.append(f"字段 {field} 必须是布尔值")
+        elif error_type in {"string_type", "string_parsing"}:
+            error_messages.append(f"字段 {field} 必须是字符串")
+        elif error_type == "list_type":
+            error_messages.append(f"字段 {field} 必须是数组")
+        elif error_type == "greater_than":
+            error_messages.append(f"字段 {field} 必须大于 0")
+        elif error_type == "less_than":
+            error_messages.append(f"字段 {field} 超出允许范围")
+        elif error_type == "string_too_short":
+            error_messages.append(f"字段 {field} 长度太短")
+        elif error_type == "string_too_long":
+            error_messages.append(f"字段 {field} 超过最大长度限制")
+        elif error_type == "value_error":
+            error_messages.append(f"字段 {field} 值无效: {error_message}")
         else:
             error_messages.append(f"字段 {field}: {error_message}")
 
@@ -71,30 +75,29 @@ def format_request_validation_error(error: RequestValidationError) -> str:  # no
         # 提取字段名
         field = location[-1] if len(location) > 1 else "未知字段"
 
-        # 转换为中文友好信息
-        if "missing" in error_type:
+        # 转换为中文友好信息（Pydantic v2 错误类型）
+        if error_type == "missing":
             error_messages.append(f"缺少必填参数: {field}")
-        elif "type_error" in error_type:
-            if "list" in error_type or "is_list" in error_type or "list" in error_message.lower():
-                error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
-            elif "float" in error_type:
-                error_messages.append(f"参数 {field} 必须是数字")
-            elif "int" in error_type:
-                error_messages.append(f"参数 {field} 必须是整数")
-            elif "bool" in error_type:
-                error_messages.append(f"参数 {field} 必须是布尔值")
-            elif "str" in error_type:
-                error_messages.append(f"参数 {field} 必须是字符串")
-            else:
-                error_messages.append(f"参数 {field} 类型错误: {error_message}")
-        elif "value_error" in error_type:
-            error_messages.append(f"参数 {field} 值无效")
-        elif "greater_than" in error_type:
+        elif error_type == "list_type":
+            error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
+        elif error_type in {"int_parsing", "int_type", "int_from_str"}:
+            error_messages.append(f"参数 {field} 必须是整数")
+        elif error_type in {"float_parsing", "float_type", "float_from_str"}:
+            error_messages.append(f"参数 {field} 必须是数字")
+        elif error_type in {"bool_parsing", "bool_type"}:
+            error_messages.append(f"参数 {field} 必须是布尔值")
+        elif error_type in {"string_type", "string_parsing"}:
+            error_messages.append(f"参数 {field} 必须是字符串")
+        elif error_type == "greater_than":
             error_messages.append(f"参数 {field} 必须大于 0")
-        elif "string_too_long" in error_type:
+        elif error_type == "less_than":
+            error_messages.append(f"参数 {field} 超出允许范围")
+        elif error_type == "string_too_long":
             error_messages.append(f"参数 {field} 超过最大长度限制")
-        elif "string_too_short" in error_type:
+        elif error_type == "string_too_short":
             error_messages.append(f"参数 {field} 长度太短")
+        elif error_type == "value_error":
+            error_messages.append(f"参数 {field} 值无效")
         else:
             error_messages.append(f"参数 {field}: {error_message}")
 

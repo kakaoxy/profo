@@ -6,11 +6,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from models.common import FollowUpMethod, RenovationStage
+from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
+
 
 class PublicProjectFilter(BaseModel):
     """C端项目筛选参数."""
 
-    project_status: str | None = Field(None, description="项目状态筛选")
+    project_status: MarketingProjectStatus | None = Field(None, description="项目状态筛选")
     community_name: str | None = Field(None, description="小区名称搜索")
     layout: str | None = Field(None, description="户型筛选")
     min_price: float | None = Field(None, description="最低总价(万)")
@@ -141,7 +144,7 @@ class PublicProjectListItem(BaseModel):
     title: str = Field(description="标题")
     cover_image: str | None = Field(None, description="封面图URL")
     tags: list[str] = Field(default_factory=list, description="标签列表")
-    project_status: str = Field(description="项目状态")
+    project_status: MarketingProjectStatus = Field(description="项目状态")
     decoration_style: str | None = Field(None, description="装修风格")
 
     model_config = ConfigDict(from_attributes=True)
@@ -163,8 +166,8 @@ class PublicMediaItem(BaseModel):
     file_url: str = Field(description="文件URL")
     thumbnail_url: str | None = Field(None, description="缩略图URL")
     media_type: str = Field(description="媒体类型")
-    photo_category: str = Field(description="照片分类")
-    renovation_stage: str | None = Field(None, description="装修阶段")
+    photo_category: PhotoCategory = Field(description="照片分类")
+    renovation_stage: RenovationStage | None = Field(None, description="装修阶段")
     description: str | None = Field(None, description="描述")
     sort_order: int = Field(description="排序")
 
@@ -174,7 +177,7 @@ class PublicMediaItem(BaseModel):
 class PublicRenovationStage(BaseModel):
     """C端改造阶段."""
 
-    stage: str = Field(description="阶段名称")
+    stage: RenovationStage = Field(description="阶段名称")
     photo_count: int = Field(description="照片数量")
 
 
@@ -199,7 +202,7 @@ class PublicProjectDetail(BaseModel):
     title: str = Field(description="标题")
     images: list[str] = Field(default_factory=list, description="图片URL列表")
     tags: list[str] = Field(default_factory=list, description="标签列表")
-    project_status: str = Field(description="项目状态")
+    project_status: MarketingProjectStatus = Field(description="项目状态")
     decoration_style: str | None = Field(None, description="装修风格")
     description: str | None = Field(None, description="描述")
     media: list[PublicMediaItem] = Field(default_factory=list, description="媒体列表")
@@ -334,7 +337,7 @@ class PublicFollowupItem(BaseModel):
     """C端跟进记录项."""
 
     id: str = Field(description="跟进记录ID")
-    method: str = Field(description="跟进方式")
+    method: FollowUpMethod = Field(description="跟进方式")
     content: str = Field(description="跟进内容")
     followed_at: datetime = Field(description="跟进时间")
 

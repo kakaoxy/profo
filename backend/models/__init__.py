@@ -11,6 +11,7 @@ from .common import (
     CashFlowType,
     ChangeType,
     FollowUpMethod,
+    ImportTaskStatus,
     LeadStatus,
     MediaType,
     ProjectStatus,
@@ -27,6 +28,7 @@ from .marketing import (
     L4MarketingMedia,
     L4MarketingProject,
     MarketingProjectStatus,
+    PhotoCategory,
     PublishStatus,
 )
 
@@ -56,7 +58,7 @@ from .property import (
 )
 
 # 系统模块
-from .system import FailedRecord, ImportTaskStatus, PropertyImportTask
+from .system import FailedRecord, PropertyImportTask
 
 # 用户权限模块
 from .user import ApiKey, Role, User
@@ -88,6 +90,7 @@ __all__ = [
     "LeadStatus",
     "MarketingProjectStatus",
     "MediaType",
+    "PhotoCategory",
     # 项目
     "Project",
     "ProjectContract",

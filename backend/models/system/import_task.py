@@ -3,23 +3,13 @@
 支持异步任务处理和状态跟踪.
 """
 
-import enum
+import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import DateTime, Enum as SQLEnum, Float, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import Base
-
-
-class ImportTaskStatus(str, enum.Enum):
-    """导入任务状态枚举."""
-
-    PENDING = "pending"  # 待处理
-    PROCESSING = "processing"  # 处理中
-    COMPLETED = "completed"  # 完成
-    FAILED = "failed"  # 失败
-    CANCELLED = "cancelled"  # 已取消
+from models.common.base import Base, ImportTaskStatus
 
 
 class PropertyImportTask(Base):
@@ -30,11 +20,17 @@ class PropertyImportTask(Base):
 
     __tablename__ = "property_import_tasks"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, comment="任务ID (UUID)")
-    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True, comment="创建用户ID")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment="任务ID (UUID)")
+    # 注意：User.id 为 String(36) UUID，此处保持一致
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True, comment="创建用户ID(UUID字符串)")
 
     # 任务状态
-    status: Mapped[str] = mapped_column(String(20), default=ImportTaskStatus.PENDING.value, nullable=False, comment="任务状态")
+    status: Mapped[ImportTaskStatus] = mapped_column(
+        SQLEnum(ImportTaskStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),
+        default=ImportTaskStatus.PENDING,
+        nullable=False,
+        comment="任务状态",
+    )
 
     # 文件信息
     filename: Mapped[str] = mapped_column(String(255), nullable=False, comment="原始文件名")

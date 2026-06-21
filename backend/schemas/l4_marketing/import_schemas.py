@@ -7,6 +7,9 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from models.common import ProjectStatus, RenovationStage
+from models.marketing.l4_marketing import PhotoCategory
+
 # ============================================================================
 # L3 项目精简信息 Schema
 # ============================================================================
@@ -24,7 +27,7 @@ class L3ProjectBriefResponse(BaseModel):
     area: Decimal | None = Field(default=None, description="面积(m²)")
     layout: str | None = Field(default=None, description="户型")
     orientation: str | None = Field(default=None, description="朝向")
-    status: str = Field(description="项目状态")
+    status: ProjectStatus = Field(description="项目状态")
 
 
 # ============================================================================
@@ -54,8 +57,8 @@ class ImportableMediaResponse(BaseModel):
     id: str = Field(description="媒体ID")
     file_url: str = Field(description="文件URL")
     thumbnail_url: str | None = Field(default=None, description="缩略图URL")
-    photo_category: str = Field(description="照片分类")
-    renovation_stage: str | None = Field(default=None, description="装修阶段")
+    photo_category: PhotoCategory = Field(description="照片分类")
+    renovation_stage: RenovationStage | None = Field(default=None, description="装修阶段")
     description: str | None = Field(default=None, description="描述")
     sort_order: int = Field(default=0, description="排序")
 
@@ -93,7 +96,7 @@ class L3ProjectImportResponse(BaseModel):
     decoration_style: str | None = Field(default=None, description="装修风格")
 
     # 项目状态
-    status: str | None = Field(default=None, description="项目状态")
+    status: ProjectStatus | None = Field(default=None, description="项目状态")
 
     # 可导入的媒体资源
     available_media: list[ImportableMediaResponse] = Field(
@@ -111,6 +114,6 @@ class L3ProjectQueryParams(BaseModel):
     """L3项目查询参数."""
 
     community_name: str | None = Field(default=None, description="小区名称筛选")
-    status: str | None = Field(default=None, description="项目状态筛选")
+    status: ProjectStatus | None = Field(default=None, description="项目状态筛选")
     page: int = Field(default=1, ge=1, description="页码")
     page_size: int = Field(default=20, ge=1, le=200, description="每页大小")

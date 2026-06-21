@@ -7,6 +7,7 @@ from sqlalchemy import asc, case, desc, func
 from sqlalchemy.orm import Query
 
 from models import PropertyCurrent, PropertyStatus
+from utils.query_params import validate_sort_field
 
 
 def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
@@ -49,8 +50,9 @@ def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
         ),
     }
 
-    # 获取排序字段
-    sort_field = sort_field_map.get(sort_by, PropertyCurrent.updated_at)
+    # 获取排序字段（白名单验证，非白名单字段回退到默认）
+    validated_sort_by = validate_sort_field(sort_by, sort_field_map.keys(), "updated_at")
+    sort_field = sort_field_map[validated_sort_by]
 
     # 应用排序方向
     return query.order_by(asc(sort_field)) if sort_order == "asc" else query.order_by(desc(sort_field))

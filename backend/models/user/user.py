@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Boolean, DateTime, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import BaseModel
+from models.common.encrypted import EncryptedString
 
 
 class Role(BaseModel):
@@ -47,7 +48,7 @@ class User(BaseModel):
     # 微信相关信息
     wechat_openid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信OpenID")
     wechat_unionid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信UnionID")
-    wechat_session_key: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="微信会话密钥")
+    wechat_session_key: Mapped[str | None] = mapped_column(EncryptedString(500), nullable=True, comment="微信会话密钥")
 
     # 角色关联（逻辑外键，级联由Service处理）
     role_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="角色ID(逻辑外键)")

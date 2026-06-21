@@ -4,11 +4,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from models.common import FollowUpMethod
+
 
 class FollowUpBase(BaseModel):
     """跟进记录基础字段."""
 
-    follow_up_type: str = Field(description="跟进方式")
+    follow_up_type: FollowUpMethod = Field(description="跟进方式")
     content: str | None = Field(None, description="跟进详情")
     follow_up_at: datetime = Field(description="跟进时间")
     follower_id: str | None = Field(None, description="跟进人ID")
@@ -25,7 +27,7 @@ class FollowUpCreate(FollowUpBase):
 class FollowUpUpdate(BaseModel):
     """更新跟进记录请求."""
 
-    follow_up_type: str | None = None
+    follow_up_type: FollowUpMethod | None = None
     content: str | None = None
     follow_up_at: datetime | None = None
     follower_id: str | None = None

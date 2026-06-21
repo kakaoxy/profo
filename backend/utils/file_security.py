@@ -75,6 +75,8 @@ def is_safe_path(base_dir: str | Path, target_path: str | Path) -> bool:
         False
         >>> is_safe_path("/app/uploads", "/etc/passwd")
         False
+        >>> is_safe_path("/app/uploads", "/app/uploads_evil/x")
+        False
 
     """
     try:
@@ -82,8 +84,9 @@ def is_safe_path(base_dir: str | Path, target_path: str | Path) -> bool:
         base = Path(base_dir).resolve()
         target = Path(target_path).resolve()
 
-        # 检查目标路径是否以基础路径开头
-        return str(target).startswith(str(base))
+        # 使用 is_relative_to 校验，避免 startswith 前缀碰撞漏洞
+        # （如 /app/uploads_evil 可绕过 /app/uploads 的 startswith 检查）
+        return target.is_relative_to(base)
     except (OSError, ValueError):
         # 路径解析错误，视为不安全
         return False

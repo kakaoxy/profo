@@ -68,7 +68,7 @@ describe("getRolesAction", () => {
       is_active: true,
     });
 
-    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/roles/", {
+    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/roles", {
       params: {
         query: {
           page: 1,

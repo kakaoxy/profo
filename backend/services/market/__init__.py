@@ -8,7 +8,11 @@
 """
 
 from .batch_importer import CSVBatchImporter
-from .community_service import CommunityQueryService, _find_existing_community_by_name
+from .community_service import (
+    CommunityQueryService,
+    _find_existing_community_by_name,
+    get_community_service,
+)
 from .csv_parser import CSVParser
 from .failed_record_handler import FailedRecordHandler
 from .filters import apply_filters
@@ -50,6 +54,7 @@ __all__ = [
     # 筛选排序工具
     "apply_filters",
     "apply_sorting",
+    "get_community_service",
     "get_import_task_service",
     "get_property_query_service",
     "get_property_service",

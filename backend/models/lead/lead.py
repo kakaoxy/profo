@@ -1,11 +1,13 @@
 """Leads Management Models."""
 
+import uuid
 from datetime import datetime, timezone
 
 from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     DateTime,
     Index,
     Integer,
@@ -24,7 +26,7 @@ class Lead(Base):
 
     __tablename__ = "leads"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, comment="UUID")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment="UUID")
 
     # Core Info
     community_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="小区名称")
@@ -58,6 +60,9 @@ class Lead(Base):
     creator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="创建人ID")
     source_property_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="关联房源ID(软引用)")
 
+    # 软删除标记
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
     # Timestamps
     last_follow_up_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最后跟进时间")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
@@ -71,8 +76,8 @@ class Lead(Base):
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id], primaryjoin="foreign(Lead.creator_id) == User.id")
     auditor = relationship("User", foreign_keys=[auditor_id], primaryjoin="foreign(Lead.auditor_id) == User.id")
-    follow_ups = relationship("LeadFollowUp", back_populates="lead", cascade="all, delete-orphan", primaryjoin="Lead.id == foreign(LeadFollowUp.lead_id)")
-    price_history = relationship("LeadPriceHistory", back_populates="lead", cascade="all, delete-orphan", primaryjoin="Lead.id == foreign(LeadPriceHistory.lead_id)")
+    follow_ups = relationship("LeadFollowUp", back_populates="lead", primaryjoin="Lead.id == foreign(LeadFollowUp.lead_id)")
+    price_history = relationship("LeadPriceHistory", back_populates="lead", primaryjoin="Lead.id == foreign(LeadPriceHistory.lead_id)")
 
     @property
     def creator_name(self) -> str | None:
@@ -83,6 +88,7 @@ class Lead(Base):
         Index("idx_lead_status", "status"),
         Index("idx_lead_community", "community_name"),
         Index("idx_lead_creator", "creator_id"),
+        Index("idx_lead_deleted", "is_deleted"),
     )
 
 
@@ -91,7 +97,7 @@ class LeadFollowUp(Base):
 
     __tablename__ = "lead_followups"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, comment="UUID")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment="UUID")
     lead_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="线索ID")
 
     method: Mapped[FollowUpMethod] = mapped_column(SQLEnum(FollowUpMethod), nullable=False, comment="跟进方式")
@@ -119,7 +125,7 @@ class LeadPriceHistory(Base):
 
     __tablename__ = "lead_price_history"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, comment="UUID")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment="UUID")
     lead_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="线索ID")
 
     price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="授权价格(万)")
