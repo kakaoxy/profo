@@ -14,8 +14,11 @@ _KEY_NOT_CONFIGURED_MSG = (
 )
 
 
+_fernet_instance: Fernet | None = None
+
+
 def _get_fernet() -> Fernet:
-    """获取 Fernet 实例.
+    """获取 Fernet 实例（单例缓存）.
 
     Returns:
         Fernet: 已初始化的 Fernet 实例
@@ -24,10 +27,14 @@ def _get_fernet() -> Fernet:
         RuntimeError: ENCRYPTION_KEY 未配置时抛出（Fail Loud）
 
     """
+    global _fernet_instance
+    if _fernet_instance is not None:
+        return _fernet_instance
     key = settings.encryption_key
     if not key:
         raise RuntimeError(_KEY_NOT_CONFIGURED_MSG)
-    return Fernet(key)
+    _fernet_instance = Fernet(key)
+    return _fernet_instance
 
 
 def encrypt(plaintext: str) -> str:
