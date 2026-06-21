@@ -10,7 +10,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
@@ -50,7 +49,7 @@ class SalesRecordCreate(BaseModel):
     record_type: RecordType
     customer_name: str | None = Field(None, max_length=100)
     customer_phone: str | None = Field(None, max_length=20)
-    customer_info: dict[str, Any] | None = None
+    customer_info: dict[str, str] | None = None
     record_date: datetime
     record_time: str | None = None
     price: Decimal | None = None
@@ -69,7 +68,7 @@ class SalesRecordResponse(BaseModel):
     record_type: RecordType
     customer_name: str | None = Field(None, validation_alias=AliasChoices("customer_name", "interaction_target"))
     customer_phone: str | None = None
-    customer_info: dict[str, Any] | None = None
+    customer_info: dict[str, str] | None = None
     record_date: datetime = Field(validation_alias=AliasChoices("record_date", "interaction_at"))
     record_time: str | None = None
     price: Decimal | None = None
