@@ -3,9 +3,28 @@
 用于封装复杂的查询参数，避免函数参数过多.
 """
 
+from collections.abc import Collection
+
 from pydantic import BaseModel, ConfigDict
 
 from settings import settings
+
+
+def validate_sort_field(sort_by: str, allowed_fields: Collection[str], default: str) -> str:
+    """验证排序字段是否在白名单内，防止 SQL 注入.
+
+    传入非白名单字段时返回默认排序字段，确保排序字段始终受控.
+
+    Args:
+        sort_by: 待验证的排序字段
+        allowed_fields: 允许的排序字段集合
+        default: 默认排序字段（不在白名单时使用）
+
+    Returns:
+        str: 验证后的排序字段
+
+    """
+    return sort_by if sort_by in allowed_fields else default
 
 
 class PropertyQueryParams(BaseModel):

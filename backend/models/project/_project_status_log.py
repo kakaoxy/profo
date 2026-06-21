@@ -2,10 +2,10 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, String, Text
+from sqlalchemy import DateTime, Enum as SQLEnum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel
+from models.common.base import BaseModel, ProjectStatus
 
 
 class ProjectStatusLog(BaseModel):
@@ -15,8 +15,16 @@ class ProjectStatusLog(BaseModel):
 
     project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
 
-    old_status: Mapped[str] = mapped_column(String(20), nullable=False, comment="变更前状态")
-    new_status: Mapped[str] = mapped_column(String(20), nullable=False, comment="变更后状态")
+    old_status: Mapped[ProjectStatus] = mapped_column(
+        SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),
+        nullable=False,
+        comment="变更前状态",
+    )
+    new_status: Mapped[ProjectStatus] = mapped_column(
+        SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),
+        nullable=False,
+        comment="变更后状态",
+    )
     trigger_event: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="触发事件")
     operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="操作人ID")
     operate_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="变更时间")

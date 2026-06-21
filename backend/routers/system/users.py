@@ -31,7 +31,7 @@ from services.system.init_service import init_service
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/")
+@router.get("")
 @limiter.limit(RateLimits.USER_LIST)
 def get_users(  # noqa: PLR0913
     request: Request,
@@ -107,7 +107,7 @@ def get_user(
     return user
 
 
-@router.post("/", status_code=201)
+@router.post("", status_code=201)
 @limiter.limit(RateLimits.USER_CREATE)
 def create_user(
     request: Request,
@@ -189,9 +189,11 @@ def change_password(
 def init_system_data(
     request: Request,
     db: DbSessionDep,
+    _current_user: CurrentAdminUserDep,
 ) -> dict:
     """初始化系统数据，包括默认角色和管理员用户.
 
+    需要管理员权限。首次初始化请使用 init_admin.py 脚本。
     注意：使用 def 避免 sync DB 阻塞
     速率限制：3次/小时.
     """

@@ -25,7 +25,13 @@ from utils.auth import (
     verify_password,
 )
 
-from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
+from .exceptions import (
+    AuthenticationError,
+    ConflictError,
+    PermissionDeniedError,
+    ResourceNotFoundError,
+    ValidationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +123,7 @@ class AuthService:
 
         Raises:
             AuthenticationError: 用户名或密码错误
+            PermissionDeniedError: 用户已被禁用
 
         Note:
             从返回 User | None 改为抛出异常，保持与服务层其他方法的一致性。
@@ -127,6 +134,9 @@ class AuthService:
         if not user or not verify_password(password, user.password):
             msg = "用户名或密码错误"
             raise AuthenticationError(msg)
+        if user.status != "active":
+            msg = "账号已被禁用，请联系管理员"
+            raise PermissionDeniedError(msg)
         return user
 
     @staticmethod

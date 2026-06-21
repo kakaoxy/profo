@@ -56,7 +56,7 @@ export interface ProjectSale {
 export interface ProjectFollowUp {
   id: string;
   project_id: string;
-  follow_up_type: string;
+  method: string;
   content?: string;
   follow_up_at: string;
   follower_id?: string;

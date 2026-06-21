@@ -145,7 +145,7 @@ class PropertyImporter:
             return community
 
         # 别名匹配
-        alias = db.query(CommunityAlias).filter(CommunityAlias.alias_name == name).first()
+        alias = db.query(CommunityAlias).filter(CommunityAlias.alias_name == name, CommunityAlias.is_deleted.is_(False)).first()
         if alias:
             return db.get(Community, alias.community_id)
 

@@ -56,7 +56,7 @@ class LeadFollowUpService:
 
         """
         # 检查线索是否存在
-        lead = self.db.query(Lead).filter(Lead.id == lead_id).first()
+        lead = self.db.query(Lead).filter(Lead.id == lead_id, Lead.is_deleted.is_(False)).first()
         if not lead:
             raise ResourceNotFoundError("线索不存在")
 

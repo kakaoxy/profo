@@ -7,6 +7,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Enum as SQLEnum,
     Index,
     Numeric,
     String,
@@ -14,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel
+from models.common.base import BaseModel, RenovationStage
 
 
 class ProjectRenovation(BaseModel):
@@ -68,7 +69,11 @@ class RenovationPhoto(BaseModel):
     project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="项目ID(逻辑外键)")
     renovation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="装修记录ID(逻辑外键)")
 
-    stage: Mapped[str] = mapped_column(String(20), nullable=False, comment="改造阶段")
+    stage: Mapped[RenovationStage] = mapped_column(
+        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x], create_constraint=True),
+        nullable=False,
+        comment="改造阶段",
+    )
     url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片URL")
     filename: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="文件名")
     description: Mapped[str | None] = mapped_column(Text, nullable=True, comment="描述")

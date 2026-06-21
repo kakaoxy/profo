@@ -170,7 +170,7 @@ class TestGetTaskStatus:
     def test_task_wrong_user(self, mock_get_service: MagicMock, admin_client: TestClient) -> None:
         """查询其他用户的任务返回 403."""
         mock_task = MagicMock()
-        mock_task.user_id = 999  # 不是当前 admin 用户
+        mock_task.user_id = "other-user-uuid"  # 不是当前 admin 用户
 
         mock_service = MagicMock()
         mock_service.get_task.return_value = mock_task

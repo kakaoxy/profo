@@ -132,7 +132,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
 
   const results = await Promise.allSettled([
     client.GET("/api/v1/projects/stats", {}),
-    client.GET("/api/v1/leads/", {
+    client.GET("/api/v1/leads", {
       params: {
         query: { page: 1, page_size: 5, statuses: ["pending_assessment"] },
       },
@@ -143,7 +143,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
         query: { page: 1, page_size: 10 },
       },
     }),
-    client.GET("/api/v1/leads/", {
+    client.GET("/api/v1/leads", {
       params: {
         query: { page: 1, page_size: 10 },
       },

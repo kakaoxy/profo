@@ -70,12 +70,16 @@ class CommunityAlias(Base):
     community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联的主小区ID")
     alias_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="别名")
     data_source: Mapped[str] = mapped_column(String(50), nullable=False, comment="数据来源")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
 
     # 关系
     community = relationship("Community", back_populates="aliases", primaryjoin="foreign(CommunityAlias.community_id) == Community.id")
 
-    __table_args__ = (UniqueConstraint("alias_name", "data_source", name="uq_alias_source"),)
+    __table_args__ = (
+        UniqueConstraint("alias_name", "data_source", name="uq_alias_source"),
+        Index("idx_alias_deleted", "is_deleted"),
+    )
 
     def __repr__(self) -> str:
         """返回字符串表示."""

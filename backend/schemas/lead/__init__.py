@@ -87,7 +87,7 @@ class LeadCreate(LeadBase):
     """创建线索请求."""
 
     status: LeadStatus | None = LeadStatus.PENDING_ASSESSMENT
-    images: list[str] = []
+    images: list[str] = Field(default_factory=list)
 
 
 class LeadUpdate(BaseModel):
@@ -124,7 +124,7 @@ class LeadResponse(LeadBase):
     auditor_id: str | None = None
     audit_time: datetime | None = None
 
-    images: list[str] = []
+    images: list[str] = Field(default_factory=list)
 
     creator_id: str | None = None
     creator_name: str | None = None
@@ -169,7 +169,7 @@ class LeadListItem(BaseModel):
     audit_reason: str | None = None
     auditor_id: str | None = None
     audit_time: datetime | None = None
-    images: list[str] = []
+    images: list[str] = Field(default_factory=list)
     district: str | None = None
     business_area: str | None = None
     remarks: str | None = None

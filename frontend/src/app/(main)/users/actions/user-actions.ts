@@ -42,7 +42,7 @@ export async function getUsersAction(params: {
 }) {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/v1/users/", {
+    const { data, error } = await client.GET("/api/v1/users", {
       params: { query: params },
     });
 
@@ -83,7 +83,7 @@ export async function getUsersSimpleAction(params?: {
 export async function createUserAction(data: UserCreate) {
   try {
     const client = await fetchClient();
-    const { error } = await client.POST("/api/v1/users/", { body: data });
+    const { error } = await client.POST("/api/v1/users", { body: data });
 
     if (error) {
       const errorMsg = (error as { detail?: string }).detail || "创建用户失败";

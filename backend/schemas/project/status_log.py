@@ -4,14 +4,15 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from models.common import ProjectStatus
 from schemas.response import PaginatedResponse
 
 
 class StatusLogBase(BaseModel):
     """状态日志基础字段."""
 
-    old_status: str = Field(description="变更前状态")
-    new_status: str = Field(description="变更后状态")
+    old_status: ProjectStatus = Field(description="变更前状态")
+    new_status: ProjectStatus = Field(description="变更后状态")
     trigger_event: str | None = Field(None, max_length=100, description="触发事件")
     operator_id: str | None = Field(None, description="操作人ID")
     operate_at: datetime = Field(description="变更时间")
@@ -29,8 +30,8 @@ class StatusLogCreate(StatusLogBase):
 class StatusLogUpdate(BaseModel):
     """更新状态日志请求."""
 
-    old_status: str | None = None
-    new_status: str | None = None
+    old_status: ProjectStatus | None = None
+    new_status: ProjectStatus | None = None
     trigger_event: str | None = None
     operator_id: str | None = None
     operate_at: datetime | None = None

@@ -10,11 +10,10 @@ from .followups import router as followups_router
 from .prices import router as prices_router
 
 router = APIRouter(
-    prefix="/leads",
     tags=["leads"],
     responses={404: {"description": "Not found"}},
 )
 
-router.include_router(core_router)
-router.include_router(followups_router, tags=["lead-followups"])
-router.include_router(prices_router, tags=["lead-prices"])
+router.include_router(core_router, prefix="/leads")
+router.include_router(followups_router, prefix="/leads", tags=["lead-followups"])
+router.include_router(prices_router, prefix="/leads", tags=["lead-prices"])

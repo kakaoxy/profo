@@ -114,7 +114,7 @@ describe("getUsersAction", () => {
       status: "active",
     });
 
-    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/users/", {
+    expect(mockClient.GET).toHaveBeenCalledWith("/api/v1/users", {
       params: {
         query: {
           page: 2,

@@ -1,6 +1,8 @@
 """项目响应构建器模块.
 
 负责将项目模型及其关联数据构建为API响应格式.
+
+依赖调用方通过 selectinload/joinedload 预加载关联关系以避免 N+1 查询。
 """
 
 from datetime import datetime
@@ -9,14 +11,6 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
-from models import (
-    FinanceRecord,
-    ProjectContract,
-    ProjectInteraction,
-    ProjectOwner,
-    ProjectRenovation,
-    ProjectSale,
-)
 from models.common import CashFlowType
 
 if TYPE_CHECKING:
@@ -28,6 +22,9 @@ class ProjectResponseBuilder:
 
     负责将Project模型及其关联数据转换为API响应格式。
     支持构建完整的项目详情响应，包括合同、业主、销售、财务等信息。
+
+    所有关联数据通过 project 的 relationship 属性访问，由调用方负责
+    通过 selectinload/joinedload 预加载以避免 N+1 查询。
 
     Attributes:
         db: SQLAlchemy数据库会话
@@ -49,7 +46,7 @@ class ProjectResponseBuilder:
         将项目模型及其关联数据组合成完整的响应字典.
 
         Args:
-            project: Project模型实例
+            project: Project模型实例（调用方应预加载所需关联）
             slim: 是否使用精简模式（列表页使用，跳过财务/互动/阶段日期等重量级查询）
 
         Returns:
@@ -57,14 +54,14 @@ class ProjectResponseBuilder:
 
         """
         response = self._build_base_info(project)
-        response.update(self._build_contract_info(project.id))
-        response.update(self._build_owner_info(project.id))
-        response.update(self._build_sale_info(project.id))
+        response.update(self._build_contract_info(project))
+        response.update(self._build_owner_info(project))
+        response.update(self._build_sale_info(project))
 
         if not slim:
-            response.update(self._build_finance_info(project.id))
-            response.update(self._build_interactions(project.id))
-            response.update(self._build_stage_dates(project.id))
+            response.update(self._build_finance_info(project))
+            response.update(self._build_interactions(project))
+            response.update(self._build_stage_dates(project))
 
         response.update(self._build_renovation_photos(project))
 
@@ -101,18 +98,14 @@ class ProjectResponseBuilder:
 
         return result
 
-    def _build_contract_info(self, project_id: str) -> dict[str, Any]:
-        """构建合同信息."""
-        contract = (
-            self.db.query(ProjectContract)
-            .filter(
-                ProjectContract.project_id == project_id,
-                ProjectContract.is_deleted.is_(False),
-            )
-            .first()
-        )
+    def _build_contract_info(self, project: "Project") -> dict[str, Any]:
+        """构建合同信息.
 
-        if not contract:
+        通过预加载的 project.contract 关系访问，过滤软删除记录。
+        """
+        contract = project.contract
+
+        if not contract or contract.is_deleted:
             return {}
 
         return {
@@ -132,16 +125,12 @@ class ProjectResponseBuilder:
             "contract_status": contract.contract_status,
         }
 
-    def _build_owner_info(self, project_id: str) -> dict[str, Any]:
-        """构建业主信息."""
-        owner = (
-            self.db.query(ProjectOwner)
-            .filter(
-                ProjectOwner.project_id == project_id,
-                ProjectOwner.is_deleted.is_(False),
-            )
-            .first()
-        )
+    def _build_owner_info(self, project: "Project") -> dict[str, Any]:
+        """构建业主信息.
+
+        通过预加载的 project.owners 关系访问，过滤软删除记录。
+        """
+        owner = next((o for o in project.owners if not o.is_deleted), None)
 
         if not owner:
             return {}
@@ -153,18 +142,14 @@ class ProjectResponseBuilder:
             "owner_info": owner.owner_info,
         }
 
-    def _build_sale_info(self, project_id: str) -> dict[str, Any]:
-        """构建销售信息."""
-        sale = (
-            self.db.query(ProjectSale)
-            .filter(
-                ProjectSale.project_id == project_id,
-                ProjectSale.is_deleted.is_(False),
-            )
-            .first()
-        )
+    def _build_sale_info(self, project: "Project") -> dict[str, Any]:
+        """构建销售信息.
 
-        if not sale:
+        通过预加载的 project.sale 关系访问，过滤软删除记录。
+        """
+        sale = project.sale
+
+        if not sale or sale.is_deleted:
             return {}
 
         return {
@@ -178,15 +163,12 @@ class ProjectResponseBuilder:
             "negotiator_id": sale.negotiator_id,
         }
 
-    def _build_finance_info(self, project_id: str) -> dict[str, Any]:
-        """构建财务统计信息."""
-        finance_records = (
-            self.db.query(FinanceRecord)
-            .filter(
-                FinanceRecord.project_id == project_id,
-            )
-            .all()
-        )
+    def _build_finance_info(self, project: "Project") -> dict[str, Any]:
+        """构建财务统计信息.
+
+        通过预加载的 project.finance_records 关系访问。
+        """
+        finance_records = project.finance_records
 
         total_income = Decimal(0)
         total_expense = Decimal(0)
@@ -207,19 +189,17 @@ class ProjectResponseBuilder:
             "roi": roi,
         }
 
-    def _build_interactions(self, project_id: str) -> dict[str, Any]:
-        """构建互动记录（销售记录）."""
-        interactions = (
-            self.db.query(ProjectInteraction)
-            .filter(
-                ProjectInteraction.project_id == project_id,
-            )
-            .order_by(ProjectInteraction.interaction_at.desc())
-            .all()
-        )
+    def _build_interactions(self, project: "Project") -> dict[str, Any]:
+        """构建互动记录（销售记录）.
+
+        通过预加载的 project.interactions 关系访问，按互动时间倒序排列。
+        """
+        interactions = project.interactions
 
         if not interactions:
             return {}
+
+        sorted_interactions = sorted(interactions, key=lambda i: i.interaction_at, reverse=True)
 
         sales_records = [
             {
@@ -232,7 +212,7 @@ class ProjectResponseBuilder:
                 "notes": interaction.content,
                 "created_at": interaction.created_at.isoformat() if interaction.created_at else None,
             }
-            for interaction in interactions
+            for interaction in sorted_interactions
         ]
 
         return {"sales_records": sales_records}
@@ -257,15 +237,12 @@ class ProjectResponseBuilder:
 
         return {"renovation_photos": renovation_photos}
 
-    def _build_stage_dates(self, project_id: str) -> dict[str, Any]:
-        """构建阶段日期映射（用于蜕变影像展示）."""
-        renovation = (
-            self.db.query(ProjectRenovation)
-            .filter(
-                ProjectRenovation.project_id == project_id,
-            )
-            .first()
-        )
+    def _build_stage_dates(self, project: "Project") -> dict[str, Any]:
+        """构建阶段日期映射（用于蜕变影像展示）.
+
+        通过预加载的 project.renovation 关系访问。
+        """
+        renovation = project.renovation
 
         if not renovation or not renovation.stage_completed_dates:
             return {}

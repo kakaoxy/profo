@@ -27,6 +27,7 @@ def _profo_test_env() -> None:
     os.environ.setdefault("JWT_SECRET_KEY", "0123456789abcdef0123456789abcdef")
     os.environ.setdefault("WECHAT_APPID", "test")
     os.environ.setdefault("WECHAT_SECRET", "test")
+    os.environ.setdefault("ENCRYPTION_KEY", "2jMwZQncfSnqaQxT3E-hhDMx7npoFQDxyNjyS8SvRCc=")
 
     db_path = (Path(__file__).parent / "test.db").resolve()
     if db_path.exists():

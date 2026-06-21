@@ -34,7 +34,7 @@ class BaseRole(BaseModel):
 class UserCreate(BaseUser):
     """用户创建模型."""
 
-    password: str = Field(min_length=6, max_length=255, description="密码")
+    password: str = Field(min_length=8, max_length=255, description="密码")
     role_id: str = Field(description="角色ID")
 
 

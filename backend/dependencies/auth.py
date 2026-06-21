@@ -162,8 +162,8 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
 
     """
 
-    async def role_checker(user: CurrentActiveUserDep) -> User:
-        if user.role.code not in required_roles:
+    def role_checker(user: CurrentActiveUserDep) -> User:
+        if user.role is None or user.role.code not in required_roles:
             raise PermissionDeniedError("权限不足")
         return user
 

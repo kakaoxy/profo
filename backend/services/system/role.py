@@ -11,6 +11,9 @@ from settings import settings
 
 from .exceptions import ConflictError, ResourceNotFoundError
 
+# 允许更新的角色字段白名单（防止设置 id 等敏感字段）
+_ROLE_ALLOWED_FIELDS = {"name", "code", "description", "permissions", "is_active"}
+
 
 class RoleService:
     """角色服务."""
@@ -102,14 +105,15 @@ class RoleService:
 
         update_data = role_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            setattr(role, field, value)
+            if field in _ROLE_ALLOWED_FIELDS:
+                setattr(role, field, value)
 
         db.commit()
         db.refresh(role)
         return role
 
     def delete_role(self, db: Session, role_id: str) -> dict:
-        """删除角色."""
+        """删除角色（逻辑删除，停用角色）."""
         role = self.get_role_by_id(db, role_id)
         if not role:
             msg = "角色不存在"
@@ -119,7 +123,7 @@ class RoleService:
             msg = "角色下存在用户，无法删除"
             raise ConflictError(msg)
 
-        db.delete(role)
+        role.is_active = False
         db.commit()
         return {"message": "角色删除成功"}
 

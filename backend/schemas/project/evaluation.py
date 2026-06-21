@@ -1,14 +1,9 @@
 """项目评估记录相关Schema."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
-
-if TYPE_CHECKING:
-    from datetime import datetime
-    from decimal import Decimal
 
 
 class EvaluationBase(BaseModel):

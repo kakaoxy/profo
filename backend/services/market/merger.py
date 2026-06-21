@@ -137,6 +137,7 @@ class CommunityMerger:
             .filter(
                 CommunityAlias.alias_name == alias_name,
                 CommunityAlias.community_id == community_id,
+                CommunityAlias.is_deleted.is_(False),
             )
             .first()
         )
@@ -159,6 +160,7 @@ class CommunityMerger:
             db.query(CommunityAlias)
             .filter(
                 CommunityAlias.community_id == old_community_id,
+                CommunityAlias.is_deleted.is_(False),
             )
             .all()
         )
@@ -169,13 +171,14 @@ class CommunityMerger:
                 .filter(
                     CommunityAlias.community_id == new_community_id,
                     CommunityAlias.alias_name == alias.alias_name,
+                    CommunityAlias.is_deleted.is_(False),
                 )
                 .count()
                 > 0
             )
 
             if is_duplicate:
-                db.delete(alias)
+                alias.is_deleted = True
             else:
                 alias.community_id = new_community_id
 

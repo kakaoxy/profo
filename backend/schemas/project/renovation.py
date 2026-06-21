@@ -73,28 +73,28 @@ class RenovationContractUpdate(BaseModel):
     actual_end_date: datetime | None = Field(None, description="实际竣工时间")
 
     # 硬装费用
-    hard_contract_amount: float | None = Field(None, description="硬装合同总金额")
+    hard_contract_amount: Decimal | None = Field(None, description="硬装合同总金额")
 
     # 支付节点
     payment_node_1: str | None = Field(None, max_length=100, description="第一笔款项支付节点")
-    payment_ratio_1: float | None = Field(None, ge=0, le=100, description="第一笔款项支付比例")
+    payment_ratio_1: Decimal | None = Field(None, ge=0, le=100, description="第一笔款项支付比例")
     payment_node_2: str | None = Field(None, max_length=100, description="第二笔款项支付节点")
-    payment_ratio_2: float | None = Field(None, ge=0, le=100, description="第二笔款项支付比例")
+    payment_ratio_2: Decimal | None = Field(None, ge=0, le=100, description="第二笔款项支付比例")
     payment_node_3: str | None = Field(None, max_length=100, description="第三笔款项支付节点")
-    payment_ratio_3: float | None = Field(None, ge=0, le=100, description="第三笔款项支付比例")
+    payment_ratio_3: Decimal | None = Field(None, ge=0, le=100, description="第三笔款项支付比例")
     payment_node_4: str | None = Field(None, max_length=100, description="第四笔款项支付节点")
-    payment_ratio_4: float | None = Field(None, ge=0, le=100, description="第四笔款项支付比例")
+    payment_ratio_4: Decimal | None = Field(None, ge=0, le=100, description="第四笔款项支付比例")
 
     # 软装费用
-    soft_budget: float | None = Field(None, description="软装预算金额")
-    soft_actual_cost: float | None = Field(None, description="软装实际发生成本")
+    soft_budget: Decimal | None = Field(None, description="软装预算金额")
+    soft_actual_cost: Decimal | None = Field(None, description="软装实际发生成本")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
     # 其他费用
-    design_fee: float | None = Field(None, description="设计费用")
-    demolition_fee: float | None = Field(None, description="拆旧费用")
-    garbage_fee: float | None = Field(None, description="垃圾清运费用")
-    other_extra_fee: float | None = Field(None, description="其他额外费用")
+    design_fee: Decimal | None = Field(None, description="设计费用")
+    demolition_fee: Decimal | None = Field(None, description="拆旧费用")
+    garbage_fee: Decimal | None = Field(None, description="垃圾清运费用")
+    other_extra_fee: Decimal | None = Field(None, description="其他额外费用")
     other_fee_reason: str | None = Field(None, description="其他费用原因")
 
     model_config = ConfigDict(from_attributes=True)
@@ -110,22 +110,22 @@ class RenovationContractResponse(BaseModel):
     contract_end_date: datetime | None = None
     actual_start_date: datetime | None = None
     actual_end_date: datetime | None = None
-    hard_contract_amount: float | None = None
+    hard_contract_amount: Decimal | None = None
     payment_node_1: str | None = None
-    payment_ratio_1: float | None = None
+    payment_ratio_1: Decimal | None = None
     payment_node_2: str | None = None
-    payment_ratio_2: float | None = None
+    payment_ratio_2: Decimal | None = None
     payment_node_3: str | None = None
-    payment_ratio_3: float | None = None
+    payment_ratio_3: Decimal | None = None
     payment_node_4: str | None = None
-    payment_ratio_4: float | None = None
-    soft_budget: float | None = None
-    soft_actual_cost: float | None = None
+    payment_ratio_4: Decimal | None = None
+    soft_budget: Decimal | None = None
+    soft_actual_cost: Decimal | None = None
     soft_detail_attachment: str | None = None
-    design_fee: float | None = None
-    demolition_fee: float | None = None
-    garbage_fee: float | None = None
-    other_extra_fee: float | None = None
+    design_fee: Decimal | None = None
+    demolition_fee: Decimal | None = None
+    garbage_fee: Decimal | None = None
+    other_extra_fee: Decimal | None = None
     other_fee_reason: str | None = None
     created_at: datetime
     updated_at: datetime

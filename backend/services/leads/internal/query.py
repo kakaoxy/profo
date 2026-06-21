@@ -46,7 +46,7 @@ class LeadQueryService:
         query = self.db.query(Lead)
         if load_creator:
             query = query.options(joinedload(Lead.creator))
-        return query.filter(Lead.id == lead_id).first()
+        return query.filter(Lead.id == lead_id, Lead.is_deleted.is_(False)).first()
 
     def get_list(  # noqa: PLR0913
         self,
@@ -82,7 +82,7 @@ class LeadQueryService:
             noload(Lead.auditor),
             noload(Lead.follow_ups),
             noload(Lead.price_history),
-        )
+        ).filter(Lead.is_deleted.is_(False))
 
         # 应用过滤条件
         if search:
@@ -117,12 +117,13 @@ class LeadQueryService:
 
         """
         # 获取总数
-        total = self.db.query(Lead).count()
+        total = self.db.query(Lead).filter(Lead.is_deleted.is_(False)).count()
 
         # 评估中：待评估 + 待看房
         evaluating = (
             self.db.query(Lead)
             .filter(
+                Lead.is_deleted.is_(False),
                 Lead.status.in_([LeadStatus.PENDING_ASSESSMENT, LeadStatus.PENDING_VISIT]),
             )
             .count()
@@ -132,6 +133,7 @@ class LeadQueryService:
         rejected = (
             self.db.query(Lead)
             .filter(
+                Lead.is_deleted.is_(False),
                 Lead.status == LeadStatus.REJECTED,
             )
             .count()
@@ -141,6 +143,7 @@ class LeadQueryService:
         visiting = (
             self.db.query(Lead)
             .filter(
+                Lead.is_deleted.is_(False),
                 Lead.status == LeadStatus.VISITED,
             )
             .count()
@@ -150,6 +153,7 @@ class LeadQueryService:
         signed = (
             self.db.query(Lead)
             .filter(
+                Lead.is_deleted.is_(False),
                 Lead.status == LeadStatus.SIGNED,
             )
             .count()

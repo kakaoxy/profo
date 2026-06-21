@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from schemas.enums import IngestionStatus
+from models.common.base import PropertyStatus
 
 
 class PropertyFilter(BaseModel):
@@ -15,7 +15,7 @@ class PropertyFilter(BaseModel):
     因此路由暂不使用此 Schema 作为 Depends 参数，仅作文档和未来用途。
     """
 
-    status: str | None = Field(None, description="房源状态: 在售 | 成交")
+    status: PropertyStatus | None = Field(None, description="房源状态: 在售 | 成交")
     community_name: str | None = Field(None, description="小区名称（模糊搜索）")
     community_ids: list[str] | None = Field(None, description="小区ID列表（精确匹配）")
     districts: list[str] | None = Field(None, description="行政区列表")
@@ -45,7 +45,7 @@ class PropertyIngestionModel(BaseModel):
     source_property_id: str = Field(alias="房源ID", description="来源平台的房源ID")
 
     # 核心业务字段
-    status: IngestionStatus = Field(alias="状态", description="房源状态")
+    status: PropertyStatus = Field(alias="状态", description="房源状态")
     community_name: str = Field(alias="小区名", min_length=1, description="小区名称")
 
     # 户型信息
@@ -139,14 +139,14 @@ class PropertyIngestionModel(BaseModel):
     @model_validator(mode="after")
     def validate_fields_based_on_status(self) -> "PropertyIngestionModel":
         """根据状态动态验证必填字段."""
-        if self.status == IngestionStatus.FOR_SALE:
+        if self.status == PropertyStatus.FOR_SALE:
             if self.listed_price_wan is None or self.listed_price_wan <= 0:
                 msg = "在售房源必须提供有效的挂牌价(万)"
                 raise ValueError(msg)
             if self.listed_date is None:
                 msg = "在售房源必须提供上架时间"
                 raise ValueError(msg)
-        elif self.status == IngestionStatus.SOLD:
+        elif self.status == PropertyStatus.SOLD:
             if self.sold_price_wan is None or self.sold_price_wan <= 0:
                 msg = "成交房源必须提供有效的成交价(万)"
                 raise ValueError(msg)
@@ -156,6 +156,7 @@ class PropertyIngestionModel(BaseModel):
         return self
 
     model_config = ConfigDict(
+        from_attributes=True,
         populate_by_name=True,
         str_strip_whitespace=True,
     )

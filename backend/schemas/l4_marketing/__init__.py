@@ -3,7 +3,12 @@
 符合项目指南的 API 契约规范.
 """  # noqa: D400, D415
 
-from .enums import MarketingProjectStatus, MediaType, PhotoCategory, PublishStatus
+from models.marketing.l4_marketing import (
+    L4MediaType,
+    MarketingProjectStatus,
+    PhotoCategory,
+    PublishStatus,
+)
 from .import_schemas import (
     ImportableMediaResponse,
     L3ProjectBriefResponse,
@@ -46,6 +51,7 @@ __all__ = [
     "L4MarketingMediaListResponse",
     "L4MarketingMediaResponse",
     "L4MarketingMediaUpdate",
+    "L4MediaType",
     # Project
     "L4MarketingProjectBase",
     "L4MarketingProjectCreate",
@@ -59,7 +65,6 @@ __all__ = [
     "L4SyncResponse",
     "MarketingProjectStatus",
     "MediaSortOrderUpdate",
-    "MediaType",
     "PhotoCategory",
     # Enums
     "PublishStatus",

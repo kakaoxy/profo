@@ -135,7 +135,7 @@ async def wechat_callback(
         refresh_token=result["refresh_token"],
     )
 
-    frontend_url = f"http://localhost:3000/login?code={auth_code}"
+    frontend_url = f"{settings.frontend_url}/login?code={auth_code}"
     return RedirectResponse(url=frontend_url, status_code=status.HTTP_302_FOUND)
 
 

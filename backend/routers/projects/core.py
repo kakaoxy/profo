@@ -4,9 +4,6 @@
 符合 AGENTS.md 规范第 26 条.
 """
 
-import csv
-import io
-from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
@@ -28,6 +25,7 @@ from schemas.project import (
     StatusUpdate,
 )
 from services.system.exceptions import ResourceNotFoundError
+from utils.csv_exporter import generate_csv_response
 
 from .cashflow import router as cashflow_router
 from .renovation import router as renovation_router
@@ -122,9 +120,6 @@ def export_projects(
 
     items = result["items"]
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-
     headers = [
         "项目ID",
         "项目名称",
@@ -156,8 +151,8 @@ def export_projects(
         "创建时间",
         "更新时间",
     ]
-    writer.writerow(headers)
 
+    rows = []
     for project in items:
         row = [
             project.id,
@@ -190,22 +185,9 @@ def export_projects(
             project.created_at.strftime("%Y-%m-%d %H:%M:%S") if project.created_at else "",
             project.updated_at.strftime("%Y-%m-%d %H:%M:%S") if project.updated_at else "",
         ]
-        writer.writerow(row)
+        rows.append(row)
 
-    csv_content = output.getvalue()
-    output.close()
-
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"projects_export_{timestamp}.csv"
-
-    return StreamingResponse(
-        iter([csv_content.encode("utf-8-sig")]),
-        media_type="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}",
-            "Content-Type": "text/csv; charset=utf-8",
-        },
-    )
+    return generate_csv_response(headers, rows, "projects_export")
 
 
 @router.get("/{project_id}")

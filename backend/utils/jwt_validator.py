@@ -3,9 +3,6 @@
 import logging
 import secrets
 import sys
-from pathlib import Path
-
-_ = sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 logger = logging.getLogger(__name__)
 
@@ -114,3 +111,4 @@ if __name__ == "__main__":
         check_jwt_configuration()
     else:
         key = generate_secure_jwt_key(args.generate)
+        print(key)

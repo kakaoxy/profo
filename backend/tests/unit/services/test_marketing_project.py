@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from services.marketing.project import MarketingProjectService
 
 

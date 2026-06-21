@@ -113,6 +113,16 @@ class FollowUpMethod(str, enum.Enum):
     VISIT = "visit"  # 实地带看
 
 
+class ImportTaskStatus(str, enum.Enum):
+    """导入任务状态枚举."""
+
+    PENDING = "pending"  # 待处理
+    PROCESSING = "processing"  # 处理中
+    COMPLETED = "completed"  # 完成
+    FAILED = "failed"  # 失败
+    CANCELLED = "cancelled"  # 已取消
+
+
 class BaseModel(Base):
     """基础模型，包含公共字段."""
 

@@ -56,7 +56,7 @@ def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
     )
 
 
-@router.get("/")
+@router.get("")
 def get_leads(  # noqa: PLR0913
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
@@ -94,7 +94,7 @@ def get_leads(  # noqa: PLR0913
     )
 
 
-@router.post("/")
+@router.post("")
 def create_lead(
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
@@ -102,10 +102,7 @@ def create_lead(
 ) -> LeadResponse:
     """创建线索."""
     service = LeadService(db)
-    db_lead = service.create_lead(lead_in, current_user.id)
-
-    db_lead.creator = current_user
-    return db_lead
+    return service.create_lead(lead_in, current_user.id, creator=current_user)
 
 
 @router.get("/{lead_id}")
@@ -133,11 +130,7 @@ def update_lead(
     速率限制：100次/小时.
     """
     service = LeadService(db)
-    lead = service.update_lead(lead_id, lead_in, current_user.id)
-
-    if not lead.creator:
-        lead.creator = current_user
-    return lead
+    return service.update_lead(lead_id, lead_in, current_user.id, creator=current_user)
 
 
 @router.delete("/{lead_id}", status_code=204)

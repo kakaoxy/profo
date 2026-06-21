@@ -3,7 +3,7 @@
 负责项目数据的查询和加载.
 """
 
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import Project
 from services.system.exceptions import ResourceNotFoundError
@@ -52,23 +52,27 @@ class ProjectQueryService:
 
         if include_all:
             # 完整加载：预加载所有关联关系
+            # joinedload 用于多对一/一对一关系（uselist=False），减少查询数
+            # selectinload 用于一对多关系，避免笛卡尔积
             query = query.options(
-                selectinload(Project.contract),
+                joinedload(Project.contract),
                 selectinload(Project.owners),
-                selectinload(Project.sale),
+                joinedload(Project.sale),
                 selectinload(Project.renovation_photos),
                 selectinload(Project.interactions),
                 selectinload(Project.finance_records),
+                joinedload(Project.renovation),
                 selectinload(Project.status_logs),
                 selectinload(Project.project_manager),
             )
         else:
-            # 简化加载：只加载必要的关系
+            # 简化加载：只加载必要的关系（含 renovation_photos，build 始终访问）
             query = query.options(
-                selectinload(Project.contract),
+                joinedload(Project.contract),
                 selectinload(Project.owners),
-                selectinload(Project.sale),
+                joinedload(Project.sale),
                 selectinload(Project.project_manager),
+                selectinload(Project.renovation_photos),
             )
 
         project = query.first()
@@ -123,12 +127,13 @@ class ProjectQueryService:
         if community_name:
             query = query.filter(Project.community_name.contains(community_name))
 
-        # 预加载关联数据
+        # 预加载关联数据（slim 模式所需：contract/owners/sale/project_manager/renovation_photos）
         query = query.options(
-            selectinload(Project.contract),
+            joinedload(Project.contract),
             selectinload(Project.owners),
-            selectinload(Project.sale),
+            joinedload(Project.sale),
             selectinload(Project.project_manager),
+            selectinload(Project.renovation_photos),
         )
 
         total = query.count()

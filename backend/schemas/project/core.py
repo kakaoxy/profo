@@ -1,49 +1,19 @@
 """项目相关 Pydantic Schema."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
+from models.common import ProjectStatus, RenovationStage
+from schemas.project.contract import SigningMaterial
 from schemas.response import PaginatedResponse
-from models.common import ProjectStatus
-
-_DATE_LEN = 10
-_DATE_DASH_COUNT = 2
-
-
-def parse_date_string(value: str | datetime | None) -> datetime | None:
-    """解析日期字符串为 datetime 对象.
-
-    支持格式: YYYY-MM-DD, ISO 格式字符串, 或 datetime 对象.
-    """
-    if value is None:
-        return None
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, str):
-        if len(value) == _DATE_LEN and value.count("-") == _DATE_DASH_COUNT:
-            try:
-                year, month, day = map(int, value.split("-"))
-                return datetime(year, month, day, tzinfo=timezone.utc)
-            except ValueError:
-                pass
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            pass
-        try:
-            return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
-        except ValueError:
-            pass
-    return None
 
 
 class ProjectFilter(BaseModel):
     """项目筛选参数."""
 
-    status: str | None = Field(None, description="项目状态筛选")
+    status: ProjectStatus | None = Field(None, description="项目状态筛选")
     community_name: str | None = Field(None, description="小区名称筛选")
 
     model_config = ConfigDict(from_attributes=True)
@@ -103,7 +73,7 @@ class ProjectCreate(BaseModel):
     cost_assumption_other: str | None = Field(None, max_length=50, description="税费及佣金承担方其他说明")
     planned_handover_date: str | None = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: str | None = Field(None, description="其他约定")
-    signing_materials: list[Any] | None = Field(None, description="签约材料列表")
+    signing_materials: list[dict[str, str]] | None = Field(None, description="签约材料列表")
 
     owner_name: str | None = Field(None, max_length=100, description="业主姓名")
     owner_phone: str | None = Field(None, max_length=20, description="业主电话")
@@ -159,7 +129,7 @@ class ProjectUpdate(BaseModel):
         None,
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
-    signing_materials: list[Any] | None = Field(None)
+    signing_materials: list[dict[str, str]] | None = Field(None)
 
     owner_name: str | None = Field(None, max_length=100)
     owner_phone: str | None = Field(None, max_length=20)
@@ -181,7 +151,7 @@ class ProjectResponse(BaseModel):
 
     id: str = Field(description="项目ID")
     name: str | None = Field(None, description="项目名称")
-    status: str = Field(description="项目状态")
+    status: ProjectStatus = Field(description="项目状态")
     created_at: datetime
     updated_at: datetime
 
@@ -193,7 +163,7 @@ class ProjectResponse(BaseModel):
     orientation: str | None = None
     is_deleted: bool = False
 
-    renovation_stage: str | None = None
+    renovation_stage: RenovationStage | None = None
 
     contract_no: str | None = Field(None, description="合同编号")
     signing_price: Decimal | None = Field(None, description="签约价格(万)")
@@ -227,9 +197,9 @@ class ProjectResponse(BaseModel):
     net_cash_flow: Decimal | None = Field(default_factory=Decimal)
     roi: float | None = Field(default=0.0)
 
-    signing_materials: list[Any] | None = Field(None, description="签约材料列表")
-    sales_records: list[Any] | None = Field(None, description="销售活动记录列表")
-    renovation_photos: list[Any] | None = Field(None, description="装修阶段照片列表")
+    signing_materials: list[SigningMaterial] | None = Field(None, description="签约材料列表")
+    sales_records: list[dict[str, str | float | None]] | None = Field(None, description="销售活动记录列表")
+    renovation_photos: list[dict[str, str | None]] | None = Field(None, description="装修阶段照片列表")
 
     renovation_stage_dates: dict[str, str] | None = Field(
         None,

@@ -10,15 +10,13 @@
 - get_community_market_stats
 """
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from datetime import datetime, timezone
+from unittest.mock import MagicMock
 
 from schemas.monitor import (
     AIStrategyResponse,
     CommunityMarketStatsResponse,
     CompetitorResponse,
-    NeighborhoodRadarItem,
     NeighborhoodRadarResponse,
     RiskPoints,
     TrendData,
@@ -47,14 +45,31 @@ def _make_competitor(community_id: str, competitor_community_id: str) -> MagicMo
     return comp
 
 
-def _make_trend_row(month: str, avg_price: float | None, volume: int = 0) -> MagicMock:
-    """构造模拟的趋势查询结果行."""
+def _make_deal_row(sold_date: datetime | None, sold_price_wan: float | None, build_area: float | None) -> MagicMock:
+    """构造模拟的成交原始数据行（Python 层聚合前）."""
     row = MagicMock()
-    row.month = month
-    row.avg_deal_price = avg_price
-    row.avg_list_price = avg_price
-    row.volume = volume
+    row.sold_date = sold_date
+    row.sold_price_wan = sold_price_wan
+    row.build_area = build_area
     return row
+
+
+def _make_listing_row(
+    listed_date: datetime | None,
+    listed_price_wan: float | None,
+    build_area: float | None,
+) -> MagicMock:
+    """构造模拟的挂牌原始数据行（Python 层聚合前）."""
+    row = MagicMock()
+    row.listed_date = listed_date
+    row.listed_price_wan = listed_price_wan
+    row.build_area = build_area
+    return row
+
+
+def _dt(year: int, month: int, day: int) -> datetime:
+    """构造 UTC 时区 datetime（测试辅助，避免 DTZ001）."""
+    return datetime(year, month, day, tzinfo=timezone.utc)
 
 
 def _make_listing_stat_row(community_id: str, count: int, avg_price: float | None) -> MagicMock:
@@ -77,12 +92,10 @@ class TestGetTrends:
     def test_empty_data(self) -> None:
         """无数据时返回空列表."""
         db = MagicMock()
-        db.query.return_value.filter.return_value.group_by.return_value.all.return_value = []
 
-        # 两次 db.query: deals + listings
+        # 两次 db.query: deals + listings，均返回空
         mock_q = MagicMock()
         mock_q.filter.return_value = mock_q
-        mock_q.group_by.return_value = mock_q
         mock_q.all.return_value = []
         db.query.side_effect = [mock_q, mock_q]
 
@@ -94,19 +107,20 @@ class TestGetTrends:
         """仅有成交数据时返回正确的趋势."""
         db = MagicMock()
 
-        deal_row = MagicMock()
-        deal_row.month = "2025-01"
-        deal_row.avg_deal_price = 35000.0
-        deal_row.volume = 5
-
+        # 5 笔成交，单价均为 35000（sold_price_wan=350, build_area=100 → 350/100*10000）
+        deal_rows = [
+            _make_deal_row(_dt(2025, 1, 10), 350.0, 100.0),
+            _make_deal_row(_dt(2025, 1, 15), 350.0, 100.0),
+            _make_deal_row(_dt(2025, 1, 20), 350.0, 100.0),
+            _make_deal_row(_dt(2025, 1, 25), 350.0, 100.0),
+            _make_deal_row(_dt(2025, 1, 28), 350.0, 100.0),
+        ]
         deals_q = MagicMock()
         deals_q.filter.return_value = deals_q
-        deals_q.group_by.return_value = deals_q
-        deals_q.all.return_value = [deal_row]
+        deals_q.all.return_value = deal_rows
 
         listings_q = MagicMock()
         listings_q.filter.return_value = listings_q
-        listings_q.group_by.return_value = listings_q
         listings_q.all.return_value = []
 
         db.query.side_effect = [deals_q, listings_q]
@@ -126,17 +140,14 @@ class TestGetTrends:
 
         deals_q = MagicMock()
         deals_q.filter.return_value = deals_q
-        deals_q.group_by.return_value = deals_q
         deals_q.all.return_value = []
 
-        listing_row = MagicMock()
-        listing_row.month = "2025-02"
-        listing_row.avg_list_price = 38000.0
-
+        listing_rows = [
+            _make_listing_row(_dt(2025, 2, 10), 380.0, 100.0),
+        ]
         listings_q = MagicMock()
         listings_q.filter.return_value = listings_q
-        listings_q.group_by.return_value = listings_q
-        listings_q.all.return_value = [listing_row]
+        listings_q.all.return_value = listing_rows
 
         db.query.side_effect = [deals_q, listings_q]
 
@@ -152,24 +163,22 @@ class TestGetTrends:
         """成交和挂牌数据合并时返回完整趋势."""
         db = MagicMock()
 
-        deal_row = MagicMock()
-        deal_row.month = "2025-03"
-        deal_row.avg_deal_price = 36000.0
-        deal_row.volume = 3
-
+        # 3 笔成交，单价 34000/36000/38000 → 均价 36000
+        deal_rows = [
+            _make_deal_row(_dt(2025, 3, 10), 340.0, 100.0),
+            _make_deal_row(_dt(2025, 3, 15), 360.0, 100.0),
+            _make_deal_row(_dt(2025, 3, 20), 380.0, 100.0),
+        ]
         deals_q = MagicMock()
         deals_q.filter.return_value = deals_q
-        deals_q.group_by.return_value = deals_q
-        deals_q.all.return_value = [deal_row]
+        deals_q.all.return_value = deal_rows
 
-        listing_row = MagicMock()
-        listing_row.month = "2025-03"
-        listing_row.avg_list_price = 37000.0
-
+        listing_rows = [
+            _make_listing_row(_dt(2025, 3, 5), 370.0, 100.0),
+        ]
         listings_q = MagicMock()
         listings_q.filter.return_value = listings_q
-        listings_q.group_by.return_value = listings_q
-        listings_q.all.return_value = [listing_row]
+        listings_q.all.return_value = listing_rows
 
         db.query.side_effect = [deals_q, listings_q]
 
@@ -185,18 +194,15 @@ class TestGetTrends:
         db = MagicMock()
 
         deal_rows = [
-            MagicMock(month="2025-03", avg_deal_price=36000.0, volume=3),
-            MagicMock(month="2025-01", avg_deal_price=34000.0, volume=2),
+            _make_deal_row(_dt(2025, 3, 10), 360.0, 100.0),
+            _make_deal_row(_dt(2025, 1, 10), 340.0, 100.0),
         ]
-
         deals_q = MagicMock()
         deals_q.filter.return_value = deals_q
-        deals_q.group_by.return_value = deals_q
         deals_q.all.return_value = deal_rows
 
         listings_q = MagicMock()
         listings_q.filter.return_value = listings_q
-        listings_q.group_by.return_value = listings_q
         listings_q.all.return_value = []
 
         db.query.side_effect = [deals_q, listings_q]
@@ -208,27 +214,22 @@ class TestGetTrends:
         assert result[1].month == "2025-03"
 
     def test_null_avg_price_treated_as_zero(self) -> None:
-        """avg_price 为 None 时应视为 0."""
+        """build_area 为 None 时均价视为 0（与 SQL avg 忽略 NULL 行为一致）."""
         db = MagicMock()
 
-        deal_row = MagicMock()
-        deal_row.month = "2025-01"
-        deal_row.avg_deal_price = None
-        deal_row.volume = 1
-
+        deal_rows = [
+            _make_deal_row(_dt(2025, 1, 10), 350.0, None),
+        ]
         deals_q = MagicMock()
         deals_q.filter.return_value = deals_q
-        deals_q.group_by.return_value = deals_q
-        deals_q.all.return_value = [deal_row]
+        deals_q.all.return_value = deal_rows
 
-        listing_row = MagicMock()
-        listing_row.month = "2025-01"
-        listing_row.avg_list_price = None
-
+        listing_rows = [
+            _make_listing_row(_dt(2025, 1, 5), 380.0, None),
+        ]
         listings_q = MagicMock()
         listings_q.filter.return_value = listings_q
-        listings_q.group_by.return_value = listings_q
-        listings_q.all.return_value = [listing_row]
+        listings_q.all.return_value = listing_rows
 
         db.query.side_effect = [deals_q, listings_q]
 

@@ -246,12 +246,14 @@ class TestDeleteUser:
     """delete_user 测试."""
 
     def test_success(self, seeded_db: dict) -> None:
-        """正常删除用户应成功."""
+        """正常删除用户应成功（软删除，标记为 inactive）."""
         db = seeded_db["session"]
         svc = UserService()
         result = svc.delete_user(db, "normal-user", "admin-user")
         assert result["message"] == "用户删除成功"
-        assert svc.get_user_by_id(db, "normal-user") is None
+        user = svc.get_user_by_id(db, "normal-user")
+        assert user is not None
+        assert user.status == "inactive"
 
     def test_deleting_self_raises_validation_error(self, seeded_db: dict) -> None:
         """删除自己应抛出 ValidationError."""

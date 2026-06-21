@@ -17,6 +17,32 @@ from models.common import ProjectStatus
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 
+# 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
+_RENOVATION_ALLOWED_FIELDS = {
+    "renovation_company",
+    "contract_start_date",
+    "contract_end_date",
+    "actual_start_date",
+    "actual_end_date",
+    "hard_contract_amount",
+    "payment_node_1",
+    "payment_ratio_1",
+    "payment_node_2",
+    "payment_ratio_2",
+    "payment_node_3",
+    "payment_ratio_3",
+    "payment_node_4",
+    "payment_ratio_4",
+    "soft_budget",
+    "soft_actual_cost",
+    "soft_detail_attachment",
+    "design_fee",
+    "demolition_fee",
+    "garbage_fee",
+    "other_extra_fee",
+    "other_fee_reason",
+}
+
 
 class RenovationService:
     """项目装修服务."""
@@ -132,9 +158,9 @@ class RenovationService:
 
         renovation = self._get_or_create_renovation(project_id)
 
-        # 更新字段
+        # 更新字段（使用白名单过滤，防止设置敏感字段）
         for field, value in renovation_data.items():
-            if hasattr(renovation, field) and value is not None:
+            if field in _RENOVATION_ALLOWED_FIELDS and value is not None:
                 setattr(renovation, field, value)
 
         renovation.updated_at = datetime.now(timezone.utc)
@@ -236,10 +262,10 @@ class RenovationService:
 
         renovation = self._get_or_create_renovation(project_id)
 
-        # 更新字段
+        # 更新字段（使用白名单过滤，防止设置敏感字段）
         update_data = contract_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            if hasattr(renovation, field) and value is not None:
+            if field in _RENOVATION_ALLOWED_FIELDS and value is not None:
                 setattr(renovation, field, value)
 
         renovation.updated_at = datetime.now(timezone.utc)

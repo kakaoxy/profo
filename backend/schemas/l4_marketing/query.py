@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, Field
 
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.response import PaginatedResponse
 from settings import settings
 
@@ -15,8 +16,8 @@ class L4MarketingProjectQuery(BaseModel):
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=settings.default_page_size, ge=1, le=200)
     community_id: str | None = None
-    publish_status: str | None = None
-    project_status: str | None = None
+    publish_status: PublishStatus | None = None
+    project_status: MarketingProjectStatus | None = None
     consultant_id: str | None = None
     project_id: str | None = None
     decoration_style: str | None = None

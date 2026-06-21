@@ -11,6 +11,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Enum as SQLEnum,
     Index,
     Integer,
     Numeric,
@@ -19,7 +20,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
-from models.common.base import BaseModel
+from models.common.base import BaseModel, RenovationStage
 
 
 class PublishStatus(str, Enum):
@@ -42,6 +43,13 @@ class PhotoCategory(str, Enum):
 
     MARKETING = "marketing"  # 营销照片
     RENOVATION = "renovation"  # 改造照片
+
+
+class L4MediaType(str, Enum):
+    """L4 营销媒体类型枚举."""
+
+    IMAGE = "image"  # 图片
+    VIDEO = "video"  # 视频
 
 
 class L4MarketingProject(BaseModel):
@@ -80,14 +88,14 @@ class L4MarketingProject(BaseModel):
     decoration_style: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="装修风格，最大长度100")
 
     # 状态控制
-    publish_status: Mapped[str] = mapped_column(
-        String(20),
+    publish_status: Mapped[PublishStatus] = mapped_column(
+        SQLEnum(PublishStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),
         nullable=False,
         default=PublishStatus.DRAFT,
         comment="发布状态: 草稿/发布",
     )
-    project_status: Mapped[str] = mapped_column(
-        String(20),
+    project_status: Mapped[MarketingProjectStatus] = mapped_column(
+        SQLEnum(MarketingProjectStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),
         nullable=False,
         default=MarketingProjectStatus.IN_PROGRESS,
         comment="项目状态: 在途/在售/已售",
@@ -195,26 +203,31 @@ class L4MarketingMedia(BaseModel):
     )
 
     # 媒体类型
-    media_type: Mapped[str] = mapped_column(
-        String(20),
+    media_type: Mapped[L4MediaType] = mapped_column(
+        SQLEnum(L4MediaType, values_callable=lambda x: [e.value for e in x], create_constraint=True),
         nullable=False,
-        default="image",
+        default=L4MediaType.IMAGE,
         comment="媒体类型: image/video",
     )
 
     # 照片分类
-    photo_category: Mapped[str] = mapped_column(
-        String(20),
+    photo_category: Mapped[PhotoCategory] = mapped_column(
+        SQLEnum(PhotoCategory, values_callable=lambda x: [e.value for e in x], create_constraint=True),
         nullable=False,
         default=PhotoCategory.MARKETING,
         comment="照片分类: marketing(营销照片)/renovation(改造照片)",
     )
 
     # 装修阶段标记（仅改造照片使用）
-    renovation_stage: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="装修阶段: 拆除/水电/木瓦/油漆/安装/交付/other")
+    renovation_stage: Mapped[RenovationStage | None] = mapped_column(
+        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x], create_constraint=True),
+        nullable=True,
+        comment="装修阶段: 拆除/设计/水电/木瓦/油漆/安装/交付/已完成",
+    )
 
     # 来源 A: 关联 L3 项目照片 (标记机制，URL 实时查询)
-    origin_media_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="来源媒体ID(L3层)")
+    # 注意：L3 RenovationPhoto.id 为 String(36) UUID
+    origin_media_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="来源媒体ID(L3层UUID)")
 
     # 来源 B: 独立上传 (直接存储 URL)
     file_url: Mapped[str] = mapped_column(Text, nullable=False, comment="文件URL")

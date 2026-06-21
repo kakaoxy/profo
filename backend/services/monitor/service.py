@@ -126,57 +126,84 @@ class MonitorService:
         )
 
     @staticmethod
-    def get_trends(db: Session, community_id: str, months: int) -> list[TrendData]:
-        """获取价格趋势数据."""
+    def get_trends(db: Session, community_id: str, months: int) -> list[TrendData]:  # noqa: C901
+        """获取价格趋势数据.
+
+        按月分组统计在 Python 层完成，避免使用 SQLite 专有的 strftime，
+        保证跨数据库兼容（生产环境使用 PostgreSQL）。
+        """
         start_date = datetime.now(timezone.utc) - timedelta(days=30 * months)
 
-        # Group by Month
-        # SQLite uses strftime('%Y-%m', date_column)
-
-        # Deals
+        # 查询原始数据，在 Python 层按月分组（避免 SQLite 专有的 strftime）
         deals = (
             db.query(
-                func.strftime("%Y-%m", PropertyCurrent.sold_date).label("month"),
-                func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000).label("avg_deal_price"),
-                func.count(PropertyCurrent.id).label("volume"),
+                PropertyCurrent.sold_date,
+                PropertyCurrent.sold_price_wan,
+                PropertyCurrent.build_area,
             )
             .filter(
                 PropertyCurrent.community_id == community_id,
                 PropertyCurrent.status == PropertyStatus.SOLD,
                 PropertyCurrent.sold_date >= start_date,
             )
-            .group_by("month")
             .all()
         )
 
-        # Listings Price
         listings = (
             db.query(
-                func.strftime("%Y-%m", PropertyCurrent.listed_date).label("month"),
-                func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_list_price"),
+                PropertyCurrent.listed_date,
+                PropertyCurrent.listed_price_wan,
+                PropertyCurrent.build_area,
             )
             .filter(
                 PropertyCurrent.community_id == community_id,
                 PropertyCurrent.listed_date >= start_date,
             )
-            .group_by("month")
             .all()
         )
 
+        # 在 Python 层按月聚合
+        # volume 统计所有成交行；avg 仅对 build_area 有效的行计算（与 SQL avg 忽略 NULL 行为一致）
+        deal_groups: dict[str, dict] = {}
+        for row in deals:
+            if not row.sold_date:
+                continue
+            month_key = row.sold_date.strftime("%Y-%m")
+            if month_key not in deal_groups:
+                deal_groups[month_key] = {"volume": 0, "prices": []}
+            deal_groups[month_key]["volume"] += 1
+            if row.build_area and row.build_area > 0 and row.sold_price_wan is not None:
+                unit_price = float(row.sold_price_wan) / float(row.build_area) * 10000
+                deal_groups[month_key]["prices"].append(unit_price)
+
+        listing_groups: dict[str, list[float]] = {}
+        for row in listings:
+            if not row.listed_date:
+                continue
+            month_key = row.listed_date.strftime("%Y-%m")
+            if month_key not in listing_groups:
+                listing_groups[month_key] = []
+            if row.build_area and row.build_area > 0 and row.listed_price_wan is not None:
+                unit_price = float(row.listed_price_wan) / float(row.build_area) * 10000
+                listing_groups[month_key].append(unit_price)
+
         # Merge data
-        data_map = {}
-        for d in deals:
-            data_map[d.month] = {
-                "month": d.month,
-                "deal_price": round(d.avg_deal_price, 0) if d.avg_deal_price else 0,
-                "volume": d.volume,
+        data_map: dict[str, dict] = {}
+        for month_key, data in deal_groups.items():
+            prices = data["prices"]
+            avg_price = sum(prices) / len(prices) if prices else 0
+            data_map[month_key] = {
+                "month": month_key,
+                "deal_price": round(avg_price, 0) if avg_price else 0,
+                "volume": data["volume"],
                 "listing_price": 0,
             }
 
-        for listing in listings:
-            if listing.month not in data_map:
-                data_map[listing.month] = {"month": listing.month, "deal_price": 0, "volume": 0, "listing_price": 0}
-            data_map[listing.month]["listing_price"] = round(listing.avg_list_price, 0) if listing.avg_list_price else 0
+        for month_key, prices in listing_groups.items():
+            avg_price = sum(prices) / len(prices) if prices else 0
+            if month_key not in data_map:
+                data_map[month_key] = {"month": month_key, "deal_price": 0, "volume": 0, "listing_price": 0}
+            data_map[month_key]["listing_price"] = round(avg_price, 0) if avg_price else 0
 
         return sorted([TrendData(**v) for v in data_map.values()], key=lambda x: x.month)
 

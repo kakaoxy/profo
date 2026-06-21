@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
 
@@ -21,9 +21,7 @@ class CommunityResponse(BaseModel):
     total_properties: int
     created_at: datetime
 
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CommunityListResponse(BaseModel):
@@ -82,9 +80,7 @@ class CommunitySearchResponse(BaseModel):
     district: str | None = None
     business_circle: str | None = None
 
-    model_config = {
-        "from_attributes": True,
-    }
+    model_config = ConfigDict(from_attributes=True)
 
 
 __all__ = [

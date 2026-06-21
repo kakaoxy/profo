@@ -66,7 +66,7 @@ class SalesRecordResponse(BaseModel):
 
     id: str
     project_id: str
-    record_type: str
+    record_type: RecordType
     customer_name: str | None = Field(None, validation_alias=AliasChoices("customer_name", "interaction_target"))
     customer_phone: str | None = None
     customer_info: dict[str, Any] | None = None
@@ -164,7 +164,7 @@ class SaleListResponse(BaseModel):
 class InteractionBase(BaseModel):
     """互动记录基础字段."""
 
-    record_type: str = Field(description="互动类型")
+    record_type: RecordType = Field(description="互动类型")
     interaction_target: str | None = Field(None, max_length=100, description="互动对象")
     content: str | None = Field(None, description="互动详情")
     interaction_at: datetime = Field(description="互动时间")
@@ -182,7 +182,7 @@ class InteractionCreate(InteractionBase):
 class InteractionUpdate(BaseModel):
     """更新互动记录请求."""
 
-    record_type: str | None = None
+    record_type: RecordType | None = None
     interaction_target: str | None = None
     content: str | None = None
     interaction_at: datetime | None = None

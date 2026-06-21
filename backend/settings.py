@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # API 配置
     api_prefix: str = "/api"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    frontend_url: str = "http://localhost:3000"  # 前端URL（用于微信回调重定向等，生产环境通过 FRONTEND_URL 环境变量配置）
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -92,6 +93,9 @@ class Settings(BaseSettings):
     # JWT密钥轮换配置
     jwt_secret_key_old: str | None = None  # 旧密钥（用于密钥轮换过渡期）
     jwt_key_rotation_enabled: bool = False  # 是否启用密钥轮换
+
+    # 敏感信息加密密钥（Fernet 对称加密，用于加密身份证/手机号/会话密钥等敏感字段）
+    encryption_key: str  # 强制从环境变量读取，禁止硬编码
 
     # C端公开接口默认顾问配置
     default_consultant_phone: str = "400-xxx-xxxx"

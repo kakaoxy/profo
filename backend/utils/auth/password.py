@@ -62,7 +62,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         bool: 密码是否匹配
 
     """
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except (ValueError, TypeError) as e:
+        logger.warning("密码哈希验证失败，可能为损坏的哈希：%s", e)
+        return False
+    except Exception:  # 兜底捕获 bcrypt 内部未预期异常
+        logger.exception("密码验证发生未预期异常")
+        return False
 
 
 def _truncate_password_safely(password: str, max_bytes: int = _BCRYPT_MAX_BYTES) -> str:

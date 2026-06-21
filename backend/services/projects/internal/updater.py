@@ -104,12 +104,16 @@ class ProjectUpdater:
             "project_manager_id",
         ]
 
+        # 跟踪是否实际更新了影响项目名称的字段
+        name_changed = False
         for field in project_fields:
             if field in update_dict:
+                if field in ("community_name", "address"):
+                    name_changed = True
                 setattr(project, field, update_dict.pop(field))
 
-        # 如果小区名称或地址发生变化，重新生成项目名称
-        if "community_name" in project_fields or "address" in project_fields:
+        # 仅当小区名称或地址实际更新时，才重新生成项目名称
+        if name_changed:
             project.name = project.generate_name()
 
     def _update_contract_fields(

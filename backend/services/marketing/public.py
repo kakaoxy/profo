@@ -9,9 +9,10 @@ from sqlalchemy import and_, case, desc, func
 from sqlalchemy.orm import Session
 
 from models import L4MarketingMedia, L4MarketingProject, User
-from schemas.l4_marketing.enums import MarketingProjectStatus, PublishStatus
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from settings import settings
 from utils.formatters import escape_like
+from utils.query_params import validate_sort_field
 
 
 class PublicProjectService:
@@ -83,7 +84,8 @@ class PublicProjectService:
             "unit_price": L4MarketingProject.unit_price,
             "area": L4MarketingProject.area,
         }
-        sort_column = allowed_sort_fields.get(sort_by, L4MarketingProject.created_at)
+        validated_sort_by = validate_sort_field(sort_by, allowed_sort_fields.keys(), "created_at")
+        sort_column = allowed_sort_fields[validated_sort_by]
         query = query.order_by(sort_column.asc() if sort_order == "asc" else sort_column.desc())
 
         offset = (page - 1) * effective_page_size

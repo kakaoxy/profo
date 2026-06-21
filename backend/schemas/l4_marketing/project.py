@@ -7,7 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .enums import MarketingProjectStatus, PublishStatus
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
+
 from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
 
 
