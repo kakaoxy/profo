@@ -4,6 +4,10 @@
 密钥未配置时抛出明确错误（Fail Loud），禁止静默跳过。
 """
 
+from __future__ import annotations
+
+import threading
+
 from cryptography.fernet import Fernet
 
 from settings import settings
@@ -13,12 +17,12 @@ _KEY_NOT_CONFIGURED_MSG = (
     "（可通过 Fernet.generate_key() 生成）"
 )
 
-
 _fernet_instance: Fernet | None = None
+_lock = threading.Lock()
 
 
 def _get_fernet() -> Fernet:
-    """获取 Fernet 实例（单例缓存）.
+    """获取 Fernet 实例（双重检查锁单例）.
 
     Returns:
         Fernet: 已初始化的 Fernet 实例
@@ -30,11 +34,14 @@ def _get_fernet() -> Fernet:
     global _fernet_instance
     if _fernet_instance is not None:
         return _fernet_instance
-    key = settings.encryption_key
-    if not key:
-        raise RuntimeError(_KEY_NOT_CONFIGURED_MSG)
-    _fernet_instance = Fernet(key)
-    return _fernet_instance
+    with _lock:
+        if _fernet_instance is not None:
+            return _fernet_instance
+        key = settings.encryption_key
+        if not key:
+            raise RuntimeError(_KEY_NOT_CONFIGURED_MSG)
+        _fernet_instance = Fernet(key)
+        return _fernet_instance
 
 
 def encrypt(plaintext: str) -> str:
