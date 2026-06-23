@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Home, MessageCircle, Info, User } from "lucide-react";
 
 const tabs = [
-  { label: "房源", href: "/c", icon: Home },
-  { label: "评估", href: "/c/contact", icon: MessageCircle },
-  { label: "服务", href: "/c/about", icon: Info },
-  { label: "我的", href: "/c/my", icon: User },
+  { label: "房源", href: "/", icon: Home },
+  { label: "评估", href: "/contact", icon: MessageCircle },
+  { label: "服务", href: "/about", icon: Info },
+  { label: "我的", href: "/my", icon: User },
 ] as const;
 
 interface BottomNavBarProps {
@@ -25,8 +25,8 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
       <div className="mx-auto flex h-full max-w-[1280px] items-center justify-around px-2">
         {tabs.map((tab) => {
           const isActive =
-            tab.href === "/c"
-              ? pathname === "/c"
+            tab.href === "/"
+              ? pathname === "/"
               : pathname.startsWith(tab.href);
           const Icon = tab.icon;
           return (

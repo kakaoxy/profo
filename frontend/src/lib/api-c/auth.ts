@@ -93,7 +93,7 @@ export async function registerAction(_: ActionResult<{ user: unknown }>, formDat
     return createErrorResult("网络错误，请连接后端服务");
   }
 
-  redirect("/c");
+  redirect("/");
 }
 
 export async function loginAction(_: ActionResult<null>, formData: FormData): Promise<ActionResult<null>> {
@@ -141,7 +141,7 @@ export async function loginAction(_: ActionResult<null>, formData: FormData): Pr
     return createErrorResult("网络错误，请连接后端服务");
   }
 
-  const redirectTo = (formData.get("redirect") as string) || "/c";
+  const redirectTo = (formData.get("redirect") as string) || "/";
   redirect(redirectTo);
 }
 
@@ -167,5 +167,5 @@ export async function logoutAction(): Promise<ActionResult<null>> {
     cookieStore.delete("c_user_info");
   }
 
-  redirect("/c");
+  redirect("/");
 }

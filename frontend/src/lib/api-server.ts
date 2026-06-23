@@ -55,7 +55,7 @@ export async function fetchClient() {
 
       if (!token) {
         console.error("🔁 [Server] Cookie 中无有效 token，跳转登录页");
-        redirect("/login");
+        redirect("/admin/login");
       }
     }
 

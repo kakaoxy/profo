@@ -50,7 +50,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { logoutAction } from "@/app/login/actions";
+import { logoutAction } from "@/app/admin/login/actions";
 
 interface User {
   username: string;
@@ -73,7 +73,7 @@ const data: { navMain: NavItem[] } = {
   navMain: [
     {
       title: "工作台",
-      url: "/",
+      url: "/admin",
       icon: LayoutDashboard,
       isActive: true,
     },
@@ -82,24 +82,24 @@ const data: { navMain: NavItem[] } = {
       url: "#",
       icon: Building2,
       items: [
-        { title: "房源列表", url: "/properties" },
-        { title: "批量上传", url: "/properties/upload" },
-        { title: "数据治理", url: "/properties/governance" },
+        { title: "房源列表", url: "/admin/properties" },
+        { title: "批量上传", url: "/admin/properties/upload" },
+        { title: "数据治理", url: "/admin/properties/governance" },
       ],
     },
     {
       title: "线索中心",
-      url: "/leads",
+      url: "/admin/leads",
       icon: PhoneIncoming,
     },
     {
       title: "项目管理",
-      url: "/projects",
+      url: "/admin/projects",
       icon: FolderKanban,
     },
     {
       title: "房源营销",
-      url: "/l4-marketing/projects",
+      url: "/admin/l4-marketing/projects",
       icon: Smartphone,
     },
     {
@@ -107,8 +107,8 @@ const data: { navMain: NavItem[] } = {
       url: "#",
       icon: Users,
       items: [
-        { title: "用户列表", url: "/users" },
-        { title: "权限管理", url: "/users/roles" },
+        { title: "用户列表", url: "/admin/users" },
+        { title: "权限管理", url: "/admin/users/roles" },
       ],
     },
     {
@@ -116,7 +116,7 @@ const data: { navMain: NavItem[] } = {
       url: "#",
       icon: Settings,
       items: [
-        { title: "API Key", url: "/settings/api-key" },
+        { title: "API Key", url: "/admin/settings/api-key" },
       ],
     },
   ],
@@ -178,16 +178,16 @@ export function AppSidebar({ user }: { user: User | null }) {
   React.useEffect(() => {
     // 定义需要自动折叠的页面路径
     const autoCollapsePaths = [
-      "/properties",
-      "/leads",
-      "/projects",
-      "/l4-marketing",
-      "/users",
-      "/settings",
+      "/admin/properties",
+      "/admin/leads",
+      "/admin/projects",
+      "/admin/l4-marketing",
+      "/admin/users",
+      "/admin/settings",
     ];
 
     // 检查当前路径是否匹配需要折叠的页面（首页除外）
-    const shouldCollapse = pathname !== "/" &&
+    const shouldCollapse = pathname !== "/admin" &&
       autoCollapsePaths.some(path => pathname.startsWith(path));
 
     if (shouldCollapse && !isMobile) {

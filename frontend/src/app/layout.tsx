@@ -9,8 +9,8 @@ import { Toaster } from "@/components/ui/sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Profo Admin",
-  description: "房产中后台管理系统",
+  title: "Profo",
+  description: "Profo",
 };
 
 export default function RootLayout({

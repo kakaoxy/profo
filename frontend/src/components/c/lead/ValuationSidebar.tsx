@@ -85,7 +85,7 @@ export function ValuationSidebar() {
           <p className="text-sm text-c-text-secondary">暂无成交参考</p>
         )}
         <Link
-          href="/c/contact"
+          href="/contact"
           className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-c-action-gold hover:underline"
         >
           查看更多案例

@@ -115,7 +115,7 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
             重试
           </Button>
 
-          <Link href="/">
+          <Link href="/admin">
             <Button className="flex items-center gap-2 w-full sm:w-auto">
               <Home className="w-4 h-4" />
               返回首页
