@@ -52,7 +52,7 @@ export function ProjectCard({
   const status = STATUS_MAP[projectStatus] ?? STATUS_MAP["已售"];
 
   return (
-    <Link href={`/c/projects/${id}`}>
+    <Link href={`/projects/${id}`}>
       <div className="bg-white rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_8px_30px_rgba(15,23,42,0.08)] transition-all">
         <div className="relative aspect-video bg-gray-100">
           {coverImage && isValidUrl(getFileUrl(coverImage)) ? (

@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { searchCommunitiesAction, createCommunityAction } from "@/app/(main)/leads/actions";
+import { searchCommunitiesAction, createCommunityAction } from "@/app/(main)/admin/leads/actions";
 import { toast } from "sonner";
 
 /**

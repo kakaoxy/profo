@@ -25,7 +25,7 @@ export function LeadListItem({
   createdAt,
 }: LeadListItemProps) {
   return (
-    <Link href={`/c/leads/${id}`}>
+    <Link href={`/leads/${id}`}>
       <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

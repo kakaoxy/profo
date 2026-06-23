@@ -4,7 +4,7 @@ import { useActionState, useState, useMemo } from "react";
 import { Smartphone, Ruler } from "lucide-react";
 import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
-import { createLeadAction, searchCCommunitiesAction } from "@/app/(c)/c/valuation/actions";
+import { createLeadAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
 import { cn } from "@/lib/utils";
 

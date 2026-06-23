@@ -10,8 +10,8 @@ export function tryRefreshTokenClient(): Promise<string | null> {
 
   const promise = (async (): Promise<string | null> => {
     try {
-      const isCRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/c");
-      const refreshPath = isCRoute ? "/api/auth/c/refresh" : "/api/auth/refresh";
+      const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+      const refreshPath = isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
 
       const response = await fetch(refreshPath, {
         method: "POST",
@@ -93,8 +93,8 @@ const authMiddleware: Middleware = {
       }
 
       if (typeof window !== "undefined") {
-        const isCRoute = window.location.pathname.startsWith("/c");
-        const loginPath = isCRoute ? "/c/login" : "/login";
+        const isAdminRoute = window.location.pathname.startsWith("/admin");
+        const loginPath = isAdminRoute ? "/admin/login" : "/login";
         if (!window.location.pathname.includes("/login")) {
           window.location.href = `${loginPath}?redirect=${encodeURIComponent(
             window.location.pathname

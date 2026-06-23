@@ -108,7 +108,7 @@ export async function cFetchClient() {
       const result = await cRefreshTokenServer();
 
       if (!result?.access_token) {
-        redirect("/c/login");
+        redirect("/login");
       }
 
       token = result.access_token;

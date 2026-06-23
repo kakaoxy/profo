@@ -5,29 +5,29 @@ import { TopAppBar } from "@/components/c/layout/TopAppBar";
 import { BottomNavBar } from "@/components/c/layout/BottomNavBar";
 
 const TITLE_MAP: Record<string, string> = {
-  "/c/about": "服务介绍",
-  "/c/contact": "成交案例",
-  "/c/valuation": "卖房估价",
-  "/c/login": "登录",
-  "/c/register": "注册",
-  "/c/profile": "编辑资料",
+  "/about": "服务介绍",
+  "/contact": "成交案例",
+  "/valuation": "卖房估价",
+  "/login": "登录",
+  "/register": "注册",
+  "/profile": "编辑资料",
 };
 
-const BOTTOM_NAV_VISIBLE_PATHS = new Set(["/c", "/c/my", "/c/about", "/c/contact"]);
-const AUTH_PATHS = new Set(["/c/login", "/c/register"]);
+const BOTTOM_NAV_VISIBLE_PATHS = new Set(["/", "/my", "/about", "/contact"]);
+const AUTH_PATHS = new Set(["/login", "/register"]);
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const isProjectDetail = /^\/c\/projects\/[^/]+$/.test(pathname);
+  const isProjectDetail = /^\/projects\/[^/]+$/.test(pathname);
   const isAuthPage = AUTH_PATHS.has(pathname);
 
-  const isMainRoute = pathname === "/c" || pathname === "/c/my";
+  const isMainRoute = pathname === "/" || pathname === "/my";
   const topBarVariant = isMainRoute ? "main" : "back";
 
   const topBarTitle =
     TITLE_MAP[pathname] ??
-    (isProjectDetail ? "房源详情" : pathname.match(/^\/c\/leads\/[^/]+$/) ? "估价详情" : "");
+    (isProjectDetail ? "房源详情" : pathname.match(/^\/leads\/[^/]+$/) ? "估价详情" : "");
 
   const bottomNavVisible = BOTTOM_NAV_VISIBLE_PATHS.has(pathname);
 

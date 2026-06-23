@@ -85,8 +85,8 @@ const authMiddleware: Middleware = {
         return await fetch(new Request(request, init));
       }
 
-      if (typeof window !== "undefined" && !window.location.pathname.includes("/c/login")) {
-        window.location.href = `/c/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     }
     return response;

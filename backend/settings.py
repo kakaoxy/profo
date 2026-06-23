@@ -1,5 +1,6 @@
 """应用配置文件."""
 
+import sys
 from typing import Any
 
 from pydantic import field_validator
@@ -124,8 +125,6 @@ class Settings(BaseSettings):
 try:
     settings = Settings()
 except Exception as e:
-    import sys
-
     print("\n" + "=" * 60)
     print("❌ 配置加载失败")
     print("=" * 60)

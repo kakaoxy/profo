@@ -7,7 +7,7 @@
  * @see globals.css 中的 --status-* 变量定义
  */
 
-import { LeadStatus } from "@/app/(main)/leads/types";
+import { LeadStatus } from "@/app/(main)/admin/leads/types";
 
 /** 通用状态类型 */
 export type StatusType =

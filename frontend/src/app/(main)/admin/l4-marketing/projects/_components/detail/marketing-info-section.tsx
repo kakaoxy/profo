@@ -1,0 +1,174 @@
+"use client";
+
+import { memo, useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { ImageOff } from "lucide-react";
+import { formatUnitPrice, formatArea } from "@/lib/formatters";
+import { safeParseDate } from "@/lib/validators";
+import { getFileUrl } from "./utils";
+import type { MarketingInfoSectionProps } from "./types";
+import type { L4MarketingMedia, L4MarketingProject } from "@/app/(main)/admin/l4-marketing/projects/types";
+
+// 获取营销主图（MARKETING分类首图，无营销照片时使用改造照片第一张）
+function getMarketingMainImage(project: L4MarketingProject, photos: L4MarketingMedia[]): string | null {
+  // 优先从 photos 中找 marketing 分类的第一张
+  const marketingPhoto = photos
+    .filter((p) => p.photo_category === "marketing")
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+  if (marketingPhoto) {
+    return getFileUrl(marketingPhoto.file_url || marketingPhoto.thumbnail_url);
+  }
+
+  // 降级策略：没有营销照片时，使用改造照片的第一张
+  const renovationPhoto = photos
+    .filter((p) => p.photo_category === "renovation")
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+  if (renovationPhoto) {
+    return getFileUrl(renovationPhoto.file_url || renovationPhoto.thumbnail_url);
+  }
+
+  // 最后使用 project.images (后端直接返回数组)
+  if (project.images && project.images.length > 0) {
+    return getFileUrl(project.images[0]);
+  }
+  return null;
+}
+
+// 信息行组件
+interface InfoRowProps {
+  label: string;
+  value?: React.ReactNode;
+  highlight?: boolean;
+}
+
+function InfoRow({ label, value, highlight }: InfoRowProps) {
+  if (value === undefined || value === null || value === "") return null;
+
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={`text-sm font-medium text-foreground ${highlight ? "font-bold text-foreground" : ""}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// 分隔线组件
+function Divider() {
+  return <div className="border-t border-border my-2" />;
+}
+
+// 使用 memo 避免不必要的重渲染
+export const MarketingInfoSection = memo(function MarketingInfoSection({
+  project,
+  photos = [],
+}: MarketingInfoSectionProps & { photos?: L4MarketingMedia[] }) {
+  const mainImage = useMemo(
+    () => getMarketingMainImage(project, photos),
+    [project, photos]
+  );
+
+  // 缓存标签渲染 - 后端直接返回数组
+  const tagsContent = useMemo(() => {
+    const tags = Array.isArray(project.tags) ? project.tags : [];
+    if (tags.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <Badge
+            key={tag}
+            variant="secondary"
+            className="bg-muted text-muted-foreground text-xs font-medium px-2 py-0.5 border-0"
+          >
+            {tag}
+          </Badge>
+        ))}
+      </div>
+    );
+  }, [project.tags]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+      {/* 左侧：营销主图 */}
+      <div className="relative">
+        <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted border border-border relative">
+          {mainImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={mainImage}
+              alt="营销主图"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+              <ImageOff className="w-12 h-12 mb-2 opacity-50" />
+              <span className="text-sm">暂无主图</span>
+            </div>
+          )}
+        </div>
+        <div className="absolute bottom-2 left-2">
+          <Badge className="bg-black/60 text-white text-xs border-0">
+            营销主图
+          </Badge>
+        </div>
+      </div>
+
+      {/* 右侧：房源信息 */}
+      <div className="space-y-2">
+        {/* 第一行：总价和单价 */}
+        <InfoRow
+          label="总价"
+          value={project.total_price ? `${project.total_price.toLocaleString()}万` : "-"}
+          highlight
+        />
+        <InfoRow
+          label="单价"
+          value={formatUnitPrice(project.unit_price)}
+        />
+
+        <Divider />
+
+        {/* 第二行：户型、面积、楼层、朝向 */}
+        <InfoRow
+          label="户型"
+          value={project.layout}
+        />
+        <InfoRow
+          label="建筑面积"
+          value={formatArea(project.area)}
+        />
+        <InfoRow
+          label="楼层"
+          value={project.floor_info}
+        />
+        <InfoRow
+          label="朝向"
+          value={project.orientation}
+        />
+
+        <Divider />
+
+        {/* 第三行：装修风格和标签 */}
+        <InfoRow
+          label="装修风格"
+          value={project.decoration_style}
+        />
+        {tagsContent && (
+          <div className="flex items-start justify-between py-2">
+            <span className="text-sm text-muted-foreground pt-0.5">标签</span>
+            <div className="text-right max-w-[70%]">{tagsContent}</div>
+          </div>
+        )}
+
+        <Divider />
+
+        {/* 第四行：创建时间 */}
+        <InfoRow
+          label="创建时间"
+          value={safeParseDate(project.created_at)?.toLocaleDateString("zh-CN") ?? "-"}
+        />
+      </div>
+    </div>
+  );
+});

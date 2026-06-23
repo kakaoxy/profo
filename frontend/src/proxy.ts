@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { apiPaths, getApiUrl } from "@/lib/config";
 
-const PROTECTED_C_PREFIXES = ["/c/valuation", "/c/leads", "/c/my", "/c/profile"];
-
-const C_DOMAINS = (process.env.C_DOMAINS || "fangmengchina.com,www.fangmengchina.com")
-  .split(",")
-  .map((d) => d.trim())
-  .filter(Boolean);
+const PROTECTED_C_PREFIXES = ["/valuation", "/leads", "/my", "/profile"];
 
 const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || "admin.fangmengchina.com")
   .split(",")
@@ -54,40 +49,28 @@ export default async function proxy(request: NextRequest) {
   const hostname = host.split(":")[0];
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
-  // ── 1. C-side domain routing ──
-  let rewritePath: string | null = null;
-
+  // ── 1. Domain routing ──
   if (!isLocalhost) {
-    const isCDomain = C_DOMAINS.includes(hostname);
     const isAdminDomain = ADMIN_DOMAINS.includes(hostname);
 
-    if (
-      isCDomain &&
-      !pathname.startsWith("/c") &&
-      !pathname.startsWith("/api") &&
-      !pathname.startsWith("/_next")
-    ) {
-      rewritePath = "/c" + pathname;
-    }
-
-    if (isAdminDomain && pathname.startsWith("/c")) {
+    // Admin domain: redirect /admin paths to / (admin should use admin domain directly)
+    if (isAdminDomain && pathname.startsWith("/admin")) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
     }
   }
 
-  const effectivePathname = rewritePath || pathname;
-
   // ── 2. C-side auth route guard + token refresh ──
-  if (isProtectedCPath(effectivePathname)) {
+  // Skip admin paths for C-side auth
+  if (!pathname.startsWith("/admin") && isProtectedCPath(pathname)) {
     const accessToken = request.cookies.get("c_access_token")?.value;
     const refreshToken = request.cookies.get("c_refresh_token")?.value;
 
     if (!accessToken && !refreshToken) {
       const url = request.nextUrl.clone();
-      url.pathname = "/c/login";
-      url.searchParams.set("redirect", effectivePathname);
+      url.pathname = "/login";
+      url.searchParams.set("redirect", pathname);
       return NextResponse.redirect(url);
     }
 
@@ -133,7 +116,7 @@ export default async function proxy(request: NextRequest) {
 
           if (response.status === 401 || response.status === 403) {
             const redirectResponse = NextResponse.redirect(
-              new URL("/c/login", request.url)
+              new URL("/login", request.url)
             );
             redirectResponse.cookies.delete("c_access_token");
             redirectResponse.cookies.delete("c_refresh_token");
@@ -146,21 +129,14 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  // Apply domain rewrite
-  if (rewritePath) {
-    const url = request.nextUrl.clone();
-    url.pathname = rewritePath;
-    return addSecurityHeaders(NextResponse.rewrite(url));
-  }
-
-  // Skip C-side direct paths from admin token refresh
-  if (pathname.startsWith("/c")) {
+  // ── 3. Admin-side: only process /admin paths ──
+  if (!pathname.startsWith("/admin")) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // ── 3. Admin-side: skip paths that don't need auth ──
+  // Admin: skip paths that don't need auth
   if (
-    pathname.startsWith("/login") ||
+    pathname.startsWith("/admin/login") ||
     pathname.startsWith("/api/v1/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -175,7 +151,7 @@ export default async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
   if (!refreshToken) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
   const shouldRefresh = !accessToken || isTokenExpired(accessToken);
@@ -217,7 +193,7 @@ export default async function proxy(request: NextRequest) {
 
       if (response.status === 401 || response.status === 403) {
         const redirectResponse = NextResponse.redirect(
-          new URL("/login", request.url)
+          new URL("/admin/login", request.url)
         );
         redirectResponse.cookies.delete("access_token");
         redirectResponse.cookies.delete("refresh_token");
