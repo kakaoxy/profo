@@ -90,6 +90,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                   size="icon"
                   className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-primary"
                   onClick={() => onEdit(lead)}
+                  aria-label="编辑线索"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
@@ -100,6 +101,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-error"
+                      aria-label="删除线索"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

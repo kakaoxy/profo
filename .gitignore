@@ -35,6 +35,9 @@ coverage.xml
 *.cover
 *.py.cover
 .hypothesis/
+e2e/
+test-results/
+playwright-report/
 
 # 数据库迁移
 alembic/

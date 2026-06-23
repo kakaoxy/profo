@@ -7,10 +7,10 @@ test.describe("线索中心", () => {
   test("线索列表页加载", async ({ page }) => {
     await page.goto("/leads");
 
-    // 验证筛选标签存在
-    await expect(page.locator("text=全部")).toBeVisible({ timeout: 15000 });
-    await expect(page.locator("text=待评估")).toBeVisible();
-    await expect(page.locator("text=待看房")).toBeVisible();
+    // 验证筛选标签存在（使用 role=tab 避免匹配 badge/表格文字）
+    await expect(page.getByRole('tab', { name: '全部' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('tab', { name: '待评估' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: '待看房' })).toBeVisible();
 
     // 验证新增线索按钮存在
     await expect(page.locator("button", { hasText: "新增线索" })).toBeVisible();
@@ -25,11 +25,11 @@ test.describe("线索中心", () => {
     // 点击新增线索按钮
     await page.locator("button", { hasText: "新增线索" }).click();
 
-    // 验证弹窗出现
-    await expect(page.locator("text=录入新线索")).toBeVisible({ timeout: 5000 });
+    // 验证弹窗出现（使用 heading 匹配弹窗标题，不使用 role=dialog）
+    await expect(page.getByRole('heading', { name: '录入新线索' })).toBeVisible({ timeout: 5000 });
 
-    // 验证表单关键字段存在
-    await expect(page.locator("text=房源名称")).toBeVisible();
-    await expect(page.locator("text=面积")).toBeVisible();
+    // 验证表单关键字段存在（使用 data-testid 匹配）
+    await expect(page.getByTestId('field-community-name')).toBeVisible();
+    await expect(page.getByTestId('field-area')).toBeVisible();
   });
 });

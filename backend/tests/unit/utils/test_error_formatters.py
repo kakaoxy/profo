@@ -139,78 +139,78 @@ class TestFormatValidationError:
     # --- 通过 mock 测试 V1 风格分支 ---
 
     def test_type_error_int_branch(self):
-        """type_error 含 'int' → 整数分支."""
+        """int_parsing/int_type → 整数分支."""
         error = ValidationError.from_exception_data(
             title="Test",
             line_errors=[{"type": "missing", "loc": ("age",), "input": None, "ctx": {}}],
         )
         with patch.object(error, "errors", return_value=[
-            {"loc": ("age",), "msg": "bad", "type": "type_error.int"},
+            {"loc": ("age",), "msg": "bad", "type": "int_parsing"},
         ]):
             result = format_validation_error(error)
         assert "age" in result
         assert "整数" in result
 
     def test_type_error_float_branch(self):
-        """type_error 含 'float' → 数字分支."""
+        """float_parsing/float_type → 数字分支."""
         error = ValidationError.from_exception_data(
             title="Test",
             line_errors=[{"type": "missing", "loc": ("score",), "input": None, "ctx": {}}],
         )
         with patch.object(error, "errors", return_value=[
-            {"loc": ("score",), "msg": "bad", "type": "type_error.float"},
+            {"loc": ("score",), "msg": "bad", "type": "float_parsing"},
         ]):
             result = format_validation_error(error)
         assert "score" in result
         assert "数字" in result
 
     def test_type_error_bool_branch(self):
-        """type_error 含 'bool' → 布尔值分支."""
+        """bool_parsing/bool_type → 布尔值分支."""
         error = ValidationError.from_exception_data(
             title="Test",
             line_errors=[{"type": "missing", "loc": ("active",), "input": None, "ctx": {}}],
         )
         with patch.object(error, "errors", return_value=[
-            {"loc": ("active",), "msg": "bad", "type": "type_error.bool"},
+            {"loc": ("active",), "msg": "bad", "type": "bool_parsing"},
         ]):
             result = format_validation_error(error)
         assert "active" in result
         assert "布尔值" in result
 
     def test_type_error_other_branch(self):
-        """type_error 不匹配 float/int/bool → 通用类型错误分支."""
+        """不匹配任何已知类型时走兜底 else 分支."""
         error = ValidationError.from_exception_data(
             title="Test",
             line_errors=[{"type": "missing", "loc": ("meta",), "input": None, "ctx": {}}],
         )
         with patch.object(error, "errors", return_value=[
-            {"loc": ("meta",), "msg": "bad", "type": "type_error.dict"},
+            {"loc": ("meta",), "msg": "bad", "type": "some_unknown_type"},
         ]):
             result = format_validation_error(error)
         assert "meta" in result
-        assert "类型错误" in result
+        assert "字段 meta: bad" in result
 
     def test_value_error_greater_than_branch(self):
-        """value_error + msg 含 greater_than → 大于0分支."""
+        """greater_than 类型 → 大于0分支."""
         error = ValidationError.from_exception_data(
             title="Test",
             line_errors=[{"type": "missing", "loc": ("count",), "input": None, "ctx": {}}],
         )
         with patch.object(error, "errors", return_value=[
-            {"loc": ("count",), "msg": "greater_than", "type": "value_error"},
+            {"loc": ("count",), "msg": "Input should be greater than 0", "type": "greater_than"},
         ]):
             result = format_validation_error(error)
         assert "count" in result
         assert "大于 0" in result
 
     def test_value_error_less_than_branch(self):
-        """value_error + msg 含 less_than → 超出范围分支."""
+        """less_than 类型 → 超出范围分支."""
         error = ValidationError.from_exception_data(
             title="Test",
             line_errors=[{"type": "missing", "loc": ("ratio",), "input": None, "ctx": {}}],
         )
         with patch.object(error, "errors", return_value=[
-            {"loc": ("ratio",), "msg": "less_than", "type": "value_error"},
+            {"loc": ("ratio",), "msg": "Input should be less than 100", "type": "less_than"},
         ]):
             result = format_validation_error(error)
         assert "ratio" in result
@@ -271,52 +271,52 @@ class TestFormatRequestValidationError:
         assert "未知字段" in result
 
     def test_type_error_list(self):
-        err = self._make_error("type_error.list", ("query", "ids"))
+        err = self._make_error("list_type", ("query", "ids"))
         result = format_request_validation_error(err)
         assert "ids" in result
         assert "数组格式" in result
 
     def test_type_error_is_list(self):
-        """type 含 'is_list' 也走数组分支."""
-        err = self._make_error("type_error.is_list", ("query", "ids"))
+        """error_type 含 'list' 也走数组分支."""
+        err = self._make_error("list_type", ("query", "ids"))
         result = format_request_validation_error(err)
         assert "数组格式" in result
 
     def test_type_error_list_via_message(self):
-        """error_type 不含 list 但 msg 包含 list 时走数组分支."""
-        err = self._make_error("type_error", ("query", "ids"), msg="Input should be a valid list")
+        """error_type 为 list_type 时走数组分支."""
+        err = self._make_error("list_type", ("query", "ids"), msg="Input should be a valid list")
         result = format_request_validation_error(err)
         assert "数组格式" in result
 
     def test_type_error_float(self):
-        err = self._make_error("type_error.float", ("query", "price"))
+        err = self._make_error("float_parsing", ("query", "price"))
         result = format_request_validation_error(err)
         assert "price" in result
         assert "数字" in result
 
     def test_type_error_int(self):
-        err = self._make_error("type_error.int", ("query", "page"))
+        err = self._make_error("int_parsing", ("query", "page"))
         result = format_request_validation_error(err)
         assert "page" in result
         assert "整数" in result
 
     def test_type_error_bool(self):
-        err = self._make_error("type_error.bool", ("query", "active"))
+        err = self._make_error("bool_parsing", ("query", "active"))
         result = format_request_validation_error(err)
         assert "active" in result
         assert "布尔值" in result
 
     def test_type_error_str(self):
-        err = self._make_error("type_error.str", ("query", "name"))
+        err = self._make_error("string_type", ("query", "name"))
         result = format_request_validation_error(err)
         assert "name" in result
         assert "字符串" in result
 
     def test_type_error_other(self):
-        err = self._make_error("type_error.dict", ("query", "meta"), msg="expected dict")
+        err = self._make_error("some_unknown_type", ("query", "meta"), msg="expected dict")
         result = format_request_validation_error(err)
         assert "meta" in result
-        assert "类型错误" in result
+        assert "expected dict" in result
 
     def test_value_error(self):
         err = self._make_error("value_error", ("query", "status"))
