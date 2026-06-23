@@ -121,4 +121,28 @@ class Settings(BaseSettings):
 
 
 # 全局配置实例
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as e:
+    import sys
+
+    print("\n" + "=" * 60)
+    print("❌ 配置加载失败")
+    print("=" * 60)
+
+    # 解析 Pydantic ValidationError 提取缺失字段
+    if hasattr(e, "errors"):
+        missing = [err["loc"][0] for err in e.errors() if err["type"] == "missing"]
+        if missing:
+            print("\n缺少以下必需的环境变量：")
+            for field in missing:
+                env_name = str(field).upper()
+                print(f"  • {env_name}")
+            print("\n请在 .env 文件中添加这些变量，然后重新启动。")
+        else:
+            print(f"\n配置验证错误：{e}")
+    else:
+        print(f"\n未知错误：{e}")
+
+    print("=" * 60 + "\n")
+    sys.exit(1)
