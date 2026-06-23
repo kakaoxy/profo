@@ -239,7 +239,7 @@ class TestBatchImportJsonUnknownException:
     @patch("services.market.json_batch_importer.save_failed_record")
     @patch("services.market.json_batch_importer.PropertyIngestionModel")
     def test_unknown_exception_recorded(self, mock_schema, mock_save_failed, importer) -> None:
-        """未知异常应被捕获并记录为'处理失败'."""
+        """未知异常应被捕获并记录为'处理失败: {错误信息}'."""
         db = MagicMock()
         mock_schema.return_value = MagicMock()
 
@@ -252,7 +252,7 @@ class TestBatchImportJsonUnknownException:
 
         assert result.total == 1
         assert result.failed == 1
-        assert result.errors[0]["reason"] == "处理失败"
+        assert result.errors[0]["reason"] == "处理失败: 意外错误"
         mock_save_failed.assert_called_once()
         db.commit.assert_called_once()
 

@@ -17,8 +17,8 @@ test.describe("认证流程", () => {
     // 验证跳转到首页（工作台）
     await page.waitForURL("/", { timeout: 15000 });
 
-    // 确认侧边栏可见，说明已进入主界面
-    await expect(page.locator("nav")).toBeVisible({ timeout: 10000 });
+    // 验证进入主界面（工作台标题可见）
+    await expect(page.getByRole('heading', { name: '工作台' })).toBeVisible({ timeout: 10000 });
   });
 
   test("错误密码登录失败", async ({ page }) => {

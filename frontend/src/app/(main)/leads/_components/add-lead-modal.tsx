@@ -15,8 +15,8 @@ interface Props {
 
 const ORIENTATION_OPTIONS = ['南', '北', '东', '西', '南北', '东西'];
 
-export const FormItem = ({ label, children }: { label: string, children?: React.ReactNode }) => (
-  <div className="space-y-1.5">
+export const FormItem = ({ label, children, testId }: { label: string, children?: React.ReactNode, testId?: string }) => (
+  <div data-testid={testId} className="space-y-1.5">
     <label className="text-[10px] font-bold text-muted-foreground ml-1">{label}</label>
     {children}
   </div>
@@ -141,13 +141,14 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             <h2 className="text-xl font-black font-sans tracking-tight">{isEdit ? '编辑线索' : '录入新线索'}</h2>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">FlipMaster Lead {isEdit ? 'Edit' : 'Creation'}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full" aria-label="关闭对话框">
             <X className="h-5 w-5" />
           </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
           <div className="space-y-6">
+          <div data-testid="field-community-name">
             <CommunitySelect
                 value={formData.communityName}
                 label="房源名称"
@@ -162,6 +163,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                   }))
                 }
             />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -198,7 +200,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                     <LayoutInputs value={formData.layout} onChange={l => setFormData(prev => ({...prev, layout: l}))} />
                 </div>
                 
-                <FormItem label="面积 (㎡) *">
+                <FormItem label="面积 (㎡) *" testId="field-area">
                   <input type="number" step="0.1" className="w-full h-11 px-4 border rounded-lg outline-none text-sm font-bold bg-background" value={formData.area} onChange={e => setFormData({...formData, area: e.target.value})} />
                 </FormItem>
                 <FormItem label="朝向">

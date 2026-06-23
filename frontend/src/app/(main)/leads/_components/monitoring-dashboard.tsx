@@ -133,6 +133,7 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
             size="icon"
             onClick={onClose}
             className="rounded-full"
+            aria-label="返回"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>

@@ -30,23 +30,23 @@ def format_validation_error(error: ValidationError) -> str:  # noqa: C901, PLR09
         if error_type == "missing":
             error_messages.append(f"缺少必填字段: {field}")
         elif error_type in {"int_parsing", "int_type", "int_from_str"}:
-            error_messages.append(f"字段 {field} 必须是整数")
+            error_messages.append(f"字段 {field}: 必须是整数")
         elif error_type in {"float_parsing", "float_type", "float_from_str"}:
-            error_messages.append(f"字段 {field} 必须是数字")
+            error_messages.append(f"字段 {field}: 必须是数字")
         elif error_type in {"bool_parsing", "bool_type"}:
-            error_messages.append(f"字段 {field} 必须是布尔值")
+            error_messages.append(f"字段 {field}: 必须是布尔值")
         elif error_type in {"string_type", "string_parsing"}:
-            error_messages.append(f"字段 {field} 必须是字符串")
+            error_messages.append(f"字段 {field}: 必须是字符串")
         elif error_type == "list_type":
-            error_messages.append(f"字段 {field} 必须是数组")
+            error_messages.append(f"字段 {field}: 必须是数组")
         elif error_type == "greater_than":
-            error_messages.append(f"字段 {field} 必须大于 0")
+            error_messages.append(f"字段 {field}: 必须大于 0")
         elif error_type == "less_than":
-            error_messages.append(f"字段 {field} 超出允许范围")
+            error_messages.append(f"字段 {field}: 超出允许范围")
         elif error_type == "string_too_short":
-            error_messages.append(f"字段 {field} 长度太短")
+            error_messages.append(f"字段 {field}: 长度太短")
         elif error_type == "string_too_long":
-            error_messages.append(f"字段 {field} 超过最大长度限制")
+            error_messages.append(f"字段 {field}: 超过最大长度限制")
         elif error_type == "value_error":
             error_messages.append(f"字段 {field} 值无效: {error_message}")
         else:
@@ -79,9 +79,9 @@ def format_request_validation_error(error: RequestValidationError) -> str:  # no
         if error_type == "missing":
             error_messages.append(f"缺少必填参数: {field}")
         elif error_type == "list_type":
-            error_messages.append(f"参数 {field} 必须是数组格式，例如: [] 或 ['item1', 'item2']")
+            error_messages.append(f"参数 {field}: 必须是数组格式，例如: [] 或 ['item1', 'item2']")
         elif error_type in {"int_parsing", "int_type", "int_from_str"}:
-            error_messages.append(f"参数 {field} 必须是整数")
+            error_messages.append(f"参数 {field}: 必须是整数")
         elif error_type in {"float_parsing", "float_type", "float_from_str"}:
             error_messages.append(f"参数 {field} 必须是数字")
         elif error_type in {"bool_parsing", "bool_type"}:

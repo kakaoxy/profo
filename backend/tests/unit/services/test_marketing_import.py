@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from models.common import ProjectStatus, RenovationStage
 from services.marketing.import_service import MarketingImportService
 
 
@@ -37,7 +38,7 @@ def _make_project(**overrides):
         "area": Decimal("89.5"),
         "layout": "三室两厅",
         "orientation": "南",
-        "status": MagicMock(value="active"),
+        "status": ProjectStatus.SELLING,
         "contract": None,
         "sale": None,
     }
@@ -56,7 +57,7 @@ def _make_community(community_id="comm-uuid-001", name="阳光花园"):
     return community
 
 
-def _make_photo(photo_id="photo-001", url="http://img/1.jpg", stage="finished", description="客厅"):
+def _make_photo(photo_id="photo-001", url="http://img/1.jpg", stage=RenovationStage.DELIVERY, description="客厅"):
     """构造 mock RenovationPhoto 对象."""
     photo = MagicMock()
     photo.id = photo_id
@@ -137,9 +138,8 @@ class TestImportFromL3Project:
         assert result.community_id is None
 
     def test_status_with_value_attribute(self, service: MarketingImportService, db: MagicMock) -> None:
-        """status 有 value 属性时使用 value."""
-        status_mock = MagicMock(value="completed")
-        project = _make_project(status=status_mock)
+        """status 为 ProjectStatus 枚举时正确使用."""
+        project = _make_project(status=ProjectStatus.SOLD)
 
         def query_side_effect(model):
             mock_q = MagicMock()
@@ -157,11 +157,11 @@ class TestImportFromL3Project:
 
         result = service.import_from_l3_project("proj-001")
         assert result is not None
-        assert result.status == "completed"
+        assert result.status == ProjectStatus.SOLD
 
     def test_status_as_plain_string(self, service: MarketingImportService, db: MagicMock) -> None:
-        """status 为普通字符串时直接使用."""
-        project = _make_project(status="pending")
+        """status 为 ProjectStatus 枚举时正确使用."""
+        project = _make_project(status=ProjectStatus.SIGNING)
 
         def query_side_effect(model):
             mock_q = MagicMock()
@@ -179,7 +179,7 @@ class TestImportFromL3Project:
 
         result = service.import_from_l3_project("proj-001")
         assert result is not None
-        assert result.status == "pending"
+        assert result.status == ProjectStatus.SIGNING
 
     def test_status_none(self, service: MarketingImportService, db: MagicMock) -> None:
         """status 为 None 时返回 None."""
@@ -349,8 +349,8 @@ class TestGetAvailableMedia:
 
     def test_returns_media_list(self, service: MarketingImportService, db: MagicMock) -> None:
         """正常返回媒体列表."""
-        photo1 = _make_photo(photo_id="p1", url="http://img/1.jpg", stage="finished", description="客厅")
-        photo2 = _make_photo(photo_id="p2", url="http://img/2.jpg", stage="rough", description="卧室")
+        photo1 = _make_photo(photo_id="p1", url="http://img/1.jpg", stage=RenovationStage.DELIVERY, description="客厅")
+        photo2 = _make_photo(photo_id="p2", url="http://img/2.jpg", stage=RenovationStage.PLUMBING, description="卧室")
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [photo1, photo2]
 
         result = service._get_available_media("proj-001")
@@ -362,7 +362,7 @@ class TestGetAvailableMedia:
 
     def test_media_fields_mapping(self, service: MarketingImportService, db: MagicMock) -> None:
         """验证媒体字段映射正确."""
-        photo = _make_photo(photo_id="p1", url="http://img/1.jpg", stage="finished", description="客厅")
+        photo = _make_photo(photo_id="p1", url="http://img/1.jpg", stage=RenovationStage.DELIVERY, description="客厅")
         db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [photo]
 
         result = service._get_available_media("proj-001")
@@ -371,7 +371,7 @@ class TestGetAvailableMedia:
         assert media.file_url == "http://img/1.jpg"
         assert media.thumbnail_url == "http://img/1.jpg"
         assert media.photo_category == "renovation"
-        assert media.renovation_stage == "finished"
+        assert media.renovation_stage == RenovationStage.DELIVERY
         assert media.description == "客厅"
 
 
