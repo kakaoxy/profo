@@ -38,6 +38,10 @@ coverage.xml
 e2e/
 test-results/
 playwright-report/
+backend/tests/
+frontend/src/**/*.test.ts
+frontend/playwright.config.ts
+frontend/vitest.config.ts
 
 # 数据库迁移
 alembic/
