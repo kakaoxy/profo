@@ -159,7 +159,7 @@ class TestImportFromL3Project:
         assert result is not None
         assert result.status == ProjectStatus.SOLD
 
-    def test_status_as_plain_string(self, service: MarketingImportService, db: MagicMock) -> None:
+    def test_status_as_enum(self, service: MarketingImportService, db: MagicMock) -> None:
         """status 为 ProjectStatus 枚举时正确使用."""
         project = _make_project(status=ProjectStatus.SIGNING)
 
