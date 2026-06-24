@@ -93,7 +93,7 @@ export default function ProjectDetailPage() {
       </nav>
       <ImageCarousel images={carouselImages} />
 
-      <section className="px-4 pt-4 space-y-2">
+      <div className="mx-auto max-w-[1200px] px-4 pt-4 space-y-2">
         <span
           className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
         >
@@ -102,9 +102,9 @@ export default function ProjectDetailPage() {
         <h1 className="text-xl font-medium text-ink">
           {data.community_name ?? "未知小区"}
         </h1>
-      </section>
+      </div>
 
-      <section className="px-4 pt-4">
+      <section className="mx-auto max-w-[1200px] px-4 pt-4">
         <PropertyGrid
           totalPrice={data.total_price}
           unitPrice={data.unit_price}
@@ -116,7 +116,7 @@ export default function ProjectDetailPage() {
         />
       </section>
 
-      <section className="px-4 pt-6">
+      <section className="mx-auto max-w-[1200px] px-4 pt-6">
         <RenovationTimeline
           stages={data.renovation_stages ?? []}
           media={data.media ?? []}

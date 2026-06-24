@@ -8,6 +8,7 @@ import { SearchBar } from "@/components/c/project/SearchBar";
 import { FilterPanel, type FilterValues } from "@/components/c/project/FilterPanel";
 import { StatusTabs } from "@/components/c/project/StatusTabs";
 import { ProjectCard } from "@/components/c/project/ProjectCard";
+import { Pagination } from "@/components/c/shared/Pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
@@ -22,24 +23,28 @@ export default function CPage() {
   return (
     <Suspense
       fallback={
-        <div className="px-4 md:px-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-12 flex-1 rounded-inputs" />
-            <Skeleton className="h-12 w-12 rounded-full" />
+        <div>
+          {/* Hero skeleton */}
+          <div className="flex items-center justify-center bg-fog px-6 py-24">
+            <Skeleton className="h-12 w-full max-w-lg rounded-inputs" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-cards overflow-hidden shadow-steep"
-              >
-                <Skeleton className="aspect-video w-full" />
-                <div className="p-5 space-y-3">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
+          {/* Content skeleton */}
+          <div className="mx-auto max-w-[1200px] px-6 py-8 space-y-6">
+            <Skeleton className="h-12 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-cards bg-white shadow-steep-sm"
+                >
+                  <Skeleton className="aspect-video w-full" />
+                  <div className="space-y-3 p-5">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       }
@@ -154,130 +159,152 @@ function CPageContent() {
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
 
   return (
-    <div className="px-4 md:px-6 space-y-4">
-      <section className="flex items-center gap-3">
-        <div className="flex-1">
-          <SearchBar onSearchChange={handleSearchChange} />
-        </div>
-        <button
-          onClick={() => {
-            const nextOpen = !isFilterOpen;
-            setIsFilterOpen(nextOpen);
-            if (nextOpen) setFilterKey((k) => k + 1);
+    <div>
+      {/* ─── Hero Section ─── */}
+      <section className="relative overflow-hidden bg-fog">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 30% 40%, rgba(251,225,209,0.5) 0%, transparent 65%)",
           }}
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-colors ${
-            hasActiveFilters
-              ? "border-transparent bg-apricot-wash text-rust"
-              : "border-dove/30 bg-white text-graphite hover:text-ink hover:border-dove/60"
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 80% 20%, rgba(211,227,252,0.2) 0%, transparent 50%)",
+          }}
+        />
+
+        <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center px-6 py-16 text-center md:py-24 lg:py-32">
+          <h1 className="font-display text-3xl text-ink md:text-5xl lg:text-[56px]">
+            发现属于您的理想居所
+          </h1>
+          <p className="mt-4 max-w-xl text-base text-ash md:text-lg">
+            专业估价，品质装修，让每一套房产焕发应有价值
+          </p>
+          <div className="mt-8 w-full max-w-lg">
+            <SearchBar onSearchChange={handleSearchChange} />
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Content Section ─── */}
+      <div className="mx-auto max-w-[1200px] px-6 py-8">
+        {/* Filter toggle */}
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={() => {
+              const nextOpen = !isFilterOpen;
+              setIsFilterOpen(nextOpen);
+              if (nextOpen) setFilterKey((k) => k + 1);
+            }}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
+              hasActiveFilters
+                ? "border-transparent bg-apricot-wash text-rust"
+                : "border-dove/30 bg-white text-graphite hover:border-dove/60 hover:text-ink"
+            }`}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Filter panel */}
+        <div
+          className={`grid transition-all duration-300 ease-in-out ${
+            isFilterOpen
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
           }`}
         >
-          <SlidersHorizontal className="h-5 w-5" />
-        </button>
-      </section>
-
-      <div
-        className={`grid transition-all duration-300 ease-in-out ${
-          isFilterOpen
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <FilterPanel
-            key={filterKey}
-            onApply={handleFilterApply}
-            onReset={handleFilterReset}
-            initialFilters={{
-              minPrice: minPrice || "",
-              maxPrice: maxPrice || "",
-              layout: layout || "",
-              minArea: minArea || "",
-              maxArea: maxArea || "",
-            }}
-          />
+          <div className="overflow-hidden">
+            <FilterPanel
+              key={filterKey}
+              onApply={handleFilterApply}
+              onReset={handleFilterReset}
+              initialFilters={{
+                minPrice: minPrice || "",
+                maxPrice: maxPrice || "",
+                layout: layout || "",
+                minArea: minArea || "",
+                maxArea: maxArea || "",
+              }}
+            />
+          </div>
         </div>
-      </div>
 
-      <nav>
-        <StatusTabs value={status} onStatusChange={handleStatusChange} />
-      </nav>
+        {/* Status tabs + result count */}
+        <nav className="mb-8">
+          <StatusTabs
+            value={status}
+            onStatusChange={handleStatusChange}
+            total={data?.total}
+          />
+        </nav>
 
-      <section>
-        {isLoading && !data ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-cards overflow-hidden shadow-steep"
-              >
-                <Skeleton className="aspect-video w-full" />
-                <div className="p-5 space-y-3">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-5 w-12" />
-                    <Skeleton className="h-5 w-12" />
-                  </div>
-                  <div className="border-t border-dove/30 pt-3">
-                    <Skeleton className="h-6 w-1/3" />
+        {/* Project grid */}
+        <section>
+          {isLoading && !data ? (
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-cards bg-white shadow-steep-sm"
+                >
+                  <Skeleton className="aspect-video w-full" />
+                  <div className="space-y-3 p-5">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-5 w-12" />
+                      <Skeleton className="h-5 w-12" />
+                    </div>
+                    <div className="border-t border-dove/30 pt-3">
+                      <Skeleton className="h-6 w-1/3" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <ErrorState onRetry={() => mutate()} />
-        ) : !data?.items.length ? (
-          <EmptyState
-            title="暂无房源"
-            description="当前筛选条件下没有找到房源，试试调整筛选条件"
-          />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {data.items.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  id={project.id}
-                  communityName={project.community_name ?? null}
-                  layout={project.layout}
-                  orientation={project.orientation}
-                  area={project.area}
-                  totalPrice={project.total_price}
-                  unitPrice={project.unit_price}
-                  title={project.title}
-                  coverImage={project.cover_image ?? null}
-                  tags={project.tags ?? EMPTY_TAGS}
-                  projectStatus={project.project_status}
-                  decorationStyle={project.decoration_style ?? null}
-                />
               ))}
             </div>
-
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-4 pt-8 pb-4">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page <= 1}
-                  className="text-[15px] font-medium text-ink hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline transition-colors"
-                >
-                  上一页
-                </button>
-                <span className="text-[15px] text-graphite">
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  className="text-[15px] font-medium text-ink hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline transition-colors"
-                >
-                  下一页
-                </button>
+          ) : error ? (
+            <ErrorState onRetry={() => mutate()} />
+          ) : !data?.items.length ? (
+            <EmptyState
+              title="暂无房源"
+              description="当前筛选条件下没有找到房源，试试调整筛选条件"
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {data.items.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    id={project.id}
+                    communityName={project.community_name ?? null}
+                    layout={project.layout}
+                    orientation={project.orientation}
+                    area={project.area}
+                    totalPrice={project.total_price}
+                    unitPrice={project.unit_price}
+                    title={project.title}
+                    coverImage={project.cover_image ?? null}
+                    tags={project.tags ?? EMPTY_TAGS}
+                    projectStatus={project.project_status}
+                    decorationStyle={project.decoration_style ?? null}
+                  />
+                ))}
               </div>
-            )}
-          </>
-        )}
-      </section>
+
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

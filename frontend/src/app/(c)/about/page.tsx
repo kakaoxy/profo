@@ -10,8 +10,6 @@ import {
   HelpCircle,
   CheckCircle,
   BadgeCheck,
-  Share2,
-  Globe,
   ImageIcon,
 } from "lucide-react";
 import { HeroCard } from "@/components/c/shared/HeroCard";
@@ -496,99 +494,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="w-full bg-ink px-6 py-8">
-          <div className="mx-auto grid max-w-[1200px] grid-cols-4 gap-8">
-            <div className="col-span-1">
-              <div className="mb-2 text-[20px] leading-[1.4] font-medium text-white tracking-[-0.009em]">
-                美房宝
-              </div>
-              <p className="text-[14px] leading-normal text-white/60 tracking-[-0.009em]">
-                重新定义高端不动产交易体验。
-              </p>
-            </div>
-            <div>
-              <h5 className="mb-2 text-[12px] font-medium leading-[1.4] tracking-[-0.009em] text-white">
-                产品
-              </h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/valuation"
-                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
-                  >
-                    房源估价
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/about"
-                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
-                  >
-                    全案操盘
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
-                  >
-                    设计师合作
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="mb-2 text-[12px] font-medium leading-[1.4] tracking-[-0.009em] text-white">
-                公司
-              </h5>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="/about"
-                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
-                  >
-                    公司简介
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/contact"
-                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
-                  >
-                    联系我们
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="mb-2 text-[12px] font-medium leading-[1.4] tracking-[-0.009em] text-white">
-                法律
-              </h5>
-              <ul className="space-y-2">
-                <li>
-                  <span className="text-[14px] leading-normal text-white/60 tracking-[-0.009em]">
-                    隐私政策
-                  </span>
-                </li>
-                <li>
-                  <span className="text-[14px] leading-normal text-white/60 tracking-[-0.009em]">
-                    服务条款
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="mx-auto mt-8 flex max-w-[1200px] flex-col items-center justify-between gap-2 border-t border-white/10 pt-8 md:flex-row">
-            <p className="text-[14px] leading-normal text-white/50 tracking-[-0.009em]">
-              © 2024 美房宝 Real Estate. All rights reserved.
-            </p>
-            <div className="flex gap-4">
-              <Share2 className="h-5 w-5 cursor-pointer text-white/60 transition-all hover:text-white" />
-              <Globe className="h-5 w-5 cursor-pointer text-white/60 transition-all hover:text-white" />
-            </div>
-          </div>
-        </footer>
+        {/* Footer is rendered by ClientShell (SiteFooter) */}
       </div>
     </>
   );
