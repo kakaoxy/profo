@@ -15,7 +15,7 @@ interface PageProps {
 
 // Map backend response to frontend Lead type
 type LeadsQuery =
-  operations["get_leads_api_v1_leads_get"]["parameters"]["query"];
+  operations["get_leads_api_v1_leads__get"]["parameters"]["query"];
 
 export default async function LeadsPage({ searchParams }: PageProps) {
   const params = await searchParams;

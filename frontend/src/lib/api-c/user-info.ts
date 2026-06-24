@@ -39,14 +39,17 @@ export function useUserInfo(): UserInfo {
   const cacheRef = useRef<UserInfo | null>(null);
   const getSnapshot = useCallback(() => {
     const latest = getUserInfoFromCookie();
+    const current = cacheRef.current;
+    const keys = Object.keys(latest) as (keyof UserInfo)[];
+    const changed =
+      current === null ||
+      keys.length !== Object.keys(current).length ||
+      keys.some((key) => current[key] !== latest[key]);
     // 只有数据真正变化时才更新引用，避免无限重渲染
-    if (
-      cacheRef.current === null ||
-      JSON.stringify(cacheRef.current) !== JSON.stringify(latest)
-    ) {
+    if (changed) {
       cacheRef.current = latest;
     }
-    return cacheRef.current;
+    return changed ? latest : current;
   }, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
