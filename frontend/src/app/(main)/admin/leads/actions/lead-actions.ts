@@ -8,9 +8,9 @@ import type { components, operations } from "@/lib/api-types";
 import { mapBackendToFrontend } from "../lib/utils";
 
 type LeadsQuery =
-  operations["get_leads_api_v1_leads_get"]["parameters"]["query"];
+  operations["get_leads_api_v1_leads__get"]["parameters"]["query"];
 type LeadCreatePayload =
-  operations["create_lead_api_v1_leads_post"]["requestBody"]["content"]["application/json"];
+  operations["create_lead_api_v1_leads__post"]["requestBody"]["content"]["application/json"];
 type LeadUpdatePayload =
   operations["update_lead_api_v1_leads__lead_id__put"]["requestBody"]["content"]["application/json"];
 
