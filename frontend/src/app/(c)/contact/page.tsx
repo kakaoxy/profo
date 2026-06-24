@@ -38,7 +38,7 @@ export default function ContactPage() {
   );
 
   return (
-    <div>
+    <div className="mx-auto max-w-[1200px]">
       <section className="relative overflow-hidden bg-white px-6 py-12">
         <div
           className="pointer-events-none absolute inset-0"

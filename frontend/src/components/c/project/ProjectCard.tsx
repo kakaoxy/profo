@@ -52,53 +52,56 @@ export function ProjectCard({
   const status = STATUS_MAP[projectStatus] ?? STATUS_MAP["已售"];
 
   return (
-    <Link href={`/projects/${id}`}>
-      <div className="bg-white rounded-cards overflow-hidden shadow-steep-sm hover:shadow-steep transition-all">
-        <div className="relative aspect-video bg-fog">
+    <Link
+      href={`/projects/${id}`}
+      className="group block transition-all duration-300 hover:-translate-y-0.5"
+    >
+      <div className="flex h-full flex-col overflow-hidden rounded-cards bg-white shadow-steep-sm transition-shadow duration-300 group-hover:shadow-steep">
+        <div className="relative aspect-video overflow-hidden bg-fog">
           {coverImage && isValidUrl(getFileUrl(coverImage)) ? (
             isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={getFileUrl(coverImage)}
                 alt={communityName ?? layout}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
               <Image
                 src={getFileUrl(coverImage)}
                 alt={communityName ?? layout}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             )
           ) : (
-            <div className="flex items-center justify-center h-full text-graphite text-sm">
+            <div className="flex h-full items-center justify-center text-sm text-graphite">
               暂无图片
             </div>
           )}
           <span
-            className={`absolute top-3 left-3 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
+            className={`absolute top-3 left-3 rounded-full px-3 py-1 text-xs font-medium backdrop-blur-sm ${status.className}`}
           >
             {status.label}
           </span>
         </div>
 
-        <div className="p-5 space-y-2.5">
+        <div className="flex flex-1 flex-col p-5">
           <h3 className="text-lg font-medium text-ink truncate">
             {communityName ?? "未知小区"} · {layout}
           </h3>
 
-          <p className="text-sm text-graphite">
+          <p className="mt-1.5 text-sm text-graphite">
             {area}㎡ · {orientation}
           </p>
 
           {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2.5 py-0.5 rounded-full text-xs bg-fog text-graphite"
+                  className="rounded-full bg-fog px-2.5 py-0.5 text-xs text-graphite"
                 >
                   {tag}
                 </span>
@@ -106,16 +109,14 @@ export function ProjectCard({
             </div>
           )}
 
-          <div className="border-t border-dove/30 pt-2.5">
+          <div className="mt-auto border-t border-dove/30 pt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-medium text-ink">
+              <span className="text-xl font-semibold text-ink">
                 {totalPrice}
               </span>
-              <span className="text-sm text-ink">万</span>
+              <span className="text-sm text-graphite">万</span>
             </div>
-            <p className="text-xs text-graphite">
-              {unitPrice}元/㎡
-            </p>
+            <p className="mt-0.5 text-xs text-graphite">{unitPrice}元/㎡</p>
           </div>
         </div>
       </div>

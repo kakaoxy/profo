@@ -40,7 +40,7 @@ export default function CMyPage() {
   };
 
   return (
-    <div className="px-4 md:px-6 space-y-6">
+    <div className="mx-auto max-w-[1200px] px-4 md:px-6 space-y-6">
       <section className="flex items-center gap-4 rounded-cards bg-white p-5 md:p-6 shadow-steep">
         <UserAvatar name={displayName} size="lg" />
         <div className="flex-1 min-w-0">

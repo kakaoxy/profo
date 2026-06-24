@@ -73,7 +73,7 @@ export default function CProfilePage() {
       : userInfo.phone || "";
 
   return (
-    <div className="px-4 md:px-6 space-y-6">
+    <div className="mx-auto max-w-[1200px] px-4 md:px-6 space-y-6">
       <div className="flex justify-center pt-6">
         <UserAvatar name={displayNickname} size="lg" />
       </div>

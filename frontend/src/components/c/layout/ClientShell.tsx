@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { TopAppBar } from "@/components/c/layout/TopAppBar";
 import { BottomNavBar } from "@/components/c/layout/BottomNavBar";
+import { SiteFooter } from "@/components/c/layout/SiteFooter";
 
 const TITLE_MAP: Record<string, string> = {
   "/about": "服务介绍",
@@ -47,7 +48,8 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-dvh bg-fog">
       {!isProjectDetail && <TopAppBar variant={topBarVariant} title={topBarTitle} />}
-      <main className={`mx-auto max-w-[1200px] ${isProjectDetail ? "" : "pt-16"} pb-20`}>{children}</main>
+      <main className={`${isProjectDetail ? "" : "pt-16 md:pt-0"}`}>{children}</main>
+      <SiteFooter />
       <BottomNavBar visible={bottomNavVisible} />
     </div>
   );

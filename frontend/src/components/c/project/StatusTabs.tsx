@@ -3,34 +3,39 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TABS = [
-  { value: "在售", label: "在售" },
-  { value: "在途", label: "在途" },
-  { value: "已售", label: "已售" },
+  { value: "在售", label: "在售房源" },
+  { value: "在途", label: "即将上架" },
+  { value: "已售", label: "过往案例" },
 ] as const;
 
 interface StatusTabsProps {
   value: string;
   onStatusChange: (status: string) => void;
+  total?: number;
 }
 
-export function StatusTabs({ value, onStatusChange }: StatusTabsProps) {
+export function StatusTabs({ value, onStatusChange, total }: StatusTabsProps) {
   return (
-    <Tabs
-      value={value}
-      onValueChange={onStatusChange}
-      className="w-full"
-    >
-      <TabsList className="bg-transparent h-auto p-0 gap-2 w-full justify-start rounded-none">
-        {TABS.map((tab) => (
-          <TabsTrigger
-            key={tab.value}
-            value={tab.value}
-            className="rounded-full border-0 px-4 py-2 text-sm font-medium text-graphite hover:text-ink data-[state=active]:text-white data-[state=active]:bg-ink data-[state=active]:shadow-none transition-colors"
-          >
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <div className="flex items-center justify-between gap-4 border-b border-dove/30">
+      <Tabs value={value} onValueChange={onStatusChange}>
+        <TabsList className="h-auto gap-0 rounded-none bg-transparent p-0">
+          {TABS.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="relative rounded-none border-0 border-b-2 border-transparent bg-transparent px-5 py-3 text-[15px] font-medium text-graphite shadow-none transition-colors hover:text-ink data-[state=active]:border-ink data-[state=active]:bg-transparent data-[state=active]:text-ink data-[state=active]:shadow-none"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {total !== undefined && (
+        <span className="hidden shrink-0 text-sm text-graphite md:block">
+          共 <span className="font-medium text-ink">{total}</span> 套精选房源
+        </span>
+      )}
+    </div>
   );
 }
