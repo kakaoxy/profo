@@ -14,7 +14,6 @@ from services.system import ApiKeyService
 from services.system.auth import AuthService
 from services.system.exceptions import AuthenticationError, PermissionDeniedError
 from settings import settings
-from utils.auth import validate_token
 
 # OAuth2密码承载器，用于从请求头中获取token
 oauth2_scheme = OAuth2PasswordBearer(
@@ -100,35 +99,22 @@ async def get_current_user(
             if cookie_token is None:
                 continue
             has_cookie_token = True
-            payload = validate_token(cookie_token)
-            if not payload:
-                continue  # token无效(过期/签名错误)，尝试下一个
-            user_id = payload.get("sub")
-            if not isinstance(user_id, str):
+            try:
+                # 复用 AuthService.authenticate_by_token 统一认证逻辑
+                return await run_in_threadpool(AuthService.authenticate_by_token, db, cookie_token)
+            except AuthenticationError:
+                # token无效(过期/签名错误)或用户不存在，尝试下一个
                 continue
-            user = await run_in_threadpool(AuthService.get_user_by_id, db, user_id)
-            if user is not None:
-                return user
-            # token有效但用户不存在，尝试下一个
 
         # 有cookie token但全部验证失败，直接报错，不回退到API Key
         if has_cookie_token:
             raise AuthenticationError("无法验证凭据")
     else:
         # Header token — 直接使用，失败即报错
-        payload = validate_token(token)
-        if not payload:
-            raise AuthenticationError("无法验证凭据")
-
-        user_id = payload.get("sub")
-        if not isinstance(user_id, str):
-            raise AuthenticationError("无法验证凭据")
-
-        user = await run_in_threadpool(AuthService.get_user_by_id, db, user_id)
-        if user is None:
-            raise AuthenticationError("无法验证凭据")
-
-        return user
+        try:
+            return await run_in_threadpool(AuthService.authenticate_by_token, db, token)
+        except AuthenticationError:
+            raise AuthenticationError("无法验证凭据") from None
 
     # 如果没有JWT token，尝试从X-API-Key Header获取API Key
     api_key = request.headers.get("X-API-Key")

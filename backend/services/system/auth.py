@@ -121,13 +121,29 @@ class AuthService:
 
         包含 bcrypt 验证（CPU密集型）.
 
+        Args:
+            db: 数据库会话
+            username: 用户名
+            password: 明文密码
+
+        Returns:
+            User: 认证成功的用户对象
+
         Raises:
             AuthenticationError: 用户名或密码错误
             PermissionDeniedError: 用户已被禁用
 
         Note:
-            从返回 User | None 改为抛出异常，保持与服务层其他方法的一致性。
-            如需旧行为（返回 None），请使用 try_authenticate_user。
+            此方法在认证失败时会抛出异常，调用者应使用 try-except 处理。
+            符合 Python EAFP (Easier to Ask for Forgiveness than Permission) 原则。
+
+        Example:
+            try:
+                user = AuthService.authenticate_user(db, username, password)
+                # 认证成功，使用 user 对象
+            except AuthenticationError:
+                # 认证失败，处理错误情况
+                pass
 
         """
         user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
@@ -140,27 +156,38 @@ class AuthService:
         return user
 
     @staticmethod
-    def try_authenticate_user(db: Session, username: str, password: str) -> User | None:
-        """尝试验证用户名密码，失败返回 None 而非抛出异常 (Sync - Blocking).
+    def authenticate_by_token(db: Session, token: str) -> User:
+        """通过 JWT token 认证用户 (Sync - Blocking).
 
-        向后兼容方法，适用于需要手动处理认证失败的场景。
-        新代码推荐使用 authenticate_user 配合 try-except 处理异常。
+        验证 token 有效性并返回对应的用户对象，复用 get_user_by_id 方法。
+
+        Args:
+            db: 数据库会话
+            token: JWT token 字符串
 
         Returns:
-            User: 验证成功返回用户对象
-            None: 验证失败返回 None
+            User: 认证成功的用户对象（已预加载角色关系）
 
-        Example:
-            user = AuthService.try_authenticate_user(db, username, password)
-            if user is None:
-                # 处理认证失败
-                pass
+        Raises:
+            AuthenticationError: token 无效或用户不存在
 
         """
-        try:
-            return AuthService.authenticate_user(db, username, password)
-        except AuthenticationError:
-            return None
+        payload = validate_token(token)
+        if not payload:
+            msg = "token 无效"
+            raise AuthenticationError(msg)
+
+        user_id = payload.get("sub")
+        if not isinstance(user_id, str):
+            msg = "token 无效"
+            raise AuthenticationError(msg)
+
+        user = AuthService.get_user_by_id(db, user_id)
+        if user is None:
+            msg = "用户不存在"
+            raise AuthenticationError(msg)
+
+        return user
 
     @staticmethod
     def create_tokens_for_user(
