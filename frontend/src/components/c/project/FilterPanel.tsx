@@ -56,9 +56,9 @@ export function FilterPanel({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle p-4 space-y-4">
+    <div className="bg-white rounded-cards shadow-steep p-5 space-y-4">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-c-text-primary">
+        <label className="text-sm font-medium text-ink">
           价格范围（万）
         </label>
         <div className="flex items-center gap-2">
@@ -67,25 +67,25 @@ export function FilterPanel({
             placeholder="最低总价"
             value={minPrice}
             onChange={(e) => setMinPrice(e.target.value)}
-            className="w-full h-10 px-3 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
+            className="w-full h-10 px-3 rounded-inputs border border-dove/30 bg-white text-sm text-ink placeholder:text-graphite focus:outline-none focus:ring-2 focus:ring-rust/10 focus:border-rust/30 transition-all"
           />
-          <span className="text-c-text-secondary shrink-0">—</span>
+          <span className="text-graphite shrink-0">—</span>
           <input
             type="number"
             placeholder="最高总价"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-full h-10 px-3 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
+            className="w-full h-10 px-3 rounded-inputs border border-dove/30 bg-white text-sm text-ink placeholder:text-graphite focus:outline-none focus:ring-2 focus:ring-rust/10 focus:border-rust/30 transition-all"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-c-text-primary">
+        <label className="text-sm font-medium text-ink">
           户型
         </label>
         <Select value={layout || undefined} onValueChange={setLayout}>
-          <SelectTrigger className="w-full h-10 rounded-lg border-c-border-subtle bg-white text-sm text-c-text-primary focus-visible:ring-c-trust-blue/10 focus-visible:border-c-trust-blue/30">
+          <SelectTrigger className="w-full h-10 rounded-inputs border-dove/30 bg-white text-sm text-ink focus-visible:ring-rust/10 focus-visible:border-rust/30">
             <SelectValue placeholder="选择户型" />
           </SelectTrigger>
           <SelectContent>
@@ -99,7 +99,7 @@ export function FilterPanel({
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-c-text-primary">
+        <label className="text-sm font-medium text-ink">
           面积范围（m²）
         </label>
         <div className="flex items-center gap-2">
@@ -108,29 +108,29 @@ export function FilterPanel({
             placeholder="最小面积"
             value={minArea}
             onChange={(e) => setMinArea(e.target.value)}
-            className="w-full h-10 px-3 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
+            className="w-full h-10 px-3 rounded-inputs border border-dove/30 bg-white text-sm text-ink placeholder:text-graphite focus:outline-none focus:ring-2 focus:ring-rust/10 focus:border-rust/30 transition-all"
           />
-          <span className="text-c-text-secondary shrink-0">—</span>
+          <span className="text-graphite shrink-0">—</span>
           <input
             type="number"
             placeholder="最大面积"
             value={maxArea}
             onChange={(e) => setMaxArea(e.target.value)}
-            className="w-full h-10 px-3 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
+            className="w-full h-10 px-3 rounded-inputs border border-dove/30 bg-white text-sm text-ink placeholder:text-graphite focus:outline-none focus:ring-2 focus:ring-rust/10 focus:border-rust/30 transition-all"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex items-center justify-end gap-4 pt-2">
         <button
           onClick={handleReset}
-          className="flex-1 h-10 rounded-lg border border-c-border-subtle text-sm font-medium text-c-text-secondary hover:text-c-text-primary hover:border-c-text-primary/30 transition-colors"
+          className="text-[15px] font-medium text-graphite hover:text-ink hover:underline transition-colors"
         >
           重置
         </button>
         <button
           onClick={handleApply}
-          className="flex-1 h-10 rounded-lg bg-c-trust-blue text-sm font-medium text-white hover:bg-c-trust-blue/90 transition-colors"
+          className="rounded-full bg-ink text-white px-5 py-2.5 text-[15px] font-medium hover:bg-ink/90 transition-colors"
         >
           确认
         </button>

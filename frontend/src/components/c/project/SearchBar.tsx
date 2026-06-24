@@ -85,7 +85,7 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-c-text-secondary" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-graphite" />
       <input
         ref={inputRef}
         type="text"
@@ -93,13 +93,13 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
         placeholder="搜索小区名..."
         onChange={handleChange}
         onFocus={handleFocus}
-        className="w-full h-12 pl-10 pr-4 rounded-lg border border-c-border-subtle bg-white text-sm text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/10 focus:border-c-trust-blue/30 transition-all"
+        className="w-full h-12 pl-10 pr-4 rounded-inputs border border-dove/30 bg-white text-sm text-ink placeholder:text-graphite focus:outline-none focus:ring-2 focus:ring-rust/10 focus:border-rust/30 transition-all"
       />
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full mt-1 rounded-lg border border-c-border-subtle bg-white shadow-lg z-50 overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-1 rounded-inputs border border-dove/30 bg-white shadow-steep z-50 overflow-hidden">
           {isLoading ? (
-            <div className="flex items-center justify-center gap-2 px-4 py-3 text-sm text-c-text-secondary">
+            <div className="flex items-center justify-center gap-2 px-4 py-3 text-sm text-graphite">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>搜索中...</span>
             </div>
@@ -110,14 +110,14 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
                   <button
                     type="button"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-c-surface transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-fog transition-colors"
                   >
-                    <MapPin className="h-4 w-4 shrink-0 text-c-text-secondary" />
+                    <MapPin className="h-4 w-4 shrink-0 text-graphite" />
                     <div className="min-w-0 flex-1">
-                      <span className="text-sm font-medium text-c-text-primary truncate block">
+                      <span className="text-sm font-medium text-ink truncate block">
                         {suggestion.name}
                       </span>
-                      <span className="text-xs text-c-text-secondary truncate block">
+                      <span className="text-xs text-graphite truncate block">
                         {suggestion.district} · {suggestion.business_circle}
                       </span>
                     </div>
@@ -126,7 +126,7 @@ export function SearchBar({ onSearchChange }: SearchBarProps) {
               ))}
             </ul>
           ) : (
-            <div className="px-4 py-3 text-sm text-c-text-secondary text-center">
+            <div className="px-4 py-3 text-sm text-graphite text-center">
               未找到相关小区
             </div>
           )}

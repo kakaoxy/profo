@@ -174,3 +174,7 @@ trace-*.json
 backend/static/
 backend/static/**/*
 .alma-snapshots
+
+
+skills-lock.json
+.agents/

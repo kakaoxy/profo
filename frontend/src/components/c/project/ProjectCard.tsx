@@ -53,8 +53,8 @@ export function ProjectCard({
 
   return (
     <Link href={`/projects/${id}`}>
-      <div className="bg-white rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(15,23,42,0.05)] hover:shadow-[0px_8px_30px_rgba(15,23,42,0.08)] transition-all">
-        <div className="relative aspect-video bg-gray-100">
+      <div className="bg-white rounded-cards overflow-hidden shadow-steep-sm hover:shadow-steep transition-all">
+        <div className="relative aspect-video bg-fog">
           {coverImage && isValidUrl(getFileUrl(coverImage)) ? (
             isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -73,7 +73,7 @@ export function ProjectCard({
               />
             )
           ) : (
-            <div className="flex items-center justify-center h-full text-c-text-secondary text-sm">
+            <div className="flex items-center justify-center h-full text-graphite text-sm">
               暂无图片
             </div>
           )}
@@ -84,12 +84,12 @@ export function ProjectCard({
           </span>
         </div>
 
-        <div className="p-4 space-y-2.5">
-          <h3 className="text-lg font-semibold text-c-trust-blue truncate">
+        <div className="p-5 space-y-2.5">
+          <h3 className="text-lg font-medium text-ink truncate">
             {communityName ?? "未知小区"} · {layout}
           </h3>
 
-          <p className="text-sm text-c-text-secondary">
+          <p className="text-sm text-graphite">
             {area}㎡ · {orientation}
           </p>
 
@@ -98,7 +98,7 @@ export function ProjectCard({
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 rounded text-xs bg-c-surface text-c-text-secondary"
+                  className="px-2.5 py-0.5 rounded-full text-xs bg-fog text-graphite"
                 >
                   {tag}
                 </span>
@@ -106,14 +106,14 @@ export function ProjectCard({
             </div>
           )}
 
-          <div className="border-t border-c-border-subtle pt-2.5">
+          <div className="border-t border-dove/30 pt-2.5">
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold text-c-trust-blue">
+              <span className="text-xl font-medium text-ink">
                 {totalPrice}
               </span>
-              <span className="text-sm text-c-trust-blue">万</span>
+              <span className="text-sm text-ink">万</span>
             </div>
-            <p className="text-xs text-c-text-secondary">
+            <p className="text-xs text-graphite">
               {unitPrice}元/㎡
             </p>
           </div>

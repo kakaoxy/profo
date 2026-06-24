@@ -19,18 +19,18 @@ export function ConsultantBar({ wechatNumber, phone }: ConsultantBarProps) {
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-0 inset-x-0 z-40 border-t bg-white/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-4">
+    <div className="fixed bottom-20 md:bottom-0 inset-x-0 z-40 border-t border-dove/30 bg-white/80 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-3 px-4">
         <button
           onClick={handleCopyWechat}
-          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-lg bg-c-surface border border-c-border-subtle text-c-text-primary text-sm font-medium hover:bg-gray-100 transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-full bg-fog text-ink text-sm font-medium hover:bg-fog/80 transition-colors"
         >
           <Copy className="h-4 w-4" />
           添加微信
         </button>
         <a
           href={`tel:${phone}`}
-          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-lg bg-c-trust-blue text-white text-sm font-medium hover:bg-c-trust-blue/90 transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-full bg-ink text-white text-sm font-medium hover:bg-ink/90 transition-colors"
         >
           <Phone className="h-4 w-4" />
           电话联系

@@ -18,15 +18,15 @@ type ConsultantInfo = components["schemas"]["PublicConsultantContact"];
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   "在售": {
     label: "在售",
-    className: "bg-c-status-onsale/10 text-c-status-onsale",
+    className: "bg-rust/10 text-rust",
   },
   "在途": {
     label: "在途",
-    className: "bg-c-status-upcoming/10 text-c-status-upcoming",
+    className: "bg-graphite/10 text-graphite",
   },
   "已售": {
     label: "已售",
-    className: "bg-c-status-sold/10 text-c-status-sold",
+    className: "bg-dove/10 text-dove",
   },
 };
 
@@ -54,7 +54,7 @@ export default function ProjectDetailPage() {
           <Skeleton className="h-8 w-3/4" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-lg" />
+              <Skeleton key={i} className="h-20 rounded-inputs" />
             ))}
           </div>
         </div>
@@ -99,7 +99,7 @@ export default function ProjectDetailPage() {
         >
           {status.label}
         </span>
-        <h1 className="text-xl font-bold text-c-trust-blue">
+        <h1 className="text-xl font-medium text-ink">
           {data.community_name ?? "未知小区"}
         </h1>
       </section>

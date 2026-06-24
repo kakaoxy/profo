@@ -78,16 +78,16 @@ export default function CProfilePage() {
         <UserAvatar name={displayNickname} size="lg" />
       </div>
 
-      <section className="rounded-xl bg-white p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
+      <section className="rounded-cards bg-white p-5 md:p-6 shadow-steep">
         <form action={profileAction} className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-bold text-c-text-primary">
+            <label className="text-sm font-medium text-ink">
               昵称
             </label>
             <button
               type="submit"
               disabled={isProfilePending}
-              className="text-sm font-medium text-c-trust-blue hover:underline disabled:opacity-50"
+              className="text-sm font-medium text-ink hover:underline disabled:opacity-50"
             >
               {isProfilePending ? "保存中..." : "保存"}
             </button>
@@ -102,25 +102,25 @@ export default function CProfilePage() {
             defaultValue={userInfo.nickname || ""}
             placeholder="请输入昵称"
             maxLength={100}
-            className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+            className="w-full bg-white border border-dove/30 rounded-inputs px-4 py-3 text-base text-ink placeholder:text-graphite focus:outline-none focus:border-rust transition-all"
           />
         </form>
       </section>
 
-      <section className="rounded-xl bg-white p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
+      <section className="rounded-cards bg-white p-5 md:p-6 shadow-steep">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Phone className="h-5 w-5 text-c-text-secondary" />
+            <Phone className="h-5 w-5 text-graphite" />
             <div>
-              <p className="text-sm font-bold text-c-text-primary">手机号</p>
-              <p className="text-sm text-c-text-secondary">
+              <p className="text-sm font-medium text-ink">手机号</p>
+              <p className="text-sm text-graphite">
                 {displayPhone ? maskPhone(displayPhone) : "未绑定"}
               </p>
             </div>
           </div>
           <button
             onClick={() => setPhoneDialogOpen(true)}
-            className="text-sm font-medium text-c-trust-blue hover:underline"
+            className="text-sm font-medium text-ink hover:underline"
           >
             修改
           </button>
@@ -140,7 +140,7 @@ export default function CProfilePage() {
               <p className="text-xs text-c-error">{phoneState.error}</p>
             )}
             <div>
-              <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
+              <label className="block text-xs font-medium text-graphite uppercase mb-2">
                 新手机号
               </label>
               <input
@@ -148,11 +148,11 @@ export default function CProfilePage() {
                 name="phone"
                 placeholder="请输入新手机号"
                 required
-                className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+                className="w-full bg-white border border-dove/30 rounded-inputs px-4 py-3 text-base text-ink placeholder:text-graphite focus:outline-none focus:border-rust transition-all"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-c-text-secondary uppercase mb-2">
+              <label className="block text-xs font-medium text-graphite uppercase mb-2">
                 当前密码
               </label>
               <input
@@ -160,14 +160,14 @@ export default function CProfilePage() {
                 name="password"
                 placeholder="请输入当前密码"
                 required
-                className="w-full bg-c-surface border border-c-border-subtle rounded-lg px-4 py-3 text-base text-c-text-primary placeholder:text-c-text-secondary focus:outline-none focus:ring-2 focus:ring-c-trust-blue/20 transition-all"
+                className="w-full bg-white border border-dove/30 rounded-inputs px-4 py-3 text-base text-ink placeholder:text-graphite focus:outline-none focus:border-rust transition-all"
               />
             </div>
             <DialogFooter>
               <button
                 type="submit"
                 disabled={isPhonePending}
-                className="w-full bg-c-trust-blue text-white h-12 rounded-lg font-bold active:opacity-80 active:scale-95 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-ink text-white rounded-full px-5 py-3 text-[15px] font-medium tracking-[-0.009em] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPhonePending ? "提交中..." : "确认修改"}
               </button>

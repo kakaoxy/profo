@@ -45,10 +45,10 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-c-trust-blue">改造过程</h2>
+        <h2 className="text-lg font-medium text-ink">改造过程</h2>
         <button
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1 text-sm text-c-text-secondary hover:text-c-trust-blue transition-colors"
+          className="flex items-center gap-1 text-sm text-graphite hover:text-ink transition-colors"
         >
           {expanded ? "收起时间轴" : "查看完整时间轴"}
           {expanded ? (
@@ -74,7 +74,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
 
             return (
               <div key={stage.stage} className="shrink-0 w-40">
-                <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 mb-2">
+                <div className="relative aspect-square rounded-images overflow-hidden bg-fog mb-2">
                   {imageUrl && isValidUrl(imageUrl) ? (
                     isDev ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -93,15 +93,15 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                       />
                     )
                   ) : (
-                    <div className="flex items-center justify-center h-full text-c-text-secondary text-xs">
+                    <div className="flex items-center justify-center h-full text-graphite text-xs">
                       暂无图片
                     </div>
                   )}
                 </div>
-                <p className="text-sm font-medium text-c-text-primary truncate">
+                <p className="text-sm font-medium text-ink truncate">
                   {stage.stage}
                 </p>
-                <p className="text-xs text-c-text-secondary">
+                <p className="text-xs text-graphite">
                   {stage.photo_count}张照片
                 </p>
               </div>
@@ -118,13 +118,13 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
             return (
               <div key={stage.stage}>
                 {index > 0 && (
-                  <div className="border-t border-c-border-subtle my-4" />
+                  <div className="border-t border-dove/30 my-4" />
                 )}
                 <div className="mb-3">
-                  <h3 className="text-sm font-medium text-c-text-primary">
+                  <h3 className="text-sm font-medium text-ink">
                     {stage.stage}
                   </h3>
-                  <p className="text-xs text-c-text-secondary">
+                  <p className="text-xs text-graphite">
                     {stage.photo_count}张照片
                   </p>
                 </div>
@@ -137,7 +137,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                       return (
                         <div
                           key={item.id}
-                          className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
+                          className="relative aspect-square rounded-images overflow-hidden bg-fog"
                         >
                         {isValidUrl(imageUrl) ? (
                           isDev ? (
@@ -166,7 +166,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                     })}
                   </div>
                 ) : (
-                  <div className="text-xs text-c-text-secondary py-4 text-center">
+                  <div className="text-xs text-graphite py-4 text-center">
                     暂无图片
                   </div>
                 )}

@@ -11,23 +11,23 @@ interface SystemEstimateCardProps {
 export function SystemEstimateCard({ evalPrice, statusColor, createdAt }: SystemEstimateCardProps) {
   return (
     <div
-      className="rounded-xl bg-white p-6 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle border-l-4"
+      className="rounded-cards bg-apricot-wash p-6 border-l border-dove/30"
       style={{ borderLeftColor: statusColor }}
     >
       <div className="flex items-center gap-2 mb-3">
-        <Calculator className="h-5 w-5 text-c-text-secondary" />
-        <span className="text-sm font-medium text-c-text-secondary">系统估价</span>
-        <span className="ml-auto text-xs text-c-text-secondary">{createdAt}</span>
+        <Calculator className="h-5 w-5 text-rust" />
+        <span className="text-sm font-medium text-ash">系统估价</span>
+        <span className="ml-auto text-xs text-ash">{createdAt}</span>
       </div>
 
       {evalPrice !== null ? (
         <div>
-          <span className="text-sm text-c-text-secondary">评估价格：</span>
-          <span className="text-2xl font-bold text-c-trust-blue">{evalPrice}</span>
-          <span className="text-sm text-c-trust-blue ml-1">万</span>
+          <span className="text-sm text-ash">评估价格：</span>
+          <span className="text-2xl font-medium text-rust">{evalPrice}</span>
+          <span className="text-sm text-rust ml-1">万</span>
         </div>
       ) : (
-        <p className="text-sm text-c-text-secondary">估价进行中，请耐心等待...</p>
+        <p className="text-sm text-ash">估价进行中，请耐心等待...</p>
       )}
     </div>
   );

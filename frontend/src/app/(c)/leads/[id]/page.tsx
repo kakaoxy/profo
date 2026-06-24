@@ -17,13 +17,13 @@ type LeadDetail = components["schemas"]["PublicLeadDetail"];
 function ForbiddenState() {
   const router = useRouter();
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-c-text-secondary">
-      <ShieldAlert className="mb-4 h-12 w-12 text-c-trust-blue/50" />
-      <p className="text-lg font-medium text-c-text-primary">无权查看该线索</p>
+    <div className="flex flex-col items-center justify-center py-20 text-ash">
+      <ShieldAlert className="mb-4 h-12 w-12 text-ink/50" />
+      <p className="text-lg font-medium text-ink">无权查看该线索</p>
       <p className="mt-1 text-sm">您没有权限查看此线索的详细信息</p>
       <button
         onClick={() => router.push("/my")}
-        className="mt-4 rounded-lg border border-c-border-subtle bg-white px-6 py-2 text-sm font-medium text-c-trust-blue hover:bg-c-surface transition-colors"
+        className="mt-4 rounded-full border border-dove/30 bg-white px-6 py-2 text-sm font-medium text-ink hover:bg-fog transition-colors"
       >
         返回我的估价
       </button>
@@ -42,10 +42,10 @@ export default function LeadDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="px-4 md:px-6 py-8 space-y-6">
-        <Skeleton className="h-40 rounded-xl" />
-        <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
+      <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-8 space-y-6">
+        <Skeleton className="h-40 rounded-cards" />
+        <Skeleton className="h-32 rounded-cards" />
+        <Skeleton className="h-48 rounded-cards" />
       </div>
     );
   }
@@ -71,7 +71,7 @@ export default function LeadDetailPage() {
     }) ?? "-";
 
   return (
-    <div className="px-4 md:px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-8 space-y-6">
       <LeadInfoCard
         communityName={data.community_name}
         layout={data.layout ?? null}

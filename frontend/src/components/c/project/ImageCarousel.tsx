@@ -17,8 +17,8 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
 
   if (!images || images.length === 0) {
     return (
-      <div className="relative w-full aspect-video bg-gray-100">
-        <div className="flex items-center justify-center h-full text-c-text-secondary text-sm">
+      <div className="relative w-full aspect-video bg-fog rounded-images">
+        <div className="flex items-center justify-center h-full text-graphite text-sm">
           暂无图片
         </div>
       </div>
@@ -29,7 +29,7 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
   const next = () => setCurrent((c) => (c < images.length - 1 ? c + 1 : 0));
 
   return (
-    <div className="relative w-full aspect-video bg-gray-100 overflow-hidden">
+    <div className="relative w-full aspect-video bg-fog rounded-images overflow-hidden">
       {isValidUrl(getFileUrl(images[current])) ? (
         isDev ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -50,7 +50,7 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
         )
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <ImageIcon className="h-8 w-8 text-c-text-secondary" />
+          <ImageIcon className="h-8 w-8 text-graphite" />
         </div>
       )}
 
