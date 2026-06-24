@@ -95,9 +95,11 @@ async def get_current_user(
 
     if token is None:
         # 按优先级依次尝试两个cookie token
+        has_cookie_token = False
         for cookie_token in (c_token, admin_token):
             if cookie_token is None:
                 continue
+            has_cookie_token = True
             payload = validate_token(cookie_token)
             if not payload:
                 continue  # token无效(过期/签名错误)，尝试下一个
@@ -108,6 +110,10 @@ async def get_current_user(
             if user is not None:
                 return user
             # token有效但用户不存在，尝试下一个
+
+        # 有cookie token但全部验证失败，直接报错，不回退到API Key
+        if has_cookie_token:
+            raise AuthenticationError("无法验证凭据")
     else:
         # Header token — 直接使用，失败即报错
         payload = validate_token(token)
