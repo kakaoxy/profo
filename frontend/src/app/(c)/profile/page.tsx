@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { updateProfileAction, updatePhoneAction } from "./actions";
 import type { ActionResult } from "@/lib/action-result";
-import { getUserInfoFromCookie } from "@/lib/api-c/user-info";
+import { useUserInfo } from "@/lib/api-c/user-info";
 
 function maskPhone(phone: string): string {
   if (phone.length >= 7) {
@@ -26,7 +26,13 @@ function maskPhone(phone: string): string {
 export default function CProfilePage() {
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
-  const userInfo = getUserInfoFromCookie();
+  const userInfo = useUserInfo();
+
+  useEffect(() => {
+    if (nicknameRef.current && userInfo.nickname) {
+      nicknameRef.current.value = userInfo.nickname;
+    }
+  }, [userInfo.nickname]);
 
   const [profileState, profileAction, isProfilePending] = useActionState(
     updateProfileAction,

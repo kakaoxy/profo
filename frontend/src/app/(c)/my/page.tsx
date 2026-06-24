@@ -8,7 +8,7 @@ import { LogOut, Pencil } from "lucide-react";
 import { UserAvatar } from "@/components/c/shared/UserAvatar";
 import { LeadListItem } from "@/components/c/lead/LeadListItem";
 import { logoutAction } from "@/lib/api-c/auth";
-import { getUserInfoFromCookie } from "@/lib/api-c/user-info";
+import { useUserInfo } from "@/lib/api-c/user-info";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
@@ -19,7 +19,7 @@ type LeadListResponse = components["schemas"]["PublicLeadListResponse"];
 
 export default function CMyPage() {
   const router = useRouter();
-  const userInfo = getUserInfoFromCookie();
+  const userInfo = useUserInfo();
 
   const displayName = userInfo.nickname || "用户";
   const displayPhone = userInfo.phone || "未设置手机号";
