@@ -38,8 +38,14 @@ function subscribe(): () => void {
 export function useUserInfo(): UserInfo {
   const cacheRef = useRef<UserInfo | null>(null);
   const getSnapshot = useCallback(() => {
-    if (cacheRef.current === null) {
-      cacheRef.current = getUserInfoFromCookie();
+    const latest = getUserInfoFromCookie();
+    // 只有数据真正变化时才更新引用，避免无限重渲染
+    if (
+      cacheRef.current === null ||
+      cacheRef.current.nickname !== latest.nickname ||
+      cacheRef.current.phone !== latest.phone
+    ) {
+      cacheRef.current = latest;
     }
     return cacheRef.current;
   }, []);
