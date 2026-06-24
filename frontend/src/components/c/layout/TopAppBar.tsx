@@ -12,13 +12,13 @@ interface TopAppBarProps {
 export function TopAppBar({ variant, title, onBack, actionIcon }: TopAppBarProps) {
   if (variant === "main") {
     return (
-      <header className="fixed top-0 inset-x-0 z-50 h-16 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4">
-          <button className="flex h-10 w-10 items-center justify-center rounded-full text-c-text-primary hover:bg-gray-100">
+      <header className="fixed top-0 inset-x-0 z-50 h-16 border-b border-dove/30 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4">
+          <button className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-fog">
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-lg font-bold text-c-trust-blue">Profo</span>
-          <button className="flex h-10 w-10 items-center justify-center rounded-full text-c-text-primary hover:bg-gray-100">
+          <span className="text-lg font-medium tracking-tight text-ink">Profo</span>
+          <button className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-fog">
             <Search className="h-5 w-5" />
           </button>
         </div>
@@ -27,15 +27,15 @@ export function TopAppBar({ variant, title, onBack, actionIcon }: TopAppBarProps
   }
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 h-16 border-b bg-white/80 backdrop-blur">
-      <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4">
+    <header className="fixed top-0 inset-x-0 z-50 h-16 border-b border-dove/30 bg-white/90 backdrop-blur">
+      <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4">
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-full text-c-text-primary hover:bg-gray-100"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-fog"
           onClick={onBack}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <span className="text-base font-semibold text-c-text-primary">
+        <span className="text-base font-medium text-ink">
           {title ?? ""}
         </span>
         <div className="flex h-10 w-10 items-center justify-center">

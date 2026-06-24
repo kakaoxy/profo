@@ -30,35 +30,35 @@ const painPoints = [
     icon: <Home className="h-5 w-5" />,
     title: "品相老化，第一眼被比下去",
     description: "老房子不收拾，客户进门就摇头",
-    color: "text-c-status-onsale",
+    color: "text-rust",
     label: "01 — 视觉资产贬值",
   },
   {
     icon: <TrendingUp className="h-5 w-5" />,
     title: "定价全凭感觉，进退两难",
     description: "挂高没人看，挂低怕吃亏",
-    color: "text-c-status-upcoming",
+    color: "text-rust",
     label: "02 — 价格锚点缺失",
   },
   {
     icon: <Clock className="h-5 w-5" />,
     title: "挂牌后带看越来越稀",
     description: "头两周热闹，后面一个月没一组",
-    color: "text-c-error",
+    color: "text-rust",
     label: "03 — 流动性陷阱",
   },
   {
     icon: <Users className="h-5 w-5" />,
     title: "商圈动辄几百套在挂",
     description: "你的房子凭什么被选中？",
-    color: "text-c-status-onsale",
+    color: "text-rust",
     label: "04 — 竞争红海",
   },
   {
     icon: <HelpCircle className="h-5 w-5" />,
     title: "周期没谱，全看运气",
     description: "快则两三个月，慢则遥遥无期",
-    color: "text-c-status-upcoming",
+    color: "text-rust",
     label: "05 — 时间成本失控",
   },
 ];
@@ -111,11 +111,13 @@ export default function AboutPage() {
 
   return (
     <>
-      {/* ========== 移动端布局（保持不变） ========== */}
+      {/* ========== 移动端布局 ========== */}
       <div className="mx-auto max-w-[600px] px-4 pt-8 pb-8 md:hidden">
         <div className="space-y-6">
           <HeroCard label="美房宝" title="卖房这件事，远比你想象的复杂">
-            <p className="mt-4 text-sm text-white/70">你可能正在经历：</p>
+            <p className="mt-4 text-sm text-ash tracking-[-0.009em]">
+              你可能正在经历：
+            </p>
             <div className="mt-4 space-y-3">
               {painPoints.map((point) => (
                 <PainPointCard
@@ -126,21 +128,25 @@ export default function AboutPage() {
                 />
               ))}
             </div>
-            <p className="mt-6 text-base font-semibold text-white">
+            <p className="mt-6 text-base font-medium text-ink tracking-[-0.009em]">
               问题不在某一环，在于全流程
             </p>
-            <p className="mt-2 text-base text-white/90">
+            <p className="mt-2 text-base text-ash tracking-[-0.009em]">
               美房宝的做法不一样：我们把整件事接过来。
             </p>
           </HeroCard>
 
-          <div className="rounded-2xl border border-c-border-subtle bg-white px-6 py-8">
-            <h3 className="text-xl font-bold text-c-text-primary">我们的服务</h3>
+          <div className="rounded-cards bg-white p-6 shadow-steep-sm">
+            <h3 className="text-xl font-medium text-ink tracking-[-0.009em]">
+              我们的服务
+            </h3>
             <ul className="mt-5 space-y-3">
               {serviceFeatures.map((feature) => (
                 <li key={feature} className="flex items-start gap-3">
-                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-c-action-gold" />
-                  <span className="text-sm text-c-text-primary">{feature}</span>
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                  <span className="text-sm text-ink tracking-[-0.009em]">
+                    {feature}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -151,14 +157,16 @@ export default function AboutPage() {
               {processSteps.map((step, index) => (
                 <div key={step.num} className="relative flex gap-4 pb-6 last:pb-0">
                   {index < processSteps.length - 1 && (
-                    <div className="absolute left-[15px] top-9 h-full w-px bg-white/20" />
+                    <div className="absolute left-[15px] top-9 h-full w-px bg-dove/30" />
                   )}
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-c-action-gold/20 text-sm font-bold text-c-action-gold">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-apricot-wash text-sm font-medium text-rust">
                     {step.num}
                   </span>
                   <div>
-                    <p className="font-semibold text-white">{step.title}</p>
-                    <p className="mt-1 text-sm text-white/70">
+                    <p className="font-medium text-ink tracking-[-0.009em]">
+                      {step.title}
+                    </p>
+                    <p className="mt-1 text-sm text-ash tracking-[-0.009em]">
                       {step.description}
                     </p>
                   </div>
@@ -167,18 +175,18 @@ export default function AboutPage() {
             </div>
           </HeroCard>
 
-          <div className="rounded-2xl border border-c-border-subtle bg-white px-6 py-8">
-            <h3 className="mb-5 text-center text-xl font-bold text-c-text-primary">
+          <div className="rounded-cards bg-white p-6 shadow-steep-sm">
+            <h3 className="mb-5 text-center text-xl font-medium text-ink tracking-[-0.009em]">
               400+ 业主已选择我们
             </h3>
             <div className="grid grid-cols-2 gap-4">
               {isLoading ? (
                 <>
-                  <div className="flex flex-col items-center rounded-xl border border-c-border-subtle bg-white px-6 py-5">
+                  <div className="flex flex-col items-center rounded-cards bg-fog px-6 py-5">
                     <Skeleton className="h-8 w-16" />
                     <Skeleton className="mt-2 h-3 w-16" />
                   </div>
-                  <div className="flex flex-col items-center rounded-xl border border-c-border-subtle bg-white px-6 py-5">
+                  <div className="flex flex-col items-center rounded-cards bg-fog px-6 py-5">
                     <Skeleton className="h-8 w-16" />
                     <Skeleton className="mt-2 h-3 w-16" />
                   </div>
@@ -188,12 +196,10 @@ export default function AboutPage() {
                   <StatsCard
                     value={statsData?.on_sale_count ?? 0}
                     label="在售套数"
-                    valueColor="text-c-status-onsale"
                   />
                   <StatsCard
                     value={statsData?.current_month_sold ?? 0}
                     label="本月已成交"
-                    valueColor="text-c-trust-blue"
                   />
                 </>
               )}
@@ -201,60 +207,67 @@ export default function AboutPage() {
           </div>
 
           <HeroCard label="美房宝" title="你的房子，现在能卖多少？">
-            <p className="mt-3 text-sm text-white/70">
+            <p className="mt-3 text-sm text-ash tracking-[-0.009em]">
               输入房源信息，立即获取专业估价
             </p>
             <div className="mt-6">
               <CTAButton href="/valuation">免费获取估价</CTAButton>
             </div>
-            <p className="mt-4 text-center text-xs text-white/50">
+            <p className="mt-4 text-center text-xs text-graphite tracking-[-0.009em]">
               100% 隐私保密 · 专业精准评估
             </p>
           </HeroCard>
         </div>
       </div>
 
-      {/* ========== PC端布局（与 about.html 视觉一致） ========== */}
+      {/* ========== PC端布局 ========== */}
       <div className="hidden md:block">
         {/* Hero Section */}
-        <section className="relative flex h-[819px] w-full items-center overflow-hidden bg-[#131b2e]">
+        <section className="relative flex h-[819px] w-full items-center overflow-hidden bg-white">
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 30% 30%, rgba(251,225,209,0.6) 0%, transparent 60%)",
+            }}
+          />
           <div className="absolute inset-0 z-0">
             {heroError ? (
-              <div className="flex h-full w-full items-center justify-center bg-[#131b2e]">
-                <ImageIcon className="h-16 w-16 text-white/20" />
+              <div className="flex h-full w-full items-center justify-center bg-fog">
+                <ImageIcon className="h-16 w-16 text-dove/40" />
               </div>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt="Modern Luxury Interior"
-                className="h-full w-full object-cover opacity-60"
+                className="h-full w-full object-cover opacity-25"
                 src="/about/hero-bg.jpg"
                 fetchPriority="high"
                 onError={() => setHeroError(true)}
               />
             )}
           </div>
-          <div className="relative z-10 mx-auto w-full max-w-[1280px] px-6">
-            <div className="max-w-2xl text-white">
-              <h1 className="mb-4 text-[40px] leading-[48px] font-bold tracking-[-0.02em]">
+          <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6">
+            <div className="max-w-2xl">
+              <h1 className="mb-4 font-display text-[44px] leading-[1.1] text-ink">
                 专业赋能，
                 <br />
                 让每一套房产焕发应有价值
               </h1>
-              <p className="mb-8 text-[18px] leading-[28px] opacity-90">
+              <p className="mb-8 text-[18px] leading-normal text-ash tracking-[-0.009em]">
                 美房宝
                 致力于为业主提供全链路资产管理与交易优化服务，通过专业审美与数据驱动，解决房产流通中的一切痛点。
               </p>
-              <div className="flex gap-4">
+              <div className="flex items-center gap-6">
                 <Link
                   href="/valuation"
-                  className="rounded-lg bg-c-action-gold px-8 py-4 text-[12px] font-bold leading-[16px] tracking-[0.05em] text-c-trust-blue transition-all hover:brightness-110"
+                  className="inline-flex items-center justify-center rounded-full bg-ink px-5 py-2.5 text-[15px] font-medium text-white tracking-[-0.009em] transition-all hover:opacity-90"
                 >
                   开启专业操盘
                 </Link>
                 <a
                   href="#process"
-                  className="rounded-lg border border-white px-8 py-4 text-[12px] font-bold leading-[16px] tracking-[0.05em] text-white transition-all hover:bg-white/10"
+                  className="text-[15px] font-medium text-ink tracking-[-0.009em] hover:underline"
                 >
                   了解更多服务
                 </a>
@@ -264,12 +277,12 @@ export default function AboutPage() {
         </section>
 
         {/* Pain Points Section */}
-        <section className="mx-auto max-w-[1280px] px-6 py-16">
+        <section className="mx-auto max-w-[1200px] px-6 py-20">
           <div className="mb-16 text-center">
-            <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-c-action-gold">
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               Pain Points
             </span>
-            <h2 className="mt-2 text-[40px] leading-[48px] font-bold tracking-[-0.02em] text-c-trust-blue">
+            <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
               房东面临的真实挑战
             </h2>
           </div>
@@ -277,22 +290,20 @@ export default function AboutPage() {
             {painPoints.map((point, index) => (
               <div
                 key={point.title}
-                className="flex h-80 flex-col justify-between rounded-xl border border-c-border-subtle bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
+                className="flex h-80 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
               >
                 <div>
                   <span className={`mb-4 block ${point.color}`}>
                     {pcPainPointIcons[index]}
                   </span>
-                  <h3 className="mb-2 text-[20px] leading-[28px] font-semibold text-c-text-primary">
+                  <h3 className="mb-2 text-[20px] leading-[1.4] font-medium text-ink tracking-[-0.009em]">
                     {point.title}
                   </h3>
-                  <p className="text-[14px] leading-[20px] text-c-text-secondary">
+                  <p className="text-[14px] leading-normal text-ash tracking-[-0.009em]">
                     {point.description}
                   </p>
                 </div>
-                <div
-                  className={`text-[12px] font-bold leading-[16px] tracking-[0.05em] ${point.color}`}
-                >
+                <div className="text-[12px] font-medium uppercase tracking-[0.2em] text-graphite">
                   {point.label}
                 </div>
               </div>
@@ -301,32 +312,32 @@ export default function AboutPage() {
         </section>
 
         {/* Process Section */}
-        <section id="process" className="bg-[#f2f4f6] py-16">
-          <div className="mx-auto max-w-[1280px] px-6">
+        <section id="process" className="bg-fog py-20">
+          <div className="mx-auto max-w-[1200px] px-6">
             <div className="mb-16 flex flex-col items-end justify-between gap-4 md:flex-row">
               <div className="max-w-xl">
-                <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-c-action-gold">
+                <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
                   Our Methodology
                 </span>
-                <h2 className="mt-2 text-[40px] leading-[48px] font-bold tracking-[-0.02em] text-c-trust-blue">
+                <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
                   美房宝 全案操盘三部曲
                 </h2>
               </div>
-              <p className="max-w-md text-[16px] leading-[24px] text-c-text-secondary">
+              <p className="max-w-md text-[16px] leading-normal text-ash tracking-[-0.009em]">
                 我们不仅仅是中介，更是您的房产产品经理。从诊断到成交，每一步都精益求精。
               </p>
             </div>
             <div className="flex gap-8">
               {processSteps.map((step) => (
                 <div key={step.num} className="group flex-1">
-                  <div className="relative z-10 h-full rounded-xl border border-c-border-subtle bg-white p-8">
-                    <div className="mb-4 text-6xl font-extrabold text-[#e0e3e5] opacity-30 transition-colors group-hover:text-c-action-gold">
+                  <div className="relative z-10 h-full rounded-cards bg-white p-8 shadow-steep-sm">
+                    <div className="mb-4 font-display text-6xl text-dove/40 transition-colors group-hover:text-rust">
                       {step.num}
                     </div>
-                    <h4 className="mb-2 text-[20px] leading-[28px] font-semibold text-c-text-primary">
+                    <h4 className="mb-2 text-[20px] leading-[1.4] font-medium text-ink tracking-[-0.009em]">
                       {step.title}
                     </h4>
-                    <p className="text-[14px] leading-[20px] text-c-text-secondary">
+                    <p className="text-[14px] leading-normal text-ash tracking-[-0.009em]">
                       {step.description}
                     </p>
                   </div>
@@ -337,12 +348,12 @@ export default function AboutPage() {
         </section>
 
         {/* Service Features Section */}
-        <section className="mx-auto max-w-[1280px] px-6 py-16">
+        <section className="mx-auto max-w-[1200px] px-6 py-20">
           <div className="mb-16 text-center">
-            <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-c-action-gold">
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               Our Services
             </span>
-            <h2 className="mt-2 text-[40px] leading-[48px] font-bold tracking-[-0.02em] text-c-trust-blue">
+            <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
               我们的服务保障
             </h2>
           </div>
@@ -350,10 +361,10 @@ export default function AboutPage() {
             {serviceFeatures.map((feature) => (
               <div
                 key={feature}
-                className="flex items-start gap-3 rounded-xl border border-c-border-subtle bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
+                className="flex items-start gap-3 rounded-cards bg-white p-6 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
               >
-                <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-c-action-gold" />
-                <span className="text-[14px] leading-[20px] text-c-text-primary">
+                <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                <span className="text-[14px] leading-normall text-ink tracking-[-0.009em]">
                   {feature}
                 </span>
               </div>
@@ -362,13 +373,13 @@ export default function AboutPage() {
         </section>
 
         {/* Social Proof Section */}
-        <section className="mx-auto max-w-[1280px] px-6 py-16">
-          <div className="flex flex-col items-center gap-12 rounded-3xl bg-c-trust-blue p-8 text-white md:flex-row md:p-16">
+        <section className="mx-auto max-w-[1200px] px-6 py-20">
+          <div className="flex flex-col items-center gap-12 rounded-cards bg-ink p-8 text-white md:flex-row md:p-16">
             <div className="flex-1">
-              <h2 className="mb-4 text-[40px] leading-[48px] font-bold tracking-[-0.02em]">
+              <h2 className="mb-4 font-display text-[44px] leading-[1.1] text-white">
                 业主信任的专业保障
               </h2>
-              <p className="mb-8 text-[18px] leading-[28px] opacity-80">
+              <p className="mb-8 text-[18px] leading-normal text-white/70 tracking-[-0.009em]">
                 每一份数据的背后，都是我们对房产价值的极致追求与对房东托付的尊重。
               </p>
               <div className="grid grid-cols-2 gap-8">
@@ -394,28 +405,36 @@ export default function AboutPage() {
                 ) : (
                   <>
                     <div>
-                      <div className="mb-1 text-4xl font-bold text-c-action-gold">
+                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
                         {statsData?.on_sale_count ?? 0}+
                       </div>
-                      <div className="text-sm opacity-60">在售套数</div>
+                      <div className="text-sm text-white/60 tracking-[-0.009em]">
+                        在售套数
+                      </div>
                     </div>
                     <div>
-                      <div className="mb-1 text-4xl font-bold text-c-action-gold">
+                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
                         {statsData?.current_month_sold ?? 0}
                       </div>
-                      <div className="text-sm opacity-60">本月已成交</div>
+                      <div className="text-sm text-white/60 tracking-[-0.009em]">
+                        本月已成交
+                      </div>
                     </div>
                     <div>
-                      <div className="mb-1 text-4xl font-bold text-c-action-gold">
+                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
                         400+
                       </div>
-                      <div className="text-sm opacity-60">成交经验</div>
+                      <div className="text-sm text-white/60 tracking-[-0.009em]">
+                        成交经验
+                      </div>
                     </div>
                     <div>
-                      <div className="mb-1 text-4xl font-bold text-c-action-gold">
+                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
                         98.5%
                       </div>
-                      <div className="text-sm opacity-60">业主满意度</div>
+                      <div className="text-sm text-white/60 tracking-[-0.009em]">
+                        业主满意度
+                      </div>
                     </div>
                   </>
                 )}
@@ -423,27 +442,27 @@ export default function AboutPage() {
             </div>
             <div className="relative aspect-square w-full flex-1">
               {dashboardError ? (
-                <div className="flex h-full w-full items-center justify-center rounded-2xl bg-c-trust-blue/50">
+                <div className="flex h-full w-full items-center justify-center rounded-images bg-ink/50">
                   <ImageIcon className="h-16 w-16 text-white/20" />
                 </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-              <img
+                <img
                   alt="Data Analytics Dashboard"
-                  className="h-full w-full rounded-2xl object-cover"
+                  className="h-full w-full rounded-images object-cover"
                   src="/about/dashboard.jpg"
                   loading="lazy"
                   onError={() => setDashboardError(true)}
                 />
               )}
-              <div className="absolute -bottom-6 -right-6 max-w-xs rounded-xl border border-white/20 bg-white/80 p-6 shadow-xl backdrop-blur-[12px] max-lg:hidden text-c-trust-blue">
+              <div className="absolute -bottom-6 -right-6 max-w-xs rounded-cards border border-dove/30 bg-white/90 p-6 shadow-steep backdrop-blur-md max-lg:hidden">
                 <div className="mb-2 flex items-center gap-2">
-                  <BadgeCheck className="h-5 w-5 text-green-600" />
-                  <span className="text-[12px] font-bold leading-[16px] tracking-[0.05em]">
+                  <BadgeCheck className="h-5 w-5 text-rust" />
+                  <span className="text-[12px] font-medium tracking-[-0.009em] text-ink">
                     实时操盘报告
                   </span>
                 </div>
-                <p className="text-xs italic opacity-80">
+                <p className="text-xs italic text-ash tracking-[-0.009em]">
                   &ldquo;美房宝
                   的介入让我的房源在一周内就收到了3个意向金，最终成交价格远超预期。&rdquo;
                   —— 上海张女士
@@ -454,49 +473,49 @@ export default function AboutPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="relative overflow-hidden bg-c-surface py-16">
-          <div className="relative z-10 mx-auto max-w-[1280px] px-6 text-center">
-            <h2 className="mb-4 text-[40px] leading-[48px] font-bold tracking-[-0.02em] text-c-trust-blue">
+        <section className="relative overflow-hidden bg-fog py-20">
+          <div className="relative z-10 mx-auto max-w-[1200px] px-6 text-center">
+            <h2 className="mb-4 font-display text-[44px] leading-[1.1] text-ink">
               准备好让您的资产再次升级了吗？
             </h2>
-            <p className="mx-auto mb-8 max-w-2xl text-[18px] leading-[28px] text-c-text-secondary">
+            <p className="mx-auto mb-8 max-w-2xl text-[18px] leading-normal text-ash tracking-[-0.009em]">
               立即免费获取由 美房宝 AI
               估价引擎与专业顾问共同生成的《房产资产优化建议书》。
             </p>
             <div className="mx-auto flex max-w-md flex-col items-center justify-center gap-4 md:flex-row">
               <Link
                 href="/valuation"
-                className="w-full whitespace-nowrap rounded-lg bg-c-trust-blue px-10 py-4 text-[12px] font-bold leading-[16px] tracking-[0.05em] text-white shadow-lg transition-all hover:bg-black active:scale-95 md:w-auto"
+                className="inline-flex w-full items-center justify-center whitespace-nowrap rounded-full bg-ink px-5 py-2.5 text-[15px] font-medium text-white tracking-[-0.009em] transition-all hover:opacity-90 active:scale-95 md:w-auto"
               >
                 免费获取估价
               </Link>
             </div>
-            <p className="mt-4 text-xs text-c-text-secondary opacity-60">
+            <p className="mt-4 text-xs text-graphite tracking-[-0.009em]">
               我们郑重承诺保护您的隐私，信息仅用于发送建议书。
             </p>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="w-full bg-[#131b2e] px-6 py-8">
-          <div className="mx-auto grid max-w-[1280px] grid-cols-4 gap-8">
+        <footer className="w-full bg-ink px-6 py-8">
+          <div className="mx-auto grid max-w-[1200px] grid-cols-4 gap-8">
             <div className="col-span-1">
-              <div className="mb-2 text-[20px] leading-[28px] font-bold text-white">
+              <div className="mb-2 text-[20px] leading-[1.4] font-medium text-white tracking-[-0.009em]">
                 美房宝
               </div>
-              <p className="text-[14px] leading-[20px] text-[#7c839b] opacity-80">
+              <p className="text-[14px] leading-normal text-white/60 tracking-[-0.009em]">
                 重新定义高端不动产交易体验。
               </p>
             </div>
             <div>
-              <h5 className="mb-2 text-[12px] font-bold leading-[16px] tracking-[0.05em] text-white">
+              <h5 className="mb-2 text-[12px] font-medium leading-[1.4] tracking-[-0.009em] text-white">
                 产品
               </h5>
               <ul className="space-y-2">
                 <li>
                   <Link
                     href="/valuation"
-                    className="text-[14px] leading-[20px] text-[#7c839b] opacity-80 transition-all hover:opacity-100"
+                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
                   >
                     房源估价
                   </Link>
@@ -504,7 +523,7 @@ export default function AboutPage() {
                 <li>
                   <Link
                     href="/about"
-                    className="text-[14px] leading-[20px] text-[#7c839b] opacity-80 transition-all hover:opacity-100"
+                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
                   >
                     全案操盘
                   </Link>
@@ -512,7 +531,7 @@ export default function AboutPage() {
                 <li>
                   <Link
                     href="/contact"
-                    className="text-[14px] leading-[20px] text-[#7c839b] opacity-80 transition-all hover:opacity-100"
+                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
                   >
                     设计师合作
                   </Link>
@@ -520,14 +539,14 @@ export default function AboutPage() {
               </ul>
             </div>
             <div>
-              <h5 className="mb-2 text-[12px] font-bold leading-[16px] tracking-[0.05em] text-white">
+              <h5 className="mb-2 text-[12px] font-medium leading-[1.4] tracking-[-0.009em] text-white">
                 公司
               </h5>
               <ul className="space-y-2">
                 <li>
                   <Link
                     href="/about"
-                    className="text-[14px] leading-[20px] text-[#7c839b] opacity-80 transition-all hover:opacity-100"
+                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
                   >
                     公司简介
                   </Link>
@@ -535,7 +554,7 @@ export default function AboutPage() {
                 <li>
                   <Link
                     href="/contact"
-                    className="text-[14px] leading-[20px] text-[#7c839b] opacity-80 transition-all hover:opacity-100"
+                    className="text-[14px] leading-normal text-white/60 tracking-[-0.009em] transition-all hover:text-white"
                   >
                     联系我们
                   </Link>
@@ -543,30 +562,30 @@ export default function AboutPage() {
               </ul>
             </div>
             <div>
-              <h5 className="mb-2 text-[12px] font-bold leading-[16px] tracking-[0.05em] text-white">
+              <h5 className="mb-2 text-[12px] font-medium leading-[1.4] tracking-[-0.009em] text-white">
                 法律
               </h5>
               <ul className="space-y-2">
                 <li>
-                  <span className="text-[14px] leading-[20px] text-[#7c839b] opacity-80">
+                  <span className="text-[14px] leading-normal text-white/60 tracking-[-0.009em]">
                     隐私政策
                   </span>
                 </li>
                 <li>
-                  <span className="text-[14px] leading-[20px] text-[#7c839b] opacity-80">
+                  <span className="text-[14px] leading-normal text-white/60 tracking-[-0.009em]">
                     服务条款
                   </span>
                 </li>
               </ul>
             </div>
           </div>
-          <div className="mx-auto mt-8 flex max-w-[1280px] flex-col items-center justify-between gap-2 border-t border-white/10 pt-8 md:flex-row">
-            <p className="text-[14px] leading-[20px] text-[#7c839b] opacity-60">
+          <div className="mx-auto mt-8 flex max-w-[1200px] flex-col items-center justify-between gap-2 border-t border-white/10 pt-8 md:flex-row">
+            <p className="text-[14px] leading-normal text-white/50 tracking-[-0.009em]">
               © 2024 美房宝 Real Estate. All rights reserved.
             </p>
             <div className="flex gap-4">
-              <Share2 className="h-5 w-5 cursor-pointer text-white opacity-60 transition-all hover:opacity-100" />
-              <Globe className="h-5 w-5 cursor-pointer text-white opacity-60 transition-all hover:opacity-100" />
+              <Share2 className="h-5 w-5 cursor-pointer text-white/60 transition-all hover:text-white" />
+              <Globe className="h-5 w-5 cursor-pointer text-white/60 transition-all hover:text-white" />
             </div>
           </div>
         </footer>

@@ -77,16 +77,42 @@
   --color-progress-middle: var(--progress-middle);
   --color-progress-end: var(--progress-end);
 
-  --color-c-trust-blue: #0F172A;
-  --color-c-action-gold: #D4AF37;
-  --color-c-status-onsale: #0EA5E9;
-  --color-c-status-upcoming: #F59E0B;
-  --color-c-status-sold: #94A3B8;
-  --color-c-surface: #f7f9fb;
-  --color-c-border-subtle: #E2E8F0;
+  /* Steep Design System — Colors */
+  --color-ink: #17191c;
+  --color-pure-white: #ffffff;
+  --color-fog: #f7f7f8;
+  --color-ash: #4c4c4c;
+  --color-graphite: #777b86;
+  --color-dove: #a3a6af;
+  --color-slate: #8b8c8d;
+  --color-rust: #5d2a1a;
+  --color-apricot-wash: #fbe1d1;
+  --color-sky-wash: #d3e3fc;
+
+  /* Steep Design System — Typography */
+  --font-signifier: var(--font-source-serif), ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-sohne: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Steep Design System — Radii */
+  --radius-cards: 24px;
+  --radius-images: 12px;
+  --radius-inputs: 16px;
+
+  /* Steep Design System — Signature card shadow (three-layer stack) */
+  --shadow-steep: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+  --shadow-steep-sm: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 8px 10px -6px;
+
+  /* C-side tokens remapped to Steep palette */
+  --color-c-trust-blue: #17191c;        /* Ink — primary action & text */
+  --color-c-action-gold: #5d2a1a;       /* Rust — signature accent */
+  --color-c-status-onsale: #5d2a1a;     /* Rust */
+  --color-c-status-upcoming: #777b86;   /* Graphite */
+  --color-c-status-sold: #a3a6af;       /* Dove */
+  --color-c-surface: #f7f7f8;           /* Fog */
+  --color-c-border-subtle: #e5e7eb;     /* light hairline */
   --color-c-error: #ba1a1a;
-  --color-c-text-primary: #1E293B;
-  --color-c-text-secondary: #64748B;
+  --color-c-text-primary: #17191c;      /* Ink */
+  --color-c-text-secondary: #4c4c4c;    /* Ash */
 }
 
 :root {
@@ -234,10 +260,28 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sohne);
+    letter-spacing: -0.009em;
   }
   html,
   body {
     overflow-x: hidden;
+  }
+}
+
+/* Steep display font utility — Signifier for hero/section headlines only (44px+) */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-signifier);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+  .shadow-steep {
+    box-shadow: var(--shadow-steep);
+  }
+  .shadow-steep-sm {
+    box-shadow: var(--shadow-steep-sm);
   }
 }
 

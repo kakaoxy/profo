@@ -21,8 +21,8 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
   if (!visible) return null;
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 h-20 border-t bg-white">
-      <div className="mx-auto flex h-full max-w-[1280px] items-center justify-around px-2">
+    <nav className="fixed bottom-0 inset-x-0 z-50 h-20 border-t border-dove/30 bg-white">
+      <div className="mx-auto flex h-full max-w-[1200px] items-center justify-around px-2">
         {tabs.map((tab) => {
           const isActive =
             tab.href === "/"
@@ -37,14 +37,14 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
             >
               <Icon
                 className={`h-5 w-5 ${
-                  isActive ? "text-c-trust-blue" : "text-c-text-secondary"
+                  isActive ? "text-ink" : "text-graphite"
                 }`}
               />
               <span
                 className={`text-xs ${
                   isActive
-                    ? "font-semibold text-c-trust-blue"
-                    : "text-c-text-secondary"
+                    ? "font-medium text-ink"
+                    : "text-graphite"
                 }`}
               >
                 {tab.label}

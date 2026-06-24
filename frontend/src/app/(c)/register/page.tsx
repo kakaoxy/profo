@@ -53,76 +53,69 @@ export default function CRegisterPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Panel - Desktop Only */}
-      <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-c-trust-blue relative overflow-hidden items-center justify-center p-6">
-        {/* Decorative Circles */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full border border-white/20" />
-          <div className="absolute bottom-[-5%] left-[-5%] w-[300px] h-[300px] rounded-full border border-white/20" />
-        </div>
+      <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-apricot-wash relative overflow-hidden items-center justify-center p-6">
+        {/* Warm radial glow */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55) 0%, transparent 60%)",
+          }}
+        />
 
         {/* Branding Content */}
         <div className="relative z-10 max-w-lg text-left">
           <div className="mb-8">
-            <span className="text-white text-[40px] leading-[48px] font-bold tracking-tighter">
+            <span className="text-ink text-[40px] leading-[48px] font-medium tracking-[-0.009em]">
               Profo
             </span>
           </div>
-          <h1 className="text-[40px] leading-[48px] font-bold tracking-tight text-white mb-4">
+          <h1 className="font-display text-[44px] leading-[1.1] text-ink mb-4">
             开启您的专业地产之旅
           </h1>
-          <p className="text-[18px] leading-[28px] text-white opacity-80">
+          <p className="text-[18px] leading-[28px] text-ash">
             加入 Profo
             平台，体验前所未有的精准房产估价与高效房源管理。我们为每一位专业人士和业主提供最权威的数据支持。
           </p>
 
           {/* Feature Cards */}
           <div className="mt-16 grid grid-cols-2 gap-4">
-            <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-              <Verified className="text-c-action-gold mb-2" size={24} />
-              <div className="text-[12px] leading-[16px] font-bold text-white uppercase">
+            <div className="p-5 bg-white rounded-cards shadow-steep-sm">
+              <Verified className="text-rust mb-2" size={24} />
+              <div className="text-[14px] leading-[20px] font-medium text-ink">
                 权威数据
               </div>
-              <div className="text-[14px] leading-[20px] text-white opacity-60">
+              <div className="text-[14px] leading-[20px] text-graphite mt-1">
                 覆盖全国核心城市房产数据
               </div>
             </div>
-            <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-              <BarChart3 className="text-c-action-gold mb-2" size={24} />
-              <div className="text-[12px] leading-[16px] font-bold text-white uppercase">
+            <div className="p-5 bg-white rounded-cards shadow-steep-sm">
+              <BarChart3 className="text-rust mb-2" size={24} />
+              <div className="text-[14px] leading-[20px] font-medium text-ink">
                 智能估值
               </div>
-              <div className="text-[14px] leading-[20px] text-white opacity-60">
+              <div className="text-[14px] leading-[20px] text-graphite mt-1">
                 基于AI的动态市场定价引擎
               </div>
             </div>
           </div>
         </div>
-
-        {/* Background Image Overlay */}
-        <div className="absolute inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            className="w-full h-full object-cover opacity-10 mix-blend-overlay"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7dzcUxAm9SFTQ6y2YHQ6XwXWjB-dZ9UWRP5ZzN42xQMqzSicHk3sAUAVGLxIsQUoKKBI9sRhhbYxKaukmxHA1FG8ePcviE2xiEdMvBwR39-9_tguHiyRq-szvDEI3BzKd7cX9Jb0zyht7YkL4U7JsnjbWpJ2lhu9StyQwuYTmWR3U--_ke8HX2Ru_He4dj1n5dMNANymVkjnFHopqb3HRnXG3GHkG6cLg5lH3yfrDQjdTyHPlpHOTavms5U5CY-QSKohODAvbY28"
-            alt=""
-          />
-        </div>
       </div>
 
       {/* Right Panel - Form Area */}
-      <div className="flex-1 flex flex-col justify-center items-center p-4 pt-16 md:p-6 md:pt-6 bg-c-surface md:bg-white">
+      <div className="flex-1 flex flex-col justify-center items-center p-4 pt-16 md:p-6 md:pt-6 bg-fog md:bg-white">
         <div className="w-full max-w-[440px]">
           {/* Header */}
           <div className="mb-8 text-center md:text-left">
             <div className="md:hidden mb-4">
-              <span className="text-c-trust-blue text-[28px] leading-[34px] font-bold tracking-tighter">
+              <span className="text-ink text-[28px] leading-[34px] font-medium tracking-[-0.009em]">
                 Profo
               </span>
             </div>
-            <h2 className="text-[28px] leading-[34px] font-semibold text-c-text-primary mb-2">
+            <h2 className="text-[28px] leading-[34px] font-medium text-ink mb-2">
               创建新账号
             </h2>
-            <p className="text-[16px] leading-[24px] text-c-text-secondary">
+            <p className="text-[16px] leading-[24px] text-ash">
               请填写以下信息完成注册
             </p>
           </div>
@@ -131,18 +124,18 @@ export default function CRegisterPage() {
           <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
             {/* Server Error */}
             {state && !state.success && state.error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-c-error text-sm">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-inputs text-c-error text-sm">
                 {extractErrorMessage(state.error, "注册失败")}
               </div>
             )}
 
             {/* Username */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-c-text-secondary" htmlFor="username">
+              <label className="text-sm text-ash" htmlFor="username">
                 用户名
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-c-text-secondary" size={20} />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
                 <input
                   id="username"
                   type="text"
@@ -152,54 +145,54 @@ export default function CRegisterPage() {
                   minLength={4}
                   maxLength={30}
                   pattern="[a-zA-Z0-9_]+"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-c-border-subtle focus:border-c-trust-blue focus:ring-0 transition-all text-base text-c-text-primary placeholder:text-c-text-secondary outline-none"
+                  className="w-full pl-10 pr-4 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
                 />
               </div>
             </div>
 
             {/* Nickname */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-c-text-secondary" htmlFor="nickname">
+              <label className="text-sm text-ash" htmlFor="nickname">
                 昵称（选填）
               </label>
               <div className="relative">
-                <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-c-text-secondary" size={20} />
+                <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
                 <input
                   id="nickname"
                   type="text"
                   name="nickname"
                   placeholder="请输入昵称"
                   maxLength={100}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-c-border-subtle focus:border-c-trust-blue focus:ring-0 transition-all text-base text-c-text-primary placeholder:text-c-text-secondary outline-none"
+                  className="w-full pl-10 pr-4 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
                 />
               </div>
             </div>
 
             {/* Phone */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-c-text-secondary" htmlFor="phone">
+              <label className="text-sm text-ash" htmlFor="phone">
                 手机号码
               </label>
               <div className="relative">
-                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-c-text-secondary" size={20} />
+                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
                 <input
                   id="phone"
                   type="tel"
                   name="phone"
                   placeholder="请输入11位手机号（选填）"
                   pattern="1[3-9]\d{9}"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-c-border-subtle focus:border-c-trust-blue focus:ring-0 transition-all text-base text-c-text-primary placeholder:text-c-text-secondary outline-none"
+                  className="w-full pl-10 pr-4 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-c-text-secondary" htmlFor="password">
+              <label className="text-sm text-ash" htmlFor="password">
                 设置密码
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-c-text-secondary" size={20} />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -207,12 +200,12 @@ export default function CRegisterPage() {
                   placeholder="至少8位字符"
                   required
                   minLength={8}
-                  className="w-full pl-10 pr-12 py-3 rounded-lg border border-c-border-subtle focus:border-c-trust-blue focus:ring-0 transition-all text-base text-c-text-primary placeholder:text-c-text-secondary outline-none"
+                  className="w-full pl-10 pr-12 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-c-text-secondary hover:text-c-trust-blue transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-graphite hover:text-ink transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -221,11 +214,11 @@ export default function CRegisterPage() {
 
             {/* Confirm Password */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-c-text-secondary" htmlFor="confirmPassword">
+              <label className="text-sm text-ash" htmlFor="confirmPassword">
                 确认密码
               </label>
               <div className="relative">
-                <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-c-text-secondary" size={20} />
+                <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
                 <input
                   id="confirmPassword"
                   type="password"
@@ -234,7 +227,7 @@ export default function CRegisterPage() {
                   required
                   minLength={8}
                   onChange={handleConfirmChange}
-                  className={`w-full pl-10 pr-4 py-3 rounded-lg border focus:border-c-trust-blue focus:ring-0 transition-all text-base text-c-text-primary placeholder:text-c-text-secondary outline-none ${confirmError ? "border-c-error" : "border-c-border-subtle"}`}
+                  className={`w-full pl-10 pr-4 py-3 rounded-inputs border bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite ${confirmError ? "border-c-error" : "border-dove/30"}`}
                 />
               </div>
               {confirmError && (
@@ -248,18 +241,18 @@ export default function CRegisterPage() {
                 id="terms"
                 name="terms"
                 type="checkbox"
-                className="mt-1 w-4 h-4 text-c-trust-blue border-c-border-subtle rounded focus:ring-0"
+                className="mt-1 w-4 h-4 text-ink border-dove/30 rounded focus:ring-0"
               />
               <label
-                className="text-sm text-c-text-secondary leading-tight"
+                className="text-sm text-ash leading-tight"
                 htmlFor="terms"
               >
                 注册即代表您已阅读并同意 Profo 的{" "}
-                <Link href="#" className="text-c-trust-blue font-semibold hover:underline">
+                <Link href="#" className="text-rust font-medium hover:underline">
                   服务条款
                 </Link>{" "}
                 和{" "}
-                <Link href="#" className="text-c-trust-blue font-semibold hover:underline">
+                <Link href="#" className="text-rust font-medium hover:underline">
                   隐私政策
                 </Link>
               </label>
@@ -269,7 +262,7 @@ export default function CRegisterPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full bg-c-trust-blue text-white font-bold text-xs py-4 rounded-lg hover:bg-opacity-90 active:scale-[0.98] transition-all uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-ink text-white font-medium text-[15px] py-3 rounded-full hover:opacity-90 active:scale-[0.98] transition-all tracking-[-0.009em] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending ? "注册中..." : "立即注册"}
             </button>
@@ -277,11 +270,11 @@ export default function CRegisterPage() {
 
           {/* Footer Link */}
           <div className="mt-8 text-center">
-            <p className="text-[16px] text-c-text-secondary">
+            <p className="text-[16px] text-ash">
               已有账号？{" "}
               <Link
                 href="/login"
-                className="text-c-trust-blue font-bold hover:underline transition-all"
+                className="text-ink font-medium hover:underline transition-all"
               >
                 立即登录
               </Link>
@@ -293,11 +286,11 @@ export default function CRegisterPage() {
         <div className="mt-auto pt-8 flex flex-wrap justify-center gap-4">
           <Link
             href="#"
-            className="text-[12px] leading-[16px] font-bold text-c-text-secondary hover:text-c-trust-blue uppercase"
+            className="text-[12px] leading-[16px] font-medium text-graphite hover:text-ink uppercase"
           >
             关于我们
           </Link>
-          <span className="text-[12px] leading-[16px] font-bold text-c-text-secondary opacity-40 uppercase">
+          <span className="text-[12px] leading-[16px] font-medium text-graphite opacity-40 uppercase">
             © 2024 Profo Real Estate
           </span>
         </div>

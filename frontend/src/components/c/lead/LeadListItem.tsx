@@ -26,10 +26,10 @@ export function LeadListItem({
 }: LeadListItemProps) {
   return (
     <Link href={`/leads/${id}`}>
-      <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
+      <div className="flex items-center gap-3 rounded-cards bg-white p-5 shadow-steep-sm border border-dove/30 hover:shadow-steep transition-shadow">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-c-text-primary truncate">
+            <span className="font-medium text-ink truncate">
               {communityName}
             </span>
             <span
@@ -42,17 +42,17 @@ export function LeadListItem({
               {statusDisplay}
             </span>
           </div>
-          <div className="text-sm text-c-text-secondary">
+          <div className="text-sm text-ash">
             {layout && <span>{layout}</span>}
             {layout && area != null && <span> · </span>}
             {area != null && <span>{area}㎡</span>}
             {!layout && area == null && <span>暂无户型信息</span>}
           </div>
-          <div className="text-xs text-c-text-secondary mt-1">
+          <div className="text-xs text-ash mt-1">
             {safeParseDate(createdAt)?.toLocaleDateString("zh-CN") ?? "-"}
           </div>
         </div>
-        <ChevronRight className="h-5 w-5 text-c-text-secondary shrink-0" />
+        <ChevronRight className="h-5 w-5 text-graphite shrink-0" />
       </div>
     </Link>
   );

@@ -24,17 +24,17 @@ export default function CPage() {
       fallback={
         <div className="px-4 md:px-6 space-y-4">
           <div className="flex items-center gap-3">
-            <Skeleton className="h-12 flex-1 rounded-lg" />
-            <Skeleton className="h-12 w-12 rounded-lg" />
+            <Skeleton className="h-12 flex-1 rounded-inputs" />
+            <Skeleton className="h-12 w-12 rounded-full" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(15,23,42,0.05)]"
+                className="bg-white rounded-cards overflow-hidden shadow-steep"
               >
                 <Skeleton className="aspect-video w-full" />
-                <div className="p-4 space-y-3">
+                <div className="p-5 space-y-3">
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </div>
@@ -165,10 +165,10 @@ function CPageContent() {
             setIsFilterOpen(nextOpen);
             if (nextOpen) setFilterKey((k) => k + 1);
           }}
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-colors ${
             hasActiveFilters
-              ? "border-c-trust-blue/30 bg-c-trust-blue/10 text-c-trust-blue"
-              : "border-c-border-subtle bg-white text-c-text-secondary hover:text-c-trust-blue hover:border-c-trust-blue/30"
+              ? "border-transparent bg-apricot-wash text-rust"
+              : "border-dove/30 bg-white text-graphite hover:text-ink hover:border-dove/60"
           }`}
         >
           <SlidersHorizontal className="h-5 w-5" />
@@ -208,17 +208,17 @@ function CPageContent() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl overflow-hidden shadow-[0px_4px_20px_rgba(15,23,42,0.05)]"
+                className="bg-white rounded-cards overflow-hidden shadow-steep"
               >
                 <Skeleton className="aspect-video w-full" />
-                <div className="p-4 space-y-3">
+                <div className="p-5 space-y-3">
                   <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                   <div className="flex gap-2">
                     <Skeleton className="h-5 w-12" />
                     <Skeleton className="h-5 w-12" />
                   </div>
-                  <div className="border-t pt-3">
+                  <div className="border-t border-dove/30 pt-3">
                     <Skeleton className="h-6 w-1/3" />
                   </div>
                 </div>
@@ -255,21 +255,21 @@ function CPageContent() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-8 pb-4">
+              <div className="flex items-center justify-center gap-4 pt-8 pb-4">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page <= 1}
-                  className="px-4 py-2 rounded-lg border border-c-border-subtle text-sm text-c-text-secondary hover:text-c-trust-blue hover:border-c-trust-blue/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="text-[15px] font-medium text-ink hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline transition-colors"
                 >
                   上一页
                 </button>
-                <span className="text-sm text-c-text-secondary">
+                <span className="text-[15px] text-graphite">
                   {page} / {totalPages}
                 </span>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
-                  className="px-4 py-2 rounded-lg border border-c-border-subtle text-sm text-c-text-secondary hover:text-c-trust-blue hover:border-c-trust-blue/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="text-[15px] font-medium text-ink hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline transition-colors"
                 >
                   下一页
                 </button>

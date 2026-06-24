@@ -20,12 +20,12 @@ export function StatusTabs({ value, onStatusChange }: StatusTabsProps) {
       onValueChange={onStatusChange}
       className="w-full"
     >
-      <TabsList className="bg-transparent h-auto p-0 gap-0 w-full justify-start border-b border-c-border-subtle rounded-none">
+      <TabsList className="bg-transparent h-auto p-0 gap-2 w-full justify-start rounded-none">
         {TABS.map((tab) => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
-            className="relative rounded-none border-0 px-4 py-3 text-sm font-medium text-c-text-secondary hover:text-c-trust-blue data-[state=active]:text-c-trust-blue data-[state=active]:bg-transparent data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-transparent data-[state=active]:after:bg-c-trust-blue after:transition-colors"
+            className="rounded-full border-0 px-4 py-2 text-sm font-medium text-graphite hover:text-ink data-[state=active]:text-white data-[state=active]:bg-ink data-[state=active]:shadow-none transition-colors"
           >
             {tab.label}
           </TabsTrigger>

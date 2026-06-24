@@ -41,15 +41,15 @@ export default function CMyPage() {
 
   return (
     <div className="px-4 md:px-6 space-y-6">
-      <section className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle">
+      <section className="flex items-center gap-4 rounded-cards bg-white p-5 md:p-6 shadow-steep">
         <UserAvatar name={displayName} size="lg" />
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-bold text-c-text-primary">{displayName}</h2>
-          <p className="text-sm text-c-text-secondary">{displayPhone}</p>
+          <h2 className="text-lg font-medium text-ink">{displayName}</h2>
+          <p className="text-sm text-graphite">{displayPhone}</p>
         </div>
         <Link
           href="/profile"
-          className="flex items-center gap-1 text-sm font-medium text-c-trust-blue hover:underline"
+          className="flex items-center gap-1 text-sm font-medium text-ink hover:underline"
         >
           <Pencil className="h-3.5 w-3.5" />
           编辑资料
@@ -57,7 +57,7 @@ export default function CMyPage() {
       </section>
 
       <section>
-        <h3 className="text-base font-bold text-c-text-primary mb-3">
+        <h3 className="text-base font-medium text-ink mb-3">
           我的估价
         </h3>
         {isLoading ? (
@@ -65,7 +65,7 @@ export default function CMyPage() {
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton
                 key={i}
-                className="h-24 rounded-xl shadow-[0px_4px_20px_rgba(15,23,42,0.05)] border border-c-border-subtle"
+                className="h-24 rounded-cards"
               />
             ))}
           </div>
@@ -98,7 +98,7 @@ export default function CMyPage() {
       <section className="pt-4">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-2 h-12 rounded-lg border border-c-border-subtle bg-white text-c-error font-medium hover:bg-red-50 transition-colors"
+          className="flex w-full items-center justify-center gap-2 h-12 rounded-full border border-dove/30 bg-white text-ink font-medium hover:bg-fog transition-colors"
         >
           <LogOut className="h-4 w-4" />
           退出登录

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { usePathname } from "next/navigation";
 import { TopAppBar } from "@/components/c/layout/TopAppBar";
@@ -34,7 +34,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   // Auth pages: full-screen split layout on desktop, standard mobile layout
   if (isAuthPage) {
     return (
-      <div className="min-h-dvh bg-c-surface">
+      <div className="min-h-dvh bg-fog">
         {/* Mobile: show TopAppBar; Desktop: hide it */}
         <div className="md:hidden">
           <TopAppBar variant={topBarVariant} title={topBarTitle} />
@@ -45,9 +45,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-dvh bg-c-surface">
+    <div className="min-h-dvh bg-fog">
       {!isProjectDetail && <TopAppBar variant={topBarVariant} title={topBarTitle} />}
-      <main className={`mx-auto max-w-[1280px] ${isProjectDetail ? "" : "pt-16"} pb-20`}>{children}</main>
+      <main className={`mx-auto max-w-[1200px] ${isProjectDetail ? "" : "pt-16"} pb-20`}>{children}</main>
       <BottomNavBar visible={bottomNavVisible} />
     </div>
   );
