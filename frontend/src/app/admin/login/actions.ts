@@ -166,7 +166,8 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
 
 export async function logoutAction() {
   const cookieStore = await cookies();
-  cookieStore.delete("access_token");
-  cookieStore.delete("refresh_token");
+  // 删除时必须指定与设置时相同的 path，否则浏览器不会匹配删除
+  cookieStore.delete({ name: "access_token", path: "/" });
+  cookieStore.delete({ name: "refresh_token", path: "/" });
   redirect("/admin/login");
 }

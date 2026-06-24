@@ -157,14 +157,14 @@ export async function logoutAction(): Promise<ActionResult<null>> {
       });
     }
 
-    cookieStore.delete("c_access_token");
-    cookieStore.delete("c_refresh_token");
-    cookieStore.delete("c_user_info");
+    cookieStore.delete({ name: "c_access_token", path: "/" });
+    cookieStore.delete({ name: "c_refresh_token", path: "/" });
+    cookieStore.delete({ name: "c_user_info", path: "/" });
   } catch {
     const cookieStore = await cookies();
-    cookieStore.delete("c_access_token");
-    cookieStore.delete("c_refresh_token");
-    cookieStore.delete("c_user_info");
+    cookieStore.delete({ name: "c_access_token", path: "/" });
+    cookieStore.delete({ name: "c_refresh_token", path: "/" });
+    cookieStore.delete({ name: "c_user_info", path: "/" });
   }
 
   redirect("/");
