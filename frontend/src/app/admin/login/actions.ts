@@ -13,8 +13,6 @@ interface LoginResponse {
   refresh_token: string;
   token_type: string;
   expires_in: number;
-  // 有些后端会在 403 时返回 payload，这里预留类型
-  detail?: string;
 }
 
 export type LoginState = {
@@ -41,41 +39,27 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
       body: new URLSearchParams({ grant_type: "password", username, password }),
     });
 
-    // --- 针对 403 的详细处理 ---
+    // --- 错误处理：422 强制改密 / 通用错误 ---
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
 
       // 开发环境记录脱敏后的错误数据
       logger.devDebug("Login Failed", { status: response.status, error: errorData });
 
-      // 1. 解析错误对象的层级
-      // 你的后端返回结构是: { error: { message: { temp_token: "..." } } }
-      const errorObj = errorData.error || errorData.detail || {};
-
-      // 有时候 message 是字符串，有时候是对象（如现在的情况）
-      const messageObj = (typeof errorObj.message === 'object') ? errorObj.message : {};
-
-      // 2. 判断是否是强制修改密码
-      const isForceChange = response.status === 403 && (
-        errorObj.code === "HTTP_403" ||
-        messageObj.code === "HTTP_403" ||
-        JSON.stringify(errorData).includes("首次登录")
-      );
+      // 后端返回: HTTP 422 + {"detail":"首次登录必须修改密码"} + Headers: X-Temp-Token, X-Must-Change-Password
+      const isForceChange =
+        response.status === 422 &&
+        response.headers.get("X-Must-Change-Password") === "true";
 
       if (isForceChange) {
-        // 3. 深度挖掘 Token
-        // 尝试从所有可能的层级获取 token，确保万无一失
-        const tempToken =
-            messageObj.temp_token ||  // 最匹配你当前日志的路径
-            errorObj.temp_token ||    // 备选路径
-            errorData.temp_token;     // 根路径备选
+        const tempToken = response.headers.get("X-Temp-Token");
 
         if (!tempToken) {
-          logger.error("无法提取 temp_token，请检查后端返回结构");
+          logger.error("无法提取 temp_token，请检查后端响应头");
           return { error: "系统错误：未获取到修改密码凭证" };
         }
 
-        logger.devDebug("成功抓取到临时 Token", { tokenPrefix: tempToken.substring(0, 10) });
+        logger.devDebug("首次登录需修改密码，已获取临时 Token", { tokenPrefix: tempToken.substring(0, 10) });
 
         return {
           mustChangePassword: true,
@@ -84,10 +68,10 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
         };
       }
 
-      // 返回通用错误信息
-      const errorMsg = typeof errorObj.message === 'string'
-        ? errorObj.message
-        : (messageObj.message || "登录失败");
+      // 返回通用错误信息（后端统一格式: {"detail": "错误信息"}）
+      const errorMsg = typeof errorData.detail === "string"
+        ? errorData.detail
+        : "登录失败";
 
       return { error: errorMsg };
     }
@@ -141,15 +125,7 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
   const apiUrl = getApiUrl(apiPaths.users.changePassword);
 
   try {
-    // 这里有个策略问题：如果没有 Token，我们如何调用这个接口？
-    // 1. 如果有 tempToken，放在 Header 里
-    // 2. 如果没有，我们可能需要先尝试用 login 接口获取 token (但 login 报 403...)
-    // 3. 只能假设：
-    //    A. 用户此时其实已经有了某种 Session
-    //    B. 或者后端在 403 响应里给了 Token (上面 loginAction 尝试获取了)
-    //    C. 这是一个开放接口但需要验证旧密码 (不太常见)
-
-    // 我们先尝试带上 Cookie 里的 Token (如果有的话) 或者 tempToken
+    // 使用 loginAction 从响应头获取的 tempToken 作为 Bearer 认证
     let token = tempToken;
     if (!token) {
         const cookieStore = await cookies();
