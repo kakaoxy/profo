@@ -150,7 +150,7 @@ export default async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
-  if (!refreshToken) {
+  if (!refreshToken || refreshToken === "") {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
