@@ -87,22 +87,37 @@ async def get_current_user(
     # 优先从Header获取JWT token
     token = token_from_header
 
-    # 如果Header没有，从cookie中获取（支持管理端和C端两种cookie名）
-    if token is None:
-        token = request.cookies.get("access_token") or request.cookies.get("c_access_token")
+    # 如果Header没有，从cookie中获取
+    # c_access_token优先：C端用户是public端点的主要使用者，
+    # 避免因浏览器残留admin access_token cookie导致错误认证
+    c_token = request.cookies.get("c_access_token")
+    admin_token = request.cookies.get("access_token")
 
-    # 如果存在JWT token，使用JWT认证
-    if token is not None:
+    if token is None:
+        # 按优先级依次尝试两个cookie token
+        for cookie_token in (c_token, admin_token):
+            if cookie_token is None:
+                continue
+            payload = validate_token(cookie_token)
+            if not payload:
+                continue  # token无效(过期/签名错误)，尝试下一个
+            user_id = payload.get("sub")
+            if not isinstance(user_id, str):
+                continue
+            user = await run_in_threadpool(AuthService.get_user_by_id, db, user_id)
+            if user is not None:
+                return user
+            # token有效但用户不存在，尝试下一个
+    else:
+        # Header token — 直接使用，失败即报错
         payload = validate_token(token)
         if not payload:
             raise AuthenticationError("无法验证凭据")
 
-        # 获取用户ID
         user_id = payload.get("sub")
         if not isinstance(user_id, str):
             raise AuthenticationError("无法验证凭据")
 
-        # 通过Service层获取用户，预加载角色关系
         user = await run_in_threadpool(AuthService.get_user_by_id, db, user_id)
         if user is None:
             raise AuthenticationError("无法验证凭据")
