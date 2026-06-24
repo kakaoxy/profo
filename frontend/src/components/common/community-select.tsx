@@ -251,13 +251,27 @@ export function CommunitySelect({
               </div>
             )}
 
-            {/* 新建选项 */}
-            {!loading && results.length === 0 && query && allowCreate && (
+            {/* 新建选项 / 自由文本提交 */}
+            {!loading && results.length === 0 && query && (
               <div className="p-1">
-                <button className={s.createButton} onClick={handleCreateNew}>
-                  <Plus className="h-4 w-4" />
-                  <span>使用新名称 &quot;{query}&quot;</span>
-                </button>
+                {allowCreate ? (
+                  <button className={s.createButton} onClick={handleCreateNew}>
+                    <Plus className="h-4 w-4" />
+                    <span>使用新名称 &quot;{query}&quot;</span>
+                  </button>
+                ) : (
+                  <button
+                    className={s.createButton}
+                    onClick={() => {
+                      onChange({ id: "", name: query }, false);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>使用 &quot;{query}&quot; 提交</span>
+                  </button>
+                )}
               </div>
             )}
 
