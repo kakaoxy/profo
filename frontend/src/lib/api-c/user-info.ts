@@ -42,8 +42,7 @@ export function useUserInfo(): UserInfo {
     // 只有数据真正变化时才更新引用，避免无限重渲染
     if (
       cacheRef.current === null ||
-      cacheRef.current.nickname !== latest.nickname ||
-      cacheRef.current.phone !== latest.phone
+      JSON.stringify(cacheRef.current) !== JSON.stringify(latest)
     ) {
       cacheRef.current = latest;
     }
