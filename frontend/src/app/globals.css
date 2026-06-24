@@ -283,6 +283,12 @@
   .shadow-steep-sm {
     box-shadow: var(--shadow-steep-sm);
   }
+  .rounded-cards {
+    border-radius: var(--radius-cards);
+  }
+  .rounded-inputs {
+    border-radius: var(--radius-inputs);
+  }
 }
 
 /* C-side: hide bottom nav on desktop */
