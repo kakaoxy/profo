@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 
 export interface UserInfo {
   nickname: string | null;
@@ -6,7 +6,6 @@ export interface UserInfo {
 }
 
 const EMPTY_INFO: UserInfo = { nickname: null, phone: null };
-let cachedInfo: UserInfo | null = null;
 
 export function getUserInfoFromCookie(): UserInfo {
   if (typeof document === "undefined") return EMPTY_INFO;
@@ -22,13 +21,6 @@ export function getUserInfoFromCookie(): UserInfo {
   }
 }
 
-function getSnapshot(): UserInfo {
-  if (cachedInfo === null) {
-    cachedInfo = getUserInfoFromCookie();
-  }
-  return cachedInfo;
-}
-
 function getServerSnapshot(): UserInfo {
   return EMPTY_INFO;
 }
@@ -41,7 +33,15 @@ function subscribe(): () => void {
  * 以 hydration-safe 方式读取 cookie 中的用户信息。
  * SSR 与 hydration 首帧返回空值（与 server 一致），
  * hydration 完成后切换为客户端 cookie 快照并触发重渲染。
+ * 缓存为组件实例级（useRef），避免全局污染。
  */
 export function useUserInfo(): UserInfo {
+  const cacheRef = useRef<UserInfo | null>(null);
+  const getSnapshot = useCallback(() => {
+    if (cacheRef.current === null) {
+      cacheRef.current = getUserInfoFromCookie();
+    }
+    return cacheRef.current;
+  }, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
