@@ -49,7 +49,7 @@ export function useUserInfo(): UserInfo {
     if (changed) {
       cacheRef.current = latest;
     }
-    return changed ? latest : current;
+    return changed ? latest : (current ?? latest);
   }, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
