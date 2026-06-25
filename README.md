@@ -5,26 +5,31 @@
   <img src="https://img.shields.io/badge/React-19.2.1-61DAFB?style=flat-square&logo=react" />
   <img src="https://img.shields.io/badge/FastAPI-0.104+-009688?style=flat-square&logo=fastapi" />
   <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python" />
-  <img src="https://img.shields.io/badge/TailwindCSS-4.1+-38B2AC?style=flat-square&logo=tailwind-css" />
+  <img src="https://img.shields.io/badge/TailwindCSS-4.3+-38B2AC?style=flat-square&logo=tailwind-css" />
+  <img src="https://img.shields.io/badge/SQLite-WAL-003B57?style=flat-square&logo=sqlite" />
 </p>
 
 <p align="center">
-  <b>轻量级、本地化、高性能的房产数据仓库系统</b>
+  <b>轻量级、本地化、高性能的房产数据中心</b><br/>
+  <sub>四层领域架构 · B端ERP + C端营销 · JWT + API Key 双认证</sub>
 </p>
 
 ---
 
 ## 📋 目录
 
-1. [项目概述](#项目概述)
-2. [技术架构全景图](#技术架构全景图)
-3. [环境搭建指南](#环境搭建指南)
-4. [开发规范](#开发规范)
-5. [API接口文档](#API接口文档)
-6. [数据库设计说明](#数据库设计说明)
-7. [核心业务流程解析](#核心业务流程解析)
-8. [常见问题解决方案](#常见问题解决方案)
-9. [后续迭代规划](#后续迭代规划)
+1. [项目概述](#-项目概述)
+2. [技术架构](#-技术架构)
+3. [环境搭建](#-环境搭建)
+4. [开发命令](#-开发命令)
+5. [配置说明](#-配置说明)
+6. [API 接口](#-api-接口)
+7. [数据库设计](#-数据库设计)
+8. [核心业务流程](#-核心业务流程)
+9. [部署指南](#-部署指南)
+10. [开发规范](#-开发规范)
+11. [常见问题](#-常见问题)
+12. [项目结构](#-项目结构)
 
 ---
 
@@ -32,64 +37,74 @@
 
 ### 项目背景
 
-ProFo是一个面向房地产翻新与销售业务的全流程管理系统，采用**四层业务领域架构**设计，实现了从市场情报采集到营销展示的全链路数据管理。
+ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，采用 **四层业务领域架构**，覆盖从市场情报采集到 C 端营销展示的全链路数据管理。系统同时提供 B 端运营后台和 C 端公开站点。
 
 ### 核心功能
 
 | 模块 | 功能描述 | 业务层级 |
 |------|---------|---------|
-| **L1 市场情报层** | 小区信息管理、房源市场数据、价格变动记录 | 数据基准 |
-| **L2 线索管理层** | 房源线索创建、跟进、评估与筛选 | 漏斗瓶颈 |
-| **L3 项目管理层** | 合同管理、装修管控、销售跟进、财务记录 | 核心ERP |
-| **L4 营销层** | 房源营销展示、历史案例作品集 | 门面展示 |
+| **L1 市场情报层** | 小区信息管理、房源市场数据、价格变动记录、CSV/JSON 批量导入 | 数据基准 |
+| **L2 线索管理层** | 卖房估价线索创建、跟进、评估、价格历史 | 漏斗瓶颈 |
+| **L3 项目管理层** | 合同管理、装修管控、销售跟进、财务现金流、状态机 | 核心 ERP |
+| **L4 营销层** | 营销房源 CMS、照片拖拽排序、媒体库、预览发布 | 门面展示 |
+| **市场监控** | 竞品对比、小区雷达、趋势定位、市场情绪、AI 策略 | 决策辅助 |
+| **C 端公开站点** | 房源浏览、估价提交、用户注册/登录、个人中心 | 客户触达 |
+| **系统管理** | 用户、角色、API Key、文件上传、数据导入任务 | 基础设施 |
 
 ### 技术亮点
 
-- 🚀 **Next.js 16 + React 19** - 最新前端技术栈，支持React Compiler
-- ⚡ **FastAPI + SQLAlchemy 2.0** - 高性能异步Python后端
-- 🎨 **TailwindCSS v4 + Radix UI** - 现代化UI组件库
-- 🔐 **JWT + OAuth2** - 企业级认证授权方案
-- 📊 **四层领域架构** - 清晰的业务边界和数据流转
-- 🔄 **写时复制(CoW)** - 层级间数据同步机制
+- 🚀 **Next.js 16 + React 19** — App Router、React Compiler、Server Actions
+- ⚡ **FastAPI + SQLAlchemy 2.0** — 异步 Python 后端，分层架构（Router → Service → Model）
+- 🎨 **TailwindCSS v4 + Radix UI / shadcn** — 现代化 UI 组件库
+- 🔐 **JWT + API Key 双认证** — httpOnly Cookie 存 Token，`X-API-Key` 头用于服务间调用
+- 🔒 **Fernet 对称加密** — 身份证 / 手机号 / 微信会话密钥等敏感字段加密存储
+- 📊 **四层领域架构** — 清晰的业务边界，层间写时复制（CoW）
+- 🖱️ **dnd-kit 拖拽排序** — 营销照片虚拟列表 + 拖拽排序 + 性能监控
+- 🛡️ **slowapi 速率限制** — 接口级防滥用
+- ⚙️ **统一异常处理** — Service 层 `ServiceException`，全局 handler 统一捕获
 
 ---
 
-## 🏗️ 技术架构全景图
+## 🏗️ 技术架构
 
 ### 系统整体架构
 
 ```mermaid
 graph TB
+    subgraph "C 端 公开站点"
+        C1[房源浏览 / 估价 / 注册]
+    end
+    subgraph "B 端 管理后台"
+        B1[项目 / 线索 / 营销 / 房源 / 用户]
+    end
     subgraph "前端层 Frontend"
         A[Next.js 16 App Router]
         B[React 19 + React Compiler]
-        C[TailwindCSS v4]
-        D[Radix UI + Shadcn]
-        E[SWR Data Fetching]
+        C[TailwindCSS v4 + shadcn]
+        D[SWR + nuqs + RHF/Zod]
     end
-
-    subgraph "API网关层"
+    subgraph "API 网关层"
         F[FastAPI]
-        G[JWT Auth]
-        H[Rate Limiter]
+        G[JWT + API Key Auth]
+        H[slowapi Rate Limiter]
         I[CORS Middleware]
     end
-
     subgraph "业务逻辑层 Backend"
-        J[Routers]
-        K[Services]
-        L[Models]
-        M[Schemas]
+        J[Routers 按领域分模块]
+        K[Services 按领域分模块]
+        L[Models 按领域分模块]
+        M[Schemas 按领域分模块]
     end
-
     subgraph "数据存储层"
-        N[(SQLite/PostgreSQL)]
-        O[Static Files]
+        N[(SQLite + WAL)]
+        O[Static Files / Uploads]
     end
 
+    C1 --> A
+    B1 --> A
     A --> F
-    B --> F
     F --> G
+    F --> H
     G --> J
     J --> K
     K --> L
@@ -103,26 +118,19 @@ graph TB
 graph TB
     subgraph "L4 市场营销层"
         L4[l4_marketing_projects - CMS]
-        L4D[角色: 门面与作品集]
-        L4F[职责: 房源营销展示<br/>历史案例作品集]
+        L4F[营销房源展示 / 媒体库 / 拖拽排序]
     end
-
     subgraph "L3 项目管理层"
-        L3[projects - 核心ERP]
-        L3D[角色: 工厂]
-        L3F[职责: 合同管理<br/>装修管控<br/>销售跟进<br/>财务记录]
+        L3[projects - 核心 ERP]
+        L3F[合同 / 装修 / 销售 / 财务 / 状态机]
     end
-
     subgraph "L2 线索管理层"
         L2[leads - 筛选器]
-        L2D[角色: 漏斗瓶颈]
-        L2F[职责: 房源线索创建<br/>跟进、评估与筛选]
+        L2F[线索创建 / 跟进 / 评估 / 价格历史]
     end
-
     subgraph "L1 市场情报层"
         L1[property_current - 参考基准]
-        L1D[角色: 参考基准]
-        L1F[职责: 小区信息管理<br/>房源市场数据<br/>价格变动记录]
+        L1F[小区 / 房源 / 价格变动 / 批量导入]
     end
 
     L1 -.->|写时复制| L2
@@ -130,888 +138,381 @@ graph TB
     L3 -.->|写时复制| L4
 ```
 
-### 前端架构详解
+### 前端架构
 
 #### 技术栈
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Next.js | 16.1.7 | React框架，App Router |
-| React | 19.2.1 | UI库，React Compiler优化 |
+| Next.js | 16.1.7 | React 框架，App Router、Server Actions |
+| React | 19.2.1 | UI 库，React Compiler 优化 |
 | TypeScript | 5.9.3 | 类型安全 |
-| TailwindCSS | 4.1.18 | 原子化CSS框架 |
-| Radix UI | 1.4.3 | 无障碍UI组件基础 |
-| SWR | 2.4.1 | 数据获取与缓存 |
-| Zod | 4.3.6 | 运行时类型校验 |
-| React Hook Form | 7.71.1 | 表单状态管理 |
+| TailwindCSS | 4.3 | 原子化 CSS |
+| Radix UI / shadcn | 1.4.3 | 无障碍 UI 组件 |
+| SWR | 2.4.1 | 服务端状态获取与缓存 |
+| nuqs | 2.8.6 | URL 查询参数状态 |
+| React Hook Form + Zod | 7.71 / 4.3 | 表单状态与校验 |
+| dnd-kit | 6.3 / 10.0 | 拖拽排序 |
+| Recharts | 3.7 | 图表可视化 |
+| openapi-fetch + openapi-typescript | 0.15 / 7.10 | 类型安全 API 客户端 |
+| Vitest + Playwright | 3.2 / 1.59 | 单元测试 + E2E 测试 |
 
-#### 组件架构
-
-```
-frontend/src/
-├── app/                    # Next.js App Router
-│   ├── (main)/            # 主布局路由组
-│   │   ├── _components/   # 主布局共享组件
-│   │   │   ├── leads-table.tsx
-│   │   │   └── stat-card.tsx
-│   │   ├── _lib/          # 主布局共享工具
-│   │   ├── projects/      # 项目管理模块
-│   │   │   ├── [projectId]/  # 项目详情路由
-│   │   │   │   └── cashflow/ # 现金流模块
-│   │   │   ├── _components/  # 项目共享组件
-│   │   │   │   ├── create-project/  # 创建项目组件
-│   │   │   │   ├── monitor/        # 监控大屏组件
-│   │   │   │   └── project-detail/ # 项目详情组件
-│   │   │   ├── actions/     # 项目相关API actions
-│   │   │   └── types/       # 项目类型定义
-│   │   ├── leads/         # 线索管理模块
-│   │   │   ├── _components/  # 线索共享组件
-│   │   │   │   ├── add-lead-parts/   # 添加线索组件
-│   │   │   │   └── drawer-parts/     # 抽屉组件
-│   │   │   ├── actions/    # 线索相关API actions
-│   │   │   ├── constants/  # 常量配置
-│   │   │   └── hooks/      # 线索模块hooks
-│   │   ├── l4-marketing/  # 营销管理模块
-│   │   │   ├── projects/
-│   │   │   │   ├── [id]/   # 营销项目详情
-│   │   │   │   │   ├── _components/  # 详情页组件
-│   │   │   │   │   ├── edit/         # 编辑页面
-│   │   │   │   │   └── preview/      # 预览页面
-│   │   │   │   └── _components/
-│   │   │   │       ├── common/       # 通用组件
-│   │   │   │       ├── detail/       # 详情组件
-│   │   │   │       ├── photo-manager/# 照片管理组件
-│   │   │   │       ├── project-form/ # 项目表单组件
-│   │   │   │       └── project-selector/ # 项目选择器
-│   │   │   └── actions/    # 营销相关API actions
-│   │   ├── properties/    # 房源管理模块
-│   │   │   ├── _components/  # 房源共享组件
-│   │   │   ├── governance/    # 房源治理模块
-│   │   │   ├── upload/       # 房源上传模块
-│   │   │   └── actions.ts    # 房源API actions
-│   │   └── users/         # 用户管理模块
-│   │       ├── _components/  # 用户共享组件
-│   │       ├── roles/        # 角色管理
-│   │       └── actions/      # 用户API actions
-│   │   └── layout.tsx     # 主布局
-│   ├── api/               # Next.js API路由
-│   │   └── auth/          # 认证相关API
-│   │       └── refresh/    # Token刷新
-│   ├── login/             # 登录页面
-│   │   ├── actions.ts     # 登录actions
-│   │   └── refresh-action.ts
-│   ├── layout.tsx         # 根布局
-│   └── globals.css        # 全局样式
-├── components/            # 组件目录
-│   ├── ui/                # shadcn/ui组件
-│   ├── app-sidebar.tsx    # 应用侧边栏
-│   ├── error-boundary.tsx # 错误边界
-│   └── swr-provider.tsx   # SWR提供者
-├── lib/                   # 核心代码
-│   ├── api-client.ts      # API客户端（浏览器端）
-│   ├── api-server.ts      # API客户端（服务端）
-│   ├── api-helpers.ts     # API辅助函数
-│   ├── api-upload.ts      # API上传工具
-│   ├── api-types.d.ts     # OpenAPI生成类型
-│   ├── config.ts          # 应用配置
-│   ├── error-utils.ts     # 错误处理工具
-│   ├── file-utils.ts      # 文件处理工具
-│   ├── formatters.ts      # 格式化工具
-│   ├── media-utils.ts     # 媒体处理工具
-│   ├── token-refresh-server.ts # Token刷新（服务端）
-│   ├── action-result.ts   # Action结果类型
-│   └── utils.ts           # 通用工具函数
-├── hooks/                 # 自定义Hooks
-│   └── use-mobile.ts      # 移动端检测Hook
-├── test/                  # 测试目录
-│   └── setup.ts           # 测试配置
-└── proxy.ts               # Next.js中间件代理
-```
-
-#### 状态管理方案
+#### 双路由组设计
 
 ```mermaid
 graph LR
-    subgraph "状态管理"
-        A[Server State<br/>SWR]
-        B[Form State<br/>React Hook Form]
-        C[UI State<br/>React useState]
-        D[URL State<br/>nuqs]
+    subgraph "(main) 受保护路由组"
+        M1[Dashboard]
+        M2[Projects]
+        M3[Leads]
+        M4[L4 Marketing]
+        M5[Properties]
+        M6[Users/Roles]
+        M7[Settings/API Key]
     end
-
-    A --> E[API Data Caching]
-    B --> F[Form Validation<br/>Zod Schema]
-    C --> G[Local UI State]
-    D --> H[Query Parameters]
+    subgraph "(c) C端公开路由组"
+        C1[首页/房源]
+        C2[估价]
+        C3[登录/注册]
+        C4[个人中心]
+        C5[关于/联系]
+    end
+    M1 --> M2
+    M1 --> M3
+    M1 --> M4
 ```
 
-### 后端架构详解
+- **`(main)/layout.tsx`** — 调用 `GET /api/v1/auth/me` 鉴权，未登录跳转 `/login`，标记 `force-dynamic` 以访问 Cookie
+- **`(c)/layout.tsx`** — C 端公开站点布局，无需登录
+
+#### 双 API 客户端
+
+| 客户端 | 文件 | 使用场景 | 特性 |
+|--------|------|---------|------|
+| `fetchClient()` | `lib/api-server.ts` | Server Components / Server Actions | 直接读 Cookie，401 自动刷新 |
+| `client` | `lib/api-client.ts` | Client Components | `credentials: "include"`，401 跳 `/login` |
+
+开发环境通过 `next.config.ts` 的 `rewrites` 将 `/api/*` 代理到 `http://127.0.0.1:8000/api/*`，使前后端同域以正常发送 Cookie。
+
+### 后端架构
 
 #### 技术栈
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| FastAPI | 0.104+ | 高性能Web框架 |
-| SQLAlchemy | 2.0+ | ORM数据库操作 |
+| FastAPI | ≥ 0.104 | 高性能 Web 框架 |
+| SQLAlchemy | ≥ 2.0 | ORM |
 | Pydantic | v2 | 数据模型与校验 |
-| Uvicorn | 0.24+ | ASGI服务器 |
-| Alembic | 1.17+ | 数据库迁移 |
-| Passlib | - | 密码哈希 |
-| Python-JOSE | - | JWT实现 |
+| pydantic-settings | ≥ 2.0 | 环境变量配置 |
+| slowapi | ≥ 0.1.9 | 速率限制 |
+| python-jose | ≥ 3.3 | JWT |
+| passlib + bcrypt | ≥ 1.7 / <4.0 | 密码哈希 |
+| cryptography (Fernet) | - | 敏感字段加密 |
+| pandas | ≥ 2.1 | 数据处理 |
+| alembic | ≥ 1.17 | 数据库迁移（可选） |
+| uv | - | 包管理器（替代 pip/venv） |
 
-#### 服务分层架构
-
-服务层按业务领域模块化组织，每个领域（Domain）包含独立的业务逻辑：
+#### 服务分层（Router → Service → Model）
 
 ```
 backend/
-├── routers/              # API路由层
-│   ├── projects_simple.py      # 项目路由
-│   ├── projects_renovation.py # 装修路由
-│   ├── projects_sales.py      # 销售路由
-│   ├── leads.py               # 线索路由
-│   ├── l4_marketing.py        # 营销路由
-│   ├── l4_marketing_import.py # 营销导入路由
-│   ├── auth.py                # 认证路由
-│   ├── users.py               # 用户路由
-│   ├── roles.py               # 角色路由
-│   ├── files.py               # 文件路由
-│   ├── upload.py              # 上传路由
-│   ├── cashflow_simple.py     # 现金流路由
-│   ├── properties.py          # 房源路由
-│   ├── admin.py               # 管理后台路由
-│   ├── monitor.py             # 监控路由
-│   └── push.py                # 推送路由
-├── services/             # 业务逻辑层（按领域模块化）
-│   ├── __init__.py           # 服务层统一入口，聚合导出所有服务
-│   ├── market/               # 市场情报服务（原L1）
-│   │   ├── query.py              # 房源查询服务
-│   │   ├── importer.py           # 数据导入服务
-│   │   ├── batch_importer.py     # CSV批量导入
-│   │   ├── merger.py             # 小区合并服务
-│   │   └── parser.py             # 楼层解析工具
-│   ├── leads/                # 线索管理服务（原L2，预留）
-│   ├── projects/             # 项目管理服务（原L3）
-│   │   ├── facade.py             # 外观服务（向后兼容）
-│   │   ├── core.py               # 项目核心服务
-│   │   ├── renovation.py         # 装修阶段服务
-│   │   ├── sales.py              # 销售跟进服务
-│   │   ├── finance.py            # 财务管理服务
-│   │   └── internal/             # 内部组件
-│   │       ├── query.py          # 项目查询逻辑
-│   │       ├── builder.py        # 响应构建器
-│   │       └── state.py          # 状态管理器
-│   ├── marketing/            # 市场营销服务（原L4）
-│   │   ├── project.py            # 营销项目管理
-│   │   ├── import_service.py     # L3项目导入
-│   │   └── query.py              # 营销查询服务
-│   ├── monitor/              # 市场监控服务
-│   │   └── service.py            # 监控服务
-│   ├── system/               # 系统服务
-│   │   ├── auth.py               # 认证服务
-│   │   ├── user.py               # 用户服务
-│   │   ├── role.py               # 角色服务
-│   │   └── error.py              # 错误记录服务
-│   └── utils/                # 服务工具
-│       └── date_parser.py        # 日期解析工具
+├── routers/                    # API 路由层（薄，仅参数校验/依赖注入）
+│   ├── common/                 # 通用路由（files / push / upload）
+│   ├── market/                 # 市场情报（properties / communities）
+│   ├── leads/                  # 线索（core / followups / prices）
+│   ├── projects/               # 项目（core / renovation / sales / cashflow）
+│   ├── marketing/              # 营销（projects / import_）
+│   ├── monitor/                # 市场监控
+│   ├── public/                 # C 端公开接口（auth / users / projects / leads / communities）
+│   └── system/                 # 系统（auth / users / roles）
+├── services/                   # 业务逻辑层（按领域模块化）
+│   ├── market/                 # 房源查询 / 导入 / 小区合并 / CSV 解析 / 导入任务
+│   ├── leads/                  # 线索核心 / 跟进 / 价格（internal/）
+│   ├── projects/               # Facade + core / renovation / sales / finance（internal/）
+│   ├── marketing/              # 营销项目 / 媒体 / 导入 / 公开
+│   ├── monitor/                # 监控服务
+│   ├── system/                 # auth / user / role / api_key / error / init / exceptions
+│   └── utils/                  # 日期解析等工具
+├── models/                     # 数据模型层（按领域模块化）
+│   ├── common/                 # Base / BaseModel / 枚举 / encrypted 字段
+│   ├── property/               # Community / PropertyCurrent / PropertyHistory / PropertyMedia
+│   ├── lead/                   # Lead / LeadFollowUp / LeadPriceHistory
+│   ├── project/                # Project 及 8 个子模型（合同/业主/销售/跟进/互动/财务/状态日志/装修）
+│   ├── marketing/              # L4MarketingProject / L4MarketingMedia
+│   ├── system/                 # FailedRecord / PropertyImportTask
+│   └── user/                   # User / Role / ApiKey
+├── schemas/                    # Pydantic Schema（按领域分模块）
+├── dependencies/               # FastAPI 依赖注入（auth / common / projects）
+├── utils/                      # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
+├── main.py                     # 应用入口
+├── db.py                       # SQLAlchemy 引擎 + 会话工厂 + init_db()
+├── settings.py                 # Pydantic Settings
+├── error_handlers.py           # 全局异常处理器
+├── exceptions.py               # 通用异常
+└── init_admin.py / init_db.py  # 初始化脚本
+```
 
-##### 服务使用方式
+#### 关键设计模式
+
+- **依赖注入**：`DbSessionDep = Annotated[Session, Depends(get_db)]`，`CurrentUserDep`、`CurrentAdminUserDep`、`CurrentInternalUserDep` 等预定义鉴权依赖
+- **服务异常**：Service 层抛出 `ServiceException` / `AuthenticationError` / `ResourceNotFoundError` 等（`services/system/exceptions.py`），由全局 handler 捕获。**禁止在 Service 层抛 `HTTPException`**
+- **响应格式**：直接返回 Pydantic 模型；分页用 `PaginatedResponse[T]`；列表查询带过滤+排序
+- **逻辑外键**：关联用 `user_id: int` 等软外键，级联由 Service 控制；启动时执行 `PRAGMA foreign_keys=ON`
+- **加密字段**：通过 `models/common/encrypted.py` 的 `EncryptedString` 类型自动加密身份证 / 手机号 / 微信会话密钥
+
+#### 统一入口导入
 
 ```python
-# 方式1：统一入口导入（推荐）
 from services import (
-    # Market 模块
-    PropertyQueryService,
-    PropertyImporter,
-    CommunityMerger,
-    FloorParser,
-    # Projects 模块
-    ProjectService,          # Facade聚合服务
-    ProjectCoreService,
-    RenovationService,
-    SalesService,
-    FinanceService,
-    CashFlowService,
-    # Marketing 模块
-    MarketingProjectService,
-    MarketingImportService,
-    # System 模块
-    AuthService,
-    UserService,
-    RoleService,
-    # Monitor 模块
+    PropertyQueryService, PropertyImporter, CommunityMerger,
+    ProjectService, ProjectCoreService, RenovationService, SalesService, FinanceService,
+    MarketingProjectService, MarketingImportService,
+    AuthService, UserService, RoleService, ApiKeyService,
     MonitorService,
 )
-
-# 方式2：按需从子模块导入
-from services.market import PropertyQueryService, PropertyImporter
-from services.projects import ProjectService, ProjectCoreService
-from services.marketing import MarketingProjectService
-from services.system import AuthService, UserService
-from services.monitor import MonitorService
-```
-
-##### 服务模块职责说明
-
-| 模块 | 业务层级 | 职责描述 | 主要服务 |
-|------|----------|----------|----------|
-| `market` | L1 | 市场情报管理 | 房源查询、数据导入、小区合并、楼层解析 |
-| `leads` | L2 | 线索管理（预留） | 线索创建、跟进、评估与筛选 |
-| `projects` | L3 | 项目核心ERP | 项目管理、装修管控、销售跟进、财务记录 |
-| `marketing` | L4 | 营销展示 | 营销项目、媒体管理、作品集展示 |
-| `monitor` | - | 市场监控 | 竞品分析、趋势监控 |
-| `system` | - | 系统服务 | 认证授权、用户管理、角色权限、错误记录 |
-
-```
-
-├── models/                    # 数据模型层（按业务领域模块化组织）
-│   ├── __init__.py            # 模型包统一入口，聚合导出所有模型
-│   ├── common/                # 基础模块
-│   │   ├── __init__.py        # 基础模块入口，导出Base、枚举类型
-│   │   └── base.py            # 基础模型和枚举定义（Base, BaseModel, PropertyStatus等）
-│   ├── lead/                  # 线索管理模块（L2）
-│   │   ├── __init__.py        # 线索模块入口
-│   │   └── lead.py            # 线索模型（Lead, LeadFollowUp, LeadPriceHistory）
-│   ├── marketing/             # 市场营销模块（L4）
-│   │   ├── __init__.py        # 营销模块入口
-│   │   └── l4_marketing.py    # 营销模型（L4MarketingProject, L4MarketingMedia等）
-│   ├── project/               # 项目管理模块（L3）
-│   │   ├── __init__.py        # 项目模块入口，聚合导出所有项目相关模型
-│   │   ├── project.py         # 项目主模型及统一导出
-│   │   ├── _project_base.py   # 项目基础模型（Project）
-│   │   ├── _project_contract.py   # 项目合同模型（ProjectContract）
-│   │   ├── _project_owner.py      # 项目业主模型（ProjectOwner）
-│   │   ├── _project_sale.py       # 项目销售模型（ProjectSale）
-│   │   ├── _project_followup.py   # 项目跟进模型（ProjectFollowUp）
-│   │   ├── _project_interaction.py    # 项目互动模型（ProjectInteraction, ProjectEvaluation）
-│   │   ├── _project_finance.py    # 项目财务模型（FinanceRecord）
-│   │   ├── _project_status_log.py # 项目状态日志模型（ProjectStatusLog）
-│   │   ├── _project_renovation.py # 项目装修模型（ProjectRenovation, RenovationPhoto）
-│   ├── property/              # 房源信息模块（L1）
-│   │   ├── __init__.py        # 房源模块入口
-│   │   ├── community.py       # 小区模型（Community, CommunityAlias, CommunityCompetitor）
-│   │   ├── property.py        # 房源模型（PropertyCurrent, PropertyHistory）
-│   │   └── media.py           # 房源媒体模型（PropertyMedia）
-│   ├── system/                # 系统模块
-│   │   ├── __init__.py        # 系统模块入口
-│   │   └── error.py           # 错误记录模型（FailedRecord）
-│   └── user/                  # 用户权限模块
-│       ├── __init__.py        # 用户模块入口
-│       └── user.py            # 用户模型（User, Role）
-├── schemas/              # Pydantic模型
-│   ├── __init__.py            # Schema包入口
-│   ├── common.py              # 通用Schema (分页响应、楼层解析等)
-│   ├── enums.py               # 枚举定义 (房源状态、媒体类型等)
-│   ├── response.py            # 统一API响应模型
-│   ├── upload.py              # 上传和导入相关Schema
-│   ├── project/               # 项目相关Schema包
-│   │   ├── __init__.py        # 聚合导出所有项目Schema
-│   │   ├── core.py            # 项目核心CRUD Schema
-│   │   ├── contract.py        # 合同Schema
-│   │   ├── owner.py           # 业主Schema
-│   │   ├── renovation.py      # 装修Schema
-│   │   ├── sales.py           # 销售Schema (含互动记录)
-│   │   ├── finance.py         # 财务Schema
-│   │   ├── followup.py        # 跟进记录Schema
-│   │   ├── evaluation.py      # 评估Schema
-│   │   └── status_log.py      # 状态日志Schema
-│   ├── property/              # 房源相关Schema包
-│   │   ├── __init__.py        # 聚合导出所有房源Schema
-│   │   ├── core.py            # 房源核心接收模型
-│   │   └── response.py        # 房源响应模型
-│   ├── lead/                  # 线索相关Schema包
-│   │   └── __init__.py        # 线索、跟进、价格历史Schema
-│   ├── user/                  # 用户相关Schema包
-│   │   └── __init__.py        # 用户、角色、认证Schema
-│   ├── community/             # 小区相关Schema包
-│   │   └── __init__.py        # 小区响应、合并、字典Schema
-│   ├── monitor/               # 监控相关Schema包
-│   │   └── __init__.py        # 市场情绪、趋势、竞品、AI策略Schema
-│   └── l4_marketing/          # L4市场营销Schema包
-│       ├── __init__.py        # 聚合导出所有L4 Schema
-│       ├── project.py         # 营销项目Schema
-│       ├── media.py           # 营销媒体Schema
-│       ├── query.py           # 查询和响应Schema
-│       ├── import_schemas.py  # L3项目导入Schema
-│       └── enums.py           # L4枚举定义 (发布状态、媒体类型等)
-├── dependencies/         # 依赖注入
-│   ├── auth.py                # 认证依赖
-│   └── projects.py            # 项目依赖
-├── utils/                # 工具函数
-│   ├── auth.py                # 认证工具
-│   ├── permission.py          # 权限工具
-│   ├── query_params.py        # 查询参数工具
-│   ├── jwt_validator.py       # JWT验证器
-│   ├── param_parser.py        # 参数解析器
-│   └── error_formatters.py    # 错误格式化
-├── scripts/              # 运维脚本
-│   └── audit_db.py           # 数据库审计脚本
-├── tests/                # 测试目录
-│   ├── test_api.py
-│   ├── test_auth.py
-│   ├── test_projects.py
-│   ├── test_leads.py
-│   ├── test_l4_marketing.py
-│   ├── test_cashflow.py
-│   ├── test_detail_response.py
-│   ├── test_importer.py
-│   ├── test_l4_marketing_import.py
-│   ├── test_l4_marketing_service.py
-│   ├── test_monitor_api.py
-│   ├── test_status_flow.py
-│   ├── test_upload.py
-│   ├── test_users_refactor.py
-│   ├── test_date_normalization.py
-│   ├── test_exceptions.py
-│   ├── test_param_parser.py
-│   ├── test_parser.py
-│   ├── test_query_params.py
-│   └── test_internal_api_permissions.py
-├── common.py             # 通用配置（限流器等）
-├── conftest.py           # 测试配置
-├── error_handlers.py     # 全局错误处理
-├── exceptions.py         # 自定义异常
-├── main.py               # 应用入口
-├── settings.py           # 配置管理
-├── db.py                 # 数据库连接
-├── alembic.ini           # Alembic配置
-└── pyproject.toml        # 项目配置
-```
-
-### 数据库架构详解
-
-#### 数据库配置
-
-```python
-# 支持SQLite（开发）和PostgreSQL（生产）
-# SQLite配置（默认）
-DATABASE_URL = "sqlite:///./data.db"
-
-# PostgreSQL配置（生产环境）
-DATABASE_URL = "postgresql://user:password@localhost/profo"
-```
-
-#### 连接池优化
-
-```python
-engine = create_engine(
-    settings.database_url,
-    echo=settings.database_echo,
-    connect_args={
-        "check_same_thread": False,  # SQLite 特定配置
-        "timeout": 30,               # 连接超时
-    },
-    poolclass=StaticPool,            # 使用静态连接池（SQLite多线程支持）
-    pool_pre_ping=True,              # 连接有效性检查
-    execution_options={
-        "compiled_cache": {},        # 启用编译缓存以提高查询性能
-    }
-)
+# 或按子模块导入
+from services.market import PropertyQueryService
+from services.projects import ProjectService
 ```
 
 ---
 
-## 🚀 环境搭建指南
+## 🚀 环境搭建
 
 ### 开发环境要求
 
 | 环境 | 版本要求 | 说明 |
 |------|---------|------|
-| Node.js | >= 20 | 前端运行环境 |
-| pnpm | >= 9 | 包管理器 |
-| Python | >= 3.10 | 后端运行环境 |
-| SQLite | - | 默认数据库 |
+| Node.js | ≥ 20 | 前端运行环境 |
+| pnpm | ≥ 9 | 前端包管理器 |
+| Python | ≥ 3.10 | 后端运行环境 |
+| uv | 最新 | 后端包管理器（替代 pip/venv） |
 
 ### 一键初始化（推荐）
 
-我们提供了跨平台的一键初始化脚本，自动完成环境配置、依赖安装和数据库初始化：
-
-**Windows:**
-```powershell
-# 使用 PowerShell 或 CMD 执行
-.\init.bat
-```
-
-**macOS/Linux:**
-```bash
-# 添加执行权限并运行
-chmod +x init.sh
-./init.sh
-```
-
-**初始化脚本将自动完成以下步骤：**
-
-1. ✅ 检查 Python 版本 (>= 3.10)
-2. ✅ 安装/检查 uv 包管理器
-3. ✅ 安装/检查 pnpm 包管理器
-4. ✅ 创建后端 `.env` 配置文件（自动生成 JWT 密钥）
-5. ✅ 创建前端 `.env.local` 配置文件
-6. ✅ 安装后端 Python 依赖
-7. ✅ 安装前端 Node.js 依赖
-8. ✅ 初始化数据库表结构
-9. ✅ 创建默认管理员账号
-
-**初始化完成后：**
+跨平台初始化脚本位于 `deploy/` 目录：
 
 ```bash
-# 1. 启动后端服务
-cd backend && uv run uvicorn main:app --reload
+# macOS / Linux
+chmod +x deploy/init.sh
+./deploy/init.sh
 
-# 2. 启动前端服务（新终端）
-cd frontend && pnpm dev
+# Windows (PowerShell / CMD)
+deploy\init.bat
 ```
 
-**默认管理员账号：**
-- 用户名: `admin`
-- 密码: `admin123`
-- 角色: 管理员
+**脚本执行步骤：**
 
----
+1. ✅ 检查 Python ≥ 3.10
+2. ✅ 安装 / 检查 uv 包管理器
+3. ✅ 安装 / 检查 pnpm 包管理器
+4. ✅ 创建后端 `backend/.env`（自动生成 JWT 密钥；⚠️ 需手动补充 `ENCRYPTION_KEY` / `WECHAT_APPID` / `WECHAT_SECRET`）
+5. ✅ 创建前端 `frontend/.env.local`
+6. ✅ `uv sync` 安装后端依赖
+7. ✅ `pnpm install` 安装前端依赖
+8. ✅ `init_db.py` 创建数据库表
+9. ✅ `init_admin.py` 创建角色和管理员
 
-### 手动安装步骤
+> ⚠️ **重要**：初始化脚本完成后会显示 `admin / admin123` 提示，但**实际管理员密码由 `init_admin.py` 随机生成**并打印在终端（格式 `Temp<12位随机字符>9!`），**仅显示一次**，请立即保存。首次登录强制修改密码（`must_change_password=True`）。
 
-如果一键初始化不适合你的环境，可以按以下步骤手动安装：
+### 手动安装
 
-### 前端启动步骤
+#### 前端
 
 ```bash
-# 1. 进入前端目录
 cd frontend
-
-# 2. 安装依赖
 pnpm install
-
-# 3. 配置环境变量
-cp .env.example .env.local
-# 编辑 .env.local 配置 API 地址
-
-# 4. 启动开发服务器
-pnpm dev
-
-# 前端访问地址: http://localhost:3000
+cp .env.example .env.local    # 编辑 API 地址
+pnpm dev                      # http://localhost:3000
 ```
 
-### 后端启动步骤
+#### 后端
 
 ```bash
-# 1. 进入后端目录
 cd backend
 
-# 2. 安装uv（如果未安装）
-# Windows:
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-# macOS/Linux:
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# 安装 uv
+curl -LsSf https://astral.sh/uv/install.sh | sh        # macOS/Linux
+# powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
-# 3. 创建虚拟环境
+# 创建虚拟环境并安装依赖
 uv venv
+uv sync
 
-# 4. 激活虚拟环境
-# Windows:
-.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# 5. 安装依赖
-uv pip install -e .
-
-# 6. 配置环境变量
+# 配置环境变量（见下节）
 cp .env.example .env
-# 编辑 .env 文件，设置必要配置：
-# - JWT_SECRET_KEY（必填）
-# - WECHAT_APPID（必填，微信登录用）
-# - WECHAT_SECRET（必填，微信登录用）
 
-# 7. 初始化数据库
+# 初始化数据库
 uv run python init_db.py
 
-# 8. 初始化系统数据（创建默认管理员）
+# 创建角色和管理员（首次会打印临时密码）
 uv run python init_admin.py
 
-# 9. 启动开发服务器
-uv run python main.py
-
-# 后端API地址: http://127.0.0.1:8000
-# API文档: http://127.0.0.1:8000/docs
-```
-
-### 数据库初始化
-
-```bash
-# 初始化数据库表结构
-uv run python init_db.py
-
-# 初始化系统数据（默认角色和管理员）
-uv run python init_admin.py
-
-# 使用Alembic进行数据库迁移
-uv run alembic upgrade head
-```
-
-### 测试账号
-
-```
-账号: admin
-密码: admin123
+# 启动开发服务器
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# API: http://127.0.0.1:8000
+# 文档: http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## 📐 开发规范
+## 🛠️ 开发命令
 
-### 代码规范
+### 后端
 
-#### Python代码规范
-
-- 遵循 **PEP 8** 编码规范
-- 使用 **Black** 进行代码格式化
-- 使用 **Ruff** 进行代码检查
-- 函数行数不超过 **250行**
-- 使用类型提示（Type Hints）
-
-```python
-# 示例：带类型提示的函数
-def get_project_by_id(
-    db: Session,
-    project_id: str
-) -> Optional[Project]:
-    """通过ID获取项目"""
-    return db.query(Project).filter(Project.id == project_id).first()
+```bash
+cd backend
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000   # 开发服务器
+uv run python init_db.py                                        # 创建所有表
+uv run python init_admin.py                                     # 初始化角色和管理员
+uv sync                                                         # 安装/同步依赖
+uv run pytest                                                   # 运行测试（带覆盖率）
+uv run pytest tests/test_foo.py -v                              # 运行单个测试
 ```
 
-#### TypeScript代码规范
+### 前端
 
-- 使用 **ESLint** 进行代码检查
-- 显式声明类型，避免使用 `any`
-- 组件文件使用 **PascalCase** 命名
-- 工具函数使用 **camelCase** 命名
-
-```typescript
-// 示例：类型定义
-interface Project {
-  id: string;
-  name: string;
-  status: ProjectStatus;
-  createdAt: Date;
-}
-
-// 示例：组件定义
-export function ProjectCard({ project }: { project: Project }) {
-  return <div>{project.name}</div>;
-}
+```bash
+cd frontend
+pnpm dev                # 开发服务器（端口 3000）
+pnpm build              # 生产构建
+pnpm start              # 生产启动
+pnpm lint               # ESLint（max-warnings 0）
+pnpm test               # Vitest 单元测试
+pnpm test:watch         # Vitest watch 模式
+pnpm test:coverage      # 覆盖率报告
+pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端运行）
 ```
 
-### 提交规范
+> **接口变更流程**：启动后端 → `curl http://127.0.0.1:8000/openapi.json` 验证 → `pnpm gen-api` → 提交 `src/lib/api-types.d.ts`
 
-使用 **Conventional Commits** 规范：
+---
 
-```
-<type>(<scope>): <subject>
+## ⚙️ 配置说明
 
-<body>
+### 后端环境变量（`backend/.env`）
 
-<footer>
-```
+| 变量 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `JWT_SECRET_KEY` | ✅ | - | JWT 签名密钥，**生产环境务必使用强密钥** |
+| `ENCRYPTION_KEY` | ✅ | - | Fernet 对称加密密钥（用于敏感字段），`openssl rand -base64 32` 生成 |
+| `WECHAT_APPID` | ✅ | - | 微信 AppID（不使用微信登录也需填占位符） |
+| `WECHAT_SECRET` | ✅ | - | 微信 AppSecret |
+| `DATABASE_URL` | - | `sqlite:///./data.db` | 数据库连接串 |
+| `API_PREFIX` | - | `/api` | API 前缀 |
+| `CORS_ORIGINS` | - | `["http://localhost:3000", ...]` | 允许的跨域来源 |
+| `FRONTEND_URL` | - | `http://localhost:3000` | 前端 URL（微信回调等） |
+| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | - | `30` | 访问令牌过期时间 |
+| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | - | `7` | 刷新令牌过期时间 |
+| `JWT_KEY_ROTATION_ENABLED` | - | `false` | 是否启用密钥轮换 |
+| `JWT_SECRET_KEY_OLD` | - | - | 旧密钥（轮换过渡期） |
+| `MAX_UPLOAD_SIZE` | - | `104857600` | 上传大小上限（100 MB） |
+| `DEFAULT_PAGE_SIZE` / `MAX_PAGE_SIZE` | - | `50` / `1000` | 分页配置 |
+| `DEBUG` | - | `true` | 调试模式 |
 
-**类型说明：**
+### 前端环境变量（`frontend/.env.local`）
 
-| 类型 | 说明 |
+| 变量 | 说明 |
 |------|------|
-| feat | 新功能 |
-| fix | Bug修复 |
-| docs | 文档更新 |
-| style | 代码格式调整 |
-| refactor | 代码重构 |
-| test | 测试相关 |
-| chore | 构建/工具相关 |
-
-**示例：**
-
-```bash
-feat(projects): 添加项目导出功能
-
-- 支持CSV格式导出
-- 添加导出进度提示
-- 支持按状态筛选导出
-
-Closes #123
-```
-
-### 分支管理规范
-
-```
-main                 # 生产分支
-├── develop          # 开发分支
-├── feature/xxx      # 功能分支
-├── bugfix/xxx       # Bug修复分支
-└── hotfix/xxx       # 热修复分支
-```
-
-**工作流程：**
-
-1. 从 `develop` 创建功能分支
-2. 开发完成后提交PR到 `develop`
-3. 代码审查通过后合并
-4. 定期从 `develop` 合并到 `main`
-
-### API设计规范
-
-#### RESTful API规范
-
-```
-GET    /api/v1/projects          # 列表查询
-POST   /api/v1/projects          # 创建资源
-GET    /api/v1/projects/{id}     # 详情查询
-PUT    /api/v1/projects/{id}     # 更新资源
-DELETE /api/v1/projects/{id}     # 删除资源
-```
-
-#### 响应格式
-
-**成功响应：**
-
-```json
-{
-  "id": "uuid",
-  "name": "项目名称",
-  "created_at": "2024-01-01T00:00:00"
-}
-```
-
-**错误响应：**
-
-```json
-{
-  "detail": "错误描述信息"
-}
-```
-
-#### HTTP状态码
-
-| 状态码 | 使用场景 |
-|-------|---------|
-| 200 | GET/PUT成功 |
-| 201 | POST创建成功 |
-| 204 | DELETE删除成功 |
-| 400 | 请求参数错误 |
-| 401 | 未认证或Token无效 |
-| 403 | 权限不足 |
-| 404 | 资源不存在 |
-| 422 | 验证失败 |
+| `NEXT_PUBLIC_API_URL` | 浏览器可访问的后端地址（开发环境 `http://127.0.0.1:8000`） |
+| `SERVER_API_URL` | 服务端内部直连地址（生产环境绕过 Nginx） |
 
 ---
 
-## 🔌 API接口文档
+## 🔌 API 接口
 
-### 认证模块
+所有接口前缀：`/api/v1`，文档地址：`http://127.0.0.1:8000/docs`
 
-#### 1. 用户登录
+### 认证方式
 
-```http
-POST /api/v1/auth/login
-Content-Type: application/json
+| 方式 | 头部 | 场景 |
+|------|------|------|
+| JWT | `Authorization: Bearer <token>` 或 httpOnly Cookie | Web 前端用户 |
+| API Key | `X-API-Key: <key>` | 服务间调用 / 第三方集成 |
 
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
+### 主要端点
 
-**响应：**
+| 模块 | 路径 | 方法 | 说明 |
+|------|------|------|------|
+| **认证** | `/auth/login` | POST | 用户登录（返回 access + refresh token） |
+| | `/auth/refresh` | POST | 刷新 Token |
+| | `/auth/me` | GET | 获取当前用户 |
+| | `/auth/logout` | POST | 登出 |
+| **项目** | `/projects` | GET/POST | 列表 / 创建 |
+| | `/projects/{id}` | GET/PUT/DELETE | 详情 / 更新 / 删除 |
+| | `/projects/contract-no/next` | GET | 生成合同编号（格式 `MFB-YYYYMM-XXXX`） |
+| | `/projects/{id}/cashflow` | GET/POST | 现金流查询 / 创建 |
+| | `/projects/{id}/renovation` | GET/PUT | 装修信息 |
+| | `/projects/{id}/sales` | GET/PUT | 销售信息 |
+| **线索** | `/leads` | GET/POST | 列表 / 创建 |
+| | `/leads/{id}` | GET/PUT/DELETE | 详情 / 更新 / 删除 |
+| | `/leads/{id}/follow-ups` | GET/POST | 跟进记录 |
+| | `/leads/{id}/prices` | GET/POST | 价格历史 |
+| **市场情报** | `/properties` | GET | 房源列表（导出 CSV） |
+| | `/communities` | GET/POST | 小区管理 |
+| | `/communities/merge` | POST | 小区合并 |
+| **营销 L4** | `/admin/l4-marketing/projects` | GET/POST | 营销项目 |
+| | `/admin/l4-marketing/projects/{id}` | GET/PUT/DELETE | 营销项目 CRUD |
+| | `/admin/l4-marketing/projects/{id}/media` | GET/POST | 媒体管理 |
+| | `/admin/l4-marketing/import` | POST | 从 L3 项目导入 |
+| **监控** | `/monitor/...` | GET | 竞品 / 雷达 / 趋势 / 情绪 / AI 策略 |
+| **C 端公开** | `/public/projects` | GET | 已发布房源列表（无需登录） |
+| | `/public/projects/{id}` | GET | 房源详情 |
+| | `/public/leads` | POST | 提交估价线索 |
+| | `/public/auth/*` | POST | 注册 / 登录 / 微信登录 |
+| **系统** | `/users` | GET/POST | 用户管理 |
+| | `/roles` | GET/POST | 角色管理 |
+| | `/upload` | POST | 文件上传 |
+| | `/files` | GET | 文件管理 |
+| | `/push` | POST | JSON 数据推送 |
+
+### 速率限制
+
+通过 `slowapi` 实现，默认 200/天、50/小时。关键端点单独配置（如 `@limiter.limit("5/minute")`）。超限返回 `429` + `Retry-After` 头。
+
+### 响应格式
+
+成功响应直接返回 Pydantic 模型；分页响应：
 
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
-  "token_type": "bearer",
-  "expires_in": 36000,
-  "user": {
-    "id": "uuid",
-    "username": "admin",
-    "nickname": "管理员",
-    "role": { "code": "admin", "name": "管理员" }
-  }
-}
-```
-
-#### 2. 获取当前用户
-
-```http
-GET /api/v1/auth/me
-Authorization: Bearer {access_token}
-```
-
-### 项目管理模块
-
-#### 1. 获取项目列表
-
-```http
-GET /api/v1/projects?page=1&page_size=20&status=signing
-Authorization: Bearer {access_token}
-```
-
-**响应：**
-
-```json
-{
-  "items": [
-    {
-      "id": "uuid",
-      "name": "项目名称",
-      "status": "signing",
-      "community_name": "小区名称",
-      "address": "物业地址",
-      "area": "100.00",
-      "contract_no": "HT2024001",
-      "signing_price": "500.00"
-    }
-  ],
+  "items": [...],
   "total": 100,
   "page": 1,
-  "size": 20
+  "size": 50
 }
 ```
 
-#### 2. 创建项目
+错误响应（由全局异常 handler 统一封装）：
 
-```http
-POST /api/v1/projects
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
+```json
 {
-  "community_name": "小区名称",
-  "address": "物业地址",
-  "area": "100.50",
-  "layout": "三室两厅",
-  "contract_no": "HT2024001",
-  "signing_price": "500.00",
-  "owner_name": "业主姓名"
+  "code": 404,
+  "message": "资源不存在",
+  "detail": "Project not found: xxx"
 }
 ```
-
-#### 3. 更新项目状态
-
-```http
-PUT /api/v1/projects/{id}/status
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "status": "selling",
-  "list_price": "550.00"
-}
-```
-
-### 线索管理模块
-
-#### 1. 获取线索列表
-
-```http
-GET /api/v1/leads?page=1&page_size=20&status=pending_assessment
-Authorization: Bearer {access_token}
-```
-
-#### 2. 创建线索
-
-```http
-POST /api/v1/leads
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "community_name": "小区名称",
-  "layout": "三室两厅",
-  "area": 100.5,
-  "total_price": 500.0,
-  "status": "pending_assessment"
-}
-```
-
-#### 3. 添加跟进记录
-
-```http
-POST /api/v1/leads/{id}/follow-ups
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "method": "phone",
-  "content": "跟进内容描述"
-}
-```
-
-### 营销管理模块 (L4)
-
-#### 1. 获取营销项目列表
-
-```http
-GET /api/v1/admin/l4-marketing/projects?page=1&page_size=20
-Authorization: Bearer {access_token}
-```
-
-#### 2. 创建营销项目
-
-```http
-POST /api/v1/admin/l4-marketing/projects
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "community_id": 1,
-  "layout": "三室两厅",
-  "area": "100.50",
-  "total_price": "500.00",
-  "title": "营销标题",
-  "publish_status": "draft"
-}
-```
-
-#### 3. 添加媒体文件
-
-```http
-POST /api/v1/admin/l4-marketing/projects/{id}/media
-Authorization: Bearer {access_token}
-Content-Type: application/json
-
-{
-  "media_type": "image",
-  "file_url": "https://...",
-  "description": "图片描述"
-}
-```
-
-### 完整API端点列表
-
-| 模块 | 端点 | 方法 | 描述 |
-|------|------|------|------|
-| 认证 | /api/v1/auth/login | POST | 用户登录 |
-| 认证 | /api/v1/auth/refresh | POST | 刷新Token |
-| 认证 | /api/v1/auth/me | GET | 获取当前用户 |
-| 用户 | /api/v1/users | GET/POST | 用户列表/创建 |
-| 用户 | /api/v1/users/{id} | GET/PUT/DELETE | 用户详情/更新/删除 |
-| 角色 | /api/v1/roles | GET/POST | 角色列表/创建 |
-| 项目 | /api/v1/projects | GET/POST | 项目列表/创建 |
-| 项目 | /api/v1/projects/{id} | GET/PUT/DELETE | 项目详情/更新/删除 |
-| 项目 | /api/v1/projects/{id}/status | PUT | 更新项目状态 |
-| 项目 | /api/v1/projects/{id}/cashflow | GET/POST | 现金流查询/创建 |
-| 线索 | /api/v1/leads | GET/POST | 线索列表/创建 |
-| 线索 | /api/v1/leads/{id} | GET/PUT/DELETE | 线索详情/更新/删除 |
-| 线索 | /api/v1/leads/{id}/follow-ups | GET/POST | 跟进记录 |
-| 营销 | /api/v1/admin/l4-marketing/projects | GET/POST | 营销项目列表/创建 |
-| 营销 | /api/v1/admin/l4-marketing/projects/{id} | GET/PUT/DELETE | 营销项目详情/更新/删除 |
-| 文件 | /api/v1/files/upload | POST | 文件上传 |
 
 ---
 
-## 🗄️ 数据库设计说明
+## 🗄️ 数据库设计
 
-### ER图
+### 配置
+
+- **引擎**：SQLite + WAL 模式
+- **连接池**：`QueuePool`（`pool_size=10`，`max_overflow=20`，`pool_pre_ping=True`，`pool_recycle=3600`）
+- **外键**：通过 `event.listen(engine, "connect", ...)` 在每个连接执行 `PRAGMA foreign_keys=ON`
+- **超时**：`timeout=30` 秒
+- **编译缓存**：`execution_options={"compiled_cache": {}}`
+- **建表**：通过 `Base.metadata.create_all` 自动建表（无 Alembic 迁移目录；如需迁移可自行初始化 Alembic）
+
+### ER 概览
 
 ```mermaid
 erDiagram
     USER ||--o{ PROJECT : "manages"
     USER }|--|| ROLE : "has"
+    USER ||--o{ API_KEY : "owns"
     PROJECT ||--|| PROJECT_CONTRACT : "has"
     PROJECT ||--o{ PROJECT_OWNER : "has"
     PROJECT ||--|| PROJECT_SALE : "has"
@@ -1025,550 +526,98 @@ erDiagram
     LEAD ||--o{ LEAD_FOLLOWUP : "has"
     LEAD ||--o{ LEAD_PRICE_HISTORY : "has"
     L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : "has"
-    L4_MARKETING_PROJECT }o--|| PROJECT : "references"
     PROPERTY_CURRENT ||--o{ PROPERTY_HISTORY : "snapshots"
     PROPERTY_CURRENT ||--o{ PROPERTY_MEDIA : "has"
     PROPERTY_CURRENT }o--|| COMMUNITY : "belongs_to"
     COMMUNITY ||--o{ COMMUNITY_ALIAS : "has"
     COMMUNITY ||--o{ COMMUNITY_COMPETITOR : "competes_with"
-
-    USER {
-        string id PK
-        string username UK
-        string password
-        string nickname
-        string phone UK
-        string avatar
-        string wechat_openid UK
-        string wechat_unionid UK
-        string wechat_session_key
-        string role_id FK
-        string status
-        boolean must_change_password
-        datetime last_login_at
-        datetime created_at
-    }
-
-    ROLE {
-        string id PK
-        string name UK
-        string code UK
-        text description
-        json permissions
-        boolean is_active
-    }
-
-    PROJECT {
-        string id PK
-        string name
-        string community_name
-        string address
-        string project_manager_id FK
-        decimal area
-        string layout
-        string orientation
-        string status
-        string renovation_stage
-        boolean is_deleted
-        datetime created_at
-        datetime updated_at
-    }
-
-    PROJECT_CONTRACT {
-        string id PK
-        string project_id FK
-        string contract_no UK
-        decimal signing_price
-        datetime signing_date
-        integer signing_period
-        integer extension_period
-        decimal extension_rent
-        string cost_assumption
-        datetime planned_handover_date
-        text other_agreements
-        json signing_materials
-        string contract_status
-        boolean is_deleted
-    }
-
-    PROJECT_OWNER {
-        string id PK
-        string project_id FK
-        string owner_name
-        string owner_phone
-        string owner_id_card
-        string relation_type
-        text owner_info
-        boolean is_deleted
-    }
-
-    PROJECT_SALE {
-        string id PK
-        string project_id FK
-        datetime listing_date
-        decimal list_price
-        datetime sold_date
-        decimal sold_price
-        string channel_manager_id
-        string property_agent_id
-        string negotiator_id
-        string transaction_status
-        boolean is_deleted
-    }
-
-    PROJECT_FOLLOW_UP {
-        string id PK
-        string project_id FK
-        string follow_up_type
-        text content
-        datetime follow_up_at
-        string follower_id
-    }
-
-    PROJECT_EVALUATION {
-        string id PK
-        string project_id FK
-        string evaluation_type
-        decimal evaluation_price
-        text remark
-        string evaluator_id
-        datetime evaluation_at
-    }
-
-    PROJECT_INTERACTION {
-        string id PK
-        string project_id FK
-        string record_type
-        string interaction_target
-        text content
-        datetime interaction_at
-        string operator_id
-        decimal price
-    }
-
-    FINANCE_RECORD {
-        string id PK
-        string project_id FK
-        string type
-        string category
-        decimal amount
-        datetime record_date
-        string operator_id
-        text remark
-    }
-
-    PROJECT_STATUS_LOG {
-        string id PK
-        string project_id FK
-        string old_status
-        string new_status
-        string trigger_event
-        string operator_id
-        datetime operate_at
-        text remark
-    }
-
-    PROJECT_RENOVATION {
-        string id PK
-        string project_id FK
-        string renovation_company
-        datetime contract_start_date
-        datetime contract_end_date
-        datetime actual_start_date
-        datetime actual_end_date
-        decimal hard_contract_amount
-        json stage_completed_dates
-        decimal soft_budget
-        decimal soft_actual_cost
-        string soft_detail_attachment
-        decimal design_fee
-        decimal demolition_fee
-        decimal garbage_fee
-        decimal other_extra_fee
-        text other_fee_reason
-        boolean is_deleted
-    }
-
-    RENOVATION_PHOTO {
-        string id PK
-        string project_id FK
-        string renovation_id FK
-        string stage
-        string url
-        string filename
-        text description
-        boolean is_deleted
-    }
-
-    LEAD {
-        string id PK
-        string community_name
-        integer is_hot
-        string layout
-        string orientation
-        string floor_info
-        decimal area
-        decimal total_price
-        decimal unit_price
-        decimal eval_price
-        string status
-        text audit_reason
-        string auditor_id
-        datetime audit_time
-        json images
-        string district
-        string business_area
-        text remarks
-        string creator_id
-        integer source_property_id
-        datetime last_follow_up_at
-        datetime created_at
-        datetime updated_at
-    }
-
-    LEAD_FOLLOWUP {
-        string id PK
-        string lead_id FK
-        string method
-        text content
-        datetime followed_at
-        string created_by_id
-    }
-
-    LEAD_PRICE_HISTORY {
-        string id PK
-        string lead_id FK
-        decimal price
-        text remark
-        datetime recorded_at
-        string created_by_id
-    }
-
-    L4_MARKETING_PROJECT {
-        integer id PK
-        integer community_id FK
-        string community_name
-        string layout
-        string orientation
-        string floor_info
-        decimal area
-        decimal total_price
-        decimal unit_price
-        string title
-        text images
-        integer sort_order
-        string tags
-        string decoration_style
-        string publish_status
-        string project_status
-        string project_id FK
-        string consultant_id FK
-        boolean is_deleted
-        datetime created_at
-        datetime updated_at
-    }
-
-    L4_MARKETING_MEDIA {
-        integer id PK
-        integer marketing_project_id FK
-        string media_type
-        string photo_category
-        string renovation_stage
-        integer origin_media_id
-        text file_url
-        text thumbnail_url
-        text description
-        integer sort_order
-        boolean is_deleted
-        datetime created_at
-        datetime updated_at
-    }
-
-    COMMUNITY {
-        integer id PK
-        string name UK
-        integer city_id
-        string district
-        string business_circle
-        float avg_price_wan
-        integer total_properties
-        boolean is_active
-        datetime created_at
-        datetime updated_at
-    }
-
-    COMMUNITY_ALIAS {
-        integer id PK
-        integer community_id FK
-        string alias_name
-        string data_source
-        datetime created_at
-    }
-
-    COMMUNITY_COMPETITOR {
-        integer id PK
-        integer community_id FK
-        integer competitor_community_id FK
-        datetime created_at
-    }
-
-    PROPERTY_CURRENT {
-        integer id PK
-        string data_source
-        string source_property_id
-        integer community_id FK
-        string status
-        string property_type
-        integer rooms
-        integer halls
-        integer baths
-        string orientation
-        string floor_original
-        integer floor_number
-        integer total_floors
-        string floor_level
-        decimal build_area
-        decimal inner_area
-        decimal listed_price_wan
-        datetime listed_date
-        decimal sold_price_wan
-        datetime sold_date
-        integer build_year
-        string building_structure
-        string decoration
-        boolean elevator
-        string ownership_type
-        integer ownership_years
-        string last_transaction
-        string heating_method
-        text listing_remarks
-        datetime created_at
-        datetime updated_at
-    }
-
-    PROPERTY_HISTORY {
-        integer id PK
-        string data_source
-        string source_property_id
-        string change_type
-        datetime captured_at
-        string status
-        integer community_id
-        integer rooms
-        float build_area
-        float listed_price_wan
-        float sold_price_wan
-        datetime listed_date
-        datetime sold_date
-    }
-
-    PROPERTY_MEDIA {
-        integer id PK
-        string data_source
-        string source_property_id
-        string media_type
-        string url
-        string description
-        integer sort_order
-        datetime created_at
-    }
+    PROPERTY_IMPORT_TASK ||--o{ FAILED_RECORD : "logs"
 ```
 
-### 核心表说明
+### 核心表
 
-#### 1. users - 用户表
+| 表 | 模块 | 说明 |
+|----|------|------|
+| `users` | user | 用户（含微信字段、加密手机号、`must_change_password` 标记） |
+| `roles` | user | 角色（admin / operator / user / customer） |
+| `api_keys` | user | API Key（哈希存储，过期时间，最后使用时间） |
+| `communities` | property | 小区（含别名、竞品关联） |
+| `property_current` | property | 房源当前数据 |
+| `property_history` | property | 房源历史快照 |
+| `property_media` | property | 房源媒体 |
+| `leads` | lead | 线索（含评估价、状态、来源 property_id） |
+| `lead_followups` | lead | 线索跟进 |
+| `lead_price_history` | lead | 线索价格历史 |
+| `projects` | project | 项目主表（status: signing/renovating/selling/sold/deleted） |
+| `project_contracts` | project | 合同（合同号唯一，自动生成 `MFB-YYYYMM-XXXX`） |
+| `project_owners` | project | 业主（身份证加密） |
+| `project_sales` | project | 销售信息 |
+| `project_renovations` | project | 装修（含硬装合同 / 软装 / 设计费 / 拆除费等） |
+| `renovation_photos` | project | 装修照片（按阶段） |
+| `project_follow_ups` | project | 项目跟进 |
+| `project_interactions` | project | 带看 / 出价等互动 |
+| `project_evaluations` | project | 评估记录 |
+| `finance_records` | project | 财务流水（income/expense） |
+| `project_status_logs` | project | 状态变更日志 |
+| `l4_marketing_projects` | marketing | 营销项目 |
+| `l4_marketing_media` | marketing | 营销媒体 |
+| `property_import_tasks` | system | 导入任务（CSV/JSON 批量） |
+| `failed_records` | system | 导入失败记录 |
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | String(36) | 主键，UUID |
-| username | String(100) | 用户名，唯一 |
-| password | String(255) | 密码哈希 |
-| nickname | String(100) | 昵称 |
-| phone | String(20) | 手机号，唯一 |
-| avatar | String(500) | 头像URL |
-| wechat_openid | String(100) | 微信OpenID，唯一 |
-| wechat_unionid | String(100) | 微信UnionID，唯一 |
-| wechat_session_key | String(100) | 微信会话密钥 |
-| role_id | String(36) | 角色ID，外键 |
-| status | String(20) | 状态: active/inactive/banned |
-| must_change_password | Boolean | 是否必须修改密码 |
-| last_login_at | DateTime | 最后登录时间 |
+### 索引策略
 
-**索引：**
-- idx_user_status: status
-- idx_user_phone: phone
-- idx_user_wechat: wechat_openid, wechat_unionid
-
-#### 2. projects - 项目主表
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | String(36) | 主键，UUID |
-| name | String(700) | 项目名称（自动生成） |
-| community_name | String(200) | 小区名称 |
-| address | String(500) | 物业地址 |
-| project_manager_id | String(36) | 项目负责人ID |
-| area | Numeric(10,2) | 产证面积(m²) |
-| layout | String(50) | 户型 |
-| orientation | String(50) | 朝向 |
-| status | Enum | 项目状态: signing/renovating/selling/sold/deleted |
-| renovation_stage | Enum | 改造子阶段: 拆除/设计/水电/木瓦/油漆/安装/交付/已完成 |
-| is_deleted | Boolean | 逻辑删除标记 |
-
-**索引：**
-- idx_project_status: status
-- idx_project_deleted: is_deleted
-- idx_project_manager: project_manager_id
-
-#### 3. project_contracts - 签约合同表
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | String(36) | 主键 |
-| project_id | String(36) | 项目ID，外键，唯一 |
-| contract_no | String(100) | 合同编号，唯一 |
-| signing_price | Numeric(15,2) | 签约价格(万) |
-| signing_date | DateTime | 签约日期 |
-| signing_period | Integer | 合同周期(天) |
-| extension_period | Integer | 顺延期(天) |
-| extension_rent | Numeric(15,2) | 顺延期租金(元/月) |
-
-**索引：**
-- idx_contract_project: project_id
-- idx_contract_no: contract_no (unique)
-
-#### 4. finance_records - 财务流水表
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | String(36) | 主键 |
-| project_id | String(36) | 项目ID，外键 |
-| type | String(20) | 类型: income/expense |
-| category | String(50) | 费用类别 |
-| amount | Numeric(15,2) | 金额(元) |
-| record_date | DateTime | 发生日期 |
-| operator_id | String(36) | 经办人ID（软引用） |
-| remark | Text | 备注 |
-
-**索引：**
-- idx_finance_project_date: project_id, record_date
-- idx_finance_type_category: type, category
-
-#### 5. leads - 线索表
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | String(36) | 主键 |
-| community_name | String(200) | 小区名称 |
-| layout | String(50) | 户型 |
-| area | Numeric(10,2) | 面积(m²) |
-| total_price | Numeric(15,2) | 总价(万) |
-| unit_price | Numeric(12,2) | 单价(元/m²) |
-| eval_price | Numeric(15,2) | 评估价(万) |
-| status | Enum | 线索状态: pending_assessment/pending_visit/rejected/visited/signed |
-| district | String(50) | 行政区 |
-| business_area | String(50) | 商圈 |
-
-### 索引设计策略
-
-#### 索引设计原则
-
-1. **高频查询字段建立索引**
-   - status, is_deleted 等筛选字段
-   - created_at, updated_at 等排序字段
-
-2. **外键字段建立索引**
-   - project_id, user_id 等关联字段
-
-3. **唯一约束字段建立唯一索引**
-   - username, phone, contract_no 等
-
-4. **复合索引优化多条件查询**
-   - (project_id, record_date) 优化项目流水查询
-
-#### 索引列表
-
-| 表名 | 索引名 | 字段 | 类型 |
-|------|--------|------|------|
-| users | idx_user_status | status | 普通索引 |
-| users | idx_user_phone | phone | 唯一索引 |
-| projects | idx_project_status | status | 普通索引 |
-| projects | idx_project_manager | project_manager_id | 普通索引 |
-| project_contracts | idx_contract_no | contract_no | 唯一索引 |
-| finance_records | idx_finance_project_date | project_id, record_date | 复合索引 |
+- 高频筛选字段（`status`、`is_deleted`）建索引
+- 外键字段建索引（`project_id`、`user_id`、`community_id`）
+- 唯一约束建唯一索引（`username`、`phone`、`contract_no`）
+- 复合索引优化多条件查询（如 `(project_id, record_date)`）
 
 ---
 
-## 🔄 核心业务流程解析
+## 🔄 核心业务流程
 
-### 项目生命周期流程
+### 项目生命周期
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 签约阶段: 创建项目
-    签约阶段 --> 装修阶段: 状态更新
-    装修阶段 --> 在售阶段: 装修完成
-    在售阶段 --> 已售阶段: 成交
-    已售阶段 --> [*]
-    
-    签约阶段 --> 已删除: 删除项目
-    装修阶段 --> 已删除: 删除项目
-    在售阶段 --> 已删除: 删除项目
+    [*] --> signing: 创建项目
+    signing --> renovating: 进入装修
+    renovating --> selling: 装修完成上架
+    selling --> sold: 成交
+    sold --> [*]
+    signing --> deleted: 删除
+    renovating --> deleted: 删除
+    selling --> deleted: 删除
 ```
 
-**详细流程：**
+各阶段在 `project_detail/views/` 下有独立视图：
+- `default/` — 基础信息 + 附件 + 交付
+- `renovation/` — 装修时间线 + 合同 + 成本汇总 + 阶段照片
+- `selling/` — 活动 / 团队 / KPI / 成交对话框
+- `sold/` — 财务生命周期 + 视觉旅程 + 总结报告
 
-1. **签约阶段 (signing)**
-   - 创建项目基本信息
-   - 录入合同信息 (project_contracts)
-   - 录入业主信息 (project_owners)
-   - 设置合同周期和顺延期
-
-2. **装修阶段 (renovating)**
-   - 创建装修记录 (project_renovations)
-   - 记录装修进度和阶段
-   - 上传装修照片 (renovation_photos)
-   - 记录装修费用支出
-
-3. **在售阶段 (selling)**
-   - 设置挂牌价和上架日期
-   - 添加带看记录 (project_interactions)
-   - 记录出价历史
-   - 监控竞品动态
-
-4. **已售阶段 (sold)**
-   - 录入成交价和成交日期
-   - 计算ROI和现金流
-   - 生成项目报告
-   - 归档项目数据
-
-### 线索转化流程
+### 线索转化
 
 ```mermaid
 sequenceDiagram
     participant U as 用户
-    participant L2 as L2线索层
-    participant L3 as L3项目层
+    participant L2 as L2 线索层
+    participant L3 as L3 项目层
     participant DB as 数据库
 
     U->>L2: 创建线索
-    L2->>DB: 保存线索数据
-    
+    L2->>DB: 保存
     loop 跟进评估
-        U->>L2: 添加跟进记录
-        L2->>DB: 保存跟进记录
-        U->>L2: 更新评估价
-        L2->>DB: 保存评估记录
+        U->>L2: 添加跟进 / 价格历史
+        L2->>DB: 保存
     end
-
-    alt 线索通过评估
-        U->>L2: 更新状态为approved
-        L2->>L3: 写时复制转化为项目
+    alt 通过评估
+        U->>L2: 状态 → approved
+        L2->>L3: 写时复制创建项目
         L3->>DB: 创建项目数据
-        L3->>U: 返回项目ID
-    else 线索被驳回
-        U->>L2: 更新状态为rejected
-        L2->>DB: 更新线索状态
+        L3-->>U: 返回项目 ID
+    else 驳回
+        U->>L2: 状态 → rejected
+        L2->>DB: 更新状态
     end
 ```
 
@@ -1576,323 +625,287 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A[CSV/JSON文件] --> B{文件格式校验}
-    B -->|校验失败| C[返回错误信息]
-    B -->|校验通过| D[解析数据]
-    D --> E{数据验证}
-    E -->|验证失败| F[记录错误日志]
-    F --> G[生成失败文件]
-    E -->|验证通过| H[批量插入数据库]
-    H --> I{是否有失败}
-    I -->|是| F
-    I -->|否| J[返回导入结果]
-    G --> J
+    A[CSV/JSON 文件] --> B[创建 PropertyImportTask]
+    B --> C[文件格式校验]
+    C -->|失败| D[记录 FailedRecord]
+    C -->|通过| E[解析数据]
+    E --> F[字段验证]
+    F -->|失败| D
+    F -->|通过| G[批量插入]
+    G --> H{部分失败?}
+    H -->|是| D
+    H -->|否| I[任务完成]
+    D --> I
 ```
 
-### 四层领域数据流转
+### 四层数据流转
 
 ```mermaid
 graph TB
-    subgraph "L1 市场情报层"
-        L1D[(property_current)]
-    end
+    L1[(property_current)]
+    L2[(leads)]
+    L3[(projects)]
+    L4[(l4_marketing_projects)]
 
-    subgraph "L2 线索管理层"
-        L2D[(leads)]
-        L2F[跟进记录]
-        L2E[评估记录]
-    end
-
-    subgraph "L3 项目管理层"
-        L3D[(projects)]
-        L3C[合同信息]
-        L3O[业主信息]
-        L3R[装修信息]
-        L3F[财务记录]
-    end
-
-    subgraph "L4 营销层"
-        L4D[(l4_marketing_projects)]
-        L4M[媒体文件]
-    end
-
-    L1D -.->|写时复制| L2D
-    L2D --> L2F
-    L2D --> L2E
-    L2D -.->|写时复制| L3D
-    L3D --> L3C
-    L3D --> L3O
-    L3D --> L3R
-    L3D --> L3F
-    L3D -.->|写时复制| L4D
-    L4D --> L4M
+    L1 -.->|写时复制| L2
+    L2 -.->|写时复制| L3
+    L3 -.->|写时复制| L4
 ```
 
 ---
 
-## ❓ 常见问题解决方案
+## 🌐 部署指南
 
-### 环境配置问题
+部署相关文件全部位于 [`deploy/`](deploy/) 目录，详细指引见 [deploy/deploy-doc.md](deploy/deploy-doc.md)。
 
-#### Q1: 前端启动时报错 "Module not found"
+### 部署方案
 
-**解决方案：**
-
-```bash
-# 1. 删除node_modules和lock文件
-rm -rf node_modules pnpm-lock.yaml
-
-# 2. 重新安装依赖
-pnpm install
-
-# 3. 清除Next.js缓存
-rm -rf .next
-```
-
-#### Q2: 后端启动时报错 "JWT_SECRET_KEY not set"
-
-**解决方案：**
+**本地构建 + 上传服务器**（适用于低配阿里云服务器）：
 
 ```bash
-# 1. 复制环境变量模板
-cp .env.example .env
-
-# 2. 生成JWT密钥
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-
-# 3. 编辑.env文件，设置JWT_SECRET_KEY
-JWT_SECRET_KEY=your-generated-key
+cd deploy
+./deploy.sh           # macOS/Linux
+deploy\deploy.bat     # Windows
 ```
 
-#### Q3: SQLite数据库锁定错误
+脚本自动完成：
+1. 本地 `pnpm build` 生成 `frontend/.next`
+2. 上传 `frontend/.next`、`backend/`、`deploy/` 到服务器 `/root/profo/`
+3. 服务器执行 `uv sync`、`pnpm install --prod`
+4. PM2 启动 / 重启 `profo-backend` 和 `profo-frontend`
 
-**解决方案：**
+### 首次部署
 
-```python
-# 在 db.py 中增加超时时间
-connect_args = {
-    "check_same_thread": False,
-    "timeout": 30,  # 增加超时时间
-}
+1. **服务器初始化**：`ssh root@server` → `cd /root/profo/deploy && ./setup-server.sh`
+2. **配置生产环境变量**：
+   - `cp deploy/.env.backend.production backend/.env` → 修改 `JWT_SECRET_KEY`、`ENCRYPTION_KEY`、`WECHAT_*`
+   - 建议把 `DATABASE_URL` 改为独立目录（如 `sqlite:////root/profo-data/data.db`），避免部署覆盖
+3. **PM2 启动**：`pm2 start ecosystem.config.js && pm2 save && pm2 startup`
+4. **验证**：`curl http://127.0.0.1:8000/health` 应返回 `healthy`
+
+### 生产架构
+
+```
+浏览器 → Nginx (443/80) ─┬─→ frontend (3000, PM2)
+                         ├─→ backend  (8000, PM2, uv run)
+                         └─→ /static/ (静态文件)
 ```
 
-### 开发调试问题
-
-#### Q4: API返回401 Unauthorized
-
-**检查清单：**
-
-1. 确认请求头包含 `Authorization: Bearer {token}`
-2. 确认Token未过期（默认600分钟）
-3. 确认用户状态为 `active`
-4. 确认用户具有相应权限
-
-#### Q5: 前端类型错误 "Property 'xxx' does not exist"
-
-**解决方案：**
+### PM2 常用命令
 
 ```bash
-# 1. 重新生成API类型
+pm2 status                          # 查看状态
+pm2 logs profo-backend --lines 50   # 查看后端日志
+pm2 restart profo-backend           # 重启后端
+pm2 monit                           # 监控面板
+```
+
+---
+
+## 📐 开发规范
+
+详见 [AGENTS.md](AGENTS.md)。核心要点：
+
+### 通用
+
+- **不准猜**：需求歧义列出选项再问；困惑立刻停手描述
+- **全栈归位**：业务逻辑/持久化 → 后端；交互/计算 → 前端
+- **最简代码**：不写非必需功能；单次使用不抽 util/hook
+- **精准修改**：只改需求相关，不动相邻代码；清理孤儿 import/变量
+
+### 前端
+
+- 默认 Server Component，仅 `'use client'` 当需浏览器 API / 客户端状态
+- shadcn/ui：不修改 `ui/` 源码，样式用 `cn()` 覆盖，逻辑封装到 `custom/`
+- 类型：API 消费用 `pnpm gen-api` 生成，禁手写
+- 表单 Zod schema 需与后端 Pydantic 语义对齐
+
+### 后端
+
+- 严格分层 Router → Service → Model，Router 禁 SQL 查询
+- 关联用逻辑外键，级联由 Service 处理
+- Service 层抛 `ServiceException`，**禁止抛 `HTTPException`**
+- 所有函数完整类型注解；Pydantic 分 `*Create/*Update/*Response/*Filter`
+- 文件 >250 行需注释说明不拆理由
+
+### 提交前
+
+- `pytest` 全绿，`tsc --noEmit` 零错，`pnpm lint` 通过
+- 接口变更：启后端 → `pnpm gen-api` → 提交生成的类型
+- 账号密码从环境变量读取，**严禁硬编码提交**
+
+### Conventional Commits
+
+```
+<type>(<scope>): <subject>
+
+类型: feat | fix | docs | style | refactor | test | chore
+```
+
+---
+
+## ❓ 常见问题
+
+### Q1: 后端启动报 `JWT_SECRET_KEY not set` / `ENCRYPTION_KEY not set`
+
+`backend/.env` 缺少必填环境变量。生成密钥：
+
+```bash
+openssl rand -hex 32          # JWT_SECRET_KEY
+openssl rand -base64 32       # ENCRYPTION_KEY (Fernet)
+```
+
+### Q2: 忘记管理员密码
+
+重新运行初始化脚本可重置：
+
+```bash
+cd backend
+uv run python init_admin.py
+```
+
+> ⚠️ 该脚本会检测已有 admin 用户并跳过。如需强制重置，需手动删除 `users` 表中 `username='admin'` 记录后重跑。
+
+### Q3: 前端类型错误 `Property 'xxx' does not exist`
+
+后端接口变更后未同步类型：
+
+```bash
+# 1. 启动后端
+cd backend && uv run uvicorn main:app --reload
+
+# 2. 重新生成类型
+cd frontend && pnpm gen-api
+```
+
+### Q4: API 返回 401
+
+检查清单：
+1. 请求头包含 `Authorization: Bearer <token>` 或通过 httpOnly Cookie
+2. Token 未过期（默认 30 分钟，可用 refresh token 刷新）
+3. 用户状态为 `active`
+4. 用户具有相应权限（admin / operator / user / customer）
+
+### Q5: SQLite 数据库锁定
+
+连接池已配置 `timeout=30`。若仍出现，检查是否有长事务未提交，或调大 `pool_size`。
+
+### Q6: 文件上传失败
+
+- 大小不超过 100 MB
+- 类型在允许列表：`.jpg .jpeg .png .pdf .xlsx .xls .csv .doc .docx .md`
+- `static/uploads` 目录有写入权限
+- `Content-Type: multipart/form-data`
+
+### Q7: 部署后数据库"丢失"
+
+`deploy.sh` 整目录覆盖会导致 `data.db` 被覆盖。建议把数据库放到代码目录之外：
+
+```env
+DATABASE_URL=sqlite:////root/profo-data/data.db
+```
+
+### Q8: 生产环境 Nginx 502
+
+```bash
+pm2 status                                    # 检查进程是否在线
+pm2 logs profo-backend --lines 50             # 查看后端日志
+ss -tlnp | grep -E ':(3000|8000)\b'           # 检查端口监听
+tail -n 50 /var/log/nginx/profo.error.log     # Nginx 错误日志
+```
+
+### Q9: 前端启动报 `Module not found`
+
+```bash
 cd frontend
-pnpm gen-api
-
-# 2. 确保后端服务正在运行
-# 3. 检查网络连接是否正常
+rm -rf node_modules pnpm-lock.yaml .next
+pnpm install
 ```
 
-#### Q6: 文件上传失败
+---
 
-**检查清单：**
-
-1. 确认文件大小不超过限制（默认100MB）
-2. 确认文件类型在允许列表中（支持：.jpg, .jpeg, .png, .pdf, .xlsx, .xls, .csv, .doc, .docx）
-3. 检查static/uploads目录是否有写入权限
-4. 确认Content-Type设置为multipart/form-data
-
-### 部署问题
-
-#### Q7: 生产环境数据库迁移
-
-**解决方案：**
-
-```bash
-# 1. 备份现有数据库
-sqlite3 data.db ".backup data.db.backup"
-
-# 2. 执行迁移
-alembic upgrade head
-
-# 3. 验证迁移结果
-alembic current
-```
-
-#### Q8: Nginx反向代理配置
-
-**配置示例：**
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # 前端
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # 后端API
-    location /api/ {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    # 静态文件
-    location /static/ {
-        alias /path/to/backend/static/;
-    }
-}
-```
-
-### 性能优化问题
-
-#### Q9: 数据库查询慢
-
-**优化建议：**
-
-1. 为常用查询字段添加索引
-2. 使用 `select_related()` 减少N+1查询
-3. 分页查询避免大数据量返回
-4. 启用SQLAlchemy查询缓存
-
-```python
-# 优化前
-projects = db.query(Project).all()
-for p in projects:
-    print(p.contract.contract_no)  # N+1查询
-
-# 优化后
-projects = db.query(Project).options(
-    joinedload(Project.contract)
-).all()
-```
-
-#### Q10: 前端页面加载慢
-
-**优化建议：**
-
-1. 使用Next.js Image组件优化图片
-2. 启用React Compiler减少重渲染
-3. 使用SWR缓存数据
-4. 按需加载组件
-
-```typescript
-// 动态导入组件
-const HeavyComponent = dynamic(
-  () => import('@/components/heavy-component'),
-  { ssr: false }
-);
-```
-
-
-
-## 📚 附录
-
-### 项目目录结构
+## 📁 项目结构
 
 ```
 ProFo/
-├── init.sh                      # Linux/macOS 一键初始化脚本
-├── init.bat                     # Windows 一键初始化脚本
-├── frontend/                    # 前端项目
+├── README.md                      # 本文件
+├── AGENTS.md                      # 编码规范（必读）
+├── CLAUDE.md                      # Claude Code 指引
+├── DESIGN.md                      # 设计风格参考
+│
+├── frontend/                      # 前端（Next.js 16）
 │   ├── src/
-│   │   ├── app/                # Next.js App Router
-│   │   │   ├── (main)/         # 主布局路由组
-│   │   │   │   ├── projects/   # 项目管理模块
-│   │   │   │   ├── leads/      # 线索管理模块
-│   │   │   │   ├── l4-marketing/  # 营销管理模块
-│   │   │   │   ├── properties/ # 房源管理模块
-│   │   │   │   └── users/      # 用户管理模块
-│   │   │   ├── api/            # API路由
-│   │   │   └── login/          # 登录页面
-│   │   ├── lib/                # 工具库
-│   │   │   ├── api-server.ts   # API客户端
-│   │   │   ├── api-types.d.ts  # OpenAPI类型
-│   │   │   └── utils.ts         # 工具函数
-│   │   └── hooks/              # 自定义Hooks (分散在各模块)
-│   ├── public/                 # 静态资源
-│   ├── components.json          # Shadcn UI配置
-│   ├── package.json             # 依赖配置
-│   ├── next.config.ts          # Next.js配置
-│   ├── eslint.config.mjs       # ESLint配置
-│   └── postcss.config.mjs       # PostCSS配置
+│   │   ├── app/
+│   │   │   ├── (main)/            # B 端受保护路由组
+│   │   │   │   ├── admin/         # 仪表盘 + 市场数据
+│   │   │   │   ├── projects/      # 项目管理（cashflow / monitor / detail views）
+│   │   │   │   ├── leads/         # 线索管理（含监控仪表盘）
+│   │   │   │   ├── l4-marketing/  # 营销 CMS（照片 DnD + 预览）
+│   │   │   │   ├── properties/    # 房源（列表 / 上传 / 治理合并）
+│   │   │   │   ├── users/         # 用户 + 角色管理
+│   │   │   │   ├── settings/api-key/  # API Key 管理
+│   │   │   │   └── layout.tsx     # 鉴权布局
+│   │   │   ├── (c)/               # C 端公开路由组
+│   │   │   │   ├── projects/      # 房源浏览
+│   │   │   │   ├── valuation/     # 估价提交
+│   │   │   │   ├── login/ register/ my/ profile/
+│   │   │   │   └── about/ contact/
+│   │   │   ├── login/             # B 端登录
+│   │   │   └── api/auth/refresh/  # Next.js API 路由（Token 刷新）
+│   │   ├── components/ui/         # shadcn/ui 组件
+│   │   ├── lib/                   # api-server / api-client / api-types / config / formatters / utils
+│   │   └── hooks/
+│   ├── public/
+│   ├── next.config.ts             # React Compiler + rewrites 代理
+│   ├── playwright.config.ts       # E2E 测试
+│   └── package.json
 │
-├── backend/                     # 后端项目
-│   ├── routers/                # API路由层
-│   ├── services/               # 业务逻辑层（按领域模块化）
-│   │   ├── __init__.py         # 服务层统一入口
-│   │   ├── market/             # 市场情报服务（L1）
-│   │   ├── leads/              # 线索管理服务（L2，预留）
-│   │   ├── projects/           # 项目管理服务（L3）
-│   │   ├── marketing/          # 市场营销服务（L4）
-│   │   ├── monitor/            # 市场监控服务
-│   │   ├── system/             # 系统服务（认证、用户、角色）
-│   │   └── utils/              # 服务工具
-│   ├── models/                 # 数据模型层
-│   ├── schemas/                # Pydantic模型
-│   ├── dependencies/           # 依赖注入
-│   ├── utils/                  # 工具函数
-│   ├── scripts/                # 运维脚本
-│   ├── tests/                  # 测试目录
-│   ├── static/uploads/         # 上传文件目录
-│   ├── main.py                 # 应用入口
-│   ├── settings.py             # 配置管理
-│   ├── db.py                   # 数据库连接
-│   ├── alembic.ini             # Alembic配置
-│   └── pyproject.toml          # 项目配置
+├── backend/                       # 后端（FastAPI）
+│   ├── routers/                   # 按领域分模块（见上文）
+│   ├── services/                  # 按领域分模块
+│   ├── models/                    # 按领域分模块
+│   ├── schemas/                   # 按领域分模块
+│   ├── dependencies/              # auth / common / projects
+│   ├── utils/                     # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
+│   ├── main.py                    # 应用入口
+│   ├── db.py                      # SQLAlchemy 引擎 + 会话
+│   ├── settings.py                # Pydantic Settings
+│   ├── error_handlers.py          # 全局异常 handler
+│   ├── exceptions.py              # 通用异常
+│   ├── init_db.py                 # 建表脚本
+│   ├── init_admin.py              # 初始化角色和管理员
+│   ├── conftest.py                # pytest 配置
+│   ├── pyproject.toml             # 依赖与工具配置
+│   └── uv.lock
 │
-├── deploy/                      # 部署配置
-│   ├── docker-compose.yml      # Docker编排
-│   ├── deploy.sh               # 部署脚本
-│   ├── deploy.bat              # Windows部署脚本
-│   ├── ecosystem.config.js     # PM2配置
-│   ├── profo-nginx.conf        # Nginx配置
-│   ├── setup-server.sh         # 服务器初始化
-│   ├── .env.backend.production # 后端生产环境配置
-│   └── .env.frontend.production # 前端生产环境配置
+├── deploy/                        # 部署相关
+│   ├── README.md                  # 部署快速指南
+│   ├── deploy-doc.md              # 详细部署文档
+│   ├── init.sh / init.bat         # 一键初始化脚本
+│   ├── deploy.sh / deploy.bat     # 部署脚本
+│   ├── setup-server.sh            # 服务器初始化
+│   ├── ecosystem.config.js        # PM2 配置
+│   ├── profo-nginx.conf           # Nginx 配置模板
+│   ├── .env.backend.production    # 后端生产环境模板
+│   └── .env.frontend.production   # 前端生产环境模板
 │
-├── docs/                        # 文档目录
-│   └── project.md              # 项目文档
-│
-├── .github/workflows/          # GitHub Actions
-│   └── lint.yml               # Lint工作流
-│
-├── .gitignore
-└── README.md                   # 项目说明文档
+├── .github/workflows/lint.yml     # GitHub Actions Lint
+└── .gitignore
 ```
 
-### 相关链接
+---
 
-- [FastAPI官方文档](https://fastapi.tiangolo.com/)
-- [Next.js官方文档](https://nextjs.org/docs)
-- [TailwindCSS官方文档](https://tailwindcss.com/docs)
-- [SQLAlchemy官方文档](https://docs.sqlalchemy.org/)
+## 📚 相关链接
 
-### 贡献者
-
-感谢所有为ProFo项目做出贡献的开发者！
-
-### 许可证
-
-[Apache 2.0 License](LICENSE)
+- [FastAPI 官方文档](https://fastapi.tiangolo.com/)
+- [Next.js 官方文档](https://nextjs.org/docs)
+- [TailwindCSS 官方文档](https://tailwindcss.com/docs)
+- [SQLAlchemy 官方文档](https://docs.sqlalchemy.org/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [uv 包管理器](https://docs.astral.sh/uv/)
 
 ---
 
 <p align="center">
-  <b>ProFo - 让房地产翻新与销售管理更简单</b>
+  <b>ProFo — 让房地产翻新与销售管理更简单</b>
 </p>
