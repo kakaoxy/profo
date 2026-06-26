@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from utils.common import RateLimits, limiter
-from dependencies.auth import DbSessionDep, require_roles
+from dependencies.auth import CurrentCustomerUserDep, DbSessionDep, require_roles
 from models import User
 from schemas.public import (
     PublicLoginResponse,
@@ -119,6 +119,20 @@ def refresh_access_token(
         token_type=token_data["token_type"],
         expires_in=token_data["expires_in"],
     )
+
+
+@router.get(
+    "/me",
+    summary="C端获取当前用户信息",
+    description="返回当前登录的C端用户信息（供前端Server Component鉴权使用）",
+)
+@limiter.limit(RateLimits.PUBLIC_PROFILE_READ)
+def get_current_user_info(
+    request: Request,  # noqa: ARG001
+    current_user: CurrentCustomerUserDep,
+) -> PublicUserInfo:
+    """获取当前登录的C端用户信息."""
+    return _build_user_info(current_user)
 
 
 @router.post(

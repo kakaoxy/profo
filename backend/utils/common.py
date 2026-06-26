@@ -78,6 +78,7 @@ class RateLimits:
 
     # ==================== C端公开接口 ====================
     PUBLIC_PROFILE_UPDATE = "20/minute"
+    PUBLIC_PROFILE_READ = "60/minute"
     PUBLIC_PHONE_UPDATE = "10/hour"
     PUBLIC_PROJECT_LIST = "60/minute"
     PUBLIC_LEAD_CREATE = "10/hour"

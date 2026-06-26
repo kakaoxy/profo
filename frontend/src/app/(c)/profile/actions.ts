@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { ActionResult, createSuccessResult, createErrorResult } from "@/lib/action-result";
 
@@ -33,6 +34,8 @@ export async function updateProfileAction(_: ActionResult<{ nickname: string }>,
       const errorData = await response.json().catch(() => ({}));
       return createErrorResult(errorData.detail || "修改失败");
     }
+    // 重新渲染整个 (c) layout 树，触发服务端重新调用 /public/auth/me 刷新 Context
+    revalidatePath("/", "layout");
     return createSuccessResult({ nickname: parsed.data.nickname }, "修改成功");
   } catch {
     return createErrorResult("网络错误");
@@ -59,6 +62,8 @@ export async function updatePhoneAction(_: ActionResult<{ phone: string }>, form
       return createErrorResult(errorData.detail || "修改失败");
     }
     const data = await response.json();
+    // 重新渲染整个 (c) layout 树，触发服务端重新调用 /public/auth/me 刷新 Context
+    revalidatePath("/", "layout");
     return createSuccessResult({ phone: data.phone }, "手机号修改成功");
   } catch {
     return createErrorResult("网络错误");

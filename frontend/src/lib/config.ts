@@ -51,6 +51,7 @@ export const apiPaths = {
     login: "/api/v1/public/auth/token",
     logout: "/api/v1/public/auth/logout",
     refresh: "/api/v1/public/auth/refresh",
+    me: "/api/v1/public/auth/me",
   },
   cCommunities: {
     search: "/api/v1/public/communities/search",

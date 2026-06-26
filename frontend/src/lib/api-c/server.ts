@@ -1,8 +1,9 @@
 import createClient from "openapi-fetch";
 import type { paths } from "../api-types";
-import { getApiUrl } from "../config";
+import { apiPaths, getApiUrl } from "../config";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import type { CUser } from "./user-context";
 
 const MAX_RETRIES = 1;
 
@@ -10,6 +11,29 @@ async function getCAccessTokenFromCookie(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     return cookieStore.get("c_access_token")?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 在 Server Component 中获取当前 C 端登录用户。
+ * - 无 token / token 失效 / refresh 失败：返回 null（不重定向，由客户端组件按需处理）
+ * - 成功：返回用户信息
+ *
+ * 用于 (c)/layout.tsx 服务端鉴权，把结果通过 CUserProvider 注入给客户端组件。
+ */
+export async function getCurrentCUser(): Promise<CUser | null> {
+  const token = await getCAccessTokenFromCookie();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(getApiUrl(apiPaths.cAuth.me), {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as CUser;
   } catch {
     return null;
   }
