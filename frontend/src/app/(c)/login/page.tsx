@@ -167,12 +167,6 @@ function LoginForm() {
                 >
                   密码
                 </label>
-                <Link
-                  href="/valuation"
-                  className="text-[14px] leading-[20px] text-graphite hover:text-ink hover:underline transition-colors"
-                >
-                  忘记密码?
-                </Link>
               </div>
               <div className="relative">
                 <input
