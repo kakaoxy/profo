@@ -30,6 +30,7 @@ def apply_sorting(query: Query, sort_by: str, sort_order: str) -> Query:
         "sold_price_wan": PropertyCurrent.sold_price_wan,
         "build_area": PropertyCurrent.build_area,
         "rooms": PropertyCurrent.rooms,
+        "floor_number": PropertyCurrent.floor_number,
         "listed_date": PropertyCurrent.listed_date,
         "sold_date": PropertyCurrent.sold_date,
         # 前端使用的字段映射
