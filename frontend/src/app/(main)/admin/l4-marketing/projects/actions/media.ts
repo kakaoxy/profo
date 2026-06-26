@@ -156,7 +156,7 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
  */
 export async function batchAddL4PhotosAction(
   projectId: number,
-  photoIds: number[],
+  photoIds: string[],
 ) {
   const results = [];
   const errors: string[] = [];

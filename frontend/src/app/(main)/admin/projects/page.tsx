@@ -85,7 +85,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
   };
 
   if (params.status && params.status !== "all") {
-    queryParams.status = params.status;
+    queryParams.status = params.status as NonNullable<QueryParams>["status"];
   }
 
   if (params.community_name && params.community_name.trim() !== "") {
