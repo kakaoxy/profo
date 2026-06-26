@@ -70,9 +70,13 @@ const getFloorPlan = (
 
 // --- 2. 通用排序表头组件 ---
 const SortableHeader = ({ title, value }: { title: string; value: string }) => {
-  const [sortBy, setSortBy] = useQueryState("sort_by", { shallow: false });
+  const [sortBy, setSortBy] = useQueryState("sort_by", {
+    shallow: false,
+    defaultValue: "timeline",
+  });
   const [sortOrder, setSortOrder] = useQueryState("sort_order", {
     shallow: false,
+    defaultValue: "desc",
   });
 
   const isSorted = sortBy === value;
@@ -345,7 +349,11 @@ export const columns: ColumnDef<Property>[] = [
   // 8. 楼层 - 移动端隐藏（已合并到小区列）
   {
     accessorKey: "floor_display",
-    header: () => <span className="hidden sm:inline text-xs">楼层</span>,
+    header: () => (
+      <div className="hidden sm:block">
+        <SortableHeader title="楼层" value="floor_number" />
+      </div>
+    ),
     cell: ({ row }) => (
       <span className="hidden sm:inline whitespace-nowrap text-xs">
         {row.getValue("floor_display")}
@@ -355,7 +363,11 @@ export const columns: ColumnDef<Property>[] = [
   // 9. 面积 - 移动端隐藏（合并到价格列）
   {
     accessorKey: "build_area",
-    header: () => <span className="hidden sm:inline text-xs">面积</span>,
+    header: () => (
+      <div className="hidden sm:block">
+        <SortableHeader title="面积" value="build_area" />
+      </div>
+    ),
     cell: ({ row }) => (
       <div className="hidden sm:block text-xs">
         {row.getValue("build_area")}㎡
@@ -402,12 +414,7 @@ export const columns: ColumnDef<Property>[] = [
   {
     id: "time_display",
     accessorKey: "listed_date",
-    header: () => (
-      <span className="text-xs">
-        <span className="hidden sm:inline">时间</span>
-        <span className="sm:hidden">日期</span>
-      </span>
-    ),
+    header: () => <SortableHeader title="时间" value="timeline" />,
     cell: ({ row }) => {
       const status = row.original.status;
       let dateStr: string | null | undefined;
