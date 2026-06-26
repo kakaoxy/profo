@@ -239,7 +239,7 @@ export default function AboutPage() {
               <img
                 alt="Modern Luxury Interior"
                 className="h-full w-full object-cover opacity-25"
-                src="/about/hero-bg.jpg"
+                src="/about/hero-bg.png"
                 fetchPriority="high"
                 onError={() => setHeroError(true)}
               />
@@ -448,7 +448,7 @@ export default function AboutPage() {
                 <img
                   alt="Data Analytics Dashboard"
                   className="h-full w-full rounded-images object-cover"
-                  src="/about/dashboard.jpg"
+                  src="/about/dashboard.png"
                   loading="lazy"
                   onError={() => setDashboardError(true)}
                 />
