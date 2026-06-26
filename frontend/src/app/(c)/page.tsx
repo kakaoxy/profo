@@ -200,6 +200,9 @@ function CPageContent() {
               setIsFilterOpen(nextOpen);
               if (nextOpen) setFilterKey((k) => k + 1);
             }}
+            aria-label={isFilterOpen ? "收起筛选" : "展开筛选"}
+            aria-expanded={isFilterOpen}
+            title={isFilterOpen ? "收起筛选" : "展开筛选"}
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
               hasActiveFilters
                 ? "border-transparent bg-apricot-wash text-rust"

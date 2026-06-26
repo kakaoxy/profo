@@ -38,7 +38,7 @@ export function Pagination({
       <button
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage <= 1}
-        className="flex h-10 w-10 items-center justify-center rounded-lg text-graphite transition-colors hover:bg-fog hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-graphite transition-colors hover:bg-fog hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         aria-label="上一页"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -53,7 +53,7 @@ export function Pagination({
           <button
             key={p}
             onClick={() => onPageChange(p)}
-            className={`flex h-10 min-w-10 items-center justify-center rounded-lg px-2 text-sm font-medium transition-colors ${
+            className={`flex h-10 min-w-10 items-center justify-center rounded-full px-2 text-sm font-medium transition-colors ${
               p === currentPage
                 ? "bg-ink text-white"
                 : "text-graphite hover:bg-fog hover:text-ink"
@@ -67,7 +67,7 @@ export function Pagination({
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage >= totalPages}
-        className="flex h-10 w-10 items-center justify-center rounded-lg text-graphite transition-colors hover:bg-fog hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-graphite transition-colors hover:bg-fog hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
         aria-label="下一页"
       >
         <ChevronRight className="h-4 w-4" />

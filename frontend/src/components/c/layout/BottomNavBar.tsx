@@ -21,7 +21,10 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
   if (!visible) return null;
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 h-20 border-t border-dove/30 bg-white">
+    <nav
+      className="fixed bottom-0 inset-x-0 z-50 h-20 border-t border-dove/30 bg-white"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       <div className="mx-auto flex h-full max-w-[1200px] items-center justify-around px-2">
         {tabs.map((tab) => {
           const isActive =
@@ -33,11 +36,12 @@ export function BottomNavBar({ visible }: BottomNavBarProps) {
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={isActive ? "page" : undefined}
               className="flex flex-col items-center justify-center gap-1 min-w-[56px]"
             >
               <Icon
                 className={`h-5 w-5 ${
-                  isActive ? "text-ink" : "text-graphite"
+                  isActive ? "text-rust" : "text-graphite"
                 }`}
               />
               <span

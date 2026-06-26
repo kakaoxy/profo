@@ -221,7 +221,7 @@ export default function AboutPage() {
       {/* ========== PC端布局 ========== */}
       <div className="hidden md:block">
         {/* Hero Section */}
-        <section className="relative flex h-[819px] w-full items-center overflow-hidden bg-white">
+        <section className="relative flex min-h-[60vh] md:min-h-[640px] w-full items-center overflow-hidden bg-white py-20 md:py-24">
           <div
             className="pointer-events-none absolute inset-0"
             style={{

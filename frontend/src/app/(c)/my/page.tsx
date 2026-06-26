@@ -98,7 +98,7 @@ export default function CMyPage() {
       <section className="pt-4">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-2 h-12 rounded-full border border-dove/30 bg-white text-ink font-medium hover:bg-fog transition-colors"
+          className="flex w-full items-center justify-center gap-2 h-12 rounded-full text-graphite font-medium hover:text-ink hover:underline transition-colors"
         >
           <LogOut className="h-4 w-4" />
           退出登录

@@ -39,7 +39,7 @@ export default function ContactPage() {
 
   return (
     <div className="mx-auto max-w-[1200px]">
-      <section className="relative overflow-hidden bg-white px-6 py-12">
+      <section className="relative overflow-hidden bg-white px-4 md:px-6 py-12">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -61,7 +61,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="bg-fog px-4 py-8">
+      <section className="bg-fog px-4 md:px-6 py-8">
         <div className="mb-5 flex items-center gap-2">
           <div className="h-5 w-1 rounded-full bg-rust" />
           <span className="text-sm font-medium text-ink tracking-[-0.009em]">
@@ -132,7 +132,7 @@ export default function ContactPage() {
         )}
       </section>
 
-      <section className="border-t border-dove/30 bg-white px-4 py-10">
+      <section className="border-t border-dove/30 bg-white px-4 md:px-6 py-10">
         <div className="mb-6 text-center">
           <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
             平台实力
@@ -179,7 +179,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-fog px-6 py-12">
+      <section className="relative overflow-hidden bg-fog px-4 md:px-6 py-12">
         <div className="relative z-10 text-center">
           <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
             立即行动

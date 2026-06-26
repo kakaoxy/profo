@@ -53,13 +53,13 @@ export default function CRegisterPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Panel - Desktop Only */}
-      <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-apricot-wash relative overflow-hidden items-center justify-center p-6">
-        {/* Warm radial glow */}
+      <div className="hidden md:flex md:w-1/2 lg:w-3/5 bg-white relative overflow-hidden items-center justify-center p-6">
+        {/* Warm radial glow (per DESIGN.md hero only) */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.55) 0%, transparent 60%)",
+              "radial-gradient(circle at 30% 30%, rgba(251,225,209,0.6) 0%, transparent 60%)",
           }}
         />
 
@@ -124,7 +124,10 @@ export default function CRegisterPage() {
           <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
             {/* Server Error */}
             {state && !state.success && state.error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-inputs text-c-error text-sm">
+              <div
+                role="alert"
+                className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
+              >
                 {extractErrorMessage(state.error, "注册失败")}
               </div>
             )}

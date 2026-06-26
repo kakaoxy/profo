@@ -36,11 +36,11 @@ export function PropertyGrid({
       {cells.map((cell) => (
         <div
           key={cell.label}
-          className="bg-white p-5 rounded-cards shadow-steep-sm"
+          className="bg-fog p-5 rounded-inputs"
         >
           <p className="text-sm text-graphite">{cell.label}</p>
           <p
-            className={`font-medium text-ink ${
+            className={`mt-1 font-medium text-ink ${
               cell.isPrice ? "text-lg" : "text-base"
             }`}
           >

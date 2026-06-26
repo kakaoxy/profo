@@ -56,7 +56,10 @@ export function ValuationForm() {
     <form action={formAction} className="space-y-4 sm:space-y-6">
       <div className="rounded-cards bg-white p-5 sm:p-8 shadow-steep border border-dove/30 space-y-4 sm:space-y-5">
         {state && !state.success && state.error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-inputs text-error text-sm">
+          <div
+            role="alert"
+            className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
+          >
             {state.error}
           </div>
         )}
@@ -110,7 +113,7 @@ export function ValuationForm() {
             <FormItem label="朝向">
               <select
                 name="orientation"
-                className="w-full h-12 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink text-center appearance-none pl-4 pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23999%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat focus:border-rust transition-colors"
+                className="w-full h-12 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink text-center appearance-none pl-4 pr-10 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a3a6af%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat focus:border-rust transition-colors"
                 value={formData.orientation}
                 onChange={(e) => updateField("orientation", e.target.value)}
               >
@@ -162,7 +165,7 @@ export function ValuationForm() {
         </div>
       </div>
 
-      <div className="bg-fog p-3 sm:p-4 rounded-inputs border-l border-rust flex items-center gap-3">
+      <div className="bg-apricot-wash p-3 sm:p-4 rounded-inputs flex items-center gap-3">
         <Smartphone className="h-5 w-5 text-rust shrink-0" />
         <span className="text-sm text-ink">完善手机号，获取更精准的估价结果</span>
       </div>
