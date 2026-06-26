@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { isValidUrl } from "@/lib/validators";
+import { DEFAULT_SORT_BY, DEFAULT_SORT_ORDER } from "./search-params";
 
 export type Property = components["schemas"]["PropertyResponse"];
 
@@ -72,11 +73,11 @@ const getFloorPlan = (
 const SortableHeader = ({ title, value }: { title: string; value: string }) => {
   const [sortBy, setSortBy] = useQueryState("sort_by", {
     shallow: false,
-    defaultValue: "timeline",
+    defaultValue: DEFAULT_SORT_BY,
   });
   const [sortOrder, setSortOrder] = useQueryState("sort_order", {
     shallow: false,
-    defaultValue: "desc",
+    defaultValue: DEFAULT_SORT_ORDER,
   });
 
   const isSorted = sortBy === value;
