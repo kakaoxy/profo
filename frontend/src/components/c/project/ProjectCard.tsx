@@ -54,7 +54,7 @@ export function ProjectCard({
   return (
     <Link
       href={`/projects/${id}`}
-      className="group block transition-all duration-300 hover:-translate-y-0.5"
+      className="group block transition-all duration-300 hover:-translate-y-1"
     >
       <div className="flex h-full flex-col overflow-hidden rounded-cards bg-white shadow-steep-sm transition-shadow duration-300 group-hover:shadow-steep">
         <div className="relative aspect-video overflow-hidden bg-fog">

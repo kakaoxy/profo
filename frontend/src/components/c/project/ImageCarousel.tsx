@@ -58,13 +58,15 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
         <>
           <button
             onClick={prev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 transition-colors"
+            aria-label="上一张图片"
+            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-ink/30 backdrop-blur-sm text-white hover:bg-ink/50 transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={next}
-            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 transition-colors"
+            aria-label="下一张图片"
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-ink/30 backdrop-blur-sm text-white hover:bg-ink/50 transition-colors"
           >
             <ChevronRight className="h-5 w-5" />
           </button>

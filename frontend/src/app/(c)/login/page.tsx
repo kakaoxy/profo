@@ -33,23 +33,23 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="px-4 pt-8 md:p-0 md:min-h-dvh md:flex md:items-center md:justify-center relative">
+    <div className="md:p-0 md:min-h-dvh md:flex md:items-center md:justify-center relative">
       {/* Main Card */}
       <main className="w-full max-w-md mx-auto md:max-w-5xl bg-white rounded-cards overflow-hidden shadow-steep flex flex-col md:flex-row md:min-h-[600px]">
         {/* Left Panel - Brand (Desktop Only) */}
-        <section className="relative hidden md:flex md:w-1/2 bg-apricot-wash overflow-hidden">
-          {/* Warm radial glow */}
+        <section className="relative hidden md:flex md:w-1/2 bg-white overflow-hidden">
+          {/* Warm radial glow (per DESIGN.md hero only) */}
           <div
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.55) 0%, transparent 60%)",
+                "radial-gradient(circle at 30% 20%, rgba(251,225,209,0.6) 0%, transparent 60%)",
             }}
           />
           {/* Brand Content */}
           <div className="relative z-10 flex flex-col justify-end p-12 w-full h-full">
             <div className="mb-8">
-              <h1 className="font-display text-[44px] leading-[1.1] text-ink mb-3">
+              <h1 className="text-[44px] leading-[1.1] font-medium text-ink mb-3 tracking-[-0.009em]">
                 Profo
               </h1>
               <p className="text-[18px] leading-[28px] text-ash max-w-sm">
@@ -115,7 +115,10 @@ function LoginForm() {
           >
             {/* Server Error */}
             {state && !state.success && state.error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-inputs text-c-error text-sm">
+              <div
+                role="alert"
+                className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
+              >
                 {state.error}
               </div>
             )}
@@ -164,11 +167,12 @@ function LoginForm() {
                 >
                   密码
                 </label>
-                <span
-                  className="text-[14px] leading-[20px] text-ink hover:underline cursor-pointer"
+                <Link
+                  href="/valuation"
+                  className="text-[14px] leading-[20px] text-graphite hover:text-ink hover:underline transition-colors"
                 >
                   忘记密码?
-                </span>
+                </Link>
               </div>
               <div className="relative">
                 <input
@@ -190,6 +194,7 @@ function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "隐藏密码" : "显示密码"}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-graphite/50 hover:text-ink transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

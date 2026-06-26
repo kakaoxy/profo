@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, ArrowLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { useUserInfo } from "@/lib/api-c/user-info";
 
 interface TopAppBarProps {
@@ -25,8 +25,14 @@ export function TopAppBar({
   actionIcon,
 }: TopAppBarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const userInfo = useUserInfo();
   const isLoggedIn = !!userInfo.nickname;
+
+  const handleBack = () => {
+    if (onBack) onBack();
+    else router.back();
+  };
 
   return (
     <>
@@ -97,19 +103,23 @@ export function TopAppBar({
         <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4">
           {variant === "main" ? (
             <>
-              <button className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-fog">
-                <Menu className="h-5 w-5" />
-              </button>
-              <span className="text-lg font-medium tracking-tight text-ink">
+              <div className="w-10" />
+              <Link
+                href="/"
+                className="text-lg font-medium tracking-tight text-ink"
+                aria-label="Profo 首页"
+              >
                 Profo
-              </span>
+              </Link>
               <div className="w-10" />
             </>
           ) : (
             <>
               <button
-                className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-fog"
-                onClick={onBack}
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-ink hover:bg-fog transition-colors"
+                onClick={handleBack}
+                aria-label="返回上一页"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>

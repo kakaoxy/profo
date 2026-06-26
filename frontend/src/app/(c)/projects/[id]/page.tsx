@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Share } from "lucide-react";
+import { toast } from "sonner";
 import useSWR from "swr";
 import { ImageCarousel } from "@/components/c/project/ImageCarousel";
 import { PropertyGrid } from "@/components/c/project/PropertyGrid";
@@ -78,16 +79,38 @@ export default function ProjectDetailPage() {
       ? marketingImages
       : (data.images && data.images.length > 0 ? data.images : []);
 
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareTitle = `${data.community_name ?? "房源"} · ${data.layout}`;
+
+  const handleShare = async () => {
+    if (typeof navigator === "undefined") return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: shareTitle, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("链接已复制到剪贴板");
+      }
+    } catch {
+      toast.error("分享失败，请手动复制链接");
+    }
+  };
+
   return (
     <div className="pb-24 md:pb-20">
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 pointer-events-none">
         <button
           onClick={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-c-trust-blue shadow-sm pointer-events-auto active:scale-95 transition-transform"
+          aria-label="返回上一页"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-sm pointer-events-auto active:scale-95 transition-transform"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-c-trust-blue shadow-sm pointer-events-auto active:scale-95 transition-transform">
+        <button
+          onClick={handleShare}
+          aria-label="分享房源"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-sm pointer-events-auto active:scale-95 transition-transform"
+        >
           <Share className="w-5 h-5" />
         </button>
       </nav>
