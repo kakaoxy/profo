@@ -12,7 +12,7 @@ import { useUserInfo } from "@/lib/api-c/user-info";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
-import { fetcher, AuthError } from "@/lib/swr";
+import { fetcher, AuthError, ForbiddenError } from "@/lib/swr";
 import type { components } from "@/lib/api-types";
 
 type LeadListResponse = components["schemas"]["PublicLeadListResponse"];
@@ -30,7 +30,8 @@ export default function CMyPage() {
   );
 
   useEffect(() => {
-    if (error instanceof AuthError) {
+    // 401(未登录/token失效) 或 403(非customer角色) 均视为需要登录
+    if (error instanceof AuthError || error instanceof ForbiddenError) {
       router.replace("/login?redirect=/my");
     }
   }, [error, router]);
