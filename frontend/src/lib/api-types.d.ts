@@ -215,13 +215,13 @@ export interface paths {
          *
          *     使用手动序列化避免 ORM 关系遍历导致的性能问题.
          */
-        get: operations["get_leads_api_v1_leads__get"];
+        get: operations["get_leads_api_v1_leads_get"];
         put?: never;
         /**
          * Create Lead
          * @description 创建线索.
          */
-        post: operations["create_lead_api_v1_leads__post"];
+        post: operations["create_lead_api_v1_leads_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1201,7 +1201,7 @@ export interface paths {
          *
          *     速率限制：60次/分钟.
          */
-        get: operations["get_users_api_v1_users__get"];
+        get: operations["get_users_api_v1_users_get"];
         put?: never;
         /**
          * Create User
@@ -1209,7 +1209,7 @@ export interface paths {
          *
          *     速率限制：10次/小时（防止批量创建用户攻击）.
          */
-        post: operations["create_user_api_v1_users__post"];
+        post: operations["create_user_api_v1_users_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1345,6 +1345,7 @@ export interface paths {
          * Init System Data
          * @description 初始化系统数据，包括默认角色和管理员用户.
          *
+         *     需要管理员权限。首次初始化请使用 init_admin.py 脚本。
          *     注意：使用 def 避免 sync DB 阻塞
          *     速率限制：3次/小时.
          */
@@ -1366,13 +1367,13 @@ export interface paths {
          * Get Roles
          * @description 获取角色列表，支持搜索和筛选.
          */
-        get: operations["get_roles_api_v1_roles__get"];
+        get: operations["get_roles_api_v1_roles_get"];
         put?: never;
         /**
          * Create Role
          * @description 创建新角色.
          */
-        post: operations["create_role_api_v1_roles__post"];
+        post: operations["create_role_api_v1_roles_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1793,6 +1794,26 @@ export interface paths {
          * @description 使用refresh_token获取新的access_token
          */
         post: operations["refresh_access_token_api_v1_public_auth_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * C端获取当前用户信息
+         * @description 返回当前登录的C端用户信息（供前端Server Component鉴权使用）
+         */
+        get: operations["get_current_user_info_api_v1_public_auth_me_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2241,12 +2262,10 @@ export interface components {
             id: string;
             /** Project Id */
             project_id: string;
-            /** Type */
-            type: string;
-            /** Category */
-            category: string;
+            type: components["schemas"]["CashFlowType"];
+            category: components["schemas"]["CashFlowCategory"];
             /** Amount */
-            amount: string;
+            amount: number;
             /**
              * Record Date
              * Format: date-time
@@ -2305,11 +2324,11 @@ export interface components {
          */
         CashFlowSummary: {
             /** Total Income */
-            total_income: string;
+            total_income: number;
             /** Total Expense */
-            total_expense: string;
+            total_expense: number;
             /** Net Cash Flow */
-            net_cash_flow: string;
+            net_cash_flow: number;
             /** Roi */
             roi: number;
             /**
@@ -2582,11 +2601,8 @@ export interface components {
              * @description 任务ID
              */
             task_id: string;
-            /**
-             * Status
-             * @description 任务状态
-             */
-            status: string;
+            /** @description 任务状态 */
+            status: components["schemas"]["ImportTaskStatus"];
             /**
              * Message
              * @description 提示信息
@@ -2594,6 +2610,12 @@ export interface components {
              */
             message: string;
         };
+        /**
+         * ImportTaskStatus
+         * @description 导入任务状态枚举.
+         * @enum {string}
+         */
+        ImportTaskStatus: "pending" | "processing" | "completed" | "failed" | "cancelled";
         /**
          * ImportTaskStatusResponse
          * @description 导入任务状态响应.
@@ -2604,11 +2626,8 @@ export interface components {
              * @description 任务ID
              */
             task_id: string;
-            /**
-             * Status
-             * @description 任务状态: pending/processing/completed/failed/cancelled
-             */
-            status: string;
+            /** @description 任务状态: pending/processing/completed/failed/cancelled */
+            status: components["schemas"]["ImportTaskStatus"];
             /**
              * Filename
              * @description 原始文件名
@@ -2696,16 +2715,10 @@ export interface components {
              * @description 缩略图URL
              */
             thumbnail_url?: string | null;
-            /**
-             * Photo Category
-             * @description 照片分类
-             */
-            photo_category: string;
-            /**
-             * Renovation Stage
-             * @description 装修阶段
-             */
-            renovation_stage?: string | null;
+            /** @description 照片分类 */
+            photo_category: components["schemas"]["PhotoCategory"];
+            /** @description 装修阶段 */
+            renovation_stage?: components["schemas"]["RenovationStage"] | null;
             /**
              * Description
              * @description 描述
@@ -2758,11 +2771,8 @@ export interface components {
              * @description 朝向
              */
             orientation?: string | null;
-            /**
-             * Status
-             * @description 项目状态
-             */
-            status: string;
+            /** @description 项目状态 */
+            status: components["schemas"]["ProjectStatus"];
         };
         /**
          * L3ProjectImportResponse
@@ -2829,11 +2839,8 @@ export interface components {
              * @description 装修风格
              */
             decoration_style?: string | null;
-            /**
-             * Status
-             * @description 项目状态
-             */
-            status?: string | null;
+            /** @description 项目状态 */
+            status?: components["schemas"]["ProjectStatus"] | null;
             /**
              * Available Media
              * @description 可导入的媒体资源列表
@@ -2872,7 +2879,7 @@ export interface components {
              * @description 媒体类型: image/video
              * @default image
              */
-            media_type: components["schemas"]["MediaType"];
+            media_type: components["schemas"]["L4MediaType"];
             /**
              * @description 照片分类: marketing/renovation
              * @default marketing
@@ -2896,9 +2903,9 @@ export interface components {
             sort_order: number;
             /**
              * Origin Media Id
-             * @description 来源媒体ID(L3层)
+             * @description 来源媒体ID(L3层，UUID字符串)
              */
-            origin_media_id?: number | null;
+            origin_media_id?: string | null;
             /**
              * File Url
              * @description 文件URL
@@ -2958,7 +2965,7 @@ export interface components {
              * @description 媒体类型: image/video
              * @default image
              */
-            media_type: components["schemas"]["MediaType"];
+            media_type: components["schemas"]["L4MediaType"];
             /**
              * @description 照片分类: marketing/renovation
              * @default marketing
@@ -2985,7 +2992,7 @@ export interface components {
             /** Marketing Project Id */
             marketing_project_id: number;
             /** Origin Media Id */
-            origin_media_id?: number | null;
+            origin_media_id?: string | null;
             /** File Url */
             file_url: string;
             /** Thumbnail Url */
@@ -3319,6 +3326,12 @@ export interface components {
             consultant_id?: string | null;
         };
         /**
+         * L4MediaType
+         * @description L4 营销媒体类型枚举.
+         * @enum {string}
+         */
+        L4MediaType: "image" | "video";
+        /**
          * L4SyncResponse
          * @description 同步响应.
          */
@@ -3367,11 +3380,8 @@ export interface components {
             source_property_id?: number | null;
             /** @default pending_assessment */
             status: components["schemas"]["LeadStatus"] | null;
-            /**
-             * Images
-             * @default []
-             */
-            images: string[];
+            /** Images */
+            images?: string[];
         };
         /**
          * LeadFunnelResponse
@@ -3443,11 +3453,8 @@ export interface components {
             auditor_id?: string | null;
             /** Audit Time */
             audit_time?: string | null;
-            /**
-             * Images
-             * @default []
-             */
-            images: string[];
+            /** Images */
+            images?: string[];
             /** District */
             district?: string | null;
             /** Business Area */
@@ -3518,11 +3525,8 @@ export interface components {
             auditor_id?: string | null;
             /** Audit Time */
             audit_time?: string | null;
-            /**
-             * Images
-             * @default []
-             */
-            images: string[];
+            /** Images */
+            images?: string[];
             /** Creator Id */
             creator_id?: string | null;
             /** Creator Name */
@@ -3633,12 +3637,6 @@ export interface components {
              */
             sort_order: number;
         };
-        /**
-         * MediaType
-         * @description 媒体类型.
-         * @enum {string}
-         */
-        MediaType: "image" | "video";
         /**
          * NeighborhoodRadarItem
          * @description 周边竞品雷达单项数据.
@@ -3799,7 +3797,7 @@ export interface components {
         };
         /**
          * PhotoCategory
-         * @description 照片分类.
+         * @description 照片分类枚举.
          * @enum {string}
          */
         PhotoCategory: "marketing" | "renovation";
@@ -3943,7 +3941,9 @@ export interface components {
              * Signing Materials
              * @description 签约材料列表
              */
-            signing_materials?: unknown[] | null;
+            signing_materials?: {
+                [key: string]: string;
+            }[] | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -4004,21 +4004,21 @@ export interface components {
             /** Sold Date */
             sold_date: string | null;
             /** Total Investment */
-            total_investment: string;
+            total_investment: number | null;
             /** Total Income */
-            total_income: string;
+            total_income: number | null;
             /** Net Profit */
-            net_profit: string;
+            net_profit: number | null;
             /** Roi */
             roi: number;
             /** Address */
             address?: string | null;
             /** Sale Price */
-            sale_price?: string | null;
+            sale_price?: number | null;
             /** List Price */
-            list_price?: string | null;
+            list_price?: number | null;
             /** Signing Price */
-            signing_price?: string | null;
+            signing_price?: number | null;
         };
         /**
          * ProjectResponse
@@ -4037,11 +4037,8 @@ export interface components {
              * @description 项目名称
              */
             name?: string | null;
-            /**
-             * Status
-             * @description 项目状态
-             */
-            status: string;
+            /** @description 项目状态 */
+            status: components["schemas"]["ProjectStatus"];
             /**
              * Created At
              * Format: date-time
@@ -4072,8 +4069,7 @@ export interface components {
              * @default false
              */
             is_deleted: boolean;
-            /** Renovation Stage */
-            renovation_stage?: string | null;
+            renovation_stage?: components["schemas"]["RenovationStage"] | null;
             /**
              * Contract No
              * @description 合同编号
@@ -4153,17 +4149,21 @@ export interface components {
              * Signing Materials
              * @description 签约材料列表
              */
-            signing_materials?: unknown[] | null;
+            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
             /**
              * Sales Records
              * @description 销售活动记录列表
              */
-            sales_records?: unknown[] | null;
+            sales_records?: {
+                [key: string]: string | number | null;
+            }[] | null;
             /**
              * Renovation Photos
              * @description 装修阶段照片列表
              */
-            renovation_photos?: unknown[] | null;
+            renovation_photos?: {
+                [key: string]: string | null;
+            }[] | null;
             /**
              * Renovationstagedates
              * @description 各阶段日期映射
@@ -4246,7 +4246,9 @@ export interface components {
             /** Other Agreements */
             other_agreements?: string | null;
             /** Signing Materials */
-            signing_materials?: unknown[] | null;
+            signing_materials?: {
+                [key: string]: string;
+            }[] | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
@@ -4502,11 +4504,8 @@ export interface components {
              * @description 跟进记录ID
              */
             id: string;
-            /**
-             * Method
-             * @description 跟进方式
-             */
-            method: string;
+            /** @description 跟进方式 */
+            method: components["schemas"]["FollowUpMethod"];
             /**
              * Content
              * @description 跟进内容
@@ -4868,16 +4867,10 @@ export interface components {
              * @description 媒体类型
              */
             media_type: string;
-            /**
-             * Photo Category
-             * @description 照片分类
-             */
-            photo_category: string;
-            /**
-             * Renovation Stage
-             * @description 装修阶段
-             */
-            renovation_stage?: string | null;
+            /** @description 照片分类 */
+            photo_category: components["schemas"]["PhotoCategory"];
+            /** @description 装修阶段 */
+            renovation_stage?: components["schemas"]["RenovationStage"] | null;
             /**
              * Description
              * @description 描述
@@ -5008,11 +5001,8 @@ export interface components {
              * @description 标签列表
              */
             tags?: string[];
-            /**
-             * Project Status
-             * @description 项目状态
-             */
-            project_status: string;
+            /** @description 项目状态 */
+            project_status: components["schemas"]["MarketingProjectStatus"];
             /**
              * Decoration Style
              * @description 装修风格
@@ -5108,11 +5098,8 @@ export interface components {
              * @description 标签列表
              */
             tags?: string[];
-            /**
-             * Project Status
-             * @description 项目状态
-             */
-            project_status: string;
+            /** @description 项目状态 */
+            project_status: components["schemas"]["MarketingProjectStatus"];
             /**
              * Decoration Style
              * @description 装修风格
@@ -5216,11 +5203,8 @@ export interface components {
          * @description C端改造阶段.
          */
         PublicRenovationStage: {
-            /**
-             * Stage
-             * @description 阶段名称
-             */
-            stage: string;
+            /** @description 阶段名称 */
+            stage: components["schemas"]["RenovationStage"];
             /**
              * Photo Count
              * @description 照片数量
@@ -5470,37 +5454,37 @@ export interface components {
             /** Actual End Date */
             actual_end_date?: string | null;
             /** Hard Contract Amount */
-            hard_contract_amount?: number | null;
+            hard_contract_amount?: string | null;
             /** Payment Node 1 */
             payment_node_1?: string | null;
             /** Payment Ratio 1 */
-            payment_ratio_1?: number | null;
+            payment_ratio_1?: string | null;
             /** Payment Node 2 */
             payment_node_2?: string | null;
             /** Payment Ratio 2 */
-            payment_ratio_2?: number | null;
+            payment_ratio_2?: string | null;
             /** Payment Node 3 */
             payment_node_3?: string | null;
             /** Payment Ratio 3 */
-            payment_ratio_3?: number | null;
+            payment_ratio_3?: string | null;
             /** Payment Node 4 */
             payment_node_4?: string | null;
             /** Payment Ratio 4 */
-            payment_ratio_4?: number | null;
+            payment_ratio_4?: string | null;
             /** Soft Budget */
-            soft_budget?: number | null;
+            soft_budget?: string | null;
             /** Soft Actual Cost */
-            soft_actual_cost?: number | null;
+            soft_actual_cost?: string | null;
             /** Soft Detail Attachment */
             soft_detail_attachment?: string | null;
             /** Design Fee */
-            design_fee?: number | null;
+            design_fee?: string | null;
             /** Demolition Fee */
-            demolition_fee?: number | null;
+            demolition_fee?: string | null;
             /** Garbage Fee */
-            garbage_fee?: number | null;
+            garbage_fee?: string | null;
             /** Other Extra Fee */
-            other_extra_fee?: number | null;
+            other_extra_fee?: string | null;
             /** Other Fee Reason */
             other_fee_reason?: string | null;
             /**
@@ -5548,7 +5532,7 @@ export interface components {
              * Hard Contract Amount
              * @description 硬装合同总金额
              */
-            hard_contract_amount?: number | null;
+            hard_contract_amount?: number | string | null;
             /**
              * Payment Node 1
              * @description 第一笔款项支付节点
@@ -5558,7 +5542,7 @@ export interface components {
              * Payment Ratio 1
              * @description 第一笔款项支付比例
              */
-            payment_ratio_1?: number | null;
+            payment_ratio_1?: number | string | null;
             /**
              * Payment Node 2
              * @description 第二笔款项支付节点
@@ -5568,7 +5552,7 @@ export interface components {
              * Payment Ratio 2
              * @description 第二笔款项支付比例
              */
-            payment_ratio_2?: number | null;
+            payment_ratio_2?: number | string | null;
             /**
              * Payment Node 3
              * @description 第三笔款项支付节点
@@ -5578,7 +5562,7 @@ export interface components {
              * Payment Ratio 3
              * @description 第三笔款项支付比例
              */
-            payment_ratio_3?: number | null;
+            payment_ratio_3?: number | string | null;
             /**
              * Payment Node 4
              * @description 第四笔款项支付节点
@@ -5588,17 +5572,17 @@ export interface components {
              * Payment Ratio 4
              * @description 第四笔款项支付比例
              */
-            payment_ratio_4?: number | null;
+            payment_ratio_4?: number | string | null;
             /**
              * Soft Budget
              * @description 软装预算金额
              */
-            soft_budget?: number | null;
+            soft_budget?: number | string | null;
             /**
              * Soft Actual Cost
              * @description 软装实际发生成本
              */
-            soft_actual_cost?: number | null;
+            soft_actual_cost?: number | string | null;
             /**
              * Soft Detail Attachment
              * @description 软装明细附件
@@ -5608,22 +5592,22 @@ export interface components {
              * Design Fee
              * @description 设计费用
              */
-            design_fee?: number | null;
+            design_fee?: number | string | null;
             /**
              * Demolition Fee
              * @description 拆旧费用
              */
-            demolition_fee?: number | null;
+            demolition_fee?: number | string | null;
             /**
              * Garbage Fee
              * @description 垃圾清运费用
              */
-            garbage_fee?: number | null;
+            garbage_fee?: number | string | null;
             /**
              * Other Extra Fee
              * @description 其他额外费用
              */
-            other_extra_fee?: number | null;
+            other_extra_fee?: number | string | null;
             /**
              * Other Fee Reason
              * @description 其他费用原因
@@ -5852,7 +5836,7 @@ export interface components {
             customer_phone?: string | null;
             /** Customer Info */
             customer_info?: {
-                [key: string]: unknown;
+                [key: string]: string;
             } | null;
             /**
              * Record Date
@@ -5891,15 +5875,14 @@ export interface components {
             id: string;
             /** Project Id */
             project_id: string;
-            /** Record Type */
-            record_type: string;
+            record_type: components["schemas"]["RecordType"];
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Phone */
             customer_phone?: string | null;
             /** Customer Info */
             customer_info?: {
-                [key: string]: unknown;
+                [key: string]: string;
             } | null;
             /**
              * Record Date
@@ -5944,6 +5927,38 @@ export interface components {
              * @description 谈判人用户ID(联卖谈判人)
              */
             negotiator_id?: string | null;
+        };
+        /**
+         * SigningMaterial
+         * @description 签约材料附件.
+         */
+        SigningMaterial: {
+            /**
+             * Filename
+             * @description 文件名
+             */
+            filename: string;
+            /**
+             * Url
+             * @description 文件URL
+             */
+            url: string;
+            /**
+             * Category
+             * @description 附件分类
+             */
+            category: string;
+            /**
+             * Filetype
+             * @description 文件类型
+             */
+            fileType: string;
+            /**
+             * Size
+             * @description 文件大小(字节)
+             * @default 0
+             */
+            size: number;
         };
         /**
          * StatusUpdate
@@ -6677,7 +6692,7 @@ export interface operations {
             };
         };
     };
-    get_leads_api_v1_leads__get: {
+    get_leads_api_v1_leads_get: {
         parameters: {
             query?: {
                 /** @description 小区名称搜索 */
@@ -6730,7 +6745,7 @@ export interface operations {
             };
         };
     };
-    create_lead_api_v1_leads__post: {
+    create_lead_api_v1_leads_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -7630,7 +7645,7 @@ export interface operations {
                 page?: number;
                 /** @description 每页数量 */
                 page_size?: number;
-                status?: string | null;
+                status?: components["schemas"]["ProjectStatus"] | null;
                 community_name?: string | null;
             };
             header?: never;
@@ -8710,7 +8725,7 @@ export interface operations {
             };
         };
     };
-    get_users_api_v1_users__get: {
+    get_users_api_v1_users_get: {
         parameters: {
             query?: {
                 /** @description 用户名搜索 */
@@ -8752,7 +8767,7 @@ export interface operations {
             };
         };
     };
-    create_user_api_v1_users__post: {
+    create_user_api_v1_users_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9032,7 +9047,7 @@ export interface operations {
             };
         };
     };
-    get_roles_api_v1_roles__get: {
+    get_roles_api_v1_roles_get: {
         parameters: {
             query?: {
                 /** @description 角色名称搜索 */
@@ -9072,7 +9087,7 @@ export interface operations {
             };
         };
     };
-    create_role_api_v1_roles__post: {
+    create_role_api_v1_roles_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -9790,6 +9805,26 @@ export interface operations {
             };
         };
     };
+    get_current_user_info_api_v1_public_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUserInfo"];
+                };
+            };
+        };
+    };
     logout_api_v1_public_auth_logout_post: {
         parameters: {
             query?: never;
@@ -9883,7 +9918,7 @@ export interface operations {
                 page?: number;
                 /** @description 每页数量 */
                 page_size?: number;
-                project_status?: string | null;
+                project_status?: components["schemas"]["MarketingProjectStatus"] | null;
                 community_name?: string | null;
                 layout?: string | null;
                 min_price?: number | null;
