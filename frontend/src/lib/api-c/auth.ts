@@ -21,7 +21,12 @@ interface TokenResponse {
   };
 }
 
-function setUserInfoCookie(cookieStore: Awaited<ReturnType<typeof cookies>>, user: { nickname?: string | null; phone?: string | null }, maxAge: number) {
+// c_user_info 寿命与 c_refresh_token 对齐：access_token 过期被刷新点续期时，
+// c_user_info 不会同步重写。若用 access_token 同寿命（30分钟），刷新后该 cookie
+// 即被浏览器删除，导致 TopAppBar 判定未登录而 /my 仍能拿到数据的不一致。
+const USER_INFO_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+
+function setUserInfoCookie(cookieStore: Awaited<ReturnType<typeof cookies>>, user: { nickname?: string | null; phone?: string | null }) {
   const info: UserInfo = {
     nickname: user.nickname ?? null,
     phone: user.phone ?? null,
@@ -30,7 +35,7 @@ function setUserInfoCookie(cookieStore: Awaited<ReturnType<typeof cookies>>, use
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge,
+    maxAge: USER_INFO_COOKIE_MAX_AGE,
     sameSite: "lax",
   });
 }
@@ -88,7 +93,7 @@ export async function registerAction(_: ActionResult<{ user: unknown }>, formDat
       sameSite: "lax",
     });
 
-    setUserInfoCookie(cookieStore, data.user, data.expires_in);
+    setUserInfoCookie(cookieStore, data.user);
   } catch {
     return createErrorResult("网络错误，请连接后端服务");
   }
@@ -136,7 +141,7 @@ export async function loginAction(_: ActionResult<null>, formData: FormData): Pr
       sameSite: "lax",
     });
 
-    setUserInfoCookie(cookieStore, data.user, data.expires_in);
+    setUserInfoCookie(cookieStore, data.user);
   } catch {
     return createErrorResult("网络错误，请连接后端服务");
   }

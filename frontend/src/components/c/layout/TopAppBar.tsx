@@ -79,20 +79,12 @@ export function TopAppBar({
                 个人中心
               </Link>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-[15px] font-medium text-graphite transition-colors hover:text-ink"
-                >
-                  登录
-                </Link>
-                <Link
-                  href="/my"
-                  className="inline-flex items-center rounded-lg bg-ink px-4 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-ink/90"
-                >
-                  个人中心
-                </Link>
-              </>
+              <Link
+                href="/login"
+                className="inline-flex items-center rounded-lg bg-ink px-4 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-ink/90"
+              >
+                登录
+              </Link>
             )}
           </div>
         </div>
