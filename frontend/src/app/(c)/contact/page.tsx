@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
 import { publicFetcher } from "@/lib/swr";
+import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
 type SoldListResponse = components["schemas"]["PublicSoldProjectListResponse"];
@@ -50,13 +51,13 @@ export default function ContactPage() {
 
         <div className="relative z-10">
           <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
-            真实数据
+            {cLocale.contact.realDataBadge}
           </span>
           <h2 className="mt-4 whitespace-pre-line text-3xl font-medium leading-snug text-ink tracking-[-0.009em]">
-            {"看看房子\n值多少钱"}
+            {cLocale.contact.title}
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-ash tracking-[-0.009em]">
-            真实成交案例，数据会说话。看看同小区、同户型的市场动态数据充分定价。
+            {cLocale.contact.subtitle}
           </p>
         </div>
       </section>
@@ -65,7 +66,7 @@ export default function ContactPage() {
         <div className="mb-5 flex items-center gap-2">
           <div className="h-5 w-1 rounded-full bg-rust" />
           <span className="text-sm font-medium text-ink tracking-[-0.009em]">
-            近期成交
+            {cLocale.contact.recentLabel}
           </span>
         </div>
 
@@ -78,7 +79,7 @@ export default function ContactPage() {
               setSearch(e.target.value);
               handleSearchChange(e.target.value);
             }}
-            placeholder="搜索小区名..."
+            placeholder={cLocale.contact.searchPlaceholder}
             className="h-10 w-full rounded-inputs border border-dove/30 bg-white pl-9 pr-3 text-sm text-ink placeholder:text-graphite tracking-[-0.009em]"
           />
         </div>
@@ -108,8 +109,8 @@ export default function ContactPage() {
           <ErrorState onRetry={() => mutateSold()} />
         ) : !soldData?.items.length ? (
           <EmptyState
-            title="暂无成交案例"
-            description="近期暂无成交记录"
+            title={cLocale.contact.empty.title}
+            description={cLocale.contact.empty.description}
           />
         ) : (
           <div className="grid grid-cols-1 gap-5">
@@ -135,20 +136,20 @@ export default function ContactPage() {
       <section className="border-t border-dove/30 bg-white px-4 md:px-6 py-10">
         <div className="mb-6 text-center">
           <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
-            平台实力
+            {cLocale.contact.platformBadge}
           </span>
           <h3 className="mt-3 text-2xl font-medium text-ink tracking-[-0.009em]">
-            用数据说话
+            {cLocale.contact.platformTitle}
           </h3>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col items-center justify-center rounded-cards bg-white px-4 py-6 shadow-steep-sm">
             <span className="text-3xl font-medium text-ink tracking-[-0.009em]">
-              400+
+              {cLocale.contact.ownersValue}
             </span>
             <span className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-graphite">
-              业主共同选择
+              {cLocale.contact.ownersLabel}
             </span>
           </div>
           <div className="flex flex-col items-center justify-center rounded-cards bg-white px-4 py-6 shadow-steep-sm">
@@ -160,7 +161,7 @@ export default function ContactPage() {
               </span>
             )}
             <span className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-graphite">
-              在售套数
+              {cLocale.contact.statOnSale}
             </span>
           </div>
         </div>
@@ -174,7 +175,7 @@ export default function ContactPage() {
             </span>
           )}
           <span className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-ink">
-            本月已成交
+            {cLocale.contact.statMonthSold}
           </span>
         </div>
       </section>
@@ -182,19 +183,19 @@ export default function ContactPage() {
       <section className="relative overflow-hidden bg-fog px-4 md:px-6 py-12">
         <div className="relative z-10 text-center">
           <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
-            立即行动
+            {cLocale.contact.actionBadge}
           </span>
           <h3 className="mt-4 text-2xl font-medium text-ink tracking-[-0.009em]">
-            你家能卖多少？
+            {cLocale.contact.actionTitle}
           </h3>
           <p className="mt-2 text-sm text-ash tracking-[-0.009em]">
-            输入房源信息，获取同户型成交参考
+            {cLocale.contact.actionDesc}
           </p>
           <Link
             href="/about"
             className="mt-6 inline-flex items-center gap-2 text-[15px] font-medium text-ink tracking-[-0.009em] hover:underline"
           >
-            了解服务详情
+            {cLocale.contact.learnMore}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -205,7 +206,7 @@ export default function ContactPage() {
           href="/valuation"
           className="flex w-full items-center justify-center rounded-full bg-ink py-3 text-base font-medium text-white tracking-[-0.009em] transition-all hover:opacity-90 active:scale-[0.98]"
         >
-          免费获取估价
+          {cLocale.contact.cta}
         </Link>
       </div>
     </div>

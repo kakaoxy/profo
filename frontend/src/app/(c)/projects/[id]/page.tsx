@@ -11,6 +11,7 @@ import { ConsultantBar } from "@/components/c/project/ConsultantBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/c/shared/ErrorState";
 import { publicFetcher } from "@/lib/swr";
+import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
 type ProjectDetail = components["schemas"]["PublicProjectDetail"];
@@ -18,15 +19,15 @@ type ConsultantInfo = components["schemas"]["PublicConsultantContact"];
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   "在售": {
-    label: "在售",
+    label: cLocale.common.status.onSale,
     className: "bg-rust/10 text-rust",
   },
   "在途": {
-    label: "在途",
+    label: cLocale.common.status.inTransit,
     className: "bg-graphite/10 text-graphite",
   },
   "已售": {
-    label: "已售",
+    label: cLocale.common.status.sold,
     className: "bg-dove/10 text-dove",
   },
 };
@@ -80,7 +81,7 @@ export default function ProjectDetailPage() {
       : (data.images && data.images.length > 0 ? data.images : []);
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const shareTitle = `${data.community_name ?? "房源"} · ${data.layout}`;
+  const shareTitle = `${data.community_name ?? cLocale.projects.shareFallback} · ${data.layout}`;
 
   const handleShare = async () => {
     if (typeof navigator === "undefined") return;
@@ -89,10 +90,10 @@ export default function ProjectDetailPage() {
         await navigator.share({ title: shareTitle, url: shareUrl });
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        toast.success("链接已复制到剪贴板");
+        toast.success(cLocale.projects.linkCopied);
       }
     } catch {
-      toast.error("分享失败，请手动复制链接");
+      toast.error(cLocale.projects.shareFailed);
     }
   };
 
@@ -101,14 +102,14 @@ export default function ProjectDetailPage() {
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 pointer-events-none">
         <button
           onClick={() => router.back()}
-          aria-label="返回上一页"
+          aria-label={cLocale.projects.backAria}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-sm pointer-events-auto active:scale-95 transition-transform"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <button
           onClick={handleShare}
-          aria-label="分享房源"
+          aria-label={cLocale.projects.shareAria}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-sm pointer-events-auto active:scale-95 transition-transform"
         >
           <Share className="w-5 h-5" />
@@ -123,7 +124,7 @@ export default function ProjectDetailPage() {
           {status.label}
         </span>
         <h1 className="text-xl font-medium text-ink">
-          {data.community_name ?? "未知小区"}
+          {data.community_name ?? cLocale.projects.unknownCommunity}
         </h1>
       </div>
 

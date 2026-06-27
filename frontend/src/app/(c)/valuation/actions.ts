@@ -6,11 +6,12 @@ import { redirect } from "next/navigation";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { ActionResult, createErrorResult } from "@/lib/action-result";
 import { transformCommunitySearchSafe } from "@/lib/api-transforms";
+import { cLocale } from "@/lib/i18n/c-locale";
 import type { Community } from "@/components/common/community-select";
 
 const createLeadSchema = z.object({
   community_id: z.string().nullable().optional(),
-  community_name: z.string().min(1, "小区名称不能为空"),
+  community_name: z.string().min(1, cLocale.valuationAction.communityRequired),
   district: z.string().nullable().optional(),
   business_area: z.string().nullable().optional(),
   layout: z.string().nullable().optional(),
@@ -38,7 +39,7 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
   const cookieStore = await cookies();
   const token = cookieStore.get("c_access_token")?.value;
   if (!token) {
-    return createErrorResult("请先登录");
+    return createErrorResult(cLocale.common.error.loginRequired);
   }
 
   const raw = {
@@ -67,12 +68,12 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return createErrorResult(errorData.detail || "提交失败");
+      return createErrorResult(errorData.detail || cLocale.valuationAction.submitFailed);
     }
     const data = await response.json();
     redirect(`/leads/${data.id}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
-    return createErrorResult("网络错误，请稍后重试");
+    return createErrorResult(cLocale.common.error.networkRetry);
   }
 }

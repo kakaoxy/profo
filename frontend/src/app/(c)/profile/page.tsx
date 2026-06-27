@@ -15,6 +15,7 @@ import {
 import { updateProfileAction, updatePhoneAction } from "./actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useUserInfo } from "@/lib/api-c/user-info";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 function maskPhone(phone: string): string {
   if (phone.length >= 7) {
@@ -49,7 +50,7 @@ export default function CProfilePage() {
       if (nicknameRef.current) {
         nicknameRef.current.value = profileState.data.nickname;
       }
-      toast.success(profileState.message || "修改成功");
+      toast.success(profileState.message || cLocale.profile.updateSuccess);
     }
   }, [profileState]);
 
@@ -58,14 +59,14 @@ export default function CProfilePage() {
       requestAnimationFrame(() => {
         setPhoneDialogOpen(false);
       });
-      toast.success(phoneState.message || "手机号修改成功");
+      toast.success(phoneState.message || cLocale.profile.phoneUpdateSuccess);
     }
   }, [phoneState]);
 
   const displayNickname =
     profileState.success && profileState.data?.nickname
       ? profileState.data.nickname
-      : userInfo.nickname || "用户";
+      : userInfo.nickname || cLocale.common.user.defaultName;
 
   const displayPhone =
     phoneState.success && phoneState.data?.phone
@@ -82,14 +83,14 @@ export default function CProfilePage() {
         <form action={profileAction} className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-ink">
-              昵称
+              {cLocale.profile.nicknameLabel}
             </label>
             <button
               type="submit"
               disabled={isProfilePending}
               className="text-sm font-medium text-ink hover:underline disabled:opacity-50"
             >
-              {isProfilePending ? "保存中..." : "保存"}
+              {isProfilePending ? cLocale.common.action.saving : cLocale.common.action.save}
             </button>
           </div>
           {profileState && !profileState.success && profileState.error && (
@@ -100,7 +101,7 @@ export default function CProfilePage() {
             type="text"
             name="nickname"
             defaultValue={userInfo.nickname || ""}
-            placeholder="请输入昵称"
+            placeholder={cLocale.profile.nicknamePlaceholder}
             maxLength={100}
             className="w-full bg-white border border-dove/30 rounded-inputs px-4 py-3 text-base text-ink placeholder:text-graphite focus:outline-none focus:border-rust transition-all"
           />
@@ -112,9 +113,9 @@ export default function CProfilePage() {
           <div className="flex items-center gap-3">
             <Phone className="h-5 w-5 text-graphite" />
             <div>
-              <p className="text-sm font-medium text-ink">手机号</p>
+              <p className="text-sm font-medium text-ink">{cLocale.profile.phoneLabel}</p>
               <p className="text-sm text-graphite">
-                {displayPhone ? maskPhone(displayPhone) : "未绑定"}
+                {displayPhone ? maskPhone(displayPhone) : cLocale.common.user.phoneUnbound}
               </p>
             </div>
           </div>
@@ -122,7 +123,7 @@ export default function CProfilePage() {
             onClick={() => setPhoneDialogOpen(true)}
             className="text-sm font-medium text-ink hover:underline"
           >
-            修改
+            {cLocale.profile.phoneModify}
           </button>
         </div>
       </section>
@@ -130,9 +131,9 @@ export default function CProfilePage() {
       <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>修改手机号</DialogTitle>
+            <DialogTitle>{cLocale.profile.dialogTitle}</DialogTitle>
             <DialogDescription>
-              请输入新手机号和当前密码以验证身份
+              {cLocale.profile.dialogDesc}
             </DialogDescription>
           </DialogHeader>
           <form action={phoneAction} className="space-y-4">
@@ -141,24 +142,24 @@ export default function CProfilePage() {
             )}
             <div>
               <label className="block text-xs font-medium text-graphite uppercase mb-2">
-                新手机号
+                {cLocale.profile.newPhoneLabel}
               </label>
               <input
                 type="tel"
                 name="phone"
-                placeholder="请输入新手机号"
+                placeholder={cLocale.profile.newPhonePlaceholder}
                 required
                 className="w-full bg-white border border-dove/30 rounded-inputs px-4 py-3 text-base text-ink placeholder:text-graphite focus:outline-none focus:border-rust transition-all"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-graphite uppercase mb-2">
-                当前密码
+                {cLocale.profile.currentPasswordLabel}
               </label>
               <input
                 type="password"
                 name="password"
-                placeholder="请输入当前密码"
+                placeholder={cLocale.profile.currentPasswordPlaceholder}
                 required
                 className="w-full bg-white border border-dove/30 rounded-inputs px-4 py-3 text-base text-ink placeholder:text-graphite focus:outline-none focus:border-rust transition-all"
               />
@@ -169,7 +170,7 @@ export default function CProfilePage() {
                 disabled={isPhonePending}
                 className="w-full bg-ink text-white rounded-full px-5 py-3 text-[15px] font-medium tracking-[-0.009em] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isPhonePending ? "提交中..." : "确认修改"}
+                {isPhonePending ? cLocale.common.action.submitting : cLocale.common.action.submit}
               </button>
             </DialogFooter>
           </form>
