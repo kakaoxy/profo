@@ -365,7 +365,7 @@ export default function AboutPage() {
                   className="flex items-start gap-3 rounded-cards bg-white p-6 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
                 >
                   <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
-                  <span className="text-[14px] leading-normall text-ink tracking-[-0.009em]">
+                  <span className="text-[14px] leading-normal text-ink tracking-[-0.009em]">
                     {feature}
                   </span>
                 </div>
