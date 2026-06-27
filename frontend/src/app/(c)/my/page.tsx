@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
 import { fetcher, AuthError, ForbiddenError } from "@/lib/swr";
+import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
 type LeadListResponse = components["schemas"]["PublicLeadListResponse"];
@@ -21,8 +22,8 @@ export default function CMyPage() {
   const router = useRouter();
   const userInfo = useUserInfo();
 
-  const displayName = userInfo.nickname || "用户";
-  const displayPhone = userInfo.phone || "未设置手机号";
+  const displayName = userInfo.nickname || cLocale.common.user.defaultName;
+  const displayPhone = userInfo.phone || cLocale.common.user.phoneUnset;
 
   const { data, error, isLoading, mutate } = useSWR<LeadListResponse>(
     "/api/v1/public/leads/mine",
@@ -53,13 +54,13 @@ export default function CMyPage() {
           className="flex items-center gap-1 text-sm font-medium text-ink hover:underline"
         >
           <Pencil className="h-3.5 w-3.5" />
-          编辑资料
+          {cLocale.common.action.editProfile}
         </Link>
       </section>
 
       <section>
         <h3 className="text-base font-medium text-ink mb-3">
-          我的估价
+          {cLocale.my.myValuation}
         </h3>
         {isLoading ? (
           <div className="space-y-3">
@@ -74,8 +75,8 @@ export default function CMyPage() {
           <ErrorState onRetry={() => mutate()} />
         ) : !data?.items.length ? (
           <EmptyState
-            title="暂无估价记录"
-            description="提交房源估价后，这里会显示您的估价记录"
+            title={cLocale.my.empty.title}
+            description={cLocale.my.empty.description}
           />
         ) : (
           <div className="space-y-3">
@@ -102,7 +103,7 @@ export default function CMyPage() {
           className="flex w-full items-center justify-center gap-2 h-12 rounded-full text-graphite font-medium hover:text-ink hover:underline transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          退出登录
+          {cLocale.common.action.logout}
         </button>
       </section>
     </div>

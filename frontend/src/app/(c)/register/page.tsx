@@ -16,6 +16,7 @@ import {
   Verified,
   BarChart3,
 } from "lucide-react";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 export default function CRegisterPage() {
   const [state, formAction, isPending] = useActionState(
@@ -31,7 +32,7 @@ export default function CRegisterPage() {
       (e.target.form?.elements.namedItem("password") as HTMLInputElement)
         ?.value ?? "";
     if (value && value !== password) {
-      setConfirmError("两次输入的密码不一致");
+      setConfirmError(cLocale.register.passwordMismatch);
     } else {
       setConfirmError("");
     }
@@ -46,7 +47,7 @@ export default function CRegisterPage() {
     ).value;
     if (password !== confirmPassword) {
       e.preventDefault();
-      setConfirmError("两次输入的密码不一致");
+      setConfirmError(cLocale.register.passwordMismatch);
     }
   }
 
@@ -67,15 +68,14 @@ export default function CRegisterPage() {
         <div className="relative z-10 max-w-lg text-left">
           <div className="mb-8">
             <span className="text-ink text-[40px] leading-[48px] font-medium tracking-[-0.009em]">
-              Profo
+              {cLocale.common.brand.company}
             </span>
           </div>
           <h1 className="font-display text-[44px] leading-[1.1] text-ink mb-4">
-            开启您的专业地产之旅
+            {cLocale.register.heroTitle}
           </h1>
           <p className="text-[18px] leading-[28px] text-ash">
-            加入 Profo
-            平台，体验前所未有的精准房产估价与高效房源管理。我们为每一位专业人士和业主提供最权威的数据支持。
+            {cLocale.register.heroDesc}
           </p>
 
           {/* Feature Cards */}
@@ -83,19 +83,19 @@ export default function CRegisterPage() {
             <div className="p-5 bg-white rounded-cards shadow-steep-sm">
               <Verified className="text-rust mb-2" size={24} />
               <div className="text-[14px] leading-[20px] font-medium text-ink">
-                权威数据
+                {cLocale.register.featureAuthoritativeTitle}
               </div>
               <div className="text-[14px] leading-[20px] text-graphite mt-1">
-                覆盖全国核心城市房产数据
+                {cLocale.register.featureAuthoritativeDesc}
               </div>
             </div>
             <div className="p-5 bg-white rounded-cards shadow-steep-sm">
               <BarChart3 className="text-rust mb-2" size={24} />
               <div className="text-[14px] leading-[20px] font-medium text-ink">
-                智能估值
+                {cLocale.register.featureSmartValuationTitle}
               </div>
               <div className="text-[14px] leading-[20px] text-graphite mt-1">
-                基于AI的动态市场定价引擎
+                {cLocale.register.featureSmartValuationDesc}
               </div>
             </div>
           </div>
@@ -109,14 +109,14 @@ export default function CRegisterPage() {
           <div className="mb-8 text-center md:text-left">
             <div className="md:hidden mb-4">
               <span className="text-ink text-[28px] leading-[34px] font-medium tracking-[-0.009em]">
-                Profo
+                {cLocale.common.brand.company}
               </span>
             </div>
             <h2 className="text-[28px] leading-[34px] font-medium text-ink mb-2">
-              创建新账号
+              {cLocale.register.formTitle}
             </h2>
             <p className="text-[16px] leading-[24px] text-ash">
-              请填写以下信息完成注册
+              {cLocale.register.formSubtitle}
             </p>
           </div>
 
@@ -128,14 +128,14 @@ export default function CRegisterPage() {
                 role="alert"
                 className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
               >
-                {extractErrorMessage(state.error, "注册失败")}
+                {extractErrorMessage(state.error, cLocale.register.submitFailed)}
               </div>
             )}
 
             {/* Username */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-ash" htmlFor="username">
-                用户名
+                {cLocale.register.usernameLabel}
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
@@ -143,7 +143,7 @@ export default function CRegisterPage() {
                   id="username"
                   type="text"
                   name="username"
-                  placeholder="请输入您的用户名"
+                  placeholder={cLocale.register.usernamePlaceholder}
                   required
                   minLength={4}
                   maxLength={30}
@@ -156,7 +156,7 @@ export default function CRegisterPage() {
             {/* Nickname */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-ash" htmlFor="nickname">
-                昵称（选填）
+                {cLocale.register.nicknameLabel}
               </label>
               <div className="relative">
                 <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
@@ -164,7 +164,7 @@ export default function CRegisterPage() {
                   id="nickname"
                   type="text"
                   name="nickname"
-                  placeholder="请输入昵称"
+                  placeholder={cLocale.register.nicknamePlaceholder}
                   maxLength={100}
                   className="w-full pl-10 pr-4 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
                 />
@@ -174,7 +174,7 @@ export default function CRegisterPage() {
             {/* Phone */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-ash" htmlFor="phone">
-                手机号码
+                {cLocale.register.phoneLabel}
               </label>
               <div className="relative">
                 <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
@@ -182,7 +182,7 @@ export default function CRegisterPage() {
                   id="phone"
                   type="tel"
                   name="phone"
-                  placeholder="请输入11位手机号（选填）"
+                  placeholder={cLocale.register.phonePlaceholder}
                   pattern="1[3-9]\d{9}"
                   className="w-full pl-10 pr-4 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
                 />
@@ -192,7 +192,7 @@ export default function CRegisterPage() {
             {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-ash" htmlFor="password">
-                设置密码
+                {cLocale.register.passwordLabel}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
@@ -200,7 +200,7 @@ export default function CRegisterPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="至少8位字符"
+                  placeholder={cLocale.register.passwordPlaceholder}
                   required
                   minLength={8}
                   className="w-full pl-10 pr-12 py-3 rounded-inputs border border-dove/30 bg-white focus:border-rust focus:outline-none transition-all text-base text-ink placeholder:text-graphite"
@@ -218,7 +218,7 @@ export default function CRegisterPage() {
             {/* Confirm Password */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm text-ash" htmlFor="confirmPassword">
-                确认密码
+                {cLocale.register.confirmPasswordLabel}
               </label>
               <div className="relative">
                 <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite" size={20} />
@@ -226,7 +226,7 @@ export default function CRegisterPage() {
                   id="confirmPassword"
                   type="password"
                   name="confirmPassword"
-                  placeholder="请再次输入密码"
+                  placeholder={cLocale.register.confirmPasswordPlaceholder}
                   required
                   minLength={8}
                   onChange={handleConfirmChange}
@@ -250,13 +250,13 @@ export default function CRegisterPage() {
                 className="text-sm text-ash leading-tight"
                 htmlFor="terms"
               >
-                注册即代表您已阅读并同意 Profo 的{" "}
+                {cLocale.register.termsPrefix}{" "}
                 <Link href="#" className="text-rust font-medium hover:underline">
-                  服务条款
+                  {cLocale.register.termsText}
                 </Link>{" "}
-                和{" "}
+                {cLocale.register.termsJoin}{" "}
                 <Link href="#" className="text-rust font-medium hover:underline">
-                  隐私政策
+                  {cLocale.register.privacyText}
                 </Link>
               </label>
             </div>
@@ -267,19 +267,19 @@ export default function CRegisterPage() {
               disabled={isPending}
               className="w-full bg-ink text-white font-medium text-[15px] py-3 rounded-full hover:opacity-90 active:scale-[0.98] transition-all tracking-[-0.009em] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isPending ? "注册中..." : "立即注册"}
+              {isPending ? cLocale.register.submitting : cLocale.register.submit}
             </button>
           </form>
 
           {/* Footer Link */}
           <div className="mt-8 text-center">
             <p className="text-[16px] text-ash">
-              已有账号？{" "}
+              {cLocale.register.hasAccount}{" "}
               <Link
                 href="/login"
                 className="text-ink font-medium hover:underline transition-all"
               >
-                立即登录
+                {cLocale.register.loginLink}
               </Link>
             </p>
           </div>
@@ -291,10 +291,10 @@ export default function CRegisterPage() {
             href="#"
             className="text-[12px] leading-[16px] font-medium text-graphite hover:text-ink uppercase"
           >
-            关于我们
+            {cLocale.register.aboutUs}
           </Link>
           <span className="text-[12px] leading-[16px] font-medium text-graphite opacity-40 uppercase">
-            © 2024 Profo Real Estate
+            {cLocale.common.brand.copyright}
           </span>
         </div>
       </div>

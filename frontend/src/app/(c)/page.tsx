@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
 import { publicFetcher } from "@/lib/swr";
+import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
 type ProjectListResponse = components["schemas"]["PublicProjectListResponse"];
@@ -179,10 +180,10 @@ function CPageContent() {
 
         <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center px-6 py-16 text-center md:py-24 lg:py-32">
           <h1 className="font-display text-3xl text-ink md:text-5xl lg:text-[56px]">
-            发现属于您的理想居所
+            {cLocale.home.hero.title}
           </h1>
           <p className="mt-4 max-w-xl text-base text-ash md:text-lg">
-            专业估价，品质装修，让每一套房产焕发应有价值
+            {cLocale.home.hero.subtitle}
           </p>
           <div className="mt-8 w-full max-w-lg">
             <SearchBar onSearchChange={handleSearchChange} />
@@ -200,9 +201,9 @@ function CPageContent() {
               setIsFilterOpen(nextOpen);
               if (nextOpen) setFilterKey((k) => k + 1);
             }}
-            aria-label={isFilterOpen ? "收起筛选" : "展开筛选"}
+            aria-label={isFilterOpen ? cLocale.home.filter.collapse : cLocale.home.filter.expand}
             aria-expanded={isFilterOpen}
-            title={isFilterOpen ? "收起筛选" : "展开筛选"}
+            title={isFilterOpen ? cLocale.home.filter.collapse : cLocale.home.filter.expand}
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors ${
               hasActiveFilters
                 ? "border-transparent bg-apricot-wash text-rust"
@@ -274,8 +275,8 @@ function CPageContent() {
             <ErrorState onRetry={() => mutate()} />
           ) : !data?.items.length ? (
             <EmptyState
-              title="暂无房源"
-              description="当前筛选条件下没有找到房源，试试调整筛选条件"
+              title={cLocale.home.empty.title}
+              description={cLocale.home.empty.description}
             />
           ) : (
             <>

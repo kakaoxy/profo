@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 export const metadata: Metadata = {
-  title: "成交案例 - 美房宝 | Profo",
-  description: "查看美房宝真实成交案例与市场数据，用数据说话，了解同小区同户型的成交价格。",
+  title: cLocale.meta.contact.title,
+  description: cLocale.meta.contact.description,
   openGraph: {
-    title: "成交案例 - 美房宝 | Profo",
-    description: "查看美房宝真实成交案例与市场数据，用数据说话，了解同小区同户型的成交价格。",
+    title: cLocale.meta.contact.title,
+    description: cLocale.meta.contact.description,
     url: "/contact",
   },
 };

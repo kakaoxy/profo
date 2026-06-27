@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/c/shared/ErrorState";
 import { ShieldAlert } from "lucide-react";
 import { fetcher, ForbiddenError } from "@/lib/swr";
 import { safeParseDate } from "@/lib/validators";
+import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
 type LeadDetail = components["schemas"]["PublicLeadDetail"];
@@ -19,13 +20,13 @@ function ForbiddenState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-ash">
       <ShieldAlert className="mb-4 h-12 w-12 text-ink/50" />
-      <p className="text-lg font-medium text-ink">无权查看该线索</p>
-      <p className="mt-1 text-sm">您没有权限查看此线索的详细信息</p>
+      <p className="text-lg font-medium text-ink">{cLocale.leads.forbiddenTitle}</p>
+      <p className="mt-1 text-sm">{cLocale.leads.forbiddenDesc}</p>
       <button
         onClick={() => router.push("/my")}
         className="mt-4 rounded-full border border-dove/30 bg-white px-6 py-2 text-sm font-medium text-ink hover:bg-fog transition-colors"
       >
-        返回我的估价
+        {cLocale.leads.backToMine}
       </button>
     </div>
   );

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 export const metadata: Metadata = {
-  title: "免费卖房估价 - 美房宝 | Profo",
-  description: "输入房源信息，免费获取专业估价师基于真实成交数据的房产评估报告。",
+  title: cLocale.meta.valuation.title,
+  description: cLocale.meta.valuation.description,
   openGraph: {
-    title: "免费卖房估价 - 美房宝 | Profo",
-    description: "输入房源信息，免费获取专业估价师基于真实成交数据的房产评估报告。",
+    title: cLocale.meta.valuation.title,
+    description: cLocale.meta.valuation.description,
     url: "/valuation",
   },
 };

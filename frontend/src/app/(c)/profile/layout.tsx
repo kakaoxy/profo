@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 export const metadata: Metadata = {
-  title: "编辑资料 - 美房宝 | Profo",
-  description: "修改您的美房宝账户昵称与手机号。",
+  title: cLocale.meta.profile.title,
+  description: cLocale.meta.profile.description,
   openGraph: {
-    title: "编辑资料 - 美房宝 | Profo",
-    description: "修改您的美房宝账户昵称与手机号。",
+    title: cLocale.meta.profile.title,
+    description: cLocale.meta.profile.description,
     url: "/profile",
   },
 };

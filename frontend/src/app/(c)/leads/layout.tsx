@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 export const metadata: Metadata = {
-  title: "估价详情 - 美房宝 | Profo",
-  description: "查看您的房产估价详情与专业顾问跟进反馈。",
+  title: cLocale.meta.leads.title,
+  description: cLocale.meta.leads.description,
   openGraph: {
-    title: "估价详情 - 美房宝 | Profo",
-    description: "查看您的房产估价详情与专业顾问跟进反馈。",
+    title: cLocale.meta.leads.title,
+    description: cLocale.meta.leads.description,
     url: "/leads",
   },
 };

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 export const metadata: Metadata = {
-  title: "注册 - 美房宝 | Profo",
-  description: "注册美房宝账户，免费获取专业房产估价服务。",
+  title: cLocale.meta.register.title,
+  description: cLocale.meta.register.description,
   openGraph: {
-    title: "注册 - 美房宝 | Profo",
-    description: "注册美房宝账户，免费获取专业房产估价服务。",
+    title: cLocale.meta.register.title,
+    description: cLocale.meta.register.description,
     url: "/register",
   },
 };
