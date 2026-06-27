@@ -275,42 +275,44 @@ export default function AboutPage() {
         </section>
 
         {/* Pain Points Section */}
-        <section className="mx-auto max-w-[1200px] px-6 py-20">
-          <div className="mb-16 text-center">
-            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
-              Pain Points
-            </span>
-            <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
-              房东面临的真实挑战
-            </h2>
-          </div>
-          <div className="grid grid-cols-3 gap-8">
-            {painPoints.map((point, index) => (
-              <div
-                key={point.title}
-                className="flex h-80 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
-              >
-                <div>
-                  <span className={`mb-4 block ${point.color}`}>
-                    {pcPainPointIcons[index]}
-                  </span>
-                  <h3 className="mb-2 text-[20px] leading-[1.4] font-medium text-ink tracking-[-0.009em]">
-                    {point.title}
-                  </h3>
-                  <p className="text-[14px] leading-normal text-ash tracking-[-0.009em]">
-                    {point.description}
-                  </p>
+        <section className="bg-fog py-20">
+          <div className="mx-auto max-w-[1200px] px-6">
+            <div className="mb-16 text-center">
+              <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+                Pain Points
+              </span>
+              <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
+                房东面临的真实挑战
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 gap-8">
+              {painPoints.map((point, index) => (
+                <div
+                  key={point.title}
+                  className="flex h-80 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
+                >
+                  <div>
+                    <span className={`mb-4 block ${point.color}`}>
+                      {pcPainPointIcons[index]}
+                    </span>
+                    <h3 className="mb-2 text-[20px] leading-[1.4] font-medium text-ink tracking-[-0.009em]">
+                      {point.title}
+                    </h3>
+                    <p className="text-[14px] leading-normal text-ash tracking-[-0.009em]">
+                      {point.description}
+                    </p>
+                  </div>
+                  <div className="text-[12px] font-medium uppercase tracking-[0.2em] text-graphite">
+                    {point.label}
+                  </div>
                 </div>
-                <div className="text-[12px] font-medium uppercase tracking-[0.2em] text-graphite">
-                  {point.label}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Process Section */}
-        <section id="process" className="bg-fog py-20">
+        <section id="process" className="bg-white py-20">
           <div className="mx-auto max-w-[1200px] px-6">
             <div className="mb-16 flex flex-col items-end justify-between gap-4 md:flex-row">
               <div className="max-w-xl">
@@ -346,27 +348,29 @@ export default function AboutPage() {
         </section>
 
         {/* Service Features Section */}
-        <section className="mx-auto max-w-[1200px] px-6 py-20">
-          <div className="mb-16 text-center">
-            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
-              Our Services
-            </span>
-            <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
-              我们的服务保障
-            </h2>
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            {serviceFeatures.map((feature) => (
-              <div
-                key={feature}
-                className="flex items-start gap-3 rounded-cards bg-white p-6 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
-              >
-                <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
-                <span className="text-[14px] leading-normall text-ink tracking-[-0.009em]">
-                  {feature}
-                </span>
-              </div>
-            ))}
+        <section className="bg-fog py-20">
+          <div className="mx-auto max-w-[1200px] px-6">
+            <div className="mb-16 text-center">
+              <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+                Our Services
+              </span>
+              <h2 className="mt-2 font-display text-[44px] leading-[1.1] text-ink">
+                我们的服务保障
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 gap-6">
+              {serviceFeatures.map((feature) => (
+                <div
+                  key={feature}
+                  className="flex items-start gap-3 rounded-cards bg-white p-6 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
+                >
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                  <span className="text-[14px] leading-normall text-ink tracking-[-0.009em]">
+                    {feature}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
