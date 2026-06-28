@@ -13,9 +13,9 @@ interface TopAppBarProps {
 }
 
 const NAV_LINKS = [
-  { label: "房源", href: "/", activeFor: ["/", "/projects", "/contact"] },
+  { label: "房源", href: "/", activeFor: ["/", "/projects"] },
+  { label: "服务", href: "/about", activeFor: ["/about", "/contact"] },
   { label: "估价", href: "/valuation", activeFor: ["/valuation"] },
-  { label: "关于我们", href: "/about", activeFor: ["/about"] },
 ] as const;
 
 export function TopAppBar({

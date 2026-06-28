@@ -11,11 +11,13 @@ import {
   CheckCircle,
   BadgeCheck,
   ImageIcon,
+  ArrowRight,
 } from "lucide-react";
 import { HeroCard } from "@/components/c/shared/HeroCard";
 import { PainPointCard } from "@/components/c/shared/PainPointCard";
 import { CTAButton } from "@/components/c/shared/CTAButton";
 import { StatsCard } from "@/components/c/shared/StatsCard";
+import { SoldProjectCard } from "@/components/c/project/SoldProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { publicFetcher } from "@/lib/swr";
 import { cLocale } from "@/lib/i18n/c-locale";
@@ -23,6 +25,7 @@ import type { components } from "@/lib/api-types";
 import Link from "next/link";
 
 type PlatformStats = components["schemas"]["PublicPlatformStats"];
+type SoldListResponse = components["schemas"]["PublicSoldProjectListResponse"];
 
 const painPointIcons = [
   <Home key="h" className="h-5 w-5" />,
@@ -52,6 +55,10 @@ const pcPainPointIcons = [
 export default function AboutPage() {
   const { data: statsData, isLoading } = useSWR<PlatformStats>(
     "/api/v1/public/stats/platform",
+    publicFetcher
+  );
+  const { data: soldData } = useSWR<SoldListResponse>(
+    "/api/v1/public/projects/sold",
     publicFetcher
   );
   const [heroError, setHeroError] = useState(false);
@@ -556,6 +563,44 @@ export default function AboutPage() {
             <p className="mt-6 border-t border-dove/30 pt-4 text-sm text-ash tracking-[-0.009em]">
               {cLocale.about.suitable.boundary}
             </p>
+          </div>
+        </section>
+
+        {/* 真实成交案例精选 */}
+        <section>
+          <div className="mb-8 text-center">
+            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+              {cLocale.about.casesTitle}
+            </h2>
+            <p className="mt-3 text-sm md:text-base text-ash tracking-[-0.009em]">
+              {cLocale.about.casesSubtitle}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {soldData?.items.slice(0, 3).map((project) => (
+              <SoldProjectCard
+                key={project.id}
+                id={project.id}
+                communityName={project.community_name ?? null}
+                layout={project.layout}
+                area={project.area}
+                totalPrice={project.total_price}
+                unitPrice={project.unit_price}
+                title={project.title}
+                coverImage={project.cover_image ?? null}
+                soldDays={project.sold_days ?? null}
+                decorationStyle={project.decoration_style ?? null}
+              />
+            ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 text-[15px] font-medium text-ink tracking-[-0.009em] hover:underline"
+            >
+              {cLocale.about.casesMore}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </section>
 
