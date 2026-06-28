@@ -28,7 +28,7 @@ const STATUS_MAP: Record<string, { label: string; className: string }> = {
     className: "bg-c-status-onsale/10 text-c-status-onsale",
   },
   "在途": {
-    label: "在途",
+    label: "装修中",
     className: "bg-c-status-upcoming/10 text-c-status-upcoming",
   },
   "已售": {

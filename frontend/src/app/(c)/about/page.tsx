@@ -344,20 +344,12 @@ export default function AboutPage() {
                       <Skeleton className="h-10 w-24" />
                       <Skeleton className="mt-1 h-4 w-16" />
                     </div>
-                    <div>
-                      <Skeleton className="h-10 w-24" />
-                      <Skeleton className="mt-1 h-4 w-16" />
-                    </div>
-                    <div>
-                      <Skeleton className="h-10 w-24" />
-                      <Skeleton className="mt-1 h-4 w-16" />
-                    </div>
                   </>
                 ) : (
                   <>
                     <div>
                       <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
-                        {statsData?.on_sale_count ?? 0}+
+                        {statsData?.on_sale_count ?? 0}
                       </div>
                       <div className="text-sm text-white/60 tracking-[-0.009em]">
                         {cLocale.about.pc.statOnSale}
@@ -369,22 +361,6 @@ export default function AboutPage() {
                       </div>
                       <div className="text-sm text-white/60 tracking-[-0.009em]">
                         {cLocale.about.pc.statMonthSold}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
-                        {cLocale.about.pc.statExperienceValue}
-                      </div>
-                      <div className="text-sm text-white/60 tracking-[-0.009em]">
-                        {cLocale.about.pc.statExperience}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
-                        {cLocale.about.pc.statSatisfactionValue}
-                      </div>
-                      <div className="text-sm text-white/60 tracking-[-0.009em]">
-                        {cLocale.about.pc.statSatisfaction}
                       </div>
                     </div>
                   </>
@@ -413,8 +389,8 @@ export default function AboutPage() {
                     {cLocale.about.pc.reportBadge}
                   </span>
                 </div>
-                <p className="text-xs italic text-ash tracking-[-0.009em]">
-                  {cLocale.about.pc.testimonial}
+                <p className="text-xs text-ash tracking-[-0.009em]">
+                  {cLocale.about.oneLiner}
                 </p>
               </div>
             </div>
@@ -445,6 +421,144 @@ export default function AboutPage() {
         </section>
 
         {/* Footer is rendered by ClientShell (SiteFooter) */}
+      </div>
+
+      {/* ========== 新增模块（响应式，移动端/PC 端共用） ========== */}
+      <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-12 md:py-20 space-y-12 md:space-y-20">
+
+        {/* 算账模块 */}
+        <section>
+          <div className="mb-8 text-center">
+            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+              {cLocale.about.calculation.title}
+            </h2>
+            <p className="mt-3 text-sm md:text-base text-ash tracking-[-0.009em]">
+              {cLocale.about.calculation.subtitle}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+            {cLocale.about.calculation.cases.map((item) => (
+              <div
+                key={item.scenario}
+                className="flex flex-col rounded-cards bg-white p-6 shadow-steep-sm border border-dove/30"
+              >
+                <span className="text-xs font-medium uppercase tracking-[0.2em] text-rust">
+                  {item.scenario}
+                </span>
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-ash">成交价</span>
+                    <span className="font-medium text-ink">{item.soldPrice}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ash">业主拿到</span>
+                    <span className="font-medium text-rust">{item.ownerGets}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ash">公司盈亏</span>
+                    <span className="font-medium text-ink">{item.company}</span>
+                  </div>
+                </div>
+                <p className="mt-4 border-t border-dove/30 pt-3 text-xs text-graphite tracking-[-0.009em]">
+                  {item.note}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-sm font-medium text-ink tracking-[-0.009em]">
+            {cLocale.about.calculation.bottomLine}
+          </p>
+        </section>
+
+        {/* FAQ（每条用 details 折叠，移动端默认收起，减少滚动疲劳） */}
+        <section id="faq">
+          <div className="mb-8 text-center">
+            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+              你可能想问
+            </h2>
+          </div>
+          <div className="mx-auto max-w-3xl space-y-3">
+            {cLocale.about.faq.map((item) => (
+              <details
+                key={item.q}
+                className="group rounded-cards bg-white p-5 shadow-steep-sm border border-dove/30"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-ink tracking-[-0.009em]">
+                  {item.q}
+                  <span className="ml-4 shrink-0 text-graphite transition-transform group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-ash tracking-[-0.009em]">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs text-graphite tracking-[-0.009em]">
+            {cLocale.about.riskNote}
+          </p>
+        </section>
+
+        {/* 三方对比 */}
+        <section>
+          <div className="mb-8 text-center">
+            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+              {cLocale.about.comparison.title}
+            </h2>
+          </div>
+          <div className="overflow-x-auto rounded-cards bg-white shadow-steep-sm border border-dove/30">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-dove/30">
+                  {cLocale.about.comparison.headers.map((h, i) => (
+                    <th
+                      key={h || i}
+                      className={`px-4 py-4 text-left font-medium tracking-[-0.009em] ${i === 3 ? "text-rust" : "text-ink"}`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cLocale.about.comparison.rows.map((row) => (
+                  <tr key={row.aspect} className="border-b border-dove/20 last:border-b-0">
+                    <td className="px-4 py-4 font-medium text-ink tracking-[-0.009em]">
+                      {row.aspect}
+                    </td>
+                    <td className="px-4 py-4 text-ash tracking-[-0.009em]">{row.decorator}</td>
+                    <td className="px-4 py-4 text-ash tracking-[-0.009em]">{row.agent}</td>
+                    <td className="px-4 py-4 text-ink tracking-[-0.009em]">{row.profo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* 适合房子 */}
+        <section>
+          <div className="mb-8 text-center">
+            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+              {cLocale.about.suitable.title}
+            </h2>
+          </div>
+          <div className="mx-auto max-w-3xl rounded-cards bg-white p-6 md:p-8 shadow-steep-sm border border-dove/30">
+            <ul className="space-y-3">
+              {cLocale.about.suitable.criteria.map((c) => (
+                <li key={c} className="flex items-start gap-3">
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                  <span className="text-sm text-ink tracking-[-0.009em]">{c}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 border-t border-dove/30 pt-4 text-sm text-ash tracking-[-0.009em]">
+              {cLocale.about.suitable.boundary}
+            </p>
+          </div>
+        </section>
+
       </div>
     </>
   );

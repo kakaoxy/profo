@@ -2,7 +2,8 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { Verified, Zap, Lock, TrendingUp, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight } from "lucide-react";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 interface SoldProject {
   id: number;
@@ -23,13 +24,6 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const BULLET_POINTS = [
-  { icon: Verified, text: "专业估价师一对一服务" },
-  { icon: Zap, text: "最快24小时出具报告" },
-  { icon: Lock, text: "信息严格保密，安全可靠" },
-  { icon: TrendingUp, text: "基于真实成交数据定价" },
-];
-
 export function ValuationSidebar() {
   const { data: soldData } = useSWR<SoldListResponse>(
     "/api/v1/public/projects/sold?pageSize=2",
@@ -38,27 +32,31 @@ export function ValuationSidebar() {
 
   return (
     <div className="space-y-6">
+      {/* 品牌记忆锚点（审批意见补充建议第2条） */}
+      <div className="rounded-cards bg-apricot-wash p-6 shadow-steep-sm">
+        <p className="text-sm leading-relaxed text-ink tracking-[-0.009em]">
+          {cLocale.about.oneLiner}
+        </p>
+      </div>
+
       <div className="rounded-cards bg-white p-6 shadow-steep border border-dove/30">
-        <h3 className="text-lg font-medium text-ink mb-4">为什么选择美房宝？</h3>
+        <h3 className="text-lg font-medium text-ink mb-4">
+          {cLocale.valuation.sidebarTitle}
+        </h3>
         <ul className="space-y-3">
-          {BULLET_POINTS.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-center gap-3">
-              <Icon className="h-5 w-5 text-rust shrink-0" />
-              <span className="text-sm text-ink">{text}</span>
+          {cLocale.valuation.bullets.map((text) => (
+            <li key={text} className="flex items-start gap-3">
+              <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+              <span className="text-sm text-ink tracking-[-0.009em]">{text}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      <div className="relative rounded-cards overflow-hidden h-48 bg-apricot-wash shadow-steep-sm">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
-          <span className="text-4xl font-medium text-rust">400+</span>
-          <span className="mt-1 text-sm text-ash">业主信赖之选</span>
-        </div>
-      </div>
-
       <div className="rounded-cards bg-white p-6 shadow-steep border border-dove/30">
-        <h3 className="text-lg font-medium text-ink mb-4">近期成交参考</h3>
+        <h3 className="text-lg font-medium text-ink mb-4">
+          {cLocale.valuation.recentSoldTitle}
+        </h3>
         {soldData?.items && soldData.items.length > 0 ? (
           <ul className="space-y-3">
             {soldData.items.map((project) => (
@@ -68,7 +66,7 @@ export function ValuationSidebar() {
               >
                 <div>
                   <p className="text-sm font-medium text-ink">
-                    {project.community_name ?? "未知小区"}
+                    {project.community_name ?? cLocale.projects.unknownCommunity}
                   </p>
                   <p className="text-xs text-ash">
                     {project.area}㎡ · {project.layout}
@@ -81,13 +79,13 @@ export function ValuationSidebar() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-ash">暂无成交参考</p>
+          <p className="text-sm text-ash">{cLocale.valuation.recentSoldEmpty}</p>
         )}
         <Link
           href="/contact"
           className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-rust hover:underline"
         >
-          查看更多案例
+          {cLocale.valuation.recentSoldMore}
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>

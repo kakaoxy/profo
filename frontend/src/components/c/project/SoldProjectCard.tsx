@@ -55,7 +55,7 @@ export function SoldProjectCard({
           </>
         )}
         <span className="text-xs text-graphite">
-          专业定价 · 精准营销 · 快速成交
+          公司垫资装修 · 全权卖房
         </span>
       </div>
     </div>

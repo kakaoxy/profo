@@ -7,6 +7,7 @@ import { LayoutInputs } from "@/components/common/layout-inputs";
 import { createLeadAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
 import { cn } from "@/lib/utils";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 const ORIENTATION_OPTIONS = ["南", "北", "东", "西", "南北", "东西"];
 
@@ -167,7 +168,7 @@ export function ValuationForm() {
 
       <div className="bg-apricot-wash p-3 sm:p-4 rounded-inputs flex items-center gap-3">
         <Smartphone className="h-5 w-5 text-rust shrink-0" />
-        <span className="text-sm text-ink">完善手机号，获取更精准的估价结果</span>
+        <span className="text-sm text-ink">{cLocale.valuation.formHint}</span>
       </div>
 
       <button
@@ -175,7 +176,7 @@ export function ValuationForm() {
         disabled={isPending}
         className="w-full bg-ink text-white h-12 rounded-full font-medium text-base active:opacity-80 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isPending ? "提交中..." : "免费获取估价"}
+        {isPending ? cLocale.valuation.submitting : cLocale.valuation.submit}
       </button>
     </form>
   );
