@@ -9,6 +9,14 @@
  * - 按页面/功能分节（common / meta / home / about / ...）
  * - 键名使用 camelCase，语义化描述用途，避免无意义缩写
  * - 每个条目路径唯一，可直接定位使用方
+ *
+ * 术语约定（依据《c端文案修改方案-审批意见.md》）：
+ * - 品牌：logo 用 "Profo"，正文统一 "美房宝"，SEO title 保留 "美房宝"
+ * - "约定价格" = 写进合同的、业主到手的目标售价（替代"兜底价"）
+ * - 状态显示："在售 / 装修中 / 已售"（"在途"为后端枚举值，前端只改显示文案）
+ * - "全流程托管" 替代 "操盘"（首次出现加括号说明）
+ * - 未核验数字一律删除（400+、98.5%、张女士引语）
+ * - 联系方式未到位：占位 "咨询热线：即将开通，暂请通过页面表单留言"
  */
 
 export const cLocale = {
@@ -16,11 +24,11 @@ export const cLocale = {
     brand: {
       name: "美房宝",
       company: "Profo",
-      copyright: "© 2024 Profo Real Estate",
+      copyright: "© 2026 美房宝",
     },
     status: {
       onSale: "在售",
-      inTransit: "在途",
+      inTransit: "装修中",
       sold: "已售",
     },
     action: {
@@ -44,27 +52,30 @@ export const cLocale = {
       networkRetry: "网络错误，请稍后重试",
       loginRequired: "请先登录",
     },
+    contact: {
+      hotlinePlaceholder: "咨询热线：即将开通，暂请通过页面表单留言",
+    },
   },
 
   meta: {
     home: {
-      title: "美房宝 - 专业房产估价与装修增值服务 | Profo",
+      title: "美房宝 - 零成本零风险卖房服务 | Profo",
       description:
-        "美房宝为您提供专业房产估价、装修增值、精准营销一站式卖房服务。400+业主信赖选择，让您的房子卖得更快、价格更高。",
+        "美房宝为您出钱装修、全权卖房。卖到约定价您拿钱，卖不到装修免费送。零成本、零风险的卖房方案。",
     },
     about: {
       title: "服务介绍 - 美房宝 | Profo",
       description:
-        "了解美房宝全案操盘服务：我们出资装修、约定兜底价、专业团队精准定价，让您的房子第一眼胜出。",
+        "美房宝全流程托管服务：我们出资装修、约定目标售价、全权卖房。卖到约定价业主拿钱，卖不到装修免费送。",
     },
     contact: {
-      title: "成交案例 - 美房宝 | Profo",
+      title: "真实成交 - 美房宝 | Profo",
       description:
-        "查看美房宝真实成交案例与市场数据，用数据说话，了解同小区同户型的成交价格。",
+        "查看美房宝真实成交案例，每一套都是公司垫资装修、全权卖房的真实案例，成交价真实可查。",
     },
     login: {
       title: "登录 - 美房宝 | Profo",
-      description: "登录美房宝账户，查看您的房产估价记录与专业顾问建议。",
+      description: "登录美房宝账户，查看您的估价记录与目标售价跟进。",
     },
     my: {
       title: "我的 - 美房宝 | Profo",
@@ -72,7 +83,7 @@ export const cLocale = {
     },
     register: {
       title: "注册 - 美房宝 | Profo",
-      description: "注册美房宝账户，免费获取专业房产估价服务。",
+      description: "注册美房宝账户，免费评估房产、商定目标售价，不签约不收费。",
     },
     profile: {
       title: "编辑资料 - 美房宝 | Profo",
@@ -80,25 +91,29 @@ export const cLocale = {
     },
     leads: {
       title: "估价详情 - 美房宝 | Profo",
-      description: "查看您的房产估价详情与专业顾问跟进反馈。",
+      description: "查看您的房产估价详情与目标售价商定进度。",
     },
     projects: {
       title: "房源详情 - 美房宝 | Profo",
-      description:
-        "查看房源详细信息、装修改造过程与专业顾问联系方式。",
+      description: "查看房源详细信息、装修改造过程与顾问联系方式。",
     },
     valuation: {
-      title: "免费卖房估价 - 美房宝 | Profo",
+      title: "免费评估 - 美房宝 | Profo",
       description:
-        "输入房源信息，免费获取专业估价师基于真实成交数据的房产评估报告。",
+        "上门评估，跟你商定一个写进合同的目标售价。我们带周边真实成交数据上门，不满意不签约，不收费。",
     },
   },
 
   home: {
     hero: {
-      title: "发现属于您的理想居所",
-      subtitle: "专业估价，品质装修，让每一套房产焕发应有价值",
+      title: "卖房不想再投钱，还想拿个好价格？",
+      subtitle:
+        "美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。",
+      tags: ["零成本", "零风险"],
+      ownerCta: "我是业主，想了解我的房子能卖多少",
+      ownerCtaHint: "约定价格 = 写进合同的、你到手的目标售价",
     },
+    stickyCta: "免费评估我的房子",
     filter: {
       expand: "展开筛选",
       collapse: "收起筛选",
@@ -110,120 +125,224 @@ export const cLocale = {
   },
 
   about: {
+    // 品牌记忆锚点（首页/估价页复用变体）
+    oneLiner:
+      "你看中的那笔卖房钱，我们试着帮你卖到。装修的钱、卖房的事，全部我们来。卖到了，你拿约定的价格。卖不到，装修送你。",
     painPoints: [
       {
-        title: "品相老化，第一眼被比下去",
-        description: "老房子不收拾，客户进门就摇头",
-        label: "01 — 视觉资产贬值",
+        title: "我装修旧了，不想再投钱",
+        description: "房子老了不收拾，客户进门就摇头",
+        label: "01",
       },
       {
-        title: "定价全凭感觉，进退两难",
-        description: "挂高没人看，挂低怕吃亏",
-        label: "02 — 价格锚点缺失",
+        title: "我怕自己装修，卖不掉血亏",
+        description: "投了十几万装修，挂半年卖不掉",
+        label: "02",
       },
       {
-        title: "挂牌后带看越来越稀",
+        title: "中介只挂牌，不管产品力",
+        description: "挂上去就不管了，带看越来越少",
+        label: "03",
+      },
+      {
+        title: "挂牌一阵，带看少出价更低",
         description: "头两周热闹，后面一个月没一组",
-        label: "03 — 流动性陷阱",
-      },
-      {
-        title: "商圈动辄几百套在挂",
-        description: "你的房子凭什么被选中？",
-        label: "04 — 竞争红海",
+        label: "04",
       },
       {
         title: "周期没谱，全看运气",
         description: "快则两三个月，慢则遥遥无期",
-        label: "05 — 时间成本失控",
+        label: "05",
       },
     ],
     serviceFeatures: [
-      "我们出资装修，让房子第一眼胜出",
-      "约定兜底价，卖不到我们赔装修",
-      "专业团队操盘，精准定价控节奏",
-      "深谙中介激励，带看量始终在线",
-      "400+套成交经验，周期可控",
-      "卖超了归我们，卖不掉装修白送",
+      "零现金投入：装修公司全额垫资，业主一分不掏",
+      "利益绑定：卖超归公司，我们不偷工减料",
+      "全流程省心：从装修到卖出，业主不用参与",
+      "风险上限清晰：最差=免费得一套装修，0现金损失",
+      "数据透明：基于周边真实成交，不压价",
+      "装修方案需业主确认：我们不改你不想改的",
     ],
     processSteps: [
       {
         num: "01",
-        title: "上门评估，约定兜底卖价",
-        description: "专业评估团队上门，给出市场分析与兜底价承诺。",
+        title: "上门评估，商定目标售价",
+        description:
+          "专业评估团队上门，结合周边真实成交数据，跟你商量一个写进合同的目标售价。",
       },
       {
         num: "02",
-        title: "我们出资装修，旧房焕新",
+        title: "公司全额垫资装修，65天",
         description:
-          "快速翻新改造，让房子品相大幅提升，第一眼就打动买家。",
+          "快速翻新改造，让房子品相大幅提升。业主一分不掏，装修方案需业主确认。",
       },
       {
         num: "03",
-        title: "精准营销 + 中介激励，加速成交",
+        title: "公司全权卖房",
         description:
-          "多渠道推广 + 中介高佣金激励，带看量持续在线。卖不掉，装修白送。",
+          "卖到约定价，业主拿钱；卖不到约定价，装修免费送业主。两种结果，业主都不亏。",
       },
     ],
+    // 新增：算账模块
+    calculation: {
+      title: "算一笔实在账",
+      subtitle:
+        "假设约定价 380 万、装修成本 15 万，看看三种市场情况下的结果",
+      cases: [
+        {
+          scenario: "市场给力",
+          soldPrice: "430万",
+          ownerGets: "380万",
+          company: "+35万",
+          note: "业主拿约定价，超出归公司",
+        },
+        {
+          scenario: "市场一般",
+          soldPrice: "395万",
+          ownerGets: "380万",
+          company: "刚回本",
+          note: "业主拿约定价，公司不亏不赚",
+        },
+        {
+          scenario: "市场不好",
+          soldPrice: "未售出",
+          ownerGets: "免费得一套装修",
+          company: "-15万",
+          note: "装修免费送业主，业主0现金损失",
+        },
+      ],
+      bottomLine: "业主最差的结果 = 免费得一套装修，0现金损失",
+    },
+    // 新增：三方对比
+    comparison: {
+      title: "我们和装修公司、中介有什么不同",
+      headers: ["", "装修公司", "中介", "美房宝"],
+      rows: [
+        {
+          aspect: "赚什么钱",
+          decorator: "材料/施工差价",
+          agent: "成交佣金",
+          profo: "卖出价超出约定价的部分",
+        },
+        {
+          aspect: "在乎什么",
+          decorator: "装修利润",
+          agent: "快速成交拿佣金",
+          profo: "卖得越贵赚越多",
+        },
+        {
+          aspect: "风险谁担",
+          decorator: "业主",
+          agent: "业主",
+          profo: "公司担（卖不掉赔装修）",
+        },
+      ],
+    },
+    // 新增：FAQ 8 条（业务文档 6 条 + 疑惑文档补充"资金怎么保障""公司靠谱吗"）
+    faq: [
+      {
+        q: "约定价格会不会被压低？",
+        a: "约定价格是双方商定的，写进合同，业主有一票否决权。我们基于周边真实成交数据给建议，不压价——因为卖得越贵我们赚越多，利益是绑定的。",
+      },
+      {
+        q: "真的免费送装修，有隐藏条件吗？",
+        a: "没有。合同写明：未售出则装修免费赠送，无附加条件。装修方案需业主确认，我们不改动业主不同意的地方。",
+      },
+      {
+        q: "65天不能看房，值不值？",
+        a: "65天是装修期。装修期间房子确实不便看，但装修后品相大幅提升，带看量和成交价都会上一个台阶。周期总账算下来比挂着等更快。",
+      },
+      {
+        q: "装修质量怎么保证？",
+        a: "装修方案需业主确认，材料清单透明。我们是利益绑定方——卖不到约定价装修白送，所以不会偷工减料砸自己招牌。",
+      },
+      {
+        q: "你们怎么赚钱？",
+        a: "我们赚的是卖出价超出约定价的部分。所以我们会努力卖得越贵越好，这与业主“拿个好价格”的目标完全一致。",
+      },
+      {
+        q: "和中介、装修公司有什么不同？",
+        a: "中介只挂牌等成交，装修公司只管装修赚钱，两者都不承担卖不掉的风险。我们出资装修+全权卖房，卖不掉装修白送，风险我们担。",
+      },
+      {
+        q: "资金怎么保障？",
+        a: "装修由公司全额垫资，业主不出资。合同明确约定价格与未售出后果，资金流向写进合同，可核查。",
+      },
+      {
+        q: "公司靠谱吗？会不会跑路？",
+        a: "我们赚的是“卖出超价”的钱，跑路对我们没好处。合同保障业主权益：约定价格写进合同，未售出装修归业主。可上门面谈，查验公司资质。",
+      },
+    ],
+    // 新增：适合房子
+    suitable: {
+      title: "什么样的房子适合找我们",
+      criteria: [
+        "装修老旧，自己不想再投钱翻新",
+        "挂牌一阵了，带看少、出价低于预期",
+        "想拿个好价格，但不想自己冒险投装修",
+        "不介意免费拿一套装修（卖不掉的情况）",
+      ],
+      boundary:
+        "如果你的房子挂牌两三天就有人抢——那恭喜你，你可能不需要我们。但如果你在犹豫，不妨也约一次评估，听听我们的建议，不收费。",
+    },
+    // 风险告知微文案（合规需要）
+    riskNote:
+      "* 美房宝不承诺保底收购。合同约定的是“未售出则装修免费赠送”，而非“公司按约定价格收购你的房产”。",
     mobile: {
       heroLabel: "美房宝",
-      heroTitle: "卖房这件事，远比你想象的复杂",
+      heroTitle: "卖房不想再投钱，还想拿一个好价格？",
+      heroSubtitle: "一种零成本、零风险的卖房方案",
       experiencing: "你可能正在经历：",
       fullProcessTitle: "问题不在某一环，在于全流程",
-      fullProcessDesc: "美房宝的做法不一样：我们把整件事接过来。",
+      fullProcessDesc:
+        "美房宝的做法不一样：我们把整件事接过来（全流程托管，即从装修到卖出，全部由我们负责）。",
       serviceTitle: "我们的服务",
       operationLabel: "美房宝",
-      operationTitle: "你的房子，我们的全案操盘",
-      ownersTitle: "400+ 业主已选择我们",
+      operationTitle: "你的房子，我们全流程托管",
+      ownersTitle: "业主信任的专业保障",
       statOnSale: "在售套数",
       statMonthSold: "本月已成交",
       valuationLabel: "美房宝",
       valuationTitle: "你的房子，现在能卖多少？",
-      valuationDesc: "输入房源信息，立即获取专业估价",
-      cta: "免费获取估价",
-      privacyNote: "100% 隐私保密 · 专业精准评估",
+      valuationDesc: "上门评估，跟你商定一个写进合同的目标售价",
+      cta: "约一次上门评估",
+      privacyNote: "不满意不签约，不收费 · 信息仅用于评估与目标售价商定",
     },
     pc: {
       heroImgAlt: "Modern Luxury Interior",
-      heroTitleLine1: "专业赋能，",
-      heroTitleLine2: "让每一套房产焕发应有价值",
+      heroTitleLine1: "卖房不想再投钱，",
+      heroTitleLine2: "还想拿一个好价格？",
       heroDesc:
-        "美房宝致力于为业主提供全链路资产管理与交易优化服务，通过专业审美与数据驱动，解决房产流通中的一切痛点。",
-      startCta: "开启专业操盘",
-      learnMore: "了解更多服务",
+        "美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。一种零成本、零风险的卖房方案。",
+      startCta: "约一次上门评估",
+      learnMore: "了解服务流程",
       painPointsEyebrow: "Pain Points",
-      painPointsTitle: "房东面临的真实挑战",
+      painPointsTitle: "房东面临的真实困境",
       methodologyEyebrow: "Our Methodology",
-      methodologyTitle: "美房宝 全案操盘三部曲",
+      methodologyTitle: "美房宝全流程托管三部曲",
       methodologyDesc:
-        "我们不仅仅是中介，更是您的房产产品经理。从诊断到成交，每一步都精益求精。",
+        "全流程托管（即从装修到卖出，全部由我们负责）。从评估到成交，每一步都精益求精。",
       servicesEyebrow: "Our Services",
       servicesTitle: "我们的服务保障",
       trustTitle: "业主信任的专业保障",
-      trustDesc:
-        "每一份数据的背后，都是我们对房产价值的极致追求与对房东托付的尊重。",
+      trustDesc: "在售套数与本月成交均来自真实成交数据，可核查。",
       statOnSale: "在售套数",
       statMonthSold: "本月已成交",
-      statExperienceValue: "400+",
-      statExperience: "成交经验",
-      statSatisfactionValue: "98.5%",
-      statSatisfaction: "业主满意度",
       dashboardImgAlt: "Data Analytics Dashboard",
-      reportBadge: "实时操盘报告",
-      testimonial:
-        "“美房宝的介入让我的房源在一周内就收到3个意向金，最终成交价格远超预期。” —— 上海张女士",
-      ctaTitle: "准备好让您的资产再次升级了吗？",
+      reportBadge: "全流程托管报告",
+      ctaTitle: "准备好让您的房子卖个好价格了吗？",
       ctaDesc:
-        "立即免费获取由 美房宝 AI 估价引擎与专业顾问共同生成的《房产资产优化建议书》。",
-      ctaButton: "免费获取估价",
-      privacyNote: "我们郑重承诺保护您的隐私，信息仅用于发送建议书。",
+        "约一次上门评估，我们带周边真实成交数据上门，跟你商定目标售价。不满意不签约，不收费。",
+      ctaButton: "约一次上门评估",
+      privacyNote: "不满意不签约，不收费 · 信息仅用于评估与目标售价商定",
     },
   },
 
   contact: {
-    realDataBadge: "真实数据",
-    title: "看看房子\n值多少钱",
+    realDataBadge: "真实成交",
+    title: "同小区同户型\n看看他们卖了多少",
     subtitle:
-      "真实成交案例，数据会说话。看看同小区、同户型的市场动态数据充分定价。",
+      "每一套都是公司垫资装修、全权卖房的真实案例。成交价、周期，真实可查。",
     recentLabel: "近期成交",
     searchPlaceholder: "搜索小区名...",
     empty: {
@@ -232,23 +351,22 @@ export const cLocale = {
     },
     platformBadge: "平台实力",
     platformTitle: "用数据说话",
-    ownersValue: "400+",
-    ownersLabel: "业主共同选择",
     statOnSale: "在售套数",
     statMonthSold: "本月已成交",
     actionBadge: "立即行动",
     actionTitle: "你家能卖多少？",
-    actionDesc: "输入房源信息，获取同户型成交参考",
+    actionDesc: "上门评估，跟你商定一个写进合同的目标售价",
     learnMore: "了解服务详情",
-    cta: "免费获取估价",
+    cta: "免费上门评估",
   },
 
   login: {
-    brandDesc: "权威、精准、宁静。为您开启高端地产的卓越管理之旅。",
-    badgeInstitutional: "Institutional Grade",
-    badgeSecure: "Secure Access",
+    brandDesc:
+      "美房宝为业主提供零成本、零风险的卖房服务。登录查看你的估价记录与目标售价跟进。",
+    badgeInstitutional: "信息严格保密",
+    badgeSecure: "不签约不收费",
     welcomeTitle: "欢迎回来",
-    welcomeSubtitle: "请输入您的凭据以访问您的账户",
+    welcomeSubtitle: "登录后可查看估价记录、目标售价与顾问跟进",
     usernameLabel: "用户名 / 电子邮箱",
     usernamePlaceholder: "请输入用户名",
     passwordLabel: "密码",
@@ -270,18 +388,18 @@ export const cLocale = {
     myValuation: "我的估价",
     empty: {
       title: "暂无估价记录",
-      description: "提交房源估价后，这里会显示您的估价记录",
+      description:
+        "提交房源信息后，这里会显示你的估价记录、目标售价与顾问跟进",
     },
   },
 
   register: {
-    heroTitle: "开启您的专业地产之旅",
-    heroDesc:
-      "加入 Profo 平台，体验前所未有的精准房产估价与高效房源管理。我们为每一位专业人士和业主提供最权威的数据支持。",
-    featureAuthoritativeTitle: "权威数据",
-    featureAuthoritativeDesc: "覆盖全国核心城市房产数据",
-    featureSmartValuationTitle: "智能估值",
-    featureSmartValuationDesc: "基于AI的动态市场定价引擎",
+    heroTitle: "注册后可免费评估房产、商定目标售价",
+    heroDesc: "提交房源信息即可获取专业评估与目标售价建议，不签约不收费。",
+    featureAuthoritativeTitle: "零成本卖房",
+    featureAuthoritativeDesc: "装修我们全额垫资",
+    featureSmartValuationTitle: "卖不到约定价",
+    featureSmartValuationDesc: "装修免费送业主",
     formTitle: "创建新账号",
     formSubtitle: "请填写以下信息完成注册",
     submitFailed: "注册失败",
@@ -296,7 +414,7 @@ export const cLocale = {
     confirmPasswordLabel: "确认密码",
     confirmPasswordPlaceholder: "请再次输入密码",
     passwordMismatch: "两次输入的密码不一致",
-    termsPrefix: "注册即代表您已阅读并同意 Profo 的",
+    termsPrefix: "注册即代表您已阅读并同意美房宝的",
     termsText: "服务条款",
     termsJoin: "和",
     privacyText: "隐私政策",
@@ -308,10 +426,33 @@ export const cLocale = {
   },
 
   valuation: {
-    badge: "免费估价",
-    title: "免费获取专业估价",
+    badge: "免费评估",
+    title: "上门评估，跟你商定目标售价",
     subtitle:
-      "填写房源信息，专业估价师将基于真实成交数据为您评估房产价值",
+      "我们带周边真实成交数据上门，结合户型楼层状况做精准评估，跟你商量一个写进合同的目标售价。不满意不签约，不收费。",
+    sidebarTitle: "为什么选择美房宝",
+    bullets: [
+      "装修公司全额垫资，业主零现金投入",
+      "卖不到约定价，装修免费送业主",
+      "约定价格写进合同，业主一票否决",
+      "基于周边真实成交数据，可自查对比",
+    ],
+    recentSoldTitle: "近期成交参考",
+    recentSoldEmpty: "暂无成交参考",
+    recentSoldMore: "查看更多案例",
+    formHint: "评估完成后，顾问将联系你商定目标售价，不签约不收费",
+    submit: "免费获取评估",
+    submitting: "提交中...",
+    privacyNote: "信息仅用于本次评估与目标售价商定，不外泄、不电话骚扰",
+    quickFaqsTitle: "你可能的疑问",
+    quickFaqs: [
+      { q: "合同期限多久？", a: "65天装修期 + 卖房期，写进合同。" },
+      { q: "资金怎么监管？", a: "装修公司全额垫资，业主不出资，资金流向写进合同。" },
+      { q: "装修质量怎么约定？", a: "装修方案需业主确认，材料清单透明。" },
+    ],
+    quickFaqsMore: "查看更多疑问",
+    riskNote:
+      "* 美房宝不承诺保底收购。合同约定的是“未售出则装修免费赠送”，而非“公司按约定价格收购你的房产”。",
   },
 
   valuationAction: {

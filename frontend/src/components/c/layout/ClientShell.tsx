@@ -7,8 +7,8 @@ import { SiteFooter } from "@/components/c/layout/SiteFooter";
 
 const TITLE_MAP: Record<string, string> = {
   "/about": "服务介绍",
-  "/contact": "成交案例",
-  "/valuation": "卖房估价",
+  "/contact": "真实成交",
+  "/valuation": "免费评估",
   "/login": "登录",
   "/register": "注册",
   "/profile": "编辑资料",

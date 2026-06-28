@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ValuationForm } from "@/components/c/lead/ValuationForm";
 import { ValuationSidebar } from "@/components/c/lead/ValuationSidebar";
 import { cLocale } from "@/lib/i18n/c-locale";
@@ -23,6 +24,41 @@ export default function ValuationPage() {
           <ValuationSidebar />
         </div>
       </div>
+
+      {/* 隐私声明 */}
+      <p className="mt-6 text-xs text-graphite tracking-[-0.009em]">
+        {cLocale.valuation.privacyNote}
+      </p>
+
+      {/* 你可能的疑问（链到 about#faq） */}
+      <section className="mt-8 rounded-cards bg-white p-5 sm:p-6 shadow-steep-sm border border-dove/30">
+        <h2 className="text-base font-medium text-ink tracking-[-0.009em]">
+          {cLocale.valuation.quickFaqsTitle}
+        </h2>
+        <ul className="mt-4 space-y-3">
+          {cLocale.valuation.quickFaqs.map((item) => (
+            <li key={item.q} className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-ink tracking-[-0.009em]">
+                {item.q}
+              </span>
+              <span className="text-sm text-ash tracking-[-0.009em]">
+                {item.a}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <Link
+          href="/about#faq"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-rust hover:underline"
+        >
+          {cLocale.valuation.quickFaqsMore}
+        </Link>
+      </section>
+
+      {/* 风险告知微文案（合规需要） */}
+      <p className="mt-6 text-xs text-graphite tracking-[-0.009em]">
+        {cLocale.valuation.riskNote}
+      </p>
     </div>
   );
 }
