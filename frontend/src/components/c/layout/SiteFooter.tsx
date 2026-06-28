@@ -17,7 +17,7 @@ export function SiteFooter() {
 
           {/* Explore */}
           <div>
-            <h5 className="mb-4 text-xs font-medium uppercase tracking-[0.1em] text-white">
+            <h5 className="mb-4 text-xs font-medium uppercase tracking-widest text-white">
               房源探索
             </h5>
             <ul className="space-y-2.5">
@@ -50,7 +50,7 @@ export function SiteFooter() {
 
           {/* Company */}
           <div>
-            <h5 className="mb-4 text-xs font-medium uppercase tracking-[0.1em] text-white">
+            <h5 className="mb-4 text-xs font-medium uppercase tracking-widest text-white">
               关于公司
             </h5>
             <ul className="space-y-2.5">
@@ -83,7 +83,7 @@ export function SiteFooter() {
 
           {/* Contact */}
           <div>
-            <h5 className="mb-4 text-xs font-medium uppercase tracking-[0.1em] text-white">
+            <h5 className="mb-4 text-xs font-medium uppercase tracking-widest text-white">
               联系我们
             </h5>
             <ul className="space-y-2.5">

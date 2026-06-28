@@ -6,7 +6,7 @@ import { BottomNavBar } from "@/components/c/layout/BottomNavBar";
 import { SiteFooter } from "@/components/c/layout/SiteFooter";
 
 const TITLE_MAP: Record<string, string> = {
-  "/about": "服务介绍",
+  "/about": "服务",
   "/contact": "真实成交",
   "/valuation": "免费评估",
   "/login": "登录",
@@ -14,8 +14,9 @@ const TITLE_MAP: Record<string, string> = {
   "/profile": "编辑资料",
 };
 
-const BOTTOM_NAV_VISIBLE_PATHS = new Set(["/", "/my", "/about", "/contact"]);
+const BOTTOM_NAV_VISIBLE_PATHS = new Set(["/", "/my", "/about", "/valuation"]);
 const AUTH_PATHS = new Set(["/login", "/register"]);
+const MAIN_ROUTES = new Set(["/", "/about", "/valuation", "/my"]);
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,7 +24,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const isProjectDetail = /^\/projects\/[^/]+$/.test(pathname);
   const isAuthPage = AUTH_PATHS.has(pathname);
 
-  const isMainRoute = pathname === "/" || pathname === "/my";
+  const isMainRoute = MAIN_ROUTES.has(pathname);
   const topBarVariant = isMainRoute ? "main" : "back";
 
   const topBarTitle =

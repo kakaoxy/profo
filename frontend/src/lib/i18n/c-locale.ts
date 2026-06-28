@@ -288,6 +288,10 @@ export const cLocale = {
     // 风险告知微文案（合规需要）
     riskNote:
       "* 美房宝不承诺保底收购。合同约定的是“未售出则装修免费赠送”，而非“公司按约定价格收购你的房产”。",
+    // 新增：真实成交案例精选区块
+    casesTitle: "真实成交案例",
+    casesSubtitle: "每一套都是公司垫资装修、全权卖房的真实案例",
+    casesMore: "查看全部成交案例",
     mobile: {
       heroLabel: "美房宝",
       heroTitle: "卖房不想再投钱，还想拿一个好价格？",

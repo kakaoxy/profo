@@ -2,12 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, BarChart3, Info, User } from "lucide-react";
+import { Home, Info, ClipboardCheck, User } from "lucide-react";
 
 const tabs = [
   { label: "房源", href: "/", icon: Home },
-  { label: "成交", href: "/contact", icon: BarChart3 },
   { label: "服务", href: "/about", icon: Info },
+  { label: "估价", href: "/valuation", icon: ClipboardCheck },
   { label: "我的", href: "/my", icon: User },
 ] as const;
 
