@@ -101,13 +101,13 @@ def encrypt_existing_phones(engine: Engine) -> None:
 
             for row in rows:
                 user_id, phone = row[0], row[1]
-                if phone == "":
-                    conn.execute(
-                        text("UPDATE users SET phone = NULL WHERE id = :id"),
-                        {"id": user_id},
-                    )
-                    continue
                 if not phone:
+                    if phone == "":
+                        # 空字符串不是有效手机号，统一清洗为 NULL
+                        conn.execute(
+                            text("UPDATE users SET phone = NULL WHERE id = :id"),
+                            {"id": user_id},
+                        )
                     continue
                 if phone.startswith(_FERNET_CIPHER_PREFIX):
                     continue
