@@ -59,9 +59,9 @@ export const cLocale = {
 
   meta: {
     home: {
-      title: "美房宝 - 零成本零风险卖房服务 | Profo",
+      title: "美房宝 - 翻新精装房源 | 真实成交价可查 | Profo",
       description:
-        "美房宝为您出钱装修、全权卖房。卖到约定价您拿钱，卖不到装修免费送。零成本、零风险的卖房方案。",
+        "浏览美房宝真实房源：在售精装房、装修中改造过程、已售真实成交价。每一套均由公司垫资翻新，真实可查。",
     },
     about: {
       title: "服务介绍 - 美房宝 | Profo",
@@ -98,22 +98,19 @@ export const cLocale = {
       description: "查看房源详细信息、装修改造过程与顾问联系方式。",
     },
     valuation: {
-      title: "免费评估 - 美房宝 | Profo",
+      title: "免费预审 - 美房宝 | Profo",
       description:
-        "上门评估，跟你商定一个写进合同的目标售价。我们带周边真实成交数据上门，不满意不签约，不收费。",
+        "在线提交房源信息做初步预审，合适则上门看房后商定写进合同的约定价格。不签约不收费。",
     },
   },
 
   home: {
     hero: {
-      title: "卖房不想再投钱，还想拿个好价格？",
+      title: "挑一套翻新过的精装房",
       subtitle:
-        "美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。",
-      tags: ["零成本", "零风险"],
-      ownerCta: "我是业主，想了解我的房子能卖多少",
-      ownerCtaHint: "约定价格 = 写进合同的、你到手的目标售价",
+        "在售、装修中、已售房源真实展示。每一套都由美房宝垫资翻新，成交价真实可查。",
+      tags: ["精装交付", "改造过程可查", "真实成交价"],
     },
-    stickyCta: "免费评估我的房子",
     filter: {
       expand: "展开筛选",
       collapse: "收起筛选",
@@ -153,6 +150,11 @@ export const cLocale = {
         title: "周期没谱，全看运气",
         description: "快则两三个月，慢则遥遥无期",
         label: "05",
+      },
+      {
+        title: "卖房太折腾，精力跟不上",
+        description: "装修要盯、带看要陪、谈判要扛，工作生活两头烧",
+        label: "06",
       },
     ],
     serviceFeatures: [
@@ -308,8 +310,8 @@ export const cLocale = {
       statMonthSold: "本月已成交",
       valuationLabel: "美房宝",
       valuationTitle: "你的房子，现在能卖多少？",
-      valuationDesc: "上门评估，跟你商定一个写进合同的目标售价",
-      cta: "约一次上门评估",
+      valuationDesc: "在线预审，合适则上门看房后商定约定价格",
+      cta: "免费在线预审",
       privacyNote: "不满意不签约，不收费 · 信息仅用于评估与目标售价商定",
     },
     pc: {
@@ -318,7 +320,7 @@ export const cLocale = {
       heroTitleLine2: "还想拿一个好价格？",
       heroDesc:
         "美房宝出钱装修、全权帮您卖。卖到约定价您拿钱，卖不到装修免费送。一种零成本、零风险的卖房方案。",
-      startCta: "约一次上门评估",
+      startCta: "免费在线预审",
       learnMore: "了解服务流程",
       painPointsEyebrow: "Pain Points",
       painPointsTitle: "房东面临的真实困境",
@@ -336,8 +338,8 @@ export const cLocale = {
       reportBadge: "全流程托管报告",
       ctaTitle: "准备好让您的房子卖个好价格了吗？",
       ctaDesc:
-        "约一次上门评估，我们带周边真实成交数据上门，跟你商定目标售价。不满意不签约，不收费。",
-      ctaButton: "约一次上门评估",
+        "提交房源信息做免费预审，合适的我们上门看房，再商定写进合同的约定价格。不签约不收费。",
+      ctaButton: "免费在线预审",
       privacyNote: "不满意不签约，不收费 · 信息仅用于评估与目标售价商定",
     },
   },
@@ -359,9 +361,9 @@ export const cLocale = {
     statMonthSold: "本月已成交",
     actionBadge: "立即行动",
     actionTitle: "你家能卖多少？",
-    actionDesc: "上门评估，跟你商定一个写进合同的目标售价",
-    learnMore: "了解服务详情",
-    cta: "免费上门评估",
+    actionDesc: "在线预审，合适则上门看房后商定约定价格",
+    learnMore: "免费评估",
+    cta: "免费在线预审",
   },
 
   login: {
@@ -430,29 +432,30 @@ export const cLocale = {
   },
 
   valuation: {
-    badge: "免费评估",
-    title: "上门评估，跟你商定目标售价",
+    badge: "免费预审",
+    title: "在线预审，先看你的房子有没有溢价空间",
     subtitle:
-      "我们带周边真实成交数据上门，结合户型楼层状况做精准评估，跟你商量一个写进合同的目标售价。不满意不签约，不收费。",
+      "线上提交房源信息，我们先做初步预审。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。",
     sidebarTitle: "为什么选择美房宝",
     bullets: [
       "装修公司全额垫资，业主零现金投入",
       "卖不到约定价，装修免费送业主",
       "约定价格写进合同，业主一票否决",
-      "基于周边真实成交数据，可自查对比",
+      "线上预审无负担，约定价格在上门看房后才商定",
     ],
     recentSoldTitle: "近期成交参考",
     recentSoldEmpty: "暂无成交参考",
     recentSoldMore: "查看更多案例",
-    formHint: "评估完成后，顾问将联系你商定目标售价，不签约不收费",
-    submit: "免费获取评估",
+    formHint: "提交后我们做初步预审，合适的会联系你上门看房，再商定约定价格。不签约不收费",
+    submit: "提交预审",
     submitting: "提交中...",
-    privacyNote: "信息仅用于本次评估与目标售价商定，不外泄、不电话骚扰",
+    privacyNote: "信息仅用于预审与上门看房安排，不外泄、不电话骚扰",
     quickFaqsTitle: "你可能的疑问",
     quickFaqs: [
       { q: "合同期限多久？", a: "65天装修期 + 卖房期，写进合同。" },
       { q: "资金怎么监管？", a: "装修公司全额垫资，业主不出资，资金流向写进合同。" },
       { q: "装修质量怎么约定？", a: "装修方案需业主确认，材料清单透明。" },
+      { q: "线上预审和最终约定价什么关系？", a: "线上预审只给初步判断。上门看房结合实际状况后，再商定写进合同的约定价格，你有一票否决权。" },
     ],
     quickFaqsMore: "查看更多疑问",
     riskNote:
@@ -494,6 +497,12 @@ export const cLocale = {
     forbiddenTitle: "无权查看该线索",
     forbiddenDesc: "您没有权限查看此线索的详细信息",
     backToMine: "返回我的估价",
+    systemEstimate: {
+      title: "初步估值",
+      priceLabel: "初步估值：",
+      pending: "预审中，请耐心等待...",
+      unit: "万",
+    },
   },
 
   projects: {

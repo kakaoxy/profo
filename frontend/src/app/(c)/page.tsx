@@ -2,9 +2,8 @@
 
 import { Suspense, useCallback, useState } from "react";
 import useSWR from "swr";
-import Link from "next/link";
 import { useQueryState, parseAsInteger, parseAsString } from "nuqs";
-import { SlidersHorizontal, ArrowRight } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { SearchBar } from "@/components/c/project/SearchBar";
 import { FilterPanel, type FilterValues } from "@/components/c/project/FilterPanel";
 import { StatusTabs } from "@/components/c/project/StatusTabs";
@@ -199,32 +198,11 @@ function CPageContent() {
           <div className="mt-8 w-full max-w-lg">
             <SearchBar onSearchChange={handleSearchChange} />
           </div>
-          <Link
-            href="/valuation"
-            className="group mt-5 inline-flex items-center gap-1.5 text-[15px] font-medium text-ink tracking-[-0.009em] hover:underline"
-          >
-            {cLocale.home.hero.ownerCta}
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <p className="mt-2 text-xs text-graphite tracking-[-0.009em]">
-            {cLocale.home.hero.ownerCtaHint}
-          </p>
         </div>
       </section>
 
       {/* ─── Content Section ─── */}
       <div className="mx-auto max-w-[1200px] px-6 py-8">
-        {/* Sticky 估价 CTA（移动端，审批意见补充建议第4条） */}
-        <div className="sticky top-16 z-30 -mx-6 mb-6 bg-fog/95 px-6 py-3 backdrop-blur md:hidden">
-          <Link
-            href="/valuation"
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-ink py-3 text-base font-medium text-white tracking-[-0.009em] transition-all hover:opacity-90 active:scale-[0.98]"
-          >
-            {cLocale.home.stickyCta}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
         {/* Filter toggle */}
         <div className="mb-6 flex justify-end">
           <button
