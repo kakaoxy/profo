@@ -5,7 +5,7 @@
 
 from sqlalchemy.orm import Session
 
-from models import Role
+from models import Role, User
 from schemas.user import RoleCreate, RoleUpdate
 from settings import settings
 
@@ -119,7 +119,9 @@ class RoleService:
             msg = "角色不存在"
             raise ResourceNotFoundError(msg)
 
-        if role.users:
+        # 使用 exists 查询避免加载全量用户
+        has_users = db.query(User.id).filter(User.role_id == role_id).limit(1).first() is not None
+        if has_users:
             msg = "角色下存在用户，无法删除"
             raise ConflictError(msg)
 

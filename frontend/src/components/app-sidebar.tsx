@@ -58,7 +58,14 @@ interface User {
   avatar?: string | null;
   role?: {
     name: string;
+    code?: string;
   };
+}
+
+interface NavSubItem {
+  title: string;
+  url: string;
+  roles?: string[];
 }
 
 interface NavItem {
@@ -66,8 +73,15 @@ interface NavItem {
   url: string;
   icon: LucideIcon;
   isActive?: boolean;
-  items?: { title: string; url: string }[];
+  // 允许访问该菜单的角色代码列表；不填表示对所有后台角色可见
+  roles?: string[];
+  items?: NavSubItem[];
 }
+
+// 后台内部角色代码：admin 超级管理员 / operator 运营 / user 普通用户
+// 无 roles 字段的菜单项对所有后台角色可见
+const ROLE_ADMIN = "admin";
+const ROLE_OPERATOR = "operator";
 
 const data: { navMain: NavItem[] } = {
   navMain: [
@@ -83,8 +97,8 @@ const data: { navMain: NavItem[] } = {
       icon: Building2,
       items: [
         { title: "房源列表", url: "/admin/properties" },
-        { title: "批量上传", url: "/admin/properties/upload" },
-        { title: "数据治理", url: "/admin/properties/governance" },
+        { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
+        { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
       ],
     },
     {
@@ -106,17 +120,19 @@ const data: { navMain: NavItem[] } = {
       title: "用户管理",
       url: "#",
       icon: Users,
+      roles: [ROLE_ADMIN],
       items: [
-        { title: "用户列表", url: "/admin/users" },
-        { title: "权限管理", url: "/admin/users/roles" },
+        { title: "用户列表", url: "/admin/users", roles: [ROLE_ADMIN] },
+        { title: "权限管理", url: "/admin/users/roles", roles: [ROLE_ADMIN] },
       ],
     },
     {
       title: "设置",
       url: "#",
       icon: Settings,
+      roles: [ROLE_ADMIN, ROLE_OPERATOR],
       items: [
-        { title: "API Key", url: "/admin/settings/api-key" },
+        { title: "API Key", url: "/admin/settings/api-key", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
       ],
     },
   ],
@@ -173,6 +189,10 @@ MenuButton.displayName = "MenuButton";
 export function AppSidebar({ user }: { user: User | null }) {
   const { state, isMobile, setOpen } = useSidebar();
   const pathname = usePathname();
+  const roleCode = user?.role?.code;
+
+  // 角色可见性判断：未声明 roles 的项对所有后台角色可见；声明了则需匹配
+  const isVisible = (roles?: string[]) => !roles || (roleCode != null && roles.includes(roleCode));
 
   // 进入非首页的功能页面时自动折叠侧边栏
   React.useEffect(() => {
@@ -194,6 +214,15 @@ export function AppSidebar({ user }: { user: User | null }) {
       setOpen(false);
     }
   }, [pathname, setOpen, isMobile]);
+
+  // 按角色过滤一级菜单与子菜单
+  const visibleNav = data.navMain
+    .filter((item) => isVisible(item.roles))
+    .map((item) => ({
+      ...item,
+      items: item.items?.filter((sub) => isVisible(sub.roles)),
+    }))
+    .filter((item) => !item.items || item.items.length > 0);
 
   return (
     <Sidebar
@@ -223,7 +252,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       <SidebarContent className="px-2 py-3">
         <SidebarGroup>
           <SidebarMenu className="gap-1">
-            {data.navMain.map((item) => {
+            {visibleNav.map((item) => {
               const hasSubmenu = item.items && item.items.length > 0;
               const isActive =
                 pathname === item.url ||

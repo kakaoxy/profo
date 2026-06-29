@@ -15,7 +15,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
 
 from utils.common import limiter
-from db import init_db
+from db import engine, init_db
 from error_handlers import (
     general_exception_handler,
     http_exception_handler,
@@ -76,6 +76,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         sys.exit(1)
 
     init_db()
+
+    # 执行启动时数据迁移（新增列、加密已存明文手机号等），幂等
+    from migrations import run_startup_migrations  # noqa: PLC0415
+
+    run_startup_migrations(engine)
+
     logger.info("Application started successfully: %s v%s", settings.app_name, settings.app_version)
 
     yield

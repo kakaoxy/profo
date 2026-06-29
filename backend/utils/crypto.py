@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import threading
 
 from cryptography.fernet import Fernet
@@ -70,3 +72,21 @@ def decrypt(ciphertext: str) -> str:
     """
     fernet = _get_fernet()
     return fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
+
+
+def hash_phone(phone: str) -> str:
+    """计算手机号的 HMAC-SHA256 哈希（用于唯一性约束）.
+
+    Fernet 加密使用随机 IV，同一明文每次加密结果不同，无法直接用于唯一性比较。
+    本函数返回确定性的 HMAC 哈希，存于 phone_hash 列以维持唯一约束。
+    使用 jwt_secret_key 作为 HMAC 密钥，避免数据库泄露后被彩虹表反推。
+
+    Args:
+        phone: 明文手机号
+
+    Returns:
+        64 字符的十六进制哈希字符串
+
+    """
+    key = settings.jwt_secret_key.encode("utf-8")
+    return hmac.new(key, phone.encode("utf-8"), hashlib.sha256).hexdigest()

@@ -14,6 +14,7 @@ from services.system import ApiKeyService
 from services.system.auth import AuthService
 from services.system.exceptions import AuthenticationError, PermissionDeniedError
 from settings import settings
+from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C
 
 # OAuth2密码承载器，用于从请求头中获取token
 oauth2_scheme = OAuth2PasswordBearer(
@@ -24,14 +25,30 @@ oauth2_scheme = OAuth2PasswordBearer(
 # 类型别名定义
 DbSessionDep = Annotated[Session, Depends(get_db)]
 
+# 后台内部角色：API Key 生成与使用仅限这些角色
+_INTERNAL_ROLE_CODES = {"admin", "operator"}
+
+
+def _infer_audience_from_path(path: str) -> str:
+    """根据请求路径推断期望的 Token 受众.
+
+    /api/v1/public/* -> C 端 (aud=c)
+    其他 -> 后台 (aud=admin)
+
+    """
+    if path.startswith(f"{settings.api_prefix}/v1/public"):
+        return AUDIENCE_C
+    return AUDIENCE_ADMIN
+
 
 async def require_api_key(
     request: Request,
     db: DbSessionDep,
 ) -> User:
-    """仅通过 API Key 认证用户.
+    """仅通过 API Key 认证用户（且必须是后台内部角色）.
 
     不接受 JWT Token，专用于机器对机器的 API 调用.
+    仅允许 admin/operator 角色的用户生成的 API Key 认证，避免 C 端用户通过 API Key 调用内部接口.
 
     Args:
         request: FastAPI请求对象
@@ -42,6 +59,7 @@ async def require_api_key(
 
     Raises:
         AuthenticationError: 401 Unauthorized - API Key 无效或缺失
+        PermissionDeniedError: 403 Forbidden - API Key 对应用户无权使用机器接口
 
     """
     # 只接受 X-API-Key Header
@@ -51,9 +69,14 @@ async def require_api_key(
 
     try:
         # 使用run_in_threadpool调用同步的数据库操作
-        return await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+        user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
     except Exception:  # noqa: BLE001
         raise AuthenticationError("API Key 无效") from None
+
+    # 角色二次校验：仅允许后台内部角色
+    if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
+        raise PermissionDeniedError("该账号无权使用 API Key 调用机器接口")
+    return user
 
 
 # API Key 认证依赖类型
@@ -67,9 +90,12 @@ async def get_current_user(
 ) -> User:
     """获取当前用户.
 
-    支持多种认证方式（按优先级）：
-    1. JWT Token (Authorization Header Bearer 或 access_token cookie)
-    2. API Key (X-API-Key Header).
+    认证顺序：
+    1. JWT Token (Authorization Header Bearer 或与目标系统匹配的 cookie)
+    2. API Key (X-API-Key Header) — 仅当无 JWT 时
+
+    按请求路径推断受众（C端 c / 后台 admin），仅读取对应系统的 cookie，
+    避免浏览器同时登录两套系统时的交叉误认。
 
     Args:
         request: FastAPI请求对象
@@ -83,36 +109,32 @@ async def get_current_user(
         AuthenticationError: 401 Unauthorized - 令牌无效或用户不存在
 
     """
+    expected_audience = _infer_audience_from_path(request.url.path)
+
     # 优先从Header获取JWT token
     token = token_from_header
 
-    # 如果Header没有，从cookie中获取
-    # c_access_token优先：C端用户是public端点的主要使用者，
-    # 避免因浏览器残留admin access_token cookie导致错误认证
-    c_token = request.cookies.get("c_access_token")
-    admin_token = request.cookies.get("access_token")
+    # 按目标系统选择对应 cookie，避免交叉误认
+    if expected_audience == AUDIENCE_C:
+        cookie_token = request.cookies.get("c_access_token")
+    else:
+        cookie_token = request.cookies.get("access_token")
 
     if token is None:
-        # 按优先级依次尝试两个cookie token
-        has_cookie_token = False
-        for cookie_token in (c_token, admin_token):
-            if cookie_token is None:
-                continue
-            has_cookie_token = True
+        if cookie_token is not None:
             try:
-                # 复用 AuthService.authenticate_by_token 统一认证逻辑
-                return await run_in_threadpool(AuthService.authenticate_by_token, db, cookie_token)
+                # 按目标系统校验受众
+                return await run_in_threadpool(
+                    AuthService.authenticate_by_token, db, cookie_token, expected_audience
+                )
             except AuthenticationError:
-                # token无效(过期/签名错误)或用户不存在，尝试下一个
-                continue
-
-        # 有cookie token但全部验证失败，直接报错，不回退到API Key
-        if has_cookie_token:
-            raise AuthenticationError("无法验证凭据")
+                raise AuthenticationError("无法验证凭据") from None
     else:
-        # Header token — 直接使用，失败即报错
+        # Header token — 校验受众，避免C端Token用于后台或反之
         try:
-            return await run_in_threadpool(AuthService.authenticate_by_token, db, token)
+            return await run_in_threadpool(
+                AuthService.authenticate_by_token, db, token, expected_audience
+            )
         except AuthenticationError:
             raise AuthenticationError("无法验证凭据") from None
 
@@ -121,9 +143,13 @@ async def get_current_user(
     if api_key:
         try:
             # 使用run_in_threadpool调用同步的数据库操作
-            return await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+            user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
         except Exception:  # noqa: BLE001
             raise AuthenticationError("API Key 无效") from None
+        # API Key 同样要求内部角色
+        if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
+            raise PermissionDeniedError("该账号无权使用 API Key 调用机器接口")
+        return user
 
     # 没有任何认证信息
     raise AuthenticationError("无法验证凭据")
