@@ -139,6 +139,8 @@ backend/data.db
 # ==========================================
 *.jpg
 *.png
+!frontend/public/about/*.png
+!frontend/public/about/*.jpg
 *.doc
 *.docx
 *.pdf
