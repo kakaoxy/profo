@@ -119,12 +119,25 @@ export async function cServerActionFetch(
 ): Promise<Response> {
   const token = await getValidCAccessToken();
 
+  const existingHeaders: Record<string, string> = {};
+  if (init.headers instanceof Headers) {
+    init.headers.forEach((value, key) => {
+      existingHeaders[key] = value;
+    });
+  } else if (Array.isArray(init.headers)) {
+    init.headers.forEach(([key, value]) => {
+      existingHeaders[key] = value;
+    });
+  } else if (typeof init.headers === "object" && init.headers !== null) {
+    Object.assign(existingHeaders, init.headers);
+  }
+
   const makeRequest = (bearerToken: string | null) =>
     fetch(getApiUrl(path), {
       ...init,
       headers: {
         "Content-Type": "application/json",
-        ...((init.headers as Record<string, string> | undefined) ?? {}),
+        ...existingHeaders,
         ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
       },
     });
