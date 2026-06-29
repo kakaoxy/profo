@@ -250,7 +250,7 @@ export default function AboutPage() {
               {painPoints.map((point, index) => (
                 <div
                   key={point.title}
-                  className="flex h-80 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-steep"
+                  className="flex h-60 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-steep"
                 >
                   <div>
                     <span className={`mb-4 block ${point.color}`}>
@@ -336,7 +336,7 @@ export default function AboutPage() {
         </section>
 
         {/* Social Proof Section */}
-        <section className="mx-auto max-w-[1200px] px-6 py-20">
+        <section className="mx-auto max-w-[1200px] px-6 py-12">
           <div className="flex flex-col items-center gap-12 rounded-cards bg-ink p-8 text-white md:flex-row md:p-16">
             <div className="flex-1">
               <h2 className="mb-4 font-display text-[44px] leading-[1.1] text-white">
