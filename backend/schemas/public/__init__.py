@@ -117,6 +117,12 @@ class PublicUserProfileResponse(PublicUserInfo):
     updated_at: datetime = Field(description="更新时间")
 
 
+class PublicPhoneCreate(BaseModel):
+    """C端首次设置手机号请求（仅当用户尚未绑定手机号时可用）."""
+
+    phone: str = Field(max_length=20, pattern=r"^1[3-9]\d{9}$", description="手机号")
+
+
 class PublicPhoneUpdate(BaseModel):
     """C端手机号更新请求."""
 
@@ -381,6 +387,7 @@ __all__ = [
     "PublicLoginResponse",
     "PublicLogoutResponse",
     "PublicMediaItem",
+    "PublicPhoneCreate",
     "PublicPhoneResponse",
     "PublicPhoneUpdate",
     "PublicPlatformStats",

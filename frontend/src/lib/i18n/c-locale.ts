@@ -447,7 +447,14 @@ export const cLocale = {
     recentSoldTitle: "近期成交参考",
     recentSoldEmpty: "暂无成交参考",
     recentSoldMore: "查看更多案例",
-    formHint: "提交后我们做初步预审，合适的会联系你上门看房，再商定约定价格。不签约不收费",
+    phoneCompleteButton: "完善手机号",
+    phoneCompleteSuffix: "，加速评估速度",
+    phoneInputPlaceholder: "请输入手机号",
+    phoneInputAriaLabel: "手机号输入框",
+    phoneSubmit: "保存",
+    phoneSubmitting: "保存中...",
+    phoneCancel: "取消",
+    phoneSuccess: "手机号保存成功",
     submit: "提交预审",
     submitting: "提交中...",
     privacyNote: "信息仅用于预审与上门看房安排，不外泄、不电话骚扰",
@@ -466,6 +473,9 @@ export const cLocale = {
   valuationAction: {
     communityRequired: "小区名称不能为空",
     submitFailed: "提交失败",
+    phoneRequired: "手机号不能为空",
+    phoneInvalid: "手机号格式不正确",
+    phoneSubmitFailed: "保存失败",
   },
 
   profile: {
