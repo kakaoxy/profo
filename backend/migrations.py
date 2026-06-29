@@ -21,6 +21,7 @@ from utils.crypto import decrypt, encrypt, hash_phone
 logger = logging.getLogger(__name__)
 
 _FERNET_CIPHER_PREFIX = "gAAAAA"
+_MIGRATION_BATCH_SIZE = 500
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
@@ -79,29 +80,41 @@ def encrypt_existing_phones(engine: Engine) -> None:
 
     判定规则：Fernet 密文以 'gAAAAA' 开头；不以该前缀开头视为明文并加密。
     幂等：已是密文则跳过。
+    使用基于 id 的游标分页，避免大数据量下 fetchall 导致 OOM。
 
     """
     with engine.begin() as conn:
-        rows = conn.execute(text("SELECT id, phone FROM users WHERE phone IS NOT NULL")).fetchall()
-        if not rows:
-            return
-
         updated = 0
-        for row in rows:
-            user_id, phone = row[0], row[1]
-            if not phone:
-                continue
-            if phone.startswith(_FERNET_CIPHER_PREFIX):
-                continue
-            try:
-                ciphertext = encrypt(phone)
-                conn.execute(
-                    text("UPDATE users SET phone = :phone WHERE id = :id"),
-                    {"phone": ciphertext, "id": user_id},
-                )
-                updated += 1
-            except Exception:  # noqa: BLE001
-                logger.exception("加密用户手机号失败 user_id=%s", user_id)
+        last_id = 0
+        while True:
+            rows = conn.execute(
+                text(
+                    "SELECT id, phone FROM users "
+                    "WHERE phone IS NOT NULL AND id > :last_id "
+                    "ORDER BY id LIMIT :batch_size"
+                ),
+                {"last_id": last_id, "batch_size": _MIGRATION_BATCH_SIZE},
+            ).fetchall()
+            if not rows:
+                break
+
+            for row in rows:
+                user_id, phone = row[0], row[1]
+                if not phone:
+                    continue
+                if phone.startswith(_FERNET_CIPHER_PREFIX):
+                    continue
+                try:
+                    ciphertext = encrypt(phone)
+                    conn.execute(
+                        text("UPDATE users SET phone = :phone WHERE id = :id"),
+                        {"phone": ciphertext, "id": user_id},
+                    )
+                    updated += 1
+                except Exception:  # noqa: BLE001
+                    logger.exception("加密用户手机号失败 user_id=%s", user_id)
+            last_id = rows[-1][0]
+
         if updated:
             logger.info("迁移：加密了 %d 条明文手机号", updated)
 
@@ -110,30 +123,40 @@ def populate_phone_hash(engine: Engine) -> None:
     """为已存用户回填 phone_hash（基于解密后的明文手机号）。
 
     必须在 encrypt_existing_phones 之后执行。
+    使用基于 id 的游标分页，避免大数据量下 fetchall 导致 OOM。
 
     """
     with engine.begin() as conn:
-        rows = conn.execute(
-            text("SELECT id, phone FROM users WHERE phone IS NOT NULL AND phone_hash IS NULL")
-        ).fetchall()
-        if not rows:
-            return
-
         updated = 0
-        for row in rows:
-            user_id, phone = row[0], row[1]
-            if not phone:
-                continue
-            try:
-                plaintext = phone if not phone.startswith(_FERNET_CIPHER_PREFIX) else decrypt(phone)
-                phone_hash_value = hash_phone(plaintext)
-                conn.execute(
-                    text("UPDATE users SET phone_hash = :h WHERE id = :id"),
-                    {"h": phone_hash_value, "id": user_id},
-                )
-                updated += 1
-            except Exception:  # noqa: BLE001
-                logger.exception("回填 phone_hash 失败 user_id=%s", user_id)
+        last_id = 0
+        while True:
+            rows = conn.execute(
+                text(
+                    "SELECT id, phone FROM users "
+                    "WHERE phone IS NOT NULL AND phone_hash IS NULL AND id > :last_id "
+                    "ORDER BY id LIMIT :batch_size"
+                ),
+                {"last_id": last_id, "batch_size": _MIGRATION_BATCH_SIZE},
+            ).fetchall()
+            if not rows:
+                break
+
+            for row in rows:
+                user_id, phone = row[0], row[1]
+                if not phone:
+                    continue
+                try:
+                    plaintext = phone if not phone.startswith(_FERNET_CIPHER_PREFIX) else decrypt(phone)
+                    phone_hash_value = hash_phone(plaintext)
+                    conn.execute(
+                        text("UPDATE users SET phone_hash = :h WHERE id = :id"),
+                        {"h": phone_hash_value, "id": user_id},
+                    )
+                    updated += 1
+                except Exception:  # noqa: BLE001
+                    logger.exception("回填 phone_hash 失败 user_id=%s", user_id)
+            last_id = rows[-1][0]
+
         if updated:
             logger.info("迁移：回填了 %d 条 phone_hash", updated)
 
