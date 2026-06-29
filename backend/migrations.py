@@ -81,12 +81,13 @@ def encrypt_existing_phones(engine: Engine) -> None:
     判定规则：Fernet 密文以 'gAAAAA' 开头；不以该前缀开头视为明文并加密。
     幂等：已是密文则跳过。
     使用基于 id 的游标分页，避免大数据量下 fetchall 导致 OOM。
+    每批次独立提交，避免单个大事务。
 
     """
-    with engine.begin() as conn:
-        updated = 0
-        last_id = 0
-        while True:
+    updated = 0
+    last_id = 0
+    while True:
+        with engine.begin() as conn:
             rows = conn.execute(
                 text(
                     "SELECT id, phone FROM users "
@@ -113,10 +114,10 @@ def encrypt_existing_phones(engine: Engine) -> None:
                     updated += 1
                 except Exception:  # noqa: BLE001
                     logger.exception("加密用户手机号失败 user_id=%s", user_id)
-            last_id = rows[-1][0]
+        last_id = rows[-1][0]
 
-        if updated:
-            logger.info("迁移：加密了 %d 条明文手机号", updated)
+    if updated:
+        logger.info("迁移：加密了 %d 条明文手机号", updated)
 
 
 def populate_phone_hash(engine: Engine) -> None:
@@ -124,12 +125,13 @@ def populate_phone_hash(engine: Engine) -> None:
 
     必须在 encrypt_existing_phones 之后执行。
     使用基于 id 的游标分页，避免大数据量下 fetchall 导致 OOM。
+    每批次独立提交，避免单个大事务。
 
     """
-    with engine.begin() as conn:
-        updated = 0
-        last_id = 0
-        while True:
+    updated = 0
+    last_id = 0
+    while True:
+        with engine.begin() as conn:
             rows = conn.execute(
                 text(
                     "SELECT id, phone FROM users "
@@ -155,10 +157,10 @@ def populate_phone_hash(engine: Engine) -> None:
                     updated += 1
                 except Exception:  # noqa: BLE001
                     logger.exception("回填 phone_hash 失败 user_id=%s", user_id)
-            last_id = rows[-1][0]
+        last_id = rows[-1][0]
 
-        if updated:
-            logger.info("迁移：回填了 %d 条 phone_hash", updated)
+    if updated:
+        logger.info("迁移：回填了 %d 条 phone_hash", updated)
 
 
 def run_startup_migrations(engine: Engine) -> None:
