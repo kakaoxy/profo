@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useState, useMemo } from "react";
+import { useActionState, useEffect, useState, useMemo } from "react";
 import { Smartphone, Ruler } from "lucide-react";
+import { toast } from "sonner";
 import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
-import { createLeadAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
+import { createLeadAction, completePhoneAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
+import { useUserInfo } from "@/lib/api-c/user-info";
 import { cn } from "@/lib/utils";
 import { cLocale } from "@/lib/i18n/c-locale";
 
@@ -25,6 +27,26 @@ export function ValuationForm() {
     createLeadAction,
     { success: false, error: "" } as ActionResult<{ id: string }>
   );
+
+  const [phoneState, phoneAction, isPhonePending] = useActionState(
+    completePhoneAction,
+    { success: false, error: "" } as ActionResult<{ phone: string }>
+  );
+
+  const userInfo = useUserInfo();
+  const [phoneFormOpen, setPhoneFormOpen] = useState(false);
+
+  // 用户已绑定手机号后，不再展示"完善手机号"提示区
+  const hasPhone = Boolean(userInfo.phone);
+
+  useEffect(() => {
+    if (phoneState.success) {
+      requestAnimationFrame(() => {
+        setPhoneFormOpen(false);
+      });
+      toast.success(phoneState.message || cLocale.valuation.phoneSuccess);
+    }
+  }, [phoneState]);
 
   const [formData, setFormData] = useState({
     communityId: "",
@@ -166,10 +188,65 @@ export function ValuationForm() {
         </div>
       </div>
 
-      <div className="bg-apricot-wash p-3 sm:p-4 rounded-inputs flex items-center gap-3">
-        <Smartphone className="h-5 w-5 text-rust shrink-0" />
-        <span className="text-sm text-ink">{cLocale.valuation.formHint}</span>
-      </div>
+      {!hasPhone && (
+        <div className="bg-apricot-wash p-3 sm:p-4 rounded-inputs">
+          {!phoneFormOpen ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Smartphone className="h-5 w-5 text-rust shrink-0" />
+              <button
+                type="button"
+                onClick={() => setPhoneFormOpen(true)}
+                className="text-sm font-medium text-rust underline-offset-2 hover:underline active:opacity-80 transition-opacity"
+              >
+                {cLocale.valuation.phoneCompleteButton}
+              </button>
+              <span className="text-sm text-ink">{cLocale.valuation.phoneCompleteSuffix}</span>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5 text-rust shrink-0" />
+                <span className="text-sm font-medium text-ink">
+                  {cLocale.valuation.phoneCompleteButton}
+                </span>
+              </div>
+              {phoneState && !phoneState.success && phoneState.error && (
+                <p className="text-xs text-c-error">{phoneState.error}</p>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="tel"
+                  name="phone"
+                  inputMode="numeric"
+                  maxLength={11}
+                  autoComplete="tel"
+                  required
+                  aria-label={cLocale.valuation.phoneInputAriaLabel}
+                  placeholder={cLocale.valuation.phoneInputPlaceholder}
+                  pattern="^1[3-9]\d{9}$"
+                  className="flex-1 h-11 px-4 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink placeholder:text-graphite outline-none focus:border-rust transition-colors"
+                />
+                <button
+                  type="submit"
+                  formAction={phoneAction}
+                  disabled={isPhonePending}
+                  className="h-11 px-4 rounded-inputs bg-ink text-white text-sm font-medium active:opacity-80 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPhonePending ? cLocale.valuation.phoneSubmitting : cLocale.valuation.phoneSubmit}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhoneFormOpen(false)}
+                  disabled={isPhonePending}
+                  className="h-11 px-3 rounded-inputs text-sm font-medium text-graphite hover:text-ink transition-colors disabled:opacity-50"
+                >
+                  {cLocale.valuation.phoneCancel}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <button
         type="submit"

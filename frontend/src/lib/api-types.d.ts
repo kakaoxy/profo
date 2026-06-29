@@ -1873,7 +1873,11 @@ export interface paths {
          * @description C端用户修改手机号，需密码确认身份
          */
         put: operations["update_phone_api_v1_public_users_phone_put"];
-        post?: never;
+        /**
+         * 首次设置手机号
+         * @description C端用户首次绑定手机号，仅当用户尚未绑定手机号时可用；已绑定请使用 PUT /phone
+         */
+        post: operations["set_initial_phone_api_v1_public_users_phone_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4881,6 +4885,17 @@ export interface components {
              * @description 排序
              */
             sort_order: number;
+        };
+        /**
+         * PublicPhoneCreate
+         * @description C端首次设置手机号请求（仅当用户尚未绑定手机号时可用）.
+         */
+        PublicPhoneCreate: {
+            /**
+             * Phone
+             * @description 手机号
+             */
+            phone: string;
         };
         /**
          * PublicPhoneResponse
@@ -9888,6 +9903,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PublicPhoneUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_initial_phone_api_v1_public_users_phone_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicPhoneCreate"];
             };
         };
         responses: {

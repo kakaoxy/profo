@@ -237,6 +237,31 @@ class UserService:
         self.check_phone_taken_by_other(db, phone, user.id)
         return self.update_phone(db, user, phone)
 
+    def set_initial_phone(self, db: Session, user: User, phone: str) -> User:
+        """首次设置用户手机号（仅在用户尚未绑定手机号时可用）.
+
+        已绑定手机号的用户需走 update_phone_with_verification 流程，
+        避免绕过密码验证覆盖已有手机号。
+
+        Args:
+            db: 数据库会话
+            user: 当前用户对象
+            phone: 新手机号
+
+        Returns:
+            User: 更新后的用户对象
+
+        Raises:
+            ValidationError: 用户已绑定手机号 或 手机号已被其他账号绑定
+
+        """
+        if user.phone:
+            msg = "已绑定手机号，修改请使用密码验证"
+            raise ValidationError(msg)
+
+        self.check_phone_taken_by_other(db, phone, user.id)
+        return self.update_phone(db, user, phone)
+
     def list_users_simple(
         self,
         db: Session,

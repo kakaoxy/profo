@@ -1,6 +1,6 @@
 """C端公开用户路由.
 
-修改资料、修改手机号.
+修改资料、首次设置手机号、修改手机号.
 """
 
 from fastapi import APIRouter, Request
@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from schemas.public import (
+    PublicPhoneCreate,
     PublicPhoneResponse,
     PublicPhoneUpdate,
     PublicProfileUpdate,
@@ -44,6 +45,24 @@ def update_profile(
         created_at=updated_user.created_at,
         updated_at=updated_user.updated_at,
     )
+
+
+@router.post(
+    "/phone",
+    summary="首次设置手机号",
+    description="C端用户首次绑定手机号，仅当用户尚未绑定手机号时可用；已绑定请使用 PUT /phone",
+)
+@limiter.limit(RateLimits.PUBLIC_PHONE_CREATE)
+def set_initial_phone(
+    request: Request,
+    body: PublicPhoneCreate,
+    current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
+) -> PublicPhoneResponse:
+    """C端用户首次设置手机号."""
+    updated_user = user_service.set_initial_phone(db, current_user, body.phone)
+
+    return PublicPhoneResponse(phone=mask_phone(updated_user.phone))
 
 
 @router.put(
