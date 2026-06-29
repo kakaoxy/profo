@@ -84,7 +84,7 @@ export default function CMyPage() {
                 href="/valuation"
                 className="inline-flex items-center gap-1 text-sm font-medium text-rust hover:underline"
               >
-                去免费预审
+                {cLocale.my.goToValuation}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
