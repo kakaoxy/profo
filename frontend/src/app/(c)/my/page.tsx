@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
-import { LogOut, Pencil } from "lucide-react";
+import { LogOut, Pencil, ArrowRight } from "lucide-react";
 import { UserAvatar } from "@/components/c/shared/UserAvatar";
 import { LeadListItem } from "@/components/c/lead/LeadListItem";
 import { logoutAction } from "@/lib/api-c/auth";
@@ -74,10 +74,21 @@ export default function CMyPage() {
         ) : error ? (
           <ErrorState onRetry={() => mutate()} />
         ) : !data?.items.length ? (
-          <EmptyState
-            title={cLocale.my.empty.title}
-            description={cLocale.my.empty.description}
-          />
+          <div className="space-y-4">
+            <EmptyState
+              title={cLocale.my.empty.title}
+              description={cLocale.my.empty.description}
+            />
+            <div className="text-center">
+              <Link
+                href="/valuation"
+                className="inline-flex items-center gap-1 text-sm font-medium text-rust hover:underline"
+              >
+                去免费预审
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             {data.items.map((lead) => (

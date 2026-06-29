@@ -8,6 +8,7 @@ import {
   Clock,
   Users,
   HelpCircle,
+  BatteryLow,
   CheckCircle,
   BadgeCheck,
   ImageIcon,
@@ -33,6 +34,7 @@ const painPointIcons = [
   <Clock key="c" className="h-5 w-5" />,
   <Users key="u" className="h-5 w-5" />,
   <HelpCircle key="q" className="h-5 w-5" />,
+  <BatteryLow key="b" className="h-5 w-5" />,
 ];
 
 const painPoints = cLocale.about.painPoints.map((point, index) => ({
@@ -50,6 +52,7 @@ const pcPainPointIcons = [
   <Clock key="c" className="h-9 w-9" />,
   <Users key="u" className="h-9 w-9" />,
   <HelpCircle key="q" className="h-9 w-9" />,
+  <BatteryLow key="b" className="h-9 w-9" />,
 ];
 
 export default function AboutPage() {

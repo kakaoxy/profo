@@ -183,7 +183,7 @@ export default function ContactPage() {
             {cLocale.contact.actionDesc}
           </p>
           <Link
-            href="/about"
+            href="/valuation"
             className="mt-6 inline-flex items-center gap-2 text-[15px] font-medium text-ink tracking-[-0.009em] hover:underline"
           >
             {cLocale.contact.learnMore}
