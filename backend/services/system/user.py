@@ -110,6 +110,9 @@ class UserService:
                 msg = "手机号已被使用"
                 raise ConflictError(msg)
 
+        # 记录禁用前的状态，用于判断是否需要撤销 Token
+        was_active = user.status == "active"
+
         update_data = user_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if field == "phone":
@@ -119,7 +122,12 @@ class UserService:
             elif field in _USER_ALLOWED_FIELDS:
                 setattr(user, field, value)
 
-        db.commit()
+        # 用户由启用变为禁用时，立即撤销已签发 Token，避免旧 Token 在过期前继续访问
+        if was_active and user.status != "active":
+            db.commit()
+            AuthService.invalidate_user_tokens(db, user)
+        else:
+            db.commit()
         db.refresh(user)
         return user
 
