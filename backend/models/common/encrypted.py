@@ -27,7 +27,7 @@ class EncryptedString(TypeDecorator):
 
     def process_result_value(self, value: str | None, dialect: object) -> str | None:  # noqa: ARG002
         """从数据库读取时解密."""
-        if value is None:
+        if value is None or value == "":
             return None
         from utils.crypto import decrypt
 
