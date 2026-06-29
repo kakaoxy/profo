@@ -110,8 +110,13 @@ def refresh_access_token(
     refresh_data: PublicRefreshTokenRequest,
     db: DbSessionDep,
 ) -> PublicLoginResponse:
-    """C端刷新令牌，使用refresh_token获取新的access_token."""
-    token_data = AuthService.refresh_user_token(db, refresh_data.refresh_token)
+    """C端刷新令牌，使用refresh_token获取新的access_token.
+
+    仅接受C端受众(aud=c)的刷新令牌，拒绝后台Token.
+    """
+    token_data = AuthService.refresh_user_token(
+        db, refresh_data.refresh_token, expected_audience="c"
+    )
 
     return PublicLoginResponse(
         access_token=token_data["access_token"],

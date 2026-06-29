@@ -38,7 +38,7 @@ class PublicRegisterRequest(BaseModel):
     password: str = Field(
         min_length=8,
         max_length=255,
-        description="密码(≥8位，需含大小写字母和数字)",
+        description="密码(≥8位，需含大小写字母、数字和特殊字符)",
     )
     nickname: str | None = Field(None, max_length=100, description="昵称")
     phone: str | None = Field(None, max_length=20, pattern=r"^1[3-9]\d{9}$", description="手机号")
@@ -46,7 +46,7 @@ class PublicRegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password_complexity(cls, v: str) -> str:
-        """校验密码复杂度."""
+        """校验密码复杂度（与后台 validate_password_strength 保持一致）."""
         if not re.search(r"[a-z]", v):
             msg = "密码必须包含至少一个小写字母"
             raise ValueError(msg)
@@ -55,6 +55,9 @@ class PublicRegisterRequest(BaseModel):
             raise ValueError(msg)
         if not re.search(r"\d", v):
             msg = "密码必须包含至少一个数字"
+            raise ValueError(msg)
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
+            msg = '密码必须包含至少一个特殊字符 (!@#$%^&*(),.?":{}|<>)'
             raise ValueError(msg)
         return v
 

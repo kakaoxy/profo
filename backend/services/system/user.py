@@ -9,7 +9,9 @@ from models import User
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
+from utils.crypto import hash_phone
 
+from .auth import AuthService
 from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
 
 # 允许更新的用户字段白名单（防止设置 password/wechat_*/id 等敏感字段）
@@ -60,9 +62,11 @@ class UserService:
             msg = "用户名已存在"
             raise ConflictError(msg)
 
-        # Check phone existence
+        # Check phone existence (via hash, since phone is encrypted)
+        phone_hash_value: str | None = None
         if user_data.phone:
-            existing_phone = db.query(User).filter(User.phone == user_data.phone).first()
+            phone_hash_value = hash_phone(user_data.phone)
+            existing_phone = db.query(User).filter(User.phone_hash == phone_hash_value).first()
             if existing_phone:
                 msg = "手机号已被使用"
                 raise ConflictError(msg)
@@ -75,6 +79,7 @@ class UserService:
         # Create user
         db_user = User(
             **user_data.model_dump(exclude={"password"}),
+            phone_hash=phone_hash_value,
             password=get_password_hash(user_data.password),
         )
         db.add(db_user)
@@ -90,12 +95,13 @@ class UserService:
             msg = "用户不存在"
             raise ResourceNotFoundError(msg)
 
-        # Check phone uniqueness
+        # Check phone uniqueness (via hash)
         if user_data.phone and user_data.phone != user.phone:
+            new_hash = hash_phone(user_data.phone)
             existing_phone = (
                 db.query(User)
                 .filter(
-                    User.phone == user_data.phone,
+                    User.phone_hash == new_hash,
                     User.id != user_id,
                 )
                 .first()
@@ -106,7 +112,11 @@ class UserService:
 
         update_data = user_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
-            if field in _USER_ALLOWED_FIELDS:
+            if field == "phone":
+                # 同步更新 phone_hash 维护唯一性
+                user.phone = value
+                user.phone_hash = hash_phone(value) if value else None
+            elif field in _USER_ALLOWED_FIELDS:
                 setattr(user, field, value)
 
         db.commit()
@@ -126,6 +136,8 @@ class UserService:
 
         user.password = get_password_hash(password_data.password)
         db.commit()
+        # 撤销该用户已签发的所有 Token，强制重新登录
+        AuthService.invalidate_user_tokens(db, user)
         return {"message": "密码重置成功"}
 
     def delete_user(self, db: Session, user_id: str, current_user_id: str) -> dict:
@@ -141,6 +153,8 @@ class UserService:
 
         user.status = "inactive"
         db.commit()
+        # 禁用后立即撤销已签发 Token，避免过期前继续访问
+        AuthService.invalidate_user_tokens(db, user)
         return {"message": "用户删除成功"}
 
     def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict:
@@ -156,6 +170,8 @@ class UserService:
         current_user.password = get_password_hash(password_data.new_password)
         current_user.must_change_password = False
         db.commit()
+        # 修改密码后撤销旧 Token，强制使用新密码重新登录
+        AuthService.invalidate_user_tokens(db, current_user)
         return {"message": "密码修改成功"}
 
     def check_phone_taken_by_other(self, db: Session, phone: str, exclude_user_id: int) -> None:
@@ -170,9 +186,10 @@ class UserService:
             ValidationError: 手机号已被其他账号绑定
 
         """
+        phone_hash_value = hash_phone(phone)
         existing = (
             db.query(User)
-            .filter(User.phone == phone, User.id != exclude_user_id)
+            .filter(User.phone_hash == phone_hash_value, User.id != exclude_user_id)
             .first()
         )
         if existing:
@@ -209,6 +226,7 @@ class UserService:
 
         """
         user.phone = phone
+        user.phone_hash = hash_phone(phone) if phone else None
         db.commit()
         db.refresh(user)
         return user

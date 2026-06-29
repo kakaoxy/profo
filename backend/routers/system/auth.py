@@ -3,6 +3,7 @@
 直接返回 Pydantic 模型，不使用 ApiResponse 包装器.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Query, Request, status
@@ -12,7 +13,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.util import get_remote_address
 
 from utils.common import RateLimits, limiter
-from dependencies.auth import DbSessionDep, get_current_active_user
+from dependencies.auth import CurrentInternalUserDep, DbSessionDep, get_current_active_user
 from models import User
 from schemas.user import (
     ApiKeyCreateResponse,
@@ -30,6 +31,8 @@ from services.system.exceptions import AuthenticationError, BusinessLogicError, 
 from settings import settings
 
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -50,8 +53,9 @@ def login_for_access_token(
 
     Sync - Run in threadpool by FastAPI
     速率限制：5次/分钟.
+    拒绝 C 端 customer 角色登录后台.
     """
-    user = AuthService.authenticate_user(db, form_data.username, form_data.password)
+    user = AuthService.authenticate_backend_user(db, form_data.username, form_data.password)
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
@@ -75,10 +79,19 @@ def login(
 
     Sync - Run in threadpool by FastAPI
     速率限制：5次/分钟.
+    拒绝 C 端 customer 角色登录后台；统一处理强制改密策略.
     """
-    user = AuthService.authenticate_user(db, login_data.username, login_data.password)
+    user = AuthService.authenticate_backend_user(db, login_data.username, login_data.password)
 
-    return AuthService.create_tokens_for_user(db, user, force_temp_token=False)
+    result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
+
+    if result.get("require_password_change"):
+        raise BusinessLogicError(
+            "首次登录必须修改密码",
+            headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
+        )
+
+    return result
 
 
 @router.post("/refresh")
@@ -92,26 +105,36 @@ def refresh_access_token(
 
     Sync - Run in threadpool by FastAPI
     速率限制：10次/分钟.
+    仅接受后台受众(aud=admin)的刷新令牌，拒绝C端Token.
     """
-    return AuthService.refresh_user_token(db, refresh_data.refresh_token)
+    return AuthService.refresh_user_token(
+        db, refresh_data.refresh_token, expected_audience="admin"
+    )
 
 
 @router.get("/wechat/authorize")
 def wechat_authorize(
     redirect_uri: Annotated[str | None, Query(description="重定向URL")] = None,
 ) -> WechatAuthUrlResponse:
-    """生成微信登录授权URL."""
-    auth_url = AuthService.generate_wechat_auth_url(redirect_uri)
+    """生成微信登录授权URL（含随机 state，回调时校验防 CSRF）."""
+    auth_url, _state = AuthService.generate_wechat_auth_url(redirect_uri)
     return WechatAuthUrlResponse(auth_url=auth_url)
 
 
 @router.get("/wechat/callback")
 async def wechat_callback(
     code: Annotated[str, Query(description="微信授权码")],
-    _state: Annotated[str, Query(description="状态参数")],
+    state: Annotated[str, Query(description="状态参数，用于防 CSRF")],
     db: DbSessionDep,
 ) -> RedirectResponse:
-    """微信授权回调 (Async for HTTP, run_in_threadpool for DB)."""
+    """微信授权回调 (Async for HTTP, run_in_threadpool for DB).
+
+    严格校验 state 与服务端签发的一致，防止 CSRF / 登录态劫持。
+    """
+    if not AuthService.consume_wechat_state(state):
+        logger.warning("微信回调 state 校验失败，疑似 CSRF 攻击")
+        raise BusinessLogicError("state 校验失败，请重新发起微信登录")
+
     token_data = await AuthService.fetch_wechat_access_token(code)
 
     openid = token_data.get("openid")
@@ -204,13 +227,14 @@ async def get_current_user_info(
 
 @router.post("/api-key")
 def create_api_key(
-    current_user: CurrentUserDep,
+    current_user: CurrentInternalUserDep,
     db: DbSessionDep,
 ) -> ApiKeyCreateResponse:
     """生成新的 API Key.
 
     每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
     Key 仅显示一次，请妥善保存.
+    仅限后台内部角色(admin/operator)生成，避免 C 端用户调用机器接口.
     """
     key_string, api_key = ApiKeyService.generate_api_key(db, str(current_user.id))
     return ApiKeyCreateResponse(
@@ -223,12 +247,13 @@ def create_api_key(
 
 @router.get("/api-key", response_model=ApiKeyInfoResponse | None)
 def get_api_key_info(
-    current_user: CurrentUserDep,
+    current_user: CurrentInternalUserDep,
     db: DbSessionDep,
 ) -> ApiKeyInfoResponse | None:
     """获取当前用户的 API Key 信息.
 
     不返回完整的 Key，只返回前缀和状态信息.
+    仅限后台内部角色(admin/operator)访问.
     """
     api_key = ApiKeyService.get_api_key_info(db, str(current_user.id))
     if not api_key:
@@ -248,11 +273,12 @@ def get_api_key_info(
 @limiter.limit(RateLimits.AUTH_API_KEY_DELETE)
 def delete_api_key(
     request: Request,
-    current_user: CurrentUserDep,
+    current_user: CurrentInternalUserDep,
     db: DbSessionDep,
 ) -> None:
     """撤销当前用户的 API Key.
 
     速率限制：20次/小时.
+    仅限后台内部角色(admin/operator)访问.
     """
     ApiKeyService.revoke_api_key(db, str(current_user.id))
