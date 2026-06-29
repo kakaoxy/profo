@@ -397,6 +397,7 @@ export const cLocale = {
       description:
         "提交房源信息后，这里会显示你的估价记录、目标售价与顾问跟进",
     },
+    goToValuation: "去免费预审",
   },
 
   register: {
