@@ -29,12 +29,12 @@ type PlatformStats = components["schemas"]["PublicPlatformStats"];
 type SoldListResponse = components["schemas"]["PublicSoldProjectListResponse"];
 
 const painPointIcons = [
-  <Home key="h" className="h-5 w-5" />,
-  <TrendingUp key="t" className="h-5 w-5" />,
-  <Clock key="c" className="h-5 w-5" />,
-  <Users key="u" className="h-5 w-5" />,
-  <HelpCircle key="q" className="h-5 w-5" />,
-  <BatteryLow key="b" className="h-5 w-5" />,
+  <Home key="h" className="h-5 w-5" aria-hidden="true" />,
+  <TrendingUp key="t" className="h-5 w-5" aria-hidden="true" />,
+  <Clock key="c" className="h-5 w-5" aria-hidden="true" />,
+  <Users key="u" className="h-5 w-5" aria-hidden="true" />,
+  <HelpCircle key="q" className="h-5 w-5" aria-hidden="true" />,
+  <BatteryLow key="b" className="h-5 w-5" aria-hidden="true" />,
 ];
 
 const painPoints = cLocale.about.painPoints.map((point, index) => ({
@@ -47,12 +47,12 @@ const painPoints = cLocale.about.painPoints.map((point, index) => ({
 
 // PC端专用大图标
 const pcPainPointIcons = [
-  <Home key="h" className="h-9 w-9" />,
-  <TrendingUp key="t" className="h-9 w-9" />,
-  <Clock key="c" className="h-9 w-9" />,
-  <Users key="u" className="h-9 w-9" />,
-  <HelpCircle key="q" className="h-9 w-9" />,
-  <BatteryLow key="b" className="h-9 w-9" />,
+  <Home key="h" className="h-9 w-9" aria-hidden="true" />,
+  <TrendingUp key="t" className="h-9 w-9" aria-hidden="true" />,
+  <Clock key="c" className="h-9 w-9" aria-hidden="true" />,
+  <Users key="u" className="h-9 w-9" aria-hidden="true" />,
+  <HelpCircle key="q" className="h-9 w-9" aria-hidden="true" />,
+  <BatteryLow key="b" className="h-9 w-9" aria-hidden="true" />,
 ];
 
 export default function AboutPage() {
@@ -101,7 +101,7 @@ export default function AboutPage() {
             <ul className="mt-5 space-y-3">
               {cLocale.about.serviceFeatures.map((feature) => (
                 <li key={feature} className="flex items-start gap-3">
-                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" aria-hidden="true" />
                   <span className="text-sm text-ink tracking-[-0.009em]">
                     {feature}
                   </span>
@@ -200,6 +200,8 @@ export default function AboutPage() {
                 alt={cLocale.about.pc.heroImgAlt}
                 className="h-full w-full object-cover opacity-25"
                 src="/about/hero-bg.png"
+                width={1920}
+                height={1080}
                 fetchPriority="high"
                 onError={() => setHeroError(true)}
               />
@@ -248,7 +250,7 @@ export default function AboutPage() {
               {painPoints.map((point, index) => (
                 <div
                   key={point.title}
-                  className="flex h-80 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
+                  className="flex h-80 flex-col justify-between rounded-cards bg-white p-8 shadow-steep-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-steep"
                 >
                   <div>
                     <span className={`mb-4 block ${point.color}`}>
@@ -321,9 +323,9 @@ export default function AboutPage() {
               {cLocale.about.serviceFeatures.map((feature) => (
                 <div
                   key={feature}
-                  className="flex items-start gap-3 rounded-cards bg-white p-6 shadow-steep-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-steep"
+                  className="flex items-start gap-3 rounded-cards bg-white p-6 shadow-steep-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-steep"
                 >
-                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" aria-hidden="true" />
                   <span className="text-[14px] leading-normal text-ink tracking-[-0.009em]">
                     {feature}
                   </span>
@@ -388,13 +390,15 @@ export default function AboutPage() {
                   alt={cLocale.about.pc.dashboardImgAlt}
                   className="h-full w-full rounded-images object-cover"
                   src="/about/dashboard.png"
+                  width={600}
+                  height={600}
                   loading="lazy"
                   onError={() => setDashboardError(true)}
                 />
               )}
               <div className="absolute -bottom-6 -right-6 max-w-xs rounded-cards border border-dove/30 bg-white/90 p-6 shadow-steep backdrop-blur-md max-lg:hidden">
                 <div className="mb-2 flex items-center gap-2">
-                  <BadgeCheck className="h-5 w-5 text-rust" />
+                  <BadgeCheck className="h-5 w-5 text-rust" aria-hidden="true" />
                   <span className="text-[12px] font-medium tracking-[-0.009em] text-ink">
                     {cLocale.about.pc.reportBadge}
                   </span>
@@ -434,10 +438,10 @@ export default function AboutPage() {
       </div>
 
       {/* ========== 新增模块（响应式，移动端/PC 端共用） ========== */}
-      <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-12 md:py-20 space-y-12 md:space-y-20">
 
-        {/* 算账模块 */}
-        <section>
+      {/* 算账模块 */}
+      <section className="bg-white py-12 md:py-20">
+        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
             <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
               {cLocale.about.calculation.title}
@@ -478,10 +482,12 @@ export default function AboutPage() {
           <p className="mt-6 text-center text-sm font-medium text-ink tracking-[-0.009em]">
             {cLocale.about.calculation.bottomLine}
           </p>
-        </section>
+        </div>
+      </section>
 
-        {/* FAQ（每条用 details 折叠，移动端默认收起，减少滚动疲劳） */}
-        <section id="faq">
+      {/* FAQ（每条用 details 折叠，移动端默认收起，减少滚动疲劳） */}
+      <section id="faq" className="bg-fog py-12 md:py-20">
+        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
             <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
               你可能想问
@@ -508,10 +514,12 @@ export default function AboutPage() {
           <p className="mt-6 text-center text-xs text-graphite tracking-[-0.009em]">
             {cLocale.about.riskNote}
           </p>
-        </section>
+        </div>
+      </section>
 
-        {/* 三方对比 */}
-        <section>
+      {/* 三方对比 */}
+      <section className="bg-white py-12 md:py-20">
+        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
             <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
               {cLocale.about.comparison.title}
@@ -545,10 +553,12 @@ export default function AboutPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 适合房子 */}
-        <section>
+      {/* 适合房子 */}
+      <section className="bg-fog py-12 md:py-20">
+        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
             <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
               {cLocale.about.suitable.title}
@@ -558,7 +568,7 @@ export default function AboutPage() {
             <ul className="space-y-3">
               {cLocale.about.suitable.criteria.map((c) => (
                 <li key={c} className="flex items-start gap-3">
-                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" />
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-rust" aria-hidden="true" />
                   <span className="text-sm text-ink tracking-[-0.009em]">{c}</span>
                 </li>
               ))}
@@ -567,10 +577,12 @@ export default function AboutPage() {
               {cLocale.about.suitable.boundary}
             </p>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 真实成交案例精选 */}
-        <section>
+      {/* 真实成交案例精选 */}
+      <section className="bg-white py-12 md:py-20">
+        <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
             <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
               {cLocale.about.casesTitle}
@@ -605,9 +617,8 @@ export default function AboutPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-        </section>
-
-      </div>
+        </div>
+      </section>
     </>
   );
 }
