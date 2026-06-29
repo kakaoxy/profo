@@ -45,7 +45,7 @@ interface CRefreshResult {
   expires_in: number;
 }
 
-async function cRefreshTokenServer(): Promise<CRefreshResult | null> {
+export async function cRefreshTokenServer(): Promise<CRefreshResult | null> {
   try {
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get("c_refresh_token")?.value;
@@ -54,9 +54,7 @@ async function cRefreshTokenServer(): Promise<CRefreshResult | null> {
       return null;
     }
 
-    const { apiPaths, getApiUrl: getUrl } = await import("../config");
-
-    const response = await fetch(getUrl(apiPaths.cAuth.refresh), {
+    const response = await fetch(getApiUrl(apiPaths.cAuth.refresh), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -86,13 +84,61 @@ async function cRefreshTokenServer(): Promise<CRefreshResult | null> {
       });
     } catch {
       // Server Component 上下文中无法修改 cookie（仅 Server Action / Route Handler 可写）
-      // 此时仍返回刷新后的 token 供当前请求使用，后续页面导航由 middleware 处理 cookie 刷新
+      // 此时仍返回刷新后的 token 供当前请求使用，后续页面导航由 proxy.ts 处理 cookie 刷新
     }
 
     return data;
   } catch {
     return null;
   }
+}
+
+/**
+ * 获取有效 access_token，cookie 中无 token 时自动用 refresh_token 刷新。
+ * 供 C 端 Server Action 统一获取认证凭据，避免 access_token cookie 过期
+ * （30 分钟）后直接报"请登录"而 refresh_token（7 天）仍可用的问题。
+ */
+export async function getValidCAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("c_access_token")?.value;
+  if (accessToken) return accessToken;
+
+  const result = await cRefreshTokenServer();
+  return result?.access_token ?? null;
+}
+
+/**
+ * 带 401 自动刷新重试的 fetch，供 C 端 Server Action 统一调用后端受保护接口。
+ * - 优先用 cookie 中的 access_token；无则先刷新
+ * - 收到 401 时自动刷新 token 并重试一次
+ * - 刷新失败则返回 401 响应，由调用方判断是否提示"请登录"
+ */
+export async function cServerActionFetch(
+  path: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const token = await getValidCAccessToken();
+
+  const makeRequest = (bearerToken: string | null) =>
+    fetch(getApiUrl(path), {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...((init.headers as Record<string, string> | undefined) ?? {}),
+        ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
+      },
+    });
+
+  let response = await makeRequest(token);
+
+  if (response.status === 401) {
+    const refreshed = await cRefreshTokenServer();
+    if (refreshed?.access_token) {
+      response = await makeRequest(refreshed.access_token);
+    }
+  }
+
+  return response;
 }
 
 export async function cFetchClient() {

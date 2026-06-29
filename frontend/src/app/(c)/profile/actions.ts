@@ -1,10 +1,10 @@
 "use server";
 
 import { z } from "zod";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { apiPaths, getApiUrl } from "@/lib/config";
+import { apiPaths } from "@/lib/config";
 import { ActionResult, createSuccessResult, createErrorResult } from "@/lib/action-result";
+import { cServerActionFetch } from "@/lib/api-c/server";
 import { cLocale } from "@/lib/i18n/c-locale";
 
 const updateProfileSchema = z.object({
@@ -17,20 +17,18 @@ const updatePhoneSchema = z.object({
 });
 
 export async function updateProfileAction(_: ActionResult<{ nickname: string }>, formData: FormData): Promise<ActionResult<{ nickname: string }>> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("c_access_token")?.value;
-  if (!token) return createErrorResult(cLocale.common.error.loginRequired);
-
   const raw = { nickname: formData.get("nickname") ?? "" };
   const parsed = updateProfileSchema.safeParse(raw);
   if (!parsed.success) return createErrorResult(parsed.error.issues[0].message);
 
   try {
-    const response = await fetch(getApiUrl(apiPaths.cUsers.profile), {
+    const response = await cServerActionFetch(apiPaths.cUsers.profile, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify({ nickname: parsed.data.nickname }),
     });
+    if (response.status === 401) {
+      return createErrorResult(cLocale.common.error.loginRequired);
+    }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return createErrorResult(errorData.detail || cLocale.profileAction.updateFailed);
@@ -44,20 +42,18 @@ export async function updateProfileAction(_: ActionResult<{ nickname: string }>,
 }
 
 export async function updatePhoneAction(_: ActionResult<{ phone: string }>, formData: FormData): Promise<ActionResult<{ phone: string }>> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("c_access_token")?.value;
-  if (!token) return createErrorResult(cLocale.common.error.loginRequired);
-
   const raw = { phone: formData.get("phone") ?? "", password: formData.get("password") ?? "" };
   const parsed = updatePhoneSchema.safeParse(raw);
   if (!parsed.success) return createErrorResult(parsed.error.issues[0].message);
 
   try {
-    const response = await fetch(getApiUrl(apiPaths.cUsers.phone), {
+    const response = await cServerActionFetch(apiPaths.cUsers.phone, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify({ phone: parsed.data.phone, password: parsed.data.password }),
     });
+    if (response.status === 401) {
+      return createErrorResult(cLocale.common.error.loginRequired);
+    }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return createErrorResult(errorData.detail || cLocale.profileAction.updateFailed);
