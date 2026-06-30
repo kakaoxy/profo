@@ -13,8 +13,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.util import get_remote_address
 
 from utils.common import RateLimits, limiter
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, get_current_active_user
-from models import User
+from dependencies.auth import CurrentActiveUserDep, CurrentInternalUserDep, DbSessionDep
 from schemas.user import (
     ApiKeyCreateResponse,
     ApiKeyInfoResponse,
@@ -29,8 +28,6 @@ from schemas.user import (
 from services.system import ApiKeyService, AuthService
 from services.system.exceptions import AuthenticationError, BusinessLogicError, ResourceNotFoundError
 from settings import settings
-
-CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +216,7 @@ async def wechat_app_login(
 
 @router.get("/me")
 async def get_current_user_info(
-    current_user: CurrentUserDep,
+    current_user: CurrentActiveUserDep,
 ) -> UserResponse:
     """获取当前用户信息."""
     return current_user

@@ -3,6 +3,7 @@ import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getApiUrl } from "./config";
 import { getAccessTokenFromCookie } from "./token-refresh-server";
+import { logger } from "./logger";
 import { redirect } from "next/navigation";
 
 /**
@@ -48,13 +49,13 @@ export async function fetchClient() {
       }
 
       retries++;
-      console.log(`🔁 [Server] 检测到 401，重新读取 cookie token... (第 ${retries} 次)`);
+      logger.warn(`检测到 401，重新读取 cookie token (第 ${retries} 次)`);
 
       // Proxy 层已保证 cookie 有效，重新从 cookie 读取 token
       token = await getAccessTokenFromCookie();
 
       if (!token) {
-        console.error("🔁 [Server] Cookie 中无有效 token，跳转登录页");
+        logger.error("Cookie 中无有效 token，跳转登录页");
         redirect("/admin/login");
       }
     }

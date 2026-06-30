@@ -152,19 +152,3 @@ def validate_token(
             return None
 
     return payload
-
-
-def get_user_id_from_token(token: str) -> str | None:
-    """从令牌中获取用户ID.
-
-    Args:
-        token: JWT令牌
-
-    Returns:
-        Optional[str]: 用户ID，如果令牌无效则返回None
-
-    """
-    payload = validate_token(token)
-    if payload:
-        return payload.get("sub")
-    return None

@@ -26,6 +26,10 @@ oauth2_scheme = OAuth2PasswordBearer(
 DbSessionDep = Annotated[Session, Depends(get_db)]
 
 # 后台内部角色：API Key 生成与使用仅限这些角色
+# 注意：与 services/system/auth.py 的 _BACKEND_ROLE_CODES 不同。
+#   _BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
+#   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
+# C 端 user 角色可登录后台但不允许生成/使用 API Key 调用机器接口。
 _INTERNAL_ROLE_CODES = {"admin", "operator"}
 
 
@@ -39,6 +43,28 @@ def _infer_audience_from_path(path: str) -> str:
     if path.startswith(f"{settings.api_prefix}/v1/public"):
         return AUDIENCE_C
     return AUDIENCE_ADMIN
+
+
+async def _authenticate_by_api_key(db: DbSessionDep, api_key: str) -> User:
+    """通过 API Key 认证并校验后台内部角色（私有 helper）.
+
+    供 require_api_key 与 get_current_user 的 API Key 回退分支共用，
+    避免认证 + 角色校验逻辑重复。
+
+    Raises:
+        AuthenticationError: API Key 无效
+        PermissionDeniedError: API Key 对应用户无权使用机器接口
+
+    """
+    try:
+        # 使用run_in_threadpool调用同步的数据库操作
+        user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
+    except Exception:  # noqa: BLE001
+        raise AuthenticationError("API Key 无效") from None
+    # 角色二次校验：仅允许后台内部角色
+    if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
+        raise PermissionDeniedError("该账号无权使用 API Key 调用机器接口")
+    return user
 
 
 async def require_api_key(
@@ -66,17 +92,7 @@ async def require_api_key(
     api_key = request.headers.get("X-API-Key")
     if not api_key:
         raise AuthenticationError("需要提供有效的 API Key")
-
-    try:
-        # 使用run_in_threadpool调用同步的数据库操作
-        user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
-    except Exception:  # noqa: BLE001
-        raise AuthenticationError("API Key 无效") from None
-
-    # 角色二次校验：仅允许后台内部角色
-    if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
-        raise PermissionDeniedError("该账号无权使用 API Key 调用机器接口")
-    return user
+    return await _authenticate_by_api_key(db, api_key)
 
 
 # API Key 认证依赖类型
@@ -141,15 +157,7 @@ async def get_current_user(
     # 如果没有JWT token，尝试从X-API-Key Header获取API Key
     api_key = request.headers.get("X-API-Key")
     if api_key:
-        try:
-            # 使用run_in_threadpool调用同步的数据库操作
-            user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
-        except Exception:  # noqa: BLE001
-            raise AuthenticationError("API Key 无效") from None
-        # API Key 同样要求内部角色
-        if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
-            raise PermissionDeniedError("该账号无权使用 API Key 调用机器接口")
-        return user
+        return await _authenticate_by_api_key(db, api_key)
 
     # 没有任何认证信息
     raise AuthenticationError("无法验证凭据")

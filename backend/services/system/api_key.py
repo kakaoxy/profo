@@ -17,6 +17,7 @@ from settings import settings
 from .exceptions import AuthenticationError, ResourceNotFoundError, ServiceException
 
 _API_KEY_GEN_FAILED = "API Key生成失败，请稍后重试"
+_API_KEY_REVOKE_FAILED = "API Key撤销失败，请稍后重试"
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class ApiKeyService:
             db.rollback()
             if settings.debug:
                 logger.exception("API Key撤销失败")
-            raise ServiceException(_API_KEY_GEN_FAILED) from e
+            raise ServiceException(_API_KEY_REVOKE_FAILED) from e
 
     @staticmethod
     def authenticate_by_api_key(db: Session, api_key: str) -> User:
@@ -224,6 +225,3 @@ class ApiKeyService:
             raise AuthenticationError(msg)
 
         return user
-
-
-api_key_service = ApiKeyService()
