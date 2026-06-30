@@ -66,13 +66,15 @@ class ProjectQueryService:
                 selectinload(Project.project_manager),
             )
         else:
-            # 简化加载：只加载必要的关系（含 renovation_photos，build 始终访问）
+            # 简化加载：只加载必要的关系
+            # 含 renovation_photos / finance_records，build 始终访问这两者
             query = query.options(
                 joinedload(Project.contract),
                 selectinload(Project.owners),
                 joinedload(Project.sale),
                 selectinload(Project.project_manager),
                 selectinload(Project.renovation_photos),
+                selectinload(Project.finance_records),
             )
 
         project = query.first()
