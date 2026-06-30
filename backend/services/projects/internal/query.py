@@ -66,8 +66,8 @@ class ProjectQueryService:
                 selectinload(Project.project_manager),
             )
         else:
-            # 简化加载：只加载必要的关系
-            # 含 renovation_photos / finance_records，build 始终访问这两者
+            # 标准加载：预加载 builder.build(slim=False) 访问的所有关联
+            # 含 contract/owners/sale/project_manager/renovation_photos/finance_records/interactions/renovation
             query = query.options(
                 joinedload(Project.contract),
                 selectinload(Project.owners),
@@ -75,6 +75,8 @@ class ProjectQueryService:
                 selectinload(Project.project_manager),
                 selectinload(Project.renovation_photos),
                 selectinload(Project.finance_records),
+                selectinload(Project.interactions),
+                joinedload(Project.renovation),
             )
 
         project = query.first()
