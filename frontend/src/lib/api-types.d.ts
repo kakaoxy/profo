@@ -994,6 +994,7 @@ export interface paths {
          *
          *     Sync - Run in threadpool by FastAPI
          *     速率限制：5次/分钟.
+         *     拒绝 C 端 customer 角色登录后台.
          */
         post: operations["login_for_access_token_api_v1_auth_token_post"];
         delete?: never;
@@ -1017,6 +1018,7 @@ export interface paths {
          *
          *     Sync - Run in threadpool by FastAPI
          *     速率限制：5次/分钟.
+         *     拒绝 C 端 customer 角色登录后台；统一处理强制改密策略.
          */
         post: operations["login_api_v1_auth_login_post"];
         delete?: never;
@@ -1040,6 +1042,7 @@ export interface paths {
          *
          *     Sync - Run in threadpool by FastAPI
          *     速率限制：10次/分钟.
+         *     仅接受后台受众(aud=admin)的刷新令牌，拒绝C端Token.
          */
         post: operations["refresh_access_token_api_v1_auth_refresh_post"];
         delete?: never;
@@ -1057,7 +1060,7 @@ export interface paths {
         };
         /**
          * Wechat Authorize
-         * @description 生成微信登录授权URL.
+         * @description 生成微信登录授权URL（含随机 state，回调时校验防 CSRF）.
          */
         get: operations["wechat_authorize_api_v1_auth_wechat_authorize_get"];
         put?: never;
@@ -1078,6 +1081,8 @@ export interface paths {
         /**
          * Wechat Callback
          * @description 微信授权回调 (Async for HTTP, run_in_threadpool for DB).
+         *
+         *     严格校验 state 与服务端签发的一致，防止 CSRF / 登录态劫持。
          */
         get: operations["wechat_callback_api_v1_auth_wechat_callback_get"];
         put?: never;
@@ -1165,6 +1170,7 @@ export interface paths {
          * @description 获取当前用户的 API Key 信息.
          *
          *     不返回完整的 Key，只返回前缀和状态信息.
+         *     仅限后台内部角色(admin/operator)访问.
          */
         get: operations["get_api_key_info_api_v1_auth_api_key_get"];
         put?: never;
@@ -1174,6 +1180,7 @@ export interface paths {
          *
          *     每个用户只能有一个有效 Key，生成新 Key 会自动撤销旧 Key
          *     Key 仅显示一次，请妥善保存.
+         *     仅限后台内部角色(admin/operator)生成，避免 C 端用户调用机器接口.
          */
         post: operations["create_api_key_api_v1_auth_api_key_post"];
         /**
@@ -1181,6 +1188,7 @@ export interface paths {
          * @description 撤销当前用户的 API Key.
          *
          *     速率限制：20次/小时.
+         *     仅限后台内部角色(admin/operator)访问.
          */
         delete: operations["delete_api_key_api_v1_auth_api_key_delete"];
         options?: never;
@@ -5170,7 +5178,7 @@ export interface components {
             username: string;
             /**
              * Password
-             * @description 密码(≥8位，需含大小写字母和数字)
+             * @description 密码(≥8位，需含大小写字母、数字和特殊字符)
              */
             password: string;
             /**
@@ -8567,8 +8575,8 @@ export interface operations {
             query: {
                 /** @description 微信授权码 */
                 code: string;
-                /** @description 状态参数 */
-                _state: string;
+                /** @description 状态参数，用于防 CSRF */
+                state: string;
             };
             header?: never;
             path?: never;
