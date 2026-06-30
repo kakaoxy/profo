@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState } from "react";
 import {
   SheetHeader,
@@ -86,7 +87,7 @@ export function ProjectDetailHeader({
       // 2. 数据更新完毕后，project prop 会自动更新，此时再打开弹窗
       setIsEditOpen(true);
     } catch (error) {
-      console.error("Failed to load full project data", error);
+      logger.error("Failed to load full project data", error);
       toast.error("加载项目数据失败，请重试");
     } finally {
       setIsLoadingFullData(false);

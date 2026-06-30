@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect, useState } from "react";
 import { useQueryState } from "nuqs";
 import { components } from "@/lib/api-types";
@@ -57,7 +58,7 @@ export function PropertyDetailSheet() {
 
         setData(detail ?? null);
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         setError("无法加载房源数据，请稍后重试。");
       } finally {
         setLoading(false);

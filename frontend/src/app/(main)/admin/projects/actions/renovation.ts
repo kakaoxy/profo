@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
@@ -33,7 +34,7 @@ export async function deleteRenovationPhotoAction(
     revalidatePath("/projects");
     return { success: true, message: "照片已删除" };
   } catch (e) {
-    console.error("删除照片异常:", e);
+    logger.error("删除照片异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -62,7 +63,7 @@ export async function getRenovationPhotosAction(projectId: string) {
     const photos = extracted?.items ?? [];
     return { success: true, data: photos };
   } catch (e) {
-    console.error("获取装修照片异常:", e);
+    logger.error("获取装修照片异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -101,7 +102,7 @@ export async function addRenovationPhotoAction(payload: {
     revalidatePath("/projects");
     return { success: true, message: "上传成功" };
   } catch (e) {
-    console.error("上传照片异常:", e);
+    logger.error("上传照片异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -136,7 +137,7 @@ export async function updateRenovationStageAction(payload: {
     revalidatePath("/projects");
     return { success: true, message: "阶段更新成功" };
   } catch (e) {
-    console.error("更新阶段异常:", e);
+    logger.error("更新阶段异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -162,7 +163,7 @@ export async function getRenovationContractAction(projectId: string) {
     const contract = extractApiData<Record<string, unknown>>(data);
     return { success: true, data: contract };
   } catch (e) {
-    console.error("获取装修合同信息异常:", e);
+    logger.error("获取装修合同信息异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -193,7 +194,7 @@ export async function updateRenovationContractAction(
     revalidatePath("/projects");
     return { success: true, data: contract, message: "装修合同信息已更新" };
   } catch (e) {
-    console.error("更新装修合同信息异常:", e);
+    logger.error("更新装修合同信息异常:", e);
     return { success: false, message: "网络错误" };
   }
 }

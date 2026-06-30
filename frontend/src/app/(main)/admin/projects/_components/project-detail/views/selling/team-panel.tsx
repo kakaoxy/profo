@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
@@ -44,7 +45,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
         if (result.success && result.data) {
           setUsers(result.data);
         } else {
-          console.error("获取用户列表失败:", result.message);
+          logger.error("获取用户列表失败:", result.message);
         }
         setIsLoadingUsers(false);
       }
@@ -92,7 +93,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
         toast.error(res.message || "保存失败");
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       toast.error("保存失败");
     } finally {
       toast.dismiss(toastId);

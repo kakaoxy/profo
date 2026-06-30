@@ -1,9 +1,9 @@
 // src/lib/api-server.ts
+import { logger } from "@/lib/logger";
 import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getApiUrl } from "./config";
 import { getAccessTokenFromCookie } from "./token-refresh-server";
-import { logger } from "./logger";
 import { redirect } from "next/navigation";
 
 /**

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -113,7 +114,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
         }
       } catch (err) {
         setError("加载数据时发生错误");
-        console.error("加载装修合同数据失败:", err);
+        logger.error("加载装修合同数据失败:", err);
       } finally {
         setIsLoading(false);
       }
@@ -154,7 +155,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
       }
     } catch (err) {
       toast.error("保存时发生错误");
-      console.error("保存装修合同数据失败:", err);
+      logger.error("保存装修合同数据失败:", err);
     } finally {
       setIsSaving(false);
     }

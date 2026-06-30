@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { CompetitorItem } from "./types";
 import { getProjectDetailAction } from "../core";
@@ -38,7 +39,7 @@ export async function getCompetitorsAction(projectId: string) {
     const items = extractApiData<CompetitorItem[]>(data);
     return { success: true, data: items || [], communityId };
   } catch (e) {
-    console.error("获取竞品列表异常:", e);
+    logger.error("获取竞品列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -63,7 +64,7 @@ export async function getCompetitorsByCommunityAction(communityId: string) {
     const items = extractApiData<CompetitorItem[]>(data);
     return { success: true, data: items || [], communityId };
   } catch (e) {
-    console.error("获取竞品列表异常:", e);
+    logger.error("获取竞品列表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -90,7 +91,7 @@ export async function searchCommunitiesAction(keyword: string) {
     const { items } = extractPaginatedData<{ id: string; name: string }>(communitiesData);
     return { success: true, data: items || [] };
   } catch (e) {
-    console.error("搜索小区异常:", e);
+    logger.error("搜索小区异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -118,7 +119,7 @@ export async function addCompetitorAction(
 
     return { success: true };
   } catch (e) {
-    console.error("添加竞品异常:", e);
+    logger.error("添加竞品异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -147,7 +148,7 @@ export async function removeCompetitorAction(
 
     return { success: true };
   } catch (e) {
-    console.error("删除竞品异常:", e);
+    logger.error("删除竞品异常:", e);
     return { success: false, message: "网络错误" };
   }
 }

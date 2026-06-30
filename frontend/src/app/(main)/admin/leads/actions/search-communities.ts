@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { transformCommunitySearch } from "@/lib/api-transforms";
 
@@ -13,7 +14,7 @@ export async function searchCommunitiesAction(query: string) {
   );
 
   if (error || !data) {
-    console.error("Search communities error:", error);
+    logger.error("Search communities error:", error);
     return [];
   }
 

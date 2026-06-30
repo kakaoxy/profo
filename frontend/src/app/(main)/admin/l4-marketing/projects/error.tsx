@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCcw, Home } from "lucide-react";
@@ -13,7 +14,7 @@ interface ErrorProps {
 export default function MarketingProjectsError({ error, reset }: ErrorProps) {
   useEffect(() => {
     // 记录错误到控制台
-    console.error("Marketing Projects Page Error:", error);
+    logger.error("Marketing Projects Page Error:", error);
   }, [error]);
 
   return (

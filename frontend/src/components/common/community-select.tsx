@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import React, { useState, useEffect, useRef } from "react";
 import { Check, ChevronsUpDown, Building2, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -107,7 +108,7 @@ export function CommunitySelect({
           : await searchCommunitiesAction(query);
         setResults(data);
       } catch (err) {
-        console.error("搜索小区失败:", err);
+        logger.error("搜索小区失败:", err);
         setResults([]);
       } finally {
         setLoading(false);

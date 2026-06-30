@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -16,7 +17,7 @@ async function getUser() {
     // 其他错误（如网络错误）才返回 null
     if (error) {
       const status = (response as Response | undefined)?.status;
-      console.error("获取用户信息失败:", error, "状态码:", status);
+      logger.error("获取用户信息失败:", error, "状态码:", status);
       // 如果是 401，说明 token 刷新也失败了，返回 null 让页面重定向
       if (status === 401) {
         return null;
@@ -27,7 +28,7 @@ async function getUser() {
     return data;
   } catch (e) {
     // 捕获网络错误 (例如后端没启动)，返回 null 防止页面崩溃
-    console.error("获取用户信息失败 (可能是后端未启动):", e);
+    logger.error("获取用户信息失败 (可能是后端未启动):", e);
     return null;
   }
 }

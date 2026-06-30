@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect, useRef, useCallback, useState } from "react";
 
 // Performance Observer entry types
@@ -90,7 +91,7 @@ export function usePerformanceMonitor(
         const style = isWarning
           ? "color: #ef4444; font-weight: bold;"
           : "color: var(--status-selling);";
-        console.log(
+        logger.devDebug(
           `%c[Performance] ${componentName} - ${name}: ${value.toFixed(2)}${unit}`,
           style
         );
@@ -123,7 +124,7 @@ export function usePerformanceMonitor(
       // 低帧率警告
       const { thresholds, componentName } = configRef.current;
       if (fps < (thresholds.fps || 30)) {
-        console.warn(
+        logger.warn(
           `[Performance] ${componentName} - Low FPS detected: ${fps}`
         );
       }
@@ -200,7 +201,7 @@ export function usePerformanceMonitor(
           const usedMB = Math.round(memory.usedJSHeapSize / 1048576);
           metricsRef.current.memory = usedMB;
           if (configRef.current.logToConsole) {
-            console.log(
+            logger.devDebug(
               `%c[Performance] ${configRef.current.componentName} - Memory: ${usedMB}MB`,
               "color: #3b82f6;"
             );
@@ -241,7 +242,7 @@ export function usePerformanceMonitor(
       const duration = performance.now() - start;
 
       if (duration > 16) {
-        console.warn(
+        logger.warn(
           `[Performance] ${configRef.current.componentName} - Slow render: ${duration.toFixed(2)}ms`
         );
       }
@@ -275,7 +276,7 @@ export function useImagePerformanceMonitor(imageId: string) {
     setStatus("loaded");
 
     if (process.env.NODE_ENV === "development" && duration > 500) {
-      console.warn(
+      logger.warn(
         `[Performance] Image ${imageId} loaded slowly: ${duration.toFixed(2)}ms`
       );
     }
@@ -283,7 +284,7 @@ export function useImagePerformanceMonitor(imageId: string) {
 
   const onError = useCallback(() => {
     setStatus("error");
-    console.error(`[Performance] Image ${imageId} failed to load`);
+    logger.error(`[Performance] Image ${imageId} failed to load`);
   }, [imageId]);
 
   return {
@@ -310,7 +311,7 @@ export function useVirtualListMonitor(listName: string) {
     itemRenderTimesRef.current.set(itemId, duration);
 
     if (process.env.NODE_ENV === "development" && duration > 8) {
-      console.warn(
+      logger.warn(
         `[Performance] ${listNameRef.current} - Slow item render ${itemId}: ${duration.toFixed(2)}ms`
       );
     }
@@ -323,7 +324,7 @@ export function useVirtualListMonitor(listName: string) {
       const avgRenderTime =
         Array.from(itemRenderTimesRef.current.values()).reduce((a, b) => a + b, 0) /
         itemRenderTimesRef.current.size;
-      console.log(
+      logger.devDebug(
         `[Performance] ${listNameRef.current} - Render #${renderCountRef.current}, Avg item time: ${avgRenderTime.toFixed(2)}ms`
       );
     }

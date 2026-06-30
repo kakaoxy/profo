@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { MarketSentimentData } from "./types";
@@ -37,7 +38,7 @@ export async function getMarketSentimentAction(projectId: string) {
     // 直接返回数据，不再提取 .data
     return { success: true, data: sentimentData as MarketSentimentData };
   } catch (e) {
-    console.error("获取市场情绪异常:", e);
+    logger.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -59,7 +60,7 @@ export async function getMarketSentimentByCommunityAction(communityId: string) {
     // 直接返回数据，不再提取 .data
     return { success: true, data: sentimentData as MarketSentimentData };
   } catch (e) {
-    console.error("获取市场情绪异常:", e);
+    logger.error("获取市场情绪异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

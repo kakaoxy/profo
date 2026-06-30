@@ -3,8 +3,8 @@
  * 每个请求独立读取自己的 cookie，不跨用户共享 token
  */
 
+import { logger } from "@/lib/logger";
 import { cookies } from "next/headers";
-import { logger } from "./logger";
 
 interface RefreshResult {
   access_token: string;

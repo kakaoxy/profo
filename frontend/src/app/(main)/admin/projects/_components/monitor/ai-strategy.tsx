@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Sparkles, BrainCircuit, ShieldAlert, Loader2, AlertTriangle } from "lucide-react";
@@ -26,8 +27,8 @@ interface AIStrategyProps {
 
 export function AIStrategy({ projectId, communityId }: AIStrategyProps) {
   // Use projectId to satisfy linter
-  if (projectId) console.log(`AI Strategy for project: ${projectId}`);
-  if (communityId) console.log(`AI Strategy for community: ${communityId}`);
+  if (projectId) logger.devDebug(`AI Strategy for project: ${projectId}`);
+  if (communityId) logger.devDebug(`AI Strategy for community: ${communityId}`);
 
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);

@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
@@ -21,13 +22,13 @@ export async function getUserByIdAction(userId: string) {
     });
 
     if (error) {
-      console.error("Get user by id error", error);
+      logger.error("Get user by id error", error);
       return { success: false, message: "获取用户信息失败" };
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error("Get user by id exception:", error);
+    logger.error("Get user by id exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -47,13 +48,13 @@ export async function getUsersAction(params: {
     });
 
     if (error) {
-      console.error("Get users error", error);
+      logger.error("Get users error", error);
       return { success: false, message: "获取用户列表失败" };
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error("Get users exception:", error);
+    logger.error("Get users exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -69,13 +70,13 @@ export async function getUsersSimpleAction(params?: {
     });
 
     if (error) {
-      console.error("Get users simple error", error);
+      logger.error("Get users simple error", error);
       return { success: false, message: "获取用户列表失败" };
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error("Get users simple exception:", error);
+    logger.error("Get users simple exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -93,7 +94,7 @@ export async function createUserAction(data: UserCreate) {
     revalidatePath("/users");
     return { success: true, message: "用户创建成功" };
   } catch (error) {
-    console.error("Create user exception:", error);
+    logger.error("Create user exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -114,7 +115,7 @@ export async function updateUserAction(userId: string, data: UserUpdate) {
     revalidatePath("/users");
     return { success: true, message: "用户更新成功" };
   } catch (error) {
-    console.error("Update user exception:", error);
+    logger.error("Update user exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -134,7 +135,7 @@ export async function deleteUserAction(userId: string) {
     revalidatePath("/users");
     return { success: true, message: "用户删除成功" };
   } catch (error) {
-    console.error("Delete user exception:", error);
+    logger.error("Delete user exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -154,7 +155,7 @@ export async function resetUserPasswordAction(userId: string, data: PasswordRese
 
     return { success: true, message: "密码重置成功" };
   } catch (error) {
-    console.error("Reset password exception:", error);
+    logger.error("Reset password exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

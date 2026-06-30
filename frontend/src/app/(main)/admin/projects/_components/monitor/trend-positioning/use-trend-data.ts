@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import {
   getTrendPositioningAction,
@@ -56,7 +57,7 @@ export function useTrendData({
           setError(res.message || "获取走势数据失败");
         }
       } catch (e) {
-        console.error("加载趋势数据失败:", e);
+        logger.error("加载趋势数据失败:", e);
         setError("加载失败");
       } finally {
         setLoading(false);

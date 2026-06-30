@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { safeParseDate } from "@/lib/validators";
 import { revalidatePath } from "next/cache";
@@ -35,7 +36,7 @@ export async function addFollowUpAction(
     revalidatePath("/leads");
     return { success: true, data: undefined };
   } catch (error) {
-    console.error("Add follow-up error:", error);
+    logger.error("Add follow-up error:", error);
     return { success: false, error: extractErrorMessage(error) };
   }
 }
@@ -52,7 +53,7 @@ export async function getLeadFollowUpsAction(
   );
 
   if (error || !data) {
-    console.error("Get follow-ups error:", error);
+    logger.error("Get follow-ups error:", error);
     return [];
   }
 
@@ -75,7 +76,7 @@ export async function getLeadPriceHistoryAction(
   });
 
   if (error || !data) {
-    console.error("Get price history error:", error);
+    logger.error("Get price history error:", error);
     return [];
   }
 

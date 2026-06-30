@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -61,11 +62,11 @@ export const useCreateProject = ({
         if (result.success && result.data) {
           form.setValue("contract_no", result.data);
         } else {
-          console.error("[CreateProject] 获取合同编号失败:", result.message);
+          logger.error("[CreateProject] 获取合同编号失败:", result.message);
         }
       })
       .catch((err: unknown) => {
-        console.error("[CreateProject] 获取合同编号异常:", err);
+        logger.error("[CreateProject] 获取合同编号异常:", err);
       });
   }, [open, isEditMode, form]);
 
@@ -136,7 +137,7 @@ export const useCreateProject = ({
       }
     } catch (error) {
       toast.error("网络请求错误");
-      console.error(error);
+      logger.error(error);
     } finally {
       setLoading(false);
     }
@@ -153,9 +154,9 @@ export const useCreateProject = ({
     onSubmit: form.handleSubmit(onSubmit, (errors) => {
       const snapshot = JSON.parse(JSON.stringify(errors));
       if (Object.keys(snapshot).length === 0) {
-        console.error("[CreateProject] Form validation failed but no specific field errors found");
+        logger.error("[CreateProject] Form validation failed but no specific field errors found");
       } else {
-        console.error("[CreateProject] Form validation errors:", snapshot);
+        logger.error("[CreateProject] Form validation errors:", snapshot);
       }
     }),
     isEditMode,

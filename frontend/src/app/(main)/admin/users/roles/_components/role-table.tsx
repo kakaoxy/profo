@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState } from "react";
 import {
   Table,
@@ -61,7 +62,7 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
         toast.error(result.message);
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       toast.error("删除失败");
     } finally {
       setIsDeleting(false);

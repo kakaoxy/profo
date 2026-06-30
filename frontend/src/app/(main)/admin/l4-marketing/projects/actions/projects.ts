@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidateTag } from "next/cache";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
@@ -62,7 +63,7 @@ export async function getL4MarketingProjectsAction(
     );
 
     if (error) {
-      console.error("Failed to fetch L4 marketing projects:", error);
+      logger.error("Failed to fetch L4 marketing projects:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -72,7 +73,7 @@ export async function getL4MarketingProjectsAction(
 
     return { success: true, data: data! };
   } catch (e) {
-    console.error("获取项目列表异常:", e);
+    logger.error("获取项目列表异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -93,7 +94,7 @@ export async function createL4MarketingProjectAction(
     );
 
     if (error) {
-      console.error("Failed to create L4 marketing project:", error);
+      logger.error("Failed to create L4 marketing project:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -104,7 +105,7 @@ export async function createL4MarketingProjectAction(
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data: data! };
   } catch (e) {
-    console.error("创建项目异常:", e);
+    logger.error("创建项目异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -123,7 +124,7 @@ export async function getL4MarketingProjectAction(id: number): Promise<ActionRes
     );
 
     if (error) {
-      console.error("Failed to fetch L4 marketing project:", error);
+      logger.error("Failed to fetch L4 marketing project:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -133,7 +134,7 @@ export async function getL4MarketingProjectAction(id: number): Promise<ActionRes
 
     return { success: true, data: data! };
   } catch (e) {
-    console.error("获取项目详情异常:", e);
+    logger.error("获取项目详情异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -156,7 +157,7 @@ export async function updateL4MarketingProjectAction(
     );
 
     if (error) {
-      console.error("Failed to update L4 marketing project:", error);
+      logger.error("Failed to update L4 marketing project:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -168,7 +169,7 @@ export async function updateL4MarketingProjectAction(
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data: data! };
   } catch (e) {
-    console.error("更新项目异常:", e);
+    logger.error("更新项目异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -187,7 +188,7 @@ export async function deleteL4MarketingProjectAction(id: number): Promise<Action
     );
 
     if (error) {
-      console.error("Failed to delete L4 marketing project:", error);
+      logger.error("Failed to delete L4 marketing project:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -198,7 +199,7 @@ export async function deleteL4MarketingProjectAction(id: number): Promise<Action
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data: undefined };
   } catch (e) {
-    console.error("删除项目异常:", e);
+    logger.error("删除项目异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }

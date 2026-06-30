@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import * as React from "react";
 import { Check, ChevronsUpDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,7 @@ import type { ConsultantSelectProps, UserSimpleResponse } from "./types";
  * ```tsx
  * <ConsultantSelect
  *   value="user-uuid"
- *   onChange={(id) => console.log(id)}
+ *   onChange={(id) => logger.devDebug(id)}
  * />
  * ```
  */
@@ -50,7 +51,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
           setConsultants([]);
         }
       } catch (err) {
-        console.error("Failed to fetch consultants:", err);
+        logger.error("Failed to fetch consultants:", err);
         setConsultants([]);
       } finally {
         setLoading(false);

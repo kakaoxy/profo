@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect } from "react";
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { cLocale } from "@/lib/i18n/c-locale";
@@ -12,7 +13,7 @@ export default function CError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[C 端路由错误]", error);
+    logger.error("[C 端路由错误]", error);
   }, [error]);
 
   return (

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useMemo } from "react";
 import { Loader2, Merge } from "lucide-react";
 import { toast } from "sonner";
@@ -75,7 +76,7 @@ export function MergeDialog({ selectedCommunities, onSuccess }: MergeDialogProps
         toast.error("合并失败", { description: result.message });
       }
     } catch (error) {
-        console.error(error)
+        logger.error(error)
       toast.error("请求失败");
     } finally {
       setIsMerging(false);

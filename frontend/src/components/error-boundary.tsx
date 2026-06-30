@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
@@ -35,8 +36,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // 记录错误信息
-    console.error("ErrorBoundary 捕获到错误:", error);
-    console.error("错误堆栈:", errorInfo.componentStack);
+    logger.error("ErrorBoundary 捕获到错误:", error);
+    logger.error("错误堆栈:", errorInfo.componentStack);
 
     this.setState({
       error,

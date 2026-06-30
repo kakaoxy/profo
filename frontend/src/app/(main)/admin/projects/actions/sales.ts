@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
@@ -52,7 +53,7 @@ export async function updateSalesRolesAction(
     revalidatePath("/projects");
     return { success: true, message: "保存成功" };
   } catch (e) {
-    console.error("更新销售角色异常:", e);
+    logger.error("更新销售角色异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -81,7 +82,7 @@ export async function getUsersSimpleAction(): Promise<{
 
     return { success: true, data: [] };
   } catch (e) {
-    console.error("获取用户列表异常:", e);
+    logger.error("获取用户列表异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -156,7 +157,7 @@ export async function createSalesRecordAction(payload: {
     revalidatePath("/projects");
     return { success: true, message: "记录已添加" };
   } catch (e) {
-    console.error("添加销售记录异常:", e);
+    logger.error("添加销售记录异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -190,7 +191,7 @@ export async function deleteSalesRecordAction(
     revalidatePath("/projects");
     return { success: true, message: "记录已删除" };
   } catch (e) {
-    console.error("删除销售记录异常:", e);
+    logger.error("删除销售记录异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -218,7 +219,7 @@ export async function completeProjectAction(
     );
 
     if (error) {
-      console.error("成交操作失败:", error);
+      logger.error("成交操作失败:", error);
       return { success: false, message: "操作失败，请重试" };
     }
 
@@ -226,7 +227,7 @@ export async function completeProjectAction(
     const resultData = extractApiData<unknown>(data);
     return { success: true, message: "恭喜！项目已成交", data: resultData };
   } catch (e) {
-    console.error("成交操作异常:", e);
+    logger.error("成交操作异常:", e);
     return { success: false, message: "网络错误" };
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
   UploadCloud,
@@ -99,7 +100,7 @@ export function UploadZone() {
         toast.info("任务已取消");
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       toast.error("上传失败", {
         description: error instanceof Error ? error.message : "未知错误",
       });
@@ -171,7 +172,7 @@ export function UploadZone() {
         await cancelImportTask(taskStatus.task_id);
         toast.info("正在取消任务...");
       } catch (error) {
-        console.error("取消任务失败:", error);
+        logger.error("取消任务失败:", error);
       }
     }
   }, [taskStatus?.task_id]);

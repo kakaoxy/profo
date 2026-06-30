@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, ReactNode } from "react";
 import { Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,7 @@ export function StatusTransitionDialog({
       // 只有成功才关闭弹窗
       setOpen(false);
     } catch (error) {
-      console.error("Transition failed:", error);
+      logger.error("Transition failed:", error);
       // 失败时不关闭弹窗，允许用户重试或修改表单
     } finally {
       setIsLoading(false);

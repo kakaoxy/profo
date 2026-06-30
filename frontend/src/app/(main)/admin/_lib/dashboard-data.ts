@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { cache } from "react";
 import { fetchClient } from "@/lib/api-server";
 import type { components } from "@/lib/api-types";
@@ -160,7 +161,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
       : null;
   if (projectStatsRes.status === "rejected") {
     errors.projectStats = "获取项目统计失败";
-    console.error("[Dashboard] 项目统计获取失败:", projectStatsRes.reason);
+    logger.error("[Dashboard] 项目统计获取失败:", projectStatsRes.reason);
   }
 
   const pendingLeadsTotal =
@@ -169,7 +170,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
       : 0;
   if (pendingLeadsRes.status === "rejected") {
     errors.pendingLeads = "获取待处理线索失败";
-    console.error("[Dashboard] 待处理线索获取失败:", pendingLeadsRes.reason);
+    logger.error("[Dashboard] 待处理线索获取失败:", pendingLeadsRes.reason);
   }
 
   const funnelData =
@@ -178,7 +179,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
       : defaultFunnelData;
   if (funnelRes.status === "rejected") {
     errors.funnel = "获取线索漏斗失败";
-    console.error("[Dashboard] 线索漏斗获取失败:", funnelRes.reason);
+    logger.error("[Dashboard] 线索漏斗获取失败:", funnelRes.reason);
   }
 
   const projects =
@@ -187,7 +188,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
       : [];
   if (projectsRes.status === "rejected") {
     errors.projects = "获取项目列表失败";
-    console.error("[Dashboard] 项目列表获取失败:", projectsRes.reason);
+    logger.error("[Dashboard] 项目列表获取失败:", projectsRes.reason);
   }
 
   const leadItems =
@@ -196,7 +197,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
       : [];
   if (leadsRes.status === "rejected") {
     errors.leads = "获取线索列表失败";
-    console.error("[Dashboard] 线索列表获取失败:", leadsRes.reason);
+    logger.error("[Dashboard] 线索列表获取失败:", leadsRes.reason);
   }
 
   const rawLeads = leadItems.map(transformLeadToDashboard);

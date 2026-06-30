@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useMemo, useCallback, memo } from "react";
 import {
   Dialog,
@@ -44,7 +45,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
 
   const handleOpenChange = useCallback(async (newOpen: boolean) => {
     if (!newOpen) {
-      console.log("[PhotoLibraryPicker] 性能报告:", metrics);
+      logger.devDebug("[PhotoLibraryPicker] 性能报告:", metrics);
     }
     onOpenChange(newOpen);
   }, [onOpenChange, metrics]);
@@ -100,7 +101,7 @@ export const PhotoLibraryPicker = memo(function PhotoLibraryPicker({
       onOpenChange(false);
       logMetric("submit", performance.now() - submitStartTime);
     } catch (error) {
-      console.error("Exception adding photos:", error);
+      logger.error("Exception adding photos:", error);
       toast.error("添加照片失败");
     } finally {
       setSubmitting(false);

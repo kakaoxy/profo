@@ -9,6 +9,7 @@
  * 2. 只有 `null` 和 `undefined` 才应被视为"无值"状态
  * 3. `!= null` 同时检查 null 和 undefined（== null 也同理）
  */
+import { logger } from "@/lib/logger";
 import {
   getAvailableL3ProjectsAction,
   importFromL3ProjectAction,
@@ -64,7 +65,7 @@ function transformProjectData(rawData: Record<string, unknown>): L3ProjectBrief 
   // 使用Zod Schema进行运行时验证
   const parseResult = L3ProjectBriefSchema.safeParse(transformed);
   if (!parseResult.success) {
-    console.error("项目数据转换失败:", parseResult.error);
+    logger.error("项目数据转换失败:", parseResult.error);
     throw new Error(`项目数据格式错误: ${parseResult.error.message}`);
   }
 
@@ -99,7 +100,7 @@ export async function fetchAvailableProjects(
   // 使用Zod进行运行时类型验证
   const parseResult = L3ProjectListResponseSchema.safeParse(transformedData);
   if (!parseResult.success) {
-    console.error("项目列表数据格式错误:", parseResult.error);
+    logger.error("项目列表数据格式错误:", parseResult.error);
     throw new Error("获取项目列表失败：数据格式错误");
   }
 
@@ -155,7 +156,7 @@ export async function fetchImportData(
   // 使用Zod进行运行时类型验证
   const parseResult = ImportPreviewDataSchema.safeParse(transformedData);
   if (!parseResult.success) {
-    console.error("导入数据格式错误:", parseResult.error);
+    logger.error("导入数据格式错误:", parseResult.error);
     throw new Error("导入数据失败：数据格式错误");
   }
 

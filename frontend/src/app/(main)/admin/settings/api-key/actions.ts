@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
@@ -13,13 +14,13 @@ export async function getApiKeyInfoAction() {
     const { data, error } = await client.GET("/api/v1/auth/api-key");
 
     if (error) {
-      console.error("Get API key info error", error);
+      logger.error("Get API key info error", error);
       return { success: false, message: "获取 API Key 信息失败" };
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error("Get API key info exception:", error);
+    logger.error("Get API key info exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -36,7 +37,7 @@ export async function generateApiKeyAction() {
 
     return { success: true, data };
   } catch (error) {
-    console.error("Generate API key exception:", error);
+    logger.error("Generate API key exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -54,7 +55,7 @@ export async function deleteApiKeyAction() {
     revalidatePath("/settings/api-key");
     return { success: true, message: "API Key 已删除" };
   } catch (error) {
-    console.error("Delete API key exception:", error);
+    logger.error("Delete API key exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
