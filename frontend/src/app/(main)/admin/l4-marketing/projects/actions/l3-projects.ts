@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
 import type { ProjectQueryParams } from "@/app/(main)/admin/l4-marketing/projects/_components/project-selector/types";
@@ -28,7 +29,7 @@ export async function getAvailableL3ProjectsAction(
     );
 
     if (error) {
-      console.error("Failed to fetch available L3 projects:", error);
+      logger.error("Failed to fetch available L3 projects:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -38,7 +39,7 @@ export async function getAvailableL3ProjectsAction(
 
     return { success: true, data: data as { items: unknown[]; total: number } };
   } catch (e) {
-    console.error("获取可关联项目列表异常:", e);
+    logger.error("获取可关联项目列表异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -57,7 +58,7 @@ export async function importFromL3ProjectAction(projectId: string): Promise<Acti
     );
 
     if (error) {
-      console.error("Failed to import from L3 project:", error);
+      logger.error("Failed to import from L3 project:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -67,7 +68,7 @@ export async function importFromL3ProjectAction(projectId: string): Promise<Acti
 
     return { success: true, data };
   } catch (e) {
-    console.error("从L3项目导入数据异常:", e);
+    logger.error("从L3项目导入数据异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -86,7 +87,7 @@ export async function getL3ProjectDetailAction(projectId: string): Promise<Actio
     );
 
     if (error) {
-      console.error("Failed to fetch L3 project detail:", error);
+      logger.error("Failed to fetch L3 project detail:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -96,7 +97,7 @@ export async function getL3ProjectDetailAction(projectId: string): Promise<Actio
 
     return { success: true, data };
   } catch (e) {
-    console.error("获取L3项目详情异常:", e);
+    logger.error("获取L3项目详情异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }

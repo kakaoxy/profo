@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { getValidAccessToken } from "@/lib/token-refresh-server";
 
@@ -53,7 +54,7 @@ export async function uploadFileAction(formData: FormData) {
       }
 
       const errorText = await res.text();
-      console.error("❌ [Upload Action] Failed:", res.status, errorText);
+      logger.error("❌ [Upload Action] Failed:", res.status, errorText);
 
       try {
         const errorJson = JSON.parse(errorText);
@@ -71,13 +72,13 @@ export async function uploadFileAction(formData: FormData) {
     const json = await res.json();
 
     if (!isValidFileUploadResponse(json)) {
-      console.error("❌ [Upload Action] Invalid response format:", json);
+      logger.error("❌ [Upload Action] Invalid response format:", json);
       return { success: false, message: "服务器返回的数据格式无效" };
     }
 
     return { success: true, data: json };
   } catch (e) {
-    console.error("文件上传网络异常:", e);
+    logger.error("文件上传网络异常:", e);
     return { success: false, message: "网络连接错误，请检查后端服务是否启动" };
   }
 }

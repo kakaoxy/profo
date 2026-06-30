@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { components } from "@/lib/api-types";
 import { getClientApiUrl } from "@/lib/config";
 
@@ -44,7 +45,7 @@ export const uploadCSV = (
           const result = JSON.parse(xhr.responseText);
           resolve(result);
         } catch (e) {
-          console.error(e);
+          logger.error(e);
           reject(new Error("解析响应失败"));
         }
       } else {

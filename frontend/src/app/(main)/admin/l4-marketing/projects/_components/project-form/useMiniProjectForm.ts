@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -37,10 +38,10 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhot
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       if (mode === "create") {
-        console.log("[Create] Form values:", values);
-        console.log("[Create] Media files:", mediaFiles);
+        logger.devDebug("[Create] Form values:", values);
+        logger.devDebug("[Create] Media files:", mediaFiles);
         const createBody = formValuesToCreateRequest(values, mediaFiles) as L4MarketingProjectCreate;
-        console.log("[Create] Request body:", createBody);
+        logger.devDebug("[Create] Request body:", createBody);
 
         const result = await actions.createL4MarketingProject(createBody);
         if (result.success && result.data?.id) {

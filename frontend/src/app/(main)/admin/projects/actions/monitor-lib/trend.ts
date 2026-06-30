@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { TrendData } from "./types";
@@ -47,7 +48,7 @@ export async function getTrendPositioningAction(projectId: string) {
     // 直接返回数据，trendData 已经是 TrendData[]
     return { success: true, data: trendData as TrendData[], myPrice };
   } catch (e) {
-    console.error("获取价格走势异常:", e);
+    logger.error("获取价格走势异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -69,7 +70,7 @@ export async function getTrendPositioningByCommunityAction(communityId: string, 
     // 直接返回数据，trendData 已经是 TrendData[]
     return { success: true, data: trendData as TrendData[], myPrice };
   } catch (e) {
-    console.error("获取价格走势异常:", e);
+    logger.error("获取价格走势异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
@@ -23,13 +24,13 @@ export async function getRolesAction(params: {
     });
 
     if (error) {
-      console.error("Get roles error", error);
+      logger.error("Get roles error", error);
       return { success: false, message: "获取角色列表失败" };
     }
 
     return { success: true, data };
   } catch (error) {
-    console.error("Get roles exception:", error);
+    logger.error("Get roles exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -47,7 +48,7 @@ export async function createRoleAction(data: RoleCreate) {
     revalidatePath("/users/roles");
     return { success: true, message: "角色创建成功" };
   } catch (error) {
-    console.error("Create role exception:", error);
+    logger.error("Create role exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -68,7 +69,7 @@ export async function updateRoleAction(roleId: string, data: RoleUpdate) {
     revalidatePath("/users/roles");
     return { success: true, message: "角色更新成功" };
   } catch (error) {
-    console.error("Update role exception:", error);
+    logger.error("Update role exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -88,7 +89,7 @@ export async function deleteRoleAction(roleId: string) {
     revalidatePath("/users/roles");
     return { success: true, message: "角色删除成功" };
   } catch (error) {
-    console.error("Delete role exception:", error);
+    logger.error("Delete role exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

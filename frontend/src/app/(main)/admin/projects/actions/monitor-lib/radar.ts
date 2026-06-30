@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { getProjectDetailAction } from "../core";
 import { NeighborhoodRadarData } from "./types";
@@ -40,7 +41,7 @@ export async function getNeighborhoodRadarAction(projectId: string) {
       data: radarData as NeighborhoodRadarData,
     };
   } catch (e) {
-    console.error("获取周边竞品异常:", e);
+    logger.error("获取周边竞品异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -67,7 +68,7 @@ export async function getNeighborhoodRadarByCommunityAction(
       data: radarData as NeighborhoodRadarData,
     };
   } catch (e) {
-    console.error("获取周边竞品异常:", e);
+    logger.error("获取周边竞品异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

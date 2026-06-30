@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { components } from "@/lib/api-types";
 import { extractPaginatedData } from "@/lib/api-helpers";
@@ -169,7 +170,7 @@ export async function getCompetitorsBrawlInitAction(
     return { success: true, data: { communityIds, counts, selfItem } };
   } catch (e) {
     const message = e instanceof Error ? e.message : "网络错误";
-    console.error("获取竞品初始化数据失败:", e);
+    logger.error("获取竞品初始化数据失败:", e);
     return { success: false, message };
   }
 }
@@ -228,7 +229,7 @@ export async function getCompetitorsBrawlPageAction(
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "网络错误";
-    console.error("获取竞品分页数据失败:", e);
+    logger.error("获取竞品分页数据失败:", e);
     return { success: false, message };
   }
 }

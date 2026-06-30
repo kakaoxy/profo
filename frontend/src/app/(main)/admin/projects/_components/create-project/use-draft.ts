@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect, useCallback, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
@@ -82,7 +83,7 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
           form.reset(parsed);
           toast.info("已恢复上次未保存的草稿");
         } catch (e) {
-          console.error("Draft parse error", e);
+          logger.error("Draft parse error", e);
         }
       }
     }
@@ -97,7 +98,7 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(value));
       } catch (e) {
-        console.error("Failed to save draft:", e);
+        logger.error("Failed to save draft:", e);
       }
     }, 500);
 
@@ -114,7 +115,7 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(currentValues));
       } catch (e) {
-        console.error("Failed to save draft on cleanup:", e);
+        logger.error("Failed to save draft on cleanup:", e);
       }
     };
   }, [open, form, isEditMode]);

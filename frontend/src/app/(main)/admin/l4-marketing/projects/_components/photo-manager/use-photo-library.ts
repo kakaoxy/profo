@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import type { RenovationPhoto } from "./types";
@@ -43,7 +44,7 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
 
   const checkPerformance = useCallback((openTime: number) => {
     if (openTime > PERFORMANCE_CONFIG.warningThreshold) {
-      console.warn(
+      logger.warn(
         `[PhotoLibraryPicker] 弹窗打开时间过长: ${openTime.toFixed(2)}ms, 目标: ${PERFORMANCE_CONFIG.targetOpenTime}ms`
       );
     }
@@ -89,7 +90,7 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
           setPhotos([]);
         }
       } catch (error) {
-        console.error("获取照片异常:", error);
+        logger.error("获取照片异常:", error);
         toast.error("获取照片失败");
         setPhotos([]);
       } finally {

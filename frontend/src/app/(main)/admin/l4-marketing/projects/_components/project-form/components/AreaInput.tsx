@@ -14,7 +14,7 @@ import type { AreaInputProps } from "./types";
  * ```tsx
  * <AreaInput
  *   value={120.5}
- *   onChange={(val) => console.log(val)}
+ *   onChange={(val) => logger.devDebug(val)}
  * />
  * ```
  */

@@ -1,5 +1,6 @@
 // 统一 Server Action 返回结果类型
 
+import { logger } from "@/lib/logger";
 export type ActionResult<T> =
   | { success: true; data: T; message?: string }
   | { success: false; error: string; code?: string };
@@ -30,7 +31,7 @@ export async function handleActionError<T>(
     const data = await action();
     return createSuccessResult(data);
   } catch (error) {
-    console.error(`${errorMessage}:`, error);
+    logger.error(`${errorMessage}:`, error);
     
     // 提取错误信息
     let errorMsg = errorMessage;

@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -65,7 +66,7 @@ export function CashFlowSheet() {
 
       setData({ stats, records });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       toast.error("网络错误");
     } finally {
       setIsLoading(false);

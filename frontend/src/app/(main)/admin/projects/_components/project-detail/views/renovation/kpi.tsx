@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useCurrentDate } from "@/hooks/use-current-date";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,7 +67,7 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
           setPhotoCount(res.data.length);
         }
       } catch (error) {
-        console.error("获取照片统计失败", error);
+        logger.error("获取照片统计失败", error);
       }
     };
 

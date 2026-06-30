@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -72,7 +73,7 @@ export function useRoleForm({ role, open, onOpenChange }: UseRoleFormProps) {
         toast.error(result.message);
       }
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       toast.error("操作失败");
     } finally {
       setIsPending(false);

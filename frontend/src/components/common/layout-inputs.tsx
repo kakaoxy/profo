@@ -32,7 +32,7 @@ export interface LayoutInputsProps {
  * // 基础用法
  * <LayoutInputs
  *   value="3室2厅1卫"
- *   onChange={(layout) => console.log(layout)}
+ *   onChange={(layout) => logger.devDebug(layout)}
  * />
  *
  * // 营销版样式
@@ -40,7 +40,7 @@ export interface LayoutInputsProps {
  *   value="3室2厅1卫"
  *   variant="marketing"
  *   showRequired
- *   onChange={(layout) => console.log(layout)}
+ *   onChange={(layout) => logger.devDebug(layout)}
  * />
  * ```
  */

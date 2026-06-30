@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import {
   getMarketSentimentAction,
@@ -48,7 +49,7 @@ export function useSentimentData({
         setFloorStats(result.data?.floor_stats || []);
         setInventoryMonths(result.data?.inventory_months || 0);
       } catch (e) {
-        console.error("获取市场情绪数据失败:", e);
+        logger.error("获取市场情绪数据失败:", e);
         setError("网络错误，请稍后重试");
       } finally {
         setLoading(false);

@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { Lead, FilterState } from "../types";
@@ -57,7 +58,7 @@ export async function createLeadAction(
     revalidatePath("/leads");
     return { success: true, data: mapBackendToFrontend(responseData) };
   } catch (error) {
-    console.error("Create lead error:", error);
+    logger.error("Create lead error:", error);
     return { success: false, error: extractErrorMessage(error) };
   }
 }
@@ -79,7 +80,7 @@ export async function getLeadsAction(filters: FilterState) {
   });
 
   if (error || !data) {
-    console.error("Get leads error:", error);
+    logger.error("Get leads error:", error);
     return [];
   }
 
@@ -110,7 +111,7 @@ export async function updateLeadAction(
     revalidatePath("/leads");
     return { success: true, data: mapBackendToFrontend(responseData) };
   } catch (error) {
-    console.error("Update lead error:", error);
+    logger.error("Update lead error:", error);
     return { success: false, error: extractErrorMessage(error) };
   }
 }
@@ -132,7 +133,7 @@ export async function deleteLeadAction(
     revalidatePath("/leads");
     return { success: true, data: undefined };
   } catch (error) {
-    console.error("Delete lead error:", error);
+    logger.error("Delete lead error:", error);
     return { success: false, error: extractErrorMessage(error) };
   }
 }

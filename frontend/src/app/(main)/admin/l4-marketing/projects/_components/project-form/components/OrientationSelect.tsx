@@ -17,7 +17,7 @@ const ORIENTATIONS = ["南", "北", "东", "西", "南北", "东西", "东南", 
  * ```tsx
  * <OrientationSelect
  *   value="南北"
- *   onChange={(orientation) => console.log(orientation)}
+ *   onChange={(orientation) => logger.devDebug(orientation)}
  * />
  * ```
  */

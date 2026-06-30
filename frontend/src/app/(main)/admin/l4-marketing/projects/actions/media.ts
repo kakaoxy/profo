@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidateTag } from "next/cache";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
@@ -29,7 +30,7 @@ export async function getL4MarketingMediaAction(
     );
 
     if (error) {
-      console.error("Failed to fetch L4 marketing media:", error);
+      logger.error("Failed to fetch L4 marketing media:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -39,7 +40,7 @@ export async function getL4MarketingMediaAction(
 
     return { success: true, data };
   } catch (e) {
-    console.error("获取媒体列表异常:", e);
+    logger.error("获取媒体列表异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -62,7 +63,7 @@ export async function createL4MarketingMediaAction(
     );
 
     if (error) {
-      console.error("Failed to create L4 marketing media:", error);
+      logger.error("Failed to create L4 marketing media:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -74,7 +75,7 @@ export async function createL4MarketingMediaAction(
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data };
   } catch (e) {
-    console.error("创建媒体异常:", e);
+    logger.error("创建媒体异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -101,7 +102,7 @@ export async function updateL4MarketingMediaAction(
     );
 
     if (error) {
-      console.error("Failed to update L4 marketing media:", error);
+      logger.error("Failed to update L4 marketing media:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -113,7 +114,7 @@ export async function updateL4MarketingMediaAction(
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data };
   } catch (e) {
-    console.error("更新媒体异常:", e);
+    logger.error("更新媒体异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -134,7 +135,7 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
     );
 
     if (error) {
-      console.error("Failed to delete L4 marketing media:", error);
+      logger.error("Failed to delete L4 marketing media:", error);
       const { message } = parseApiError(error);
       return {
         success: false,
@@ -146,7 +147,7 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true };
   } catch (e) {
-    console.error("删除媒体异常:", e);
+    logger.error("删除媒体异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }
@@ -215,7 +216,7 @@ export async function batchUpdateMediaSortOrderAction(
     );
 
     if (error) {
-      console.error("Failed to update media sort order:", error);
+      logger.error("Failed to update media sort order:", error);
       const { message } = parseApiError(error);
       return { success: false, error: message };
     }
@@ -224,7 +225,7 @@ export async function batchUpdateMediaSortOrderAction(
     revalidateTag("l4-marketing-projects", { expire: 0 });
     return { success: true, data };
   } catch (e) {
-    console.error("更新媒体排序异常:", e);
+    logger.error("更新媒体排序异常:", e);
     return { success: false, error: parseNetworkError(e) };
   }
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { apiPaths } from "@/lib/config";
 
@@ -33,7 +34,7 @@ export async function createCommunityAction(
     );
 
     if (error || !result) {
-      console.error("Create community error:", error);
+      logger.error("Create community error:", error);
       return null;
     }
 
@@ -44,7 +45,7 @@ export async function createCommunityAction(
       business_circle: result.business_circle ?? null,
     };
   } catch (error) {
-    console.error("Create community error:", error);
+    logger.error("Create community error:", error);
     return null;
   }
 }

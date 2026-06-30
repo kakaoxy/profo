@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
@@ -36,7 +37,7 @@ export async function getProjectCashFlowAction(projectId: string) {
   );
 
   if (error) {
-    console.error("获取现金流失败:", error);
+    logger.error("获取现金流失败:", error);
     return null;
   }
 

@@ -3,6 +3,7 @@
 // Every internal module then calls `getGlobalAuthConfig()` instead of
 // receiving config as a constructor argument, keeping function signatures clean.
 
+import { logger } from "@/lib/logger";
 import type { ResolvedAuthConfig } from "./types";
 
 let _config: ResolvedAuthConfig | null = null;
@@ -45,8 +46,8 @@ export function getGlobalAuthConfig(): ResolvedAuthConfig {
 export function debugLog(message: string, data?: unknown): void {
   if (!_config?.debug) return;
   if (data !== undefined) {
-    console.log(`[next-jwt-auth] ${message}`, data);
+    logger.devDebug(`[next-jwt-auth] ${message}`, data);
   } else {
-    console.log(`[next-jwt-auth] ${message}`);
+    logger.devDebug(`[next-jwt-auth] ${message}`);
   }
 }

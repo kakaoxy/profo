@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS } from "../schema";
@@ -84,7 +85,7 @@ export function BasicInfoTab({ form }: TabProps) {
         if (result.success && result.data) {
           setUsers(result.data);
         } else if (!result.success) {
-          console.error("加载用户列表失败:", result.message);
+          logger.error("加载用户列表失败:", result.message);
           toast.error(result.message || "加载用户列表失败");
         }
         setIsLoadingUsers(false);

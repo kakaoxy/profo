@@ -14,7 +14,7 @@ import type { TotalPriceInputProps, UnitPriceDisplayProps } from "./types";
  * ```tsx
  * <TotalPriceInput
  *   value="213"
- *   onChange={(val) => console.log(val)}
+ *   onChange={(val) => logger.devDebug(val)}
  * />
  * ```
  */

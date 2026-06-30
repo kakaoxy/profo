@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
 import {
   clearTokenCookies,
@@ -259,7 +260,7 @@ export async function logoutAction(
                 : String(adapterError),
           },
         );
-        console.error(
+        logger.error(
           "[next-jwt-auth] logoutAction: adapter.logout() threw. Cookies will still be cleared.",
           adapterError,
         );

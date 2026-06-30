@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useMemo, useCallback } from "react";
 import {
   DragEndEvent,
@@ -239,12 +240,12 @@ export function usePhotoDragAndDrop({
       setActiveId(null);
 
       if (process.env.NODE_ENV === "development") {
-        console.log("[DragEnd] active.id:", active.id, "over:", over?.id);
+        logger.devDebug("[DragEnd] active.id:", active.id, "over:", over?.id);
       }
 
       if (!over) {
         if (process.env.NODE_ENV === "development") {
-          console.log("[DragEnd] No over target, returning");
+          logger.devDebug("[DragEnd] No over target, returning");
         }
         return;
       }
@@ -252,7 +253,7 @@ export function usePhotoDragAndDrop({
       const activePhoto = photos.find((p) => p.id === active.id);
       if (!activePhoto) {
         if (process.env.NODE_ENV === "development") {
-          console.log("[DragEnd] Active photo not found");
+          logger.devDebug("[DragEnd] Active photo not found");
         }
         return;
       }
@@ -262,13 +263,13 @@ export function usePhotoDragAndDrop({
       const overContainer = getContainerIdFromOverId(overId.toString(), photos);
 
       if (process.env.NODE_ENV === "development") {
-        console.log("[DragEnd] activeContainer:", activeContainer, "overContainer:", overContainer, "overId:", overId);
+        logger.devDebug("[DragEnd] activeContainer:", activeContainer, "overContainer:", overContainer, "overId:", overId);
       }
 
       // 同一容器内排序
       if (activeContainer === overContainer && active.id !== overId) {
         if (process.env.NODE_ENV === "development") {
-          console.log("[DragEnd] Same container sort");
+          logger.devDebug("[DragEnd] Same container sort");
         }
         await handleSameContainerSort(activePhoto, overId as number);
         return;
@@ -277,7 +278,7 @@ export function usePhotoDragAndDrop({
       // 跨容器拖拽
       if (activeContainer !== overContainer) {
         if (process.env.NODE_ENV === "development") {
-          console.log("[DragEnd] Cross container move");
+          logger.devDebug("[DragEnd] Cross container move");
         }
         await handleCrossContainerMove(activePhoto, overContainer, overId as number | string);
       }

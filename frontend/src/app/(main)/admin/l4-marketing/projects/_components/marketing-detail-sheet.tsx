@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import {
   Sheet,
@@ -94,7 +95,7 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
       setPhotos(photosData);
       fetchedProjectIdRef.current = projectId;
     } catch (error) {
-      console.error("Failed to load detail data:", error);
+      logger.error("Failed to load detail data:", error);
       toast.error("加载详情数据失败");
     } finally {
       setIsLoading(false);

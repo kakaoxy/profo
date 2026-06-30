@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 import { extractErrorMessage } from "./action-result";
 
@@ -23,7 +24,7 @@ export function handleError(
   const errorMessage = extractErrorMessage(error, opts.fallbackMessage);
 
   if (opts.logToConsole) {
-    console.error(`[${context}]`, error);
+    logger.error(`[${context}]`, error);
   }
 
   if (opts.showToast) {

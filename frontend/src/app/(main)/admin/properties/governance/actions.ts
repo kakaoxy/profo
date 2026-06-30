@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
@@ -56,7 +57,7 @@ export async function mergeCommunitiesAction(
       affected_properties: resultData?.affected_properties,
     };
   } catch (e) {
-    console.error("合并异常:", e);
+    logger.error("合并异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

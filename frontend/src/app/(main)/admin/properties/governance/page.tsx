@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { extractPaginatedData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
@@ -29,7 +30,7 @@ export default async function GovernancePage(props: GovernancePageProps) {
   });
 
   if (error || !data) {
-    console.error("连接后端失败:", error);
+    logger.error("连接后端失败:", error);
     return (
       <div className="p-8 text-center text-error">
         加载数据失败，请检查网络或权限。

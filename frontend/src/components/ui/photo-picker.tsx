@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState } from "react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -44,7 +45,7 @@ export function PhotoPicker({
       // 这里应该从API获取照片，暂时使用空数组
       setPhotos([]);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       toast.error("加载源照片失败");
     } finally {
       setLoading(false);

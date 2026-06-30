@@ -141,22 +141,37 @@ class Logger {
     console.warn(`[WARN] ${processed.message}`, processed.data !== undefined ? processed.data : "");
   }
 
-  error(message: string, error?: unknown): void {
+  error(message: string | Error | unknown, ...extra: unknown[]): void {
     if (!this.shouldLog("error")) return;
+    let msg: string;
+    let errData: unknown;
+    if (typeof message === "string") {
+      msg = message;
+      errData = extra.length === 0
+        ? undefined
+        : extra.length === 1
+          ? extra[0]
+          : extra;
+    } else {
+      msg = "发生错误";
+      errData = message;
+    }
     // 错误日志中永远不要包含敏感信息
-    const safeError = error instanceof Error
-      ? { name: error.name, message: error.message }
-      : maskSensitiveData(error);
-    console.error(`[ERROR] ${message}`, safeError);
+    const safeError = errData instanceof Error
+      ? { name: errData.name, message: errData.message }
+      : maskSensitiveData(errData);
+    console.error(`[ERROR] ${msg}`, safeError);
   }
 
   /**
    * 开发环境专用调试日志，生产环境完全不会输出
    */
-  devDebug(message: string, data?: unknown): void {
-    if (this.config.isDevelopment) {
-      console.log(`[DEV] ${message}`, data !== undefined ? data : "");
-    }
+  devDebug(...args: unknown[]): void {
+    if (!this.config.isDevelopment || args.length === 0) return;
+    const [first, ...rest] = args;
+    const message = typeof first === "string" ? first : JSON.stringify(first);
+    const data = rest.length === 0 ? undefined : rest.length === 1 ? rest[0] : rest;
+    console.log(`[DEV] ${message}`, data !== undefined ? data : "");
   }
 }
 

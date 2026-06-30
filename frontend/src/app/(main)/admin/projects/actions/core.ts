@@ -1,5 +1,6 @@
 "use server";
 
+import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
@@ -36,7 +37,7 @@ export async function createProjectAction(data: ProjectCreate) {
     revalidatePath("/projects");
     return { success: true, message: "项目创建成功" };
   } catch (e) {
-    console.error("创建项目异常:", e);
+    logger.error("创建项目异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -60,7 +61,7 @@ export async function updateProjectAction(id: string, data: ProjectUpdate) {
     revalidatePath("/projects");
     return { success: true, message: "项目更新成功" };
   } catch (e) {
-    console.error("更新项目异常:", e);
+    logger.error("更新项目异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -83,7 +84,7 @@ export async function deleteProjectAction(id: string) {
     revalidatePath("/projects");
     return { success: true, message: "项目已删除" };
   } catch (e) {
-    console.error("删除项目异常:", e);
+    logger.error("删除项目异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
@@ -117,7 +118,7 @@ export async function updateProjectStatusAction(
     revalidatePath("/projects");
     return { success: true, message: "状态已更新" };
   } catch (e) {
-    console.error("更新状态异常:", e);
+    logger.error("更新状态异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -148,7 +149,7 @@ export async function getProjectDetailAction(
     const projectData = extractApiData<ProjectResponse>(data);
     return { success: true, data: projectData };
   } catch (e) {
-    console.error("获取详情异常:", e);
+    logger.error("获取详情异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
@@ -167,7 +168,7 @@ export async function getNextContractNoAction(): Promise<{ success: boolean; dat
 
     return { success: true, data: data as string };
   } catch (e) {
-    console.error("获取合同编号异常:", e);
+    logger.error("获取合同编号异常:", e);
     return { success: false, message: "网络错误" };
   }
 }

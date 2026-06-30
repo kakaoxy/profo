@@ -13,7 +13,7 @@ import type { FloorInputProps } from "./types";
  * ```tsx
  * <FloorInput 
  *   value="5/共12层" 
- *   onChange={(floor) => console.log(floor)} 
+ *   onChange={(floor) => logger.devDebug(floor)} 
  * />
  * ```
  */
