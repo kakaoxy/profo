@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { apiPaths, getApiUrl } from "@/lib/config";
+import { debugLog } from "@/lib/auth/config";
 
 interface RefreshResponse {
   access_token: string;
@@ -22,7 +23,7 @@ export async function POST() {
   const refreshToken = cookieStore.get("refresh_token")?.value;
 
   if (!refreshToken) {
-    console.warn("🔁 [API Route] 无 refresh_token 可用");
+    debugLog("[admin refresh route] 无 refresh_token 可用");
     return NextResponse.json(
       { error: "No refresh token available" },
       { status: 401 }
@@ -30,7 +31,7 @@ export async function POST() {
   }
 
   try {
-    console.log("🔁 [API Route] 向后端请求刷新 token...");
+    debugLog("[admin refresh route] 向后端请求刷新 token...");
 
     const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
       method: "POST",
@@ -40,14 +41,17 @@ export async function POST() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("🔁 [API Route] 后端刷新失败:", response.status, errorText);
+      debugLog("[admin refresh route] 后端刷新失败", {
+        status: response.status,
+        error: errorText,
+      });
 
       // 只有401/403错误才清除 cookies（token确实无效）
       // 500错误保留cookies，可能是临时问题
       if (response.status === 401 || response.status === 403) {
         cookieStore.delete("access_token");
         cookieStore.delete("refresh_token");
-        console.log("🔁 [API Route] 已清除无效 cookies");
+        debugLog("[admin refresh route] 已清除无效 cookies");
       }
 
       return NextResponse.json(
@@ -75,7 +79,7 @@ export async function POST() {
       sameSite: "lax",
     });
 
-    console.log("✅ [API Route] Token 刷新成功");
+    debugLog("[admin refresh route] Token 刷新成功");
 
     // 返回新的 access_token，让客户端可以使用
     // 注意：refresh_token 仍然是 httpOnly cookie，不会返回给客户端
@@ -85,7 +89,9 @@ export async function POST() {
       expires_in: data.expires_in,
     });
   } catch (error) {
-    console.error("🔁 [API Route] 刷新时发生异常:", error);
+    debugLog("[admin refresh route] 刷新时发生异常", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

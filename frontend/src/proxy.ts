@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { auth } from "@/auth";
+import { debugLog } from "@/lib/auth/config";
 
 const PROTECTED_C_PREFIXES = ["/valuation", "/leads", "/my", "/profile"];
 
@@ -56,6 +57,7 @@ export default async function proxy(request: NextRequest) {
 
     // Admin domain: redirect /admin paths to / (admin should use admin domain directly)
     if (isAdminDomain && pathname.startsWith("/admin")) {
+      debugLog("proxy: admin domain redirecting /admin path to /", { hostname, pathname });
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
@@ -70,6 +72,7 @@ export default async function proxy(request: NextRequest) {
 
     if (!session.isAuthenticated) {
       // 无 token 或刷新失败：清 cookies 并重定向到登录页
+      debugLog("proxy: C-side unauthenticated — redirecting to login", { pathname });
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return session.redirect(loginUrl);
@@ -101,6 +104,7 @@ export default async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
   if (!refreshToken || refreshToken === "") {
+    debugLog("proxy: admin no refresh_token — redirecting to /admin/login", { pathname });
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
@@ -111,6 +115,7 @@ export default async function proxy(request: NextRequest) {
   const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
 
   if (shouldRefresh && refreshToken && isHtmlRequest) {
+    debugLog("proxy: admin refreshing token", { pathname, reason: !accessToken ? "no access_token" : "expired" });
     try {
       const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
         method: "POST",
@@ -138,10 +143,15 @@ export default async function proxy(request: NextRequest) {
           sameSite: "lax",
         });
 
+        debugLog("proxy: admin token refresh successful", { pathname });
         return addSecurityHeaders(nextResponse);
       }
 
       if (response.status === 401 || response.status === 403) {
+        debugLog("proxy: admin refresh rejected — redirecting to /admin/login", {
+          pathname,
+          status: response.status,
+        });
         const redirectResponse = NextResponse.redirect(
           new URL("/admin/login", request.url)
         );
@@ -149,8 +159,13 @@ export default async function proxy(request: NextRequest) {
         redirectResponse.cookies.delete("refresh_token");
         return redirectResponse;
       }
-    } catch {
-      // network error, continue processing
+
+      debugLog("proxy: admin refresh non-ok status", { pathname, status: response.status });
+    } catch (error) {
+      debugLog("proxy: admin refresh network error — continuing", {
+        pathname,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

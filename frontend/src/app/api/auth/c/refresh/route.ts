@@ -19,6 +19,8 @@ export async function POST() {
 
   const tokens = await getTokensFromCookies(config);
   if (!tokens?.refreshToken) {
+    // 缺少 refresh_token：清掉残留的 access_token cookie，避免半失效状态
+    await clearTokenCookies(config);
     return NextResponse.json(
       { error: "No refresh token available" },
       { status: 401 },

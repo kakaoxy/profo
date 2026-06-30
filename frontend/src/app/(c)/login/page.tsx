@@ -18,7 +18,8 @@ import { cLocale } from "@/lib/i18n/c-locale";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+  // 兼容 redirect 与 callbackUrl 两种参数名（统一为 redirect，callbackUrl 作为回退）
+  const redirect = searchParams.get("redirect") || searchParams.get("callbackUrl") || "/";
 
   const { login } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");
