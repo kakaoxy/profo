@@ -4,7 +4,7 @@
 避免同一 refresh_token 被重复利用（重放防护）。
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -46,7 +46,7 @@ class RefreshToken(BaseModel):
         """检查记录是否仍然有效（未撤销且未过期）."""
         if self.revoked:
             return False
-        return self.expires_at > datetime.utcnow()
+        return self.expires_at > datetime.now(timezone.utc).replace(tzinfo=None)
 
     def __repr__(self) -> str:
         """返回字符串表示."""
