@@ -190,18 +190,7 @@ class ProjectCoreService:
             ResourceNotFoundError: 项目不存在时抛出
 
         """
-        project = (
-            self.db.query(Project)
-            .filter(
-                Project.id == project_id,
-                Project.is_deleted.is_(False),
-            )
-            .first()
-        )
-
-        if not project:
-            msg = "项目不存在"
-            raise ResourceNotFoundError(msg)
+        project = self.query_service.get_by_id(project_id, include_all=False)
 
         project.is_deleted = True
         project.status = ProjectStatus.DELETED.value
