@@ -70,8 +70,8 @@ class User(BaseModel):
     __table_args__ = (
         # 用户状态查询索引
         Index("idx_user_status", "status"),
-        # 手机号唯一性查询索引（基于 HMAC 哈希，因 phone 已加密）
-        Index("idx_user_phone_hash", "phone_hash"),
+        # 手机号唯一性：phone_hash 列已声明 unique=True，由 SQLAlchemy 自动创建唯一索引；
+        # 迁移（migrations.py）以 idx_users_phone_hash 命名创建，此处不再重复声明。
         # 微信信息查询索引
         Index("idx_user_wechat", "wechat_openid", "wechat_unionid"),
     )

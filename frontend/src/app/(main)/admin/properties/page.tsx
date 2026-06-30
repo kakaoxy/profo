@@ -20,9 +20,6 @@ export default async function PropertiesPage(props: PageProps) {
   // 3. 使用 nuqs 解析缓存
   const query = searchParamsCache.parse(searchParams);
 
-  // 调试日志：你看一下服务端控制台打印出来的 query 是否包含参数
-  // console.log("前端解析到的参数:", query);
-
   const client = await fetchClient();
   
   // 4. 发起请求

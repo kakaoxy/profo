@@ -4,6 +4,7 @@
  */
 
 import { cookies } from "next/headers";
+import { logger } from "./logger";
 
 interface RefreshResult {
   access_token: string;
@@ -35,7 +36,7 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
     const refreshToken = cookieStore.get("refresh_token")?.value;
 
     if (!refreshToken) {
-      console.warn("🔁 [Server] 无 refresh_token，无法刷新");
+      logger.warn("无 refresh_token，无法刷新");
       return null;
     }
 
@@ -49,7 +50,7 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
     });
 
     if (!response.ok) {
-      console.error("🔁 [Server] Token 刷新失败，状态码:", response.status);
+      logger.error("Token 刷新失败", { status: response.status });
       return null;
     }
 
@@ -74,12 +75,12 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
     } catch {
       // Proxy 层（proxy.ts）已是 cookie 更新的主要路径
       // Server Component 上下文中无法修改 cookie（仅 Server Action / Route Handler 可写）
-      console.warn("🔁 [Server] Server Component 无法写入 cookie，由 Proxy 层处理 cookie 更新");
+      logger.warn("Server Component 无法写入 cookie，由 Proxy 层处理 cookie 更新");
     }
 
     return data;
   } catch (error) {
-    console.error("🔁 [Server] 刷新 Token 时发生网络错误:", error);
+    logger.error("刷新 Token 时发生网络错误", error);
     return null;
   }
 }

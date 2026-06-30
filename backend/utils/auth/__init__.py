@@ -11,7 +11,6 @@ from .token import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    get_user_id_from_token,
     validate_token,
 )
 
@@ -22,10 +21,9 @@ __all__ = [
     "create_access_token",
     "create_refresh_token",
     "decode_token",
-    "get_password_hash",
-    "get_user_id_from_token",
-    # password.py
-    "validate_password_strength",
     "validate_token",
+    # password.py
+    "get_password_hash",
+    "validate_password_strength",
     "verify_password",
 ]

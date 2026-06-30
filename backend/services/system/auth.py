@@ -164,6 +164,10 @@ class AuthService:
         return user
 
     # 后台允许的角色（C 端 customer 明确禁止登录后台）
+    # 注意：与 dependencies/auth.py 的 _INTERNAL_ROLE_CODES 不同。
+    #   _BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
+    #   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
+    # user 角色可登录后台但不应生成/使用 API Key。
     _BACKEND_ROLE_CODES: ClassVar[set[str]] = {"admin", "operator", "user"}
 
     @staticmethod
@@ -499,7 +503,7 @@ class AuthService:
             response = await client.get(settings.wechat_token_url, params=params)
             data = response.json()
 
-        if "errcode" in data:
+        if data.get("errcode", 0) != 0:
             msg = f"微信授权失败: {data.get('errmsg')}"
             raise ValidationError(msg)
         return data
@@ -516,7 +520,7 @@ class AuthService:
             response = await client.get(settings.wechat_userinfo_url, params=params)
             data = response.json()
 
-        if "errcode" in data:
+        if data.get("errcode", 0) != 0:
             msg = f"获取微信用户信息失败: {data.get('errmsg')}"
             raise ValidationError(msg)
         return data

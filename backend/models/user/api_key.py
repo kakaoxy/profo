@@ -53,14 +53,6 @@ class ApiKey(BaseModel):
         Index("idx_api_key_user_status", "user_id", "status"),
     )
 
-    def is_active(self) -> bool:
-        """检查 Key 是否有效."""
-        if self.status != "active":
-            return False
-        if self.deleted_at is not None:
-            return False
-        return not (self.expires_at and self.expires_at < datetime.now(timezone.utc))
-
     def revoke(self) -> None:
         """撤销 Key（软删除）."""
         self.status = "revoked"

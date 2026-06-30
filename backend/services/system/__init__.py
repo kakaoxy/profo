@@ -7,7 +7,7 @@
     from services.system import save_failed_record
 """
 
-from .api_key import ApiKeyService, api_key_service
+from .api_key import ApiKeyService
 from .auth import AuthService
 from .error import save_failed_record
 from .init_service import SystemInitService, init_service
@@ -20,7 +20,6 @@ __all__ = [
     "RoleService",
     "SystemInitService",
     "UserService",
-    "api_key_service",
     "init_service",
     "role_service",
     "save_failed_record",
