@@ -47,7 +47,8 @@ class ProjectResponseBuilder:
 
         Args:
             project: Project模型实例（调用方应预加载所需关联）
-            slim: 是否使用精简模式（列表页使用，跳过财务/互动/阶段日期等重量级查询）
+            slim: 是否使用精简模式（列表页使用，跳过互动/阶段日期等重量级查询；
+                财务统计始终构建，列表页需展示现金流）
 
         Returns:
             包含项目信息的字典
@@ -57,9 +58,9 @@ class ProjectResponseBuilder:
         response.update(self._build_contract_info(project))
         response.update(self._build_owner_info(project))
         response.update(self._build_sale_info(project))
+        response.update(self._build_finance_info(project))
 
         if not slim:
-            response.update(self._build_finance_info(project))
             response.update(self._build_interactions(project))
             response.update(self._build_stage_dates(project))
 
@@ -174,6 +175,8 @@ class ProjectResponseBuilder:
         total_expense = Decimal(0)
 
         for record in finance_records:
+            if record.is_deleted:
+                continue
             if record.type == CashFlowType.INCOME.value:
                 total_income += record.amount
             else:

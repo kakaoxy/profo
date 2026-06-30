@@ -127,13 +127,14 @@ class ProjectQueryService:
         if community_name:
             query = query.filter(Project.community_name.contains(community_name))
 
-        # 预加载关联数据（slim 模式所需：contract/owners/sale/project_manager/renovation_photos）
+        # 预加载关联数据（列表页所需：contract/owners/sale/project_manager/renovation_photos/finance_records）
         query = query.options(
             joinedload(Project.contract),
             selectinload(Project.owners),
             joinedload(Project.sale),
             selectinload(Project.project_manager),
             selectinload(Project.renovation_photos),
+            selectinload(Project.finance_records),
         )
 
         total = query.count()
