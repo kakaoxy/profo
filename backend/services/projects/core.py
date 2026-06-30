@@ -91,6 +91,8 @@ class ProjectCoreService:
 
         """
         project = self.creator.create(project_data)
+        # 重新查询以预加载 builder 所需的所有关联（create 已 commit，关联已 expire）
+        project = self.query_service.get_by_id(project.id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def get_project(self, project_id: str, *, include_all: bool = False) -> ProjectResponse | None:
@@ -169,22 +171,13 @@ class ProjectCoreService:
             ResourceNotFoundError: 项目不存在时抛出
 
         """
-        project = (
-            self.db.query(Project)
-            .filter(
-                Project.id == project_id,
-                Project.is_deleted.is_(False),
-            )
-            .first()
-        )
-
-        if not project:
-            msg = "项目不存在"
-            raise ResourceNotFoundError(msg)
+        project = self.query_service.get_by_id(project_id, include_all=False)
 
         update_dict = update_data.model_dump(exclude_unset=True)
         project = self.updater.update(project, update_dict)
 
+        # update 已 commit，重新查询以预加载 builder 所需关联
+        project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def delete_project(self, project_id: str) -> None:
@@ -229,21 +222,12 @@ class ProjectCoreService:
             ResourceNotFoundError: 项目不存在时抛出
 
         """
-        project = (
-            self.db.query(Project)
-            .filter(
-                Project.id == project_id,
-                Project.is_deleted.is_(False),
-            )
-            .first()
-        )
-
-        if not project:
-            msg = "项目不存在"
-            raise ResourceNotFoundError(msg)
+        project = self.query_service.get_by_id(project_id, include_all=False)
 
         project = self.state_manager.update_status(project, status_update)
 
+        # update_status 已 commit，重新查询以预加载 builder 所需关联
+        project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def get_project_stats(self) -> dict[str, int]:

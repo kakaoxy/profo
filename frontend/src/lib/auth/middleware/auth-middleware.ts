@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSecondsUntilExpiry, isTokenValid } from "../core/jwt";
 import { getGlobalAuthConfig, debugLog } from "../config";
+import { dedupServerRefresh } from "../server/refresh-dedup";
 
 export interface AuthMiddlewareResult {
   /** True if the request has a valid, non-expired access token. */

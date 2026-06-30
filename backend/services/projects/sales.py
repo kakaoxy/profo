@@ -21,7 +21,7 @@ from schemas.project.sales import (
 )
 from services.system.exceptions import BusinessLogicError, ResourceNotFoundError, ValidationError
 
-from .internal import ProjectResponseBuilder
+from .internal import ProjectQueryService, ProjectResponseBuilder
 
 # 允许更新的销售角色字段白名单（防止设置 id/is_deleted 等敏感字段）
 _SALES_ROLE_FIELDS = {"channel_manager_id", "property_agent_id", "negotiator_id"}
@@ -38,6 +38,7 @@ class SalesService:
 
         """
         self.db = db
+        self.query_service = ProjectQueryService(db)
         self.response_builder = ProjectResponseBuilder(db)
 
     def _get_project(self, project_id: str) -> Project:
@@ -105,8 +106,9 @@ class SalesService:
 
         sale.updated_at = datetime.now(timezone.utc)
         self.db.commit()
-        self.db.refresh(project)
 
+        # commit 后关联已 expire，重新查询以预加载 builder 所需关联
+        project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
     def create_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
@@ -220,7 +222,9 @@ class SalesService:
             self.db.add(sale)
 
         self.db.commit()
-        self.db.refresh(project)
+
+        # commit 后关联已 expire，重新查询以预加载 builder 所需关联
+        project = self.query_service.get_by_id(project_id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
 
