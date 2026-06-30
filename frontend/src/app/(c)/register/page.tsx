@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { registerAction } from "@/lib/api-c/auth";
+import { registerAction } from "./actions";
 import type { ActionResult } from "@/lib/action-result";
 import { extractErrorMessage } from "@/lib/action-result";
 import {

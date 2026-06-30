@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { apiPaths, getApiUrl } from "@/lib/config";
+import { auth } from "@/auth";
 
 const PROTECTED_C_PREFIXES = ["/valuation", "/leads", "/my", "/profile"];
 
@@ -61,72 +62,21 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 2. C-side auth route guard + token refresh ──
+  // ── 2. C-side protected paths: 用 library middleware 检查认证 + 自动刷新 ──
   // Skip admin paths for C-side auth
   if (!pathname.startsWith("/admin") && isProtectedCPath(pathname)) {
-    const accessToken = request.cookies.get("c_access_token")?.value;
-    const refreshToken = request.cookies.get("c_refresh_token")?.value;
+    const resolveAuth = auth.createMiddleware();
+    const session = await resolveAuth(request);
 
-    if (!accessToken && !refreshToken) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(url);
+    if (!session.isAuthenticated) {
+      // 无 token 或刷新失败：清 cookies 并重定向到登录页
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return session.redirect(loginUrl);
     }
 
-    const accessTokenExpired = accessToken ? isTokenExpired(accessToken) : true;
-
-    if (accessTokenExpired && refreshToken && !isTokenExpired(refreshToken, 0)) {
-      // 仅对 HTML 页面请求执行 proxy 层刷新，避免并发 API 请求多次触发刷新
-      // 客户端 API 请求的 401 由 api-client.ts / swr.ts 的刷新重试机制处理
-      const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
-
-      if (isHtmlRequest) {
-        try {
-          const response = await fetch(getApiUrl(apiPaths.cAuth.refresh), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            const nextResponse = NextResponse.next();
-
-            nextResponse.cookies.set("c_access_token", data.access_token, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              path: "/",
-              maxAge: data.expires_in || 36000,
-              sameSite: "lax",
-            });
-
-            if (data.refresh_token) {
-              nextResponse.cookies.set("c_refresh_token", data.refresh_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                path: "/",
-                maxAge: 60 * 60 * 24 * 7,
-                sameSite: "lax",
-              });
-            }
-
-            return addSecurityHeaders(nextResponse);
-          }
-
-          if (response.status === 401 || response.status === 403) {
-            const redirectResponse = NextResponse.redirect(
-              new URL("/login", request.url)
-            );
-            redirectResponse.cookies.delete("c_access_token");
-            redirectResponse.cookies.delete("c_refresh_token");
-            return redirectResponse;
-          }
-        } catch {
-          // network error, continue processing
-        }
-      }
-    }
+    // 已认证：写回可能刷新后的 token cookies
+    return addSecurityHeaders(session.response(NextResponse.next()));
   }
 
   // ── 3. Admin-side: only process /admin paths ──

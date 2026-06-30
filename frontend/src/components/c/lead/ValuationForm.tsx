@@ -7,7 +7,7 @@ import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { createLeadAction, completePhoneAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
-import { useUserInfo } from "@/lib/api-c/user-info";
+import { useSession, useAuth } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { cLocale } from "@/lib/i18n/c-locale";
 
@@ -33,7 +33,12 @@ export function ValuationForm() {
     { success: false, error: "" } as ActionResult<{ phone: string }>
   );
 
-  const userInfo = useUserInfo();
+  const session = useSession();
+  const { fetchSession } = useAuth();
+  const userInfo = {
+    nickname: session.status === "authenticated" ? session.user.nickname : null,
+    phone: session.status === "authenticated" ? session.user.phone : null,
+  };
   const [phoneFormOpen, setPhoneFormOpen] = useState(false);
 
   // 用户已绑定手机号后，不再展示"完善手机号"提示区
@@ -45,8 +50,10 @@ export function ValuationForm() {
         setPhoneFormOpen(false);
       });
       toast.success(phoneState.message || cLocale.valuation.phoneSuccess);
+      // 同步刷新 AuthProvider 中的 session.user.phone
+      void fetchSession();
     }
-  }, [phoneState]);
+  }, [phoneState, fetchSession]);
 
   const [formData, setFormData] = useState({
     communityId: "",

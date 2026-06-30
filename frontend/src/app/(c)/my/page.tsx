@@ -7,8 +7,7 @@ import useSWR from "swr";
 import { LogOut, Pencil, ArrowRight } from "lucide-react";
 import { UserAvatar } from "@/components/c/shared/UserAvatar";
 import { LeadListItem } from "@/components/c/lead/LeadListItem";
-import { logoutAction } from "@/lib/api-c/auth";
-import { useUserInfo } from "@/lib/api-c/user-info";
+import { useSession, useAuth } from "@/lib/auth/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/c/shared/EmptyState";
 import { ErrorState } from "@/components/c/shared/ErrorState";
@@ -20,7 +19,12 @@ type LeadListResponse = components["schemas"]["PublicLeadListResponse"];
 
 export default function CMyPage() {
   const router = useRouter();
-  const userInfo = useUserInfo();
+  const session = useSession();
+  const { logout } = useAuth();
+  const userInfo = {
+    nickname: session.status === "authenticated" ? session.user.nickname : null,
+    phone: session.status === "authenticated" ? session.user.phone : null,
+  };
 
   const displayName = userInfo.nickname || cLocale.common.user.defaultName;
   const displayPhone = userInfo.phone || cLocale.common.user.phoneUnset;
@@ -38,7 +42,7 @@ export default function CMyPage() {
   }, [error, router]);
 
   const handleLogout = async () => {
-    await logoutAction();
+    await logout({ callbackUrl: "/login", redirect: true });
   };
 
   return (
