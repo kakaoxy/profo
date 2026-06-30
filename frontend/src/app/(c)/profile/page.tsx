@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { updateProfileAction, updatePhoneAction } from "./actions";
 import type { ActionResult } from "@/lib/action-result";
-import { useUserInfo } from "@/lib/api-c/user-info";
+import { useSession, useAuth } from "@/lib/auth/client";
 import { cLocale } from "@/lib/i18n/c-locale";
 
 function maskPhone(phone: string): string {
@@ -27,7 +27,12 @@ function maskPhone(phone: string): string {
 export default function CProfilePage() {
   const nicknameRef = useRef<HTMLInputElement>(null);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
-  const userInfo = useUserInfo();
+  const session = useSession();
+  const { fetchSession } = useAuth();
+  const userInfo = {
+    nickname: session.status === "authenticated" ? session.user.nickname : null,
+    phone: session.status === "authenticated" ? session.user.phone : null,
+  };
 
   useEffect(() => {
     if (nicknameRef.current && userInfo.nickname) {
@@ -51,8 +56,10 @@ export default function CProfilePage() {
         nicknameRef.current.value = profileState.data.nickname;
       }
       toast.success(profileState.message || cLocale.profile.updateSuccess);
+      // 同步刷新 AuthProvider 中的 session.user，避免 UI 显示旧昵称
+      void fetchSession();
     }
-  }, [profileState]);
+  }, [profileState, fetchSession]);
 
   useEffect(() => {
     if (phoneState.success && phoneState.data) {
@@ -60,8 +67,9 @@ export default function CProfilePage() {
         setPhoneDialogOpen(false);
       });
       toast.success(phoneState.message || cLocale.profile.phoneUpdateSuccess);
+      void fetchSession();
     }
-  }, [phoneState]);
+  }, [phoneState, fetchSession]);
 
   const displayNickname =
     profileState.success && profileState.data?.nickname

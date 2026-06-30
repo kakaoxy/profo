@@ -1,10 +1,9 @@
 "use client";
 
-import { Suspense, startTransition, useActionState, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { loginAction } from "@/lib/api-c/auth";
-import type { ActionResult } from "@/lib/action-result";
+import { useAuth } from "@/lib/auth/client";
 import {
   User,
   Lock,
@@ -19,19 +18,45 @@ import { cLocale } from "@/lib/i18n/c-locale";
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "";
+  const redirect = searchParams.get("redirect") || "/";
 
-  const [state, formAction, isPending] = useActionState(
-    loginAction,
-    { success: false, error: "" } as ActionResult<null>
-  );
-
+  const { login } = useAuth();
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isPending, setIsPending] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{
     username?: string;
     password?: string;
   }>({});
-
   const [showPassword, setShowPassword] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+
+    const errors: { username?: string; password?: string } = {};
+    if (!username.trim()) errors.username = cLocale.login.validation.usernameRequired;
+    if (!password) errors.password = cLocale.login.validation.passwordRequired;
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors({});
+    setErrorMessage("");
+    setIsPending(true);
+
+    const result = await login(
+      { username, password },
+      { callbackUrl: redirect, redirect: true },
+    );
+
+    if (!result.success) {
+      setErrorMessage(result.error);
+      setIsPending(false);
+    }
+    // 成功时 library 内部 redirect() 会跳转，组件不会继续渲染
+  }
 
   return (
     <div className="md:p-0 md:min-h-dvh md:flex md:items-center md:justify-center relative">
@@ -93,38 +118,16 @@ function LoginForm() {
             </p>
           </header>
 
-          <form
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const username = formData.get("username") as string;
-              const password = formData.get("password") as string;
-              const errors: { username?: string; password?: string } = {};
-              if (!username.trim()) errors.username = cLocale.login.validation.usernameRequired;
-              if (!password) errors.password = cLocale.login.validation.passwordRequired;
-              if (Object.keys(errors).length > 0) {
-                setValidationErrors(errors);
-                return;
-              }
-              setValidationErrors({});
-              startTransition(() => {
-                formAction(formData);
-              });
-            }}
-            className="space-y-4"
-          >
+          <form noValidate onSubmit={handleSubmit} className="space-y-4">
             {/* Server Error */}
-            {state && !state.success && state.error && (
+            {errorMessage && (
               <div
                 role="alert"
                 className="p-3 bg-error-container border border-(--error)/30 rounded-inputs text-error text-sm"
               >
-                {state.error}
+                {errorMessage}
               </div>
             )}
-
-            <input type="hidden" name="redirect" value={redirect} />
 
             {/* Username Input */}
             <div className="space-y-2">

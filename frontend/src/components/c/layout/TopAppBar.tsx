@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { useUserInfo } from "@/lib/api-c/user-info";
+import { useSession } from "@/lib/auth/client";
 
 interface TopAppBarProps {
   variant: "main" | "back";
@@ -26,8 +26,8 @@ export function TopAppBar({
 }: TopAppBarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const userInfo = useUserInfo();
-  const isLoggedIn = !!userInfo.nickname;
+  const session = useSession();
+  const isLoggedIn = session.status === "authenticated";
 
   const handleBack = () => {
     if (onBack) onBack();
