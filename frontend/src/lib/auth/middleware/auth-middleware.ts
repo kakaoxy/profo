@@ -156,8 +156,14 @@ export function createAuthMiddleware() {
             : `within threshold (${secondsRemaining}s remaining)`,
       });
 
+      // Dedup concurrent refresh calls for the same refresh_token: refresh
+      // token rotation revokes the old token on each refresh, so without
+      // dedup, concurrent requests (navigation + prefetch) would each fire
+      // an independent refresh and all but one would fail.
       try {
-        refreshedTokens = await config.adapter.refreshToken(refreshToken);
+        refreshedTokens = await dedupServerRefresh(refreshToken, () =>
+          config.adapter.refreshToken(refreshToken),
+        );
         accessToken = refreshedTokens.accessToken;
         debugLog("Middleware: token refresh successful", { pathname });
       } catch (error) {

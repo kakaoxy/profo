@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { auth } from "@/auth";
 import { debugLog } from "@/lib/auth/config";
+import { dedupServerRefresh } from "@/lib/auth/server/refresh-dedup";
 
 const PROTECTED_C_PREFIXES = ["/valuation", "/leads", "/my", "/profile"];
 
@@ -116,56 +117,67 @@ export default async function proxy(request: NextRequest) {
 
   if (shouldRefresh && refreshToken && isHtmlRequest) {
     debugLog("proxy: admin refreshing token", { pathname, reason: !accessToken ? "no access_token" : "expired" });
-    try {
-      const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
 
-      if (response.ok) {
+    // Dedup concurrent refresh calls for the same refresh_token: refresh
+    // token rotation revokes the old token on each refresh, so without
+    // dedup, concurrent HTML requests (multi-tab) would each fire an
+    // independent refresh and all but one would fail.
+    const refreshResult = await dedupServerRefresh(refreshToken, async () => {
+      try {
+        const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        if (!response.ok) {
+          return { ok: false as const, status: response.status };
+        }
         const data = await response.json();
-        const nextResponse = NextResponse.next();
-
-        nextResponse.cookies.set("access_token", data.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          maxAge: data.expires_in || 36000,
-          sameSite: "lax",
-        });
-
-        nextResponse.cookies.set("refresh_token", data.refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          maxAge: 60 * 60 * 24 * 7,
-          sameSite: "lax",
-        });
-
-        debugLog("proxy: admin token refresh successful", { pathname });
-        return addSecurityHeaders(nextResponse);
+        return { ok: true as const, data };
+      } catch {
+        return { ok: false as const, networkError: true };
       }
+    });
 
-      if (response.status === 401 || response.status === 403) {
-        debugLog("proxy: admin refresh rejected — redirecting to /admin/login", {
-          pathname,
-          status: response.status,
-        });
-        const redirectResponse = NextResponse.redirect(
-          new URL("/admin/login", request.url)
-        );
-        redirectResponse.cookies.delete("access_token");
-        redirectResponse.cookies.delete("refresh_token");
-        return redirectResponse;
-      }
+    if (refreshResult.ok) {
+      const data = refreshResult.data;
+      const nextResponse = NextResponse.next();
 
-      debugLog("proxy: admin refresh non-ok status", { pathname, status: response.status });
-    } catch (error) {
-      debugLog("proxy: admin refresh network error — continuing", {
-        pathname,
-        error: error instanceof Error ? error.message : String(error),
+      nextResponse.cookies.set("access_token", data.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: data.expires_in || 36000,
+        sameSite: "lax",
       });
+
+      nextResponse.cookies.set("refresh_token", data.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+      });
+
+      debugLog("proxy: admin token refresh successful", { pathname });
+      return addSecurityHeaders(nextResponse);
+    }
+
+    if ("networkError" in refreshResult) {
+      debugLog("proxy: admin refresh network error — continuing", { pathname });
+    } else if (refreshResult.status === 401 || refreshResult.status === 403) {
+      debugLog("proxy: admin refresh rejected — redirecting to /admin/login", {
+        pathname,
+        status: refreshResult.status,
+      });
+      const redirectResponse = NextResponse.redirect(
+        new URL("/admin/login", request.url)
+      );
+      redirectResponse.cookies.delete("access_token");
+      redirectResponse.cookies.delete("refresh_token");
+      return redirectResponse;
+    } else {
+      debugLog("proxy: admin refresh non-ok status", { pathname, status: refreshResult.status });
     }
   }
 
