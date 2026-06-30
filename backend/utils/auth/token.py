@@ -1,5 +1,6 @@
 """JWT 令牌相关工具函数."""
 
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
@@ -49,16 +50,19 @@ def create_refresh_token(
     data: dict[str, Any],
     expires_delta: timedelta | None = None,
     audience: str | None = None,
-) -> str:
+    jti: str | None = None,
+) -> tuple[str, str]:
     """创建刷新令牌.
 
     Args:
         data: 要存储在令牌中的数据
         expires_delta: 过期时间增量
         audience: 受众标识（"c" 或 "admin"），用于隔离两套系统 Token
+        jti: JWT 唯一标识；不传则内部生成。用于 refresh_token 轮换：
+            服务端跟踪 jti，刷新时撤销旧 jti 并签发新 jti。
 
     Returns:
-        str: JWT刷新令牌
+        tuple[str, str]: (JWT刷新令牌, jti)
 
     """
     to_encode = data.copy()
@@ -67,14 +71,16 @@ def create_refresh_token(
     else:
         expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_token_expire_days)
 
-    to_encode.update({"exp": expire, "type": "refresh"})
+    token_jti = jti or uuid.uuid4().hex
+    to_encode.update({"exp": expire, "type": "refresh", "jti": token_jti})
     if audience is not None:
         to_encode["aud"] = audience
-    return jwt.encode(
+    token = jwt.encode(
         to_encode,
         settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
     )
+    return token, token_jti
 
 
 def decode_token(token: str) -> dict[str, Any] | None:

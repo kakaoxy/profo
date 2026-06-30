@@ -16,7 +16,7 @@ from urllib.parse import urlencode
 import httpx
 from sqlalchemy.orm import Session, joinedload
 
-from models import Role, User
+from models import RefreshToken, Role, User
 from settings import settings
 from utils.auth import (
     AUDIENCE_ADMIN,
@@ -287,11 +287,22 @@ class AuthService:
         )
 
         refresh_token_expires = timedelta(days=settings.jwt_refresh_token_expire_days)
-        refresh_token = create_refresh_token(
+        refresh_token, refresh_jti = create_refresh_token(
             data={"sub": user.id, "ver": user.token_version},
             expires_delta=refresh_token_expires,
             audience=audience,
         )
+
+        # 跟踪 refresh_token：刷新时校验 jti 并撤销旧 jti，实现轮换防重放
+        db.add(
+            RefreshToken(
+                user_id=user.id,
+                jti=refresh_jti,
+                audience=audience,
+                expires_at=datetime.now(timezone.utc) + refresh_token_expires,
+            )
+        )
+        db.commit()
 
         return {
             "require_password_change": False,
@@ -320,6 +331,9 @@ class AuthService:
             expected_audience: 期望的受众标识；传入时刷新令牌的 aud 必须匹配，
                 避免C端 refresh_token 刷新后台 access_token。
 
+        Raises:
+            AuthenticationError: 刷新令牌无效/已撤销/不存在（重放防护）
+
         """
         payload = validate_token(
             refresh_token,
@@ -346,10 +360,28 @@ class AuthService:
             msg = "凭据已失效，请重新登录"
             raise AuthenticationError(msg)
 
+        # 校验 jti 并撤销旧 refresh_token，实现轮换防重放：
+        # 同一 refresh_token 只能使用一次，刷新后立即失效，旧 token 被截获也无法复用
+        jti = payload.get("jti")
+        if not jti:
+            # 缺少 jti：旧版签发的 refresh_token，拒绝刷新（需重新登录）
+            msg = "刷新令牌已失效，请重新登录"
+            raise AuthenticationError(msg)
+
+        record = db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
+        if record is None or record.revoked:
+            msg = "刷新令牌已失效，请重新登录"
+            raise AuthenticationError(msg)
+
+        # 撤销旧 jti，防止同一 refresh_token 被重复利用
+        record.revoked = True
+        db.commit()
+
         # 继承原 Token 的受众，避免刷新后跨系统
         inherited_audience = payload.get("aud")
 
         # 刷新token时不更新登录时间，避免事务冲突
+        # create_tokens_for_user 会签发新 jti 并写入跟踪记录
         return AuthService.create_tokens_for_user(
             db, user, update_login_time=False, audience=inherited_audience
         )
@@ -359,9 +391,16 @@ class AuthService:
         """递增 token_version，使该用户已签发的所有 JWT 失效 (Sync).
 
         用于修改密码、重置密码、禁用、删除用户、强制下线等场景。
+        同时撤销所有未过期的 refresh_token 跟踪记录，确保已签发的
+        refresh_token 也无法再换取新 access_token（纵深防御）。
 
         """
         user.token_version = (user.token_version or 0) + 1
+        # 撤销该用户所有未撤销的 refresh_token 记录
+        db.query(RefreshToken).filter(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked.is_(False),
+        ).update({RefreshToken.revoked: True})
         db.commit()
 
     @staticmethod

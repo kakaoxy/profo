@@ -98,10 +98,10 @@ export async function getUser(): Promise<SessionUser | null> {
  * Use this as a server-side guard in protected pages and layouts.
  *
  * When `includeCallbackUrl` is true (default), the current path is appended
- * as a `?callbackUrl=` search param so your login page can redirect back
- * after a successful login.
+ * as a `?redirect=` search param so your login page can redirect back
+ * after a successful login. 参数名与 proxy.ts 保持一致（统一为 `redirect`）。
  *
- * @param options.includeCallbackUrl - Append the current path as `?callbackUrl=` to the redirect. Defaults to `true`.
+ * @param options.includeCallbackUrl - Append the current path as `?redirect=` to the redirect. Defaults to `true`.
  * @returns The current `Session` object (guaranteed non-null).
  * @throws Always throws Next.js's internal `NEXT_REDIRECT` error when unauthenticated —
  *         this is the standard mechanism for Next.js page redirects and must not be caught.
@@ -128,14 +128,14 @@ export async function requireSession(
           "";
         if (currentPath) {
           debugLog(
-            "requireSession: unauthenticated — redirecting with callbackUrl",
+            "requireSession: unauthenticated — redirecting with redirect param",
             {
               signIn: config.pages.signIn,
-              callbackUrl: currentPath,
+              redirect: currentPath,
             },
           );
           redirect(
-            `${config.pages.signIn}?callbackUrl=${encodeURIComponent(currentPath)}`,
+            `${config.pages.signIn}?redirect=${encodeURIComponent(currentPath)}`,
           );
         }
       } catch (error) {

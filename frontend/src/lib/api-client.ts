@@ -1,45 +1,19 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getClientApiUrl } from "./config";
+import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
 
-// 全局单例刷新 Promise，防止并发刷新导致 refresh token 被多次使用
-let refreshPromise: Promise<string | null> | null = null;
+function getRefreshEndpoint(): string {
+  const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
+}
 
+/**
+ * 触发 token 刷新，返回新的 access_token 或 null。
+ * 跨文件共享去重（与 api-c/client.ts 共用同一 registry）。
+ */
 export function tryRefreshTokenClient(): Promise<string | null> {
-  if (refreshPromise) return refreshPromise;
-
-  const promise = (async (): Promise<string | null> => {
-    try {
-      const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
-      const refreshPath = isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
-
-      const response = await fetch(refreshPath, {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data.access_token ?? null;
-    } catch {
-      return null;
-    }
-  })();
-
-  refreshPromise = promise;
-
-  promise.finally(() => {
-    setTimeout(() => {
-      if (refreshPromise === promise) {
-        refreshPromise = null;
-      }
-    }, 2000);
-  });
-
-  return promise;
+  return refreshTokensDedup(getRefreshEndpoint()).then((r) => r.accessToken);
 }
 
 const requestBodyStore = new WeakMap<Request, string>();
@@ -71,7 +45,7 @@ const authMiddleware: Middleware = {
         return response;
       }
 
-      const newToken = await tryRefreshTokenClient();
+      const { accessToken: newToken } = await refreshTokensDedup(getRefreshEndpoint());
 
       if (newToken) {
         const storedBody = requestBodyStore.get(request);

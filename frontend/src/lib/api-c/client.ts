@@ -1,41 +1,9 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "../api-types";
 import { getClientApiUrl } from "../config";
+import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
 
-let refreshPromise: Promise<boolean> | null = null;
-
-function tryRefreshTokenClient(): Promise<boolean> {
-  if (refreshPromise) return refreshPromise;
-
-  const promise = (async (): Promise<boolean> => {
-    try {
-      const response = await fetch("/api/auth/c/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        return false;
-      }
-
-      return true;
-    } catch {
-      return false;
-    }
-  })();
-
-  refreshPromise = promise;
-
-  promise.finally(() => {
-    setTimeout(() => {
-      if (refreshPromise === promise) {
-        refreshPromise = null;
-      }
-    }, 2000);
-  });
-
-  return promise;
-}
+const C_REFRESH_ENDPOINT = "/api/auth/c/refresh";
 
 const requestBodyStore = new WeakMap<Request, string>();
 
@@ -66,7 +34,7 @@ const authMiddleware: Middleware = {
         return response;
       }
 
-      const refreshed = await tryRefreshTokenClient();
+      const { success: refreshed } = await refreshTokensDedup(C_REFRESH_ENDPOINT);
 
       if (refreshed) {
         await new Promise(resolve => setTimeout(resolve, 100));

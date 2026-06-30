@@ -61,7 +61,7 @@ from .property import (
 from .system import FailedRecord, PropertyImportTask
 
 # 用户权限模块
-from .user import ApiKey, Role, User
+from .user import ApiKey, RefreshToken, Role, User
 
 __all__ = [
     "ApiKey",
@@ -111,7 +111,8 @@ __all__ = [
     "RecordType",
     "RenovationPhoto",
     "RenovationStage",
-    "Role",
     # 用户
+    "RefreshToken",
+    "Role",
     "User",
 ]
