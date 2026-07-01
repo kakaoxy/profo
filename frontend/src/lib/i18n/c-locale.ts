@@ -519,7 +519,7 @@ export const cLocale = {
   projects: {
     unknownCommunity: "未知小区",
     valueProposition:
-      "美房宝 — 出钱装修、全权卖房。卖到约定价您拿钱，卖不到装修免费送。",
+      "美房宝，每一套房子都值得被认真对待，坚持做品牌二手房。精选好房，匠心设计，严选好材，专业服务。",
     shareFallback: "房源",
     linkCopied: "链接已复制到剪贴板",
     shareFailed: "分享失败，请手动复制链接",
