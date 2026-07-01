@@ -61,7 +61,7 @@ export default function CMyPage() {
             <h2 className="text-[18px] font-medium leading-[1.35] tracking-[-0.16px] text-ink">
               {displayName}
             </h2>
-            <p className="mt-0.5 text-[14px] leading-[1.5] tracking-[-0.13px] text-graphite">
+            <p className="mt-0.5 text-[14px] leading-normal tracking-[-0.13px] text-graphite">
               {displayPhone}
             </p>
           </div>
