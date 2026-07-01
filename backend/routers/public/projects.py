@@ -187,7 +187,7 @@ def get_project_detail(
         PublicRenovationStage(
             stage=stage,
             photo_count=count,
-            completed_date=stage_dates.get(stage.value if hasattr(stage, "value") else stage),
+            completed_date=stage_dates.get(stage.value),
         )
         for stage, count in stage_groups.items()
     ]

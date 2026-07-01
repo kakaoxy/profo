@@ -44,7 +44,7 @@ export function StageDatesFields() {
                 <div key={stage.value} className="space-y-2">
                   <label
                     htmlFor={`stage-date-${stage.value}`}
-                    className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider"
+                    className="block text-xs font-bold text-muted-foreground uppercase tracking-wider"
                   >
                     {stage.label}
                   </label>
@@ -53,7 +53,7 @@ export function StageDatesFields() {
                     type="date"
                     value={dates[stage.value] ?? ""}
                     onChange={(e) => handleChange(stage.value, e.target.value)}
-                    className="w-full h-12 px-4 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                    className="w-full h-12 px-4 border border-(--border)/50 rounded-xl bg-card text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
                   />
                 </div>
               ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { ArrowLeft, Share } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -38,13 +38,6 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const id = params.id;
 
-  // Fix: derive shareUrl client-side to avoid hydration mismatch
-  const [shareUrl, setShareUrl] = useState("");
-
-  useEffect(() => {
-    setShareUrl(window.location.href);
-  }, []);
-
   const { data, error, isLoading, mutate } = useSWR<ProjectDetail>(
     id ? `/api/v1/public/projects/${id}` : null,
     publicFetcher
@@ -54,6 +47,26 @@ export default function ProjectDetailPage() {
     id ? `/api/v1/public/projects/${id}/consultant` : null,
     publicFetcher
   );
+
+  const handleShare = useCallback(async () => {
+    if (!data) return;
+    const url = window.location.href;
+    const title = `${data.community_name ?? cLocale.projects.shareFallback} · ${data.layout}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(cLocale.projects.linkCopied);
+      }
+    } catch {
+      toast.error(cLocale.projects.shareFailed);
+    }
+  }, [data]);
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -87,26 +100,6 @@ export default function ProjectDetailPage() {
     marketingImages.length > 0
       ? marketingImages
       : (data.images && data.images.length > 0 ? data.images : []);
-
-  const shareTitle = `${data.community_name ?? cLocale.projects.shareFallback} · ${data.layout}`;
-
-  const handleShare = useCallback(async () => {
-    if (!shareUrl) return;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: shareTitle, url: shareUrl });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success(cLocale.projects.linkCopied);
-      }
-    } catch {
-      toast.error(cLocale.projects.shareFailed);
-    }
-  }, [shareUrl, shareTitle]);
-
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
 
   return (
     <div className="pb-24 md:pb-20">
