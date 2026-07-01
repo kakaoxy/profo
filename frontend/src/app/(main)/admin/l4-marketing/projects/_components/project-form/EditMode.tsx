@@ -4,6 +4,7 @@ import * as React from "react";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { MarketingInfoFields } from "./MarketingInfoFields";
+import { StageDatesFields } from "./StageDatesFields";
 import { BasicConfigFields } from "./BasicConfigFields";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import { useProjectImport } from "./useProjectImport";
@@ -148,7 +149,7 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
               <h4 className="text-red-800 font-medium text-sm mb-2">表单验证失败，请检查以下字段：</h4>
               <ul className="list-disc list-inside text-error text-sm space-y-1">
                 {Object.entries(errors).map(([field, error]) => (
-                  <li key={field}>{field}: {error?.message || '验证失败'}</li>
+                  <li key={field}>{field}: {String(error?.message ?? "验证失败")}</li>
                 ))}
               </ul>
             </div>
@@ -165,6 +166,8 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
               />
 
               <MarketingInfoFields />
+
+              <StageDatesFields />
 
               <DualPhotoManager
                 l3ProjectId={project?.project_id}

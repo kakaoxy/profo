@@ -95,6 +95,12 @@ class L3ProjectImportResponse(BaseModel):
     tags: str | None = Field(default=None, description="标签")
     decoration_style: str | None = Field(default=None, description="装修风格")
 
+    # 改造阶段完成时间 - 来自 L3 ProjectRenovation.stage_completed_dates
+    stage_completed_dates: dict[str, str] | None = Field(
+        default=None,
+        description="L3 项目各阶段完成日期，格式: {stage: 'YYYY-MM-DD'}",
+    )
+
     # 项目状态
     status: ProjectStatus | None = Field(default=None, description="项目状态")
 

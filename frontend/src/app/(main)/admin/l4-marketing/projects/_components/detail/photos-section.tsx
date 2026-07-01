@@ -56,7 +56,7 @@ export const PhotosSection = memo(function PhotosSection({
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<PhotoCategory>("marketing");
-  const [uploadStage, setUploadStage] = useState("other");
+  const [uploadStage, setUploadStage] = useState("拆除");
 
   const { effectiveProjectId } = useProjectId({ l4ProjectId, l3ProjectId });
 

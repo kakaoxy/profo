@@ -188,6 +188,7 @@ class PublicRenovationStage(BaseModel):
 
     stage: RenovationStage = Field(description="阶段名称")
     photo_count: int = Field(description="照片数量")
+    completed_date: str | None = Field(default=None, description="阶段完成日期 YYYY-MM-DD")
 
 
 class PublicConsultantInfo(BaseModel):

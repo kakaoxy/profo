@@ -181,7 +181,16 @@ def get_project_detail(
         if stage not in stage_groups:
             stage_groups[stage] = 0
         stage_groups[stage] += 1
-    renovation_stages = [PublicRenovationStage(stage=stage, photo_count=count) for stage, count in stage_groups.items()]
+    # 阶段完成日期 - 方案A：仅展示有照片的阶段，完成时间依附阶段展示
+    stage_dates = project.stage_completed_dates or {}
+    renovation_stages = [
+        PublicRenovationStage(
+            stage=stage,
+            photo_count=count,
+            completed_date=stage_dates.get(stage.value if hasattr(stage, "value") else stage),
+        )
+        for stage, count in stage_groups.items()
+    ]
 
     consultant_info = None
     if project.consultant_id:

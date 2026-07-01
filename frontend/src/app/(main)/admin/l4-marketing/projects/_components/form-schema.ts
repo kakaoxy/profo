@@ -30,6 +30,7 @@ export const formSchema = z.object({
   sort_order: z.number().int().min(0),
   tags: z.array(z.string()),
   decoration_style: z.string().trim().max(100).optional(),
+  stage_completed_dates: z.record(z.string(), z.string()).optional(),
 
   // 状态
   publish_status: publishStatusSchema,
@@ -65,6 +66,7 @@ export const createSchema = z.object({
   sort_order: z.number().int().min(0, "排序权重不能小于0").default(0),
   tags: z.array(z.string()).optional().default([]),
   decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
+  stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
 
   // 状态字段
   publish_status: publishStatusSchema.default("草稿"),
@@ -91,6 +93,7 @@ export const updateSchema = z.object({
   sort_order: z.number().int().min(0, "排序权重不能小于0").optional(),
   tags: z.array(z.string()).optional(),
   decoration_style: z.string().trim().max(100, "装修风格最多100个字符").nullable().optional(),
+  stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
   publish_status: publishStatusSchema.optional(),
   project_status: projectStatusSchema.optional(),
   // 关联字段 - project_id 为字符串类型(UUID)
@@ -144,6 +147,11 @@ export function formValuesToCreateRequest(
     consultant_id: values.consultant_id,
   };
 
+  // 改造阶段完成时间
+  if (values.stage_completed_dates !== undefined) {
+    result.stage_completed_dates = values.stage_completed_dates;
+  }
+
   // 关联L3项目ID - 后端期望字符串类型(UUID)
   if (values.project_id !== undefined) {
     result.project_id = values.project_id;
@@ -174,6 +182,7 @@ export function formValuesToUpdateRequest(values: Partial<FormValues>): Record<s
   if (values.sort_order !== undefined) result.sort_order = values.sort_order;
   if (values.tags !== undefined) result.tags = values.tags;
   if (values.decoration_style !== undefined) result.decoration_style = values.decoration_style || null;
+  if (values.stage_completed_dates !== undefined) result.stage_completed_dates = values.stage_completed_dates;
   if (values.publish_status !== undefined) result.publish_status = values.publish_status;
   if (values.project_status !== undefined) result.project_status = values.project_status;
   if (values.consultant_id !== undefined) result.consultant_id = values.consultant_id;
@@ -216,6 +225,7 @@ export function projectToFormValues(project: Record<string, unknown>): FormValue
     // 后端直接返回数组，直接使用
     tags: Array.isArray(project.tags) ? project.tags as string[] : [],
     decoration_style: (project.decoration_style as string) || undefined,
+    stage_completed_dates: (project.stage_completed_dates as Record<string, string>) || undefined,
     publish_status: (project.publish_status as "草稿" | "发布") || "草稿",
     project_status: (project.project_status as "在途" | "在售" | "已售") || "在途",
     consultant_id: (project.consultant_id as string) || undefined,
@@ -271,6 +281,7 @@ export function importDataToFormValues(data: Record<string, unknown>): Partial<F
     // 后端直接返回数组，直接使用
     tags: Array.isArray(data.tags) ? data.tags as string[] : [],
     decoration_style: (data.decoration_style as string) || "",
+    stage_completed_dates: (data.stage_completed_dates as Record<string, string>) || undefined,
     project_status: mapL3StatusToL4(data.status as string),
   };
 }

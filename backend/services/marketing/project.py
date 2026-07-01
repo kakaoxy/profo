@@ -5,6 +5,7 @@
 
 from sqlalchemy import and_, desc
 from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from models import L4MarketingMedia, L4MarketingProject
 from schemas.l4_marketing import (
@@ -270,6 +271,7 @@ class MarketingProjectService:
             "sort_order",
             "tags",
             "decoration_style",
+            "stage_completed_dates",
             "publish_status",
             "project_status",
             "project_id",
@@ -280,6 +282,9 @@ class MarketingProjectService:
         for field, value in update_data.items():
             if field in allowed_fields:
                 setattr(db_obj, field, value)
+                # JSON 字段需 flag_modified 确保 SQLAlchemy 检测到变更（含空 dict/None）
+                if field == "stage_completed_dates":
+                    flag_modified(db_obj, "stage_completed_dates")
 
         self.db.commit()
         self.db.refresh(db_obj)
