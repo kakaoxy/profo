@@ -19,7 +19,7 @@ export function ConsultantBar({ wechatNumber, phone }: ConsultantBarProps) {
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-0 inset-x-0 z-40 border-t border-dove/30 bg-white/80 backdrop-blur overscroll-behavior-contain">
+    <div className="fixed bottom-0 inset-x-0 z-40 border-t border-dove/30 bg-white/80 backdrop-blur overscroll-behavior-contain" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-3 px-4">
         {/* Secondary action: text-link style per DESIGN.md (one filled button per screen max) */}
         <button
