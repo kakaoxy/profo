@@ -19,20 +19,24 @@ export function ConsultantBar({ wechatNumber, phone }: ConsultantBarProps) {
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-0 inset-x-0 z-40 border-t border-dove/30 bg-white/80 backdrop-blur">
+    <div className="fixed bottom-20 md:bottom-0 inset-x-0 z-40 border-t border-dove/30 bg-white/80 backdrop-blur overscroll-behavior-contain">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-3 px-4">
+        {/* Secondary action: text-link style per DESIGN.md (one filled button per screen max) */}
         <button
           onClick={handleCopyWechat}
-          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-full bg-fog text-ink text-sm font-medium hover:bg-fog/80 transition-colors"
+          aria-label={`复制微信号：${wechatNumber}`}
+          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-full text-ink text-sm font-medium hover:bg-fog/80 focus-visible:ring-2 focus-visible:ring-ink/20 transition-colors"
         >
-          <Copy className="h-4 w-4" />
+          <Copy className="h-4 w-4" aria-hidden="true" />
           添加微信
         </button>
+        {/* Primary CTA: Ink filled pill — one per screen */}
         <a
           href={`tel:${phone}`}
-          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-full bg-ink text-white text-sm font-medium hover:bg-ink/90 transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 h-11 rounded-full bg-ink text-white text-[15px] font-medium tracking-[-0.009em] hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-ink/40 transition-colors"
+          style={{ touchAction: "manipulation" }}
         >
-          <Phone className="h-4 w-4" />
+          <Phone className="h-4 w-4" aria-hidden="true" />
           电话联系
         </a>
       </div>

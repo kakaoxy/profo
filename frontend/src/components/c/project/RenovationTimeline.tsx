@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { ChevronRight, ChevronUp, ImageIcon } from "lucide-react";
 import { getFileUrl } from "@/lib/config";
@@ -32,6 +32,8 @@ interface RenovationTimelineProps {
 export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
   const [expanded, setExpanded] = useState(false);
 
+  const toggle = useCallback(() => setExpanded((prev) => !prev), []);
+
   if (!stages || stages.length === 0) return null;
 
   const mediaByStage = new Map<string, MediaItem[]>();
@@ -45,26 +47,29 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium text-ink">改造过程</h2>
+        <h2 className="text-[22px] font-medium text-ink leading-subheading tracking-subheading font-display">
+          改造过程
+        </h2>
         <button
-          onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1 text-sm text-graphite hover:text-ink transition-colors"
+          onClick={toggle}
+          aria-expanded={expanded}
+          aria-controls="renovation-timeline-content"
+          className="flex items-center gap-1 text-sm text-graphite hover:text-ink focus-visible:ring-2 focus-visible:ring-ink/20 rounded-md transition-colors"
         >
           {expanded ? "收起时间轴" : "查看完整时间轴"}
           {expanded ? (
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="h-4 w-4" aria-hidden="true" />
           ) : (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           )}
         </button>
       </div>
 
       {!expanded && (
         <div
-          className="flex gap-3 overflow-x-auto pb-2 transition-all duration-300"
-          style={{ scrollbarWidth: "none" }}
+          className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          id="renovation-timeline-content"
         >
-          <style>{`div[style*="scrollbar-width: none"]::-webkit-scrollbar { display: none; }`}</style>
           {stages.map((stage) => {
             const stageMedia = mediaByStage.get(stage.stage) ?? [];
             const firstImage = stageMedia.length > 0 ? stageMedia[0] : null;
@@ -81,6 +86,8 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                       <img
                         src={imageUrl}
                         alt={stage.stage}
+                        width={160}
+                        height={160}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -101,7 +108,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                 <p className="text-sm font-medium text-ink truncate">
                   {stage.stage}
                 </p>
-                <p className="text-xs text-graphite">
+                <p className="text-xs text-graphite tabular-nums">
                   {stage.photo_count}张照片
                 </p>
               </div>
@@ -111,7 +118,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
       )}
 
       {expanded && (
-        <div className="transition-all duration-300">
+        <div id="renovation-timeline-content">
           {stages.map((stage, index) => {
             const stageMedia = mediaByStage.get(stage.stage) ?? [];
 
@@ -124,7 +131,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                   <h3 className="text-sm font-medium text-ink">
                     {stage.stage}
                   </h3>
-                  <p className="text-xs text-graphite">
+                  <p className="text-xs text-graphite tabular-nums">
                     {stage.photo_count}张照片
                   </p>
                 </div>
@@ -145,6 +152,8 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                             <img
                               src={imageUrl}
                               alt={item.description ?? stage.stage}
+                              width={200}
+                              height={200}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -158,7 +167,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                           )
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="h-5 w-5 text-c-text-secondary" />
+                            <ImageIcon className="h-5 w-5 text-graphite" aria-hidden="true" />
                           </div>
                         )}
                         </div>

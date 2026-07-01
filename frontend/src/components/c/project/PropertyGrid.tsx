@@ -32,16 +32,18 @@ export function PropertyGrid({
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {cells.map((cell) => (
         <div
           key={cell.label}
-          className="bg-fog p-5 rounded-inputs"
+          className="bg-white p-5 rounded-cards shadow-steep-sm"
         >
-          <p className="text-sm text-graphite">{cell.label}</p>
+          <p className="text-[14px] text-graphite leading-caption tracking-caption">
+            {cell.label}
+          </p>
           <p
-            className={`mt-1 font-medium text-ink ${
-              cell.isPrice ? "text-lg" : "text-base"
+            className={`mt-1 font-medium text-ink min-w-0 truncate tabular-nums ${
+              cell.isPrice ? "text-[18px]" : "text-[16px]"
             }`}
           >
             {cell.value}

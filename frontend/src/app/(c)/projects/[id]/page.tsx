@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, Share } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -37,6 +38,13 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const id = params.id;
 
+  // Fix: derive shareUrl client-side to avoid hydration mismatch
+  const [shareUrl, setShareUrl] = useState("");
+
+  useEffect(() => {
+    setShareUrl(window.location.href);
+  }, []);
+
   const { data, error, isLoading, mutate } = useSWR<ProjectDetail>(
     id ? `/api/v1/public/projects/${id}` : null,
     publicFetcher
@@ -54,9 +62,9 @@ export default function ProjectDetailPage() {
         <div className="px-4 space-y-4">
           <Skeleton className="h-6 w-1/4" />
           <Skeleton className="h-8 w-3/4" />
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-inputs" />
+              <Skeleton key={i} className="h-20 rounded-cards" />
             ))}
           </div>
         </div>
@@ -80,11 +88,10 @@ export default function ProjectDetailPage() {
       ? marketingImages
       : (data.images && data.images.length > 0 ? data.images : []);
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareTitle = `${data.community_name ?? cLocale.projects.shareFallback} · ${data.layout}`;
 
-  const handleShare = async () => {
-    if (typeof navigator === "undefined") return;
+  const handleShare = useCallback(async () => {
+    if (!shareUrl) return;
     try {
       if (navigator.share) {
         await navigator.share({ title: shareTitle, url: shareUrl });
@@ -95,40 +102,53 @@ export default function ProjectDetailPage() {
     } catch {
       toast.error(cLocale.projects.shareFailed);
     }
-  };
+  }, [shareUrl, shareTitle]);
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
 
   return (
     <div className="pb-24 md:pb-20">
+      {/* Top floating nav — back + share */}
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 pointer-events-none">
         <button
-          onClick={() => router.back()}
+          onClick={handleBack}
           aria-label={cLocale.projects.backAria}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-sm pointer-events-auto active:scale-95 transition-transform"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-steep-sm pointer-events-auto active:scale-95 focus-visible:ring-2 focus-visible:ring-ink/20 transition-[transform]"
+          style={{ touchAction: "manipulation" }}
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </button>
         <button
           onClick={handleShare}
           aria-label={cLocale.projects.shareAria}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-sm pointer-events-auto active:scale-95 transition-transform"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-ink shadow-steep-sm pointer-events-auto active:scale-95 focus-visible:ring-2 focus-visible:ring-ink/20 transition-[transform]"
+          style={{ touchAction: "manipulation" }}
         >
-          <Share className="w-5 h-5" />
+          <Share className="w-5 h-5" aria-hidden="true" />
         </button>
       </nav>
+
       <ImageCarousel images={carouselImages} />
 
-      <div className="mx-auto max-w-[1200px] px-4 pt-4 space-y-2">
+      {/* Hero info block — Signifier heading per DESIGN.md */}
+      <div className="mx-auto max-w-[1200px] px-4 pt-6 space-y-2">
         <span
           className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
         >
           {status.label}
         </span>
-        <h1 className="text-xl font-medium text-ink">
+        <h1 className="text-[26px] md:text-[44px] font-display text-ink leading-heading-sm md:leading-heading tracking-heading-sm md:tracking-heading text-wrap-balance">
           {data.community_name ?? cLocale.projects.unknownCommunity}
         </h1>
+        <p className="text-[16px] text-ash leading-body tracking-body">
+          美房宝&nbsp;—&nbsp;出钱装修、全权卖房。卖到约定价您拿钱，卖不到装修免费送。
+        </p>
       </div>
 
-      <section className="mx-auto max-w-[1200px] px-4 pt-4">
+      {/* Property specs — white cards on fog canvas per DESIGN.md */}
+      <section className="mx-auto max-w-[1200px] px-4 pt-6">
         <PropertyGrid
           totalPrice={data.total_price}
           unitPrice={data.unit_price}
@@ -140,7 +160,8 @@ export default function ProjectDetailPage() {
         />
       </section>
 
-      <section className="mx-auto max-w-[1200px] px-4 pt-6">
+      {/* Renovation timeline section */}
+      <section className="mx-auto max-w-[1200px] px-4 pt-8">
         <RenovationTimeline
           stages={data.renovation_stages ?? []}
           media={data.media ?? []}
