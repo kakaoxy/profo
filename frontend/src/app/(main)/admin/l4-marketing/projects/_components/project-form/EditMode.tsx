@@ -107,18 +107,27 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
   } = useProjectImport({ form, onMediaImport: handleMediaImport });
 
   // 处理照片变化
-  const handlePhotosChange = React.useCallback((newPhotos: L4MarketingMedia[]) => {
-    setLocalPhotos(newPhotos);
-    // 编辑模式下，检测照片是否有变更（数量变化或有新上传的照片）
-    if (mode === "edit") {
-      const hasChanges = newPhotos.length !== initialPhotoCountRef.current ||
-        newPhotos.some(p => {
-          // 检测临时ID（负数或大于特定值的ID表示新上传）
-          const id = Number(p.id);
-          return id < 0 || id > 1000000000000; // 临时ID通常是负数或时间戳
-        });
-      setHasPhotoChanges(hasChanges);
-    }
+  const handlePhotosChange = React.useCallback((
+    update: L4MarketingMedia[] | ((prev: L4MarketingMedia[]) => L4MarketingMedia[]),
+  ) => {
+    setLocalPhotos((prev) => {
+      const newPhotos = typeof update === "function"
+        ? (update as (prev: L4MarketingMedia[]) => L4MarketingMedia[])(prev)
+        : update;
+
+      // 编辑模式下，检测照片是否有变更（数量变化或有新上传的照片）
+      if (mode === "edit") {
+        const hasChanges = newPhotos.length !== initialPhotoCountRef.current ||
+          newPhotos.some(p => {
+            // 检测临时ID（负数或大于特定值的ID表示新上传）
+            const id = Number(p.id);
+            return id < 0 || id > 1000000000000; // 临时ID通常是负数或时间戳
+          });
+        setHasPhotoChanges(hasChanges);
+      }
+
+      return newPhotos;
+    });
   }, [mode]);
 
   const submitButtonText = isSubmitting

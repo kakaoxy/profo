@@ -9,12 +9,22 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useUpload } from "@/components/common/upload";
 import { createL4MarketingMediaAction } from "../../actions";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@/lib/constants";
+import {
+  ALLOWED_IMAGE_TYPES,
+  MAX_IMAGE_SIZE,
+  MAX_UPLOAD_FILES,
+} from "@/lib/constants";
 import type { L4MarketingMedia, PhotoCategory } from "../../types";
 
 export interface UploadProgress {
   filename: string;
   progress: number;
+  file: File;
+}
+
+interface FailedUpload {
+  filename: string;
+  file: File;
 }
 
 interface UseImageUploadOptions {
@@ -30,7 +40,9 @@ interface UseImageUploadReturn {
   uploadingFiles: UploadProgress[];
   isUploading: boolean;
   uploadFiles: (files: FileList | File[]) => Promise<void>;
-  setUploadingFiles: React.Dispatch<React.SetStateAction<UploadProgress[]>>;
+  failedUploads: FailedUpload[];
+  retryFailed: () => Promise<void>;
+  clearFailed: () => void;
 }
 
 export function useImageUpload({
@@ -42,125 +54,185 @@ export function useImageUpload({
 }: UseImageUploadOptions): UseImageUploadReturn {
   // 本地状态管理上传进度（用于UI展示）
   const [uploadingFiles, setUploadingFiles] = useState<UploadProgress[]>([]);
+  const [failedUploads, setFailedUploads] = useState<FailedUpload[]>([]);
 
-  // 使用 ref 存储 photos 和 onPhotosChange，避免频繁变化导致 useCallback 重建
-  const photosRef = useRef(photos);
+  // 使用 ref 存储 onPhotosChange 和 photos，避免频繁变化导致 useCallback 重建
   const onPhotosChangeRef = useRef(onPhotosChange);
-
-  // 使用 useEffect 同步 ref 值，避免在渲染期间更新
-  useEffect(() => {
-    photosRef.current = photos;
-  }, [photos]);
+  const photosRef = useRef(photos);
+  // 记录当前批次起始排序值，保证同一批次内 sort_order 不重复
+  const baseSortOrderRef = useRef(0);
 
   useEffect(() => {
     onPhotosChangeRef.current = onPhotosChange;
   }, [onPhotosChange]);
 
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
   const { isUploading, uploadSingle } = useUpload({
     maxSize: MAX_IMAGE_SIZE,
     allowedTypes: ALLOWED_IMAGE_TYPES,
     multiple: true,
-    onProgress: ({ filename, progress }) => {
+    onProgress: ({ file, progress }) => {
       // 同步到组件的 uploadingFiles 状态（用于UI展示）
-      setUploadingFiles((prev) => {
-        const exists = prev.find((f) => f.filename === filename);
-        if (exists) {
-          return prev.map((f) => (f.filename === filename ? { ...f, progress } : f));
-        }
-        return [...prev, { filename, progress }];
-      });
-    },
-    onSuccess: async (response, file) => {
-      const fileUrl = response.url;
-      if (!fileUrl) {
-        toast.error(`${file.name}: 解析响应失败`);
-        return;
-      }
-
-      // 上传成功后从进度列表移除
-      setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
-
-      // 使用 ref 获取最新值
-      const currentPhotos = photosRef.current;
-      const currentOnPhotosChange = onPhotosChangeRef.current;
-
-      // 计算排序值（基于当前分类的照片数量）
-      const categoryPhotos = currentPhotos.filter(
-        (p) => p.photo_category === uploadCategory
+      setUploadingFiles((prev) =>
+        prev.map((item) => (item.file === file ? { ...item, progress } : item)),
       );
-      const nextSortOrder = categoryPhotos.length;
-
-      // 如果没有 projectId（创建模式），直接创建临时媒体记录
-      if (!projectId) {
-        const tempMedia: L4MarketingMedia = {
-          id: Date.now() + Math.random(), // 临时ID
-          file_url: fileUrl,
-          media_type: "image",
-          photo_category: uploadCategory,
-          renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
-          sort_order: nextSortOrder,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as L4MarketingMedia;
-        currentOnPhotosChange([...currentPhotos, tempMedia]);
-        toast.success(`${file.name}: 上传成功`);
-        return;
-      }
-
-      // 有 projectId（编辑模式），创建媒体记录
-      try {
-        const createResult = await createL4MarketingMediaAction(projectId, {
-          file_url: fileUrl,
-          media_type: "image",
-          photo_category: uploadCategory,
-          renovation_stage: uploadCategory === "renovation" ? uploadStage : null,
-          sort_order: nextSortOrder,
-        });
-
-        if (createResult.success && createResult.data) {
-          currentOnPhotosChange([...currentPhotos, createResult.data]);
-          toast.success(`${file.name}: 上传成功`);
-        } else {
-          toast.error(createResult.error || `${file.name}: 保存记录失败`);
-        }
-      } catch {
-        toast.error(`${file.name}: 保存记录失败`);
-      }
-    },
-    onError: (error, file) => {
-      // 上传失败时从列表中移除
-      setUploadingFiles((prev) => prev.filter((f) => f.filename !== file.name));
     },
   });
+
+  const makeTempMedia = useCallback(
+    (fileUrl: string, sortOrder: number): L4MarketingMedia => {
+      return {
+        id: Date.now() + Math.random(),
+        file_url: fileUrl,
+        media_type: "image",
+        photo_category: uploadCategory,
+        renovation_stage:
+          uploadCategory === "renovation" ? uploadStage : null,
+        sort_order: sortOrder,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as L4MarketingMedia;
+    },
+    [uploadCategory, uploadStage],
+  );
 
   const uploadFiles = useCallback(
     async (files: FileList | File[]) => {
       const fileArray = Array.isArray(files) ? files : Array.from(files);
 
-      if (fileArray.length > 1) {
-        toast.info(`开始上传 ${fileArray.length} 个文件...`);
+      if (fileArray.length === 0) return;
+
+      if (fileArray.length > MAX_UPLOAD_FILES) {
+        toast.error(
+          `一次最多上传 ${MAX_UPLOAD_FILES} 张图片，当前选择了 ${fileArray.length} 张`,
+        );
+        return;
       }
 
-      setUploadingFiles([]);
+      setFailedUploads([]);
+      setUploadingFiles(
+        fileArray.map((file) => ({
+          filename: file.name,
+          progress: 0,
+          file,
+        })),
+      );
+      baseSortOrderRef.current = photosRef.current.filter(
+        (p) => p.photo_category === uploadCategory,
+      ).length;
 
-      const results = await Promise.all(fileArray.map((file) => uploadSingle(file)));
-      const successCount = results.filter(Boolean).length;
+      try {
+        const results = await Promise.all(
+          fileArray.map((file) => uploadSingle(file)),
+        );
 
-      setUploadingFiles([]);
+        const succeeded: { file: File; response: { url: string }; index: number }[] =
+          [];
+        const failed: FailedUpload[] = [];
 
-      if (fileArray.length > 1) {
-        toast.success(`上传完成`, {
-          description: `成功 ${successCount} 个，共 ${fileArray.length} 个文件`,
+        results.forEach((response, idx) => {
+          const file = fileArray[idx];
+          if (response?.url) {
+            succeeded.push({ file, response, index: idx });
+          } else {
+            failed.push({ filename: file.name, file });
+          }
         });
+
+        if (succeeded.length === 0) {
+          setFailedUploads(failed);
+          if (fileArray.length > 1) {
+            toast.error(`上传失败：${failed.length} 个文件未上传成功`);
+          } else {
+            toast.error(`${fileArray[0].name}: 上传失败`);
+          }
+          return;
+        }
+
+        const currentPhotos = photosRef.current;
+
+        if (!projectId) {
+          // 创建模式：直接生成临时媒体记录，等提交时一并保存
+          const newPhotos = succeeded.map(({ response, index }) =>
+            makeTempMedia(response.url, baseSortOrderRef.current + index),
+          );
+          onPhotosChangeRef.current([...currentPhotos, ...newPhotos]);
+        } else {
+          // 编辑模式：逐个调用后端接口创建媒体记录
+          const newMedias: L4MarketingMedia[] = [];
+
+          for (const { response, index } of succeeded) {
+            const createResult = await createL4MarketingMediaAction(
+              projectId,
+              {
+                file_url: response.url,
+                media_type: "image",
+                photo_category: uploadCategory,
+                renovation_stage:
+                  uploadCategory === "renovation" ? uploadStage : null,
+                sort_order: baseSortOrderRef.current + index,
+              },
+            );
+
+            if (createResult.success && createResult.data) {
+              newMedias.push(createResult.data);
+            } else {
+              failed.push({
+                filename: fileArray[index].name,
+                file: fileArray[index],
+              });
+            }
+          }
+
+          if (newMedias.length > 0) {
+            onPhotosChangeRef.current([...currentPhotos, ...newMedias]);
+          }
+        }
+
+        setFailedUploads(failed);
+
+        const successCount = fileArray.length - failed.length;
+        if (fileArray.length > 1) {
+          if (failed.length === 0) {
+            toast.success(`上传完成：成功 ${successCount} 个文件`);
+          } else {
+            toast.error(
+              `上传完成：成功 ${successCount} 个，失败 ${failed.length} 个`,
+            );
+          }
+        } else if (failed.length === 0) {
+          toast.success(`${fileArray[0].name}: 上传成功`);
+        }
+      } catch {
+        toast.error("上传过程中发生错误");
+        setFailedUploads(
+          fileArray.map((file) => ({ filename: file.name, file })),
+        );
+      } finally {
+        setUploadingFiles([]);
       }
     },
-    [uploadSingle]
+    [uploadSingle, projectId, uploadCategory, uploadStage, makeTempMedia],
   );
+
+  const retryFailed = useCallback(async () => {
+    if (failedUploads.length === 0) return;
+    await uploadFiles(failedUploads.map((f) => f.file));
+  }, [failedUploads, uploadFiles]);
+
+  const clearFailed = useCallback(() => {
+    setFailedUploads([]);
+  }, []);
 
   return {
     uploadingFiles,
     isUploading,
     uploadFiles,
-    setUploadingFiles,
+    failedUploads,
+    retryFailed,
+    clearFailed,
   };
 }
