@@ -13,8 +13,9 @@ import { UploadArea } from "@/components/common/image-upload";
 import { useImageUpload } from "./use-image-upload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { FolderOpen, Loader2 } from "lucide-react";
+import { FolderOpen, Loader2, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MAX_UPLOAD_FILES } from "@/lib/constants";
 import { usePhotoDragAndDrop } from "./use-photo-drag-and-drop";
 import { MarketingPhotoList } from "./marketing-photo-list";
 import { RenovationPhotoList } from "./renovation-photo-list";
@@ -44,7 +45,14 @@ export function DualPhotoManager({
 
   const { effectiveProjectId } = useProjectId({ l4ProjectId, l3ProjectId });
 
-  const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
+  const {
+    uploadingFiles,
+    isUploading,
+    uploadFiles,
+    failedUploads,
+    retryFailed,
+    clearFailed,
+  } = useImageUpload({
     // 优先使用 l4ProjectId（L4营销项目ID），如果不存在则使用 l3ProjectId
     projectId: effectiveProjectId,
     uploadCategory,
@@ -120,7 +128,7 @@ export function DualPhotoManager({
 
             <TabsContent value="upload" className="space-y-4 mt-4">
               <div className="space-y-3">
-                <div className="text-xs font-medium text-[var(--muted-foreground)]">选择照片类别</div>
+                <div className="text-xs font-medium text-muted-foreground">选择照片类别</div>
                 <PhotoCategorySelector
                   value={uploadCategory}
                   onChange={setUploadCategory}
@@ -130,13 +138,13 @@ export function DualPhotoManager({
                 {uploadCategory === "renovation" ? (
                   <div className="grid grid-cols-12 gap-3">
                     <div className="col-span-6 lg:col-span-4">
-                      <div className="text-xs font-medium text-[var(--muted-foreground)] mb-1">装修阶段</div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">装修阶段</div>
                       <Select
                         value={uploadStage}
                         onValueChange={setUploadStage}
                         disabled={isUploading}
                       >
-                        <SelectTrigger className="bg-card border-[var(--border)]/50">
+                        <SelectTrigger className="bg-card border-(--border)/50">
                           <SelectValue placeholder="选择阶段" />
                         </SelectTrigger>
                         <SelectContent>
@@ -156,7 +164,7 @@ export function DualPhotoManager({
                 isUploading={isUploading}
                 disabled={isUploading}
                 title="点击或拖拽图片到此处上传"
-                description="支持 JPG, PNG, GIF, WebP 格式，单文件最大 10MB"
+                description={`支持 JPG, PNG, GIF, WebP 格式，单文件最大 10MB，单次最多 ${MAX_UPLOAD_FILES} 张`}
                 accept=".jpg,.jpeg,.png,.gif,.webp"
                 multiple
                 onUpload={uploadFiles}
@@ -168,8 +176,8 @@ export function DualPhotoManager({
                     <Loader2 className="h-4 w-4 animate-spin" />
                     正在上传 {uploadingFiles.length} 个文件...
                   </div>
-                  {uploadingFiles.map((file) => (
-                    <div key={file.filename} className="space-y-1">
+                  {uploadingFiles.map((file, index) => (
+                    <div key={index} className="space-y-1">
                       <div className="flex justify-between text-xs">
                         <span className="truncate max-w-[200px]">{file.filename}</span>
                         <span>{file.progress}%</span>
@@ -179,17 +187,54 @@ export function DualPhotoManager({
                   ))}
                 </div>
               )}
+
+              {failedUploads.length > 0 && (
+                <div className="rounded-md border border-error/20 bg-error/5 p-3 space-y-2">
+                  <div className="text-sm font-medium text-error">
+                    以下 {failedUploads.length} 个文件上传失败
+                  </div>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    {failedUploads.map((file, index) => (
+                      <li key={index} className="truncate">{file.filename}</li>
+                    ))}
+                  </ul>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={retryFailed}
+                      disabled={isUploading}
+                      className="h-8 text-xs"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                      重试
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFailed}
+                      disabled={isUploading}
+                      className="h-8 text-xs"
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      清除
+                    </Button>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="sync" className="space-y-4 mt-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="text-xs font-medium text-[var(--muted-foreground)]">从其他项目同步照片</div>
+                <div className="text-xs font-medium text-muted-foreground">从其他项目同步照片</div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setPickerOpen(true)}
-                  className="bg-card border-[var(--border)]/50 hover:bg-[var(--primary)]"
+                  className="bg-card border-(--border)/50 hover:bg-primary"
                 >
                   <FolderOpen className="h-4 w-4 mr-1" />
                   从照片库选择
@@ -204,7 +249,7 @@ export function DualPhotoManager({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[var(--border)]/20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-(--border)/20">
               <MarketingPhotoList
                 photos={marketingPhotos}
                 photoIds={marketingPhotoIds}
