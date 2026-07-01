@@ -44,7 +44,7 @@ export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryP
                 variant="secondary"
                 className="text-[10px] bg-black/50 text-white border-0"
               >
-                {(p.renovation_stage || "other").slice(0, 8)}
+                {(p.renovation_stage || "—").slice(0, 8)}
               </Badge>
               <Badge
                 variant="secondary"

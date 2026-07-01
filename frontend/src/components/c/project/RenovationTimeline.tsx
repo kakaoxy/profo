@@ -5,12 +5,14 @@ import Image from "next/image";
 import { ChevronRight, ChevronUp, ImageIcon } from "lucide-react";
 import { getFileUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
+import { cLocale } from "@/lib/i18n/c-locale";
 
 const isDev = process.env.NODE_ENV === "development";
 
 interface RenovationStage {
   stage: string;
   photo_count: number;
+  completed_date?: string | null;
 }
 
 interface MediaItem {
@@ -48,7 +50,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[22px] font-medium text-ink leading-subheading tracking-subheading font-display">
-          改造过程
+          {cLocale.projects.renovationProcess}
         </h2>
         <button
           onClick={toggle}
@@ -56,7 +58,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
           aria-controls="renovation-timeline-content"
           className="flex items-center gap-1 text-sm text-graphite hover:text-ink focus-visible:ring-2 focus-visible:ring-ink/20 rounded-md transition-colors"
         >
-          {expanded ? "收起时间轴" : "查看完整时间轴"}
+          {expanded ? cLocale.projects.collapseTimeline : cLocale.projects.viewFullTimeline}
           {expanded ? (
             <ChevronUp className="h-4 w-4" aria-hidden="true" />
           ) : (
@@ -100,7 +102,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                     )
                   ) : (
                     <div className="flex items-center justify-center h-full text-graphite text-xs">
-                      暂无图片
+                      {cLocale.projects.noPhotos}
                     </div>
                   )}
                 </div>
@@ -108,8 +110,13 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                   {stage.stage}
                 </p>
                 <p className="text-xs text-graphite tabular-nums">
-                  {stage.photo_count}张照片
+                  {cLocale.projects.photoCount(stage.photo_count)}
                 </p>
+                {stage.completed_date && (
+                  <p className="text-xs text-graphite tabular-nums">
+                    {cLocale.projects.completedOn(stage.completed_date)}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -131,8 +138,13 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                     {stage.stage}
                   </h3>
                   <p className="text-xs text-graphite tabular-nums">
-                    {stage.photo_count}张照片
+                    {cLocale.projects.photoCount(stage.photo_count)}
                   </p>
+                  {stage.completed_date && (
+                    <p className="text-xs text-graphite tabular-nums">
+                      {cLocale.projects.completedOn(stage.completed_date)}
+                    </p>
+                  )}
                 </div>
                 {stageMedia.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -175,7 +187,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                   </div>
                 ) : (
                   <div className="text-xs text-graphite py-4 text-center">
-                    暂无图片
+                    {cLocale.projects.noPhotos}
                   </div>
                 )}
               </div>

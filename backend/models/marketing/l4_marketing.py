@@ -87,6 +87,13 @@ class L4MarketingProject(BaseModel):
     tags: Mapped[list] = mapped_column(JSON, default=list, comment="标签列表，JSON数组")
     decoration_style: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="装修风格，最大长度100")
 
+    # 改造阶段完成时间 - JSON 格式 {stage: "YYYY-MM-DD"}，与 L3 ProjectRenovation.stage_completed_dates 同构
+    stage_completed_dates: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}",
+    )
+
     # 状态控制
     publish_status: Mapped[PublishStatus] = mapped_column(
         SQLEnum(PublishStatus, values_callable=lambda x: [e.value for e in x], create_constraint=True),

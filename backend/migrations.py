@@ -8,6 +8,7 @@
 - add_phone_hash_column: 为 users 表添加 phone_hash 列与唯一索引（H-006）
 - encrypt_existing_phones: 将已存的明文手机号加密为 Fernet 密文（H-006）
 - populate_phone_hash: 为已存用户回填 phone_hash（H-006）
+- add_stage_completed_dates_column: 为 l4_marketing_projects 表添加 stage_completed_dates 列
 
 """
 
@@ -168,6 +169,21 @@ def populate_phone_hash(engine: Engine) -> None:
         logger.info("迁移：回填了 %d 条 phone_hash", updated)
 
 
+def add_stage_completed_dates_column(engine: Engine) -> None:
+    """为 l4_marketing_projects 表添加 stage_completed_dates 列。
+
+    存储各改造阶段完成日期，JSON 格式 {stage: "YYYY-MM-DD"}。
+    SQLite 支持 ALTER TABLE ADD COLUMN，幂等。
+    """
+    if _column_exists(engine, "l4_marketing_projects", "stage_completed_dates"):
+        return
+    logger.info("迁移：为 l4_marketing_projects 表添加 stage_completed_dates 列")
+    with engine.begin() as conn:
+        conn.execute(
+            text("ALTER TABLE l4_marketing_projects ADD COLUMN stage_completed_dates JSON")
+        )
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -175,6 +191,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_phone_hash_column(engine)
         encrypt_existing_phones(engine)
         populate_phone_hash(engine)
+        add_stage_completed_dates_column(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

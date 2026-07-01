@@ -1,6 +1,6 @@
 "use client";
 
-import { L4MarketingMedia } from "../../types";
+import { L4MarketingMedia, RENOVATION_STAGES } from "../../types";
 import { getFileUrl } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -21,17 +21,11 @@ export function PhotoItem({
   onDelete,
   isSynced = true,
 }: PhotoItemProps) {
-  const stageLabels: Record<string, string> = {
-    other: "其他",
-    拆除: "拆除阶段",
-    水电: "水电阶段",
-    木瓦: "木瓦阶段",
-    油漆: "油漆阶段",
-    安装: "安装阶段",
-    交付: "交付阶段",
-  };
+  const stageLabels: Record<string, string> = Object.fromEntries(
+    RENOVATION_STAGES.map((s) => [s.value, s.label]),
+  );
 
-  const stage = photo.renovation_stage || "other";
+  const stage = photo.renovation_stage || "";
   const displayUrl = photo.file_url || photo.thumbnail_url;
   const { status: imageStatus } = useSimpleImageLoader(
     displayUrl ? getFileUrl(displayUrl) : null
@@ -79,7 +73,7 @@ export function PhotoItem({
           照片 #{photo.id}
         </p>
         <p className="text-xs text-muted-foreground">
-          阶段: {stageLabels[stage] || stageLabels.other}
+          阶段: {stageLabels[stage] || stage || "—"}
         </p>
       </div>
       <div className="flex items-center gap-3">

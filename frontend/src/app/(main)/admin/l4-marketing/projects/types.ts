@@ -135,21 +135,23 @@ export const MEDIA_TYPE = {
 
 export type RenovationStage =
   | "拆除"
+  | "设计"
   | "水电"
   | "木瓦"
   | "油漆"
   | "安装"
   | "交付"
-  | "other";
+  | "已完成";
 
 export const RENOVATION_STAGES: { value: RenovationStage; label: string }[] = [
   { value: "拆除", label: "拆除阶段" },
+  { value: "设计", label: "设计阶段" },
   { value: "水电", label: "水电阶段" },
   { value: "木瓦", label: "木瓦阶段" },
   { value: "油漆", label: "油漆阶段" },
   { value: "安装", label: "安装阶段" },
   { value: "交付", label: "交付阶段" },
-  { value: "other", label: "其他" },
+  { value: "已完成", label: "已完成" },
 ];
 
 // ============================================================================

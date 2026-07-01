@@ -525,6 +525,12 @@ export const cLocale = {
     shareFailed: "分享失败，请手动复制链接",
     backAria: "返回上一页",
     shareAria: "分享房源",
+    renovationProcess: "改造过程",
+    viewFullTimeline: "查看完整时间轴",
+    collapseTimeline: "收起时间轴",
+    photoCount: (n: number) => `${n}张照片`,
+    noPhotos: "暂无图片",
+    completedOn: (date: string) => `完成于 ${date}`,
   },
 
   error: {

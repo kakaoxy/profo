@@ -34,6 +34,10 @@ class L4MarketingProjectBase(BaseModel):
     sort_order: int = Field(default=0, ge=0, description="排序权重，默认0")
     tags: list[str] = Field(default_factory=list, description="标签列表")
     decoration_style: str | None = Field(default=None, max_length=100, description="装修风格，最大长度100")
+    stage_completed_dates: dict[str, str] | None = Field(
+        default=None,
+        description="各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}",
+    )
 
     # 状态
     publish_status: PublishStatus = Field(default=PublishStatus.DRAFT, description="发布状态: 草稿/发布")
@@ -85,6 +89,10 @@ class L4MarketingProjectUpdate(BaseModel):
     sort_order: int | None = Field(default=None, ge=0)
     tags: list[str] | None = Field(default=None, description="标签列表")
     decoration_style: str | None = Field(default=None, max_length=100)
+    stage_completed_dates: dict[str, str] | None = Field(
+        default=None,
+        description="各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}",
+    )
 
     # 状态
     publish_status: PublishStatus | None = Field(default=None, description="发布状态: 草稿/发布")
@@ -148,6 +156,7 @@ class L4MarketingProjectResponse(BaseModel):
     sort_order: int
     tags: list[str] = Field(default_factory=list, description="标签列表，JSON数组")
     decoration_style: str | None = None
+    stage_completed_dates: dict[str, str] | None = None
 
     # 状态
     publish_status: PublishStatus
@@ -182,6 +191,22 @@ class L4MarketingProjectResponse(BaseModel):
             except json.JSONDecodeError:
                 return []
         return []
+
+    @field_validator("stage_completed_dates", mode="before")
+    @classmethod
+    def validate_stage_completed_dates(cls, v: Any) -> dict[str, str] | None:  # noqa: ANN401
+        """验证阶段完成日期字段，兼容 JSON 字符串/None."""
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, dict) else None
+            except json.JSONDecodeError:
+                return None
+        return None
 
     @field_validator("community_id", "project_id", "consultant_id", mode="before")
     @classmethod

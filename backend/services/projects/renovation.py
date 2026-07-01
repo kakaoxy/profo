@@ -117,7 +117,6 @@ class RenovationService:
 
         # 更新到下一个阶段
         project.renovation_stage = renovation_data.renovation_stage.value
-        project.stage_completed_at = renovation_data.stage_completed_at
 
         # 如果有实际开始/结束日期，更新到装修记录
         if renovation_data.renovation_stage.value == "拆除" and not renovation.actual_start_date:

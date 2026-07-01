@@ -2851,6 +2851,13 @@ export interface components {
              * @description 装修风格
              */
             decoration_style?: string | null;
+            /**
+             * Stage Completed Dates
+             * @description L3 项目各阶段完成日期，格式: {stage: 'YYYY-MM-DD'}
+             */
+            stage_completed_dates?: {
+                [key: string]: string;
+            } | null;
             /** @description 项目状态 */
             status?: components["schemas"]["ProjectStatus"] | null;
             /**
@@ -3108,6 +3115,13 @@ export interface components {
              */
             decoration_style?: string | null;
             /**
+             * Stage Completed Dates
+             * @description 各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}
+             */
+            stage_completed_dates?: {
+                [key: string]: string;
+            } | null;
+            /**
              * @description 发布状态: 草稿/发布
              * @default 草稿
              */
@@ -3215,6 +3229,10 @@ export interface components {
             tags?: string[];
             /** Decoration Style */
             decoration_style?: string | null;
+            /** Stage Completed Dates */
+            stage_completed_dates?: {
+                [key: string]: string;
+            } | null;
             publish_status: components["schemas"]["PublishStatus"];
             project_status: components["schemas"]["MarketingProjectStatus"];
             /** Project Id */
@@ -3322,6 +3340,13 @@ export interface components {
             tags?: string[] | null;
             /** Decoration Style */
             decoration_style?: string | null;
+            /**
+             * Stage Completed Dates
+             * @description 各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}
+             */
+            stage_completed_dates?: {
+                [key: string]: string;
+            } | null;
             /** @description 发布状态: 草稿/发布 */
             publish_status?: components["schemas"]["PublishStatus"] | null;
             /** @description 项目状态: 在途/在售/已售 */
@@ -5233,6 +5258,11 @@ export interface components {
              * @description 照片数量
              */
             photo_count: number;
+            /**
+             * Completed Date
+             * @description 阶段完成日期 YYYY-MM-DD
+             */
+            completed_date?: string | null;
         };
         /**
          * PublicSoldProjectItem

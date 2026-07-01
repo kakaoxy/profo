@@ -169,7 +169,7 @@ export async function batchAddL4PhotosAction(
       media_type: "image",
       photo_category: "marketing",
       origin_media_id: photoId,
-      renovation_stage: "other",
+      renovation_stage: null,
       sort_order: sortOrder,
     });
 

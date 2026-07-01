@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from models import Community, Project, RenovationPhoto
+from models import Community, Project, ProjectRenovation, RenovationPhoto
 from schemas.l4_marketing.import_schemas import (
     ImportableMediaResponse,
     L3ProjectImportResponse,
@@ -76,6 +76,17 @@ class MarketingImportService:
         # 获取可导入的媒体资源
         available_media = self._get_available_media(project_id)
 
+        # 读取 L3 阶段完成时间
+        renovation = (
+            self.db.query(ProjectRenovation)
+            .filter(
+                ProjectRenovation.project_id == project_id,
+                ProjectRenovation.is_deleted.is_(False),
+            )
+            .first()
+        )
+        stage_completed_dates = renovation.stage_completed_dates if renovation else None
+
         # 从地址提取楼层信息
         floor_info = self._extract_floor_info(project.address)
 
@@ -101,6 +112,7 @@ class MarketingImportService:
             title=title,
             tags=None,
             decoration_style=None,
+            stage_completed_dates=stage_completed_dates,
             status=status,
             available_media=available_media,
         )

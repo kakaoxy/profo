@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { L4MarketingMedia } from "@/app/(main)/admin/l4-marketing/projects/types";
+import { L4MarketingMedia, RENOVATION_STAGES } from "@/app/(main)/admin/l4-marketing/projects/types";
 import { PhotoItem } from "./photo-item";
 import { PhotoLibraryPicker } from "../../_components/photo-manager";
 import { deleteL4MarketingMediaAction } from "../../actions";
@@ -38,7 +38,7 @@ export function PhotoManager({
 }: PhotoManagerProps) {
   const [activeTab, setActiveTab] = useState<UploadTab>("upload");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [uploadStage, setUploadStage] = useState("other");
+  const [uploadStage, setUploadStage] = useState("拆除");
 
   const { uploadingFiles, isUploading, uploadFiles } = useImageUpload({
     projectId: l3ProjectId ? parseInt(l3ProjectId) : undefined,
@@ -123,13 +123,11 @@ export function PhotoManager({
                       <SelectValue placeholder="选择阶段" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="拆除">拆除</SelectItem>
-                      <SelectItem value="水电">水电</SelectItem>
-                      <SelectItem value="木瓦">木瓦</SelectItem>
-                      <SelectItem value="油漆">油漆</SelectItem>
-                      <SelectItem value="安装">安装</SelectItem>
-                      <SelectItem value="交付">交付</SelectItem>
-                      <SelectItem value="other">其他</SelectItem>
+                      {RENOVATION_STAGES.map((stage) => (
+                        <SelectItem key={stage.value} value={stage.value}>
+                          {stage.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
