@@ -144,7 +144,7 @@ export function DualPhotoManager({
                         onValueChange={setUploadStage}
                         disabled={isUploading}
                       >
-                        <SelectTrigger className="bg-card border-(--border)/50">
+                        <SelectTrigger className="bg-card border-[--border]/50">
                           <SelectValue placeholder="选择阶段" />
                         </SelectTrigger>
                         <SelectContent>
@@ -234,7 +234,7 @@ export function DualPhotoManager({
                   variant="outline"
                   size="sm"
                   onClick={() => setPickerOpen(true)}
-                  className="bg-card border-(--border)/50 hover:bg-primary"
+                  className="bg-card border-[--border]/50 hover:bg-primary"
                 >
                   <FolderOpen className="h-4 w-4 mr-1" />
                   从照片库选择
@@ -249,7 +249,7 @@ export function DualPhotoManager({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-(--border)/20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4 border-t border-[--border]/20">
               <MarketingPhotoList
                 photos={marketingPhotos}
                 photoIds={marketingPhotoIds}
