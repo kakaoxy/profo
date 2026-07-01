@@ -61,6 +61,9 @@ export function useImageUpload({
   const photosRef = useRef(photos);
   // 记录当前批次起始排序值，保证同一批次内 sort_order 不重复
   const baseSortOrderRef = useRef(0);
+  // 串行化并发上传：连续选择多批文件时，后一批等待前一批完成（含 onPhotosChange）
+  // 再开始，避免后一批读取过期的 photosRef 而覆盖前一批的上传结果
+  const uploadChainRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     onPhotosChangeRef.current = onPhotosChange;
@@ -99,7 +102,7 @@ export function useImageUpload({
     [uploadCategory, uploadStage],
   );
 
-  const uploadFiles = useCallback(
+  const runUpload = useCallback(
     async (files: FileList | File[]) => {
       const fileArray = Array.isArray(files) ? files : Array.from(files);
 
@@ -216,6 +219,26 @@ export function useImageUpload({
       }
     },
     [uploadSingle, projectId, uploadCategory, uploadStage, makeTempMedia],
+  );
+
+  // 并发锁：连续触发 uploadFiles 时串行执行，后一批等待前一批完全结束
+  // （含 onPhotosChange 回调）再开始，确保后一批读到最新的 photosRef，
+  // 避免过期快照覆盖前一批的上传结果
+  const uploadFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const previous = uploadChainRef.current;
+      let release!: () => void;
+      uploadChainRef.current = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await previous;
+      try {
+        await runUpload(files);
+      } finally {
+        release();
+      }
+    },
+    [runUpload],
   );
 
   const retryFailed = useCallback(async () => {
