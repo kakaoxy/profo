@@ -1,5 +1,7 @@
 "use client";
 
+import { Building2, LayoutGrid, Maximize, Compass, MessageSquare, Calendar } from "lucide-react";
+
 interface LeadInfoCardProps {
   communityName: string;
   layout: string | null;
@@ -8,6 +10,20 @@ interface LeadInfoCardProps {
   orientation: string | null;
   remarks: string | null;
   createdAt: string;
+}
+
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fog text-graphite">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <span className="text-[12px] uppercase tracking-[0.5px] text-graphite">{label}</span>
+        <p className="mt-0.5 text-[15px] font-medium tracking-[-0.009em] text-ink truncate">{value}</p>
+      </div>
+    </div>
+  );
 }
 
 export function LeadInfoCard({
@@ -20,39 +36,56 @@ export function LeadInfoCard({
   createdAt,
 }: LeadInfoCardProps) {
   return (
-    <div className="rounded-cards bg-white p-6 shadow-steep-sm border border-dove/30 space-y-4">
-      <h3 className="text-lg font-medium text-ink">房源信息</h3>
+    <div className="rounded-cards bg-white p-6 shadow-steep-sm border border-dove/30">
+      <h2 className="text-[18px] font-medium leading-[1.35] tracking-[-0.16px] text-ink mb-1">
+        房源信息
+      </h2>
+      <p className="text-[14px] text-graphite mb-4">提交的房源基本信息</p>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-ash">小区</span>
-          <span className="text-sm font-medium text-ink">
-            {communityName}
-            {layout && <span className="ml-2 text-ash">· {layout}</span>}
-            {area && <span className="ml-2 text-ash">· {area}㎡</span>}
-          </span>
-        </div>
+      <div className="divide-y divide-dove/20">
+        <InfoRow
+          icon={<Building2 className="h-4 w-4" aria-hidden="true" />}
+          label="小区"
+          value={communityName}
+        />
+
+        {layout && (
+          <InfoRow
+            icon={<LayoutGrid className="h-4 w-4" aria-hidden="true" />}
+            label="户型"
+            value={layout}
+          />
+        )}
+
+        {area != null && (
+          <InfoRow
+            icon={<Maximize className="h-4 w-4" aria-hidden="true" />}
+            label="面积"
+            value={`${area}㎡`}
+          />
+        )}
 
         {(floorInfo || orientation) && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-ash">楼层/朝向</span>
-            <span className="text-sm font-medium text-ink">
-              {[floorInfo, orientation].filter(Boolean).join(" · ")}
-            </span>
-          </div>
+          <InfoRow
+            icon={<Compass className="h-4 w-4" aria-hidden="true" />}
+            label="楼层/朝向"
+            value={[floorInfo, orientation].filter(Boolean).join(" · ")}
+          />
         )}
 
         {remarks && (
-          <div className="flex items-start justify-between">
-            <span className="text-sm text-ash shrink-0">留言</span>
-            <span className="text-sm text-ink text-right ml-4">{remarks}</span>
-          </div>
+          <InfoRow
+            icon={<MessageSquare className="h-4 w-4" aria-hidden="true" />}
+            label="留言"
+            value={remarks}
+          />
         )}
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-ash">提交时间</span>
-          <span className="text-sm text-ink">{createdAt}</span>
-        </div>
+        <InfoRow
+          icon={<Calendar className="h-4 w-4" aria-hidden="true" />}
+          label="提交时间"
+          value={createdAt}
+        />
       </div>
     </div>
   );
