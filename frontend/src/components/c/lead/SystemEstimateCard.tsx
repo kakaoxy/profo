@@ -5,11 +5,10 @@ import { cLocale } from "@/lib/i18n/c-locale";
 
 interface SystemEstimateCardProps {
   evalPrice: number | null;
-  statusColor: string;
   createdAt: string;
 }
 
-export function SystemEstimateCard({ evalPrice, statusColor, createdAt }: SystemEstimateCardProps) {
+export function SystemEstimateCard({ evalPrice, createdAt }: SystemEstimateCardProps) {
   return (
     <div className="rounded-cards bg-apricot-wash p-6 border border-apricot-wash">
       <div className="flex items-center gap-2 mb-4">

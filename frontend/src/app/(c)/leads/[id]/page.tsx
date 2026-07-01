@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
 import { LeadInfoCard } from "@/components/c/lead/LeadInfoCard";
@@ -91,7 +91,6 @@ export default function LeadDetailPage() {
 
         <SystemEstimateCard
           evalPrice={data.eval_price ?? null}
-          statusColor={data.status_color}
           createdAt={formattedDate}
         />
 
