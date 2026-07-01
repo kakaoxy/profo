@@ -11,24 +11,33 @@ interface SystemEstimateCardProps {
 
 export function SystemEstimateCard({ evalPrice, statusColor, createdAt }: SystemEstimateCardProps) {
   return (
-    <div
-      className="rounded-cards bg-apricot-wash p-6 border-l border-dove/30"
-      style={{ borderLeftColor: statusColor }}
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <Calculator className="h-5 w-5 text-rust" />
-        <span className="text-sm font-medium text-ash">{cLocale.leads.systemEstimate.title}</span>
-        <span className="ml-auto text-xs text-ash">{createdAt}</span>
+    <div className="rounded-cards bg-apricot-wash p-6 border border-apricot-wash">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/60">
+          <Calculator className="h-4 w-4 text-rust" aria-hidden="true" />
+        </div>
+        <span className="text-[15px] font-medium tracking-[-0.009em] text-ink">
+          {cLocale.leads.systemEstimate.title}
+        </span>
+        <span className="ml-auto text-[12px] text-graphite">{createdAt}</span>
       </div>
 
       {evalPrice !== null ? (
-        <div>
-          <span className="text-sm text-ash">{cLocale.leads.systemEstimate.priceLabel}</span>
-          <span className="text-2xl font-medium text-rust">{evalPrice}</span>
-          <span className="text-sm text-rust ml-1">{cLocale.leads.systemEstimate.unit}</span>
+        <div className="rounded-inputs bg-white/60 p-5">
+          <span className="text-[14px] text-ash">{cLocale.leads.systemEstimate.priceLabel}</span>
+          <div className="flex items-baseline gap-1 mt-1">
+            <span className="text-[44px] font-medium leading-[1.1] tracking-[-0.66px] text-ink">
+              {evalPrice}
+            </span>
+            <span className="text-[15px] font-medium text-rust">
+              {cLocale.leads.systemEstimate.unit}
+            </span>
+          </div>
         </div>
       ) : (
-        <p className="text-sm text-ash">{cLocale.leads.systemEstimate.pending}</p>
+        <div className="rounded-inputs bg-white/60 p-5">
+          <p className="text-[15px] text-ash">{cLocale.leads.systemEstimate.pending}</p>
+        </div>
       )}
     </div>
   );

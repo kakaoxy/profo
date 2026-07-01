@@ -25,15 +25,18 @@ export function LeadListItem({
   createdAt,
 }: LeadListItemProps) {
   return (
-    <Link href={`/leads/${id}`}>
-      <div className="flex items-center gap-3 rounded-cards bg-white p-5 shadow-steep-sm border border-dove/30 hover:shadow-steep transition-shadow">
+    <Link
+      href={`/leads/${id}`}
+      className="block rounded-cards bg-white p-5 shadow-steep-sm border border-dove/30 transition-shadow hover:shadow-steep"
+    >
+      <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-ink truncate">
+            <span className="font-medium text-[16px] tracking-[-0.14px] text-ink truncate">
               {communityName}
             </span>
             <span
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0"
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium shrink-0"
               style={{
                 backgroundColor: `${statusColor}20`,
                 color: statusColor,
@@ -42,17 +45,17 @@ export function LeadListItem({
               {statusDisplay}
             </span>
           </div>
-          <div className="text-sm text-ash">
+          <div className="text-[14px] leading-[1.5] text-ash">
             {layout && <span>{layout}</span>}
-            {layout && area != null && <span> · </span>}
+            {layout && area != null && <span>&nbsp;·&nbsp;</span>}
             {area != null && <span>{area}㎡</span>}
             {!layout && area == null && <span>暂无户型信息</span>}
           </div>
-          <div className="text-xs text-ash mt-1">
+          <div className="mt-1 text-[12px] text-graphite">
             {safeParseDate(createdAt)?.toLocaleDateString("zh-CN") ?? "-"}
           </div>
         </div>
-        <ChevronRight className="h-5 w-5 text-graphite shrink-0" />
+        <ChevronRight className="h-5 w-5 text-dove shrink-0" aria-hidden="true" />
       </div>
     </Link>
   );
