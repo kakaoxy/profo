@@ -68,7 +68,6 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
       {!expanded && (
         <div
           className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          id="renovation-timeline-content"
         >
           {stages.map((stage) => {
             const stageMedia = mediaByStage.get(stage.stage) ?? [];

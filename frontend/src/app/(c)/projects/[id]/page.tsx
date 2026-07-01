@@ -143,7 +143,7 @@ export default function ProjectDetailPage() {
           {data.community_name ?? cLocale.projects.unknownCommunity}
         </h1>
         <p className="text-[16px] text-ash leading-body tracking-body">
-          美房宝&nbsp;—&nbsp;出钱装修、全权卖房。卖到约定价您拿钱，卖不到装修免费送。
+          {cLocale.projects.valueProposition}
         </p>
       </div>
 
