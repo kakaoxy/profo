@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/client";
 import {
@@ -18,6 +18,7 @@ import { cLocale } from "@/lib/i18n/c-locale";
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   // 兼容 redirect 与 callbackUrl 两种参数名（统一为 redirect，callbackUrl 作为回退）
   const redirect = searchParams.get("redirect") || searchParams.get("callbackUrl") || "/";
 
@@ -47,16 +48,21 @@ function LoginForm() {
     setErrorMessage("");
     setIsPending(true);
 
+    // redirect:false 让 loginAction 正常返回 result，使 AuthProvider 的 login
+    // 回调得以执行 setSession 更新客户端 session 状态；再手动跳转目标页。
+    // 若用 redirect:true，redirect() 抛出 NEXT_REDIRECT 会跳过 setSession，
+    // 导致软导航后 TopAppBar 仍显示「登录」（需刷新才更新）。
     const result = await login(
       { username, password },
-      { callbackUrl: redirect, redirect: true },
+      { callbackUrl: redirect, redirect: false },
     );
 
     if (!result.success) {
       setErrorMessage(result.error);
       setIsPending(false);
+      return;
     }
-    // 成功时 library 内部 redirect() 会跳转，组件不会继续渲染
+    router.replace(redirect);
   }
 
   return (
