@@ -78,7 +78,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
+      <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
         房源顾问
       </label>
       <Popover open={open} onOpenChange={setOpen}>
@@ -87,11 +87,11 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-[var(--border)]/50 hover:bg-[var(--primary)] hover:text-[var(--foreground)] bg-card"
+            className="w-full h-12 justify-between rounded-xl px-4 text-left font-medium border-(--border)/50 hover:bg-primary hover:text-foreground bg-card"
           >
             <div className="flex items-center gap-2 truncate">
-              <User className="h-4 w-4 text-[var(--muted-foreground)] shrink-0" />
-              <span className={cn("truncate", !selectedConsultantName && !selectedConsultant && "text-[var(--muted-foreground)] font-normal")}>
+              <User className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className={cn("truncate", !selectedConsultantName && !selectedConsultant && "text-muted-foreground font-normal")}>
                 {selectedConsultantName || (selectedConsultant ? `${selectedConsultant.nickname || selectedConsultant.username}` : "选择房源顾问...")}
               </span>
             </div>
@@ -101,13 +101,13 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
         <PopoverContent className="w-[400px] p-0 rounded-xl" align="start">
           <div className="max-h-[300px] overflow-y-auto p-1">
             {loading ? (
-              <div className="flex items-center justify-center py-6 text-[var(--muted-foreground)]">
+              <div className="flex items-center justify-center py-6 text-muted-foreground">
                 <span className="text-xs">加载中...</span>
               </div>
             ) : null}
 
             {!loading && consultants.length === 0 ? (
-              <div className="py-8 text-center text-[var(--muted-foreground)] text-xs">
+              <div className="py-8 text-center text-muted-foreground text-xs">
                 暂无顾问数据
               </div>
             ) : null}
@@ -116,7 +116,7 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
               <button
                 key={consultant.id}
                 className={cn(
-                  "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-[var(--primary)] transition-colors group text-left",
+                  "w-full flex items-center justify-between p-3 text-sm rounded-lg hover:bg-primary transition-colors group text-left",
                   value === consultant.id && "bg-primary/10 text-primary font-bold"
                 )}
                 onClick={() => {
@@ -125,10 +125,10 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
                 }}
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-bold text-[var(--foreground)]">
+                  <span className="font-bold text-foreground">
                     {consultant.nickname || consultant.username}
                   </span>
-                  <span className="text-[10px] text-[var(--muted-foreground)]">
+                  <span className="text-[10px] text-muted-foreground">
                     {consultant.username}
                   </span>
                 </div>
@@ -138,9 +138,9 @@ export function ConsultantSelect({ value, onChange }: ConsultantSelectProps) {
 
             {/* 清除选择选项 */}
             {!loading && value ? (
-              <div className="p-1 border-t border-[var(--border)]/20 mt-1">
+              <div className="p-1 border-t border-(--border)/20 mt-1">
                 <button
-                  className="w-full flex items-center gap-2 p-3 text-sm text-[var(--muted-foreground)] hover:bg-[var(--error)]/30 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 p-3 text-sm text-muted-foreground hover:bg-(--error)/30 rounded-lg transition-colors"
                   onClick={() => {
                     onChange(undefined);
                     setOpen(false);
