@@ -75,6 +75,7 @@ class RenovationPhoto(BaseModel):
         comment="改造阶段",
     )
     url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片URL")
+    thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True, comment="缩略图URL")
     filename: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="文件名")
     description: Mapped[str | None] = mapped_column(Text, nullable=True, comment="描述")
 

@@ -42,9 +42,10 @@ def upload_renovation_photo(  # noqa: PLR0913
     _current_user: CurrentInternalUserDep,
     filename: Annotated[str | None, Query(description="文件名")] = None,
     description: Annotated[str | None, Query(description="描述")] = None,
+    thumbnail_url: Annotated[str | None, Query(description="缩略图URL")] = None,
 ) -> RenovationPhotoResponse:
     """上传改造阶段照片."""
-    return service.add_renovation_photo(project_id, stage, url, filename, description)
+    return service.add_renovation_photo(project_id, stage, url, filename, description, thumbnail_url)
 
 
 @router.get("/{project_id}/renovation/photos")

@@ -144,3 +144,17 @@ export function getFileUrl(url: string | undefined | null): string {
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
   return cleanPath;
 }
+
+/**
+ * 获取缩略图 URL，无缩略图时回退原图.
+ * 用于列表/网格场景，详情/预览应直接用 getFileUrl(originalUrl).
+ */
+export function getThumbnailUrl(
+  thumbnailUrl: string | null | undefined,
+  originalUrl: string | null | undefined,
+): string {
+  if (thumbnailUrl) {
+    return getFileUrl(thumbnailUrl);
+  }
+  return getFileUrl(originalUrl);
+}

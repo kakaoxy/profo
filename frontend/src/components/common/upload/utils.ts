@@ -82,11 +82,20 @@ export function parseUploadResponse(response: Record<string, unknown>): UploadRe
 
   if (!url || typeof url !== 'string') return null;
 
+  // 尝试从不同格式的响应中提取缩略图 URL
+  const thumbnail_url =
+    data?.thumbnail_url ||
+    response.thumbnail_url ||
+    data?.thumbnailUrl ||
+    response.thumbnailUrl;
+
   // 确保 URL 是完整的
   const fullUrl = getFileUrl(url);
+  const fullThumbnailUrl = typeof thumbnail_url === 'string' ? getFileUrl(thumbnail_url) : undefined;
 
   return {
     url: fullUrl,
+    thumbnail_url: fullThumbnailUrl,
     filename: (response.filename as string | undefined) ?? (data?.filename as string | undefined),
     size: (response.size as number | undefined) ?? (data?.size as number | undefined),
     mimeType: (response.mime_type as string | undefined) ?? (data?.mime_type as string | undefined),

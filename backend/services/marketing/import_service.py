@@ -175,7 +175,7 @@ class MarketingImportService:
             ImportableMediaResponse(
                 id=photo.id,
                 file_url=photo.url,
-                thumbnail_url=photo.url,
+                thumbnail_url=photo.thumbnail_url or photo.url,
                 photo_category="renovation",
                 renovation_stage=photo.stage,
                 description=photo.description,

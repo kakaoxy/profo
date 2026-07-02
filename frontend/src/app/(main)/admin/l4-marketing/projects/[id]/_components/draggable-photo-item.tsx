@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { L4MarketingMedia, PHOTO_CATEGORY_CONFIG } from "../../types";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export function DraggablePhotoItem({
     (s) => s.value === photo.renovation_stage
   )?.label;
 
-  const displayUrl = photo.file_url || photo.thumbnail_url;
+  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.file_url);
 
   return (
     <div
@@ -64,7 +64,7 @@ export function DraggablePhotoItem({
 
       <div
         className="w-16 h-16 rounded-md bg-cover bg-center border shrink-0 relative"
-        style={{ backgroundImage: `url(${getFileUrl(displayUrl)})` }}
+        style={{ backgroundImage: `url(${displayUrl})` }}
       >
         <Badge
           className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[10px]"

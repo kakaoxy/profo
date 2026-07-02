@@ -2569,6 +2569,8 @@ export interface components {
             url: string;
             /** Filename */
             filename: string;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
         };
         /**
          * FloorStats
@@ -5736,6 +5738,8 @@ export interface components {
             filename?: string | null;
             /** Description */
             description?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -7370,6 +7374,8 @@ export interface operations {
                 filename?: string | null;
                 /** @description 描述 */
                 description?: string | null;
+                /** @description 缩略图URL */
+                thumbnail_url?: string | null;
             };
             header?: never;
             path: {

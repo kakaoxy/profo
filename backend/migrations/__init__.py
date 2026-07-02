@@ -9,6 +9,7 @@
 - encrypt_existing_phones: 将已存的明文手机号加密为 Fernet 密文（H-006）
 - populate_phone_hash: 为已存用户回填 phone_hash（H-006）
 - add_stage_completed_dates_column: 为 l4_marketing_projects 表添加 stage_completed_dates 列
+- add_thumbnail_url_to_photos: 为 renovation_photos 与 property_media 表添加 thumbnail_url 列
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 
 """
@@ -186,6 +187,22 @@ def add_stage_completed_dates_column(engine: Engine) -> None:
         )
 
 
+def add_thumbnail_url_to_photos(engine: Engine) -> None:
+    """为 renovation_photos 与 property_media 表添加 thumbnail_url 列。
+
+    存储压缩后缩略图 URL，供列表展示加速使用。
+    SQLite 支持 ALTER TABLE ADD COLUMN，幂等：通过 _column_exists 检查跳过已存在列。
+    """
+    for table in ("renovation_photos", "property_media"):
+        if _column_exists(engine, table, "thumbnail_url"):
+            continue
+        logger.info("迁移：为 %s 表添加 thumbnail_url 列", table)
+        with engine.begin() as conn:
+            conn.execute(
+                text(f"ALTER TABLE {table} ADD COLUMN thumbnail_url TEXT")
+            )
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -194,6 +211,7 @@ def run_startup_migrations(engine: Engine) -> None:
         encrypt_existing_phones(engine)
         populate_phone_hash(engine)
         add_stage_completed_dates_column(engine)
+        add_thumbnail_url_to_photos(engine)
         run_fix_image_urls(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")

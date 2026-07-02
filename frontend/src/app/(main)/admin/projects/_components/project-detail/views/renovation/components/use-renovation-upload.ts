@@ -33,6 +33,7 @@ export function useRenovationUpload({
         projectId,
         stage: stageValue,
         url: response.url,
+        thumbnail_url: response.thumbnail_url,
         filename: file.name,
       });
 
