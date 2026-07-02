@@ -35,24 +35,27 @@ class FileUploadResponse(BaseModel):
     filename: str
 
 
-@router.post("/upload", summary="上传文件")
-@limiter.limit(RateLimits.FILE_UPLOAD)
-def upload_file(
+def save_upload_file(
+    file: UploadFile,
     request: Request,
-    _current_user: CurrentOperatorUserDep,
-    file: Annotated[UploadFile, File()],
-    _db: Annotated[Session, Depends(get_db)],
+    allowed_ext: set[str] | None = None,
 ) -> FileUploadResponse:
-    """Handle file upload (Sync - Run in threadpool by FastAPI).
+    """校验并保存上传文件，返回访问 URL.
 
-    Optimized to read only first 2KB for MIME check.
-    速率限制：50次/小时（防止资源耗尽攻击）.
+    Args:
+        file: FastAPI UploadFile 对象
+        request: Request 对象，用于构造静态文件访问 URL
+        allowed_ext: 允许的扩展名白名单；为 None 时使用 settings.allowed_extensions
+
+    Returns:
+        FileUploadResponse: 包含 url 与 filename 的响应
     """
     try:
         safe_name = sanitize_filename(file.filename)
         ext = Path(safe_name).suffix.lower()
-        if ext not in settings.allowed_extensions:
-            raise ValidationError(f"不支持的文件扩展名。允许的扩展名: {', '.join(settings.allowed_extensions)}")
+        effective_ext = allowed_ext if allowed_ext is not None else settings.allowed_extensions
+        if ext not in effective_ext:
+            raise ValidationError(f"不支持的文件扩展名。允许的扩展名: {', '.join(sorted(effective_ext))}")
 
         file.file.seek(0, 2)
         file_size = file.file.tell()
@@ -91,3 +94,19 @@ def upload_file(
     except Exception:
         logger.exception("文件上传失败")
         raise FileProcessingError("文件上传失败，请稍后重试")
+
+
+@router.post("/upload", summary="上传文件")
+@limiter.limit(RateLimits.FILE_UPLOAD)
+def upload_file(
+    request: Request,
+    _current_user: CurrentOperatorUserDep,
+    file: Annotated[UploadFile, File()],
+    _db: Annotated[Session, Depends(get_db)],
+) -> FileUploadResponse:
+    """Handle file upload (Sync - Run in threadpool by FastAPI).
+
+    Optimized to read only first 2KB for MIME check.
+    速率限制：50次/小时（防止资源耗尽攻击）.
+    """
+    return save_upload_file(file, request)

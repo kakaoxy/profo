@@ -33,6 +33,7 @@ from routers.projects import core_router
 from routers.public import (
     public_auth_router,
     public_communities_router,
+    public_files_router,
     public_leads_router,
     public_projects_router,
     public_users_router,
@@ -118,6 +119,7 @@ app = FastAPI(
         {"name": "public-projects", "description": "C端公开 - 房源展示"},
         {"name": "public-leads", "description": "C端公开 - 卖房估价"},
         {"name": "public-communities", "description": "C端公开 - 小区搜索"},
+        {"name": "public-files", "description": "C端公开 - 文件上传"},
     ],
     contact={
         "name": "ProFo Team",
@@ -178,6 +180,7 @@ app.include_router(public_auth_router, prefix=API_V1_PREFIX)
 app.include_router(public_users_router, prefix=API_V1_PREFIX)
 app.include_router(public_projects_router, prefix=API_V1_PREFIX)
 app.include_router(public_leads_router, prefix=API_V1_PREFIX)
+app.include_router(public_files_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
 
 app.add_exception_handler(ServiceException, service_exception_handler)

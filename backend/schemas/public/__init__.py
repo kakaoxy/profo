@@ -286,6 +286,7 @@ class PublicLeadCreate(BaseModel):
     floor_info: str | None = Field(None, description="楼层信息")
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="备注")
+    images: list[str] = Field(default_factory=list, description="户型图URL列表")
 
 
 LeadStatusType = Literal[
@@ -311,6 +312,7 @@ class PublicLeadResponse(BaseModel):
     eval_price: float | None = Field(None, description="评估价格(万)")
     status: LeadStatusType = Field(description="状态")
     remarks: str | None = Field(None, description="备注")
+    images: list[str] = Field(default_factory=list, description="户型图URL列表")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
 
@@ -370,6 +372,7 @@ class PublicLeadDetail(BaseModel):
     status_display: str = Field(description="状态显示名称")
     status_color: str = Field(description="状态颜色")
     remarks: str | None = Field(None, description="备注")
+    images: list[str] = Field(default_factory=list, description="户型图URL列表")
     follow_ups: list[PublicFollowupItem] = Field(default_factory=list, description="跟进记录")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")

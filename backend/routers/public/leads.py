@@ -67,6 +67,7 @@ def create_lead(
         floor_info=body.floor_info,
         orientation=body.orientation,
         remarks=body.remarks,
+        images=body.images,
     )
 
     lead = service.create_lead(lead_data, creator_id=current_user.id)
@@ -83,6 +84,7 @@ def create_lead(
         eval_price=float(lead.eval_price) if lead.eval_price else None,
         status=lead.status.value if hasattr(lead.status, "value") else str(lead.status),
         remarks=lead.remarks,
+        images=lead.images or [],
         created_at=lead.created_at,
         updated_at=lead.updated_at,
     )
@@ -174,6 +176,7 @@ def get_lead_detail(
         status_display=status_display,
         status_color=status_color,
         remarks=lead.remarks,
+        images=lead.images or [],
         follow_ups=followup_items,
         created_at=lead.created_at,
         updated_at=lead.updated_at,

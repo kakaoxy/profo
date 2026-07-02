@@ -2052,6 +2052,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/files/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * C端上传文件
+         * @description C端用户上传图片（如户型图），仅支持 jpg/jpeg/png
+         */
+        post: operations["upload_file_api_v1_public_files_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/communities/search": {
         parameters: {
             query?: never;
@@ -2227,6 +2247,11 @@ export interface components {
         };
         /** Body_upload_file_api_v1_files_upload_post */
         Body_upload_file_api_v1_files_upload_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_upload_file_api_v1_public_files_upload_post */
+        Body_upload_file_api_v1_public_files_upload_post: {
             /** File */
             file: string;
         };
@@ -4590,6 +4615,11 @@ export interface components {
              * @description 备注
              */
             remarks?: string | null;
+            /**
+             * Images
+             * @description 户型图URL列表
+             */
+            images?: string[];
         };
         /**
          * PublicLeadDetail
@@ -4662,6 +4692,11 @@ export interface components {
              * @description 备注
              */
             remarks?: string | null;
+            /**
+             * Images
+             * @description 户型图URL列表
+             */
+            images?: string[];
             /**
              * Follow Ups
              * @description 跟进记录
@@ -4826,6 +4861,11 @@ export interface components {
              * @description 备注
              */
             remarks?: string | null;
+            /**
+             * Images
+             * @description 户型图URL列表
+             */
+            images?: string[];
             /**
              * Created At
              * Format: date-time
@@ -10243,6 +10283,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicLeadDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_file_api_v1_public_files_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_file_api_v1_public_files_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileUploadResponse"];
                 };
             };
             /** @description Validation Error */

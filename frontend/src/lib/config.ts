@@ -61,6 +61,9 @@ export const apiPaths = {
     mine: "/api/v1/public/leads/mine",
     detail: "/api/v1/public/leads",
   },
+  cFiles: {
+    upload: "/api/v1/public/files/upload",
+  },
   cProjects: {
     list: "/api/v1/public/projects",
     sold: "/api/v1/public/projects/sold",
