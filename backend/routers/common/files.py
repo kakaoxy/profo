@@ -57,7 +57,6 @@ def save_upload_file(
         if ext not in effective_ext:
             raise ValidationError(f"不支持的文件扩展名。允许的扩展名: {', '.join(sorted(effective_ext))}")
 
-        file.file.seek(0)
         file.file.seek(0, 2)
         file_size = file.file.tell()
         file.file.seek(0)
