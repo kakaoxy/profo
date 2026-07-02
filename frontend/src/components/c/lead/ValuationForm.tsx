@@ -84,8 +84,11 @@ export function ValuationForm() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const setImages = (images: string[]) => {
-    setFormData((prev) => ({ ...prev, images }));
+  const setImages = (images: string[] | ((prev: string[]) => string[])) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: typeof images === "function" ? images(prev.images) : images,
+    }));
   };
 
   return (

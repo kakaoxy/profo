@@ -20,7 +20,7 @@ const createLeadSchema = z.object({
   floor_info: z.string().nullable().optional(),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
-  images: z.array(z.string()).default([]),
+  images: z.array(z.string().url()).max(6).default([]),
 });
 
 const completePhoneSchema = z.object({
