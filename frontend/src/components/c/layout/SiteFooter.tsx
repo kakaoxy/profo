@@ -11,7 +11,7 @@ export function SiteFooter() {
           <div className="col-span-2 md:col-span-1">
             <span className="text-xl font-semibold text-white">Profo</span>
             <p className="mt-3 text-sm leading-relaxed text-white/60">
-              美房宝，每一套房子都值得被认真对待，坚持做品牌二手房。精选好房，匠心设计，严选好材，专业服务。
+              美房宝，每一套房子都值得被认真对待，坚持做品质二手房。精选好房，匠心设计，严选好材，专业服务。
             </p>
           </div>
 

@@ -161,11 +161,11 @@ export default function ContactPage() {
               <Skeleton className="h-9 w-14" />
             ) : (
               <span className="text-3xl font-medium text-rust tracking-[-0.009em]">
-                {statsData?.current_month_sold ?? 0}
+                {statsData?.total_sold ?? 0}
               </span>
             )}
             <span className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-ink">
-              {cLocale.contact.statMonthSold}
+              {cLocale.contact.statTotalSold}
             </span>
           </div>
         </div>

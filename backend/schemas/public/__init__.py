@@ -263,7 +263,7 @@ class PublicPlatformStats(BaseModel):
 
     total_owners: int = Field(description="业主总数")
     on_sale_count: int = Field(description="在售房源数")
-    current_month_sold: int = Field(description="本月成交数")
+    total_sold: int = Field(description="累计成交数")
 
 
 class PublicCommunitySearchItem(BaseModel):

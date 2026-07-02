@@ -156,8 +156,8 @@ export default function AboutPage() {
                     label={cLocale.about.mobile.statOnSale}
                   />
                   <StatsCard
-                    value={statsData?.current_month_sold ?? 0}
-                    label={cLocale.about.mobile.statMonthSold}
+                    value={statsData?.total_sold ?? 0}
+                    label={cLocale.about.mobile.statTotalSold}
                   />
                 </>
               )}
@@ -369,10 +369,10 @@ export default function AboutPage() {
                     </div>
                     <div>
                       <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
-                        {statsData?.current_month_sold ?? 0}
+                        {statsData?.total_sold ?? 0}
                       </div>
                       <div className="text-sm text-white/60 tracking-[-0.009em]">
-                        {cLocale.about.pc.statMonthSold}
+                        {cLocale.about.pc.statTotalSold}
                       </div>
                     </div>
                   </>
