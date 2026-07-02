@@ -18,6 +18,7 @@ from dependencies.auth import CurrentOperatorUserDep
 from services.system.exceptions import FileProcessingError, ValidationError
 from settings import settings
 from utils.file_security import get_safe_file_path, sanitize_filename
+from utils.image_processing import generate_thumbnail
 
 router = APIRouter(prefix="/files", tags=["files"])
 logger = logging.getLogger(__name__)
@@ -27,12 +28,15 @@ TEXT_BASED_EXTENSIONS: dict[str, str] = {
     ".md": "text/markdown",
 }
 
+IMAGE_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
 
 class FileUploadResponse(BaseModel):
     """文件上传响应."""
 
     url: str
     filename: str
+    thumbnail_url: str | None = None
 
 
 def save_upload_file(
@@ -87,7 +91,14 @@ def save_upload_file(
 
         url = f"/static/uploads/{filename}"
 
-        return FileUploadResponse(url=url, filename=filename)
+        thumbnail_url: str | None = None
+        if ext in IMAGE_EXTENSIONS:
+            thumb_filename = f"{Path(filename).stem}.webp"
+            thumb_path = upload_path / "thumbs" / thumb_filename
+            if generate_thumbnail(file_path, thumb_path):
+                thumbnail_url = f"/static/uploads/thumbs/{thumb_filename}"
+
+        return FileUploadResponse(url=url, filename=filename, thumbnail_url=thumbnail_url)
 
     except (ValidationError, FileProcessingError):
         raise

@@ -127,9 +127,10 @@ class ProjectService:
         url: str,
         filename: str | None = None,
         description: str | None = None,
+        thumbnail_url: str | None = None,
     ) -> RenovationPhoto:
         """添加装修照片."""
-        return self._renovation_service.add_photo(project_id, stage, url, filename, description)
+        return self._renovation_service.add_photo(project_id, stage, url, filename, description, thumbnail_url)
 
     def get_renovation_photos(self, project_id: str, stage: str | None = None) -> list[RenovationPhoto]:
         """获取装修照片."""

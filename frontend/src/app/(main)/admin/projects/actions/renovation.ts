@@ -75,6 +75,7 @@ export async function addRenovationPhotoAction(payload: {
   projectId: string;
   stage: string;
   url: string;
+  thumbnail_url?: string;
   filename?: string;
 }) {
   try {
@@ -87,6 +88,7 @@ export async function addRenovationPhotoAction(payload: {
           query: {
             stage: payload.stage,
             url: payload.url,
+            thumbnail_url: payload.thumbnail_url,
             filename: payload.filename,
           },
         },

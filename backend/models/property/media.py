@@ -5,7 +5,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Index, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,6 +24,7 @@ class PropertyMedia(Base):
 
     media_type: Mapped[MediaType] = mapped_column(SQLEnum(MediaType), nullable=False, comment="媒体类型")
     url: Mapped[str] = mapped_column(String(500), nullable=False, comment="媒体URL")
+    thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True, comment="缩略图URL")
     description: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="描述")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, comment="排序")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")

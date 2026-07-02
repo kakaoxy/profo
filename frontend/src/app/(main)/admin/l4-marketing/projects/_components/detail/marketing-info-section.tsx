@@ -6,6 +6,7 @@ import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
 import { safeParseDate } from "@/lib/validators";
 import { getFileUrl } from "./utils";
+import { getThumbnailUrl } from "@/lib/config";
 import type { MarketingInfoSectionProps } from "./types";
 import type { L4MarketingMedia, L4MarketingProject } from "@/app/(main)/admin/l4-marketing/projects/types";
 
@@ -16,7 +17,7 @@ function getMarketingMainImage(project: L4MarketingProject, photos: L4MarketingM
     .filter((p) => p.photo_category === "marketing")
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
   if (marketingPhoto) {
-    return getFileUrl(marketingPhoto.file_url || marketingPhoto.thumbnail_url);
+    return getThumbnailUrl(marketingPhoto.thumbnail_url, marketingPhoto.file_url);
   }
 
   // 降级策略：没有营销照片时，使用改造照片的第一张
@@ -24,7 +25,7 @@ function getMarketingMainImage(project: L4MarketingProject, photos: L4MarketingM
     .filter((p) => p.photo_category === "renovation")
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
   if (renovationPhoto) {
-    return getFileUrl(renovationPhoto.file_url || renovationPhoto.thumbnail_url);
+    return getThumbnailUrl(renovationPhoto.thumbnail_url, renovationPhoto.file_url);
   }
 
   // 最后使用 project.images (后端直接返回数组)

@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import type { L4MarketingMedia } from "../../types";
 
 interface PhotoGalleryProps {
@@ -25,7 +25,7 @@ export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryP
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
       {sortedPhotos.map((p) => {
-        const url = p.file_url || p.thumbnail_url;
+        const url = getThumbnailUrl(p.thumbnail_url, p.file_url);
         return (
           <div
             key={p.id}
@@ -35,7 +35,7 @@ export const PhotoGallery = memo(function PhotoGallery({ photos }: PhotoGalleryP
               <div
                 className="absolute inset-0 bg-cover bg-center transition-opacity duration-300"
                 style={{
-                  backgroundImage: `url(${getFileUrl(url)})`,
+                  backgroundImage: `url(${url})`,
                 }}
               />
             )}

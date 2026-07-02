@@ -1,7 +1,7 @@
 "use client";
 
 import { L4MarketingMedia, RENOVATION_STAGES } from "../../types";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,9 @@ export function PhotoItem({
   );
 
   const stage = photo.renovation_stage || "";
-  const displayUrl = photo.file_url || photo.thumbnail_url;
+  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.file_url);
   const { status: imageStatus } = useSimpleImageLoader(
-    displayUrl ? getFileUrl(displayUrl) : null
+    displayUrl || null
   );
 
   return (
@@ -44,7 +44,7 @@ export function PhotoItem({
         {displayUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={getFileUrl(displayUrl)}
+            src={displayUrl}
             alt={`照片 #${photo.id}`}
             className={cn(
               "w-full h-full object-cover transition-opacity duration-300",

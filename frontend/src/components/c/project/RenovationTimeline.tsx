@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import { ChevronRight, ChevronUp, ImageIcon } from "lucide-react";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 import { cLocale } from "@/lib/i18n/c-locale";
 
@@ -75,7 +75,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
             const stageMedia = mediaByStage.get(stage.stage) ?? [];
             const firstImage = stageMedia.length > 0 ? stageMedia[0] : null;
             const imageUrl = firstImage
-              ? getFileUrl(firstImage.thumbnail_url ?? firstImage.file_url)
+              ? getThumbnailUrl(firstImage.thumbnail_url, firstImage.file_url)
               : "";
 
             return (
@@ -149,8 +149,9 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
                 {stageMedia.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {stageMedia.map((item) => {
-                      const imageUrl = getFileUrl(
-                        item.thumbnail_url ?? item.file_url
+                      const imageUrl = getThumbnailUrl(
+                        item.thumbnail_url,
+                        item.file_url
                       );
                       return (
                         <div

@@ -28,6 +28,8 @@ export interface UploadFile {
 export interface UploadResponse {
   /** 文件URL */
   url: string;
+  /** 缩略图URL */
+  thumbnail_url?: string;
   /** 文件名称 */
   filename?: string;
   /** 文件大小 */

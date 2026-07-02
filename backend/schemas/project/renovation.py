@@ -31,6 +31,7 @@ class RenovationPhotoUpload(BaseModel):
     url: str = Field(min_length=1, max_length=500)
     filename: str | None = None
     description: str | None = None
+    thumbnail_url: str | None = Field(default=None, max_length=500, description="缩略图URL")
 
 
 class RenovationPhotoResponse(BaseModel):
@@ -43,6 +44,7 @@ class RenovationPhotoResponse(BaseModel):
     url: str
     filename: str | None = None
     description: str | None = None
+    thumbnail_url: str | None = None
     created_at: datetime
     updated_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
