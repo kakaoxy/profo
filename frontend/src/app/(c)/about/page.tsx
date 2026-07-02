@@ -336,76 +336,81 @@ export default function AboutPage() {
         </section>
 
         {/* Social Proof Section */}
-        <section className="mx-auto max-w-[1200px] px-6 py-12">
-          <div className="flex flex-col items-center gap-12 rounded-cards bg-ink p-8 text-white md:flex-row md:p-16">
-            <div className="flex-1">
-              <h2 className="mb-4 font-display text-[44px] leading-[1.1] text-white">
-                {cLocale.about.pc.trustTitle}
-              </h2>
-              <p className="mb-8 text-[18px] leading-normal text-white/70 tracking-[-0.009em]">
-                {cLocale.about.pc.trustDesc}
-              </p>
-              <div className="grid grid-cols-2 gap-8">
-                {isLoading ? (
-                  <>
-                    <div>
-                      <Skeleton className="h-10 w-24" />
-                      <Skeleton className="mt-1 h-4 w-16" />
-                    </div>
-                    <div>
-                      <Skeleton className="h-10 w-24" />
-                      <Skeleton className="mt-1 h-4 w-16" />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
-                        {statsData?.on_sale_count ?? 0}
-                      </div>
-                      <div className="text-sm text-white/60 tracking-[-0.009em]">
-                        {cLocale.about.pc.statOnSale}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="mb-1 text-4xl font-medium text-rust tracking-[-0.009em]">
-                        {statsData?.total_sold ?? 0}
-                      </div>
-                      <div className="text-sm text-white/60 tracking-[-0.009em]">
-                        {cLocale.about.pc.statTotalSold}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="relative aspect-square w-full flex-1">
-              {dashboardError ? (
-                <div className="flex h-full w-full items-center justify-center rounded-images bg-ink/50">
-                  <ImageIcon className="h-16 w-16 text-white/20" />
-                </div>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  alt={cLocale.about.pc.dashboardImgAlt}
-                  className="h-full w-full rounded-images object-cover"
-                  src="/about/dashboard.png"
-                  width={600}
-                  height={600}
-                  loading="lazy"
-                  onError={() => setDashboardError(true)}
-                />
-              )}
-              <div className="absolute -bottom-6 -right-6 max-w-xs rounded-cards border border-dove/30 bg-white/90 p-6 shadow-steep backdrop-blur-md max-lg:hidden">
-                <div className="mb-2 flex items-center gap-2">
-                  <BadgeCheck className="h-5 w-5 text-rust" aria-hidden="true" />
-                  <span className="text-[12px] font-medium tracking-[-0.009em] text-ink">
-                    {cLocale.about.pc.reportBadge}
-                  </span>
-                </div>
-                <p className="text-xs text-ash tracking-[-0.009em]">
-                  {cLocale.about.oneLiner}
+        <section className="bg-white py-20">
+          <div className="mx-auto max-w-[1200px] px-6">
+            <div className="flex flex-col items-center gap-12 rounded-cards border border-dove/30 bg-white p-8 shadow-steep md:flex-row md:p-16">
+              <div className="flex-1">
+                <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+                  {cLocale.about.pc.trustEyebrow}
+                </span>
+                <h2 className="mb-4 mt-2 font-display text-[44px] leading-[1.1] text-ink">
+                  {cLocale.about.pc.trustTitle}
+                </h2>
+                <p className="mb-8 text-[18px] leading-normal text-ash tracking-[-0.009em]">
+                  {cLocale.about.pc.trustDesc}
                 </p>
+                <div className="grid grid-cols-2 gap-8">
+                  {isLoading ? (
+                    <>
+                      <div>
+                        <Skeleton className="h-10 w-24" />
+                        <Skeleton className="mt-1 h-4 w-16" />
+                      </div>
+                      <div>
+                        <Skeleton className="h-10 w-24" />
+                        <Skeleton className="mt-1 h-4 w-16" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <div className="mb-1 font-display text-[44px] leading-[1.1] text-ink">
+                          {statsData?.on_sale_count ?? 0}
+                        </div>
+                        <div className="text-sm text-graphite tracking-[-0.009em]">
+                          {cLocale.about.pc.statOnSale}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-1 font-display text-[44px] leading-[1.1] text-ink">
+                          {statsData?.total_sold ?? 0}
+                        </div>
+                        <div className="text-sm text-graphite tracking-[-0.009em]">
+                          {cLocale.about.pc.statTotalSold}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="relative aspect-square w-full flex-1">
+                {dashboardError ? (
+                  <div className="flex h-full w-full items-center justify-center rounded-images bg-fog">
+                    <ImageIcon className="h-16 w-16 text-dove/40" />
+                  </div>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={cLocale.about.pc.dashboardImgAlt}
+                    className="h-full w-full rounded-images object-cover"
+                    src="/about/dashboard.png"
+                    width={600}
+                    height={600}
+                    loading="lazy"
+                    onError={() => setDashboardError(true)}
+                  />
+                )}
+                <div className="absolute -bottom-6 -right-6 max-w-xs rounded-cards border border-dove/30 bg-white/90 p-6 shadow-steep backdrop-blur-md max-lg:hidden">
+                  <div className="mb-2 flex items-center gap-2">
+                    <BadgeCheck className="h-5 w-5 text-rust" aria-hidden="true" />
+                    <span className="text-[12px] font-medium tracking-[-0.009em] text-ink">
+                      {cLocale.about.pc.reportBadge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-ash tracking-[-0.009em]">
+                    {cLocale.about.oneLiner}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
