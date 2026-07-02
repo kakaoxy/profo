@@ -36,6 +36,7 @@ export function FloorPlanUpload({
     maxSize: maxFileSize * 1024 * 1024,
     allowedTypes: FLOOR_PLAN_ALLOWED_TYPES,
     multiple: true,
+    maxCount: maxImages,
     onSuccess: (response) => {
       if (response.url) {
         onChange((prev) => [...prev, response.url]);
