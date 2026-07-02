@@ -4,13 +4,13 @@ import { useRef, useCallback } from "react";
 import Image from "next/image";
 import { X, Plus, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES } from "@/components/common/upload";
+import { useUpload } from "@/components/common/upload";
 import { getClientApiUrl, apiPaths } from "@/lib/config";
 import { cLocale } from "@/lib/i18n/c-locale";
 
 interface Props {
   images: string[];
-  onChange: (images: string[]) => void;
+  onChange: (images: string[] | ((prev: string[]) => string[])) => void;
   maxImages?: number;
   maxFileSize?: number; // MB
 }
@@ -18,6 +18,10 @@ interface Props {
 /** 本地开发环境 URL 需关闭 next/image 优化，避免私有 IP 限制 */
 const isLocalDevUrl = (url: string): boolean =>
   url.includes("127.0.0.1") || url.includes("localhost");
+
+// 与 backend/routers/public/files.py 的 IMAGE_EXTENSIONS 保持一致：仅 jpg/jpeg/png
+const FLOOR_PLAN_ALLOWED_TYPES = ["image/jpeg", "image/png"];
+const FLOOR_PLAN_ACCEPT = ".jpg,.jpeg,.png";
 
 export function FloorPlanUpload({
   images,
@@ -30,12 +34,11 @@ export function FloorPlanUpload({
   const { isUploading, upload, uploadingFiles } = useUpload({
     url: getClientApiUrl(apiPaths.cFiles.upload),
     maxSize: maxFileSize * 1024 * 1024,
-    allowedTypes: DEFAULT_ALLOWED_IMAGE_TYPES,
+    allowedTypes: FLOOR_PLAN_ALLOWED_TYPES,
     multiple: true,
-    maxCount: maxImages,
     onSuccess: (response) => {
       if (response.url) {
-        onChange([...images, response.url]);
+        onChange((prev) => [...prev, response.url]);
       }
     },
     onError: (error) => {
@@ -69,9 +72,9 @@ export function FloorPlanUpload({
 
   const removeImage = useCallback(
     (index: number) => {
-      onChange(images.filter((_, i) => i !== index));
+      onChange((prev) => prev.filter((_, i) => i !== index));
     },
-    [images, onChange]
+    [onChange]
   );
 
   const canAddMore = images.length < maxImages;
@@ -155,7 +158,7 @@ export function FloorPlanUpload({
       <input
         ref={fileInputRef}
         type="file"
-        accept={DEFAULT_ALLOWED_IMAGE_TYPES.join(",")}
+        accept={FLOOR_PLAN_ACCEPT}
         multiple
         className="hidden"
         onChange={handleSelect}
