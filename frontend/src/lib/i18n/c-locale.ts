@@ -330,6 +330,7 @@ export const cLocale = {
         "全流程托管（即从装修到卖出，全部由我们负责）。从评估到成交，每一步都精益求精。",
       servicesEyebrow: "Our Services",
       servicesTitle: "我们的服务保障",
+      trustEyebrow: "Social Proof",
       trustTitle: "业主信任的专业保障",
       trustDesc: "在售套数与累计成交均来自真实成交数据，可核查。",
       statOnSale: "在售套数",
