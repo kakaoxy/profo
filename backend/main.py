@@ -129,7 +129,8 @@ app = FastAPI(
 
 upload_dir_abs = Path(settings.upload_dir).resolve()
 upload_dir_abs.mkdir(parents=True, exist_ok=True)
-static_root = upload_dir_abs.parent
+# 始终从代码目录挂载 static，uploads 子目录通过软链指向持久化目录（生产）或直接存在（开发）
+static_root = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
 
