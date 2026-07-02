@@ -5,6 +5,7 @@ import { Smartphone, Ruler } from "lucide-react";
 import { toast } from "sonner";
 import { CommunitySelect } from "@/components/common/community-select";
 import { LayoutInputs } from "@/components/common/layout-inputs";
+import { FloorPlanUpload } from "@/components/c/lead/floor-plan-upload";
 import { createLeadAction, completePhoneAction, searchCCommunitiesAction } from "@/app/(c)/valuation/actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useSession, useAuth } from "@/lib/auth/client";
@@ -66,6 +67,7 @@ export function ValuationForm() {
     totalFloor: "",
     area: "",
     remarks: "",
+    images: [] as string[],
   });
 
   const floorInfo = useMemo(() => {
@@ -80,6 +82,10 @@ export function ValuationForm() {
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const setImages = (images: string[]) => {
+    setFormData((prev) => ({ ...prev, images }));
   };
 
   return (
@@ -182,6 +188,9 @@ export function ValuationForm() {
             </div>
           </div>
           <input type="hidden" name="floor_info" value={floorInfo} />
+
+          <FloorPlanUpload images={formData.images} onChange={setImages} />
+          <input type="hidden" name="images" value={JSON.stringify(formData.images)} />
 
           <div className="space-y-1.5">
             <label className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest ml-1">补充信息</label>

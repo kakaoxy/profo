@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import useSWR from "swr";
 import { LeadInfoCard } from "@/components/c/lead/LeadInfoCard";
 import { SystemEstimateCard } from "@/components/c/lead/SystemEstimateCard";
@@ -11,6 +12,7 @@ import { ErrorState } from "@/components/c/shared/ErrorState";
 import { ShieldAlert } from "lucide-react";
 import { fetcher, ForbiddenError } from "@/lib/swr";
 import { safeParseDate } from "@/lib/validators";
+import { getFileUrl } from "@/lib/config";
 import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
@@ -88,6 +90,34 @@ export default function LeadDetailPage() {
           remarks={data.remarks ?? null}
           createdAt={formattedDate}
         />
+
+        {data.images && data.images.length > 0 && (
+          <div className="rounded-cards bg-white p-6 shadow-steep-sm border border-dove/30">
+            <h2 className="text-[18px] font-medium leading-[1.35] tracking-[-0.16px] text-ink mb-4">
+              {cLocale.leads.floorPlanTitle}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {data.images.map((img, idx) => (
+                <a
+                  key={`${img}-${idx}`}
+                  href={getFileUrl(img)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="aspect-square relative rounded-inputs overflow-hidden border border-dove/30 bg-fog group"
+                >
+                  <Image
+                    src={img}
+                    alt={`${cLocale.leads.floorPlanTitle} ${idx + 1}`}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 640px) 50vw, 33vw"
+                    unoptimized={img.includes("127.0.0.1") || img.includes("localhost")}
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <SystemEstimateCard
           evalPrice={data.eval_price ?? null}

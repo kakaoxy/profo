@@ -458,6 +458,13 @@ export const cLocale = {
     submit: "提交预审",
     submitting: "提交中...",
     privacyNote: "信息仅用于预审与上门看房安排，不外泄、不电话骚扰",
+    floorPlanLabel: "户型图",
+    floorPlanHint: "上传户型图帮助准确估价，最多 {max} 张",
+    floorPlanUploadFailed: "户型图上传失败",
+    floorPlanFull: "已满",
+    floorPlanAddPic: "ADD PIC",
+    floorPlanUploading: "上传中...",
+    floorPlanMaxImages: (n: number) => `最多只能上传 ${n} 张图片`,
     quickFaqsTitle: "你可能的疑问",
     quickFaqs: [
       { q: "合同期限多久？", a: "65天装修期 + 卖房期，写进合同。" },
@@ -508,6 +515,7 @@ export const cLocale = {
     forbiddenTitle: "无权查看该线索",
     forbiddenDesc: "您没有权限查看此线索的详细信息",
     backToMine: "返回我的估价",
+    floorPlanTitle: "户型图",
     systemEstimate: {
       title: "初步估值",
       priceLabel: "初步估值：",
