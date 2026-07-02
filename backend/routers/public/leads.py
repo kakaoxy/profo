@@ -67,7 +67,7 @@ def create_lead(
         floor_info=body.floor_info,
         orientation=body.orientation,
         remarks=body.remarks,
-        images=[str(url) for url in body.images],
+        images=body.images,
     )
 
     lead = service.create_lead(lead_data, creator_id=current_user.id)

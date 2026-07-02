@@ -4,6 +4,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { apiPaths, getApiUrl } from "@/lib/config";
+import { isValidUrl } from "@/lib/validators";
 import { ActionResult, createSuccessResult, createErrorResult } from "@/lib/action-result";
 import { transformCommunitySearchSafe } from "@/lib/api-transforms";
 import { cServerActionFetch } from "@/lib/api-c/server";
@@ -20,7 +21,7 @@ const createLeadSchema = z.object({
   floor_info: z.string().nullable().optional(),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
-  images: z.array(z.string().url()).max(6).default([]),
+  images: z.array(z.string().refine(isValidUrl, { message: "无效的图片 URL" })).max(6).default([]),
 });
 
 const completePhoneSchema = z.object({

@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from models.common import FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
@@ -286,7 +286,21 @@ class PublicLeadCreate(BaseModel):
     floor_info: str | None = Field(None, description="楼层信息")
     orientation: str | None = Field(None, description="朝向")
     remarks: str | None = Field(None, description="备注")
-    images: list[HttpUrl] = Field(default_factory=list, max_length=6, description="户型图URL列表")
+    images: list[str] = Field(default_factory=list, max_length=6, description="户型图URL列表")
+
+    @field_validator("images")
+    @classmethod
+    def validate_images(cls, v: list[str]) -> list[str]:
+        """校验户型图 URL：允许相对路径（/开头，上传接口返回格式）或 http(s) URL，过滤脏数据."""
+        for url in v:
+            if not url.strip():
+                raise ValueError("图片 URL 不能为空")
+            if url.startswith("/"):
+                if len(url) > 500:
+                    raise ValueError("图片 URL 过长")
+            elif not url.startswith(("http://", "https://")):
+                raise ValueError(f"无效的图片 URL: {url}")
+        return v
 
 
 LeadStatusType = Literal[
