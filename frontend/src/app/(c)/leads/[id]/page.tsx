@@ -106,12 +106,12 @@ export default function LeadDetailPage() {
                   className="aspect-square relative rounded-inputs overflow-hidden border border-dove/30 bg-fog group"
                 >
                   <Image
-                    src={img}
+                    src={getFileUrl(img)}
                     alt={`${cLocale.leads.floorPlanTitle} ${idx + 1}`}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-105"
                     sizes="(max-width: 640px) 50vw, 33vw"
-                    unoptimized={img.includes("127.0.0.1") || img.includes("localhost")}
+                    unoptimized
                   />
                 </a>
               ))}

@@ -97,12 +97,27 @@ export function getClientApiUrl(path: string): string {
 }
 
 /**
+ * 已知的后端主机名（不含端口，按 hostname 匹配）
+ */
+const knownBackendHostnames = [
+  "127.0.0.1",
+  "localhost",
+  "fangmengchina.com",
+  "admin.fangmengchina.com",
+  "www.fangmengchina.com",
+];
+
+/**
+ * 局域网 IP 段正则：10.x / 172.16-31.x / 192.168.x
+ */
+const lanIpPattern = /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/;
+
+/**
  * 获取图片/文件的完整 URL
  * - 绝对 URL 指向后端 → 转为相对路径，通过 Next.js rewrites / Nginx 代理访问
  * - 绝对 URL 指向外部域名 → 直接返回
  * - blob:/data: URL → 直接返回
- * - 相对路径 → 生产环境直接返回相对路径（Nginx 代理 /static/），
- *   开发环境拼接后端地址
+ * - 相对路径 → dev/prod 统一返回相对路径
  */
 export function getFileUrl(url: string | undefined | null): string {
   if (!url) return "";
@@ -114,12 +129,10 @@ export function getFileUrl(url: string | undefined | null): string {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     try {
       const parsed = new URL(url);
-      const backendHosts = [
-        "127.0.0.1:8000",
-        "localhost:8000",
-        "fangmengchina.com",
-      ];
-      if (backendHosts.includes(parsed.host)) {
+      if (
+        knownBackendHostnames.includes(parsed.hostname) ||
+        lanIpPattern.test(parsed.hostname)
+      ) {
         return parsed.pathname;
       }
     } catch {
@@ -129,11 +142,5 @@ export function getFileUrl(url: string | undefined | null): string {
   }
 
   const cleanPath = url.startsWith("/") ? url : `/${url}`;
-
-  if (isProduction) {
-    // Nginx 代理 /static/* 到后端，相对路径即可
-    return cleanPath;
-  }
-
-  return `${PUBLIC_API_BASE}${cleanPath}`;
+  return cleanPath;
 }

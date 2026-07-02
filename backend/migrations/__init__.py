@@ -9,6 +9,7 @@
 - encrypt_existing_phones: 将已存的明文手机号加密为 Fernet 密文（H-006）
 - populate_phone_hash: 为已存用户回填 phone_hash（H-006）
 - add_stage_completed_dates_column: 为 l4_marketing_projects 表添加 stage_completed_dates 列
+- run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 
 """
 
@@ -17,6 +18,7 @@ import logging
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
+from migrations.fix_image_urls import run_fix_image_urls
 from utils.crypto import decrypt, encrypt, hash_phone
 
 logger = logging.getLogger(__name__)
@@ -192,6 +194,7 @@ def run_startup_migrations(engine: Engine) -> None:
         encrypt_existing_phones(engine)
         populate_phone_hash(engine)
         add_stage_completed_dates_column(engine)
+        run_fix_image_urls(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

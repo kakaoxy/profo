@@ -4,10 +4,11 @@
  */
 
 /**
- * 校验字符串是否为合法的绝对 URL（http/https）
+ * 校验字符串是否为合法的绝对 URL（http/https）或相对路径
  * 过滤数据库中的脏数据如 "q_80" 等非 URL 字符串
  */
 export const isValidUrl = (str: string): boolean => {
+  if (str.startsWith("/")) return true; // 相对路径视为有效
   try {
     const url = new URL(str);
     return url.protocol === "http:" || url.protocol === "https:";

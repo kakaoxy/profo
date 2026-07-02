@@ -127,9 +127,10 @@ app = FastAPI(
 )
 
 
-if not Path("static").exists():
-    Path("static").mkdir(parents=True)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+upload_dir_abs = Path(settings.upload_dir).resolve()
+upload_dir_abs.mkdir(parents=True, exist_ok=True)
+static_root = upload_dir_abs.parent
+app.mount("/static", StaticFiles(directory=str(static_root)), name="static")
 
 
 app.add_middleware(
@@ -210,4 +211,6 @@ if __name__ == "__main__":
         host="0.0.0.0",  # noqa: S104
         port=8000,
         reload=settings.debug,
+        proxy_headers=True,
+        forwarded_allow_ips="127.0.0.1",
     )
