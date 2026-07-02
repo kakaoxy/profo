@@ -81,6 +81,21 @@ const nextConfig: NextConfig = {
         port: "8000",
         pathname: "/static/**",
       },
+      // 局域网 IP 段（开发环境手机调试）
+      // 注：Next.js remotePatterns 对纯 IP 通配支持不明确，
+      // 若匹配失败，依赖 getFileUrl 返回相对路径 + Image unoptimized 兜底
+      {
+        protocol: "http",
+        hostname: "192.168.*.*",
+        port: "8000",
+        pathname: "/static/**",
+      },
+      {
+        protocol: "http",
+        hostname: "10.*.*.*",
+        port: "8000",
+        pathname: "/static/**",
+      },
     ],
   },
 };

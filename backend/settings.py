@@ -1,10 +1,13 @@
 """应用配置文件."""
 
 import sys
+from pathlib import Path
 from typing import Any
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+_base_dir = Path(__file__).resolve().parent
 
 
 class Settings(BaseSettings):
@@ -50,7 +53,7 @@ class Settings(BaseSettings):
         return v
 
     # 文件上传配置
-    upload_dir: str = "static/uploads"
+    upload_dir: str = str(_base_dir / "static" / "uploads")
     max_upload_size: int = 100 * 1024 * 1024  # 100MB
     # 支持的文件类型：图片、PDF、Excel、Word文档、Markdown
     allowed_extensions: set[str] = {

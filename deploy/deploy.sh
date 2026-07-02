@@ -100,6 +100,15 @@ mkdir -p "$REMOTE_PATH"
 echo "解压部署包..."
 tar -xzf "$ARCHIVE_FILE" -C "$REMOTE_PATH"
 
+# 上传目录持久化：将 uploads 迁移到 /root/profo-data/uploads 并建立软链
+PERSIST_DIR="/root/profo-data/uploads"
+mkdir -p "$PERSIST_DIR"
+if [ -d "$REMOTE_PATH/backend/static/uploads" ] && [ ! -L "$REMOTE_PATH/backend/static/uploads" ]; then
+    cp -rn "$REMOTE_PATH/backend/static/uploads/"* "$PERSIST_DIR/" 2>/dev/null || true
+    rm -rf "$REMOTE_PATH/backend/static/uploads"
+fi
+ln -sfn "$PERSIST_DIR" "$REMOTE_PATH/backend/static/uploads"
+
 # 进入后端目录，安装依赖
 echo "安装后端依赖..."
 cd "$REMOTE_PATH/backend"
