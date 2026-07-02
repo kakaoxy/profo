@@ -3,8 +3,6 @@
 职责: 处理C端公开项目相关的数据库查询.
 """
 
-from datetime import datetime, timezone
-
 from sqlalchemy import and_, case, desc, func
 from sqlalchemy.orm import Session
 
@@ -148,11 +146,8 @@ class PublicProjectService:
         """获取平台统计数据.
 
         Returns:
-            (total_owners, on_sale_count, current_month_sold)
+            (total_owners, on_sale_count, total_sold)
         """
-        now = datetime.now(timezone.utc)
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
         stats = self.db.query(
             func.count(
                 func.distinct(
@@ -187,16 +182,15 @@ class PublicProjectService:
                         and_(
                             L4MarketingProject.is_deleted.is_(False),
                             L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value,
-                            L4MarketingProject.updated_at >= month_start,
                         ),
                         L4MarketingProject.id,
                     ),
                     else_=None,
                 ),
-            ).label("current_month_sold"),
+            ).label("total_sold"),
         ).first()
 
         if not stats:
             return 0, 0, 0
 
-        return stats.total_owners or 0, stats.on_sale_count or 0, stats.current_month_sold or 0
+        return stats.total_owners or 0, stats.on_sale_count or 0, stats.total_sold or 0

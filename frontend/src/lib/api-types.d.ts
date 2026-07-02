@@ -5015,10 +5015,10 @@ export interface components {
              */
             on_sale_count: number;
             /**
-             * Current Month Sold
-             * @description 本月成交数
+             * Total Sold
+             * @description 累计成交数
              */
-            current_month_sold: number;
+            total_sold: number;
         };
         /**
          * PublicProfileUpdate

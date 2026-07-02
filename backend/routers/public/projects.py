@@ -278,10 +278,10 @@ def get_platform_stats(
 ) -> PublicPlatformStats:
     """获取平台统计数据."""
     svc = PublicProjectService(db)
-    total_owners, on_sale_count, current_month_sold = svc.get_platform_stats()
+    total_owners, on_sale_count, total_sold = svc.get_platform_stats()
 
     return PublicPlatformStats(
         total_owners=total_owners,
         on_sale_count=on_sale_count,
-        current_month_sold=current_month_sold,
+        total_sold=total_sold,
     )
