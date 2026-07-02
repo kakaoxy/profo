@@ -132,7 +132,7 @@ export default function ProjectDetailPage() {
         >
           {status.label}
         </span>
-        <h1 className="text-[26px] md:text-[44px] font-display text-ink leading-heading-sm md:leading-heading tracking-heading-sm md:tracking-heading text-wrap-balance">
+        <h1 className="text-[26px] font-medium md:font-display md:text-[44px] text-ink leading-heading-sm md:leading-heading tracking-heading-sm md:tracking-heading text-wrap-balance">
           {data.community_name ?? cLocale.projects.unknownCommunity}
         </h1>
         <p className="text-[16px] text-ash leading-body tracking-body">

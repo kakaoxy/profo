@@ -187,6 +187,7 @@ export const cLocale = {
     ],
     // 新增：算账模块
     calculation: {
+      eyebrow: "Transparent Pricing",
       title: "算一笔实在账",
       subtitle:
         "假设约定价 380 万、装修成本 15 万，看看三种市场情况下的结果",
@@ -217,6 +218,7 @@ export const cLocale = {
     },
     // 新增：三方对比
     comparison: {
+      eyebrow: "Comparison",
       title: "我们和装修公司、中介有什么不同",
       headers: ["", "装修公司", "中介", "美房宝"],
       rows: [
@@ -240,6 +242,8 @@ export const cLocale = {
         },
       ],
     },
+    faqTitle: "你可能想问",
+    faqEyebrow: "FAQ",
     // 新增：FAQ 8 条（业务文档 6 条 + 疑惑文档补充"资金怎么保障""公司靠谱吗"）
     faq: [
       {
@@ -277,6 +281,7 @@ export const cLocale = {
     ],
     // 新增：适合房子
     suitable: {
+      eyebrow: "Suitable Properties",
       title: "什么样的房子适合找我们",
       criteria: [
         "装修老旧，自己不想再投钱翻新",
@@ -292,6 +297,7 @@ export const cLocale = {
       "* 美房宝不承诺保底收购。合同约定的是“未售出则装修免费赠送”，而非“公司按约定价格收购你的房产”。",
     // 新增：真实成交案例精选区块
     casesTitle: "真实成交案例",
+    casesEyebrow: "Success Stories",
     casesSubtitle: "每一套都是公司垫资装修、全权卖房的真实案例",
     casesMore: "查看全部成交案例",
     mobile: {

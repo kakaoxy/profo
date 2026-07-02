@@ -49,7 +49,7 @@ export function RenovationTimeline({ stages, media }: RenovationTimelineProps) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[22px] font-medium text-ink leading-subheading tracking-subheading font-display">
+        <h2 className="text-[22px] font-medium text-ink leading-subheading tracking-subheading">
           {cLocale.projects.renovationProcess}
         </h2>
         <button

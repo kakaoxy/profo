@@ -21,7 +21,7 @@ export function HeroCard({ label, title, children }: HeroCardProps) {
         <span className="inline-block rounded-full bg-apricot-wash px-3 py-1 text-xs font-medium tracking-[-0.009em] text-rust">
           {label}
         </span>
-        <h2 className="font-display mt-4 text-[28px] leading-[1.15] text-ink">
+        <h2 className="mt-4 text-[28px] leading-[1.15] font-medium text-ink tracking-[-0.009em]">
           {title}
         </h2>
         {children}

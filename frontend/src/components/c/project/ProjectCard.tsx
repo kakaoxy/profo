@@ -111,7 +111,7 @@ export function ProjectCard({
 
           <div className="mt-auto border-t border-dove/30 pt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-xl font-semibold text-ink">
+              <span className="text-xl font-medium text-ink">
                 {totalPrice}
               </span>
               <span className="text-sm text-graphite">万</span>

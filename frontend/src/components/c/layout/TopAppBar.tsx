@@ -41,7 +41,7 @@ export function TopAppBar({
         <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-6">
           <Link
             href="/"
-            className="text-[28px] font-semibold leading-none tracking-tight text-ink"
+            className="text-[28px] font-medium leading-none tracking-[-0.009em] text-ink"
           >
             Profo
           </Link>
@@ -74,14 +74,14 @@ export function TopAppBar({
             {isLoggedIn ? (
               <Link
                 href="/my"
-                className="inline-flex items-center gap-2 rounded-lg bg-fog px-4 py-2.5 text-[15px] font-medium text-ink transition-colors hover:bg-dove/20"
+                className="text-[15px] font-medium text-ink hover:underline"
               >
                 个人中心
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center rounded-lg bg-ink px-4 py-2.5 text-[15px] font-medium text-white transition-colors hover:bg-ink/90"
+                className="inline-flex items-center rounded-full bg-ink px-5 py-2.5 text-[15px] font-medium text-white tracking-[-0.009em] transition-opacity hover:opacity-90"
               >
                 登录
               </Link>
