@@ -123,7 +123,9 @@ export default function ProjectDetailPage() {
         </button>
       </nav>
 
-      <ImageCarousel images={carouselImages} />
+      <section className="mx-auto w-full max-w-[1200px] px-4">
+        <ImageCarousel images={carouselImages} />
+      </section>
 
       {/* Hero info block — Signifier heading per DESIGN.md */}
       <div className="mx-auto max-w-[1200px] px-4 pt-6 space-y-2">
