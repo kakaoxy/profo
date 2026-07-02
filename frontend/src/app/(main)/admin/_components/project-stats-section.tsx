@@ -20,7 +20,8 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
 
   const viewTotal = viewingRecords.length;
   const { currentWeekViews, lastWeekViews } = getWeekViewStats(viewingRecords);
-  const viewTrendIsUp = currentWeekViews >= lastWeekViews;
+  const viewTrendIsUp = currentWeekViews > lastWeekViews;
+  const viewTrendIsFlat = currentWeekViews === lastWeekViews;
 
   const { offerCount, maxOffer, lastOffer } = getOfferStats(offerRecords);
 
@@ -39,12 +40,16 @@ export function ProjectStatsSection({ salesRecords }: ProjectStatsSectionProps) 
         <div className="text-xs text-muted-foreground ml-6">本周/上周</div>
         <div
           className={`text-xs font-semibold ${
-            viewTrendIsUp ? "text-tertiary" : "text-error"
+            viewTrendIsFlat
+              ? "text-muted-foreground"
+              : viewTrendIsUp
+              ? "text-tertiary"
+              : "text-error"
           }`}
         >
           {currentWeekViews} / {lastWeekViews}
           <span className="ml-1">
-            {viewTrendIsUp ? "↑" : "↓"}
+            {viewTrendIsFlat ? "→" : viewTrendIsUp ? "↑" : "↓"}
           </span>
         </div>
       </div>
