@@ -82,7 +82,7 @@ function LoginForm() {
           {/* Brand Content */}
           <div className="relative z-10 flex flex-col justify-end p-12 w-full h-full">
             <div className="mb-8">
-              <h1 className="text-[44px] leading-[1.1] font-medium text-ink mb-3 tracking-[-0.009em]">
+              <h1 className="font-display text-[44px] text-ink mb-3">
                 {cLocale.common.brand.company}
               </h1>
               <p className="text-[18px] leading-[28px] text-ash max-w-sm">

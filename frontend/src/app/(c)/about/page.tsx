@@ -448,7 +448,10 @@ export default function AboutPage() {
       <section className="bg-white py-12 md:py-20">
         <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
-            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+              {cLocale.about.calculation.eyebrow}
+            </span>
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
               {cLocale.about.calculation.title}
             </h2>
             <p className="mt-3 text-sm md:text-base text-ash tracking-[-0.009em]">
@@ -494,8 +497,11 @@ export default function AboutPage() {
       <section id="faq" className="bg-fog py-12 md:py-20">
         <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
-            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
-              你可能想问
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+              {cLocale.about.faqEyebrow}
+            </span>
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
+              {cLocale.about.faqTitle}
             </h2>
           </div>
           <div className="mx-auto max-w-3xl space-y-3">
@@ -526,7 +532,10 @@ export default function AboutPage() {
       <section className="bg-white py-12 md:py-20">
         <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
-            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+              {cLocale.about.comparison.eyebrow}
+            </span>
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
               {cLocale.about.comparison.title}
             </h2>
           </div>
@@ -565,7 +574,10 @@ export default function AboutPage() {
       <section className="bg-fog py-12 md:py-20">
         <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
-            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+              {cLocale.about.suitable.eyebrow}
+            </span>
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
               {cLocale.about.suitable.title}
             </h2>
           </div>
@@ -589,7 +601,10 @@ export default function AboutPage() {
       <section className="bg-white py-12 md:py-20">
         <div className="mx-auto max-w-[1200px] px-4 md:px-6">
           <div className="mb-8 text-center">
-            <h2 className="font-display text-2xl md:text-[44px] md:leading-[1.1] text-ink">
+            <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
+              {cLocale.about.casesEyebrow}
+            </span>
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
               {cLocale.about.casesTitle}
             </h2>
             <p className="mt-3 text-sm md:text-base text-ash tracking-[-0.009em]">

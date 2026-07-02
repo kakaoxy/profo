@@ -179,7 +179,7 @@ function CPageContent() {
         />
 
         <div className="relative z-10 mx-auto flex max-w-[1200px] flex-col items-center px-6 py-16 text-center md:py-24 lg:py-32">
-          <h1 className="font-display text-3xl text-ink md:text-5xl lg:text-[56px]">
+          <h1 className="text-3xl font-medium text-ink md:font-display md:text-5xl lg:text-[56px] tracking-[-0.009em] md:tracking-[-0.025em]">
             {cLocale.home.hero.title}
           </h1>
           <p className="mt-4 max-w-xl text-base text-ash md:text-lg">
