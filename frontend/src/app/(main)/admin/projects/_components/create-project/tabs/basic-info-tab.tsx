@@ -6,6 +6,7 @@ import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
 import { CommunitySelect } from "@/components/common/community-select";
 import { getUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
+import { FloorInput } from "@/components/common";
 import { toast } from "sonner";
 import {
   FormControl,
@@ -15,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -34,7 +35,7 @@ interface UserOption {
   username: string;
 }
 
-// 户型数字输入框组件
+// 户型数字输入框组件 — Steep: centered text, rounded-inputs, compact height
 function RoomNumberField({
   control,
   name,
@@ -62,7 +63,7 @@ function RoomNumberField({
                 const val = e.target.value;
                 field.onChange(val === "" ? undefined : parseInt(val, 10));
               }}
-              className="text-center h-10"
+              className="rounded-inputs h-10 text-center border-dove/50 bg-pure-white focus-visible:border-ink/30 focus-visible:ring-ink/10"
             />
           </FormControl>
           <FormMessage />
@@ -78,9 +79,7 @@ export function BasicInfoTab({ form }: TabProps) {
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
   // 区分是来自小区的 district（只读）还是用户手输（可编辑）
-  // 通过跟踪 community 原始 district 来判断
   const [communityDistrict, setCommunityDistrict] = useState<string | undefined>(undefined);
-  // 商圈同理：来自小区则只读，无则可编辑
   const [communityBusinessCircle, setCommunityBusinessCircle] = useState<string | undefined>(undefined);
 
   // 加载用户列表 + 当前登录用户（并行）
@@ -95,7 +94,6 @@ export function BasicInfoTab({ form }: TabProps) {
           logger.error("加载用户列表失败:", usersResult.message);
           toast.error(usersResult.message || "加载用户列表失败");
         }
-        // 新建模式下，若项目负责人为空，默认设为当前登录用户
         if (currentUserResult.success && currentUserResult.data) {
           const currentManagerId = form.getValues("project_manager_id");
           if (!currentManagerId) {
@@ -116,9 +114,9 @@ export function BasicInfoTab({ form }: TabProps) {
   }, [form]);
 
   return (
-    <div className="space-y-4">
-      {/* 第一行：小区名称 + 详细地址 */}
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-5">
+      {/* 第一行：小区 / 行政区 / 商圈（行政区与商圈较窄，小区占更大比例） */}
+      <div className="grid grid-cols-[2fr_1fr_1fr] gap-4">
         {/* 小区名称 - 使用小区选择组件 */}
         <Controller
           control={control}
@@ -128,14 +126,10 @@ export function BasicInfoTab({ form }: TabProps) {
               value={field.value}
               onChange={(community) => {
                 field.onChange(community.name);
-                // 同时保存小区ID用于市场监控数据关联
                 form.setValue("community_id", community.id || undefined);
-                // 回填行政区（来自小区搜索结果）
                 form.setValue("district", community.district || "");
-                // 快照小区原始行政区，用于 onSubmit 比对是否被用户修改（AC-4.3）
                 form.setValue("original_community_district", community.district || "");
                 setCommunityDistrict(community.district);
-                // 回填商圈（与行政区同源，来自小区）
                 form.setValue("business_circle", community.businessCircle || "");
                 form.setValue("original_community_business_circle", community.businessCircle || "");
                 setCommunityBusinessCircle(community.businessCircle);
@@ -144,64 +138,7 @@ export function BasicInfoTab({ form }: TabProps) {
           )}
         />
 
-        {/* 详细地址 */}
-        <FormField
-          control={control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                详细地址
-                <span className="text-error ml-1">*</span>
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="街道/楼栋/门牌号"
-                  {...field}
-                  value={field.value || ""}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      {/* 第二行：业务形式 + 行政区 + 商圈 */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* 业务形式 */}
-        <FormField
-          control={control}
-          name="business_form"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>业务形式</FormLabel>
-              <Select
-                value={field.value || "__empty__"}
-                onValueChange={(value) => {
-                  field.onChange(value === "__empty__" ? "" : value);
-                }}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="未设置" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="__empty__">未设置</SelectItem>
-                  {BUSINESS_FORM_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 行政区 - 选择小区后自动回填，无 district 时可编辑 */}
+        {/* 行政区 */}
         <FormField
           control={control}
           name="district"
@@ -209,11 +146,11 @@ export function BasicInfoTab({ form }: TabProps) {
             const hasCommunityDistrict = !!communityDistrict;
             return (
               <FormItem>
-                <FormLabel>
+                <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
                   行政区
                   {!hasCommunityDistrict && (
-                    <span className="text-xs text-muted-foreground ml-1">
-                      （小区未设置，可手输）
+                    <span className="text-[12px] text-graphite font-normal ml-1">
+                      （可手输）
                     </span>
                   )}
                 </FormLabel>
@@ -223,7 +160,9 @@ export function BasicInfoTab({ form }: TabProps) {
                     readOnly={hasCommunityDistrict}
                     {...field}
                     value={field.value || ""}
-                    className={hasCommunityDistrict ? "bg-muted/50 text-muted-foreground" : ""}
+                    className={`rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 ${
+                      hasCommunityDistrict ? "bg-fog/60 text-graphite" : ""
+                    }`}
                   />
                 </FormControl>
                 <FormMessage />
@@ -232,7 +171,7 @@ export function BasicInfoTab({ form }: TabProps) {
           }}
         />
 
-        {/* 商圈 - 选择小区后自动回填，无 business_circle 时可编辑 */}
+        {/* 商圈 */}
         <FormField
           control={control}
           name="business_circle"
@@ -240,11 +179,11 @@ export function BasicInfoTab({ form }: TabProps) {
             const hasCommunityBusinessCircleVal = !!communityBusinessCircle;
             return (
               <FormItem>
-                <FormLabel>
+                <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
                   商圈
                   {!hasCommunityBusinessCircleVal && (
-                    <span className="text-xs text-muted-foreground ml-1">
-                      （小区未设置，可手输）
+                    <span className="text-[12px] text-graphite font-normal ml-1">
+                      （可手输）
                     </span>
                   )}
                 </FormLabel>
@@ -254,7 +193,9 @@ export function BasicInfoTab({ form }: TabProps) {
                     readOnly={hasCommunityBusinessCircleVal}
                     {...field}
                     value={field.value || ""}
-                    className={hasCommunityBusinessCircleVal ? "bg-muted/50 text-muted-foreground" : ""}
+                    className={`rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 ${
+                      hasCommunityBusinessCircleVal ? "bg-fog/60 text-graphite" : ""
+                    }`}
                   />
                 </FormControl>
                 <FormMessage />
@@ -264,6 +205,29 @@ export function BasicInfoTab({ form }: TabProps) {
         />
       </div>
 
+      {/* 第二行：详细地址 - 独占一行（地址通常较长） */}
+      <FormField
+        control={control}
+        name="address"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+              详细地址
+              <span className="text-error ml-0.5">*</span>
+            </FormLabel>
+            <FormControl>
+              <Input
+                placeholder="街道/楼栋/门牌号"
+                {...field}
+                value={field.value || ""}
+                className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* 第三行：产证面积 + 户型 */}
       <div className="grid grid-cols-2 gap-4">
         {/* 产证面积 */}
@@ -272,13 +236,16 @@ export function BasicInfoTab({ form }: TabProps) {
           name="area"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>产证面积 (㎡)</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                产证面积 (㎡)
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"
                   placeholder="输入面积"
                   {...field}
                   value={field.value || ""}
+                  className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10"
                 />
               </FormControl>
               <FormMessage />
@@ -286,99 +253,170 @@ export function BasicInfoTab({ form }: TabProps) {
           )}
         />
 
-        {/* 户型 - 三个独立输入框 */}
+        {/* 户型 - Steep: pill-chip styled room inputs */}
         <FormItem>
-          <FormLabel>户型    <p className="text-xs text-muted-foreground mt-1">（至少填写一项）</p></FormLabel>
+          <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+            户型
+            <span className="text-[12px] text-graphite font-normal ml-1">（至少填写一项）</span>
+          </FormLabel>
           <div className="flex items-center gap-2">
             <RoomNumberField
               control={control}
               name="rooms"
               placeholder="2"
             />
-            <span className="text-muted-foreground">室</span>
+            <span className="text-[13px] text-graphite shrink-0">室</span>
             <RoomNumberField
               control={control}
               name="halls"
               placeholder="1"
             />
-            <span className="text-muted-foreground">厅</span>
+            <span className="text-[13px] text-graphite shrink-0">厅</span>
             <RoomNumberField
               control={control}
               name="bathrooms"
               placeholder="1"
             />
-            <span className="text-muted-foreground">卫</span>
+            <span className="text-[13px] text-graphite shrink-0">卫</span>
           </div>
-
         </FormItem>
       </div>
 
-      {/* 第四行：朝向 - 独占一行（5 个选项横向排列更舒展） */}
-      <FormField
-        control={control}
-        name="orientation"
-        render={({ field }) => (
-          <FormItem className="space-y-2">
-            <FormLabel>朝向</FormLabel>
-            <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                value={field.value}
-                className="flex flex-wrap gap-4"
-              >
-                {ORIENTATION_OPTIONS.map((option) => (
-                  <FormItem
-                    key={option.value}
-                    className="flex items-center space-x-2 space-y-0"
-                  >
-                    <FormControl>
-                      <RadioGroupItem value={option.value} />
-                    </FormControl>
-                    <FormLabel className="font-normal cursor-pointer">
-                      {option.label}
-                    </FormLabel>
-                  </FormItem>
-                ))}
-              </RadioGroup>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* 第五行：项目负责人 - 独占一行，避免与朝向 RadioGroup 并排导致宽度不均 */}
-      <FormField
-        control={control}
-        name="project_manager_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>项目负责人</FormLabel>
-            <Select
-              value={field.value || "__empty__"}
-              onValueChange={(value) => {
-                const newValue = value === "__empty__" ? undefined : value;
-                field.onChange(newValue);
-              }}
-              disabled={isLoadingUsers}
-            >
+      {/* 第四行：楼层 + 朝向 */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* 楼层 - 共享组件（与线索表单共用） */}
+        <FormField
+          control={control}
+          name="floor_info"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">楼层</FormLabel>
               <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="未选择" />
-                </SelectTrigger>
+                <FloorInput
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                />
               </FormControl>
-              <SelectContent>
-                <SelectItem value="__empty__">未选择</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.nickname || user.username}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 朝向 — Steep: pill-style radio chips */}
+        <FormField
+          control={control}
+          name="orientation"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">朝向</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-wrap gap-2"
+                >
+                  {ORIENTATION_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
+                        field.value === option.value
+                          ? "bg-ink text-pure-white border-ink"
+                          : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        value={option.value}
+                        checked={field.value === option.value}
+                        onChange={() => field.onChange(option.value)}
+                        className="sr-only"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* 第五行：业务形式（与朝向同样的 pill 选项形式） + 项目负责人 */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* 业务形式 — Steep: pill-style radio chips（与朝向同款） */}
+        <FormField
+          control={control}
+          name="business_form"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">业务形式</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value || ""}
+                  className="flex flex-wrap gap-2"
+                >
+                  {BUSINESS_FORM_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
+                        field.value === option.value
+                          ? "bg-ink text-pure-white border-ink"
+                          : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        value={option.value}
+                        checked={field.value === option.value}
+                        onChange={() => field.onChange(option.value)}
+                        className="sr-only"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 项目负责人 */}
+        <FormField
+          control={control}
+          name="project_manager_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">项目负责人</FormLabel>
+              <Select
+                value={field.value || "__empty__"}
+                onValueChange={(value) => {
+                  const newValue = value === "__empty__" ? undefined : value;
+                  field.onChange(newValue);
+                }}
+                disabled={isLoadingUsers}
+              >
+                <FormControl>
+                  <SelectTrigger className="rounded-inputs h-10 border-dove/50 bg-pure-white text-[14px] focus:ring-ink/10">
+                    <SelectValue placeholder="未选择" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="__empty__">未选择</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.nickname || user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
   );
 }

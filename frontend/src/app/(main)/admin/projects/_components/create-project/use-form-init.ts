@@ -42,6 +42,7 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         halls: editLayoutData.halls,
         bathrooms: editLayoutData.bathrooms,
         orientation: (project.orientation as FormValues["orientation"]) || "南北",
+        floor_info: project.floor_info || "",
         owner_name: project.owner_name || "",
         owner_phone: project.owner_phone || "",
         owner_id_card: project.owner_id_card || "",
@@ -102,6 +103,7 @@ export function getDefaultValues(
     orientation: isEditMode
       ? (project?.orientation as FormValues["orientation"]) || "南北"
       : "南北",
+    floor_info: project?.floor_info || "",
     owner_name: project?.owner_name || "",
     owner_phone: project?.owner_phone || "",
     owner_id_card: project?.owner_id_card || "",

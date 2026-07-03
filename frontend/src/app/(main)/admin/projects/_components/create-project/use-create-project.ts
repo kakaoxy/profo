@@ -88,6 +88,7 @@ export const useCreateProject = ({
         area: values.area ?? null,
         layout: layoutString || null,
         orientation: values.orientation || null,
+        floor_info: values.floor_info || null,
         project_manager_id: values.project_manager_id || null,
         business_form:
           values.business_form === "agent" || values.business_form === "wholesale"

@@ -78,30 +78,31 @@ export function CreateProjectDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[750px] p-0 gap-0 overflow-hidden h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-[750px] p-0 gap-0 overflow-hidden h-[85vh] flex flex-col rounded-cards border-dove/40">
         {/* --- Header --- */}
-        <DialogHeader className="px-6 py-4 border-b bg-card shrink-0">
+        <DialogHeader className="px-7 py-5 border-b border-dove/30 bg-pure-white shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle>{project ? "编辑项目" : "新建项目"}</DialogTitle>
-              <DialogDescription className="mt-1">
+              <DialogTitle className="text-foreground font-sohne font-medium text-[18px] tracking-tight">
+                {project ? "编辑项目" : "新建项目"}
+              </DialogTitle>
+              <DialogDescription className="mt-1.5 text-graphite text-[14px] font-normal">
                 {project ? "修改项目详细信息。" : "录入新项目信息。支持自动保存草稿。"}
               </DialogDescription>
             </div>
             {/* 顶部工具栏：仅在新建模式显示草稿控制 */}
             {!isEditMode && (
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={clearDraft}
-                  className="h-8 text-xs text-muted-foreground hover:text-error"
+                  className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] text-graphite hover:text-error hover:bg-error/5 transition-colors"
                 >
-                  <Trash2 className="mr-1 h-3 w-3" />
+                  <Trash2 className="h-3.5 w-3.5" />
                   清空
-                </Button>
-                <div className="flex items-center rounded-full bg-success/10 px-2 py-1 text-xs text-success">
-                  <Save className="mr-1 h-3 w-3" />
+                </button>
+                <div className="flex items-center rounded-full bg-success/10 px-3 py-1.5 text-[13px] font-medium text-success">
+                  <Save className="mr-1.5 h-3 w-3" />
                   自动保存中
                 </div>
               </div>
@@ -110,12 +111,12 @@ export function CreateProjectDialog({
         </DialogHeader>
 
         {/* --- Body --- */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-muted/50">
+        <div className="flex-1 min-h-0 overflow-hidden bg-fog">
           <Form {...form}>
             <form onSubmit={onSubmit} className="h-full flex flex-col">
               {/* 表单错误提示 */}
               {hasErrors && (
-                <Alert variant="destructive" className="m-6 mb-0 shrink-0">
+                <Alert variant="destructive" className="mx-7 mt-5 mb-0 shrink-0 rounded-inputs border-dove/40">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     表单验证失败，请检查以下字段：
@@ -132,19 +133,19 @@ export function CreateProjectDialog({
                 onValueChange={setActiveTab}
                 className="flex-1 min-h-0 flex flex-col overflow-hidden"
               >
-                {/* Tabs 导航 */}
-                <div className="px-6 pt-4 shrink-0">
-                <TabsList className="grid w-full grid-cols-4 gap-1">
-                    <TabsTrigger value="basic">基础信息</TabsTrigger>
-                    <TabsTrigger value="agency">代理协议</TabsTrigger>
-                    <TabsTrigger value="owner">业主信息</TabsTrigger>
-                    <TabsTrigger value="attachments">附件上传</TabsTrigger>
+                {/* Tabs 导航 — Steep: pill-style tabs on Fog canvas */}
+                <div className="px-7 pt-5 shrink-0">
+                <TabsList className="grid w-full grid-cols-4 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
+                    <TabsTrigger value="basic" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">基础信息</TabsTrigger>
+                    <TabsTrigger value="agency" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">代理协议</TabsTrigger>
+                    <TabsTrigger value="owner" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">业主信息</TabsTrigger>
+                    <TabsTrigger value="attachments" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">附件上传</TabsTrigger>
                   </TabsList>
                 </div>
 
-                {/* Tabs 内容区域 - min-h-0 确保 flex 子项可收缩，ScrollArea 才能正确滚动 */}
+                {/* Tabs 内容区域 */}
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-6">
+                  <div className="p-7">
                     <TabsContent value="basic" className="m-0">
                       <BasicInfoTab form={form} />
                     </TabsContent>
@@ -164,16 +165,21 @@ export function CreateProjectDialog({
                 </ScrollArea>
               </Tabs>
 
-              {/* --- Footer --- */}
-              <DialogFooter className="px-6 py-4 border-t bg-card shrink-0">
+              {/* --- Footer — Steep: one filled CTA + text link secondary */}
+              <DialogFooter className="px-7 py-4 border-t border-dove/30 bg-pure-white shrink-0">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => setOpen(false)}
+                  className="text-graphite hover:text-ink hover:bg-transparent text-[14px] font-medium px-4"
                 >
                   取消
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-ink hover:bg-ink/90 text-pure-white rounded-full px-6 font-medium text-[14px] shadow-none border-0"
+                >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isEditMode ? "保存修改" : "创建项目"}
                 </Button>

@@ -150,6 +150,7 @@ export interface Project {
 
   layout?: string;
   orientation?: string;
+  floor_info?: string;
 
   manager?: string;
   project_manager?: ProjectManager;

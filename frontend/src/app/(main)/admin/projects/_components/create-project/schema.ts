@@ -111,6 +111,9 @@ export const formSchema = z
     // 朝向 - 单选框
     orientation: orientationEnum.default("南北"),
 
+    // 楼层信息（如：5/28层），与线索表单格式一致
+    floor_info: z.string().max(50).optional(),
+
     // 代理协议 - 合同信息
     contract_no: z.string().min(1, "合同编号不能为空").max(100),
     signing_price: optionalNumber,

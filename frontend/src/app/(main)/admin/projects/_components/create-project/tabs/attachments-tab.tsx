@@ -12,12 +12,7 @@ interface TabProps {
   form: UseFormReturn<FormValues>;
 }
 
-/**
- * 附件上传 Tab
- * 包含文件上传区域和已上传文件列表
- */
 export function AttachmentsTab({ form }: TabProps) {
-  // Use useWatch for proper subscription to form field changes
   const attachments = useWatch({
     control: form.control,
     name: "attachments",
@@ -45,23 +40,23 @@ export function AttachmentsTab({ form }: TabProps) {
     <div className="space-y-6">
       {/* 上传区域 */}
       <div>
-        <h3 className="mb-3 text-sm font-medium">上传附件</h3>
+        <h3 className="mb-3 text-[14px] font-medium text-foreground tracking-tight">上传附件</h3>
         <FileUploader onUploadComplete={handleUploadComplete} />
       </div>
 
-      <Separator />
+      <Separator className="bg-dove/20" />
 
       {/* 已上传文件列表 */}
       <div>
-        <h3 className="mb-3 text-sm font-medium">
+        <h3 className="mb-3 text-[14px] font-medium text-foreground tracking-tight">
           已上传附件
           {attachments.length > 0 && (
-            <span className="ml-2 text-muted-foreground">
+            <span className="ml-2 text-[13px] text-graphite font-normal">
               （共 {attachments.length} 个）
             </span>
           )}
         </h3>
-        <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+        <ScrollArea className="h-[300px] w-full rounded-inputs border border-dove/40 p-5 bg-pure-white">
           <div className="pr-4">
             <FileList attachments={attachments} onRemove={handleRemove} />
           </div>

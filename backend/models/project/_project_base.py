@@ -24,6 +24,7 @@ class Project(BaseModel):
     area: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="产证面积(m²)")
     layout: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="户型(展示用)")
     orientation: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="朝向")
+    floor_info: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="楼层信息(如:5/28层)")
 
     status: Mapped[ProjectStatus] = mapped_column(
         SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x]),

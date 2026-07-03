@@ -23,7 +23,6 @@ import { FormValues } from "./schema";
 
 interface DatePickerProps {
   control: Control<FormValues>;
-  // 使用 Path<FormValues> 确保 name 必须是表单字段之一，这就不会报错了
   name: Path<FormValues>;
   label: string;
 }
@@ -35,28 +34,29 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
       name={name}
       render={({ field }) => (
         <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+            {label}
+          </FormLabel>
           <Popover>
             <PopoverTrigger asChild>
               <FormControl>
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-full pl-3 text-left font-normal",
-                    !field.value && "text-muted-foreground"
+                    "w-full pl-3 text-left font-normal rounded-inputs h-10 border-dove/50 bg-pure-white text-[14px] hover:bg-fog/50 focus-visible:border-ink/30 focus-visible:ring-ink/10",
+                    !field.value && "text-dove"
                   )}
                 >
-                  {/* 类型保护：确保是 Date 对象或者是 undefined */}
                   {field.value instanceof Date ? (
                     format(field.value, "yyyy-MM-dd")
                   ) : (
                     <span>选择日期</span>
                   )}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-40" />
                 </Button>
               </FormControl>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 rounded-cards border-dove/40" align="start">
               <Calendar
                 mode="single"
                 selected={field.value instanceof Date ? field.value : undefined}
