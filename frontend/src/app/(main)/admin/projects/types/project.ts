@@ -152,11 +152,26 @@ export interface Project {
   orientation?: string;
   floor_info?: string;
 
+  // 公用事业户号
+  electricity_account?: string | null;
+  water_account?: string | null;
+  gas_account?: string | null;
+
   manager?: string;
   project_manager?: ProjectManager;
   owner_name?: string;
   owner_phone?: string;
   owner_id_card?: string;
+  owners?: Array<{
+    id?: string;
+    owner_name?: string | null;
+    owner_phone?: string | null;
+    owner_id_card?: string | null;
+    bank_name?: string | null;
+    bank_card_number?: string | null;
+    relation_type?: string | null;
+    owner_info?: string | null;
+  }>;
 
   created_at: string;
   updated_at: string;

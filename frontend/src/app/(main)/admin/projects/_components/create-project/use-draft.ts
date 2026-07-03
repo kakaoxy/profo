@@ -86,6 +86,23 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
           if (parsed.commission_end_date) {
             parsed.commission_end_date = fromDateStr(parsed.commission_end_date);
           }
+          // 兼容旧 draft：若缺少 owners 但存在历史单业主字段，映射为 owners[0]
+          if ((!parsed.owners || !Array.isArray(parsed.owners)) && (parsed.owner_name || parsed.owner_phone || parsed.owner_id_card)) {
+            parsed.owners = [
+              {
+                owner_name: parsed.owner_name || "",
+                owner_phone: parsed.owner_phone || "",
+                owner_id_card: parsed.owner_id_card || "",
+                bank_name: "",
+                bank_card_number: "",
+                relation_type: "业主",
+                owner_info: "",
+              },
+            ];
+          }
+          delete parsed.owner_name;
+          delete parsed.owner_phone;
+          delete parsed.owner_id_card;
           form.reset(parsed);
           toast.info("已恢复上次未保存的草稿");
         } catch (e) {
@@ -143,9 +160,20 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
       halls: undefined,
       bathrooms: undefined,
       orientation: "南北",
-      owner_name: "",
-      owner_phone: "",
-      owner_id_card: "",
+      electricity_account: undefined,
+      water_account: undefined,
+      gas_account: undefined,
+      owners: [
+        {
+          owner_name: "",
+          owner_phone: "",
+          owner_id_card: "",
+          bank_name: "",
+          bank_card_number: "",
+          relation_type: "业主",
+          owner_info: "",
+        },
+      ],
       notes: "",
       contract_no: "",
       signing_price: undefined,

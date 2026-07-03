@@ -25,6 +25,9 @@ class Project(BaseModel):
     layout: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="户型(展示用)")
     orientation: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="朝向")
     floor_info: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="楼层信息(如:5/28层)")
+    electricity_account: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="电表户号")
+    water_account: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="水表户号")
+    gas_account: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="煤气户号")
 
     status: Mapped[ProjectStatus] = mapped_column(
         SQLEnum(ProjectStatus, values_callable=lambda x: [e.value for e in x]),

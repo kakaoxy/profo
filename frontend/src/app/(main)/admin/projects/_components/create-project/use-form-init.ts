@@ -43,9 +43,32 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         bathrooms: editLayoutData.bathrooms,
         orientation: (project.orientation as FormValues["orientation"]) || "南北",
         floor_info: project.floor_info || "",
-        owner_name: project.owner_name || "",
-        owner_phone: project.owner_phone || "",
-        owner_id_card: project.owner_id_card || "",
+        electricity_account: project.electricity_account || undefined,
+        water_account: project.water_account || undefined,
+        gas_account: project.gas_account || undefined,
+        owners:
+          project.owners && project.owners.length > 0
+            ? project.owners.map((o) => ({
+                id: o.id || undefined,
+                owner_name: o.owner_name || "",
+                owner_phone: o.owner_phone || "",
+                owner_id_card: o.owner_id_card || "",
+                bank_name: o.bank_name || "",
+                bank_card_number: o.bank_card_number || "",
+                relation_type: o.relation_type || "业主",
+                owner_info: o.owner_info || "",
+              }))
+            : [
+                {
+                  owner_name: project.owner_name || "",
+                  owner_phone: project.owner_phone || "",
+                  owner_id_card: project.owner_id_card || "",
+                  bank_name: "",
+                  bank_card_number: "",
+                  relation_type: "业主",
+                  owner_info: "",
+                },
+              ],
         notes: project.notes || "",
         contract_no: project.contract_no || "",
         signing_price: project.signing_price,
@@ -104,9 +127,44 @@ export function getDefaultValues(
       ? (project?.orientation as FormValues["orientation"]) || "南北"
       : "南北",
     floor_info: project?.floor_info || "",
-    owner_name: project?.owner_name || "",
-    owner_phone: project?.owner_phone || "",
-    owner_id_card: project?.owner_id_card || "",
+    electricity_account: project?.electricity_account || undefined,
+    water_account: project?.water_account || undefined,
+    gas_account: project?.gas_account || undefined,
+    owners:
+      project && project.owners && project.owners.length > 0
+        ? project.owners.map((o) => ({
+            id: o.id || undefined,
+            owner_name: o.owner_name || "",
+            owner_phone: o.owner_phone || "",
+            owner_id_card: o.owner_id_card || "",
+            bank_name: o.bank_name || "",
+            bank_card_number: o.bank_card_number || "",
+            relation_type: o.relation_type || "业主",
+            owner_info: o.owner_info || "",
+          }))
+        : project
+          ? [
+              {
+                owner_name: project.owner_name || "",
+                owner_phone: project.owner_phone || "",
+                owner_id_card: project.owner_id_card || "",
+                bank_name: "",
+                bank_card_number: "",
+                relation_type: "业主",
+                owner_info: "",
+              },
+            ]
+          : [
+              {
+                owner_name: "",
+                owner_phone: "",
+                owner_id_card: "",
+                bank_name: "",
+                bank_card_number: "",
+                relation_type: "业主",
+                owner_info: "",
+              },
+            ],
     notes: project?.notes || "",
     contract_no: project?.contract_no || "",
     signing_price: project?.signing_price,

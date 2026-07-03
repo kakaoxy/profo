@@ -7,6 +7,7 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from models.common import BusinessForm, ProjectStatus, RenovationStage
 from schemas.project.contract import SigningMaterial
+from schemas.project.owner import OwnerInlineCreate, OwnerInlineUpdate, OwnerResponse
 from schemas.response import PaginatedResponse
 
 
@@ -59,6 +60,9 @@ class ProjectCreate(BaseModel):
     layout: str | None = Field(None, max_length=50, description="户型")
     orientation: str | None = Field(None, max_length=50, description="朝向")
     floor_info: str | None = Field(None, max_length=50, description="楼层信息(如:5/28层)")
+    electricity_account: str | None = Field(None, max_length=50, description="电表户号")
+    water_account: str | None = Field(None, max_length=50, description="水表户号")
+    gas_account: str | None = Field(None, max_length=50, description="煤气户号")
     project_manager_id: str | None = Field(None, description="项目负责人ID")
 
     business_form: BusinessForm | None = Field(None, description="业务形式: agent(代理美化)/wholesale(收购美化)")
@@ -84,6 +88,7 @@ class ProjectCreate(BaseModel):
     owner_id_card: str | None = Field(None, max_length=18, description="业主身份证号")
     owner_info: str | None = Field(None, description="业主备注")
     notes: str | None = Field(None, description="备注（映射到 owner_info）")
+    owners: list[OwnerInlineCreate] | None = Field(None, description="业主列表（内联创建）")
 
     list_price: Decimal | None = Field(None, description="挂牌价(万)")
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
@@ -108,6 +113,24 @@ class ProjectUpdate(BaseModel):
         validation_alias=AliasChoices("floor_info", "floorInfo"),
         max_length=50,
         description="楼层信息(如:5/28层)",
+    )
+    electricity_account: str | None = Field(
+        None,
+        validation_alias=AliasChoices("electricity_account", "electricityAccount"),
+        max_length=50,
+        description="电表户号",
+    )
+    water_account: str | None = Field(
+        None,
+        validation_alias=AliasChoices("water_account", "waterAccount"),
+        max_length=50,
+        description="水表户号",
+    )
+    gas_account: str | None = Field(
+        None,
+        validation_alias=AliasChoices("gas_account", "gasAccount"),
+        max_length=50,
+        description="煤气户号",
     )
     project_manager_id: str | None = Field(None, description="项目负责人ID")
 
@@ -155,6 +178,7 @@ class ProjectUpdate(BaseModel):
     owner_id_card: str | None = Field(None, max_length=18)
     owner_info: str | None = Field(None)
     notes: str | None = Field(None)
+    owners: list[OwnerInlineUpdate] | None = Field(None, description="业主列表（内联同步）")
 
     list_price: Decimal | None = Field(None)
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
@@ -192,6 +216,9 @@ class ProjectResponse(BaseModel):
     layout: str | None = None
     orientation: str | None = None
     floor_info: str | None = Field(None, description="楼层信息(如:5/28层)")
+    electricity_account: str | None = Field(None, description="电表户号")
+    water_account: str | None = Field(None, description="水表户号")
+    gas_account: str | None = Field(None, description="煤气户号")
     is_deleted: bool = False
 
     business_form: BusinessForm | None = Field(None, description="业务形式: agent(代理美化)/wholesale(收购美化)")
@@ -213,6 +240,7 @@ class ProjectResponse(BaseModel):
     owner_phone: str | None = None
     owner_id_card: str | None = None
     owner_info: str | None = None
+    owners: list[OwnerResponse] = Field(default_factory=list, description="业主列表")
 
     list_price: Decimal | None = Field(None, description="挂牌价(万)")
     listing_date: str | None = None

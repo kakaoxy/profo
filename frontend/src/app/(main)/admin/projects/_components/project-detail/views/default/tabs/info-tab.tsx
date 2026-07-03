@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, TrendingUp, User, MapPin, FileCheck } from "lucide-react";
+import { FileText, TrendingUp, User, MapPin, FileCheck, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Project } from "../../../../../types";
 import { InfoCard as InfoSection, InfoItem } from "@/components/common";
@@ -241,26 +241,82 @@ export function InfoTab({ project }: InfoTabProps) {
 
       {/* --- 业主信息 --- */}
       <InfoSection title="业主信息" icon={<User className="h-4 w-4" />}>
-        {/* 业主姓名 */}
-        <InfoItem label="业主姓名" value={project.owner_name} />
+        {project.owners && project.owners.length > 0 ? (
+          // 多业主遍历（owners 数组优先）
+          project.owners.map((owner, index) => (
+            <div
+              key={owner.id ?? `owner-${index}`}
+              className={cn(index > 0 && "mt-4 pt-4 border-t border-border")}
+            >
+              {/* 关系类型：仅非"业主"时显示 */}
+              {owner.relation_type && owner.relation_type !== "业主" && (
+                <InfoItem label="关系类型" value={owner.relation_type} />
+              )}
 
-        {/* 业主联系方式 - 脱敏显示，支持复制完整数据 */}
-        <InfoItem
-          label="业主联系方式"
-          value={maskString(project.owner_phone)}
-          copyable
-          copyValue={project.owner_phone}
-        />
+              <InfoItem label="业主姓名" value={owner.owner_name} />
 
-        {/* 业主身份证 - 脱敏显示，支持复制完整数据 */}
-        <InfoItem
-          label="业主身份证"
-          value={maskString(project.owner_id_card)}
-          copyable
-          copyValue={project.owner_id_card}
-          className="sm:col-span-2"
-        />
+              {/* 联系电话 - 脱敏显示，支持复制完整数据 */}
+              <InfoItem
+                label="联系电话"
+                value={maskString(owner.owner_phone)}
+                copyable
+                copyValue={owner.owner_phone ?? undefined}
+              />
+
+              {/* 身份证号 - 脱敏显示，支持复制完整数据 */}
+              <InfoItem
+                label="身份证号"
+                value={maskString(owner.owner_id_card)}
+                copyable
+                copyValue={owner.owner_id_card ?? undefined}
+              />
+
+              {/* 开户行 - 仅有值时显示 */}
+              <InfoItem label="开户行" value={owner.bank_name} />
+
+              {/* 银行卡号 - 后端已脱敏，原样展示 */}
+              <InfoItem label="银行卡号" value={owner.bank_card_number} />
+
+              {/* 备注 - 仅有值时显示 */}
+              <InfoItem label="备注" value={owner.owner_info} />
+            </div>
+          ))
+        ) : (
+          // 回退到单业主字段（兼容历史数据）
+          <>
+            <InfoItem label="业主姓名" value={project.owner_name} />
+
+            {/* 业主联系方式 - 脱敏显示，支持复制完整数据 */}
+            <InfoItem
+              label="业主联系方式"
+              value={maskString(project.owner_phone)}
+              copyable
+              copyValue={project.owner_phone}
+            />
+
+            {/* 业主身份证 - 脱敏显示，支持复制完整数据 */}
+            <InfoItem
+              label="业主身份证"
+              value={maskString(project.owner_id_card)}
+              copyable
+              copyValue={project.owner_id_card}
+              className="sm:col-span-2"
+            />
+          </>
+        )}
       </InfoSection>
+
+      {/* --- 公用事业户号 --- */}
+      {/* 仅有值时（任一户号非空）才渲染整个分组 */}
+      {(project.electricity_account ||
+        project.water_account ||
+        project.gas_account) && (
+        <InfoSection title="公用事业户号" icon={<Zap className="h-4 w-4" />}>
+          <InfoItem label="电表户号" value={project.electricity_account} />
+          <InfoItem label="水表户号" value={project.water_account} />
+          <InfoItem label="煤气户号" value={project.gas_account} />
+        </InfoSection>
+      )}
 
       {/* --- 交易数据（保留作为参考） --- */}
       <InfoSection title="交易数据" icon={<TrendingUp className="h-4 w-4" />}>

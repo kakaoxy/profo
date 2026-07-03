@@ -79,6 +79,20 @@ export const BUSINESS_FORM_OPTIONS = [
 
 export const businessFormEnum = z.enum(["agent", "wholesale", ""]);
 
+// 业主信息（多业主支持）
+const ownerItemSchema = z.object({
+  id: z.string().optional(), // 编辑模式：已有业主的 id；新建模式：无
+  owner_name: z.string().max(100).optional(),
+  owner_phone: z.string().max(20).optional(),
+  owner_id_card: z.string().max(18).optional(),
+  bank_name: z.string().max(100).optional(),
+  bank_card_number: z.string().max(50).optional(),
+  relation_type: z.string().max(20).default("业主"),
+  owner_info: z.string().optional(),
+});
+
+export const ownerItemSchemaExport = ownerItemSchema; // 供 owner-tab 使用
+
 export const formSchema = z
   .object({
     // 基础信息 - 重构后：移除 name, manager, tags 字段
@@ -114,6 +128,11 @@ export const formSchema = z
     // 楼层信息（如：5/28层），与线索表单格式一致
     floor_info: z.string().max(50).optional(),
 
+    // 公用事业户号
+    electricity_account: z.string().max(50).optional(),
+    water_account: z.string().max(50).optional(),
+    gas_account: z.string().max(50).optional(),
+
     // 代理协议 - 合同信息
     contract_no: z.string().min(1, "合同编号不能为空").max(100),
     signing_price: optionalNumber,
@@ -129,17 +148,31 @@ export const formSchema = z
     commission_end_date: z.date().nullable().optional(),
     other_agreements: z.string().optional(),
 
-    // 业主信息
-    owner_name: z.string().max(100).optional(),
-    owner_phone: z.string().max(20).optional(),
-    owner_id_card: z.string().max(18).optional(),
+    // 业主信息（多业主，至少 1 位）
+    owners: z
+      .array(ownerItemSchema)
+      .default([
+        {
+          owner_name: "",
+          owner_phone: "",
+          owner_id_card: "",
+          bank_name: "",
+          bank_card_number: "",
+          relation_type: "业主",
+          owner_info: "",
+        },
+      ]),
 
     // 备注
     notes: z.string().optional(),
 
     // 附件列表
     attachments: z.array(attachmentSchema).optional(),
-  });
+  })
+  .refine(
+    (data) => data.owners && data.owners.length >= 1,
+    { message: "至少需要一位业主", path: ["owners"] }
+  );
 // 移除户型必填验证 - layout 是可选字段，允许用户不填户型
 
 // 这个类型现在被强制用于 useForm 泛型
