@@ -5,7 +5,7 @@ import { UseFormReturn, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formSchema, FormValues } from "./schema";
 import { Project } from "../../types";
-import { parseLayout, convertAttachments } from "./utils";
+import { parseLayout, convertAttachments, fromDateStr } from "./utils";
 
 interface UseFormInitProps {
   form: UseFormReturn<FormValues>;
@@ -72,23 +72,15 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         notes: project.notes || "",
         contract_no: project.contract_no || "",
         signing_price: project.signing_price,
-        signing_date: project.signing_date
-          ? new Date(project.signing_date + "T00:00:00")
-          : undefined,
+        signing_date: fromDateStr(project.signing_date),
         signing_period: project.signing_period,
         extension_period: project.extension_period,
         extension_rent: project.extension_rent,
         cost_assumption_type: (project.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
         cost_assumption_other: project.cost_assumption_other || "",
-        planned_handover_date: project.planned_handover_date
-          ? new Date(project.planned_handover_date + "T00:00:00")
-          : undefined,
-        commission_start_date: project.commission_start_date
-          ? new Date(project.commission_start_date + "T00:00:00")
-          : undefined,
-        commission_end_date: project.commission_end_date
-          ? new Date(project.commission_end_date + "T00:00:00")
-          : undefined,
+        planned_handover_date: fromDateStr(project.planned_handover_date),
+        commission_start_date: fromDateStr(project.commission_start_date),
+        commission_end_date: fromDateStr(project.commission_end_date),
         other_agreements: project.other_agreements || "",
         attachments: convertAttachments(project.signing_materials),
       });
@@ -168,23 +160,15 @@ export function getDefaultValues(
     notes: project?.notes || "",
     contract_no: project?.contract_no || "",
     signing_price: project?.signing_price,
-    signing_date: project?.signing_date
-      ? new Date(project.signing_date + "T00:00:00")
-      : undefined,
+    signing_date: fromDateStr(project?.signing_date),
     signing_period: project?.signing_period,
     extension_period: project?.extension_period,
     extension_rent: project?.extension_rent,
     cost_assumption_type: (project?.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
     cost_assumption_other: project?.cost_assumption_other || "",
-    planned_handover_date: project?.planned_handover_date
-      ? new Date(project.planned_handover_date + "T00:00:00")
-      : undefined,
-    commission_start_date: project?.commission_start_date
-      ? new Date(project.commission_start_date + "T00:00:00")
-      : undefined,
-    commission_end_date: project?.commission_end_date
-      ? new Date(project.commission_end_date + "T00:00:00")
-      : undefined,
+    planned_handover_date: fromDateStr(project?.planned_handover_date),
+    commission_start_date: fromDateStr(project?.commission_start_date),
+    commission_end_date: fromDateStr(project?.commission_end_date),
     other_agreements: project?.other_agreements || "",
     attachments: convertAttachments(project?.signing_materials),
   };

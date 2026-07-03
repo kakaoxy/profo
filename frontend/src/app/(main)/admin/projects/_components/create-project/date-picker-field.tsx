@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Control, Path } from "react-hook-form";
 
@@ -47,7 +47,7 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
                     !field.value && "text-dove"
                   )}
                 >
-                  {field.value instanceof Date ? (
+                  {field.value instanceof Date && isValid(field.value) ? (
                     format(field.value, "yyyy-MM-dd")
                   ) : (
                     <span>选择日期</span>
@@ -59,7 +59,7 @@ export function DatePickerField({ control, name, label }: DatePickerProps) {
             <PopoverContent className="w-auto p-0 rounded-cards border-dove/40" align="start">
               <Calendar
                 mode="single"
-                selected={field.value instanceof Date ? field.value : undefined}
+                selected={field.value instanceof Date && isValid(field.value) ? field.value : undefined}
                 onSelect={(date) => field.onChange(date ?? undefined)}
                 disabled={(date) => date < new Date("1900-01-01")}
                 initialFocus
