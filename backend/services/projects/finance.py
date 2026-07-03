@@ -242,6 +242,7 @@ class FinanceService:
             .filter(
                 FinanceRecord.project_id == project_id,
                 FinanceRecord.type == "income",
+                FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
         )

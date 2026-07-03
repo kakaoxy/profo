@@ -195,6 +195,7 @@ class ProjectUpdater:
             self.db.query(ProjectContract)
             .filter(
                 ProjectContract.project_id == project_id,
+                ProjectContract.is_deleted.is_(False),
             )
             .first()
         )
@@ -232,6 +233,7 @@ class ProjectUpdater:
             self.db.query(ProjectOwner)
             .filter(
                 ProjectOwner.project_id == project_id,
+                ProjectOwner.is_deleted.is_(False),
             )
             .first()
         )
@@ -273,6 +275,7 @@ class ProjectUpdater:
             self.db.query(ProjectSale)
             .filter(
                 ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
             )
             .first()
         )
