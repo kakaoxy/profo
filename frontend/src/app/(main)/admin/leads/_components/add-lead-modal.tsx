@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { X, Ruler, MapPin } from 'lucide-react';
 import { CommunitySelect } from '@/components/common/community-select';
 import { LayoutInputs } from '@/components/common/layout-inputs';
+import { FloorInput } from '@/components/common';
 import { ImageUpload } from './add-lead-parts/image-upload';
 
 interface Props {
@@ -29,8 +30,6 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     layout: '2室1厅1卫',
     orientation: '南',
     floorInfo: '',
-    currentFloor: '',
-    totalFloor: '',
     area: '',
     totalPrice: '',
     district: '',
@@ -42,27 +41,12 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
   // Initialize form when lead changes
   React.useEffect(() => {
     if (isOpen && lead) {
-        // Parse floor info "X/Y层"
-        let current = '';
-        let total = '';
-        const match = lead.floorInfo?.match(/(\d+)\/(\d+)层/);
-        if (match) {
-            current = match[1];
-            total = match[2];
-        } else {
-            // Try to handle simple "X层"
-            const matchSimple = lead.floorInfo?.match(/(\d+)层/);
-            if (matchSimple) current = matchSimple[1];
-        }
-
         setFormData({
             communityId: lead.communityId || '',
             communityName: lead.communityName,
             layout: lead.layout || '2室1厅1卫',
             orientation: lead.orientation || '南',
             floorInfo: lead.floorInfo || '',
-            currentFloor: current,
-            totalFloor: total,
             area: lead.area ? String(lead.area) : '',
             totalPrice: lead.totalPrice ? String(lead.totalPrice) : '',
             district: lead.district || '',
@@ -78,8 +62,6 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             layout: '2室1厅1卫',
             orientation: '南',
             floorInfo: '',
-            currentFloor: '',
-            totalFloor: '',
             area: '',
             totalPrice: '',
             district: '',
@@ -100,18 +82,12 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     e.preventDefault();
     if (!formData.communityName || !formData.area || !formData.totalPrice) return;
 
-    const floorText = (formData.currentFloor && formData.totalFloor) 
-        ? `${formData.currentFloor}/${formData.totalFloor}层` 
-        : formData.currentFloor 
-            ? `${formData.currentFloor}层`
-            : formData.floorInfo; // Fallback or empty
-
     onAdd({
       communityId: formData.communityId || undefined,
       communityName: formData.communityName,
       layout: formData.layout,
       orientation: formData.orientation,
-      floorInfo: floorText,
+      floorInfo: formData.floorInfo,
       area: Number(formData.area),
       totalPrice: Number(formData.totalPrice),
       unitPrice: Number(calculatedUnitPrice),
@@ -122,7 +98,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
       images: images.length > 0 ? images : [],
       creatorName: lead?.creatorName || '运营',
     });
-    
+
     // Close modal (state reset happens in useEffect when re-opened or lead changes)
     onClose();
   };
@@ -209,27 +185,10 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                   </select>
                 </FormItem>
                 <FormItem label="楼层/总高">
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                        <input 
-                            placeholder="1" 
-                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center bg-background" 
-                            value={formData.currentFloor} 
-                            onChange={e => setFormData({...formData, currentFloor: e.target.value})} 
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background">层</span>
-                    </div>
-                    <span className="text-muted-foreground/50">/</span>
-                    <div className="relative flex-1">
-                        <input
-                            placeholder="6"
-                            className="w-full h-11 px-3 border rounded-lg outline-none text-sm font-medium text-center"
-                            value={formData.totalFloor}
-                            onChange={e => setFormData({...formData, totalFloor: e.target.value})}
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background">总</span>
-                    </div>
-                  </div>
+                  <FloorInput
+                    value={formData.floorInfo}
+                    onChange={(floorInfo) => setFormData({ ...formData, floorInfo })}
+                  />
                 </FormItem>
                 <FormItem label="用户报价 (万) *">
                   <input type="number" className="w-full h-11 px-4 border border-primary/20 rounded-lg outline-none text-sm font-black text-primary bg-background" value={formData.totalPrice} onChange={e => setFormData({...formData, totalPrice: e.target.value})} />

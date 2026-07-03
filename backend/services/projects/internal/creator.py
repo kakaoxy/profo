@@ -83,6 +83,7 @@ class ProjectCreator:
             area=project_data.area,
             layout=project_data.layout,
             orientation=project_data.orientation,
+            floor_info=project_data.floor_info,
             project_manager_id=project_data.project_manager_id,
             status=ProjectStatus.SIGNING.value,
             business_form=project_data.business_form,

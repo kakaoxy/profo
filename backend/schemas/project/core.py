@@ -58,6 +58,7 @@ class ProjectCreate(BaseModel):
     area: Decimal | None = Field(None, description="产证面积(m²)")
     layout: str | None = Field(None, max_length=50, description="户型")
     orientation: str | None = Field(None, max_length=50, description="朝向")
+    floor_info: str | None = Field(None, max_length=50, description="楼层信息(如:5/28层)")
     project_manager_id: str | None = Field(None, description="项目负责人ID")
 
     business_form: BusinessForm | None = Field(None, description="业务形式: agent(代理美化)/wholesale(收购美化)")
@@ -102,6 +103,12 @@ class ProjectUpdate(BaseModel):
     area: Decimal | None = Field(None)
     layout: str | None = Field(None, max_length=50)
     orientation: str | None = Field(None, max_length=50)
+    floor_info: str | None = Field(
+        None,
+        validation_alias=AliasChoices("floor_info", "floorInfo"),
+        max_length=50,
+        description="楼层信息(如:5/28层)",
+    )
     project_manager_id: str | None = Field(None, description="项目负责人ID")
 
     business_form: BusinessForm | None = Field(
@@ -184,6 +191,7 @@ class ProjectResponse(BaseModel):
     area: Decimal | None = None
     layout: str | None = None
     orientation: str | None = None
+    floor_info: str | None = Field(None, description="楼层信息(如:5/28层)")
     is_deleted: bool = False
 
     business_form: BusinessForm | None = Field(None, description="业务形式: agent(代理美化)/wholesale(收购美化)")

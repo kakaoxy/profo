@@ -9,3 +9,4 @@ export { InfoCard, type InfoCardProps } from "./info-card";
 export { EmptyState, type EmptyStateProps } from "./empty-state";
 export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
 export { TableActionCell, type TableActionCellProps, type ActionDef } from "./table-action-cell";
+export { FloorInput, type FloorInputProps } from "./floor-input";

@@ -10,7 +10,7 @@ import {
   FormItem,
   FormLabel,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 
 const COST_ASSUMPTION_OPTIONS = [
@@ -23,7 +23,6 @@ const COST_ASSUMPTION_OPTIONS = [
 export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }) {
   const { control } = form;
 
-  // 监听税费承担方类型
   const costAssumptionType = useWatch({
     control,
     name: "cost_assumption_type",
@@ -102,28 +101,37 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
         />
       </div>
 
-      {/* 税费及佣金承担方 */}
+      {/* 税费及佣金承担方 — Steep: pill-style radio chips */}
       <FormField
         control={control}
         name="cost_assumption_type"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>税费及佣金承担方</FormLabel>
+          <FormItem className="space-y-3">
+            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">税费及佣金承担方</FormLabel>
             <FormControl>
               <RadioGroup
                 onValueChange={field.onChange}
                 value={field.value}
-                className="flex flex-wrap gap-4"
+                className="flex flex-wrap gap-2"
               >
                 {COST_ASSUMPTION_OPTIONS.map((option) => (
-                  <FormItem key={option.value} className="flex items-center space-x-2 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value={option.value} />
-                    </FormControl>
-                    <FormLabel className="font-normal cursor-pointer">
-                      {option.label}
-                    </FormLabel>
-                  </FormItem>
+                  <label
+                    key={option.value}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
+                      field.value === option.value
+                        ? "bg-ink text-pure-white border-ink"
+                        : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      value={option.value}
+                      checked={field.value === option.value}
+                      onChange={() => field.onChange(option.value)}
+                      className="sr-only"
+                    />
+                    {option.label}
+                  </label>
                 ))}
               </RadioGroup>
             </FormControl>
@@ -138,12 +146,13 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
           name="cost_assumption_other"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>其他说明</FormLabel>
+              <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">其他说明</FormLabel>
               <FormControl>
                 <Input
                   placeholder="请填写具体承担方式"
                   {...field}
                   value={field.value || ""}
+                  className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10"
                 />
               </FormControl>
             </FormItem>

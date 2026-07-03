@@ -4015,6 +4015,11 @@ export interface components {
              */
             orientation?: string | null;
             /**
+             * Floor Info
+             * @description 楼层信息(如:5/28层)
+             */
+            floor_info?: string | null;
+            /**
              * Project Manager Id
              * @description 项目负责人ID
              */
@@ -4209,6 +4214,11 @@ export interface components {
             /** Orientation */
             orientation?: string | null;
             /**
+             * Floor Info
+             * @description 楼层信息(如:5/28层)
+             */
+            floor_info?: string | null;
+            /**
              * Is Deleted
              * @default false
              */
@@ -4375,6 +4385,11 @@ export interface components {
             layout?: string | null;
             /** Orientation */
             orientation?: string | null;
+            /**
+             * Floor Info
+             * @description 楼层信息(如:5/28层)
+             */
+            floor_info?: string | null;
             /**
              * Project Manager Id
              * @description 项目负责人ID

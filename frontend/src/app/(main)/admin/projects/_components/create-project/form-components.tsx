@@ -22,6 +22,12 @@ interface BaseFieldProps {
   required?: boolean;
 }
 
+/* Steep-consistent input classes */
+const steepInput =
+  "rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 text-[14px]";
+
+const steepLabel = "text-[14px] font-medium text-foreground tracking-tight";
+
 // 1. 通用文本/数字输入框
 interface SimpleInputProps extends BaseFieldProps {
   type?: "text" | "number";
@@ -44,18 +50,17 @@ export function SimpleInputField({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className={description ? "" : "mb-2"}>
+          <FormLabel className={description ? steepLabel : `${steepLabel} mb-2`}>
             {label}
-            {required && <span className="text-error ml-1">*</span>}
+            {required && <span className="text-error ml-0.5">*</span>}
           </FormLabel>
           <FormControl>
             <Input
               type={type}
               step={step}
               placeholder={placeholder}
+              className={steepInput}
               {...field}
-              // [修复]：显式处理类型，防止将 Date 对象传给 input
-              // 如果是 string 或 number，直接使用；否则（如 Date 或 undefined）转为空字符串
               value={
                 typeof field.value === "string" ||
                 typeof field.value === "number"
@@ -64,7 +69,7 @@ export function SimpleInputField({
               }
             />
           </FormControl>
-          {description && <FormDescription>{description}</FormDescription>}
+          {description && <FormDescription className="text-graphite">{description}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}
@@ -86,16 +91,15 @@ export function SimpleTextareaField({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>
+          <FormLabel className={steepLabel}>
             {label}
-            {required && <span className="text-error ml-1">*</span>}
+            {required && <span className="text-error ml-0.5">*</span>}
           </FormLabel>
           <FormControl>
             <Textarea
               placeholder={placeholder}
-              className="resize-none min-h-[80px]"
+              className="rounded-inputs resize-none min-h-[80px] border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 text-[14px]"
               {...field}
-              // [修复]：同上，确保 textarea 不会接收到 Date 对象
               value={
                 typeof field.value === "string" ||
                 typeof field.value === "number"
