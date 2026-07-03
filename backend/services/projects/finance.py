@@ -13,7 +13,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from models import FinanceRecord, Project, ProjectContract, ProjectSale
-from models.common import CashFlowCategory, CashFlowType
+from models.common import BusinessForm, CashFlowCategory, CashFlowType
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -47,6 +47,22 @@ class FinanceService:
         except ValidationError:
             logger.exception("Cashflow category validation failed")
             raise
+
+        # 业务形式驱动的现金流科目校验：
+        # - 收购款(PURCHASE_PRICE)仅适用于收购美化(WHOLESALE)项目
+        # - 中介佣金(AGENCY_COMMISSION)仅适用于代理美化(AGENT)项目
+        # - business_form 为 None 的历史项目不拦截（兼容）
+        if project.business_form is not None:
+            if (
+                record_data.category == CashFlowCategory.PURCHASE_PRICE
+                and project.business_form != BusinessForm.WHOLESALE
+            ):
+                raise ValidationError("收购款科目仅适用于收购美化项目")
+            if (
+                record_data.category == CashFlowCategory.AGENCY_COMMISSION
+                and project.business_form == BusinessForm.WHOLESALE
+            ):
+                raise ValidationError("中介佣金仅适用于代理美化项目")
 
         # 创建新的 FinanceRecord
         record = FinanceRecord(
@@ -338,6 +354,7 @@ class FinanceService:
             CashFlowCategory.OTHER_EXPENSE,
             CashFlowCategory.TAX_FEE,
             CashFlowCategory.OPERATION_FEE,
+            CashFlowCategory.PURCHASE_PRICE,
         }
 
         income_categories = {

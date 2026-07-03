@@ -21,16 +21,23 @@ import {
 import { deleteCashFlowRecordAction } from "../actions";
 import { toast } from "sonner";
 
-import { CashFlowRecord } from "../types";
+import { BusinessForm, CashFlowRecord } from "../types";
 import { AddRecordDialog } from "./add-record-dialog";
 
 interface LedgerTableProps {
   projectId: string;
   data: CashFlowRecord[];
+  /** 当前项目业务形式，用于过滤录入表单的可选支出科目；未传时显示全部 */
+  businessForm?: BusinessForm | null;
   onRefresh?: () => void;
 }
 
-export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
+export function LedgerTable({
+  projectId,
+  data,
+  businessForm,
+  onRefresh,
+}: LedgerTableProps) {
   const [filter, setFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -201,6 +208,7 @@ export function LedgerTable({ projectId, data, onRefresh }: LedgerTableProps) {
 
       <AddRecordDialog
         projectId={projectId}
+        businessForm={businessForm ?? null}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onSuccess={() => {

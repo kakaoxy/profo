@@ -21,6 +21,16 @@ const formatWan = (value: number | string | undefined | null) => {
   return `${value}`;
 };
 
+const BUSINESS_FORM_LABEL: Record<string, string> = {
+  agent: "代理美化",
+  wholesale: "收购美化",
+};
+
+function getBusinessFormLabel(form: string | null | undefined): string | null {
+  if (!form) return null;
+  return BUSINESS_FORM_LABEL[form] || null;
+}
+
 export const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
@@ -69,15 +79,26 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => {
       const status = row.original.status || DEFAULT_STATUS;
+      const businessFormLabel = getBusinessFormLabel(row.original.business_form);
 
       return (
-        <div className="hidden md:block">
+        <div className="hidden md:block space-y-1">
           <Badge
             variant="secondary"
             className={`px-3 py-1 text-xs font-semibold rounded-lg border-none shadow-none ${getProjectStatusClassName(status)}`}
           >
             {getStatusLabel(status)}
           </Badge>
+          {businessFormLabel && (
+            <div>
+              <Badge
+                variant="outline"
+                className="px-2 py-0.5 text-[10px] font-medium rounded-md text-muted-foreground"
+              >
+                {businessFormLabel}
+              </Badge>
+            </div>
+          )}
         </div>
       );
     },
@@ -107,6 +128,26 @@ export const columns: ColumnDef<Project>[] = [
         {formatWan(row.original.sold_price)}
       </div>
     ),
+  },
+  {
+    accessorKey: "days_on_market",
+    header: () => (
+      <div className="hidden xl:block text-right pr-4 text-muted-foreground font-medium">
+        用时(天)
+      </div>
+    ),
+    cell: ({ row }) => {
+      const days = row.original.days_on_market;
+      return (
+        <div className="hidden xl:block text-right pr-4 tabular-nums text-foreground">
+          {days != null ? (
+            <span className="font-semibold">{days}</span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "manager",

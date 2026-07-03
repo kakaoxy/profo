@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Index, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel, ProjectStatus, RenovationStage
+from models.common.base import BaseModel, BusinessForm, ProjectStatus, RenovationStage
 
 
 class Project(BaseModel):
@@ -35,6 +35,19 @@ class Project(BaseModel):
         SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段",
     )
 
+    business_form: Mapped[BusinessForm | None] = mapped_column(
+        SQLEnum(BusinessForm, values_callable=lambda x: [e.value for e in x]),
+        nullable=True,
+        default=None,
+        comment="业务形式",
+    )
+    commission_start_date: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, default=None, comment="委托开始日期 YYYY-MM-DD"
+    )
+    commission_end_date: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, default=None, comment="委托结束日期 YYYY-MM-DD"
+    )
+
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     __table_args__ = (
@@ -42,6 +55,7 @@ class Project(BaseModel):
         Index("idx_project_deleted", "is_deleted"),
         Index("idx_project_manager", "project_manager_id"),
         Index("idx_project_community", "community_id"),
+        Index("idx_project_business_form", "business_form"),
     )
 
     def __init__(self, **kwargs: object) -> None:

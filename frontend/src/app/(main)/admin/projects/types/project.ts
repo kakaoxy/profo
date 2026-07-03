@@ -132,12 +132,21 @@ export interface Project {
   community_name?: string;
   status: string;
 
+  // 业务形式: agent(代理美化) / wholesale(收购美化) / null
+  business_form?: "agent" | "wholesale" | null;
+
   signing_price?: number;
   sold_price?: number;
   list_price?: number;
   listing_price?: number;
   total_investment?: number;
   area?: number;
+
+  // 行政区（来自小区，前端展示用，非项目持久化字段）
+  district?: string | null;
+
+  // 商圈（来自小区，前端展示用，非项目持久化字段）
+  business_circle?: string | null;
 
   layout?: string;
   orientation?: string;
@@ -158,6 +167,13 @@ export interface Project {
 
   renovation_start_date?: string | null;
   listing_date?: string | null;
+
+  // 委托期限
+  commission_start_date?: string | null;
+  commission_end_date?: string | null;
+
+  // 用时天数（已售项目：sold_date - listing_date）
+  days_on_market?: number | null;
 
   contract_no?: string;
   signing_period?: number;

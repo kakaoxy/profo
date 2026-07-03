@@ -54,6 +54,20 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
         />
       </div>
 
+      {/* 委托期限日期范围 */}
+      <div className="grid grid-cols-2 gap-4">
+        <DatePickerField
+          control={control}
+          name="commission_start_date"
+          label="委托开始日期"
+        />
+        <DatePickerField
+          control={control}
+          name="commission_end_date"
+          label="委托结束日期"
+        />
+      </div>
+
       {/* 签约价格 & 合同周期 */}
       <div className="grid grid-cols-2 gap-4">
         <SimpleInputField

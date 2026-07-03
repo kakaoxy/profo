@@ -80,6 +80,12 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
               parsed.planned_handover_date
             );
           }
+          if (parsed.commission_start_date) {
+            parsed.commission_start_date = fromDateStr(parsed.commission_start_date);
+          }
+          if (parsed.commission_end_date) {
+            parsed.commission_end_date = fromDateStr(parsed.commission_end_date);
+          }
           form.reset(parsed);
           toast.info("已恢复上次未保存的草稿");
         } catch (e) {
@@ -130,6 +136,9 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
       community_name: "",
       address: "",
       area: undefined,
+      business_form: "",
+      district: "",
+      business_circle: "",
       rooms: undefined,
       halls: undefined,
       bathrooms: undefined,
@@ -147,6 +156,8 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
       cost_assumption_type: "meifangbao",
       cost_assumption_other: "",
       planned_handover_date: undefined,
+      commission_start_date: undefined,
+      commission_end_date: undefined,
       other_agreements: "",
       attachments: [],
     });

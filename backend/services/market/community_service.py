@@ -16,10 +16,11 @@ from schemas.community import (
     CommunityCreateRequest,
     CommunityListResponse,
     CommunityResponse,
+    CommunityUpdateRequest,
     DictionaryResponse,
 )
 from schemas.public import PublicCommunitySearchItem
-from services.system.exceptions import ConflictError, ServiceException, ValidationError
+from services.system.exceptions import ConflictError, ResourceNotFoundError, ServiceException, ValidationError
 from settings import settings
 from utils.formatters import escape_like
 
@@ -241,6 +242,50 @@ class CommunityQueryService:
             raise ServiceException("创建小区失败")
 
         return CommunityQueryService.build_response_from_community(new_community)
+
+    @staticmethod
+    def update_community(db: Session, community_id: str, body: CommunityUpdateRequest) -> CommunityResponse:
+        """更新小区信息.
+
+        仅更新 body 中显式提供的字段（PATCH 语义）.
+
+        Args:
+            db: 数据库会话
+            community_id: 小区ID
+            body: 小区更新请求数据
+
+        Returns:
+            CommunityResponse: 更新后的小区响应
+
+        Raises:
+            ResourceNotFoundError: 小区不存在
+            ConflictError: 小区名称冲突
+            ServiceException: 数据库操作失败
+
+        """
+        community = db.query(Community).filter(Community.id == community_id).first()
+        if not community:
+            raise ResourceNotFoundError("小区不存在")
+
+        update_data = body.model_dump(exclude_unset=True)
+
+        try:
+            for field, value in update_data.items():
+                setattr(community, field, value)
+
+            db.commit()
+            db.refresh(community)
+            logger.info("更新小区成功: %s (ID: %s)", community.name, community.id)
+        except IntegrityError as e:
+            db.rollback()
+            logger.warning("更新小区时发生唯一约束冲突: %s, 错误: %s", community_id, e)
+            raise ConflictError("小区名称已存在") from e
+        except Exception:
+            db.rollback()
+            logger.exception("更新小区发生数据库错误")
+            raise ServiceException("更新小区失败")
+
+        return CommunityQueryService.build_response_from_community(community)
 
 
 def _find_existing_community_by_name(db: Session, name: str) -> Community | None:

@@ -3,7 +3,7 @@
 import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
-import { FormValues, ORIENTATION_OPTIONS } from "../schema";
+import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
 import { CommunitySelect } from "@/components/common/community-select";
 import { getUsersSimpleAction } from "../../../actions/sales";
 import { toast } from "sonner";
@@ -77,6 +77,12 @@ export function BasicInfoTab({ form }: TabProps) {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
+  // 区分是来自小区的 district（只读）还是用户手输（可编辑）
+  // 通过跟踪 community 原始 district 来判断
+  const [communityDistrict, setCommunityDistrict] = useState<string | undefined>(undefined);
+  // 商圈同理：来自小区则只读，无则可编辑
+  const [communityBusinessCircle, setCommunityBusinessCircle] = useState<string | undefined>(undefined);
+
   // 加载用户列表
   useEffect(() => {
     let mounted = true;
@@ -111,6 +117,15 @@ export function BasicInfoTab({ form }: TabProps) {
                 field.onChange(community.name);
                 // 同时保存小区ID用于市场监控数据关联
                 form.setValue("community_id", community.id || undefined);
+                // 回填行政区（来自小区搜索结果）
+                form.setValue("district", community.district || "");
+                // 快照小区原始行政区，用于 onSubmit 比对是否被用户修改（AC-4.3）
+                form.setValue("original_community_district", community.district || "");
+                setCommunityDistrict(community.district);
+                // 回填商圈（与行政区同源，来自小区）
+                form.setValue("business_circle", community.businessCircle || "");
+                form.setValue("original_community_business_circle", community.businessCircle || "");
+                setCommunityBusinessCircle(community.businessCircle);
               }}
             />
           )}
@@ -139,7 +154,104 @@ export function BasicInfoTab({ form }: TabProps) {
         />
       </div>
 
-      {/* 第二行：产证面积 + 户型 */}
+      {/* 第二行：业务形式 + 行政区 + 商圈 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* 业务形式 */}
+        <FormField
+          control={control}
+          name="business_form"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>业务形式</FormLabel>
+              <Select
+                value={field.value || "__empty__"}
+                onValueChange={(value) => {
+                  field.onChange(value === "__empty__" ? "" : value);
+                }}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="未设置" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="__empty__">未设置</SelectItem>
+                  {BUSINESS_FORM_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 行政区 - 选择小区后自动回填，无 district 时可编辑 */}
+        <FormField
+          control={control}
+          name="district"
+          render={({ field }) => {
+            const hasCommunityDistrict = !!communityDistrict;
+            return (
+              <FormItem>
+                <FormLabel>
+                  行政区
+                  {!hasCommunityDistrict && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      （小区未设置，可手输）
+                    </span>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="如：黄浦区"
+                    readOnly={hasCommunityDistrict}
+                    {...field}
+                    value={field.value || ""}
+                    className={hasCommunityDistrict ? "bg-muted/50 text-muted-foreground" : ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+
+        {/* 商圈 - 选择小区后自动回填，无 business_circle 时可编辑 */}
+        <FormField
+          control={control}
+          name="business_circle"
+          render={({ field }) => {
+            const hasCommunityBusinessCircleVal = !!communityBusinessCircle;
+            return (
+              <FormItem>
+                <FormLabel>
+                  商圈
+                  {!hasCommunityBusinessCircleVal && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      （小区未设置，可手输）
+                    </span>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="如：南京西路"
+                    readOnly={hasCommunityBusinessCircleVal}
+                    {...field}
+                    value={field.value || ""}
+                    className={hasCommunityBusinessCircleVal ? "bg-muted/50 text-muted-foreground" : ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
+      </div>
+
+      {/* 第三行：产证面积 + 户型 */}
       <div className="grid grid-cols-2 gap-4">
         {/* 产证面积 */}
         <FormField
@@ -184,11 +296,11 @@ export function BasicInfoTab({ form }: TabProps) {
             />
             <span className="text-muted-foreground">卫</span>
           </div>
-      
+
         </FormItem>
       </div>
 
-      {/* 第三行：朝向 + 项目负责人 */}
+      {/* 第四行：朝向 + 项目负责人 */}
       <div className="grid grid-cols-2 gap-4">
         {/* 朝向 - 单选框 */}
         <FormField

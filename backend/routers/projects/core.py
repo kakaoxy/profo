@@ -77,6 +77,7 @@ def get_projects(
     result = service.get_projects(
         status_filter=filters.status,
         community_name=filters.community_name,
+        business_form=filters.business_form,
         page=pagination.page,
         page_size=pagination.page_size,
     )

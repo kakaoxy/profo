@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
-from models.common import ProjectStatus, RenovationStage
+from models.common import BusinessForm, ProjectStatus, RenovationStage
 from schemas.project.contract import SigningMaterial
 from schemas.response import PaginatedResponse
 
@@ -15,6 +15,7 @@ class ProjectFilter(BaseModel):
 
     status: ProjectStatus | None = Field(None, description="项目状态筛选")
     community_name: str | None = Field(None, description="小区名称筛选")
+    business_form: BusinessForm | None = Field(None, description="业务形式筛选")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,6 +60,8 @@ class ProjectCreate(BaseModel):
     orientation: str | None = Field(None, max_length=50, description="朝向")
     project_manager_id: str | None = Field(None, description="项目负责人ID")
 
+    business_form: BusinessForm | None = Field(None, description="业务形式: agent(代理美化)/wholesale(收购美化)")
+
     contract_no: str = Field(max_length=100, description="合同编号")
     signing_price: Decimal | None = Field(None, description="签约价格(万)")
     signing_date: str | None = Field(None, description="签约日期 (YYYY-MM-DD 格式)")
@@ -84,6 +87,9 @@ class ProjectCreate(BaseModel):
     list_price: Decimal | None = Field(None, description="挂牌价(万)")
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
+    commission_start_date: str | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
+    commission_end_date: str | None = Field(None, description="委托结束日期 (YYYY-MM-DD 格式)")
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -97,6 +103,12 @@ class ProjectUpdate(BaseModel):
     layout: str | None = Field(None, max_length=50)
     orientation: str | None = Field(None, max_length=50)
     project_manager_id: str | None = Field(None, description="项目负责人ID")
+
+    business_form: BusinessForm | None = Field(
+        None,
+        validation_alias=AliasChoices("business_form", "businessForm"),
+        description="业务形式: agent(代理美化)/wholesale(收购美化)",
+    )
 
     contract_no: str | None = Field(
         None,
@@ -140,6 +152,17 @@ class ProjectUpdate(BaseModel):
     list_price: Decimal | None = Field(None)
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
+    commission_start_date: str | None = Field(
+        None,
+        validation_alias=AliasChoices("commission_start_date", "commissionStartDate"),
+        description="委托开始日期 (YYYY-MM-DD 格式)",
+    )
+    commission_end_date: str | None = Field(
+        None,
+        validation_alias=AliasChoices("commission_end_date", "commissionEndDate"),
+        description="委托结束日期 (YYYY-MM-DD 格式)",
+    )
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -163,6 +186,7 @@ class ProjectResponse(BaseModel):
     orientation: str | None = None
     is_deleted: bool = False
 
+    business_form: BusinessForm | None = Field(None, description="业务形式: agent(代理美化)/wholesale(收购美化)")
     renovation_stage: RenovationStage | None = None
 
     contract_no: str | None = Field(None, description="合同编号")
@@ -187,6 +211,10 @@ class ProjectResponse(BaseModel):
     sold_price: Decimal | None = None
     sold_date: str | None = None
     transaction_status: str | None = None
+
+    commission_start_date: str | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
+    commission_end_date: str | None = Field(None, description="委托结束日期 (YYYY-MM-DD 格式)")
+    days_on_market: int | None = Field(None, description="用时天数（已售项目：sold_date - listing_date）")
 
     channel_manager_id: str | None = Field(None, description="渠道负责人ID")
     property_agent_id: str | None = Field(None, description="房源维护人ID(讲房人)")

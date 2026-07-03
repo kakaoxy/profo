@@ -102,6 +102,9 @@ class ProjectUpdater:
             "status",
             "tags",
             "project_manager_id",
+            "business_form",
+            "commission_start_date",
+            "commission_end_date",
         ]
 
         # 跟踪是否实际更新了影响项目名称的字段

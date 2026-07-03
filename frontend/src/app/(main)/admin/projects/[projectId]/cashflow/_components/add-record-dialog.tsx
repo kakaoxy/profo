@@ -28,12 +28,15 @@ import {
 import { createCashFlowRecordAction } from "../actions";
 import {
   INCOME_CATEGORIES,
-  EXPENSE_CATEGORIES,
+  getAvailableExpenseCategories,
+  BusinessForm,
   TransactionType,
 } from "../types";
 
 interface AddRecordDialogProps {
   projectId: string;
+  /** 当前项目业务形式；agent 排除「收购款」，wholesale 排除「中介佣金」，null 显示全部 */
+  businessForm?: BusinessForm | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
@@ -41,6 +44,7 @@ interface AddRecordDialogProps {
 
 export function AddRecordDialog({
   projectId,
+  businessForm,
   isOpen,
   onClose,
   onSuccess,
@@ -101,7 +105,9 @@ export function AddRecordDialog({
   };
 
   const categoryOptions =
-    type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+    type === "income"
+      ? INCOME_CATEGORIES
+      : getAvailableExpenseCategories(businessForm);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>

@@ -6,7 +6,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 
 from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
@@ -17,6 +17,7 @@ from schemas.community import (
     CommunityMergeRequest,
     CommunityMergeResponse,
     CommunityResponse,
+    CommunityUpdateRequest,
     DictionaryResponse,
 )
 from services.market import CommunityMerger, get_community_service
@@ -131,3 +132,22 @@ def create_community(
     速率限制：100次/小时
     """
     return service.create_community(db, body)
+
+
+@router.patch("/communities/{community_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def update_community(
+    request: Request,
+    community_id: Annotated[str, Path(description="小区ID")],
+    body: CommunityUpdateRequest,
+    db: DbSessionDep,
+    _current_user: CurrentOperatorUserDep,
+    service: CommunityServiceDep,
+) -> CommunityResponse:
+    """更新小区信息.
+
+    仅更新请求体中显式提供的字段（PATCH 语义）.
+
+    速率限制：100次/小时
+    """
+    return service.update_community(db, community_id, body)

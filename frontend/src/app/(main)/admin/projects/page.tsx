@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
 import { ProjectStats } from "./_components/project-stats";
 import { ProjectView } from "./_components/project-view";
+import { ProjectPagination } from "./_components/project-pagination";
 import { Project } from "./types";
 import { CashFlowSheet } from "./[projectId]/cashflow/_components/cashflow-sheet";
 import { MonitorSheet } from "./_components/monitor/monitor-sheet";
@@ -12,8 +13,10 @@ interface PageProps {
   searchParams: Promise<{
     status?: string;
     page?: string;
+    page_size?: string;
     community_name?: string;
     cashflow_id?: string;
+    business_form?: string;
   }>;
 }
 
@@ -41,6 +44,7 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     area: toNumber(item.area),
     layout: item.layout ?? undefined,
     orientation: item.orientation ?? undefined,
+    business_form: (item.business_form ?? null) as Project["business_form"],
     signing_price: toNumber(item.signing_price),
     signing_date: item.signing_date ?? undefined,
     signing_period: item.signing_period ?? undefined,
@@ -56,6 +60,9 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     listing_date: item.listing_date ?? undefined,
     sold_price: toNumber(item.sold_price),
     sold_date: item.sold_date ?? undefined,
+    commission_start_date: item.commission_start_date ?? undefined,
+    commission_end_date: item.commission_end_date ?? undefined,
+    days_on_market: item.days_on_market ?? undefined,
     total_income: toNumber(item.total_income),
     total_expense: toNumber(item.total_expense),
     net_cash_flow: toNumber(item.net_cash_flow),
@@ -78,10 +85,11 @@ function mapProjectResponse(item: ApiProjectItem): Project {
 export default async function ProjectsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
+  const page_size = Number(params.page_size) || 20;
 
   const queryParams: QueryParams = {
     page: page,
-    page_size: 20,
+    page_size: page_size,
   };
 
   if (params.status && params.status !== "all") {
@@ -90,6 +98,10 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 
   if (params.community_name && params.community_name.trim() !== "") {
     queryParams.community_name = params.community_name.trim();
+  }
+
+  if (params.business_form && (params.business_form === "agent" || params.business_form === "wholesale")) {
+    queryParams.business_form = params.business_form;
   }
 
   const client = await fetchClient();
@@ -122,6 +134,10 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
         <ProjectStats stats={stats} />
 
         <ProjectView data={projectData} total={total} />
+
+        <div className="mt-2 relative z-50 bg-card">
+          <ProjectPagination total={total} />
+        </div>
 
         <Suspense fallback={null}>
           <CashFlowSheet />

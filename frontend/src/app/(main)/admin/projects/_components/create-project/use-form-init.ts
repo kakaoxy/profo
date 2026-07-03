@@ -30,6 +30,14 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         address: project.address || "",
         area: project.area,
         project_manager_id: project.project_manager?.id || undefined,
+        business_form:
+          project.business_form === "agent" || project.business_form === "wholesale"
+            ? project.business_form
+            : "",
+        district: project.district || "",
+        original_community_district: project.district || "",
+        business_circle: project.business_circle || "",
+        original_community_business_circle: project.business_circle || "",
         rooms: editLayoutData.rooms,
         halls: editLayoutData.halls,
         bathrooms: editLayoutData.bathrooms,
@@ -50,6 +58,12 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         cost_assumption_other: project.cost_assumption_other || "",
         planned_handover_date: project.planned_handover_date
           ? new Date(project.planned_handover_date + "T00:00:00")
+          : undefined,
+        commission_start_date: project.commission_start_date
+          ? new Date(project.commission_start_date + "T00:00:00")
+          : undefined,
+        commission_end_date: project.commission_end_date
+          ? new Date(project.commission_end_date + "T00:00:00")
           : undefined,
         other_agreements: project.other_agreements || "",
         attachments: convertAttachments(project.signing_materials),
@@ -73,6 +87,14 @@ export function getDefaultValues(
     address: project?.address || "",
     area: project?.area,
     project_manager_id: project?.project_manager?.id || undefined,
+    business_form:
+      project?.business_form === "agent" || project?.business_form === "wholesale"
+        ? project.business_form
+        : "",
+    district: project?.district || "",
+    original_community_district: project?.district || "",
+    business_circle: project?.business_circle || "",
+    original_community_business_circle: project?.business_circle || "",
     // 修复：户型字段无值时返回undefined，让placeholder生效
     rooms: layoutData.rooms,
     halls: layoutData.halls,
@@ -96,6 +118,12 @@ export function getDefaultValues(
     cost_assumption_other: project?.cost_assumption_other || "",
     planned_handover_date: project?.planned_handover_date
       ? new Date(project.planned_handover_date + "T00:00:00")
+      : undefined,
+    commission_start_date: project?.commission_start_date
+      ? new Date(project.commission_start_date + "T00:00:00")
+      : undefined,
+    commission_end_date: project?.commission_end_date
+      ? new Date(project.commission_end_date + "T00:00:00")
       : undefined,
     other_agreements: project?.other_agreements || "",
     attachments: convertAttachments(project?.signing_materials),

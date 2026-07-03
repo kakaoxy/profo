@@ -38,6 +38,7 @@ interface UrlPaginationProps extends PaginationBaseProps {
   mode: "url";
   pageParamName?: string;
   sizeParamName?: string;
+  defaultPageSize?: number;
 }
 
 type PaginationProps = ControlledPaginationProps | UrlPaginationProps;
@@ -217,6 +218,7 @@ function UrlPagination({
   showFirstLastButtons = true,
   pageParamName = "page",
   sizeParamName = "pageSize",
+  defaultPageSize = 50,
   className,
 }: UrlPaginationProps) {
   const [page, setPage] = useQueryState(
@@ -225,7 +227,7 @@ function UrlPagination({
   );
   const [pageSize, setPageSize] = useQueryState(
     sizeParamName,
-    parseAsInteger.withDefault(50).withOptions({ shallow: false })
+    parseAsInteger.withDefault(defaultPageSize).withOptions({ shallow: false })
   );
 
   const totalPages = Math.ceil(totalItems / pageSize);
