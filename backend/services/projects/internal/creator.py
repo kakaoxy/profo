@@ -63,7 +63,9 @@ class ProjectCreator:
         self._create_contract_record(project_id, project_data, now)
 
         # 3. 创建业主记录（如果提供了业主信息）
-        self._create_owner_record(project_id, project_data, now)
+        #    owners 数组优先：提供了 owners 时跳过遗留字段创建，避免重复记录
+        if project_data.owners is None:
+            self._create_owner_record(project_id, project_data, now)
 
         # 4. 同步业主列表（如果提供了 owners 数组）
         if project_data.owners is not None:

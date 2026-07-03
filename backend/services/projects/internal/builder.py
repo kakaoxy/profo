@@ -244,7 +244,11 @@ class ProjectResponseBuilder:
         if not interactions:
             return {}
 
-        sorted_interactions = sorted(interactions, key=lambda i: i.interaction_at, reverse=True)
+        active_interactions = [i for i in interactions if not i.is_deleted]
+        if not active_interactions:
+            return {}
+
+        sorted_interactions = sorted(active_interactions, key=lambda i: i.interaction_at, reverse=True)
 
         sales_records = [
             {
