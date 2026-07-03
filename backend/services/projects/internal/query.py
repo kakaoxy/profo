@@ -109,6 +109,8 @@ class ProjectQueryService:
         business_form: BusinessForm | None = None,
         page: int = 1,
         page_size: int | None = None,
+        *,
+        include_interactions: bool = False,
     ) -> list[Project]:
         """分页获取项目列表.
 
@@ -138,14 +140,18 @@ class ProjectQueryService:
             query = query.filter(Project.business_form == business_form)
 
         # 预加载关联数据（列表页所需：contract/owners/sale/project_manager/renovation_photos/finance_records）
-        query = query.options(
+        options = [
             joinedload(Project.contract),
             selectinload(Project.owners),
             joinedload(Project.sale),
             selectinload(Project.project_manager),
             selectinload(Project.renovation_photos),
             selectinload(Project.finance_records),
-        )
+        ]
+        if include_interactions:
+            # 工作台重点监控卡片需展示项目动态(带看/出价)，预加载互动记录避免 N+1
+            options.append(selectinload(Project.interactions))
+        query = query.options(*options)
 
         total = query.count()
 

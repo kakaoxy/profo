@@ -8111,6 +8111,8 @@ export interface operations {
     get_projects_api_v1_projects_get: {
         parameters: {
             query?: {
+                /** @description 是否包含互动记录(sales_records)，工作台重点监控卡片需传 true */
+                include_interactions?: boolean;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
