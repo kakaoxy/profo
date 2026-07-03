@@ -6,6 +6,7 @@
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import Project
+from models.common import BusinessForm
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
 
@@ -105,6 +106,7 @@ class ProjectQueryService:
         self,
         status: str | None = None,
         community_name: str | None = None,
+        business_form: BusinessForm | None = None,
         page: int = 1,
         page_size: int | None = None,
     ) -> list[Project]:
@@ -115,6 +117,7 @@ class ProjectQueryService:
         Args:
             status: 项目状态筛选条件
             community_name: 小区名称筛选条件（模糊匹配）
+            business_form: 业务形式筛选条件（精确匹配）
             page: 页码，从1开始
             page_size: 每页数量
 
@@ -130,6 +133,9 @@ class ProjectQueryService:
 
         if community_name:
             query = query.filter(Project.community_name.contains(community_name))
+
+        if business_form:
+            query = query.filter(Project.business_form == business_form)
 
         # 预加载关联数据（列表页所需：contract/owners/sale/project_manager/renovation_photos/finance_records）
         query = query.options(

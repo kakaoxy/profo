@@ -1,18 +1,61 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { FileText, TrendingUp, User, MapPin, FileCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Project } from "../../../../../types";
 import { InfoCard as InfoSection, InfoItem } from "@/components/common";
 import { formatDate, formatPrice } from "../../../utils";
+import { searchCommunitiesAction } from "@/app/(main)/admin/leads/actions";
 
 interface InfoTabProps {
   project: Project;
 }
+
+const BUSINESS_FORM_LABEL: Record<string, string> = {
+  agent: "代理美化",
+  wholesale: "收购美化",
+};
 
 /**
  * 信息 Tab - 展示项目详细信息
  * 按照创建表单的结构组织：基础信息、代理协议、业主信息
  */
 export function InfoTab({ project }: InfoTabProps) {
+  // 行政区来自小区（Project 本身没有 district 字段），通过小区搜索接口异步拉取
+  // 使用 {name, district} 结构避免小区切换时显示陈旧数据
+  const [fetched, setFetched] = useState<{
+    name: string;
+    district?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    // 已有 district 或无小区名时不查询
+    if (project.district || !project.community_name) {
+      return;
+    }
+    const name = project.community_name;
+    let mounted = true;
+    searchCommunitiesAction(name)
+      .then((results) => {
+        if (!mounted) return;
+        const matched = results.find((c) => c.name === name);
+        setFetched({ name, district: matched?.district });
+      })
+      .catch(() => {
+        if (mounted) setFetched({ name, district: undefined });
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [project.community_name, project.district]);
+
+  const district =
+    project.district ||
+    (fetched && fetched.name === project.community_name
+      ? fetched.district
+      : undefined);
+
   // 脱敏函数：前3后4，中间用*代替
   const maskString = (str?: string | null, keepStart = 3, keepEnd = 4): string | undefined => {
     if (!str) return undefined;
@@ -50,12 +93,42 @@ export function InfoTab({ project }: InfoTabProps) {
     return typeLabel;
   };
 
+  // 委托期限范围展示
+  const formatCommissionRange = (project: Project): string | undefined => {
+    const start = project.commission_start_date;
+    const end = project.commission_end_date;
+    if (!start && !end) return undefined;
+    if (start && end) return `${start} 至 ${end}`;
+    return start || end || undefined;
+  };
+
+  // 已售项目展示用时天数
+  const isSold =
+    project.status === "sold" || project.status === "已售";
+  const daysOnMarket =
+    isSold && project.days_on_market != null
+      ? `${project.days_on_market} 天`
+      : undefined;
+
   return (
     <div className="space-y-4">
       {/* --- 基础信息 --- */}
       <InfoSection title="基础信息" icon={<MapPin className="h-4 w-4" />}>
         {/* 小区名称 */}
         <InfoItem label="小区名称" value={project.community_name} />
+
+        {/* 行政区 */}
+        <InfoItem label="行政区" value={district} />
+
+        {/* 业务形式 */}
+        <InfoItem
+          label="业务形式"
+          value={
+            project.business_form
+              ? BUSINESS_FORM_LABEL[project.business_form]
+              : "未设置"
+          }
+        />
 
         {/* 产证面积 */}
         <InfoItem
@@ -144,6 +217,13 @@ export function InfoTab({ project }: InfoTabProps) {
           }
         />
 
+        {/* 委托期限 */}
+        <InfoItem
+          label="委托期限"
+          value={formatCommissionRange(project)}
+          className="sm:col-span-2"
+        />
+
         {/* 税费及佣金承担方 */}
         <InfoItem
           label="税费及佣金承担方"
@@ -224,6 +304,10 @@ export function InfoTab({ project }: InfoTabProps) {
           label="上架日期"
           value={formatDate(project.listing_date)}
         />
+        {/* 用时（仅已售项目且有值时显示） */}
+        {daysOnMarket && (
+          <InfoItem label="用时" value={daysOnMarket} highlight />
+        )}
       </InfoSection>
 
       {/* --- 备注 --- */}

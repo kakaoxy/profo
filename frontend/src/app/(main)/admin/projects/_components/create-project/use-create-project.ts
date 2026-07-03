@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createProjectAction, updateProjectAction, getNextContractNoAction } from "../../actions/core";
+import { updateCommunityAction } from "../../../leads/actions/update-community";
 import { FormValues, ProjectCreateReq, ProjectUpdateReq } from "./schema";
 import { Project } from "../../types";
 import { buildLayout, toDateStr } from "./utils";
@@ -88,6 +89,10 @@ export const useCreateProject = ({
         layout: layoutString || null,
         orientation: values.orientation || null,
         project_manager_id: values.project_manager_id || null,
+        business_form:
+          values.business_form === "agent" || values.business_form === "wholesale"
+            ? values.business_form
+            : null,
         owner_name: values.owner_name || null,
         owner_phone: values.owner_phone || null,
         owner_id_card: values.owner_id_card || null,
@@ -101,6 +106,8 @@ export const useCreateProject = ({
         cost_assumption_type: values.cost_assumption_type,
         cost_assumption_other: values.cost_assumption_type === "other" ? values.cost_assumption_other || null : null,
         planned_handover_date: toDateStr(values.planned_handover_date),
+        commission_start_date: toDateStr(values.commission_start_date),
+        commission_end_date: toDateStr(values.commission_end_date),
         other_agreements: values.other_agreements || null,
         signing_materials: values.attachments?.length
           ? values.attachments.map((att) => ({
@@ -125,6 +132,30 @@ export const useCreateProject = ({
 
       if (res.success) {
         toast.success(isEditMode ? "项目更新成功" : "项目创建成功");
+
+        // AC-4.3: 项目保存成功后，若用户手动修改了行政区或商圈，回写到小区对应字段
+        // 仅当值非空且与小区原始值不一致时才调用，失败不阻塞项目成功
+        const communityId = values.community_id;
+        const districtValue = values.district?.trim();
+        const originalDistrict = values.original_community_district?.trim();
+        const businessCircleValue = values.business_circle?.trim();
+        const originalBusinessCircle = values.original_community_business_circle?.trim();
+
+        const communityPatch: { district?: string; business_circle?: string } = {};
+        if (districtValue && districtValue !== originalDistrict) {
+          communityPatch.district = districtValue;
+        }
+        if (businessCircleValue && businessCircleValue !== originalBusinessCircle) {
+          communityPatch.business_circle = businessCircleValue;
+        }
+
+        if (communityId && Object.keys(communityPatch).length > 0) {
+          const communityRes = await updateCommunityAction(communityId, communityPatch);
+          if (!communityRes.success) {
+            toast.error("小区信息更新失败" + (communityRes.message ? `：${communityRes.message}` : ""));
+          }
+        }
+
         if (!isEditMode) {
           localStorage.removeItem("create_project_draft_v2");
           form.reset();

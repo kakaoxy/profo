@@ -7,6 +7,7 @@
 from .common import (
     Base,
     BaseModel,
+    BusinessForm,
     CashFlowCategory,
     CashFlowType,
     ChangeType,
@@ -68,6 +69,7 @@ __all__ = [
     # 基础
     "Base",
     "BaseModel",
+    "BusinessForm",
     "CashFlowCategory",
     "CashFlowType",
     "ChangeType",

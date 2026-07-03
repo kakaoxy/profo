@@ -13,7 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models import Project
-from models.common import ProjectStatus
+from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, StatusUpdate
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
@@ -125,6 +125,7 @@ class ProjectCoreService:
         self,
         status_filter: str | None = None,
         community_name: str | None = None,
+        business_form: BusinessForm | None = None,
         page: int = 1,
         page_size: int | None = None,
     ) -> dict[str, Any]:
@@ -133,6 +134,7 @@ class ProjectCoreService:
         Args:
             status_filter: 状态筛选条件
             community_name: 小区名称筛选条件
+            business_form: 业务形式筛选条件
             page: 页码
             page_size: 每页数量
 
@@ -144,6 +146,7 @@ class ProjectCoreService:
         result = self.query_service.get_by_status(
             status=status_filter,
             community_name=community_name,
+            business_form=business_form,
             page=page,
             page_size=effective_page_size,
         )

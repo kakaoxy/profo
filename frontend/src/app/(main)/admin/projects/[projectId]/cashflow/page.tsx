@@ -8,6 +8,7 @@ import { HeaderStats } from "./_components/header-stats";
 import { TrendChart } from "./_components/trend-chart";
 import { LedgerTable } from "./_components/ledger-table";
 import { getProjectCashFlowAction } from "./actions";
+import { getProjectDetailAction } from "../../actions/core";
 import { mapToCashFlowRecord, mapToCashFlowStats } from "./types";
 
 interface PageProps {
@@ -18,7 +19,10 @@ export default async function CashFlowPage({ params }: PageProps) {
   const { projectId } = await params;
 
   // 1. 调用 Server Action 获取真实数据
-  const apiData = await getProjectCashFlowAction(projectId);
+  const [apiData, projectRes] = await Promise.all([
+    getProjectCashFlowAction(projectId),
+    getProjectDetailAction(projectId),
+  ]);
 
   if (!apiData) {
     return notFound();
@@ -26,6 +30,9 @@ export default async function CashFlowPage({ params }: PageProps) {
 
   const records = apiData.records.map((r) => mapToCashFlowRecord(r, projectId));
   const stats = mapToCashFlowStats(apiData.summary);
+  const businessForm = projectRes.success
+    ? projectRes.data?.business_form ?? null
+    : null;
 
   return (
     <div className="min-h-screen bg-muted/50 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1200px] mx-auto">
@@ -58,7 +65,11 @@ export default async function CashFlowPage({ params }: PageProps) {
             </div>
           }
         >
-          <LedgerTable projectId={projectId} data={records} />
+          <LedgerTable
+            projectId={projectId}
+            data={records}
+            businessForm={businessForm}
+          />
         </Suspense>
       </section>
     </div>

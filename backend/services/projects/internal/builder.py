@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
-from models.common import CashFlowType
+from models.common import CashFlowType, ProjectStatus
 
 if TYPE_CHECKING:
     from models import Project
@@ -80,10 +80,14 @@ class ProjectResponseBuilder:
             "layout": project.layout,
             "orientation": project.orientation,
             "status": project.status,
+            "business_form": project.business_form,
+            "commission_start_date": project.commission_start_date,
+            "commission_end_date": project.commission_end_date,
             "renovation_stage": project.renovation_stage,
             "is_deleted": project.is_deleted,
             "created_at": project.created_at.isoformat() if project.created_at else None,
             "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+            "days_on_market": self._compute_days_on_market(project),
         }
 
         # 添加项目负责人信息
@@ -263,3 +267,23 @@ class ProjectResponseBuilder:
                     stage_dates[stage_name] = date_value.strftime("%Y-%m-%d")
 
         return {"renovation_stage_dates": stage_dates} if stage_dates else {}
+
+    def _compute_days_on_market(self, project: "Project") -> int | None:
+        """计算用时天数.
+
+        仅当项目状态为已售(SOLD)且 listing_date 与 sold_date 均非空时计算：
+        days_on_market = (sold_date - listing_date).days。否则返回 None（未售/日期缺失）。
+        """
+        if project.status != ProjectStatus.SOLD.value:
+            return None
+
+        sale = project.sale
+        if not sale or getattr(sale, "is_deleted", False):
+            return None
+
+        listing_date = sale.listing_date
+        sold_date = sale.sold_date
+        if not listing_date or not sold_date:
+            return None
+
+        return (sold_date.date() - listing_date.date()).days

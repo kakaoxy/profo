@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 # 导入模型和 Schema 类型
 from models import ProjectInteraction, ProjectRenovation, RenovationPhoto
+from models.common import BusinessForm
 from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, StatusUpdate
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from schemas.project.sales import (
@@ -72,12 +73,19 @@ class ProjectService:
         self,
         status_filter: str | None = None,
         community_name: str | None = None,
+        business_form: BusinessForm | None = None,
         page: int = 1,
         page_size: int | None = None,
     ) -> dict[str, Any]:
         """获取项目列表."""
         effective_page_size = page_size if page_size is not None else settings.default_page_size
-        return self._core_service.get_projects(status_filter, community_name, page, effective_page_size)
+        return self._core_service.get_projects(
+            status_filter=status_filter,
+            community_name=community_name,
+            business_form=business_form,
+            page=page,
+            page_size=effective_page_size,
+        )
 
     def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目."""

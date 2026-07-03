@@ -6,6 +6,7 @@
 from .base import (
     Base,
     BaseModel,
+    BusinessForm,
     CashFlowCategory,
     CashFlowType,
     ChangeType,
@@ -22,6 +23,7 @@ from .base import (
 __all__ = [
     "Base",
     "BaseModel",
+    "BusinessForm",
     "CashFlowCategory",
     "CashFlowType",
     "ChangeType",

@@ -37,8 +37,43 @@ export function HeroMetrics({ project }: { project: Project }) {
   // 如果占用天数为 0 (异常情况)，则年化无意义，暂不计算或显式 0
   const annualizedRoR = occupationDays > 0 ? (roi / safeDays) * 365 : 0;
 
+  // 用时（来自后端 days_on_market = sold_date - listing_date，已售项目用）
+  const daysOnMarket = project.days_on_market;
+
+  // 委托期限范围
+  const commissionStart = project.commission_start_date;
+  const commissionEnd = project.commission_end_date;
+  const commissionRange =
+    commissionStart && commissionEnd
+      ? `${commissionStart} 至 ${commissionEnd}`
+      : commissionStart || commissionEnd || null;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+    <div className="mt-6 space-y-4">
+      {(daysOnMarket != null || commissionRange) && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg bg-muted/60 border border-border text-sm">
+          {daysOnMarket != null && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">成交用时：</span>
+              <span className="font-bold text-foreground tabular-nums">
+                {daysOnMarket} 天
+              </span>
+              <span className="text-xs text-muted-foreground">(上架至成交)</span>
+            </div>
+          )}
+          {daysOnMarket != null && (
+            <div className="flex items-center gap-2 sm:ml-4 sm:pl-4 sm:border-l border-border">
+              <span className="text-muted-foreground">委托期限：</span>
+              {commissionRange ? (
+                <span className="font-semibold text-foreground">{commissionRange}</span>
+              ) : (
+                <span className="text-muted-foreground">--</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* 卡片 1：净利润 */}
       <Card className="bg-error-container/50 border-error/30 shadow-sm transition-all hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -110,6 +145,7 @@ export function HeroMetrics({ project }: { project: Project }) {
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

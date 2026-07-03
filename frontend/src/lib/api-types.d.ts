@@ -202,6 +202,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/communities/{community_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Community
+         * @description 更新小区信息.
+         *
+         *     仅更新请求体中显式提供的字段（PATCH 语义）.
+         *
+         *     速率限制：100次/小时
+         */
+        patch: operations["update_community_api_v1_admin_communities__community_id__patch"];
+        trace?: never;
+    };
     "/api/v1/leads": {
         parameters: {
             query?: never;
@@ -2256,6 +2280,12 @@ export interface components {
             file: string;
         };
         /**
+         * BusinessForm
+         * @description 业务形式枚举.
+         * @enum {string}
+         */
+        BusinessForm: "agent" | "wholesale";
+        /**
          * CancelTaskResponse
          * @description 取消任务响应.
          */
@@ -2270,7 +2300,7 @@ export interface components {
          * @description 现金流分类枚举.
          * @enum {string}
          */
-        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
+        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
         /**
          * CashFlowRecordCreate
          * @description 创建现金流.
@@ -2524,6 +2554,44 @@ export interface components {
             district?: string | null;
             /** Business Circle */
             business_circle?: string | null;
+        };
+        /**
+         * CommunityUpdateRequest
+         * @description 更新小区请求.
+         *
+         *     所有字段可选，仅更新请求体中显式提供的字段（PATCH 语义）.
+         */
+        CommunityUpdateRequest: {
+            /**
+             * Name
+             * @description 小区名称
+             */
+            name?: string | null;
+            /**
+             * District
+             * @description 行政区
+             */
+            district?: string | null;
+            /**
+             * Business Circle
+             * @description 商圈
+             */
+            business_circle?: string | null;
+            /**
+             * Avg Price Wan
+             * @description 小区均价(万)
+             */
+            avg_price_wan?: number | null;
+            /**
+             * Total Properties
+             * @description 房源总数
+             */
+            total_properties?: number | null;
+            /**
+             * Is Active
+             * @description 是否激活(软删除)
+             */
+            is_active?: boolean | null;
         };
         /**
          * CompetitorResponse
@@ -3951,6 +4019,8 @@ export interface components {
              * @description 项目负责人ID
              */
             project_manager_id?: string | null;
+            /** @description 业务形式: agent(代理美化)/wholesale(收购美化) */
+            business_form?: components["schemas"]["BusinessForm"] | null;
             /**
              * Contract No
              * @description 合同编号
@@ -4043,6 +4113,16 @@ export interface components {
              * @description 上架日期 (YYYY-MM-DD 格式)
              */
             listing_date?: string | null;
+            /**
+             * Commission Start Date
+             * @description 委托开始日期 (YYYY-MM-DD 格式)
+             */
+            commission_start_date?: string | null;
+            /**
+             * Commission End Date
+             * @description 委托结束日期 (YYYY-MM-DD 格式)
+             */
+            commission_end_date?: string | null;
         };
         /**
          * ProjectReportResponse
@@ -4133,6 +4213,8 @@ export interface components {
              * @default false
              */
             is_deleted: boolean;
+            /** @description 业务形式: agent(代理美化)/wholesale(收购美化) */
+            business_form?: components["schemas"]["BusinessForm"] | null;
             renovation_stage?: components["schemas"]["RenovationStage"] | null;
             /**
              * Contract No
@@ -4183,6 +4265,21 @@ export interface components {
             sold_date?: string | null;
             /** Transaction Status */
             transaction_status?: string | null;
+            /**
+             * Commission Start Date
+             * @description 委托开始日期 (YYYY-MM-DD 格式)
+             */
+            commission_start_date?: string | null;
+            /**
+             * Commission End Date
+             * @description 委托结束日期 (YYYY-MM-DD 格式)
+             */
+            commission_end_date?: string | null;
+            /**
+             * Days On Market
+             * @description 用时天数（已售项目：sold_date - listing_date）
+             */
+            days_on_market?: number | null;
             /**
              * Channel Manager Id
              * @description 渠道负责人ID
@@ -4283,6 +4380,8 @@ export interface components {
              * @description 项目负责人ID
              */
             project_manager_id?: string | null;
+            /** @description 业务形式: agent(代理美化)/wholesale(收购美化) */
+            business_form?: components["schemas"]["BusinessForm"] | null;
             /** Contract No */
             contract_no?: string | null;
             /** Signing Price */
@@ -4330,6 +4429,16 @@ export interface components {
              * @description 上架日期 (YYYY-MM-DD 格式)
              */
             listing_date?: string | null;
+            /**
+             * Commission Start Date
+             * @description 委托开始日期 (YYYY-MM-DD 格式)
+             */
+            commission_start_date?: string | null;
+            /**
+             * Commission End Date
+             * @description 委托结束日期 (YYYY-MM-DD 格式)
+             */
+            commission_end_date?: string | null;
         };
         /**
          * PropertyDetailResponse
@@ -6789,6 +6898,42 @@ export interface operations {
             };
         };
     };
+    update_community_api_v1_admin_communities__community_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_leads_api_v1_leads_get: {
         parameters: {
             query?: {
@@ -7746,6 +7891,7 @@ export interface operations {
                 page_size?: number;
                 status?: components["schemas"]["ProjectStatus"] | null;
                 community_name?: string | null;
+                business_form?: components["schemas"]["BusinessForm"] | null;
             };
             header?: never;
             path?: never;

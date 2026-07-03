@@ -66,6 +66,13 @@ class CashFlowType(str, enum.Enum):
     EXPENSE = "expense"  # 支出
 
 
+class BusinessForm(str, enum.Enum):
+    """业务形式枚举."""
+
+    AGENT = "agent"  # 代理美化
+    WHOLESALE = "wholesale"  # 收购美化
+
+
 class CashFlowCategory(str, enum.Enum):
     """现金流分类枚举."""
 
@@ -77,6 +84,7 @@ class CashFlowCategory(str, enum.Enum):
     OTHER_EXPENSE = "其他支出"
     TAX_FEE = "税费"
     OPERATION_FEE = "运营费"
+    PURCHASE_PRICE = "收购款"  # 收购款（收购美化独有支出）
 
     # 收入类
     BOND_RETURN = "回收保证金"

@@ -72,6 +72,20 @@ class CommunityCreateRequest(BaseModel):
     business_circle: str | None = Field(default=None, max_length=100, description="商圈")
 
 
+class CommunityUpdateRequest(BaseModel):
+    """更新小区请求.
+
+    所有字段可选，仅更新请求体中显式提供的字段（PATCH 语义）.
+    """
+
+    name: str | None = Field(default=None, min_length=1, max_length=200, description="小区名称")
+    district: str | None = Field(default=None, max_length=100, description="行政区")
+    business_circle: str | None = Field(default=None, max_length=100, description="商圈")
+    avg_price_wan: float | None = Field(default=None, ge=0, description="小区均价(万)")
+    total_properties: int | None = Field(default=None, ge=0, description="房源总数")
+    is_active: bool | None = Field(default=None, description="是否激活(软删除)")
+
+
 class CommunitySearchResponse(BaseModel):
     """小区搜索响应模型 - 精简字段用于搜索建议."""
 
@@ -90,5 +104,6 @@ __all__ = [
     "CommunityMergeResponse",
     "CommunityResponse",
     "CommunitySearchResponse",
+    "CommunityUpdateRequest",
     "DictionaryResponse",
 ]

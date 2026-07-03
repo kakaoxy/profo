@@ -68,6 +68,7 @@ class RateLimits:
     # ==================== 市场情报模块 ====================
     COMMUNITY_MERGE = "20/hour"
     COMMUNITY_CREATE = "100/hour"
+    COMMUNITY_UPDATE = "100/hour"
 
     # ==================== 监控模块 ====================
     MONITOR_DELETE = "20/hour"

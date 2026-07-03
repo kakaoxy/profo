@@ -14,6 +14,7 @@ import { Search } from "lucide-react";
 
 import { columns } from "./columns";
 import { MergeDialog } from "./merge-dialog";
+import { CreateCommunityDialog } from "./create-community-dialog";
 import { components } from "@/lib/api-types";
 
 type Community = components["schemas"]["CommunityResponse"];
@@ -96,10 +97,15 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
         </div>
         
         {/* 合并按钮 - 传入选中项 */}
-        <MergeDialog 
-          selectedCommunities={selectedCommunities} 
-          onSuccess={() => setRowSelection({})} // 合并成功后清空选择
-        />
+        <div className="flex items-center gap-2">
+          <CreateCommunityDialog
+            onSuccess={() => router.refresh()}
+          />
+          <MergeDialog
+            selectedCommunities={selectedCommunities}
+            onSuccess={() => setRowSelection({})} // 合并成功后清空选择
+          />
+        </div>
       </div>
 
       <div className="rounded-md border bg-card overflow-x-auto scrollbar-hide">

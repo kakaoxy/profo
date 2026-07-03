@@ -71,6 +71,14 @@ export const ORIENTATION_OPTIONS = [
 
 export const orientationEnum = z.enum(["南北", "南", "东", "西", "北"]);
 
+// 业务形式枚举（"" 表示未设置，对应后端 null）
+export const BUSINESS_FORM_OPTIONS = [
+  { value: "agent", label: "代理美化" },
+  { value: "wholesale", label: "收购美化" },
+] as const;
+
+export const businessFormEnum = z.enum(["agent", "wholesale", ""]);
+
 export const formSchema = z
   .object({
     // 基础信息 - 重构后：移除 name, manager, tags 字段
@@ -79,6 +87,21 @@ export const formSchema = z
     address: z.string().min(1, "物业地址不能为空").max(500),
     area: optionalNumber,
     project_manager_id: z.string().optional(),
+
+    // 业务形式（agent / wholesale / ""=未设置）
+    business_form: businessFormEnum.default(""),
+
+    // 行政区（来自小区，前端展示用；新建项目时不写入 project）
+    district: z.string().max(50).optional(),
+
+    // 小区原始行政区（选择小区时快照，用于 onSubmit 比对是否被用户修改，隐藏不展示）
+    original_community_district: z.string().optional(),
+
+    // 商圈（来自小区，前端展示用；新建项目时不写入 project）
+    business_circle: z.string().max(50).optional(),
+
+    // 小区原始商圈（选择小区时快照，用于 onSubmit 比对是否被用户修改，隐藏不展示）
+    original_community_business_circle: z.string().optional(),
 
     // 户型 - 三个独立输入框
     rooms: roomNumberSchema,
@@ -98,6 +121,9 @@ export const formSchema = z
     cost_assumption_type: z.enum(["meifangbao", "owner", "respective", "other"]).default("meifangbao"),
     cost_assumption_other: z.string().max(50).optional(),
     planned_handover_date: z.date().nullable().optional(),
+    // 委托期限日期范围
+    commission_start_date: z.date().nullable().optional(),
+    commission_end_date: z.date().nullable().optional(),
     other_agreements: z.string().optional(),
 
     // 业主信息
