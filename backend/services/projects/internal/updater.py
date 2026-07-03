@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING, Any
 
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
 from models.common import ProjectStatus
+from schemas.project.owner import OwnerInlineUpdate
 from services.utils import parse_date_string
+
+from . import owners
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -49,6 +52,9 @@ class ProjectUpdater:
             更新后的项目模型实例
 
         """
+        # 提前弹出 owners，避免作为普通字段更新到 project 表
+        owners_payload = update_dict.pop("owners", None)
+
         # 已售状态限制可修改字段
         if project.status == ProjectStatus.SOLD.value:
             update_dict = self._filter_allowed_fields(update_dict)
@@ -59,6 +65,13 @@ class ProjectUpdater:
         self._update_owner_fields(project.id, update_dict)
         self._update_sale_fields(project.id, update_dict)
         self._update_remaining_fields(project, update_dict)
+
+        # 同步业主列表（不内联 diff，委托给 owners service）
+        if owners_payload is not None:
+            owner_items: list[OwnerInlineUpdate] = [
+                OwnerInlineUpdate(**o) if isinstance(o, dict) else o for o in owners_payload
+            ]
+            owners.sync_owners(self.db, project.id, owner_items)
 
         project.updated_at = datetime.now(timezone.utc)
         self.db.commit()
@@ -76,6 +89,9 @@ class ProjectUpdater:
             "orientation",
             "layout",
             "floor_info",
+            "electricity_account",
+            "water_account",
+            "gas_account",
             "renovation_stage",
             "notes",
             "tags",
@@ -100,6 +116,9 @@ class ProjectUpdater:
             "orientation",
             "layout",
             "floor_info",
+            "electricity_account",
+            "water_account",
+            "gas_account",
             "renovation_stage",
             "status",
             "tags",

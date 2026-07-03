@@ -17,6 +17,8 @@ class ProjectOwner(BaseModel):
     owner_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="业主姓名")
     owner_phone: Mapped[str | None] = mapped_column(EncryptedString(500), nullable=True, comment="业主联系方式")
     owner_id_card: Mapped[str | None] = mapped_column(EncryptedString(500), nullable=True, comment="业主身份证号")
+    bank_name: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="开户行")
+    bank_card_number: Mapped[str | None] = mapped_column(EncryptedString(500), nullable=True, comment="银行卡号(加密)")
     relation_type: Mapped[str] = mapped_column(String(20), nullable=False, default="业主", comment="关系类型")
     owner_info: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
 

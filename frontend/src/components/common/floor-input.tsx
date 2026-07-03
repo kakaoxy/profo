@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 
 export interface FloorInputProps {
@@ -49,13 +49,15 @@ export function FloorInput({ value, onChange, className }: FloorInputProps) {
   const parsed = parseFloorInfo(value ?? "");
   const [current, setCurrent] = useState(parsed.current);
   const [total, setTotal] = useState(parsed.total);
+  // 跟踪上一次的外部 value，用于在渲染期间同步内部状态（替代 effect 内 setState）
+  const [lastValue, setLastValue] = useState(value);
 
   // 外部 value 变化时（如表单 reset / 编辑回填）同步内部状态
-  useEffect(() => {
-    const p = parseFloorInfo(value ?? "");
-    setCurrent(p.current);
-    setTotal(p.total);
-  }, [value]);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setCurrent(parsed.current);
+    setTotal(parsed.total);
+  }
 
   const emitChange = (nextCurrent: string, nextTotal: string) => {
     setCurrent(nextCurrent);

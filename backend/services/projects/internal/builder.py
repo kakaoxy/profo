@@ -12,6 +12,9 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.orm import Session
 
 from models.common import CashFlowType, ProjectStatus
+from utils.mask import mask_bank_card
+
+from . import owners
 
 if TYPE_CHECKING:
     from models import Project
@@ -57,6 +60,7 @@ class ProjectResponseBuilder:
         response = self._build_base_info(project)
         response.update(self._build_contract_info(project))
         response.update(self._build_owner_info(project))
+        response.update(self._build_owners_list(project))
         response.update(self._build_sale_info(project))
         response.update(self._build_finance_info(project))
 
@@ -79,6 +83,9 @@ class ProjectResponseBuilder:
             "area": str(project.area) if project.area else None,
             "layout": project.layout,
             "orientation": project.orientation,
+            "electricity_account": project.electricity_account,
+            "water_account": project.water_account,
+            "gas_account": project.gas_account,
             "status": project.status,
             "business_form": project.business_form,
             "commission_start_date": project.commission_start_date,
@@ -145,6 +152,33 @@ class ProjectResponseBuilder:
             "owner_phone": owner.owner_phone,
             "owner_id_card": owner.owner_id_card,
             "owner_info": owner.owner_info,
+        }
+
+    def _build_owners_list(self, project: "Project") -> dict[str, Any]:
+        """构建业主列表（含银行卡号脱敏）.
+
+        通过 owners.list_owners 查询项目下未删除业主，
+        对 bank_card_number 调用 mask_bank_card 脱敏后返回。
+        """
+        owner_list = owners.list_owners(self.db, project.id)
+        return {
+            "owners": [
+                {
+                    "id": o.id,
+                    "project_id": o.project_id,
+                    "owner_name": o.owner_name,
+                    "owner_phone": o.owner_phone,
+                    "owner_id_card": o.owner_id_card,
+                    "bank_name": o.bank_name,
+                    "bank_card_number": mask_bank_card(o.bank_card_number),
+                    "relation_type": o.relation_type,
+                    "owner_info": o.owner_info,
+                    "is_deleted": o.is_deleted,
+                    "created_at": o.created_at.isoformat() if o.created_at else None,
+                    "updated_at": o.updated_at.isoformat() if o.updated_at else None,
+                }
+                for o in owner_list
+            ],
         }
 
     def _build_sale_info(self, project: "Project") -> dict[str, Any]:

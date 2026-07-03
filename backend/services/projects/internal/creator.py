@@ -12,6 +12,8 @@ from models.common import ProjectStatus
 from schemas.project import ProjectCreate
 from services.utils import parse_date_string
 
+from . import owners
+
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
@@ -63,6 +65,10 @@ class ProjectCreator:
         # 3. 创建业主记录（如果提供了业主信息）
         self._create_owner_record(project_id, project_data, now)
 
+        # 4. 同步业主列表（如果提供了 owners 数组）
+        if project_data.owners is not None:
+            owners.sync_owners(self.db, project_id, project_data.owners)
+
         self.db.commit()
         self.db.refresh(project)
 
@@ -84,6 +90,9 @@ class ProjectCreator:
             layout=project_data.layout,
             orientation=project_data.orientation,
             floor_info=project_data.floor_info,
+            electricity_account=project_data.electricity_account,
+            water_account=project_data.water_account,
+            gas_account=project_data.gas_account,
             project_manager_id=project_data.project_manager_id,
             status=ProjectStatus.SIGNING.value,
             business_form=project_data.business_form,

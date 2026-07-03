@@ -94,9 +94,9 @@ export const useCreateProject = ({
           values.business_form === "agent" || values.business_form === "wholesale"
             ? values.business_form
             : null,
-        owner_name: values.owner_name || null,
-        owner_phone: values.owner_phone || null,
-        owner_id_card: values.owner_id_card || null,
+        electricity_account: values.electricity_account || null,
+        water_account: values.water_account || null,
+        gas_account: values.gas_account || null,
         notes: values.notes || null,
         contract_no: values.contract_no,
         signing_price: values.signing_price ?? null,
@@ -119,6 +119,16 @@ export const useCreateProject = ({
               size: att.size,
             }))
           : null,
+        owners: values.owners?.map((o) => ({
+          id: o.id || undefined,
+          owner_name: o.owner_name || null,
+          owner_phone: o.owner_phone || null,
+          owner_id_card: o.owner_id_card || null,
+          bank_name: o.bank_name || null,
+          bank_card_number: o.bank_card_number || null,
+          relation_type: o.relation_type || "业主",
+          owner_info: o.owner_info || null,
+        })) ?? null,
         owner_info: values.notes || null,
       };
 

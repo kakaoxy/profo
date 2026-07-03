@@ -3810,6 +3810,161 @@ export interface components {
             items: components["schemas"]["NeighborhoodRadarItem"][];
         };
         /**
+         * OwnerInlineCreate
+         * @description 项目创建时内联的业主数据（不含 project_id）.
+         */
+        OwnerInlineCreate: {
+            /**
+             * Owner Name
+             * @description 业主姓名
+             */
+            owner_name?: string | null;
+            /**
+             * Owner Phone
+             * @description 业主联系方式
+             */
+            owner_phone?: string | null;
+            /**
+             * Owner Id Card
+             * @description 业主身份证号
+             */
+            owner_id_card?: string | null;
+            /**
+             * Bank Name
+             * @description 开户行
+             */
+            bank_name?: string | null;
+            /**
+             * Bank Card Number
+             * @description 银行卡号
+             */
+            bank_card_number?: string | null;
+            /**
+             * Relation Type
+             * @description 关系类型
+             */
+            relation_type?: string | null;
+            /**
+             * Owner Info
+             * @description 备注
+             */
+            owner_info?: string | null;
+        };
+        /**
+         * OwnerInlineUpdate
+         * @description 项目更新时内联的业主数据（含可选 id 用于 diff 同步）.
+         */
+        OwnerInlineUpdate: {
+            /**
+             * Id
+             * @description 业主ID（提供时更新对应记录，否则新增）
+             */
+            id?: string | null;
+            /**
+             * Owner Name
+             * @description 业主姓名
+             */
+            owner_name?: string | null;
+            /**
+             * Owner Phone
+             * @description 业主联系方式
+             */
+            owner_phone?: string | null;
+            /**
+             * Owner Id Card
+             * @description 业主身份证号
+             */
+            owner_id_card?: string | null;
+            /**
+             * Bank Name
+             * @description 开户行
+             */
+            bank_name?: string | null;
+            /**
+             * Bank Card Number
+             * @description 银行卡号
+             */
+            bank_card_number?: string | null;
+            /**
+             * Relation Type
+             * @description 关系类型
+             */
+            relation_type?: string | null;
+            /**
+             * Owner Info
+             * @description 备注
+             */
+            owner_info?: string | null;
+        };
+        /**
+         * OwnerResponse
+         * @description 业主响应.
+         */
+        OwnerResponse: {
+            /**
+             * Owner Name
+             * @description 业主姓名
+             */
+            owner_name?: string | null;
+            /**
+             * Owner Phone
+             * @description 业主联系方式
+             */
+            owner_phone?: string | null;
+            /**
+             * Owner Id Card
+             * @description 业主身份证号
+             */
+            owner_id_card?: string | null;
+            /**
+             * Bank Name
+             * @description 开户行
+             */
+            bank_name?: string | null;
+            /**
+             * Bank Card Number
+             * @description 银行卡号
+             */
+            bank_card_number?: string | null;
+            /**
+             * Relation Type
+             * @description 关系类型
+             * @default 业主
+             */
+            relation_type: string;
+            /**
+             * Owner Info
+             * @description 备注
+             */
+            owner_info?: string | null;
+            /**
+             * Id
+             * @description 业主ID
+             */
+            id: string;
+            /**
+             * Project Id
+             * @description 项目ID
+             */
+            project_id: string;
+            /**
+             * Is Deleted
+             * @description 逻辑删除标记
+             * @default false
+             */
+            is_deleted: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
          * PaginatedLeadListResponse
          * @description 列表分页响应 - 使用 LeadListItem 避免性能问题.
          */
@@ -4020,6 +4175,21 @@ export interface components {
              */
             floor_info?: string | null;
             /**
+             * Electricity Account
+             * @description 电表户号
+             */
+            electricity_account?: string | null;
+            /**
+             * Water Account
+             * @description 水表户号
+             */
+            water_account?: string | null;
+            /**
+             * Gas Account
+             * @description 煤气户号
+             */
+            gas_account?: string | null;
+            /**
              * Project Manager Id
              * @description 项目负责人ID
              */
@@ -4108,6 +4278,11 @@ export interface components {
              * @description 备注（映射到 owner_info）
              */
             notes?: string | null;
+            /**
+             * Owners
+             * @description 业主列表（内联创建）
+             */
+            owners?: components["schemas"]["OwnerInlineCreate"][] | null;
             /**
              * List Price
              * @description 挂牌价(万)
@@ -4219,6 +4394,21 @@ export interface components {
              */
             floor_info?: string | null;
             /**
+             * Electricity Account
+             * @description 电表户号
+             */
+            electricity_account?: string | null;
+            /**
+             * Water Account
+             * @description 水表户号
+             */
+            water_account?: string | null;
+            /**
+             * Gas Account
+             * @description 煤气户号
+             */
+            gas_account?: string | null;
+            /**
              * Is Deleted
              * @default false
              */
@@ -4262,6 +4452,11 @@ export interface components {
             owner_id_card?: string | null;
             /** Owner Info */
             owner_info?: string | null;
+            /**
+             * Owners
+             * @description 业主列表
+             */
+            owners?: components["schemas"]["OwnerResponse"][];
             /**
              * List Price
              * @description 挂牌价(万)
@@ -4391,6 +4586,21 @@ export interface components {
              */
             floor_info?: string | null;
             /**
+             * Electricity Account
+             * @description 电表户号
+             */
+            electricity_account?: string | null;
+            /**
+             * Water Account
+             * @description 水表户号
+             */
+            water_account?: string | null;
+            /**
+             * Gas Account
+             * @description 煤气户号
+             */
+            gas_account?: string | null;
+            /**
              * Project Manager Id
              * @description 项目负责人ID
              */
@@ -4437,6 +4647,11 @@ export interface components {
             owner_info?: string | null;
             /** Notes */
             notes?: string | null;
+            /**
+             * Owners
+             * @description 业主列表（内联同步）
+             */
+            owners?: components["schemas"]["OwnerInlineUpdate"][] | null;
             /** List Price */
             list_price?: number | string | null;
             /**
