@@ -98,6 +98,7 @@ app = FastAPI(
     openapi_tags=[
         {"name": "projects", "description": "项目管理 - 签约、装修、销售全流程"},
         {"name": "cashflow", "description": "现金流管理"},
+        {"name": "documents", "description": "文书签收管理"},
         {"name": "renovation", "description": "装修阶段管理"},
         {"name": "sales", "description": "销售记录管理"},
         {"name": "properties", "description": "市场情报 - 房源查询与导出"},

@@ -23,6 +23,12 @@ from .core import (
     ProjectUpdate,
     StatusUpdate,
 )
+from .document import (
+    DocumentCreate,
+    DocumentInitializeResponse,
+    DocumentResponse,
+    DocumentUpdate,
+)
 from .evaluation import (
     EvaluationBase,
     EvaluationCreate,
@@ -109,6 +115,11 @@ __all__ = [
     "ContractListResponse",
     "ContractResponse",
     "ContractUpdate",
+    # Document
+    "DocumentCreate",
+    "DocumentInitializeResponse",
+    "DocumentResponse",
+    "DocumentUpdate",
     # Evaluation
     "EvaluationBase",
     "EvaluationCreate",

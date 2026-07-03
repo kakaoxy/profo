@@ -38,6 +38,7 @@ from .project import (
     FinanceRecord,
     Project,
     ProjectContract,
+    ProjectDocument,
     ProjectEvaluation,
     ProjectFollowUp,
     ProjectInteraction,
@@ -96,6 +97,7 @@ __all__ = [
     # 项目
     "Project",
     "ProjectContract",
+    "ProjectDocument",
     "ProjectEvaluation",
     "ProjectFollowUp",
     "ProjectInteraction",
