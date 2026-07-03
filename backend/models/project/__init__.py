@@ -6,6 +6,7 @@
 # 导入关系定义
 from ._project_base import Project
 from ._project_contract import ProjectContract
+from ._project_document import ProjectDocument
 from ._project_finance import FinanceRecord
 from ._project_followup import ProjectEvaluation, ProjectFollowUp
 from ._project_interaction import ProjectInteraction
@@ -20,6 +21,7 @@ __all__ = [
     "FinanceRecord",
     "Project",
     "ProjectContract",
+    "ProjectDocument",
     "ProjectEvaluation",
     "ProjectFollowUp",
     "ProjectInteraction",

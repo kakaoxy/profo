@@ -73,6 +73,14 @@ class BusinessForm(str, enum.Enum):
     WHOLESALE = "wholesale"  # 收购美化
 
 
+class DocumentSignoffStatus(str, enum.Enum):
+    """文书签收状态枚举."""
+
+    UNSIGNED = "unsigned"  # 未签署
+    SIGNED = "signed"  # 签署
+    ARCHIVED = "archived"  # 归档
+
+
 class CashFlowCategory(str, enum.Enum):
     """现金流分类枚举."""
 

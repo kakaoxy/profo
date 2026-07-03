@@ -12,7 +12,7 @@ from models.common import ProjectStatus
 from schemas.project import ProjectCreate
 from services.utils import parse_date_string
 
-from . import owners
+from . import documents, owners
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -68,6 +68,10 @@ class ProjectCreator:
         # 4. 同步业主列表（如果提供了 owners 数组）
         if project_data.owners is not None:
             owners.sync_owners(self.db, project_id, project_data.owners)
+
+        # 5. 初始化文书签收清单（business_form 非 NULL 时）
+        if project_data.business_form is not None:
+            documents.initialize_documents(self.db, project_id, project_data.business_form)
 
         self.db.commit()
         self.db.refresh(project)

@@ -400,6 +400,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Documents
+         * @description 获取项目文书签收列表.
+         */
+        get: operations["list_documents_api_v1_projects__project_id__documents_get"];
+        put?: never;
+        /**
+         * Create Document
+         * @description 新增文书.
+         */
+        post: operations["create_document_api_v1_projects__project_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Document
+         * @description 删除文书（逻辑删除）.
+         */
+        delete: operations["delete_document_api_v1_projects__project_id__documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Document
+         * @description 更新文书签收状态/归档日期/名称.
+         */
+        patch: operations["update_document_api_v1_projects__project_id__documents__document_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/documents/initialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Initialize Documents
+         * @description 初始化默认文书清单（幂等）。business_form=None 抛 400.
+         */
+        post: operations["initialize_documents_api_v1_projects__project_id__documents_initialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/renovation": {
         parameters: {
             query?: never;
@@ -2616,6 +2684,100 @@ export interface components {
             type: string;
             /** Items */
             items: string[];
+        };
+        /**
+         * DocumentCreate
+         * @description 创建文书请求.
+         */
+        DocumentCreate: {
+            /**
+             * Document Name
+             * @description 文书名称
+             */
+            document_name: string;
+            /**
+             * Display Order
+             * @description 显示顺序（默认追加末尾）
+             */
+            display_order?: number | null;
+        };
+        /**
+         * DocumentInitializeResponse
+         * @description 初始化文书清单响应.
+         */
+        DocumentInitializeResponse: {
+            /**
+             * Initialized Count
+             * @description 新增文书数量
+             */
+            initialized_count: number;
+        };
+        /**
+         * DocumentResponse
+         * @description 文书响应.
+         */
+        DocumentResponse: {
+            /**
+             * Id
+             * @description 文书ID
+             */
+            id: string;
+            /**
+             * Project Id
+             * @description 项目ID
+             */
+            project_id: string;
+            /**
+             * Document Name
+             * @description 文书名称
+             */
+            document_name: string;
+            /**
+             * Signoff Status
+             * @description 签收状态
+             */
+            signoff_status: string;
+            /**
+             * Archive Date
+             * @description 归档日期
+             */
+            archive_date?: string | null;
+            /**
+             * Display Order
+             * @description 显示顺序
+             */
+            display_order: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * DocumentUpdate
+         * @description 更新文书请求.
+         */
+        DocumentUpdate: {
+            /**
+             * Document Name
+             * @description 文书名称
+             */
+            document_name?: string | null;
+            /**
+             * Signoff Status
+             * @description 签收状态: unsigned/signed/archived
+             */
+            signoff_status?: string | null;
+            /**
+             * Archive Date
+             * @description 归档日期 YYYY-MM-DD
+             */
+            archive_date?: string | null;
         };
         /**
          * ExchangeTokenRequest
@@ -7651,6 +7813,176 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_api_v1_projects__project_id__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_document_api_v1_projects__project_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_document_api_v1_projects__project_id__documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 文书ID */
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_document_api_v1_projects__project_id__documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 文书ID */
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    initialize_documents_api_v1_projects__project_id__documents_initialize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentInitializeResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

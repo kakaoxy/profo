@@ -8,11 +8,11 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from models import Project, ProjectContract, ProjectOwner, ProjectSale
-from models.common import ProjectStatus
+from models.common import BusinessForm, ProjectStatus
 from schemas.project.owner import OwnerInlineUpdate
 from services.utils import parse_date_string
 
-from . import owners
+from . import documents, owners
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -55,6 +55,9 @@ class ProjectUpdater:
         # 提前弹出 owners，避免作为普通字段更新到 project 表
         owners_payload = update_dict.pop("owners", None)
 
+        # 记录变更前业务形式，用于后续文书清单同步
+        old_business_form = project.business_form
+
         # 已售状态限制可修改字段
         if project.status == ProjectStatus.SOLD.value:
             update_dict = self._filter_allowed_fields(update_dict)
@@ -72,6 +75,15 @@ class ProjectUpdater:
                 OwnerInlineUpdate(**o) if isinstance(o, dict) else o for o in owners_payload
             ]
             owners.sync_owners(self.db, project.id, owner_items)
+
+        # 业务形式变更时追加新业务形式独有的文书（不内联逻辑，委托给 documents service）
+        new_business_form = project.business_form
+        if old_business_form != new_business_form:
+            old_enum = BusinessForm(old_business_form) if old_business_form else None
+            new_enum = BusinessForm(new_business_form) if new_business_form else None
+            documents.sync_documents_on_business_form_change(
+                self.db, project.id, old_enum, new_enum
+            )
 
         project.updated_at = datetime.now(timezone.utc)
         self.db.commit()
