@@ -33,7 +33,7 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         business_form:
           project.business_form === "agent" || project.business_form === "wholesale"
             ? project.business_form
-            : "",
+            : "agent",
         district: project.district || "",
         original_community_district: project.district || "",
         business_circle: project.business_circle || "",
@@ -54,7 +54,7 @@ export function useFormInit({ form, project, open, isEditMode }: UseFormInitProp
         signing_period: project.signing_period,
         extension_period: project.extension_period,
         extension_rent: project.extension_rent,
-        cost_assumption_type: (project.cost_assumption_type as FormValues["cost_assumption_type"]) || "meifangbao",
+        cost_assumption_type: (project.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
         cost_assumption_other: project.cost_assumption_other || "",
         planned_handover_date: project.planned_handover_date
           ? new Date(project.planned_handover_date + "T00:00:00")
@@ -90,7 +90,7 @@ export function getDefaultValues(
     business_form:
       project?.business_form === "agent" || project?.business_form === "wholesale"
         ? project.business_form
-        : "",
+        : "agent",
     district: project?.district || "",
     original_community_district: project?.district || "",
     business_circle: project?.business_circle || "",
@@ -114,7 +114,7 @@ export function getDefaultValues(
     signing_period: project?.signing_period,
     extension_period: project?.extension_period,
     extension_rent: project?.extension_rent,
-    cost_assumption_type: (project?.cost_assumption_type as FormValues["cost_assumption_type"]) || "meifangbao",
+    cost_assumption_type: (project?.cost_assumption_type as FormValues["cost_assumption_type"]) || "respective",
     cost_assumption_other: project?.cost_assumption_other || "",
     planned_handover_date: project?.planned_handover_date
       ? new Date(project.planned_handover_date + "T00:00:00")

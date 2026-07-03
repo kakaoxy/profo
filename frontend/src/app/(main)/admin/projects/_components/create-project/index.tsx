@@ -110,12 +110,12 @@ export function CreateProjectDialog({
         </DialogHeader>
 
         {/* --- Body --- */}
-        <div className="flex-1 overflow-hidden bg-muted/50">
+        <div className="flex-1 min-h-0 overflow-hidden bg-muted/50">
           <Form {...form}>
             <form onSubmit={onSubmit} className="h-full flex flex-col">
               {/* 表单错误提示 */}
               {hasErrors && (
-                <Alert variant="destructive" className="m-6 mb-0">
+                <Alert variant="destructive" className="m-6 mb-0 shrink-0">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     表单验证失败，请检查以下字段：
@@ -130,7 +130,7 @@ export function CreateProjectDialog({
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
-                className="flex-1 flex flex-col overflow-hidden"
+                className="flex-1 min-h-0 flex flex-col overflow-hidden"
               >
                 {/* Tabs 导航 */}
                 <div className="px-6 pt-4 shrink-0">
@@ -142,8 +142,8 @@ export function CreateProjectDialog({
                   </TabsList>
                 </div>
 
-                {/* Tabs 内容区域 */}
-                <ScrollArea className="flex-1">
+                {/* Tabs 内容区域 - min-h-0 确保 flex 子项可收缩，ScrollArea 才能正确滚动 */}
+                <ScrollArea className="flex-1 min-h-0">
                   <div className="p-6">
                     <TabsContent value="basic" className="m-0">
                       <BasicInfoTab form={form} />
