@@ -47,7 +47,7 @@ export const useCreateProject = ({
   useFormInit({ form, project, open, isEditMode });
 
   // 草稿管理
-  const { clearDraft } = useDraft({ form, open, isEditMode });
+  const { clearDraft, saveDraft } = useDraft({ form, open, isEditMode });
 
   // 获取合同编号（新建模式且表单中无值时）
   useEffect(() => {
@@ -193,6 +193,7 @@ export const useCreateProject = ({
     activeTab,
     setActiveTab,
     clearDraft,
+    saveDraft,
     onSubmit: form.handleSubmit(onSubmit, (errors) => {
       const snapshot = JSON.parse(JSON.stringify(errors));
       if (Object.keys(snapshot).length === 0) {

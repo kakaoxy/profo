@@ -81,7 +81,7 @@ class ProjectCreate(BaseModel):
     cost_assumption_other: str | None = Field(None, max_length=50, description="税费及佣金承担方其他说明")
     planned_handover_date: str | None = Field(None, description="计划交房时间 (YYYY-MM-DD 格式)")
     other_agreements: str | None = Field(None, description="其他约定")
-    signing_materials: list[dict[str, str]] | None = Field(None, description="签约材料列表")
+    signing_materials: list[SigningMaterial] | None = Field(None, description="签约材料列表")
 
     owner_name: str | None = Field(None, max_length=100, description="业主姓名")
     owner_phone: str | None = Field(None, max_length=20, description="业主电话")
@@ -171,7 +171,7 @@ class ProjectUpdate(BaseModel):
         None,
         validation_alias=AliasChoices("other_agreements", "otherAgreements"),
     )
-    signing_materials: list[dict[str, str]] | None = Field(None)
+    signing_materials: list[SigningMaterial] | None = Field(None)
 
     owner_name: str | None = Field(None, max_length=100)
     owner_phone: str | None = Field(None, max_length=20)

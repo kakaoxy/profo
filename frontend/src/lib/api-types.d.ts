@@ -4250,9 +4250,7 @@ export interface components {
              * Signing Materials
              * @description 签约材料列表
              */
-            signing_materials?: {
-                [key: string]: string;
-            }[] | null;
+            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
             /**
              * Owner Name
              * @description 业主姓名
@@ -4634,9 +4632,7 @@ export interface components {
             /** Other Agreements */
             other_agreements?: string | null;
             /** Signing Materials */
-            signing_materials?: {
-                [key: string]: string;
-            }[] | null;
+            signing_materials?: components["schemas"]["SigningMaterial"][] | null;
             /** Owner Name */
             owner_name?: string | null;
             /** Owner Phone */
