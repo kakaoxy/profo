@@ -156,7 +156,9 @@ export function CreateProjectDialog({
                     </TabsContent>
 
                     <TabsContent value="owner" className="m-0">
-                      <OwnerTab form={form} onSave={saveDraft} />
+                      {/* onSave(草稿手动保存)仅新建模式传入；编辑模式传入会把当前项目数据写入草稿，
+                          下次新建时被恢复逻辑读回，造成跨项目数据残留（含业主手机号/身份证等敏感信息） */}
+                      <OwnerTab form={form} onSave={!isEditMode ? saveDraft : undefined} />
                     </TabsContent>
 
                     <TabsContent value="attachments" className="m-0">

@@ -58,9 +58,9 @@ export function ProjectDetailSheet({
 
   const handlers = createHandlers(setPreviewImage);
   const isSoldMode = viewMode === "sold";
-  const viewKey = `${project.id}-${JSON.stringify(
-    project.signing_materials || "",
-  )}-${project.updated_at}`;
+  // viewKey 仅基于 project.id，避免 updated_at 变化导致子视图无谓 remount
+  // （remount 会销毁内部 state，如 ListingKPIs 的 now 状态，导致本周统计归零）
+  const viewKey = project.id;
 
   return (
     <>

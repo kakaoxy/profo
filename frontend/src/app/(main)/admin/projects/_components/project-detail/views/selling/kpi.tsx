@@ -44,12 +44,18 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
     const talks = records.filter((r) => r.record_type === "negotiation");
 
     // 2. Time Range Definition (Week starts on Monday)
-    // 如果 now 还未设置，使用一个固定日期避免计算错误
-    const currentNow = now || new Date("2025-01-01");
-    const thisWeekStart = startOfWeek(currentNow, { weekStartsOn: 1 });
-    const thisWeekEnd = endOfWeek(currentNow, { weekStartsOn: 1 });
-    const lastWeekStart = startOfWeek(subWeeks(currentNow, 1), { weekStartsOn: 1 });
-    const lastWeekEnd = endOfWeek(subWeeks(currentNow, 1), { weekStartsOn: 1 });
+    // now 未就绪时返回零值 stats，避免用 fallback 日期算出错误结果
+    if (!now) {
+      return {
+        viewings: { count: 0, growth: 0, isPositive: true, isInfinite: false, lastWeekCount: 0 },
+        bids: { count: 0, max: 0 },
+        talks: { count: 0, latest: "暂无" },
+      };
+    }
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    const lastWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+    const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
 
     // 3. Viewings Calculation
     let thisWeekViewingsCount = 0;
@@ -121,7 +127,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
     if (latestTalk) {
       const date = parseISO(latestTalk.record_date);
       if (isValid(date)) {
-        if (isSameWeek(date, currentNow, { weekStartsOn: 1 })) {
+        if (isSameWeek(date, now, { weekStartsOn: 1 })) {
           latestTalkText = "本周";
         } else {
           // Format as MM-dd
@@ -147,8 +153,7 @@ export function ListingKPIs({ project }: ListingKPIsProps) {
         latest: latestTalkText,
       },
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.sales_records]);
+  }, [project.sales_records, now]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
