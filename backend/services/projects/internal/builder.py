@@ -43,7 +43,7 @@ class ProjectResponseBuilder:
         """
         self.db = db
 
-    def build(self, project: "Project", *, slim: bool = False) -> dict[str, Any]:
+    def build(self, project: "Project", *, slim: bool = False, include_interactions: bool = False) -> dict[str, Any]:
         """构建项目响应数据.
 
         将项目模型及其关联数据组合成完整的响应字典.
@@ -52,6 +52,8 @@ class ProjectResponseBuilder:
             project: Project模型实例（调用方应预加载所需关联）
             slim: 是否使用精简模式（列表页使用，跳过互动/阶段日期等重量级查询；
                 财务统计始终构建，列表页需展示现金流）
+            include_interactions: slim模式下是否仍构建互动记录(sales_records)，
+                供工作台重点监控卡片展示项目动态(带看/出价)；slim=False 时始终构建
 
         Returns:
             包含项目信息的字典
@@ -67,6 +69,8 @@ class ProjectResponseBuilder:
         if not slim:
             response.update(self._build_interactions(project))
             response.update(self._build_stage_dates(project))
+        elif include_interactions:
+            response.update(self._build_interactions(project))
 
         response.update(self._build_renovation_photos(project))
 
