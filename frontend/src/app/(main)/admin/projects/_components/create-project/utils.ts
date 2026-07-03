@@ -9,9 +9,13 @@ export const toDateStr = (d: Date | undefined | null): string | null =>
     ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
     : null;
 
-/** 将 YYYY-MM-DD 字符串转为 Date */
-export const fromDateStr = (s: string | undefined | null): Date | undefined =>
-  s ? new Date(s + "T00:00:00") : undefined;
+/** 将日期字符串转为 Date（容错：取前 10 位 YYYY-MM-DD，避免已带时间导致 Invalid Date） */
+export const fromDateStr = (s: string | undefined | null): Date | undefined => {
+  if (!s) return undefined;
+  const datePart = s.slice(0, 10);
+  const d = new Date(datePart + "T00:00:00");
+  return isNaN(d.getTime()) ? undefined : d;
+};
 
 // 解析户型字符串为数字
 export function parseLayout(
