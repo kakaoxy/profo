@@ -51,6 +51,7 @@ export function CreateProjectDialog({
     activeTab,
     setActiveTab,
     clearDraft,
+    saveDraft,
     onSubmit,
     isEditMode,
   } = useCreateProject({
@@ -155,7 +156,7 @@ export function CreateProjectDialog({
                     </TabsContent>
 
                     <TabsContent value="owner" className="m-0">
-                      <OwnerTab form={form} />
+                      <OwnerTab form={form} onSave={saveDraft} />
                     </TabsContent>
 
                     <TabsContent value="attachments" className="m-0">

@@ -6,6 +6,7 @@ import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import { FormValues, DRAFT_KEY } from "./schema";
 import { fromDateStr } from "./utils";
+import { getDefaultValues } from "./use-form-init";
 
 interface UseDraftProps {
   form: UseFormReturn<FormValues>;
@@ -133,64 +134,35 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
       subscription.unsubscribe();
       // 取消待执行的防抖定时器，防止内存泄漏
       saveDraftRef.current?.cancel();
-      // 立即保存当前值，确保数据不丢失
-      const currentValues = form.getValues();
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(currentValues));
-      } catch (e) {
-        logger.error("Failed to save draft on cleanup:", e);
-      }
+      // 注意：不在 cleanup 中保存当前值。
+      // 原因：open 变 false（Dialog 关闭）会触发此 cleanup，此时若 onSubmit 已调用 form.reset()，
+      // getValues() 可能仍返回旧值，导致把上一个项目数据重新写入 localStorage，
+      // 下次新建时被草稿恢复逻辑读回，造成数据残留。
+      // 实时保存已由 form.watch + debounce 覆盖，无需在 cleanup 重复保存。
     };
   }, [open, form, isEditMode]);
+
+  // 手动保存草稿（立即保存 + 反馈，给用户安全感）
+  const saveDraft = useCallback(() => {
+    const currentValues = form.getValues();
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(currentValues));
+      toast.success("信息已保存");
+    } catch (e) {
+      logger.error("Failed to save draft:", e);
+      toast.error("保存失败");
+    }
+  }, [form]);
 
   // 清除草稿
   const clearDraft = useCallback(() => {
     // 取消待执行的保存操作
     saveDraftRef.current?.cancel();
     localStorage.removeItem(DRAFT_KEY);
-    // 重置所有字段为初始值
-    form.reset({
-      community_name: "",
-      address: "",
-      area: undefined,
-      business_form: "",
-      district: "",
-      business_circle: "",
-      rooms: undefined,
-      halls: undefined,
-      bathrooms: undefined,
-      orientation: "南北",
-      electricity_account: undefined,
-      water_account: undefined,
-      gas_account: undefined,
-      owners: [
-        {
-          owner_name: "",
-          owner_phone: "",
-          owner_id_card: "",
-          bank_name: "",
-          bank_card_number: "",
-          relation_type: "业主",
-          owner_info: "",
-        },
-      ],
-      notes: "",
-      contract_no: "",
-      signing_price: undefined,
-      signing_date: undefined,
-      signing_period: undefined,
-      extension_period: undefined,
-      extension_rent: undefined,
-      cost_assumption_type: "meifangbao",
-      cost_assumption_other: "",
-      planned_handover_date: undefined,
-      commission_start_date: undefined,
-      commission_end_date: undefined,
-      other_agreements: "",
-      attachments: [],
-    });
+    // 重置所有字段为新建模式默认值（复用工厂函数，避免遗漏字段）
+    form.reset(getDefaultValues(undefined, false));
     toast.success("草稿已清空");
   }, [form]);
 
-  return { clearDraft };
+  return { clearDraft, saveDraft };
 }

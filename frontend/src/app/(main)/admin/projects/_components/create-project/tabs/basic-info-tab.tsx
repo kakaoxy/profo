@@ -4,7 +4,6 @@ import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
-import { SimpleInputField } from "../form-components";
 import { CommunitySelect } from "@/components/common/community-select";
 import { getUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
 import { FloorInput } from "@/components/common";
@@ -417,28 +416,6 @@ export function BasicInfoTab({ form }: TabProps) {
             </FormItem>
           )}
         />
-      </div>
-
-      {/* 第六行：公用事业户号 */}
-      <div className="space-y-3">
-        <h3 className="text-[14px] font-medium text-foreground tracking-tight">公用事业户号</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <SimpleInputField
-            control={control}
-            name="electricity_account"
-            label="电表户号"
-          />
-          <SimpleInputField
-            control={control}
-            name="water_account"
-            label="水表户号"
-          />
-          <SimpleInputField
-            control={control}
-            name="gas_account"
-            label="煤气户号"
-          />
-        </div>
       </div>
     </div>
   );
