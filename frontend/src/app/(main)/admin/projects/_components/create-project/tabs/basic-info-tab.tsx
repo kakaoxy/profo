@@ -86,8 +86,8 @@ export function BasicInfoTab({ form }: TabProps) {
   // 加载用户列表 + 当前登录用户（并行）
   useEffect(() => {
     let mounted = true;
-    Promise.all([getUsersSimpleAction(), getCurrentUserAction()]).then(
-      ([usersResult, currentUserResult]) => {
+    Promise.all([getUsersSimpleAction(), getCurrentUserAction()])
+      .then(([usersResult, currentUserResult]) => {
         if (!mounted) return;
         if (usersResult.success && usersResult.data) {
           setUsers(usersResult.data);
@@ -103,8 +103,13 @@ export function BasicInfoTab({ form }: TabProps) {
           }
         }
         setIsLoadingUsers(false);
-      }
-    );
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        logger.error("加载数据失败:", err);
+        toast.error("加载数据失败");
+        setIsLoadingUsers(false);
+      });
     return () => {
       mounted = false;
     };
