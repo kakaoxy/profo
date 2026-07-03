@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
 import { CommunitySelect } from "@/components/common/community-select";
-import { getUsersSimpleAction } from "../../../actions/sales";
+import { getUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
 import { toast } from "sonner";
 import {
   FormControl,
@@ -83,24 +83,32 @@ export function BasicInfoTab({ form }: TabProps) {
   // 商圈同理：来自小区则只读，无则可编辑
   const [communityBusinessCircle, setCommunityBusinessCircle] = useState<string | undefined>(undefined);
 
-  // 加载用户列表
+  // 加载用户列表 + 当前登录用户（并行）
   useEffect(() => {
     let mounted = true;
-    getUsersSimpleAction().then((result) => {
-      if (mounted) {
-        if (result.success && result.data) {
-          setUsers(result.data);
-        } else if (!result.success) {
-          logger.error("加载用户列表失败:", result.message);
-          toast.error(result.message || "加载用户列表失败");
+    Promise.all([getUsersSimpleAction(), getCurrentUserAction()]).then(
+      ([usersResult, currentUserResult]) => {
+        if (!mounted) return;
+        if (usersResult.success && usersResult.data) {
+          setUsers(usersResult.data);
+        } else if (!usersResult.success) {
+          logger.error("加载用户列表失败:", usersResult.message);
+          toast.error(usersResult.message || "加载用户列表失败");
+        }
+        // 新建模式下，若项目负责人为空，默认设为当前登录用户
+        if (currentUserResult.success && currentUserResult.data) {
+          const currentManagerId = form.getValues("project_manager_id");
+          if (!currentManagerId) {
+            form.setValue("project_manager_id", currentUserResult.data.id);
+          }
         }
         setIsLoadingUsers(false);
       }
-    });
+    );
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [form]);
 
   return (
     <div className="space-y-4">
@@ -155,7 +163,7 @@ export function BasicInfoTab({ form }: TabProps) {
       </div>
 
       {/* 第二行：业务形式 + 行政区 + 商圈 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {/* 业务形式 */}
         <FormField
           control={control}
@@ -300,75 +308,72 @@ export function BasicInfoTab({ form }: TabProps) {
         </FormItem>
       </div>
 
-      {/* 第四行：朝向 + 项目负责人 */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* 朝向 - 单选框 */}
-        <FormField
-          control={control}
-          name="orientation"
-          render={({ field }) => (
-            <FormItem className="space-y-2">
-              <FormLabel>朝向</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  className="flex flex-wrap gap-4"
-                >
-                  {ORIENTATION_OPTIONS.map((option) => (
-                    <FormItem
-                      key={option.value}
-                      className="flex items-center space-x-2 space-y-0"
-                    >
-                      <FormControl>
-                        <RadioGroupItem value={option.value} />
-                      </FormControl>
-                      <FormLabel className="font-normal cursor-pointer">
-                        {option.label}
-                      </FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 负责人选择 */}
-        <FormField
-          control={control}
-          name="project_manager_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>项目负责人</FormLabel>
-              <Select
-                value={field.value || "__empty__"}
-                onValueChange={(value) => {
-                  const newValue = value === "__empty__" ? undefined : value;
-                  field.onChange(newValue);
-                }}
-                disabled={isLoadingUsers}
+      {/* 第四行：朝向 - 独占一行（5 个选项横向排列更舒展） */}
+      <FormField
+        control={control}
+        name="orientation"
+        render={({ field }) => (
+          <FormItem className="space-y-2">
+            <FormLabel>朝向</FormLabel>
+            <FormControl>
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value}
+                className="flex flex-wrap gap-4"
               >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="未选择" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="__empty__">未选择</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.nickname || user.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+                {ORIENTATION_OPTIONS.map((option) => (
+                  <FormItem
+                    key={option.value}
+                    className="flex items-center space-x-2 space-y-0"
+                  >
+                    <FormControl>
+                      <RadioGroupItem value={option.value} />
+                    </FormControl>
+                    <FormLabel className="font-normal cursor-pointer">
+                      {option.label}
+                    </FormLabel>
+                  </FormItem>
+                ))}
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* 第五行：项目负责人 - 独占一行，避免与朝向 RadioGroup 并排导致宽度不均 */}
+      <FormField
+        control={control}
+        name="project_manager_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>项目负责人</FormLabel>
+            <Select
+              value={field.value || "__empty__"}
+              onValueChange={(value) => {
+                const newValue = value === "__empty__" ? undefined : value;
+                field.onChange(newValue);
+              }}
+              disabled={isLoadingUsers}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="未选择" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="__empty__">未选择</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

@@ -88,8 +88,8 @@ export const formSchema = z
     area: optionalNumber,
     project_manager_id: z.string().optional(),
 
-    // 业务形式（agent / wholesale / ""=未设置）
-    business_form: businessFormEnum.default(""),
+    // 业务形式（agent / wholesale / ""=未设置）默认代理美化
+    business_form: businessFormEnum.default("agent"),
 
     // 行政区（来自小区，前端展示用；新建项目时不写入 project）
     district: z.string().max(50).optional(),
@@ -118,7 +118,7 @@ export const formSchema = z
     signing_period: optionalNumber,
     extension_period: optionalNumber,
     extension_rent: optionalNumber,
-    cost_assumption_type: z.enum(["meifangbao", "owner", "respective", "other"]).default("meifangbao"),
+    cost_assumption_type: z.enum(["meifangbao", "owner", "respective", "other"]).default("respective"),
     cost_assumption_other: z.string().max(50).optional(),
     planned_handover_date: z.date().nullable().optional(),
     // 委托期限日期范围

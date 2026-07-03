@@ -88,6 +88,43 @@ export async function getUsersSimpleAction(): Promise<{
 }
 
 /**
+ * 获取当前登录用户（用于项目负责人默认值）
+ */
+export async function getCurrentUserAction(): Promise<{
+  success: boolean;
+  data?: UserSimple;
+  message?: string;
+}> {
+  try {
+    const client = await fetchClient();
+    const { data, error, response } = await client.GET("/api/v1/auth/me");
+
+    if (error) {
+      const status = (response as Response | undefined)?.status;
+      const errorMsg = (error as { detail?: string }).detail || `获取当前用户失败${status ? ` (${status})` : ""}`;
+      return { success: false, message: errorMsg };
+    }
+
+    if (data && typeof data === "object" && "id" in data) {
+      return {
+        success: true,
+        data: {
+          id: (data as UserSimple).id,
+          nickname: (data as UserSimple).nickname ?? null,
+          username: (data as UserSimple).username,
+        },
+      };
+    }
+
+    return { success: false, message: "当前用户数据格式异常" };
+  } catch (e) {
+    logger.error("获取当前用户异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+
+/**
  * 创建销售记录 (带看/出价/面谈)
  */
 export async function createSalesRecordAction(payload: {
