@@ -4,23 +4,56 @@ import * as React from "react";
 import type { FloorInputProps } from "./types";
 
 /**
+ * 从楼层字符串解析当前楼层
+ * 兼容多种格式：
+ * - "5/共12层"（组件生成格式）
+ * - "5/28层"（L3 项目数据格式）
+ * - "5层"（仅当前楼层）
+ */
+function parseCurrent(value: string): string {
+  return value.match(/^(\d+)(?:\/|层)/)?.[1] || "";
+}
+
+/**
+ * 从楼层字符串解析总楼层
+ * 兼容多种格式：
+ * - "5/共12层"（组件生成格式）
+ * - "5/28层"（L3 项目数据格式）
+ */
+function parseTotal(value: string): string {
+  return value.match(/\/共?(\d+)层/)?.[1] || "";
+}
+
+/**
  * 楼层输入组件
- * 
+ *
  * 提供当前楼层和总楼层的独立输入
- * 支持从现有楼层字符串解析初始值，格式如："5/共12层"
- * 
+ * 支持从现有楼层字符串解析初始值，兼容多种格式
+ *
+ * 通过 useEffect 同步外部 value 变化（如从 L3 项目导入时
+ * form.setValue 更新了 floor_info），确保组件状态反映最新值。
+ *
  * @example
  * ```tsx
- * <FloorInput 
- *   value="5/共12层" 
- *   onChange={(floor) => logger.devDebug(floor)} 
+ * <FloorInput
+ *   value="5/共12层"
+ *   onChange={(floor) => logger.devDebug(floor)}
  * />
  * ```
  */
 export function FloorInput({ value, onChange }: FloorInputProps) {
   // 从楼层字符串解析初始值
-  const [current, setCurrent] = React.useState(() => value.match(/^(\d+)\//)?.[1] || "");
-  const [total, setTotal] = React.useState(() => value.match(/共(\d+)层/)?.[1] || "");
+  const [current, setCurrent] = React.useState(() => parseCurrent(value));
+  const [total, setTotal] = React.useState(() => parseTotal(value));
+
+  // 同步外部 value 变化（如从项目导入时 form.setValue 更新了 floor_info）
+  // 仅在解析结果与当前状态不一致时更新，避免输入时循环
+  React.useEffect(() => {
+    const parsedCurrent = parseCurrent(value);
+    const parsedTotal = parseTotal(value);
+    setCurrent((prev) => (prev !== parsedCurrent ? parsedCurrent : prev));
+    setTotal((prev) => (prev !== parsedTotal ? parsedTotal : prev));
+  }, [value]);
 
   /**
    * 处理单个输入变化
