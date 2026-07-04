@@ -94,12 +94,14 @@ export default function ProjectDetailPage() {
   const marketingImages = (data.media ?? [])
     .filter((m) => m.media_type === "image" && m.photo_category === "marketing" && m.file_url)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((m) => m.file_url);
+    .map((m) => ({ url: m.file_url, thumbnailUrl: m.thumbnail_url }));
 
   const carouselImages =
     marketingImages.length > 0
       ? marketingImages
-      : (data.images && data.images.length > 0 ? data.images : []);
+      : (data.images && data.images.length > 0
+        ? data.images.map((url: string) => ({ url, thumbnailUrl: null as string | null }))
+        : []);
 
   return (
     <div className="pb-24 md:pb-20">

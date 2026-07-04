@@ -29,6 +29,7 @@ export {
   parseUploadResponse,
   handleUploadError,
   generateId,
+  compressImage,
 } from "./utils";
 
 // 常量

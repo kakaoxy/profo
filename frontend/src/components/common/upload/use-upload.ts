@@ -143,16 +143,21 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
         xhr.open("POST", url);
         xhr.withCredentials = true;
 
-        // 进度监听
+        // 进度监听 - 节流：仅在百分比变化 ≥5% 时更新状态，避免高频重渲染
+        let lastReportedPercent = 0;
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
             const percent = Math.round((event.loaded / event.total) * 100);
-            setFiles((prev) =>
-              prev.map((f) =>
-                f.id === fileId ? { ...f, progress: percent } : f
-              )
-            );
-            onProgressRef.current?.({ id: fileId, filename: processedFile.name, progress: percent, file: processedFile });
+            // 100% 时必须更新（完成态）；否则仅在变化 ≥5% 时更新
+            if (percent === 100 || percent - lastReportedPercent >= 5) {
+              lastReportedPercent = percent;
+              setFiles((prev) =>
+                prev.map((f) =>
+                  f.id === fileId ? { ...f, progress: percent } : f
+                )
+              );
+              onProgressRef.current?.({ id: fileId, filename: processedFile.name, progress: percent, file: processedFile });
+            }
           }
         };
 

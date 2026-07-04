@@ -60,6 +60,7 @@ class Settings(BaseSettings):
         ".jpg",
         ".jpeg",
         ".png",
+        ".webp",
         ".pdf",
         ".xlsx",
         ".xls",
@@ -71,6 +72,7 @@ class Settings(BaseSettings):
     allowed_mime_types: set[str] = {
         "image/jpeg",
         "image/png",
+        "image/webp",
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
         "application/vnd.ms-excel",  # .xls

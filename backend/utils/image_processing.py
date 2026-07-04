@@ -11,17 +11,22 @@ logger = logging.getLogger(__name__)
 def generate_thumbnail(
     source_path: Path,
     target_path: Path,
-    max_width: int = 400,
+    max_width: int = 800,
 ) -> bool:
     """生成 WebP 格式缩略图.
 
     Args:
         source_path: 原图路径
         target_path: 缩略图目标路径
-        max_width: 最大宽度（像素），默认 400
+        max_width: 最大宽度（像素），默认 800
 
     Returns:
         True 表示生成成功，False 表示失败
+
+    Note:
+        800px 宽度适用于轮播图展示（1200px 容器，略放大但可接受），
+        同时兼顾网格缩略图（64-200px，浏览器缩放）。
+        WebP quality=80 时，800px 图片约 100-200KB，远小于 3MB+ 原图。
     """
     try:
         target_path.parent.mkdir(parents=True, exist_ok=True)

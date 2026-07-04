@@ -3,13 +3,18 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 
 const isDev = process.env.NODE_ENV === "development";
 
+interface CarouselImage {
+  url: string;
+  thumbnailUrl?: string | null;
+}
+
 interface ImageCarouselProps {
-  images: string[];
+  images: CarouselImage[];
 }
 
 export function ImageCarousel({ images }: ImageCarouselProps) {
@@ -43,7 +48,9 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
     );
   }
 
-  const imgUrl = getFileUrl(images[current]);
+  // 优先使用缩略图（800px WebP，约100-200KB），避免加载3MB+原图
+  const currentImage = images[current];
+  const imgUrl = getThumbnailUrl(currentImage?.thumbnailUrl, currentImage?.url);
 
   return (
     <div
