@@ -51,6 +51,8 @@ export const ImportPreviewDataSchema = z.object({
   tags: z.string().optional(),
   decoration_style: z.string().optional(),
   status: z.string().optional(),
+  // 改造阶段完成时间 - 来自 L3 ProjectRenovation.stage_completed_dates
+  stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
   available_media: z.array(ImportableMediaSchema),
 });
 

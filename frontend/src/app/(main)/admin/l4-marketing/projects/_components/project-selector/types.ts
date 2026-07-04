@@ -90,6 +90,8 @@ export interface ImportPreviewData {
   decoration_style?: string;
   /** 项目状态 */
   status?: string;
+  /** 改造阶段完成时间 - 来自 L3 ProjectRenovation.stage_completed_dates */
+  stage_completed_dates?: Record<string, string> | null;
   /** 可导入的媒体资源 */
   available_media: ImportableMedia[];
 }

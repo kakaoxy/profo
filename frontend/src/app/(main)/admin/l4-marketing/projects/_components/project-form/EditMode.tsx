@@ -13,6 +13,8 @@ import { DualPhotoManager } from "../photo-manager";
 import { ProjectSelector } from "../project-selector/ProjectSelector";
 import { ImportPreview } from "../project-selector/ImportPreview";
 import { ProjectImportButton } from "./ProjectImportButton";
+import { getCurrentUserAction } from "@/app/(main)/admin/projects/actions/sales";
+import { logger } from "@/lib/logger";
 import Link from "next/link";
 import type { L4MarketingMedia } from "../../types";
 import type { MediaFile } from "../form-schema";
@@ -85,6 +87,32 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     mediaFiles,
     hasPhotoChanges,
   });
+
+  // 创建模式下，房源顾问默认为当前登录用户
+  React.useEffect(() => {
+    if (mode !== "create") return;
+    let mounted = true;
+    getCurrentUserAction()
+      .then((result) => {
+        if (!mounted) return;
+        if (result.success && result.data) {
+          const current = form.getValues("consultant_id");
+          if (!current) {
+            form.setValue("consultant_id", result.data.id, {
+              shouldDirty: false,
+              shouldTouch: false,
+              shouldValidate: false,
+            });
+          }
+        }
+      })
+      .catch((err) => {
+        logger.error("加载当前用户失败:", err);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [mode, form]);
 
   // 处理导入的媒体数据
   const handleMediaImport = React.useCallback((importedMedia: ImportableMedia[]) => {
