@@ -12,6 +12,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# 构建时注入 SERVER_API_URL，让 next.config.ts 的 rewrites 在 build 阶段拿到正确值
+# （Next.js rewrites 在 build 时评估，运行时环境变量对它无效）
+# 默认值用于本地 dev；Docker 部署通过 docker-compose.yml build args 覆盖为 http://backend:8000
+ARG SERVER_API_URL=http://127.0.0.1:8000
+ENV SERVER_API_URL=${SERVER_API_URL}
 RUN pnpm build
 
 # ---- Stage 3: runner ----
