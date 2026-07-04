@@ -79,6 +79,28 @@ if not exist "frontend\node_modules" (
   popd
 )
 
+REM 创建 backend\static\uploads 软链 → ..\..\uploads
+REM 让本地 dev 模式与 Docker 容器共享同一份上传文件
+REM Windows 需要管理员权限或开发者模式创建软链，故用 junction 替代
+if not exist "backend\static" mkdir "backend\static"
+if exist "backend\static\uploads" (
+  REM 检查是否已是 junction/软链
+  dir /al "backend\static\uploads" 2>nul | findstr "JUNCTION\|SYMLINK" > nul
+  if errorlevel 1 (
+    echo [警告] backend\static\uploads 是真实目录而非 junction
+    echo    如需共享 Docker uploads，请先删除该目录: rmdir /s /q backend\static\uploads
+    echo    当前 dev 模式将使用独立的本地 uploads，与 Docker 不互通
+  )
+) else (
+  mklink /J "backend\static\uploads" "%~dp0uploads" > nul 2>&1
+  if errorlevel 1 (
+    echo [警告] 创建 junction 失败，backend\static\uploads 将使用独立目录
+    echo    如需共享，请手动执行: mklink /J backend\static\uploads ..\..\uploads
+  ) else (
+    echo [成功] 已创建 junction backend\static\uploads -^> ..\..\uploads（共享 uploads 目录）
+  )
+)
+
 set "CMD=%~1"
 if "%CMD%"=="" set "CMD=up"
 

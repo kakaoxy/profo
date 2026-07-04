@@ -26,7 +26,8 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - uploads:/app/static/uploads
+      # bind mount 让 Docker 容器与本地 dev 模式共享同一份上传文件
+      - ./uploads:/app/static/uploads
     expose:
       - "8000"
     healthcheck:
@@ -58,7 +59,8 @@ services:
       - "80:80"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - uploads:/app/uploads:ro
+      # bind mount 让 nginx 直接从主机 ./uploads 提供静态文件，与 backend 共享
+      - ./uploads:/app/uploads:ro
     depends_on:
       - backend
       - frontend
@@ -66,4 +68,3 @@ services:
 
 volumes:
   pgdata:
-  uploads:

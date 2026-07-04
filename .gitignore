@@ -175,6 +175,8 @@ trace-*.json
 # ==========================================
 backend/static/
 backend/static/**/*
+# Docker 与 dev 模式共享的上传目录（bind mount 目标）
+/uploads/
 .alma-snapshots
 
 
