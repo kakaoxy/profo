@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # 数据库配置
-    database_url: str = "sqlite:///./data.db"
+    database_url: str = "sqlite:///./data.db"  # 开发默认 SQLite；生产用 PostgreSQL: postgresql+psycopg://user:pass@host:5432/dbname
     database_echo: bool = False  # 是否打印 SQL 语句
 
     # API 配置

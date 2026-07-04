@@ -1,0 +1,55 @@
+# Virtual environments
+.venv
+venv
+env
+ENV
+
+# Python bytecode / caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+
+# Database files (do not bake into image)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite*
+test.db
+data.db
+profo.db
+
+# Environment / secrets (provided at runtime via docker-compose env_file)
+.env
+.env.*
+.slowapi.env
+
+# Tests & coverage
+tests
+pytest_cache
+.pytest_cache
+.coverage
+htmlcov
+.coverage.*
+
+# Review / internal notes
+review
+
+# Uploaded files volume (mounted at runtime, do not bake in)
+static/uploads
+static/uploads/**
+
+# VCS & misc
+.git
+.gitignore
+*.log
+
+# Docker build files (avoid sending to build context)
+Dockerfile
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db

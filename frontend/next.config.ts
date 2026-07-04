@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "standalone",
   reactCompiler: true,
   turbopack: {
     root: import.meta.dirname, // 明确指定项目根目录，避免 lockfile 警告
