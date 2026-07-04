@@ -126,14 +126,14 @@ function PaymentNodeRow({
 
 // 支付节点
 export function PaymentNodesSection({ values, setValue, isEditing }: PaymentNodesProps) {
-  const hardAmount = values.hard_contract_amount || 0;
+  const hardAmount = Number(values.hard_contract_amount) || 0;
 
-  // 计算总支付比例
+  // 计算总支付比例（Number() 兜底，防止字符串拼接）
   const totalRatio =
-    (values.payment_ratio_1 || 0) +
-    (values.payment_ratio_2 || 0) +
-    (values.payment_ratio_3 || 0) +
-    (values.payment_ratio_4 || 0);
+    (Number(values.payment_ratio_1) || 0) +
+    (Number(values.payment_ratio_2) || 0) +
+    (Number(values.payment_ratio_3) || 0) +
+    (Number(values.payment_ratio_4) || 0);
 
   // 是否超过100%
   const isOverLimit = totalRatio > 100;

@@ -29,6 +29,14 @@ interface RenovationContractFormProps {
   projectId: string;
 }
 
+// 后端 Decimal 字段经 JSON 序列化为字符串，需显式转为 number
+function toNumber(v: unknown): number | undefined {
+  if (v === null || v === undefined || v === "") return undefined;
+  if (typeof v === "number") return isNaN(v) ? undefined : v;
+  const n = Number(v);
+  return isNaN(n) ? undefined : n;
+}
+
 export function RenovationContractForm({ projectId }: RenovationContractFormProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -91,22 +99,22 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
             actual_end_date: data.actual_end_date
               ? new Date(data.actual_end_date as string)
               : undefined,
-            hard_contract_amount: data.hard_contract_amount as number | undefined,
+            hard_contract_amount: toNumber(data.hard_contract_amount),
             payment_node_1: (data.payment_node_1 as string) || "",
-            payment_ratio_1: data.payment_ratio_1 as number | undefined,
+            payment_ratio_1: toNumber(data.payment_ratio_1),
             payment_node_2: (data.payment_node_2 as string) || "",
-            payment_ratio_2: data.payment_ratio_2 as number | undefined,
+            payment_ratio_2: toNumber(data.payment_ratio_2),
             payment_node_3: (data.payment_node_3 as string) || "",
-            payment_ratio_3: data.payment_ratio_3 as number | undefined,
+            payment_ratio_3: toNumber(data.payment_ratio_3),
             payment_node_4: (data.payment_node_4 as string) || "",
-            payment_ratio_4: data.payment_ratio_4 as number | undefined,
-            soft_budget: data.soft_budget as number | undefined,
-            soft_actual_cost: data.soft_actual_cost as number | undefined,
+            payment_ratio_4: toNumber(data.payment_ratio_4),
+            soft_budget: toNumber(data.soft_budget),
+            soft_actual_cost: toNumber(data.soft_actual_cost),
             soft_detail_attachment: (data.soft_detail_attachment as string) || "",
-            design_fee: data.design_fee as number | undefined,
-            demolition_fee: data.demolition_fee as number | undefined,
-            garbage_fee: data.garbage_fee as number | undefined,
-            other_extra_fee: data.other_extra_fee as number | undefined,
+            design_fee: toNumber(data.design_fee),
+            demolition_fee: toNumber(data.demolition_fee),
+            garbage_fee: toNumber(data.garbage_fee),
+            other_extra_fee: toNumber(data.other_extra_fee),
             other_fee_reason: (data.other_fee_reason as string) || "",
           });
         } else {
