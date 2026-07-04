@@ -85,33 +85,33 @@ export function FloorInput({ value, onChange }: FloorInputProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider">
-        楼层信息 <span className="text-[var(--error)]">*</span>
+      <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        楼层信息 <span className="text-error">*</span>
       </label>
       <div className="flex items-center gap-2">
         {/* 当前楼层 */}
         <div className="relative flex-1">
           <input
             inputMode="numeric"
-            className="w-full h-11 px-3 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+            className="w-full h-11 px-3 border border-(--border)/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
             value={current}
             onChange={(e) => handleChange("current", e.target.value)}
             placeholder="当前"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]">层</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">层</span>
         </div>
         {/* 分隔符 */}
-        <span className="text-[var(--muted-foreground)] font-bold">/</span>
+        <span className="text-muted-foreground font-bold">/</span>
         {/* 总楼层 */}
         <div className="relative flex-1">
           <input
             inputMode="numeric"
-            className="w-full h-11 px-3 border border-[var(--border)]/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+            className="w-full h-11 px-3 border border-(--border)/50 rounded-xl bg-card text-sm font-bold text-center outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
             value={total}
             onChange={(e) => handleChange("total", e.target.value)}
             placeholder="总"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]">层</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">层</span>
         </div>
       </div>
     </div>
