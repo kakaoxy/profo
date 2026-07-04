@@ -84,7 +84,7 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
                 ref={contractRef}
                 className="space-y-6 overflow-auto max-h-[calc(100vh-300px)] scrollbar-thin"
               >
-                <RenovationContractForm projectId={project.id} />
+                <RenovationContractForm projectId={project.id} area={project.area} />
               </div>
             )}
           </>

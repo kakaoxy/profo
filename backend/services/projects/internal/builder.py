@@ -267,8 +267,15 @@ class ProjectResponseBuilder:
         return {"sales_records": sales_records}
 
     def _build_renovation_photos(self, project: "Project") -> dict[str, Any]:
-        """构建装修照片（蜕变影像）."""
+        """构建装修照片（蜕变影像）.
+
+        过滤软删除记录后再序列化, 与 _build_interactions 保持一致.
+        """
         if not project.renovation_photos:
+            return {}
+
+        active_photos = [p for p in project.renovation_photos if not p.is_deleted]
+        if not active_photos:
             return {}
 
         renovation_photos = [
@@ -281,7 +288,7 @@ class ProjectResponseBuilder:
                 "description": photo.description,
                 "created_at": photo.created_at.isoformat() if photo.created_at else None,
             }
-            for photo in project.renovation_photos
+            for photo in active_photos
         ]
 
         return {"renovation_photos": renovation_photos}

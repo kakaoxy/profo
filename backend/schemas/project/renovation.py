@@ -92,6 +92,11 @@ class RenovationContractUpdate(BaseModel):
     soft_actual_cost: Decimal | None = Field(None, description="软装实际发生成本")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
+    # 定制柜/窗户/电器扩展金额
+    custom_cabinet_amount: Decimal | None = Field(None, description="定制柜定额")
+    window_amount: Decimal | None = Field(None, description="窗户金额")
+    appliance_amount: Decimal | None = Field(None, description="电器金额")
+
     # 其他费用
     design_fee: Decimal | None = Field(None, description="设计费用")
     demolition_fee: Decimal | None = Field(None, description="拆旧费用")
@@ -124,6 +129,9 @@ class RenovationContractResponse(BaseModel):
     soft_budget: Decimal | None = None
     soft_actual_cost: Decimal | None = None
     soft_detail_attachment: str | None = None
+    custom_cabinet_amount: Decimal | None = None
+    window_amount: Decimal | None = None
+    appliance_amount: Decimal | None = None
     design_fee: Decimal | None = None
     demolition_fee: Decimal | None = None
     garbage_fee: Decimal | None = None
@@ -162,6 +170,11 @@ class RenovationBase(BaseModel):
     soft_actual_cost: Decimal | None = Field(None, description="软装实际发生成本")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
+    # 定制柜/窗户/电器扩展金额
+    custom_cabinet_amount: Decimal | None = Field(None, description="定制柜定额")
+    window_amount: Decimal | None = Field(None, description="窗户金额")
+    appliance_amount: Decimal | None = Field(None, description="电器金额")
+
     # 其他费用
     design_fee: Decimal | None = Field(None, description="设计费用")
     demolition_fee: Decimal | None = Field(None, description="拆旧费用")
@@ -198,6 +211,9 @@ class RenovationInfoUpdate(BaseModel):
     soft_budget: Decimal | None = None
     soft_actual_cost: Decimal | None = None
     soft_detail_attachment: str | None = None
+    custom_cabinet_amount: Decimal | None = None
+    window_amount: Decimal | None = None
+    appliance_amount: Decimal | None = None
     design_fee: Decimal | None = None
     demolition_fee: Decimal | None = None
     garbage_fee: Decimal | None = None

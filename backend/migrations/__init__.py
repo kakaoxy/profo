@@ -10,6 +10,7 @@
 - populate_phone_hash: 为已存用户回填 phone_hash（H-006）
 - add_stage_completed_dates_column: 为 l4_marketing_projects 表添加 stage_completed_dates 列
 - add_thumbnail_url_to_photos: 为 renovation_photos 与 property_media 表添加 thumbnail_url 列
+- add_renovation_extra_amount_columns: 为 project_renovations 表添加定制柜/窗户/电器金额列
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 
 """
@@ -203,6 +204,30 @@ def add_thumbnail_url_to_photos(engine: Engine) -> None:
             )
 
 
+def add_renovation_extra_amount_columns(engine: Engine) -> None:
+    """为 project_renovations 表添加定制柜/窗户/电器金额列。
+
+    新增三列：custom_cabinet_amount / window_amount / appliance_amount，
+    均为 Numeric(15,2) 可空。SQLite/PostgreSQL 均支持 ALTER TABLE ADD COLUMN，
+    幂等：通过 _column_exists 检查跳过已存在列。
+    """
+    columns = (
+        ("custom_cabinet_amount", "NUMERIC(15, 2)"),
+        ("window_amount", "NUMERIC(15, 2)"),
+        ("appliance_amount", "NUMERIC(15, 2)"),
+    )
+    for column, ddl_type in columns:
+        if _column_exists(engine, "project_renovations", column):
+            continue
+        logger.info("迁移：为 project_renovations 表添加 %s 列", column)
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    f"ALTER TABLE project_renovations ADD COLUMN {column} {ddl_type}"
+                )
+            )
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -212,6 +237,7 @@ def run_startup_migrations(engine: Engine) -> None:
         populate_phone_hash(engine)
         add_stage_completed_dates_column(engine)
         add_thumbnail_url_to_photos(engine)
+        add_renovation_extra_amount_columns(engine)
         run_fix_image_urls(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")

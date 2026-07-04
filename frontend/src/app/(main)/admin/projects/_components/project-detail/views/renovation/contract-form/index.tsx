@@ -27,6 +27,7 @@ import { CostSummarySection } from "./cost-summary";
 
 interface RenovationContractFormProps {
   projectId: string;
+  area?: number;
 }
 
 // 后端 Decimal 字段经 JSON 序列化为字符串，需显式转为 number
@@ -37,7 +38,7 @@ function toNumber(v: unknown): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
-export function RenovationContractForm({ projectId }: RenovationContractFormProps) {
+export function RenovationContractForm({ projectId, area }: RenovationContractFormProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -64,6 +65,9 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
       soft_budget: undefined,
       soft_actual_cost: undefined,
       soft_detail_attachment: "",
+      custom_cabinet_amount: undefined,
+      window_amount: undefined,
+      appliance_amount: undefined,
       design_fee: undefined,
       demolition_fee: undefined,
       garbage_fee: undefined,
@@ -111,6 +115,9 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
             soft_budget: toNumber(data.soft_budget),
             soft_actual_cost: toNumber(data.soft_actual_cost),
             soft_detail_attachment: (data.soft_detail_attachment as string) || "",
+            custom_cabinet_amount: toNumber(data.custom_cabinet_amount),
+            window_amount: toNumber(data.window_amount),
+            appliance_amount: toNumber(data.appliance_amount),
             design_fee: toNumber(data.design_fee),
             demolition_fee: toNumber(data.demolition_fee),
             garbage_fee: toNumber(data.garbage_fee),
@@ -256,7 +263,7 @@ export function RenovationContractForm({ projectId }: RenovationContractFormProp
         <DecorationCostSection values={values} setValue={setValue} isEditing={isEditing} />
         <PaymentNodesSection values={values} setValue={setValue} isEditing={isEditing} />
         <OtherFeesSection values={values} setValue={setValue} isEditing={isEditing} />
-        <CostSummarySection values={values} />
+        <CostSummarySection values={values} area={area} />
       </CardContent>
     </Card>
   );
