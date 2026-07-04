@@ -31,11 +31,23 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-# 加载 .env 环境变量（供本地 backend 使用 POSTGRES_* 拼接 DATABASE_URL）
-set -a
-# shellcheck disable=SC1091
-source .env
-set +a
+# 从 .env 精准提取 POSTGRES_* 变量（不 source 整个文件，避免特殊字符报错）
+read_env_var() {
+  local key="$1"
+  # 只取第一个匹配，去掉行首尾空白与可能的引号
+  grep -E "^${key}=" .env | head -1 | sed -E "s/^${key}=//; s/^\"//; s/\"$//; s/^'//; s/'$//"
+}
+
+POSTGRES_USER="$(read_env_var POSTGRES_USER)"
+POSTGRES_PASSWORD="$(read_env_var POSTGRES_PASSWORD)"
+POSTGRES_DB="$(read_env_var POSTGRES_DB)"
+
+if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$POSTGRES_DB" ]; then
+  echo "❌ .env 中未找到 POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB"
+  echo "   请检查 .env 配置"
+  exit 1
+fi
+export POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
 
 # 开发环境覆盖：backend 直连本地映射的 Docker db（127.0.0.1:5432，而非容器名 db）
 export DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
@@ -54,7 +66,44 @@ if [ ! -d frontend/node_modules ]; then
   (cd frontend && pnpm install)
 fi
 
+# 创建 backend/static/uploads 软链 → ../../uploads
+# 让本地 dev 模式与 Docker 容器共享同一份上传文件
+UPLOADS_SYMLINK="backend/static/uploads"
+UPLOADS_TARGET="../../uploads"
+mkdir -p backend/static
+if [ ! -e "$UPLOADS_SYMLINK" ]; then
+  ln -s "$UPLOADS_TARGET" "$UPLOADS_SYMLINK"
+  echo "✅ 已创建软链 $UPLOADS_SYMLINK → $UPLOADS_TARGET（共享 uploads 目录）"
+elif [ -L "$UPLOADS_SYMLINK" ]; then
+  # 已是软链，确认指向正确
+  current_target="$(readlink "$UPLOADS_SYMLINK")"
+  if [ "$current_target" != "$UPLOADS_TARGET" ]; then
+    echo "⚠️  $UPLOADS_SYMLINK 软链指向 $current_target（期望 $UPLOADS_TARGET），修正中..."
+    rm "$UPLOADS_SYMLINK"
+    ln -s "$UPLOADS_TARGET" "$UPLOADS_SYMLINK"
+  fi
+elif [ -d "$UPLOADS_SYMLINK" ]; then
+  echo "⚠️  $UPLOADS_SYMLINK 是真实目录而非软链"
+  echo "   如需共享 Docker uploads，请先删除该目录: rm -rf $UPLOADS_SYMLINK"
+  echo "   当前 dev 模式将使用独立的本地 uploads，与 Docker 不互通"
+fi
+
 CMD="${1:-up}"
+
+# 端口预检：检查 8000/3000 是否被占用，占用则列出 PID 并退出
+check_port() {
+  local port="$1"
+  local name="$2"
+  local pids
+  pids="$(lsof -ti:"$port" 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    echo "❌ 端口 $port ($name) 已被占用，PID: $(echo "$pids" | tr '\n' ' ')"
+    echo "   请先终止该进程: kill $pids"
+    echo "   或强制终止: kill -9 $pids"
+    return 1
+  fi
+  return 0
+}
 
 start_db() {
   echo "启动 PostgreSQL (Docker)..."
@@ -64,6 +113,9 @@ start_db() {
 
 case "$CMD" in
   up|start)
+    # 端口预检（db 端口 5432 由 Docker 管理，无需检查）
+    check_port 8000 "backend" || exit 1
+    check_port 3000 "frontend" || exit 1
     start_db
     echo ""
     echo "启动后端 (uvicorn --reload) 与前端 (next dev)..."
