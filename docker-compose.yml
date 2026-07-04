@@ -54,7 +54,12 @@ services:
 
   frontend:
     image: profo-frontend:prod
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # 构建时注入 SERVER_API_URL，让 next.config.ts 的 rewrites 在 build 阶段拿到正确值
+        # 这样 frontend 容器内 SSR 代理会直连 backend 容器，而非 127.0.0.1 自指向
+        SERVER_API_URL: http://backend:8000
     # 跨平台构建：本地 Mac (arm64) 必须构建 amd64 镜像，否则服务器 (x86_64) 跑不起来
     platform: linux/amd64
     depends_on:
