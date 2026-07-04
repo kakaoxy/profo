@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // [性能优化] 关闭 next/image 自动优化，避免容器内 SSR 代理 + 格式转换导致图片加载慢（8s+）
+    // 服务器 CPU 弱（2核），next/image 优化在并发时严重排队
+    // 关闭后 <Image> 直接用原图，跳过 frontend 容器代理，图片走 nginx → backend 直服
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
