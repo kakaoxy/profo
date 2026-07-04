@@ -16,7 +16,9 @@ const nextConfig: NextConfig = {
   // [修复] API 代理重写规则 - 解决跨域 Cookie 问题
   // 开发环境下将 /api/* 请求代理到后端，使前后端同域，Cookie 可正常发送
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    // 服务端 SSR 代理优先用 SERVER_API_URL（Docker 容器内直连 backend 容器，避免 127.0.0.1 自指向）
+    // 浏览器侧 fallback 用 NEXT_PUBLIC_API_URL（开发环境）或 127.0.0.1:8000
+    const apiUrl = process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
     return [
       {
         source: "/api/:path*",
