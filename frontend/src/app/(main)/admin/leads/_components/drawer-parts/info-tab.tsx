@@ -22,10 +22,10 @@ interface InfoTabProps {
     evalPrice?: number,
     reason?: string
   ) => void;
-  onViewMonitor: (lead: Lead) => void;
+  onSwitchToMonitor: () => void;
 }
 
-export const InfoTab: React.FC<InfoTabProps> = ({ lead, onAudit, onViewMonitor }) => {
+export const InfoTab: React.FC<InfoTabProps> = ({ lead, onAudit, onSwitchToMonitor }) => {
   const { sentiment, loading: sentimentLoading } = useMarketSentiment(lead.communityId || '');
 
   return (
@@ -69,10 +69,9 @@ export const InfoTab: React.FC<InfoTabProps> = ({ lead, onAudit, onViewMonitor }
 
       {/* Real-time Market Monitoring */}
       <MonitorCard
-        lead={lead}
         sentiment={sentiment}
         loading={sentimentLoading}
-        onViewMonitor={onViewMonitor}
+        onViewMonitor={onSwitchToMonitor}
       />
 
       {/* Action Panels per Status */}

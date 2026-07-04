@@ -150,6 +150,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
               columns={columns}
               data={filteredData}
               onRowClick={handleRowClick}
+              meta={{ onEdit: handleRowClick }}
             />
           </div>
         </div>

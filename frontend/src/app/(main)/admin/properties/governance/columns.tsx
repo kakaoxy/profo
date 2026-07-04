@@ -31,8 +31,8 @@ export const columns: ColumnDef<Community>[] = [
   },
   {
     accessorKey: "id",
-    header: () => <span className="hidden sm:inline">ID</span>,
-    cell: ({ row }) => <span className="hidden sm:inline">{row.getValue("id")}</span>,
+    header: () => <span className="inline">ID</span>,
+    cell: ({ row }) => <span className="inline">{row.getValue("id")}</span>,
     size: 60,
   },
   {
@@ -51,20 +51,20 @@ export const columns: ColumnDef<Community>[] = [
   },
   {
     accessorKey: "district",
-    header: () => <span className="hidden lg:inline">行政区</span>,
-    cell: ({ row }) => <span className="hidden lg:inline">{row.getValue("district")}</span>,
+    header: () => <span className="inline">行政区</span>,
+    cell: ({ row }) => <span className="inline">{row.getValue("district")}</span>,
   },
   {
     accessorKey: "business_circle",
-    header: () => <span className="hidden lg:inline">商圈</span>,
-    cell: ({ row }) => <span className="hidden lg:inline">{row.getValue("business_circle")}</span>,
+    header: () => <span className="inline">商圈</span>,
+    cell: ({ row }) => <span className="inline">{row.getValue("business_circle")}</span>,
   },
   {
     accessorKey: "created_at",
-    header: () => <span className="hidden sm:inline text-xs">创建时间</span>,
+    header: () => <span className="inline text-xs">创建时间</span>,
     cell: ({ row }) => {
       const date = new Date(row.getValue("created_at"));
-      return <span className="hidden sm:inline text-xs">{date.toLocaleDateString("zh-CN")}</span>;
+      return <span className="inline text-xs">{date.toLocaleDateString("zh-CN")}</span>;
     },
   },
 ];

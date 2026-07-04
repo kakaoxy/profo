@@ -23,15 +23,20 @@ interface MarketingViewProps {
   pageSize: number;
 }
 
-// 状态过滤映射：将前端 tab 值映射到后端 API 参数
-const STATUS_FILTER_MAP: Record<string, { project_status?: string; publish_status?: string }> = {
-  all: {},
-  in_progress: { project_status: "在途" },
-  for_sale: { project_status: "在售" },
-  sold: { project_status: "已售" },
-  published: { publish_status: "发布" },
-  draft: { publish_status: "草稿" },
-};
+// 发布状态 Tab：value 直接对应后端 publish_status 参数值
+const PUBLISH_TABS = [
+  { value: "all", label: "全部" },
+  { value: "发布", label: "已发布" },
+  { value: "草稿", label: "草稿" },
+] as const;
+
+// 项目状态 Tab：value 直接对应后端 project_status 参数值
+const PROJECT_STATUS_TABS = [
+  { value: "all", label: "全部" },
+  { value: "在途", label: "在途" },
+  { value: "在售", label: "在售" },
+  { value: "已售", label: "已售" },
+] as const;
 
 const createLayoutFilter = (layoutFilter: string) => {
   if (layoutFilter === "all") return () => true;
@@ -64,12 +69,14 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 从 URL 读取初始状态
-  const initialTab = (searchParams.get("status_tab") as keyof typeof STATUS_FILTER_MAP) || "all";
+  // 从 URL 读取初始状态（两组 Tab 独立）
+  const initialPublishTab = searchParams.get("publish_status") || "all";
+  const initialProjectStatusTab = searchParams.get("project_status") || "all";
   const initialLayout = searchParams.get("layout") || "all";
   const initialSearch = searchParams.get("search") || "";
 
-  const [activeTab, setActiveTab] = useState<keyof typeof STATUS_FILTER_MAP>(initialTab);
+  const [publishTab, setPublishTab] = useState(initialPublishTab);
+  const [projectStatusTab, setProjectStatusTab] = useState(initialProjectStatusTab);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [layoutFilter, setLayoutFilter] = useState(initialLayout);
   const [, startTransition] = useTransition();
@@ -116,13 +123,17 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     router.push(`/admin/l4-marketing/projects?${params.toString()}`);
   }, [currentPage, totalPages, searchParams, router]);
 
-  const handleTabChange = useCallback((tab: keyof typeof STATUS_FILTER_MAP) => {
-    setActiveTab(tab);
-    const filterParams = STATUS_FILTER_MAP[tab];
+  const handlePublishTabChange = useCallback((value: string) => {
+    setPublishTab(value);
     updateUrlParams({
-      status_tab: tab === "all" ? undefined : tab,
-      project_status: filterParams.project_status,
-      publish_status: filterParams.publish_status,
+      publish_status: value === "all" ? undefined : value,
+    });
+  }, [updateUrlParams]);
+
+  const handleProjectStatusTabChange = useCallback((value: string) => {
+    setProjectStatusTab(value);
+    updateUrlParams({
+      project_status: value === "all" ? undefined : value,
     });
   }, [updateUrlParams]);
 
@@ -179,32 +190,46 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
             </div>
 
             <Tabs
-              value={activeTab}
-              onValueChange={(val) => handleTabChange(val as keyof typeof STATUS_FILTER_MAP)}
+              value={publishTab}
+              onValueChange={handlePublishTabChange}
               className="w-full sm:w-auto"
             >
               <TabsList className="h-10 bg-muted p-1 rounded-lg">
-                <TabsTrigger value="all" className="text-xs px-3">
-                  全部
-                </TabsTrigger>
-                <TabsTrigger
-                  value="in_progress"
-                  className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                >
-                  在途
-                </TabsTrigger>
-                <TabsTrigger
-                  value="for_sale"
-                  className="text-xs px-3 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
-                >
-                  在售
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sold"
-                  className="text-xs px-3 data-[state=active]:bg-muted data-[state=active]:text-foreground"
-                >
-                  已售
-                </TabsTrigger>
+                {PUBLISH_TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="text-xs px-3 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            <Tabs
+              value={projectStatusTab}
+              onValueChange={handleProjectStatusTabChange}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="h-10 bg-muted p-1 rounded-lg">
+                {PROJECT_STATUS_TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className={`text-xs px-3 ${
+                      tab.value === "在途"
+                        ? "data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                        : tab.value === "在售"
+                        ? "data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800"
+                        : tab.value === "已售"
+                        ? "data-[state=active]:bg-muted data-[state=active]:text-foreground"
+                        : ""
+                    }`}
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
           </>

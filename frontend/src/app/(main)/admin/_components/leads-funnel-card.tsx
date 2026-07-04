@@ -20,25 +20,31 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
   const getPercent = (value: number) =>
     total > 0 ? Math.round((value / total) * 100) : 0;
 
+  const conversionRate =
+    total > 0 && signed > 0 ? ((signed / total) * 100).toFixed(1) + "%" : "暂无";
+
   return (
-    <div className="col-span-12 lg:col-span-6 bg-card rounded-xl border border-border shadow-card p-5 h-40 flex flex-col min-w-0">
+    <div className="col-span-12 lg:col-span-6 bg-card rounded-xl border border-border shadow-card p-5 h-auto flex flex-col min-w-0">
       <span className="text-xs text-muted-foreground font-black uppercase tracking-widest block mb-2">
         线索漏斗
       </span>
 
-      <div className="flex-1 flex items-center gap-1 min-w-0 overflow-hidden">
+      <div className="flex-1 flex items-stretch gap-1 min-w-0">
         {stages.map((stage) => {
           const widthPercent = (stage.value / maxValue) * 100;
-          const minWidth = stage.value > 0 ? 8 : 0;
+          // 所有阶段都保证最小宽度,避免标签被挤压截断
+          const minWidth = Math.max(widthPercent, 10);
 
           return (
             <div
               key={stage.key}
-              className={`h-14 ${stage.color} rounded-md flex flex-col items-center justify-center text-white relative group cursor-pointer transition-all duration-300 hover:opacity-90 min-w-0`}
-              style={{ flex: Math.max(widthPercent, minWidth) }}
+              className={`h-14 ${stage.color} rounded-md flex flex-col items-center justify-center text-white relative group cursor-pointer transition-all duration-300 hover:opacity-90 min-w-0 px-1`}
+              style={{ flex: minWidth }}
               title={`${stage.label}: ${stage.value} (${getPercent(stage.value)}%)`}
             >
-              <span className="text-[10px] font-bold opacity-90 truncate px-1">{stage.label}</span>
+              <span className="text-[10px] font-bold opacity-90 text-center leading-tight whitespace-nowrap">
+                {stage.label}
+              </span>
               <span className="text-sm font-black">{stage.value}</span>
             </div>
           );
@@ -55,7 +61,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
           </span>
         </div>
         <span className="text-xs font-bold text-foreground">
-          转化率: {total > 0 ? ((signed / total) * 100).toFixed(1) : 0}%
+          转化率: {conversionRate}
         </span>
       </div>
     </div>

@@ -1,21 +1,19 @@
 import React from 'react';
-import { Lead } from '../../types';
 import { MarketSentiment } from '../../actions';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   Activity, TrendingUp, ChevronRight,
   BarChart3, PieChart, Timer, Loader2, AlertCircle
 } from 'lucide-react';
 
 interface Props {
-  lead: Lead;
   sentiment: MarketSentiment | null;
   loading?: boolean;
-  onViewMonitor: (lead: Lead) => void;
+  onViewMonitor: () => void;
 }
 
-export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewMonitor }) => {
+export const MonitorCard: React.FC<Props> = ({ sentiment, loading, onViewMonitor }) => {
   // 获取市场活跃度标签
   const getActivityLabel = () => {
     if (!sentiment) return { label: '数据加载中', color: 'text-muted-foreground' };
@@ -107,10 +105,10 @@ export const MonitorCard: React.FC<Props> = ({ lead, sentiment, loading, onViewM
         </div>
       </div>
       
-      <Button 
-        variant="link" 
-        size="sm" 
-        onClick={() => onViewMonitor(lead)}
+      <Button
+        variant="link"
+        size="sm"
+        onClick={onViewMonitor}
         className="mt-4 w-full text-primary font-bold text-xs uppercase tracking-widest h-auto p-0 hover:no-underline hover:text-primary/80"
       >
         查看区域供需全景 <ChevronRight className="h-3 w-3 ml-1" />

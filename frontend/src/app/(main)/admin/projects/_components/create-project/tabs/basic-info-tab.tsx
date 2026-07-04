@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup } from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -316,23 +316,23 @@ export function BasicInfoTab({ form }: TabProps) {
                   className="flex flex-wrap gap-2"
                 >
                   {ORIENTATION_OPTIONS.map((option) => (
-                    <label
-                      key={option.value}
-                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
-                        field.value === option.value
-                          ? "bg-ink text-pure-white border-ink"
-                          : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
-                      }`}
-                    >
-                      <input
-                        type="radio"
+                    <div key={option.value} className="flex">
+                      <RadioGroupItem
                         value={option.value}
-                        checked={field.value === option.value}
-                        onChange={() => field.onChange(option.value)}
+                        id={`orientation-${option.value}`}
                         className="sr-only"
                       />
-                      {option.label}
-                    </label>
+                      <label
+                        htmlFor={`orientation-${option.value}`}
+                        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
+                          field.value === option.value
+                            ? "bg-ink text-pure-white border-ink"
+                            : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
+                        }`}
+                      >
+                        {option.label}
+                      </label>
+                    </div>
                   ))}
                 </RadioGroup>
               </FormControl>
@@ -358,23 +358,23 @@ export function BasicInfoTab({ form }: TabProps) {
                   className="flex flex-wrap gap-2"
                 >
                   {BUSINESS_FORM_OPTIONS.map((option) => (
-                    <label
-                      key={option.value}
-                      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
-                        field.value === option.value
-                          ? "bg-ink text-pure-white border-ink"
-                          : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
-                      }`}
-                    >
-                      <input
-                        type="radio"
+                    <div key={option.value} className="flex">
+                      <RadioGroupItem
                         value={option.value}
-                        checked={field.value === option.value}
-                        onChange={() => field.onChange(option.value)}
+                        id={`business-form-${option.value}`}
                         className="sr-only"
                       />
-                      {option.label}
-                    </label>
+                      <label
+                        htmlFor={`business-form-${option.value}`}
+                        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-all border ${
+                          field.value === option.value
+                            ? "bg-ink text-pure-white border-ink"
+                            : "bg-pure-white text-graphite border-dove/50 hover:border-dove hover:bg-fog/50"
+                        }`}
+                      >
+                        {option.label}
+                      </label>
+                    </div>
                   ))}
                 </RadioGroup>
               </FormControl>
@@ -396,11 +396,10 @@ export function BasicInfoTab({ form }: TabProps) {
                   const newValue = value === "__empty__" ? undefined : value;
                   field.onChange(newValue);
                 }}
-                disabled={isLoadingUsers}
               >
                 <FormControl>
                   <SelectTrigger className="rounded-inputs h-10 border-dove/50 bg-pure-white text-[14px] focus:ring-ink/10">
-                    <SelectValue placeholder="未选择" />
+                    <SelectValue placeholder={isLoadingUsers ? "加载中..." : "未选择"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>

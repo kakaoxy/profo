@@ -24,6 +24,14 @@ export function MarketDataSection({
     );
   }
 
+  if (!isLoading && !marketData) {
+    return (
+      <div className="flex items-center justify-center min-h-[70px] text-xs text-muted-foreground bg-muted rounded-lg">
+        暂无市场数据
+      </div>
+    );
+  }
+
   const onSaleCount = marketData?.on_sale ?? 0;
   // API 返回的 avg_price 单位是元/㎡，转换为万元/㎡ 显示 (/10000)
   const avgPriceWan =

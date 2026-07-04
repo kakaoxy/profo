@@ -20,7 +20,6 @@ export function useLeadSelection({ initialSelectedLeadId, leads }: UseLeadSelect
   const [isDrawerOpen, setIsDrawerOpen] = useState(shouldOpenDrawerInitially);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [monitoringLead, setMonitoringLead] = useState<Lead | null>(null);
 
   const selectedLead = useMemo(
     () => leads.find((l) => l.id === selectedLeadId) || null,
@@ -50,28 +49,16 @@ export function useLeadSelection({ initialSelectedLeadId, leads }: UseLeadSelect
     setIsAddModalOpen(false);
   }, []);
 
-  const openMonitor = useCallback((lead: Lead) => {
-    setMonitoringLead(lead);
-    setIsDrawerOpen(false);
-  }, []);
-
-  const closeMonitor = useCallback(() => {
-    setMonitoringLead(null);
-  }, []);
-
   return {
     selectedLeadId,
     selectedLead,
     isDrawerOpen,
     editingLead,
     isAddModalOpen,
-    monitoringLead,
     openDetail,
     closeDetail,
     startAddLead,
     startEditLead,
     closeAddModal,
-    openMonitor,
-    closeMonitor,
   };
 }

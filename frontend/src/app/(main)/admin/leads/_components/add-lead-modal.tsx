@@ -115,7 +115,6 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <h2 className="text-xl font-black font-sans tracking-tight">{isEdit ? '编辑线索' : '录入新线索'}</h2>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">FlipMaster Lead {isEdit ? 'Edit' : 'Creation'}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full" aria-label="关闭对话框">
             <X className="h-5 w-5" />

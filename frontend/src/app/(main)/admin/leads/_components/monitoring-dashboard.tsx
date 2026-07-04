@@ -72,7 +72,8 @@ function ComponentSkeleton({ height }: { height: string }) {
 
 interface Props {
   lead: Lead;
-  onClose: () => void;
+  onClose?: () => void;
+  embedded?: boolean;
 }
 
 const CardWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -99,7 +100,7 @@ function EmptyState({ communityName }: { communityName: string }) {
   );
 }
 
-export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
+export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose, embedded = false }) => {
   // 使用 lead 中的 communityId，空值转换为 undefined 确保组件参数有效
   const communityId = lead.communityId || undefined;
 
@@ -122,6 +123,48 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose }) => {
       : lead.totalPrice && lead.area
         ? Math.round((lead.totalPrice * 10000) / lead.area)
         : 0;
+
+  // 嵌入模式:仅渲染卡片内容,用于抽屉 Tab 内嵌展示
+  if (embedded) {
+    return (
+      <div className="font-sans py-2">
+        <CardWrapper>
+          <HeroSection overrideData={overrideData} />
+        </CardWrapper>
+
+        {!communityId ? (
+          <CardWrapper>
+            <EmptyState communityName={lead.communityName} />
+          </CardWrapper>
+        ) : (
+          <>
+            <CardWrapper>
+              <MarketSentiment communityId={communityId} />
+            </CardWrapper>
+
+            <CardWrapper>
+              <NeighborhoodRadar communityId={communityId} />
+            </CardWrapper>
+
+            <CardWrapper>
+              <TrendPositioning
+                communityId={communityId}
+                myOverridePrice={myOverridePrice}
+              />
+            </CardWrapper>
+
+            <CardWrapper>
+              <CompetitorsBrawl communityId={communityId} />
+            </CardWrapper>
+
+            <CardWrapper>
+              <AIStrategy communityId={communityId} />
+            </CardWrapper>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-60 bg-background flex flex-col animate-in fade-in zoom-in-95 duration-300">

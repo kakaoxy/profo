@@ -200,12 +200,12 @@ const FloorPlanPreview = ({
 };
 
 export const columns: ColumnDef<Property>[] = [
-  // 1. 房源ID - 移动端隐藏
+  // 1. 房源ID
   {
     accessorKey: "id",
-    header: () => <span className="hidden sm:inline">ID</span>,
+    header: () => <span className="inline">ID</span>,
     cell: ({ row }) => (
-      <span className="hidden sm:inline text-xs text-muted-foreground">
+      <span className="inline text-xs text-muted-foreground">
         #{row.getValue("id")}
       </span>
     ),
@@ -286,14 +286,14 @@ export const columns: ColumnDef<Property>[] = [
       );
     },
   },
-  // 4. 状态 - 移动端隐藏
+  // 4. 状态
   {
     accessorKey: "status",
-    header: () => <span className="hidden sm:inline">状态</span>,
+    header: () => <span className="inline">状态</span>,
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <div className="hidden sm:block">
+        <div className="block">
           <Badge
             variant={
               status === "在售"
@@ -311,66 +311,66 @@ export const columns: ColumnDef<Property>[] = [
       );
     },
   },
-  // 5. 商圈 - 仅在 lg 及以上显示
+  // 5. 商圈
   {
     accessorKey: "business_circle",
-    header: () => <span className="hidden lg:inline">商圈</span>,
+    header: () => <span className="inline">商圈</span>,
     cell: ({ row }) => {
       const val = row.getValue("business_circle") as string;
       return (
-        <span className="hidden lg:inline text-sm text-muted-foreground">
+        <span className="inline text-sm text-muted-foreground">
           {val || "-"}
         </span>
       );
     },
   },
-  // 6. 户型 - 移动端隐藏（已合并到小区列）
+  // 6. 户型
   {
     id: "layout_custom",
-    header: () => <span className="hidden sm:inline text-xs">户型</span>,
+    header: () => <span className="inline text-xs">户型</span>,
     cell: ({ row }) => {
       const { rooms, baths } = row.original;
       return (
-        <span className="hidden sm:inline whitespace-nowrap text-xs">
+        <span className="inline whitespace-nowrap text-xs">
           {rooms}室{baths}卫
         </span>
       );
     },
   },
-  // 7. 朝向 - 仅在 md 及以上显示
+  // 7. 朝向
   {
     accessorKey: "orientation",
-    header: () => <span className="hidden md:inline text-xs">朝向</span>,
+    header: () => <span className="inline text-xs">朝向</span>,
     cell: ({ row }) => (
-      <span className="hidden md:inline text-xs">
+      <span className="inline text-xs">
         {row.getValue("orientation")}
       </span>
     ),
   },
-  // 8. 楼层 - 移动端隐藏（已合并到小区列）
+  // 8. 楼层
   {
     accessorKey: "floor_display",
     header: () => (
-      <div className="hidden sm:block">
+      <div className="block">
         <SortableHeader title="楼层" value="floor_number" />
       </div>
     ),
     cell: ({ row }) => (
-      <span className="hidden sm:inline whitespace-nowrap text-xs">
+      <span className="inline whitespace-nowrap text-xs">
         {row.getValue("floor_display")}
       </span>
     ),
   },
-  // 9. 面积 - 移动端隐藏（合并到价格列）
+  // 9. 面积
   {
     accessorKey: "build_area",
     header: () => (
-      <div className="hidden sm:block">
+      <div className="block">
         <SortableHeader title="面积" value="build_area" />
       </div>
     ),
     cell: ({ row }) => (
-      <div className="hidden sm:block text-xs">
+      <div className="block text-xs">
         {row.getValue("build_area")}㎡
       </div>
     ),
@@ -397,16 +397,16 @@ export const columns: ColumnDef<Property>[] = [
       );
     },
   },
-  // 11. 单价 - 仅在 lg 及以上显示
+  // 11. 单价
   {
     accessorKey: "unit_price",
     header: () => (
-      <div className="hidden lg:block">
+      <div className="block">
         <SortableHeader title="单价(元/㎡)" value="unit_price" />
       </div>
     ),
     cell: ({ row }) => (
-      <div className="hidden lg:block text-xs text-muted-foreground">
+      <div className="block text-xs text-muted-foreground">
         {row.getValue("unit_price")}
       </div>
     ),
@@ -440,22 +440,22 @@ export const columns: ColumnDef<Property>[] = [
       );
     },
   },
-  // 13. 数据源 - 移动端隐藏
+  // 13. 数据源
   {
     accessorKey: "data_source",
-    header: () => <span className="hidden sm:inline text-xs">来源</span>,
+    header: () => <span className="inline text-xs">来源</span>,
     cell: ({ row }) => (
-      <Badge variant="outline" className="hidden sm:inline-flex text-[10px]">
+      <Badge variant="outline" className="inline-flex text-[10px]">
         {row.getValue("data_source")}
       </Badge>
     ),
   },
-  // 14. 操作 - 移动端隐藏（通过点击小区列打开详情）
+  // 14. 操作
   {
     id: "actions",
-    header: () => <span className="hidden sm:inline">操作</span>,
+    header: () => <span className="inline">操作</span>,
     cell: ({ row }) => (
-      <div className="hidden sm:block">
+      <div className="block">
         <ActionCell id={row.original.id} />
       </div>
     ),
