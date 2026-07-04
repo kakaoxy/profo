@@ -1,0 +1,13 @@
+# 开发环境 override 文件
+#
+# 仅在本地开发时与 docker-compose.yml 叠加使用，给 db 服务添加主机端口映射，
+# 让本机运行的 uvicorn / next dev 能通过 127.0.0.1:5432 直连容器内 PostgreSQL。
+#
+# 用法:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+#
+# 生产部署（./start.sh）不加载此文件，db 仅 expose 不 ports，安全性不变。
+services:
+  db:
+    ports:
+      - "5432:5432"
