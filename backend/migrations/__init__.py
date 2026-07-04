@@ -89,7 +89,7 @@ def encrypt_existing_phones(engine: Engine) -> None:
 
     """
     updated = 0
-    last_id = 0
+    last_id = ""  # users.id 为 varchar(uuid)，游标分页用空串起步（PostgreSQL 下 varchar > int 无操作符）
     while True:
         with engine.begin() as conn:
             rows = conn.execute(
@@ -138,7 +138,7 @@ def populate_phone_hash(engine: Engine) -> None:
 
     """
     updated = 0
-    last_id = 0
+    last_id = ""  # users.id 为 varchar(uuid)，游标分页用空串起步（PostgreSQL 下 varchar > int 无操作符）
     while True:
         with engine.begin() as conn:
             rows = conn.execute(

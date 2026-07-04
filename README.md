@@ -4,14 +4,15 @@
   <img src="https://img.shields.io/badge/Next.js-16.1.7-black?style=flat-square&logo=next.js" />
   <img src="https://img.shields.io/badge/React-19.2.1-61DAFB?style=flat-square&logo=react" />
   <img src="https://img.shields.io/badge/FastAPI-0.104+-009688?style=flat-square&logo=fastapi" />
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python" />
+  <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python" />
   <img src="https://img.shields.io/badge/TailwindCSS-4.3+-38B2AC?style=flat-square&logo=tailwind-css" />
-  <img src="https://img.shields.io/badge/SQLite-WAL-003B57?style=flat-square&logo=sqlite" />
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql" />
+  <img src="https://img.shields.io/badge/Docker_Compose-2-2496ED?style=flat-square&logo=docker" />
 </p>
 
 <p align="center">
   <b>轻量级、本地化、高性能的房产数据中心</b><br/>
-  <sub>四层领域架构 · B端ERP + C端营销 · JWT + API Key 双认证</sub>
+  <sub>四层领域架构 · B端ERP + C端营销 · JWT + API Key 双认证 · PostgreSQL + Docker 一键部署</sub>
 </p>
 
 ---
@@ -20,16 +21,17 @@
 
 1. [项目概述](#-项目概述)
 2. [技术架构](#-技术架构)
-3. [环境搭建](#-环境搭建)
-4. [开发命令](#-开发命令)
+3. [快速开始（Docker）](#-快速开始docker)
+4. [本地开发](#-本地开发)
 5. [配置说明](#-配置说明)
 6. [API 接口](#-api-接口)
 7. [数据库设计](#-数据库设计)
 8. [核心业务流程](#-核心业务流程)
 9. [部署指南](#-部署指南)
-10. [开发规范](#-开发规范)
-11. [常见问题](#-常见问题)
-12. [项目结构](#-项目结构)
+10. [数据迁移](#-数据迁移)
+11. [开发规范](#-开发规范)
+12. [常见问题](#-常见问题)
+13. [项目结构](#-项目结构)
 
 ---
 
@@ -59,6 +61,8 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 - 🔐 **JWT + API Key 双认证** — httpOnly Cookie 存 Token，`X-API-Key` 头用于服务间调用
 - 🔒 **Fernet 对称加密** — 身份证 / 手机号 / 微信会话密钥等敏感字段加密存储
 - 📊 **四层领域架构** — 清晰的业务边界，层间写时复制（CoW）
+- 🐘 **PostgreSQL 16** — `TIMESTAMP WITH TIME ZONE` 解决时区问题，`psycopg` 高性能驱动
+- 🐳 **Docker Compose 一键部署** — db / backend / frontend / nginx 四服务编排，开发与生产同构
 - 🖱️ **dnd-kit 拖拽排序** — 营销照片虚拟列表 + 拖拽排序 + 性能监控
 - 🛡️ **slowapi 速率限制** — 接口级防滥用
 - ⚙️ **统一异常处理** — Service 层 `ServiceException`，全局 handler 统一捕获
@@ -71,37 +75,37 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 
 ```mermaid
 graph TB
-    subgraph "C 端 公开站点"
-        C1[房源浏览 / 估价 / 注册]
-    end
-    subgraph "B 端 管理后台"
-        B1[项目 / 线索 / 营销 / 房源 / 用户]
-    end
-    subgraph "前端层 Frontend"
-        A[Next.js 16 App Router]
-        B[React 19 + React Compiler]
-        C[TailwindCSS v4 + shadcn]
-        D[SWR + nuqs + RHF/Zod]
-    end
-    subgraph "API 网关层"
-        F[FastAPI]
-        G[JWT + API Key Auth]
-        H[slowapi Rate Limiter]
-        I[CORS Middleware]
-    end
-    subgraph "业务逻辑层 Backend"
-        J[Routers 按领域分模块]
-        K[Services 按领域分模块]
-        L[Models 按领域分模块]
-        M[Schemas 按领域分模块]
-    end
-    subgraph "数据存储层"
-        N[(SQLite + WAL)]
-        O[Static Files / Uploads]
+    subgraph "Docker Compose 编排"
+        subgraph "外部入口"
+            NX[Nginx :80]
+        end
+        subgraph "前端层 Frontend"
+            A[Next.js 16 App Router]
+            B[React 19 + React Compiler]
+            C[TailwindCSS v4 + shadcn]
+            D[SWR + nuqs + RHF/Zod]
+        end
+        subgraph "API 网关层 Backend"
+            F[FastAPI]
+            G[JWT + API Key Auth]
+            H[slowapi Rate Limiter]
+            I[CORS Middleware]
+        end
+        subgraph "业务逻辑层"
+            J[Routers 按领域分模块]
+            K[Services 按领域分模块]
+            L[Models 按领域分模块]
+            M[Schemas 按领域分模块]
+        end
+        subgraph "数据存储层"
+            N[(PostgreSQL 16)]
+            O[uploads volume]
+        end
     end
 
-    C1 --> A
-    B1 --> A
+    NX -->|/api/*| F
+    NX -->|/static/uploads/*| O
+    NX -->|/| A
     A --> F
     F --> G
     F --> H
@@ -111,6 +115,29 @@ graph TB
     L --> N
     F --> O
 ```
+
+### Docker 服务编排
+
+```mermaid
+graph LR
+    Browser[浏览器 :80] --> NX[Nginx 容器]
+    NX -->|http://backend:8000/api/*| BE[Backend 容器]
+    NX -->|http://frontend:3000/| FE[Frontend 容器]
+    NX -->|/static/uploads/*| UP[(uploads volume)]
+    BE -->|postgres:5432| DB[(PostgreSQL 容器)]
+    BE -.->|挂载| UP
+    DB -.->|持久化| PG[(pgdata volume)]
+    FE -->|Server Action 直连 backend:8000| BE
+
+    style DB fill:#4169E1,color:#fff
+    style PG fill:#4169E1,color:#fff
+    style UP fill:#f59e0b,color:#fff
+```
+
+- **db**: `postgres:16-alpine` + `pgdata` 卷持久化
+- **backend**: FastAPI + uvicorn，挂载 `uploads` 卷
+- **frontend**: Next.js standalone 模式，Server Action 通过 `http://backend:8000` 直连后端容器
+- **nginx**: 反代 + 静态资源缓存，挂载 `uploads` 卷直服上传文件
 
 ### 四层业务领域架构
 
@@ -144,7 +171,7 @@ graph TB
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Next.js | 16.1.7 | React 框架，App Router、Server Actions |
+| Next.js | 16.1.7 | React 框架，App Router、Server Actions（standalone 输出） |
 | React | 19.2.1 | UI 库，React Compiler 优化 |
 | TypeScript | 5.9.3 | 类型安全 |
 | TailwindCSS | 4.3 | 原子化 CSS |
@@ -192,6 +219,8 @@ graph LR
 | `fetchClient()` | `lib/api-server.ts` | Server Components / Server Actions | 直接读 Cookie，401 自动刷新 |
 | `client` | `lib/api-client.ts` | Client Components | `credentials: "include"`，401 跳 `/login` |
 
+> **Docker 部署关键点**：Server Action 在 frontend 容器内运行，`http://127.0.0.1:8000` 会指向容器自身。需通过 `SERVER_API_URL=http://backend:8000` 环境变量让 Server Action 直连 backend 容器（已在 `docker-compose.yml` 中配置）。
+
 开发环境通过 `next.config.ts` 的 `rewrites` 将 `/api/*` 代理到 `http://127.0.0.1:8000/api/*`，使前后端同域以正常发送 Cookie。
 
 ### 后端架构
@@ -210,6 +239,8 @@ graph LR
 | cryptography (Fernet) | - | 敏感字段加密 |
 | pandas | ≥ 2.1 | 数据处理 |
 | alembic | ≥ 1.17 | 数据库迁移（可选） |
+| psycopg[binary] | ≥ 3.1 | PostgreSQL 高性能驱动 |
+| httpx | ≥ 0.25 | HTTP 客户端 |
 | uv | - | 包管理器（替代 pip/venv） |
 
 #### 服务分层（Router → Service → Model）
@@ -244,12 +275,14 @@ backend/
 ├── schemas/                    # Pydantic Schema（按领域分模块）
 ├── dependencies/               # FastAPI 依赖注入（auth / common / projects）
 ├── utils/                      # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
+├── migrations/                 # 启动时数据迁移（幂等，列变更/明文加密等）
+├── scripts/                    # 一次性脚本（如 SQLite → PostgreSQL 迁移）
 ├── main.py                     # 应用入口
 ├── db.py                       # SQLAlchemy 引擎 + 会话工厂 + init_db()
 ├── settings.py                 # Pydantic Settings
 ├── error_handlers.py           # 全局异常处理器
 ├── exceptions.py               # 通用异常
-└── init_admin.py / init_db.py  # 初始化脚本
+└── init_admin.py               # 初始化角色与管理员脚本（首次部署手动执行）
 ```
 
 #### 关键设计模式
@@ -257,8 +290,9 @@ backend/
 - **依赖注入**：`DbSessionDep = Annotated[Session, Depends(get_db)]`，`CurrentUserDep`、`CurrentAdminUserDep`、`CurrentInternalUserDep` 等预定义鉴权依赖
 - **服务异常**：Service 层抛出 `ServiceException` / `AuthenticationError` / `ResourceNotFoundError` 等（`services/system/exceptions.py`），由全局 handler 捕获。**禁止在 Service 层抛 `HTTPException`**
 - **响应格式**：直接返回 Pydantic 模型；分页用 `PaginatedResponse[T]`；列表查询带过滤+排序
-- **逻辑外键**：关联用 `user_id: int` 等软外键，级联由 Service 控制；启动时执行 `PRAGMA foreign_keys=ON`
+- **逻辑外键**：关联用 `user_id: int` 等软外键，级联由 Service 控制
 - **加密字段**：通过 `models/common/encrypted.py` 的 `EncryptedString` 类型自动加密身份证 / 手机号 / 微信会话密钥
+- **时区处理**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PostgreSQL 存储 `TIMESTAMP WITH TIME ZONE`，避免 SQLite naive datetime 导致的时区 stripping 问题
 
 #### 统一入口导入
 
@@ -277,7 +311,100 @@ from services.projects import ProjectService
 
 ---
 
-## 🚀 环境搭建
+## 🚀 快速开始（Docker）
+
+### 前置条件
+
+- 已安装 **Docker Engine** 与 **Docker Compose v2**（`docker --version` 与 `docker compose version` 都能正常输出）
+- 不需要本机安装 Node.js / Python / pnpm / uv —— 所有运行时由容器提供
+
+### 一键启动
+
+```bash
+# 1. 复制环境变量模板
+cp .env.docker.example .env
+
+# 2. 编辑 .env 填入真实凭据（必填项见下方"配置说明"）
+#    - POSTGRES_PASSWORD  数据库强密码
+#    - JWT_SECRET_KEY     JWT 签名密钥 (openssl rand -hex 32)
+#    - ENCRYPTION_KEY     Fernet 加密密钥
+#    - WECHAT_APPID/SECRET  微信凭据（不使用可填占位符）
+
+# 3. 构建并启动全部服务
+./start.sh
+# 等价于: docker compose up -d --build
+```
+
+启动后访问 `http://localhost/` 即可看到前端页面，API 走 `http://localhost/api/...`。
+
+### 首次部署：初始化管理员账号
+
+```bash
+# 创建数据库表（应用启动时已自动执行 init_db()，此处可省略）
+# docker compose exec backend .venv/bin/python init_db.py
+
+# 创建角色 + 默认 admin 用户（首次会打印临时密码，仅显示一次）
+docker compose exec backend .venv/bin/python init_admin.py
+```
+
+> 默认管理员用户名：`admin`，临时密码格式 `Temp<12位随机字符>9!`，首次登录强制修改。
+> 当前项目预设管理员密码：`Fdd123..`（详见 [AGENTS.md](AGENTS.md)）。
+
+### 验证部署
+
+```bash
+# 健康检查（应返回 {"status":"healthy","database":"connected"}）
+curl http://localhost/health
+
+# 查看服务状态
+docker compose ps
+```
+
+### 启停命令（./start.sh）
+
+| 命令 | 作用 |
+|------|------|
+| `./start.sh` 或 `./start.sh up` | 启动（后台，复用已有镜像） |
+| `./start.sh stop` | 停止（保留容器与数据卷） |
+| `./start.sh restart` | 重启 |
+| `./start.sh logs` | 跟踪全部服务日志（最近 100 行） |
+| `./start.sh status` | 查看服务状态 |
+| `./start.sh down` | 停止并删除容器（**保留** `pgdata` / `uploads` 数据卷） |
+| `./start.sh rebuild` | 重新构建镜像并启动（代码变更后使用） |
+
+### 持久化
+
+- **PostgreSQL 数据**：`pgdata` volume（数据库文件）
+- **上传文件**：`uploads` volume（同时挂载到 backend `/app/static/uploads` 与 nginx `/app/uploads`）
+
+```bash
+docker compose down          # 停止服务，保留 volume 数据
+docker compose down -v       # 同时删除 volume（谨慎！数据会丢失）
+```
+
+### 查看日志
+
+```bash
+docker compose logs -f backend    # 后端日志
+docker compose logs -f frontend   # 前端日志
+docker compose logs -f nginx      # Nginx 日志
+docker compose logs -f db         # 数据库日志
+```
+
+### 重建单个服务
+
+修改了某个服务的代码后，单独重建并重启：
+
+```bash
+docker compose up -d --build backend   # 仅重建后端
+docker compose up -d --build frontend  # 仅重建前端
+```
+
+---
+
+## 🛠️ 本地开发
+
+如需在容器外进行本地开发（保留热重载与单步调试），仍可使用原始 Node + Python 工具链。
 
 ### 开发环境要求
 
@@ -285,39 +412,21 @@ from services.projects import ProjectService
 |------|---------|------|
 | Node.js | ≥ 20 | 前端运行环境 |
 | pnpm | ≥ 9 | 前端包管理器 |
-| Python | ≥ 3.10 | 后端运行环境 |
+| Python | ≥ 3.13 | 后端运行环境（与 Docker 镜像一致） |
 | uv | 最新 | 后端包管理器（替代 pip/venv） |
+| PostgreSQL | ≥ 14 | 本地数据库（或通过 `docker compose up db` 启动单服务） |
 
-### 一键初始化（推荐）
+### 仅启动数据库容器（推荐）
 
-跨平台初始化脚本位于 `deploy/` 目录：
+开发时前端/后端跑在本机，仅用 Docker 提供 PostgreSQL：
 
 ```bash
-# macOS / Linux
-chmod +x deploy/init.sh
-./deploy/init.sh
-
-# Windows (PowerShell / CMD)
-deploy\init.bat
+docker compose up -d db
+# DATABASE_URL 指向 postgresql+psycopg://profo:ProfoPgDev2026pass@127.0.0.1:5432/profo
+# 注意：需在 docker-compose.yml 中将 db 服务的 expose 改为 ports，或在 .env 中改用 127.0.0.1:5432
 ```
 
-**脚本执行步骤：**
-
-1. ✅ 检查 Python ≥ 3.10
-2. ✅ 安装 / 检查 uv 包管理器
-3. ✅ 安装 / 检查 pnpm 包管理器
-4. ✅ 创建后端 `backend/.env`（自动生成 JWT 密钥；⚠️ 需手动补充 `ENCRYPTION_KEY` / `WECHAT_APPID` / `WECHAT_SECRET`）
-5. ✅ 创建前端 `frontend/.env.local`
-6. ✅ `uv sync` 安装后端依赖
-7. ✅ `pnpm install` 安装前端依赖
-8. ✅ `init_db.py` 创建数据库表
-9. ✅ `init_admin.py` 创建角色和管理员
-
-> ⚠️ **重要**：初始化脚本完成后会显示 `admin / admin123` 提示，但**实际管理员密码由 `init_admin.py` 随机生成**并打印在终端（格式 `Temp<12位随机字符>9!`），**仅显示一次**，请立即保存。首次登录强制修改密码（`must_change_password=True`）。
-
-### 手动安装
-
-#### 前端
+### 前端
 
 ```bash
 cd frontend
@@ -326,7 +435,7 @@ cp .env.example .env.local    # 编辑 API 地址
 pnpm dev                      # http://localhost:3000
 ```
 
-#### 后端
+### 后端
 
 ```bash
 cd backend
@@ -339,48 +448,36 @@ curl -LsSf https://astral.sh/uv/install.sh | sh        # macOS/Linux
 uv venv
 uv sync
 
-# 配置环境变量（见下节）
+# 配置环境变量（见"配置说明"）
 cp .env.example .env
+# 修改 DATABASE_URL 指向本地 PostgreSQL
 
 # 初始化数据库
 uv run python init_db.py
-
-# 创建角色和管理员（首次会打印临时密码）
-uv run python init_admin.py
+uv run python init_admin.py    # 首次会打印临时密码
 
 # 启动开发服务器
 uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
-# API: http://127.0.0.1:8000
-# 文档: http://127.0.0.1:8000/docs
+# API:   http://127.0.0.1:8000
+# 文档:  http://127.0.0.1:8000/docs
 ```
 
----
-
-## 🛠️ 开发命令
-
-### 后端
+### 开发命令
 
 ```bash
+# 后端
 cd backend
 uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000   # 开发服务器
-uv run python init_db.py                                        # 创建所有表
-uv run python init_admin.py                                     # 初始化角色和管理员
-uv sync                                                         # 安装/同步依赖
 uv run pytest                                                   # 运行测试（带覆盖率）
 uv run pytest tests/test_foo.py -v                              # 运行单个测试
-```
 
-### 前端
-
-```bash
+# 前端
 cd frontend
 pnpm dev                # 开发服务器（端口 3000）
 pnpm build              # 生产构建
-pnpm start              # 生产启动
 pnpm lint               # ESLint（max-warnings 0）
 pnpm test               # Vitest 单元测试
-pnpm test:watch         # Vitest watch 模式
-pnpm test:coverage      # 覆盖率报告
+pnpm test:e2e           # Playwright E2E 测试
 pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端运行）
 ```
 
@@ -390,38 +487,45 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 
 ## ⚙️ 配置说明
 
-### 后端环境变量（`backend/.env`）
+### Docker 部署环境变量（项目根目录 `.env`）
+
+由 `docker-compose.yml` 通过 `env_file: .env` 注入 backend 容器，模板见 [`.env.docker.example`](.env.docker.example)。
 
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
-| `JWT_SECRET_KEY` | ✅ | - | JWT 签名密钥，**生产环境务必使用强密钥** |
-| `ENCRYPTION_KEY` | ✅ | - | Fernet 对称加密密钥（用于敏感字段），`openssl rand -base64 32` 生成 |
+| `POSTGRES_USER` | ✅ | `profo` | PostgreSQL 用户名 |
+| `POSTGRES_PASSWORD` | ✅ | - | PostgreSQL 强密码（**生产环境务必使用强密码**） |
+| `POSTGRES_DB` | ✅ | `profo` | PostgreSQL 数据库名 |
+| `DATABASE_URL` | - | 见 `.env.docker.example` | 数据库连接串；compose 会用 `${POSTGRES_*}` 重新拼装覆盖指向 `db:5432`，此处仅占位 |
+| `JWT_SECRET_KEY` | ✅ | - | JWT 签名密钥，`openssl rand -hex 32` 生成 |
+| `ENCRYPTION_KEY` | ✅ | - | Fernet 对称加密密钥，`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` 生成 |
 | `WECHAT_APPID` | ✅ | - | 微信 AppID（不使用微信登录也需填占位符） |
 | `WECHAT_SECRET` | ✅ | - | 微信 AppSecret |
-| `DATABASE_URL` | - | `sqlite:///./data.db` | 数据库连接串 |
-| `API_PREFIX` | - | `/api` | API 前缀 |
-| `CORS_ORIGINS` | - | `["http://localhost:3000", ...]` | 允许的跨域来源 |
-| `FRONTEND_URL` | - | `http://localhost:3000` | 前端 URL（微信回调等） |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | - | `30` | 访问令牌过期时间 |
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | - | `7` | 刷新令牌过期时间 |
 | `JWT_KEY_ROTATION_ENABLED` | - | `false` | 是否启用密钥轮换 |
 | `JWT_SECRET_KEY_OLD` | - | - | 旧密钥（轮换过渡期） |
+| `CORS_ORIGINS` | - | `[]` | 允许的跨域来源（同域部署留空即可） |
+| `API_PREFIX` | - | `/api` | API 前缀 |
+| `UPLOAD_DIR` | - | `/app/static/uploads` | 上传目录（容器内路径，勿改） |
 | `MAX_UPLOAD_SIZE` | - | `104857600` | 上传大小上限（100 MB） |
-| `DEFAULT_PAGE_SIZE` / `MAX_PAGE_SIZE` | - | `50` / `1000` | 分页配置 |
-| `DEBUG` | - | `true` | 调试模式 |
+| `DEBUG` | - | `false` | 调试模式 |
 
-### 前端环境变量（`frontend/.env.local`）
+> **Docker 专有环境变量**（仅在 `docker-compose.yml` 中显式设置，不在 `.env` 中）：
+> - `frontend.environment.SERVER_API_URL=http://backend:8000` — Server Action / Server Component 在容器内运行时直连 backend 容器（不设此项会回退到 `http://127.0.0.1:8000`，指向 frontend 自己，导致登录"网络错误"）
+
+### 前端环境变量（`frontend/.env.local`，仅本地开发）
 
 | 变量 | 说明 |
 |------|------|
 | `NEXT_PUBLIC_API_URL` | 浏览器可访问的后端地址（开发环境 `http://127.0.0.1:8000`） |
-| `SERVER_API_URL` | 服务端内部直连地址（生产环境绕过 Nginx） |
+| `SERVER_API_URL` | 服务端内部直连地址（生产环境通过 Nginx，无需设置；Docker 部署由 compose 注入） |
 
 ---
 
 ## 🔌 API 接口
 
-所有接口前缀：`/api/v1`，文档地址：`http://127.0.0.1:8000/docs`
+所有接口前缀：`/api/v1`，文档地址：`http://localhost/docs`（Docker 部署）或 `http://127.0.0.1:8000/docs`（本地开发）
 
 ### 认证方式
 
@@ -499,12 +603,15 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 
 ### 配置
 
-- **引擎**：SQLite + WAL 模式
+- **引擎**：PostgreSQL 16（Docker 镜像 `postgres:16-alpine`）
+- **驱动**：`psycopg[binary]`（SQLAlchemy 方言 `postgresql+psycopg://`）
 - **连接池**：`QueuePool`（`pool_size=10`，`max_overflow=20`，`pool_pre_ping=True`，`pool_recycle=3600`）
-- **外键**：通过 `event.listen(engine, "connect", ...)` 在每个连接执行 `PRAGMA foreign_keys=ON`
-- **超时**：`timeout=30` 秒
+- **时区**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PG 存储为 `TIMESTAMP WITH TIME ZONE`，避免 SQLite naive datetime 导致的时区 stripping 问题
 - **编译缓存**：`execution_options={"compiled_cache": {}}`
-- **建表**：通过 `Base.metadata.create_all` 自动建表（无 Alembic 迁移目录；如需迁移可自行初始化 Alembic）
+- **建表**：通过 `Base.metadata.create_all` 自动建表（应用启动时执行 `init_db()`）
+- **数据迁移**：`backend/migrations/` 目录下的幂等启动迁移（列变更、明文加密等），应用启动时自动执行；schema 变更通过 Alembic 管理（如需）
+
+> SQLite 仍保留为开发/测试环境的兼容回退（`db.py` 通过 `_is_sqlite` 分支处理 `check_same_thread` 与 `PRAGMA foreign_keys=ON`），但生产环境只使用 PostgreSQL。`pytest` 通过 `conftest.py` 使用 SQLite in-memory 数据库以加速测试。
 
 ### ER 概览
 
@@ -656,49 +763,132 @@ graph TB
 
 ## 🌐 部署指南
 
-部署相关文件全部位于 [`deploy/`](deploy/) 目录，详细指引见 [deploy/deploy-doc.md](deploy/deploy-doc.md)。
+### 部署架构
 
-### 部署方案
+```
+浏览器 → Nginx 容器 (:80) ─┬─→ frontend 容器 (:3000, Next.js standalone)
+                           ├─→ backend 容器 (:8000, FastAPI + uvicorn)
+                           │     └─→ db 容器 (:5432, PostgreSQL 16)
+                           └─→ uploads volume (/static/uploads/)
+```
 
-**本地构建 + 上传服务器**（适用于低配阿里云服务器）：
+### 涉及文件
+
+| 文件 | 作用 |
+|------|------|
+| [`docker-compose.yml`](docker-compose.yml) | 编排 db / backend / frontend / nginx 四个服务，定义 `pgdata` / `uploads` 两个 volume |
+| [`docker/nginx.conf`](docker/nginx.conf) | 容器内 Nginx 反代配置（HTTP only，开发/单机部署用；生产 HTTPS 需在前置代理层终止） |
+| [`backend/Dockerfile`](backend/Dockerfile) | 后端多阶段构建：builder（uv sync）→ runner（uvicorn） |
+| [`frontend/Dockerfile`](frontend/Dockerfile) | 前端三阶段构建：deps（pnpm install）→ builder（next build standalone）→ runner |
+| [`.env.docker.example`](.env.docker.example) | 环境变量模板（复制为 `.env` 后编辑） |
+| [`start.sh`](start.sh) | Docker 一键启停脚本（up/stop/restart/logs/status/down/rebuild） |
+| [`backend/scripts/migrate_sqlite_to_pg.py`](backend/scripts/migrate_sqlite_to_pg.py) | 一次性 SQLite → PostgreSQL 数据迁移脚本（仅首次迁移旧数据时使用） |
+
+### 快速部署流程
 
 ```bash
-cd deploy
-./deploy.sh           # macOS/Linux
-deploy\deploy.bat     # Windows
+# 1. 克隆代码
+git clone <repo-url> profo && cd profo
+
+# 2. 准备环境变量
+cp .env.docker.example .env
+# 编辑 .env：
+#   POSTGRES_PASSWORD  数据库强密码（避免含 # 等特殊字符，防止 URL 解析失败）
+#   JWT_SECRET_KEY     openssl rand -hex 32
+#   ENCRYPTION_KEY     python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+#   WECHAT_APPID/SECRET
+
+# 3. 构建并启动
+./start.sh           # 等价于 docker compose up -d --build
+
+# 4. 初始化管理员（首次部署）
+docker compose exec backend .venv/bin/python init_admin.py
+# 会打印临时密码，首次登录强制修改
+
+# 5. 验证
+curl http://localhost/health
+# {"status":"healthy","database":"connected"}
 ```
 
-脚本自动完成：
-1. 本地 `pnpm build` 生成 `frontend/.next`
-2. 上传 `frontend/.next`、`backend/`、`deploy/` 到服务器 `/root/profo/`
-3. 服务器执行 `uv sync`、`pnpm install --prod`
-4. PM2 启动 / 重启 `profo-backend` 和 `profo-frontend`
+### 生产环境注意事项
 
-### 首次部署
+1. **HTTPS**：当前 `docker/nginx.conf` 仅监听 80 端口。生产环境建议在前置层（云负载均衡 / Caddy / Traefik）终止 HTTPS，再转发到 nginx 容器的 80 端口；或自定义 `docker/nginx.conf` 挂载证书。
+2. **密钥管理**：`.env` 中的 `JWT_SECRET_KEY` / `ENCRYPTION_KEY` / `POSTGRES_PASSWORD` 务必使用强随机值，**严禁提交到 Git**（`.env` 已在 `.gitignore` 中）。
+3. **数据库备份**：定期备份 `pgdata` volume，或使用 `pg_dump`：
+   ```bash
+   docker compose exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup_$(date +%F).sql
+   ```
+4. **日志**：`docker compose logs -f` 跟踪日志；如需持久化，建议配置外部日志驱动。
+5. **资源限制**：低配服务器可在 `docker-compose.yml` 中添加 `mem_limit` / `cpus` 限制单个容器资源。
+6. **密码安全**：`POSTGRES_PASSWORD` 避免包含 `#`、`@`、`:`、`/` 等 URL 保留字符，防止 `DATABASE_URL` 解析失败。如必须使用，需对密码做 URL 编码。
 
-1. **服务器初始化**：`ssh root@server` → `cd /root/profo/deploy && ./setup-server.sh`
-2. **配置生产环境变量**：
-   - `cp deploy/.env.backend.production backend/.env` → 修改 `JWT_SECRET_KEY`、`ENCRYPTION_KEY`、`WECHAT_*`
-   - 建议把 `DATABASE_URL` 改为独立目录（如 `sqlite:////root/profo-data/data.db`），避免部署覆盖
-3. **PM2 启动**：`pm2 start ecosystem.config.js && pm2 save && pm2 startup`
-4. **验证**：`curl http://127.0.0.1:8000/health` 应返回 `healthy`
-
-### 生产架构
-
-```
-浏览器 → Nginx (443/80) ─┬─→ frontend (3000, PM2)
-                         ├─→ backend  (8000, PM2, uv run)
-                         └─→ /static/ (静态文件)
-```
-
-### PM2 常用命令
+### 升级流程
 
 ```bash
-pm2 status                          # 查看状态
-pm2 logs profo-backend --lines 50   # 查看后端日志
-pm2 restart profo-backend           # 重启后端
-pm2 monit                           # 监控面板
+# 拉取最新代码
+git pull
+
+# 重新构建并启动（保留数据）
+./start.sh rebuild
+
+# 如有 schema 变更，应用会通过 migrations/ 自动执行幂等迁移
 ```
+
+---
+
+## 🔄 数据迁移
+
+### 从旧 SQLite 迁移到 PostgreSQL（一次性）
+
+仅当你之前用 SQLite 跑过生产数据，需要把旧数据搬到 Docker 部署的 PostgreSQL 时执行。新部署可跳过此节。
+
+#### 迁移范围
+
+仅迁移项目管理相关 12 张表（`projects` 及其子表）：
+`project_documents`, `renovation_photos`, `project_renovations`, `project_status_logs`,
+`finance_records`, `project_interactions`, `project_evaluations`, `project_follow_ups`,
+`project_sales`, `project_owners`, `project_contracts`, `projects`。
+
+其他业务数据（线索、房源、营销项目、用户等）不迁移。
+
+#### 迁移步骤
+
+1. **准备旧 SQLite 文件**：将旧 `data.db` 挂载到 backend 容器内（或在 `.env` 中设置 `SQLITE_SOURCE_URL` 指向它）。
+
+2. **启动 Docker 服务**（确保 PostgreSQL 已就绪）：
+   ```bash
+   ./start.sh
+   ```
+
+3. **执行迁移脚本**：
+   ```bash
+   docker compose exec backend .venv/bin/python scripts/migrate_sqlite_to_pg.py
+   ```
+
+4. **验证**：
+   ```bash
+   curl -H "Authorization: Bearer <admin-token>" \
+     "http://localhost/api/v1/projects?page=1&page_size=10"
+   # 应返回迁移后的项目列表
+   ```
+
+#### 迁移脚本关键设计
+
+- **幂等**：在单事务内按子表优先 DELETE → 父表优先 INSERT，失败整体回滚，可重跑。
+- **时区处理**：SQLite 返回 naive datetime，脚本对所有 `tzinfo=None` 的 datetime 附加 UTC 时区，匹配 PG 的 `TIMESTAMP WITH TIME ZONE`。
+- **加密字段反序列化**：`EncryptedString` 列在源库用原生 SQL 读出的是密文，脚本通过 `decrypt()` 还原成明文，让后续 Core insert 的 `process_bind_param` 正常单层加密（避免双重加密）。
+- **JSON 字段反序列化**：JSON 列同理，先 `json.loads()` 还原成 Python 对象，避免双重序列化。
+
+详见 [`backend/scripts/migrate_sqlite_to_pg.py`](backend/scripts/migrate_sqlite_to_pg.py)。
+
+### 启动时数据迁移（自动）
+
+`backend/migrations/` 目录下的迁移在应用启动时由 `main.py` 的 `lifespan` 调用 `run_startup_migrations(engine)` 自动执行，幂等设计：
+- 列变更（`ALTER TABLE ADD COLUMN`）
+- 明文手机号加密
+- 图片 URL 路径修正（绝对 URL → 相对路径）
+
+无需手动执行。
 
 ---
 
@@ -727,6 +917,7 @@ pm2 monit                           # 监控面板
 - Service 层抛 `ServiceException`，**禁止抛 `HTTPException`**
 - 所有函数完整类型注解；Pydantic 分 `*Create/*Update/*Response/*Filter`
 - 文件 >250 行需注释说明不拆理由
+- Schema 变更通过 Alembic 迁移管理；启动时 `migrations/` 会执行幂等兼容迁移
 
 ### 提交前
 
@@ -748,37 +939,71 @@ pm2 monit                           # 监控面板
 
 ### Q1: 后端启动报 `JWT_SECRET_KEY not set` / `ENCRYPTION_KEY not set`
 
-`backend/.env` 缺少必填环境变量。生成密钥：
+`.env` 缺少必填环境变量。生成密钥：
 
 ```bash
 openssl rand -hex 32          # JWT_SECRET_KEY
 openssl rand -base64 32       # ENCRYPTION_KEY (Fernet)
+# 或
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-### Q2: 忘记管理员密码
+### Q2: Docker 部署后管理后台登录显示"网络错误，请连接后端服务"
 
-重新运行初始化脚本可重置：
+**根因**：frontend 容器内的 Server Action 默认通过 `http://127.0.0.1:8000` 调后端，但容器内该地址指向 frontend 自身。
+
+**修复**：`docker-compose.yml` 的 frontend 服务已配置 `SERVER_API_URL: http://backend:8000`，让 Server Action 直连 backend 容器。如仍报错，检查：
 
 ```bash
-cd backend
-uv run python init_admin.py
+docker compose exec frontend wget -qO- http://backend:8000/health
+# 应返回 {"status":"healthy","database":"connected"}
 ```
 
-> ⚠️ 该脚本会检测已有 admin 用户并跳过。如需强制重置，需手动删除 `users` 表中 `username='admin'` 记录后重跑。
+### Q3: 项目管理统计显示有项目，但列表为空（HTTP 500）
 
-### Q3: 前端类型错误 `Property 'xxx' does not exist`
+**根因**：从 SQLite 迁移到 PostgreSQL 时，迁移脚本对 `EncryptedString` 列双重加密、`JSON` 列双重序列化，导致响应 schema 校验失败。
+
+**修复**：使用修正后的 `backend/scripts/migrate_sqlite_to_pg.py` 重跑迁移（脚本会先 DELETE 再 INSERT，幂等）：
+
+```bash
+docker compose exec backend .venv/bin/python scripts/migrate_sqlite_to_pg.py
+```
+
+### Q4: 启动报 `POSTGRES_PASSWORD` URL 解析失败
+
+**根因**：`.env` 中 `POSTGRES_PASSWORD` 包含 `#`、`@`、`:`、`/` 等 URL 保留字符，被 `DATABASE_URL` 解析器误判。
+
+**修复**：改用纯字母数字密码，或对密码做 URL 编码（`python -c "import urllib.parse; print(urllib.parse.quote('你的密码'))"`）。
+
+### Q5: 忘记管理员密码
+
+进入容器重置：
+
+```bash
+docker compose exec backend .venv/bin/python init_admin.py
+```
+
+> ⚠️ 该脚本会检测已有 admin 用户并跳过。如需强制重置，需手动删除 `users` 表中 `username='admin'` 记录后重跑：
+
+```bash
+docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB \
+  -c "DELETE FROM users WHERE username='admin';"
+docker compose exec backend .venv/bin/python init_admin.py
+```
+
+### Q6: 前端类型错误 `Property 'xxx' does not exist`
 
 后端接口变更后未同步类型：
 
 ```bash
 # 1. 启动后端
-cd backend && uv run uvicorn main:app --reload
+docker compose up -d backend
 
 # 2. 重新生成类型
 cd frontend && pnpm gen-api
 ```
 
-### Q4: API 返回 401
+### Q7: API 返回 401
 
 检查清单：
 1. 请求头包含 `Authorization: Bearer <token>` 或通过 httpOnly Cookie
@@ -786,33 +1011,12 @@ cd frontend && pnpm gen-api
 3. 用户状态为 `active`
 4. 用户具有相应权限（admin / operator / user / customer）
 
-### Q5: SQLite 数据库锁定
-
-连接池已配置 `timeout=30`。若仍出现，检查是否有长事务未提交，或调大 `pool_size`。
-
-### Q6: 文件上传失败
+### Q8: 文件上传失败
 
 - 大小不超过 100 MB
 - 类型在允许列表：`.jpg .jpeg .png .pdf .xlsx .xls .csv .doc .docx .md`
-- `static/uploads` 目录有写入权限
+- `uploads` volume 挂载正常：`docker compose exec backend ls /app/static/uploads`
 - `Content-Type: multipart/form-data`
-
-### Q7: 部署后数据库"丢失"
-
-`deploy.sh` 整目录覆盖会导致 `data.db` 被覆盖。建议把数据库放到代码目录之外：
-
-```env
-DATABASE_URL=sqlite:////root/profo-data/data.db
-```
-
-### Q8: 生产环境 Nginx 502
-
-```bash
-pm2 status                                    # 检查进程是否在线
-pm2 logs profo-backend --lines 50             # 查看后端日志
-ss -tlnp | grep -E ':(3000|8000)\b'           # 检查端口监听
-tail -n 50 /var/log/nginx/profo.error.log     # Nginx 错误日志
-```
 
 ### Q9: 前端启动报 `Module not found`
 
@@ -820,6 +1024,15 @@ tail -n 50 /var/log/nginx/profo.error.log     # Nginx 错误日志
 cd frontend
 rm -rf node_modules pnpm-lock.yaml .next
 pnpm install
+```
+
+### Q10: 如何重置整个环境（清空数据）
+
+```bash
+./start.sh down                  # 停止并删除容器
+docker compose down -v           # 同时删除 pgdata / uploads volume（数据丢失！）
+./start.sh                       # 重新启动
+docker compose exec backend .venv/bin/python init_admin.py    # 重新初始化管理员
 ```
 
 ---
@@ -833,7 +1046,13 @@ ProFo/
 ├── CLAUDE.md                      # Claude Code 指引
 ├── DESIGN.md                      # 设计风格参考
 │
-├── frontend/                      # 前端（Next.js 16）
+├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend / nginx）
+├── docker/
+│   └── nginx.conf                 # 容器内 Nginx 反代配置
+├── .env.docker.example            # Docker 部署环境变量模板
+├── start.sh                       # Docker 一键启停脚本
+│
+├── frontend/                      # 前端（Next.js 16，standalone 输出）
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── (main)/            # B 端受保护路由组
@@ -857,6 +1076,7 @@ ProFo/
 │   │   └── hooks/
 │   ├── public/
 │   ├── next.config.ts             # React Compiler + rewrites 代理
+│   ├── Dockerfile                 # 多阶段构建（deps → builder → runner）
 │   ├── playwright.config.ts       # E2E 测试
 │   └── package.json
 │
@@ -867,27 +1087,19 @@ ProFo/
 │   ├── schemas/                   # 按领域分模块
 │   ├── dependencies/              # auth / common / projects
 │   ├── utils/                     # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
+│   ├── migrations/                # 启动时幂等迁移（列变更 / 明文加密 / URL 修正）
+│   ├── scripts/                   # 一次性脚本（SQLite → PostgreSQL 迁移）
 │   ├── main.py                    # 应用入口
-│   ├── db.py                      # SQLAlchemy 引擎 + 会话
+│   ├── db.py                      # SQLAlchemy 引擎 + 会话（SQLite/PG 双方言分支）
 │   ├── settings.py                # Pydantic Settings
 │   ├── error_handlers.py          # 全局异常 handler
 │   ├── exceptions.py              # 通用异常
 │   ├── init_db.py                 # 建表脚本
 │   ├── init_admin.py              # 初始化角色和管理员
-│   ├── conftest.py                # pytest 配置
+│   ├── conftest.py                # pytest 配置（SQLite in-memory）
+│   ├── Dockerfile                 # 多阶段构建（builder → runner）
 │   ├── pyproject.toml             # 依赖与工具配置
 │   └── uv.lock
-│
-├── deploy/                        # 部署相关
-│   ├── README.md                  # 部署快速指南
-│   ├── deploy-doc.md              # 详细部署文档
-│   ├── init.sh / init.bat         # 一键初始化脚本
-│   ├── deploy.sh / deploy.bat     # 部署脚本
-│   ├── setup-server.sh            # 服务器初始化
-│   ├── ecosystem.config.js        # PM2 配置
-│   ├── profo-nginx.conf           # Nginx 配置模板
-│   ├── .env.backend.production    # 后端生产环境模板
-│   └── .env.frontend.production   # 前端生产环境模板
 │
 ├── .github/workflows/lint.yml     # GitHub Actions Lint
 └── .gitignore
@@ -901,6 +1113,8 @@ ProFo/
 - [Next.js 官方文档](https://nextjs.org/docs)
 - [TailwindCSS 官方文档](https://tailwindcss.com/docs)
 - [SQLAlchemy 官方文档](https://docs.sqlalchemy.org/)
+- [PostgreSQL 官方文档](https://www.postgresql.org/docs/)
+- [Docker Compose 官方文档](https://docs.docker.com/compose/)
 - [shadcn/ui](https://ui.shadcn.com/)
 - [uv 包管理器](https://docs.astral.sh/uv/)
 

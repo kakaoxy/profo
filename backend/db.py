@@ -11,6 +11,8 @@ from settings import settings
 
 logger = logging.getLogger(__name__)
 
+_is_sqlite = settings.database_url.startswith("sqlite")
+
 
 # 创建数据库引擎（优化版本）
 # 使用 QueuePool 替代 StaticPool 以支持更好的并发访问
@@ -27,11 +29,15 @@ def _enable_sqlite_fk(dbapi_conn, _connection_record: object) -> None:  # noqa: 
 engine = create_engine(
     settings.database_url,
     echo=settings.database_echo,
-    connect_args={
-        "check_same_thread": False,  # SQLite 特定配置，允许多线程访问
-        # SQLite 性能优化参数
-        "timeout": 30,  # 增加超时时间到30秒
-    },
+    connect_args=(
+        {
+            "check_same_thread": False,  # SQLite 特定配置，允许多线程访问
+            # SQLite 性能优化参数
+            "timeout": 30,  # 增加超时时间到30秒
+        }
+        if _is_sqlite
+        else {}
+    ),
     poolclass=QueuePool,  # 使用队列连接池支持并发
     pool_size=10,  # 连接池大小
     max_overflow=20,  # 最大溢出连接数
@@ -43,8 +49,9 @@ engine = create_engine(
     },
 )
 
-# 监听连接事件，启用外键约束
-event.listen(engine, "connect", _enable_sqlite_fk)
+# 监听连接事件，启用外键约束（仅 SQLite）
+if _is_sqlite:
+    event.listen(engine, "connect", _enable_sqlite_fk)
 
 # 创建会话工厂
 SessionLocal = sessionmaker(

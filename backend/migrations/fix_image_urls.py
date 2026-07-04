@@ -75,8 +75,10 @@ def run_fix_image_urls(engine: Engine) -> None:
                 logger.info("l4_marketing_media.%s: 修正 %d 条 URL", col, len(rows))
 
         # 4. l4_marketing_projects.images (JSON 数组)
+        # images 为 JSON 列：PostgreSQL 不支持 JSON LIKE text（SQLite 经 text 亲和性允许），
+        # 统一 CAST AS text 跨方言兼容
         rows = conn.execute(text(
-            "SELECT id, images FROM l4_marketing_projects WHERE images LIKE '%http://%'"
+            "SELECT id, images FROM l4_marketing_projects WHERE CAST(images AS text) LIKE '%http://%'"
         )).fetchall()
         for row in rows:
             if row[1]:
