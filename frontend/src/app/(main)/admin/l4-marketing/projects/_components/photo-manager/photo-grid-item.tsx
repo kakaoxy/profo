@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { Check } from "lucide-react";
 import { useSimpleImageLoader } from "../common/hooks";
 import type { RenovationPhoto } from "./types";
@@ -14,7 +14,8 @@ interface PhotoGridItemProps {
 }
 
 export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: PhotoGridItemProps) {
-  const { status: imageStatus } = useSimpleImageLoader(getFileUrl(photo.url));
+  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
+  const { status: imageStatus } = useSimpleImageLoader(displayUrl);
 
   return (
     <div
@@ -55,7 +56,7 @@ export function PhotoGridItem({ photo, isSelected, isExisting, onToggle }: Photo
         )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={getFileUrl(photo.url)}
+          src={displayUrl}
           alt={photo.description || `Photo ${photo.id}`}
           loading="lazy"
           decoding="async"

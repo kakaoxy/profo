@@ -59,7 +59,7 @@ export const SortablePhotoItem = memo(function SortablePhotoItem({
   // 转换照片数据格式
   const photoData: PhotoItemData = {
     id: photo.id,
-    url: photo.file_url || photo.thumbnail_url || "",
+    url: photo.thumbnail_url || photo.file_url || "",
     description: photo.description,
     category: photo.photo_category,
     stage: photo.renovation_stage,

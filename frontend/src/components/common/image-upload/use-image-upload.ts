@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES, DEFAULT_MAX_FILE_SIZE } from "@/components/common/upload";
+import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES, DEFAULT_MAX_FILE_SIZE, compressImage } from "@/components/common/upload";
 import type { ImageItem } from "./types";
 
 interface UseImageUploadOptions {
@@ -75,6 +75,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}): UseImageUpl
     maxSize,
     allowedTypes,
     maxConcurrency,
+    beforeUpload: (file) => compressImage(file),
     onSuccess: (response, file) => {
       const fileId = itemsRef.current.find(
         (item) => item.file === file && item.status === "uploading"

@@ -5,6 +5,7 @@ export interface RenovationPhoto {
   project_id: number | string;
   stage: string;
   url: string;
+  thumbnail_url?: string | null;
   filename?: string | null;
   description?: string | null;
   created_at: string;

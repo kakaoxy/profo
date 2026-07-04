@@ -70,6 +70,7 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
                 project_id: String(p.project_id),
                 stage: String(p.stage || ""),
                 url: String(p.url || ""),
+                thumbnail_url: p.thumbnail_url ? String(p.thumbnail_url) : null,
                 filename: p.filename ? String(p.filename) : null,
                 description: p.description ? String(p.description) : null,
                 created_at: String(p.created_at || ""),

@@ -7,7 +7,7 @@
 
 import { useCallback, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useUpload } from "@/components/common/upload";
+import { useUpload, compressImage } from "@/components/common/upload";
 import { createL4MarketingMediaAction } from "../../actions";
 import {
   ALLOWED_IMAGE_TYPES,
@@ -77,6 +77,7 @@ export function useImageUpload({
     maxSize: MAX_IMAGE_SIZE,
     allowedTypes: ALLOWED_IMAGE_TYPES,
     multiple: true,
+    beforeUpload: (file) => compressImage(file),
     onProgress: ({ file, progress }) => {
       // 同步到组件的 uploadingFiles 状态（用于UI展示）
       setUploadingFiles((prev) =>

@@ -1,10 +1,10 @@
 "use client";
 
-import { memo, useMemo, CSSProperties } from "react";
+import { memo, CSSProperties } from "react";
 import { cn } from "@/lib/utils";
+import { getThumbnailUrl } from "@/lib/config";
 import { Check } from "lucide-react";
 import { useElementVisibility, useSimpleImageLoader } from "../common/hooks";
-import { getOptimizedImageUrl } from "../common/utils";
 import type { RenovationPhoto } from "./types";
 
 interface VirtualizedPhotoGridItemProps {
@@ -29,11 +29,8 @@ export const VirtualizedPhotoGridItem = memo(function VirtualizedPhotoGridItem({
   // 使用共享的元素视口检测 Hook
   const { ref: elementRef, isVisible: isInViewport } = useElementVisibility<HTMLDivElement>();
 
-  // 使用优化的图片 URL
-  const imageUrl = photo.url;
-  const thumbnailUrl = useMemo(() => {
-    return getOptimizedImageUrl(imageUrl, { width: 200, height: 200, quality: 75 });
-  }, [imageUrl]);
+  // 优先使用缩略图（避免加载3MB+原图）
+  const thumbnailUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
 
   // 使用共享的图片加载 Hook
   const { status: imageStatus } = useSimpleImageLoader(
