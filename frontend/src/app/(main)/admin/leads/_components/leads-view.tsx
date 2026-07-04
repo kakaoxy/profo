@@ -35,11 +35,6 @@ const AddLeadModal = dynamic(
   { ssr: false },
 );
 
-const MonitoringDashboard = dynamic(
-  () => import("./monitoring-dashboard").then((mod) => mod.MonitoringDashboard),
-  { ssr: false },
-);
-
 interface LeadsViewProps {
   initialLeads: Lead[];
   initialSelectedLeadId?: string;
@@ -67,14 +62,11 @@ export function LeadsView({
     isDrawerOpen,
     editingLead,
     isAddModalOpen,
-    monitoringLead,
     openDetail,
     closeDetail,
     startAddLead,
     startEditLead,
     closeAddModal,
-    openMonitor,
-    closeMonitor,
   } = useLeadSelection({ initialSelectedLeadId, leads });
 
   const { viewMode, setViewMode } = useViewMode("table");
@@ -213,13 +205,8 @@ export function LeadsView({
           onClose={closeDetail}
           onAudit={handleAudit}
           onAddFollowUp={handleAddFollowUp}
-          onViewMonitor={openMonitor}
           onImagesUpdate={handleImagesUpdate}
         />
-
-        {monitoringLead && (
-          <MonitoringDashboard lead={monitoringLead} onClose={closeMonitor} />
-        )}
 
         <AddLeadModal
           isOpen={isAddModalOpen}

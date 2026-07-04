@@ -1,8 +1,8 @@
 import React from 'react';
-import { Target, Image as ImageIcon, History } from 'lucide-react';
+import { Target, Image as ImageIcon, History, LineChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'info' | 'images' | 'followup';
+export type TabId = 'info' | 'images' | 'followup' | 'monitor';
 
 interface Props {
   activeTab: TabId;
@@ -14,7 +14,8 @@ export const TabsNav: React.FC<Props> = ({ activeTab, onTabChange, imagesCount }
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'info', label: '决策面板', icon: <Target className="h-3.5 w-3.5" /> },
     { id: 'images', label: `影像库 (${imagesCount})`, icon: <ImageIcon className="h-3.5 w-3.5" /> },
-    { id: 'followup', label: '流转轨迹', icon: <History className="h-3.5 w-3.5" /> }
+    { id: 'followup', label: '流转轨迹', icon: <History className="h-3.5 w-3.5" /> },
+    { id: 'monitor', label: '数据大盘', icon: <LineChart className="h-3.5 w-3.5" /> }
   ];
 
   return (

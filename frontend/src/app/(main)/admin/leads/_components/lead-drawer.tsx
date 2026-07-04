@@ -8,6 +8,7 @@ import { TabsNav, TabId } from './drawer-parts/tabs-nav';
 import { InfoTab } from './drawer-parts/info-tab';
 import { ImagesTab } from './drawer-parts/images-tab';
 import { FollowUpTab } from './drawer-parts/follow-up-tab';
+import { MonitoringDashboard } from './monitoring-dashboard';
 
 interface Props {
   lead: Lead | null;
@@ -15,11 +16,10 @@ interface Props {
   onClose: () => void;
   onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
   onAddFollowUp: (leadId: string, method: FollowUpMethod, content: string) => void;
-  onViewMonitor: (lead: Lead) => void;
   onImagesUpdate?: (leadId: string, images: string[]) => void;
 }
 
-export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, onAddFollowUp, onViewMonitor, onImagesUpdate }) => {
+export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, onAddFollowUp, onImagesUpdate }) => {
   const [activeTab, setActiveTab] = useState<TabId>('info');
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
 
@@ -42,6 +42,10 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
     }
   };
 
+  const handleSwitchToMonitor = () => {
+    setActiveTab('monitor');
+  };
+
   if (!lead) return null;
 
   return (
@@ -51,7 +55,7 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
         className="w-full sm:w-[550px] md:w-[650px] sm:max-w-[550px] md:max-w-[650px] p-0 flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">客户详情</SheetTitle>
-        <DrawerHeader lead={lead} onViewMonitor={onViewMonitor} />
+        <DrawerHeader lead={lead} />
 
         <LifecycleStepper lead={lead} />
 
@@ -59,9 +63,11 @@ export const LeadDrawer: React.FC<Props> = ({ lead, isOpen, onClose, onAudit, on
 
         <div key={lead.id} className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar bg-muted/30">
           {activeTab === 'info' ? (
-            <InfoTab lead={lead} onAudit={onAudit} onViewMonitor={onViewMonitor} />
+            <InfoTab lead={lead} onAudit={onAudit} onSwitchToMonitor={handleSwitchToMonitor} />
           ) : activeTab === 'images' ? (
             <ImagesTab images={lead.images} onImagesChange={onImagesUpdate ? handleImagesChange : undefined} />
+          ) : activeTab === 'monitor' ? (
+            <MonitoringDashboard lead={lead} embedded />
           ) : (
             <FollowUpTab
               lead={lead}

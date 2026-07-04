@@ -49,19 +49,17 @@ export const ActionCell = memo(function ActionCell({ project }: ActionCellProps)
         </Button>
       </Link>
 
-      <div className="hidden sm:block">
-        <DeleteConfirmButton
-          onDelete={async () => {
-            const res = await deleteL4MarketingProjectAction(project.id);
-            if (res.success) {
-              return { success: true };
-            }
-            return { success: false, message: res.error };
-          }}
-          itemName={project.title}
-          description="该操作不可撤销。"
-        />
-      </div>
+      <DeleteConfirmButton
+        onDelete={async () => {
+          const res = await deleteL4MarketingProjectAction(project.id);
+          if (res.success) {
+            return { success: true };
+          }
+          return { success: false, message: res.error };
+        }}
+        itemName={project.title}
+        description="该操作不可撤销。"
+      />
     </div>
   );
 });

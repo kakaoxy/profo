@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Project } from "../types";
-import { ActionCell } from "./action-cell";
+import { ActionCell, ProjectTableMeta } from "./action-cell";
 import { getStatusLabel, getProjectStatusClassName, DEFAULT_STATUS } from "@/lib/status-colors";
 
 const formatMoney = (value: number | undefined | null) => {
@@ -198,6 +198,9 @@ export const columns: ColumnDef<Project>[] = [
   {
     id: "actions",
     header: "操作",
-    cell: ActionCell,
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as ProjectTableMeta | undefined;
+      return <ActionCell row={row} onEdit={meta?.onEdit} />;
+    },
   },
 ];
