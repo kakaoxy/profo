@@ -75,7 +75,7 @@ export function TimeSection({ values, setValue, isEditing }: ContractSectionsPro
   );
 }
 
-// 装修费用（硬装+软装合并）
+// 装修费用（硬装+软装+定制柜+窗户+电器）
 export function DecorationCostSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
@@ -105,6 +105,30 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           value={values.soft_actual_cost}
           onChange={(v) => setValue("soft_actual_cost", v)}
           placeholder="软装实际成本"
+          disabled={!isEditing}
+          suffix="元"
+        />
+        <NumberInputField
+          label="定制柜定额"
+          value={values.custom_cabinet_amount}
+          onChange={(v) => setValue("custom_cabinet_amount", v)}
+          placeholder="定制柜定额"
+          disabled={!isEditing}
+          suffix="元"
+        />
+        <NumberInputField
+          label="窗户金额"
+          value={values.window_amount}
+          onChange={(v) => setValue("window_amount", v)}
+          placeholder="窗户金额"
+          disabled={!isEditing}
+          suffix="元"
+        />
+        <NumberInputField
+          label="电器金额"
+          value={values.appliance_amount}
+          onChange={(v) => setValue("appliance_amount", v)}
+          placeholder="电器金额"
           disabled={!isEditing}
           suffix="元"
         />

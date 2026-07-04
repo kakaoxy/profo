@@ -6069,6 +6069,12 @@ export interface components {
             soft_actual_cost?: string | null;
             /** Soft Detail Attachment */
             soft_detail_attachment?: string | null;
+            /** Custom Cabinet Amount */
+            custom_cabinet_amount?: string | null;
+            /** Window Amount */
+            window_amount?: string | null;
+            /** Appliance Amount */
+            appliance_amount?: string | null;
             /** Design Fee */
             design_fee?: string | null;
             /** Demolition Fee */
@@ -6180,6 +6186,21 @@ export interface components {
              * @description 软装明细附件
              */
             soft_detail_attachment?: string | null;
+            /**
+             * Custom Cabinet Amount
+             * @description 定制柜定额
+             */
+            custom_cabinet_amount?: number | string | null;
+            /**
+             * Window Amount
+             * @description 窗户金额
+             */
+            window_amount?: number | string | null;
+            /**
+             * Appliance Amount
+             * @description 电器金额
+             */
+            appliance_amount?: number | string | null;
             /**
              * Design Fee
              * @description 设计费用
