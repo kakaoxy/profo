@@ -15,23 +15,23 @@ function formatAmount(amount: number | undefined | null): string {
 
 // 费用汇总
 export function CostSummarySection({ values }: CostSummaryProps) {
-  // 计算装修总预算
+  // 计算装修总预算（Number() 兜底，防止字符串拼接）
   const totalBudget =
-    (values.hard_contract_amount || 0) +
-    (values.soft_budget || 0) +
-    (values.design_fee || 0) +
-    (values.demolition_fee || 0) +
-    (values.garbage_fee || 0) +
-    (values.other_extra_fee || 0);
+    (Number(values.hard_contract_amount) || 0) +
+    (Number(values.soft_budget) || 0) +
+    (Number(values.design_fee) || 0) +
+    (Number(values.demolition_fee) || 0) +
+    (Number(values.garbage_fee) || 0) +
+    (Number(values.other_extra_fee) || 0);
 
   // 计算装修实际发生费用
   const totalActualCost =
-    (values.hard_contract_amount || 0) +
-    (values.soft_actual_cost || 0) +
-    (values.design_fee || 0) +
-    (values.demolition_fee || 0) +
-    (values.garbage_fee || 0) +
-    (values.other_extra_fee || 0);
+    (Number(values.hard_contract_amount) || 0) +
+    (Number(values.soft_actual_cost) || 0) +
+    (Number(values.design_fee) || 0) +
+    (Number(values.demolition_fee) || 0) +
+    (Number(values.garbage_fee) || 0) +
+    (Number(values.other_extra_fee) || 0);
 
   // 费用明细数据
   const items = [
