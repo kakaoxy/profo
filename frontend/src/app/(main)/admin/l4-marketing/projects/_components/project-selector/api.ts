@@ -141,6 +141,11 @@ export async function fetchImportData(
     tags: toOptionalString(rawData.tags),
     decoration_style: toOptionalString(rawData.decoration_style),
     status: toOptionalString(rawData.status),
+    // 改造阶段完成时间 - 后端返回 dict[str,str] | null
+    stage_completed_dates:
+      rawData.stage_completed_dates != null && typeof rawData.stage_completed_dates === "object"
+        ? (rawData.stage_completed_dates as Record<string, string>)
+        : undefined,
     available_media: rawMedia.map((media) => ({
       id: String(media.id || ""),
       file_url: String(media.file_url || ""),

@@ -87,8 +87,8 @@ class MarketingImportService:
         )
         stage_completed_dates = renovation.stage_completed_dates if renovation else None
 
-        # 从地址提取楼层信息
-        floor_info = self._extract_floor_info(project.address)
+        # 楼层信息: 优先使用 L3 Project.floor_info 字段, 缺失时回退到地址提取
+        floor_info = project.floor_info or self._extract_floor_info(project.address)
 
         # 获取项目状态
         status = (
