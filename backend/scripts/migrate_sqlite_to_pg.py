@@ -30,7 +30,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import Table, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.types import JSON, TypeDecorator
 
@@ -83,7 +83,7 @@ def _get_urls() -> tuple[str, str]:
     return src_url, dst_url
 
 
-def _read_rows(src_engine: Engine, table_name: str, table_obj: object) -> list[dict]:
+def _read_rows(src_engine: Engine, table_obj: Table) -> list[dict]:
     """从源库读取指定表的全部行, 返回处理后的字典列表.
 
     按目标表列类型对值做反序列化, 使后续 Core insert 时 type decorator 能正确工作:
@@ -95,7 +95,7 @@ def _read_rows(src_engine: Engine, table_name: str, table_obj: object) -> list[d
     """
     # 预扫描列类型, 避免逐行逐列 isinstance 开销.
     col_types: dict[str, tuple[str, ...]] = {}
-    for col in table_obj.columns:  # type: ignore[attr-defined]
+    for col in table_obj.columns:
         t = col.type
         kinds: tuple[str, ...] = ()
         if isinstance(t, EncryptedString):
@@ -106,7 +106,8 @@ def _read_rows(src_engine: Engine, table_name: str, table_obj: object) -> list[d
 
     rows: list[dict] = []
     with src_engine.connect() as conn:
-        result = conn.execute(text(f"SELECT * FROM {table_name}"))
+        # 使用 Core API 规避 SQL 拼接, 表名由 SQLAlchemy 元数据安全处理.
+        result = conn.execute(table_obj.select())
         for mapping in result.mappings():
             row_dict: dict = {}
             for key, value in mapping.items():
@@ -144,13 +145,13 @@ def _migrate(src_engine: Engine, dst_engine: Engine) -> int:
     total: int = 0
     try:
         with dst_engine.begin() as conn:
-            # 幂等: 子表优先删除目标表数据.
+            # 幂等: 子表优先删除目标表数据. 使用 Core API 规避 SQL 拼接.
             for name in DELETION_ORDER:
-                conn.execute(text(f"DELETE FROM {name}"))
+                conn.execute(tables_meta[name].delete())
             # 父表优先插入.
             for name in INSERTION_ORDER:
                 table_obj = tables_meta[name]
-                rows = _read_rows(src_engine, name, table_obj)
+                rows = _read_rows(src_engine, table_obj)
                 if rows:
                     conn.execute(table_obj.insert(), rows)
                 print(f"{name}: migrated {len(rows)} rows")
