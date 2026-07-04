@@ -9,15 +9,27 @@ services:
       - pgdata:/var/lib/postgresql/data
     expose:
       - "5432"
+    # 生产环境内存调优（1.6G 服务器）
+    # shared_buffers 128MB + work_mem 4MB，控制在 256MB 以内
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+      -c max_connections=50
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    mem_limit: 384m
 
   backend:
+    image: profo-backend:prod
     build: ./backend
+    # 跨平台构建：本地 Mac (arm64) 必须构建 amd64 镜像，否则服务器 (x86_64) 跑不起来
+    platform: linux/amd64
     env_file: .env
     environment:
       # 显式覆盖 .env 中的 DATABASE_URL，保证使用 compose 内 db 服务主机名
@@ -28,8 +40,9 @@ services:
     volumes:
       # bind mount 让 Docker 容器与本地 dev 模式共享同一份上传文件
       - ./uploads:/app/static/uploads
-    expose:
-      - "8000"
+    ports:
+      # 仅暴露到宿主 127.0.0.1，由宿主 nginx 反代，不直接暴露公网
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD-SHELL", ".venv/bin/python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health',timeout=5).status==200 else 1)\""]
       interval: 10s
@@ -37,14 +50,19 @@ services:
       retries: 5
       start_period: 20s
     restart: unless-stopped
+    mem_limit: 512m
 
   frontend:
+    image: profo-frontend:prod
     build: ./frontend
+    # 跨平台构建：本地 Mac (arm64) 必须构建 amd64 镜像，否则服务器 (x86_64) 跑不起来
+    platform: linux/amd64
     depends_on:
       backend:
         condition: service_healthy
-    expose:
-      - "3000"
+    ports:
+      # 仅暴露到宿主 127.0.0.1，由宿主 nginx 反代，不直接暴露公网
+      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -52,19 +70,7 @@ services:
       # 不设此项时默认 http://127.0.0.1:8000（指向 frontend 自己，导致登录"网络错误"）
       SERVER_API_URL: http://backend:8000
     restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # bind mount 让 nginx 直接从主机 ./uploads 提供静态文件，与 backend 共享
-      - ./uploads:/app/uploads:ro
-    depends_on:
-      - backend
-      - frontend
-    restart: unless-stopped
+    mem_limit: 256m
 
 volumes:
   pgdata:

@@ -133,6 +133,7 @@ backend/data.db
 .env.local
 .env.*.local
 .env.*
+!.env.docker.example
 
 # ==========================================
 # 文档与媒体文件
