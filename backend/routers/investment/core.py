@@ -7,6 +7,7 @@
 - 404 由 ResourceNotFoundError 统一异常处理器返回
 """
 
+import urllib.parse
 from datetime import datetime
 from typing import Annotated
 
@@ -109,8 +110,6 @@ def export_investments(
     )
     filename = f"跟投列表_{datetime.now().strftime('%Y%m%d')}.xlsx"
     # 中文文件名需 RFC5987 编码
-    import urllib.parse  # noqa: PLC0415
-
     filename_encoded = urllib.parse.quote(filename)
     return StreamingResponse(
         iter([content]),
