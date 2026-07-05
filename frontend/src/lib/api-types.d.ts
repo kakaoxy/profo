@@ -6073,8 +6073,8 @@ export interface components {
             custom_cabinet_amount?: string | null;
             /** Window Amount */
             window_amount?: string | null;
-            /** Appliance Amount */
-            appliance_amount?: string | null;
+            /** Wall Treatment Amount */
+            wall_treatment_amount?: string | null;
             /** Design Fee */
             design_fee?: string | null;
             /** Demolition Fee */
@@ -6197,10 +6197,10 @@ export interface components {
              */
             window_amount?: number | string | null;
             /**
-             * Appliance Amount
-             * @description 电器金额
+             * Wall Treatment Amount
+             * @description 墙面处理金额
              */
-            appliance_amount?: number | string | null;
+            wall_treatment_amount?: number | string | null;
             /**
              * Design Fee
              * @description 设计费用

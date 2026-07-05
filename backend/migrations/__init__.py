@@ -205,18 +205,19 @@ def add_thumbnail_url_to_photos(engine: Engine) -> None:
 
 
 def add_renovation_extra_amount_columns(engine: Engine) -> None:
-    """为 project_renovations 表添加定制柜/窗户/电器金额列。
+    """为 project_renovations 表添加定制柜/窗户/墙面处理金额列。
 
-    新增三列：custom_cabinet_amount / window_amount / appliance_amount，
-    均为 Numeric(15,2) 可空。SQLite/PostgreSQL 均支持 ALTER TABLE ADD COLUMN，
-    幂等：通过 _column_exists 检查跳过已存在列。
+    - custom_cabinet_amount / window_amount: 直接 ADD COLUMN（幂等）
+    - wall_treatment_amount: 优先 RENAME COLUMN appliance_amount TO wall_treatment_amount
+      （兼容已部署旧字段的存量数据）；若 appliance_amount 不存在则 ADD COLUMN。
+    - SQLite 3.25+ 与 PostgreSQL 均支持 ALTER TABLE RENAME COLUMN。
+    - 幂等：通过 _column_exists 检查跳过已存在列。
     """
-    columns = (
+    # 1) custom_cabinet_amount / window_amount：直接加列
+    for column, ddl_type in (
         ("custom_cabinet_amount", "NUMERIC(15, 2)"),
         ("window_amount", "NUMERIC(15, 2)"),
-        ("appliance_amount", "NUMERIC(15, 2)"),
-    )
-    for column, ddl_type in columns:
+    ):
         if _column_exists(engine, "project_renovations", column):
             continue
         logger.info("迁移：为 project_renovations 表添加 %s 列", column)
@@ -226,6 +227,28 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
                     f"ALTER TABLE project_renovations ADD COLUMN {column} {ddl_type}"
                 )
             )
+
+    # 2) wall_treatment_amount：优先重命名 appliance_amount，否则加列
+    if _column_exists(engine, "project_renovations", "wall_treatment_amount"):
+        return
+    if _column_exists(engine, "project_renovations", "appliance_amount"):
+        logger.info("迁移：重命名 project_renovations.appliance_amount → wall_treatment_amount")
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE project_renovations "
+                    "RENAME COLUMN appliance_amount TO wall_treatment_amount"
+                )
+            )
+        return
+    logger.info("迁移：为 project_renovations 表添加 wall_treatment_amount 列")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE project_renovations "
+                "ADD COLUMN wall_treatment_amount NUMERIC(15, 2)"
+            )
+        )
 
 
 def run_startup_migrations(engine: Engine) -> None:

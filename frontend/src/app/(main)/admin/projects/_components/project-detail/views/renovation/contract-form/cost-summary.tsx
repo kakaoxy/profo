@@ -28,10 +28,10 @@ export function CostSummarySection({ values, area }: CostSummaryProps) {
 
   // 各分项金额（Number() 兜底，防止 Decimal 字符串）
   const hardAmount = Number(values.hard_contract_amount) || 0;
-  const softAmount = Number(values.soft_budget) || 0;
+  const softActual = Number(values.soft_actual_cost) || 0;
   const cabinetAmount = Number(values.custom_cabinet_amount) || 0;
   const windowAmount = Number(values.window_amount) || 0;
-  const applianceAmount = Number(values.appliance_amount) || 0;
+  const wallTreatmentAmount = Number(values.wall_treatment_amount) || 0;
   const designFee = Number(values.design_fee) || 0;
   const demolitionFee = Number(values.demolition_fee) || 0;
   const garbageFee = Number(values.garbage_fee) || 0;
@@ -40,19 +40,19 @@ export function CostSummarySection({ values, area }: CostSummaryProps) {
   // 其他费用 = 设计费 + 拆旧费 + 清运费 + 其他
   const otherFees = designFee + demolitionFee + garbageFee + otherExtraFee;
 
-  // 总金额 = 硬装 + 软装 + 定制柜 + 窗户 + 电器 + 其他
-  const totalAmount = hardAmount + softAmount + cabinetAmount + windowAmount + applianceAmount + otherFees;
+  // 总金额 = 硬装 + 软装实际 + 定制柜 + 窗户 + 墙面处理 + 其他
+  const totalAmount = hardAmount + softActual + cabinetAmount + windowAmount + wallTreatmentAmount + otherFees;
 
-  // 明细项（顺序按需求：硬装金额、硬装单价、软装金额、定制柜、窗户、电器、其他费用、总单价）
+  // 明细项（顺序：硬装金额、硬装单价、软装实际、定制柜、窗户、墙面处理、其他费用）
+  // 总单价已在顶部汇总卡片展示，明细不重复
   const items = [
     { label: "硬装金额", value: formatAmount(hardAmount) },
     { label: "硬装单价", value: formatUnitPrice(hardAmount, areaNum) },
-    { label: "软装金额", value: formatAmount(softAmount) },
+    { label: "软装实际", value: formatAmount(softActual) },
     { label: "定制柜", value: formatAmount(cabinetAmount) },
     { label: "窗户", value: formatAmount(windowAmount) },
-    { label: "电器", value: formatAmount(applianceAmount) },
+    { label: "墙面处理", value: formatAmount(wallTreatmentAmount) },
     { label: "其他费用", value: formatAmount(otherFees) },
-    { label: "总单价", value: formatUnitPrice(totalAmount, areaNum) },
   ];
 
   return (
