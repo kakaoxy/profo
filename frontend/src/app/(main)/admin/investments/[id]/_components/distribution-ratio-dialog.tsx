@@ -13,6 +13,7 @@
  */
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -65,6 +66,7 @@ export function DistributionRatioDialog({
   onOpenChange,
   investment,
 }: DistributionRatioDialogProps) {
+  const router = useRouter();
   const investors = investment.investors ?? [];
   const totalReturn = toNum(investment.total_return);
   const savedAdjustments = investment.return_adjustments ?? [];
@@ -142,6 +144,7 @@ export function DistributionRatioDialog({
       if (res.success) {
         toast.success("分配比例调整已保存");
         onOpenChange(false);
+        router.refresh();
       } else {
         toast.error(res.message);
       }
