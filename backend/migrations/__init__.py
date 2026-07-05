@@ -12,6 +12,7 @@
 - add_thumbnail_url_to_photos: 为 renovation_photos 与 property_media 表添加 thumbnail_url 列
 - add_renovation_extra_amount_columns: 为 project_renovations 表添加定制柜/窗户/电器金额列
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
+- create_investment_tables: 幂等创建跟投管理 4 张表（investments/investors/return_adjustments/investment_logs）
 
 """
 
@@ -251,6 +252,39 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
         )
 
 
+def create_investment_tables(engine: Engine) -> None:
+    """幂等创建跟投管理 4 张表与索引.
+
+    使用 SQLAlchemy Core API（Table + MetaData）通过模型 __table__ 元数据创建，
+    checkfirst=True 确保表/索引已存在时跳过，避免破坏已有数据。
+    新建表（非加列），CREATE TABLE IF NOT EXISTS 语义。
+    """
+    from models import Base  # noqa: PLC0415
+    from models.investment import (  # noqa: PLC0415
+        Investment,
+        InvestmentLog,
+        Investor,
+        ReturnAdjustment,
+    )
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    target_tables = [
+        Investment.__table__,
+        Investor.__table__,
+        ReturnAdjustment.__table__,
+        InvestmentLog.__table__,
+    ]
+    missing_tables = [t for t in target_tables if t.name not in existing_tables]
+
+    if not missing_tables:
+        return
+
+    table_names = [t.name for t in missing_tables]
+    logger.info("迁移：创建跟投管理表 %s", table_names)
+    Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -262,6 +296,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_thumbnail_url_to_photos(engine)
         add_renovation_extra_amount_columns(engine)
         run_fix_image_urls(engine)
+        create_investment_tables(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

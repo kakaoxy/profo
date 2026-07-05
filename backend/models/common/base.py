@@ -139,6 +139,38 @@ class ImportTaskStatus(str, enum.Enum):
     CANCELLED = "cancelled"  # 已取消
 
 
+class SettlementStatus(str, enum.Enum):
+    """跟投结算状态枚举."""
+
+    UNSETTLED = "unsettled"  # 未结算
+    SETTLED = "settled"  # 已结算
+
+
+class InvestorType(str, enum.Enum):
+    """投资方类型枚举."""
+
+    ENTERPRISE = "enterprise"  # 企业
+    INDIVIDUAL = "individual"  # 个人
+
+
+class InvestmentActionType(str, enum.Enum):
+    """跟投操作日志类型枚举."""
+
+    CREATE = "create"
+    STATUS_CHANGE = "status_change"
+    RATIO_ADJUST = "ratio_adjust"
+    INVESTOR_ADD = "investor_add"
+    INVESTOR_EDIT = "investor_edit"
+    INVESTOR_DELETE = "investor_delete"
+    SUB_INVESTOR_ADD = "sub_investor_add"
+    SUB_INVESTOR_EDIT = "sub_investor_edit"
+    SUB_INVESTOR_DELETE = "sub_investor_delete"
+    TOTAL_INVESTMENT_CHANGE = "total_investment_change"
+    TOTAL_RETURN_CHANGE = "total_return_change"
+    SETTLE = "settle"
+    UNSETTLE = "unsettle"
+
+
 class BaseModel(Base):
     """基础模型，包含公共字段."""
 

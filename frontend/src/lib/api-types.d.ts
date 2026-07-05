@@ -1071,6 +1071,244 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/investments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取跟投记录列表
+         * @description 分页查询跟投记录列表（含项目状态关联、回报率、投资方数量）.
+         */
+        get: operations["list_investments_api_v1_admin_investments_get"];
+        put?: never;
+        /**
+         * 创建跟投记录
+         * @description 创建跟投记录：校验项目存在、未软删、无重复跟投；写日志.
+         *
+         *     速率限制：100次/小时.
+         */
+        post: operations["create_investment_api_v1_admin_investments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取跟投汇总卡片
+         * @description 5 张汇总卡片统计：总项目 / 投资总额 / 收益总额 / 平均回报率 / 未结算数.
+         */
+        get: operations["get_investment_stats_api_v1_admin_investments_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出跟投列表 Excel
+         * @description 导出全量跟投列表为 .xlsx（openpyxl）。文件名 跟投列表_YYYYMMDD.xlsx.
+         *
+         *     速率限制：10次/小时.
+         */
+        get: operations["export_investments_api_v1_admin_investments_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取跟投记录详情
+         * @description 获取跟投记录详情（含投资方树 + 操作日志）.
+         */
+        get: operations["get_investment_api_v1_admin_investments__investment_id__get"];
+        /**
+         * 更新跟投记录
+         * @description 更新跟投记录：仅 unsettled 可改；修改总额触发投资方金额重算并写日志.
+         *
+         *     速率限制：100次/小时.
+         */
+        put: operations["update_investment_api_v1_admin_investments__investment_id__put"];
+        post?: never;
+        /**
+         * 删除跟投记录
+         * @description 软删除跟投记录（设 deleted_at），子表保留.
+         *
+         *     速率限制：20次/小时.
+         */
+        delete: operations["delete_investment_api_v1_admin_investments__investment_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}/investors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 添加投资方
+         * @description 添加投资方（含子投资人）：校验名称唯一、比例合计、子投资人内部占比.
+         *
+         *     速率限制：200次/小时.
+         */
+        post: operations["add_investor_api_v1_admin_investments__investment_id__investors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}/investors/{investor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 更新投资方
+         * @description 更新投资方：sub_investors 整体替换；仅 unsettled 可改.
+         *
+         *     速率限制：200次/小时.
+         */
+        put: operations["update_investor_api_v1_admin_investments__investment_id__investors__investor_id__put"];
+        post?: never;
+        /**
+         * 删除投资方
+         * @description 删除投资方：母投资方级联删除子投资人；仅 unsettled 可改.
+         *
+         *     速率限制：200次/小时.
+         */
+        delete: operations["delete_investor_api_v1_admin_investments__investment_id__investors__investor_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}/return-adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 批量保存回报率调整
+         * @description 批量调整回报率：校验调整后收益合计 = total_return；写记录与日志.
+         *
+         *     速率限制：200次/小时.
+         */
+        put: operations["adjust_return_ratios_api_v1_admin_investments__investment_id__return_adjustments_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 结算跟投记录
+         * @description 结算：unsettled → settled，记录日期与说明，写日志.
+         *
+         *     速率限制：50次/小时.
+         */
+        post: operations["settle_investment_api_v1_admin_investments__investment_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}/unsettle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 反结算跟投记录
+         * @description 反结算：settled → unsettled，清空结算字段，写日志.
+         *
+         *     速率限制：50次/小时.
+         */
+        post: operations["unsettle_investment_api_v1_admin_investments__investment_id__unsettle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/investments/{investment_id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 复制跟投配置到目标项目
+         * @description 复制投资方结构到目标项目（仅 name/type/share_ratio/子投资人，金额重算，状态重置）.
+         *
+         *     速率限制：100次/小时.
+         */
+        post: operations["copy_investment_api_v1_admin_investments__investment_id__copy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/token": {
         parameters: {
             query?: never;
@@ -2676,6 +2914,17 @@ export interface components {
             on_sale_count: number;
         };
         /**
+         * CopyInvestmentRequest
+         * @description 复制跟投配置到目标项目请求.
+         */
+        CopyInvestmentRequest: {
+            /**
+             * Target Project Id
+             * @description 目标项目ID
+             */
+            target_project_id: string;
+        };
+        /**
          * DictionaryResponse
          * @description 字典响应模型.
          */
@@ -2999,6 +3248,409 @@ export interface components {
              * @default 0
              */
             sort_order: number;
+        };
+        /**
+         * InvestmentActionType
+         * @description 跟投操作日志类型枚举.
+         * @enum {string}
+         */
+        InvestmentActionType: "create" | "status_change" | "ratio_adjust" | "investor_add" | "investor_edit" | "investor_delete" | "sub_investor_add" | "sub_investor_edit" | "sub_investor_delete" | "total_investment_change" | "total_return_change" | "settle" | "unsettle";
+        /**
+         * InvestmentCreate
+         * @description 创建跟投记录请求.
+         */
+        InvestmentCreate: {
+            /**
+             * Project Id
+             * @description 关联项目ID
+             */
+            project_id: string;
+            /**
+             * Total Investment
+             * @description 投资总额(元)
+             */
+            total_investment: number | string;
+            /**
+             * Total Return
+             * @description 收益总额(元)
+             */
+            total_return?: number | string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * InvestmentListItemResponse
+         * @description 跟投记录列表项响应（精简版）.
+         */
+        InvestmentListItemResponse: {
+            /**
+             * Id
+             * @description 跟投记录ID
+             */
+            id: string;
+            /**
+             * Project Id
+             * @description 关联项目ID
+             */
+            project_id: string;
+            /**
+             * Project Code
+             * @description 项目编号(冗余)
+             */
+            project_code: string;
+            /**
+             * Project Name
+             * @description 项目名称(冗余)
+             */
+            project_name: string;
+            /**
+             * Project Address
+             * @description 物业地址(来自关联Project)
+             */
+            project_address?: string | null;
+            /** @description 项目状态(来自关联Project) */
+            project_status?: components["schemas"]["ProjectStatus"] | null;
+            /** @description 跟投状态 */
+            settlement_status: components["schemas"]["SettlementStatus"];
+            /**
+             * Total Investment
+             * @description 投资总额(元)
+             */
+            total_investment: string;
+            /**
+             * Total Return
+             * @description 收益总额(元)
+             */
+            total_return?: string | null;
+            /**
+             * Return Ratio
+             * @description 回报率(%)
+             */
+            return_ratio: number;
+            /**
+             * Investor Count
+             * @description 投资方数量
+             */
+            investor_count: number;
+        };
+        /**
+         * InvestmentListResponse
+         * @description 跟投记录列表分页响应.
+         */
+        InvestmentListResponse: {
+            /**
+             * Items
+             * @description 跟投记录列表
+             */
+            items: components["schemas"]["InvestmentListItemResponse"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * InvestmentLogResponse
+         * @description 操作日志响应.
+         *
+         *     operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
+         */
+        InvestmentLogResponse: {
+            /**
+             * Id
+             * @description 日志ID
+             */
+            id: string;
+            /**
+             * Investment Id
+             * @description 关联跟投记录ID
+             */
+            investment_id: string;
+            /** @description 操作类型 */
+            action_type: components["schemas"]["InvestmentActionType"];
+            /**
+             * Detail
+             * @description 操作详情(JSON)
+             */
+            detail?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Operator Id
+             * @description 操作人ID
+             */
+            operator_id: string;
+            /**
+             * Operator Name
+             * @description 操作人名称(冗余)
+             */
+            operator_name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 操作时间
+             */
+            created_at: string;
+        };
+        /**
+         * InvestmentResponse
+         * @description 跟投记录完整响应（详情页）.
+         */
+        InvestmentResponse: {
+            /**
+             * Id
+             * @description 跟投记录ID
+             */
+            id: string;
+            /**
+             * Project Id
+             * @description 关联项目ID
+             */
+            project_id: string;
+            /**
+             * Project Code
+             * @description 项目编号(冗余)
+             */
+            project_code: string;
+            /**
+             * Project Name
+             * @description 项目名称(冗余)
+             */
+            project_name: string;
+            /**
+             * Total Investment
+             * @description 投资总额(元)
+             */
+            total_investment: string;
+            /**
+             * Total Return
+             * @description 收益总额(元)
+             */
+            total_return?: string | null;
+            /** @description 结算状态 */
+            settlement_status: components["schemas"]["SettlementStatus"];
+            /**
+             * Settled Date
+             * @description 结算日期
+             */
+            settled_date?: string | null;
+            /**
+             * Settled Note
+             * @description 结算说明
+             */
+            settled_note?: string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Created By
+             * @description 创建人ID
+             */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+            /**
+             * Investors
+             * @description 母投资方列表(含嵌套子投资人)
+             */
+            investors?: components["schemas"]["InvestorResponse"][];
+            /**
+             * Logs
+             * @description 操作日志列表(可选)
+             */
+            logs?: components["schemas"]["InvestmentLogResponse"][] | null;
+        };
+        /**
+         * InvestmentStatsResponse
+         * @description 跟投汇总卡片统计响应.
+         */
+        InvestmentStatsResponse: {
+            /**
+             * Total Projects
+             * @description 总项目数
+             */
+            total_projects: number;
+            /**
+             * Total Investment
+             * @description 投资总额合计(元)
+             */
+            total_investment: string;
+            /**
+             * Total Return
+             * @description 收益总额合计(元)
+             */
+            total_return: string;
+            /**
+             * Avg Return Ratio
+             * @description 加权平均回报率(%)
+             */
+            avg_return_ratio: number;
+            /**
+             * Unsettled Count
+             * @description 未结算项目数
+             */
+            unsettled_count: number;
+        };
+        /**
+         * InvestmentUpdate
+         * @description 更新跟投记录请求（仅 unsettled 可改）.
+         */
+        InvestmentUpdate: {
+            /**
+             * Total Investment
+             * @description 投资总额(元)
+             */
+            total_investment?: number | string | null;
+            /**
+             * Total Return
+             * @description 收益总额(元)
+             */
+            total_return?: number | string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * InvestorCreate
+         * @description 创建投资方请求（母投资方）.
+         */
+        InvestorCreate: {
+            /**
+             * Name
+             * @description 投资方名称
+             */
+            name: string;
+            /** @description 投资方类型: enterprise/individual */
+            type: components["schemas"]["InvestorType"];
+            /**
+             * Share Ratio
+             * @description 占项目总投资额比例(%)
+             */
+            share_ratio: number | string;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Sub Investors
+             * @description 子投资人列表
+             */
+            sub_investors?: components["schemas"]["SubInvestorCreate"][] | null;
+        };
+        /**
+         * InvestorResponse
+         * @description 投资方响应（含嵌套子投资人）.
+         */
+        InvestorResponse: {
+            /**
+             * Id
+             * @description 投资方ID
+             */
+            id: string;
+            /**
+             * Investment Id
+             * @description 关联跟投记录ID
+             */
+            investment_id: string;
+            /**
+             * Name
+             * @description 投资方名称
+             */
+            name: string;
+            /** @description 投资方类型 */
+            type: components["schemas"]["InvestorType"];
+            /**
+             * Share Ratio
+             * @description 占比(母:占项目比例; 子:内部占比)
+             */
+            share_ratio: string;
+            /**
+             * Invest Amount
+             * @description 投资金额(元)
+             */
+            invest_amount: string;
+            /**
+             * Parent Id
+             * @description 母投资方ID
+             */
+            parent_id?: string | null;
+            /**
+             * Sort Order
+             * @description 排序序号
+             */
+            sort_order?: number | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Sub Investors
+             * @description 子投资人列表
+             */
+            sub_investors?: components["schemas"]["InvestorResponse"][];
+        };
+        /**
+         * InvestorType
+         * @description 投资方类型枚举.
+         * @enum {string}
+         */
+        InvestorType: "enterprise" | "individual";
+        /**
+         * InvestorUpdate
+         * @description 更新投资方请求（仅 unsettled 可改）.
+         */
+        InvestorUpdate: {
+            /**
+             * Name
+             * @description 投资方名称
+             */
+            name?: string | null;
+            /** @description 投资方类型 */
+            type?: components["schemas"]["InvestorType"] | null;
+            /**
+             * Share Ratio
+             * @description 占项目总投资额比例(%)
+             */
+            share_ratio?: number | string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Sub Investors
+             * @description 子投资人列表(整体替换)
+             */
+            sub_investors?: components["schemas"]["SubInvestorCreate"][] | null;
         };
         /**
          * L3ProjectBriefResponse
@@ -6286,6 +6938,90 @@ export interface components {
             stage_completed_at?: string | null;
         };
         /**
+         * ReturnAdjustmentBatchRequest
+         * @description 批量回报率调整请求.
+         */
+        ReturnAdjustmentBatchRequest: {
+            /**
+             * Adjustments
+             * @description 调整项列表
+             */
+            adjustments: components["schemas"]["ReturnAdjustmentItem"][];
+        };
+        /**
+         * ReturnAdjustmentItem
+         * @description 单条回报率调整项.
+         */
+        ReturnAdjustmentItem: {
+            /**
+             * Investor Id
+             * @description 投资方ID
+             */
+            investor_id: string;
+            /**
+             * Adjusted Return Ratio
+             * @description 调整后回报率(%)
+             */
+            adjusted_return_ratio: number | string;
+            /**
+             * Remark
+             * @description 调整备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * ReturnAdjustmentResponse
+         * @description 回报率调整记录响应.
+         */
+        ReturnAdjustmentResponse: {
+            /**
+             * Id
+             * @description 调整记录ID
+             */
+            id: string;
+            /**
+             * Investment Id
+             * @description 关联跟投记录ID
+             */
+            investment_id: string;
+            /**
+             * Investor Id
+             * @description 关联投资方ID
+             */
+            investor_id: string;
+            /**
+             * Default Return Ratio
+             * @description 默认回报率(%)
+             */
+            default_return_ratio: string;
+            /**
+             * Adjusted Return Ratio
+             * @description 调整后回报率(%)
+             */
+            adjusted_return_ratio: string;
+            /**
+             * Adjusted Amount
+             * @description 调整后收益金额(元)
+             */
+            adjusted_amount: string;
+            /**
+             * Adjusted By
+             * @description 调整人ID
+             */
+            adjusted_by: string;
+            /**
+             * Adjusted At
+             * Format: date-time
+             * @description 调整时间
+             */
+            adjusted_at: string;
+            /**
+             * Remark
+             * @description 调整备注
+             */
+            remark?: string | null;
+        };
+        /**
          * RiskPoints
          * @description 风险点.
          */
@@ -6544,6 +7280,29 @@ export interface components {
             negotiator_id?: string | null;
         };
         /**
+         * SettlementChangeRequest
+         * @description 结算请求（unsettled → settled）.
+         */
+        SettlementChangeRequest: {
+            /**
+             * Settled Note
+             * @description 结算说明
+             */
+            settled_note?: string | null;
+            /**
+             * Settled Date
+             * Format: date
+             * @description 结算日期
+             */
+            settled_date: string;
+        };
+        /**
+         * SettlementStatus
+         * @description 跟投结算状态枚举.
+         * @enum {string}
+         */
+        SettlementStatus: "unsettled" | "settled";
+        /**
          * SigningMaterial
          * @description 签约材料附件.
          */
@@ -6593,6 +7352,27 @@ export interface components {
             list_price?: number | string | null;
         };
         /**
+         * SubInvestorCreate
+         * @description 创建子投资人请求（属于某母投资方，内部占比）.
+         */
+        SubInvestorCreate: {
+            /**
+             * Name
+             * @description 子投资人姓名
+             */
+            name: string;
+            /**
+             * Share Ratio
+             * @description 内部占比(%)
+             */
+            share_ratio: number | string;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
          * TokenResponse
          * @description 令牌响应模型.
          */
@@ -6633,6 +7413,17 @@ export interface components {
             deal_price: number;
             /** Volume */
             volume: number;
+        };
+        /**
+         * UnsettleRequest
+         * @description 反结算请求（settled → unsettled）.
+         */
+        UnsettleRequest: {
+            /**
+             * Reason
+             * @description 反结算原因
+             */
+            reason: string;
         };
         /**
          * UserBrief
@@ -9229,6 +10020,483 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["L3ProjectImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_investments_api_v1_admin_investments_get: {
+        parameters: {
+            query?: {
+                /** @description 模糊搜索: 项目编号/小区/地址 */
+                search?: string | null;
+                /** @description 项目状态筛选 */
+                project_status?: components["schemas"]["ProjectStatus"] | null;
+                /** @description 跟投状态筛选 */
+                settlement_status?: components["schemas"]["SettlementStatus"] | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_investment_api_v1_admin_investments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_investment_stats_api_v1_admin_investments_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentStatsResponse"];
+                };
+            };
+        };
+    };
+    export_investments_api_v1_admin_investments_export_get: {
+        parameters: {
+            query?: {
+                /** @description 模糊搜索 */
+                search?: string | null;
+                /** @description 项目状态筛选 */
+                project_status?: components["schemas"]["ProjectStatus"] | null;
+                /** @description 跟投状态筛选 */
+                settlement_status?: components["schemas"]["SettlementStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_investment_api_v1_admin_investments__investment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_investment_api_v1_admin_investments__investment_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_investment_api_v1_admin_investments__investment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_investor_api_v1_admin_investments__investment_id__investors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestorCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_investor_api_v1_admin_investments__investment_id__investors__investor_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+                /** @description 投资方ID */
+                investor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestorUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_investor_api_v1_admin_investments__investment_id__investors__investor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+                /** @description 投资方ID */
+                investor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_return_ratios_api_v1_admin_investments__investment_id__return_adjustments_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnAdjustmentBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnAdjustmentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_investment_api_v1_admin_investments__investment_id__settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettlementChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsettle_investment_api_v1_admin_investments__investment_id__unsettle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnsettleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_investment_api_v1_admin_investments__investment_id__copy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyInvestmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestmentResponse"];
                 };
             };
             /** @description Validation Error */

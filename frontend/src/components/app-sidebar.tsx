@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Smartphone,
   Settings,
+  Wallet,
   LucideIcon,
 } from "lucide-react";
 import {
@@ -117,6 +118,14 @@ const data: { navMain: NavItem[] } = {
       icon: Smartphone,
     },
     {
+      title: "财务管理",
+      url: "#",
+      icon: Wallet,
+      items: [
+        { title: "跟投管理", url: "/admin/investments" },
+      ],
+    },
+    {
       title: "用户管理",
       url: "#",
       icon: Users,
@@ -202,6 +211,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       "/admin/leads",
       "/admin/projects",
       "/admin/l4-marketing",
+      "/admin/investments",
       "/admin/users",
       "/admin/settings",
     ];

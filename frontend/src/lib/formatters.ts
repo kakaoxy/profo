@@ -111,3 +111,31 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
+
+/**
+ * 格式化人民币金额（元，两位小数 + 千分位）
+ * @param value - 金额值（字符串或数字）
+ * @returns 格式化后的金额字符串，如 "¥8,000,000.00"
+ */
+export function formatCNY(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "¥0.00";
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "¥0.00";
+  return new Intl.NumberFormat("zh-CN", {
+    style: "currency",
+    currency: "CNY",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
+/**
+ * 格式化百分比
+ * @param value - 百分比数值（如 40.0 表示 40.0%）
+ * @param digits - 小数位数，默认 1
+ * @returns 格式化后的百分比字符串，如 "40.0%"
+ */
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || isNaN(value)) return "0.0%";
+  return `${value.toFixed(digits)}%`;
+}

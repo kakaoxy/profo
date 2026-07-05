@@ -61,6 +61,14 @@ class RateLimits:
     MARKETING_UPDATE = "100/hour"
     MARKETING_DELETE = "20/hour"
 
+    # ==================== 投资管理（跟投管理）模块 ====================
+    INVESTMENT_CREATE = "100/hour"
+    INVESTMENT_UPDATE = "100/hour"
+    INVESTMENT_DELETE = "20/hour"
+    INVESTMENT_EXPORT = "10/hour"
+    INVESTMENT_INVESTOR_WRITE = "200/hour"
+    INVESTMENT_SETTLE = "50/hour"
+
     # ==================== 线索管理模块 ====================
     LEAD_UPDATE = "100/hour"
     LEAD_DELETE = "20/hour"
