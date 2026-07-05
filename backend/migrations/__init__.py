@@ -300,6 +300,7 @@ def rename_return_adjustment_columns(engine: Engine) -> None:
         return
     logger.info("迁移：重命名 return_adjustments 表字段（回报率 → 分配比例）")
     with engine.begin() as conn:
+        logger.info("迁移：清空 return_adjustments 旧数据（语义不兼容：回报率% → 分配比例%）")
         conn.execute(text("DELETE FROM return_adjustments"))
         conn.execute(
             text("ALTER TABLE return_adjustments RENAME COLUMN default_return_ratio TO default_distribution_ratio")
