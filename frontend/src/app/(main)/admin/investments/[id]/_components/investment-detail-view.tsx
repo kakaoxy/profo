@@ -751,13 +751,13 @@ function ProfitDistributionCard({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {investors.map((inv) => {
+                  {investors.map((inv, idx) => {
                     const amount = toNum(inv.invest_amount);
                     const profit = (amount * defaultRatio) / 100;
                     const profitRatio =
                       totalReturn > 0 ? (profit / totalReturn) * 100 : 0;
                     return (
-                      <TableRow key={inv.id}>
+                      <TableRow key={inv.id || `inv-${idx}`}>
                         <TableCell className="font-medium">
                           {inv.name}
                         </TableCell>
