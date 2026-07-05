@@ -298,6 +298,7 @@ class InvestmentService:
         """获取项目，不存在或已软删抛 404."""
         proj = (
             self.db.query(Project)
+            .options(selectinload(Project.contract))
             .filter(
                 Project.id == project_id,
                 Project.is_deleted.is_(False),
@@ -307,6 +308,12 @@ class InvestmentService:
         if proj is None:
             raise ResourceNotFoundError("项目不存在")
         return proj
+
+    def _get_project_code(self, project: Project) -> str:
+        """获取项目编号：优先使用合同编号，否则回退到项目 ID."""
+        if project.contract is not None and project.contract.contract_no:
+            return project.contract.contract_no
+        return project.id
 
     # ==================== 列表 / 统计 / 详情 ====================
 
@@ -451,7 +458,7 @@ class InvestmentService:
 
         inv = Investment(
             project_id=proj.id,
-            project_code=proj.id,
+            project_code=self._get_project_code(proj),
             project_name=proj.name,
             total_investment=data.total_investment,
             total_return=data.total_return,
@@ -773,7 +780,7 @@ class InvestmentService:
         inv = self._get_investment_or_404(investment_id)
         self._assert_editable(inv)
 
-        if inv.total_return is None or inv.total_return <= 0:
+        if inv.total_return is None:
             raise ValidationError("收益总额未设置，无法调整分配比例")
 
         total_return = inv.total_return
@@ -917,7 +924,7 @@ class InvestmentService:
 
         new_inv = Investment(
             project_id=target_proj.id,
-            project_code=target_proj.id,
+            project_code=self._get_project_code(target_proj),
             project_name=target_proj.name,
             total_investment=source.total_investment,
             total_return=source.total_return,
