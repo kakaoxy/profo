@@ -342,12 +342,13 @@ class InvestmentService:
         )
 
         if search:
-            like = f"%{search}%"
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            like = f"%{escaped}%"
             query = query.filter(
                 or_(
-                    Investment.project_code.ilike(like),
-                    Investment.project_name.ilike(like),
-                    Project.address.ilike(like),
+                    Investment.project_code.ilike(like, escape="\\"),
+                    Investment.project_name.ilike(like, escape="\\"),
+                    Project.address.ilike(like, escape="\\"),
                 ),
             )
         if project_status is not None:
@@ -503,9 +504,19 @@ class InvestmentService:
             inv.remark = update_data["remark"]
 
         if log_details.get("total_investment"):
-            self._write_log(inv.id, InvestmentActionType.TOTAL_INVESTMENT_CHANGE, log_details, operator_id)
+            self._write_log(
+                inv.id,
+                InvestmentActionType.TOTAL_INVESTMENT_CHANGE,
+                {"total_investment": log_details["total_investment"]},
+                operator_id,
+            )
         if log_details.get("total_return"):
-            self._write_log(inv.id, InvestmentActionType.TOTAL_RETURN_CHANGE, log_details, operator_id)
+            self._write_log(
+                inv.id,
+                InvestmentActionType.TOTAL_RETURN_CHANGE,
+                {"total_return": log_details["total_return"]},
+                operator_id,
+            )
 
         self.db.commit()
         self.db.refresh(inv)
@@ -514,6 +525,7 @@ class InvestmentService:
     def delete_investment(self, investment_id: str, operator_id: str) -> None:
         """软删除跟投记录（设 deleted_at），子表保留."""
         inv = self._get_investment_or_404(investment_id)
+        self._assert_editable(inv)
         inv.deleted_at = datetime.now(timezone.utc)
         self._write_log(inv.id, InvestmentActionType.STATUS_CHANGE, {"action": "soft_delete"}, operator_id)
         self.db.commit()

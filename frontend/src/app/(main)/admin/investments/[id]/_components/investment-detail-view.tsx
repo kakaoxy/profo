@@ -1065,6 +1065,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
   };
   const handleTotalConfirm = (): void => {
     setTotalInvestment(pendingTotal);
+    setTotalInput(String(pendingTotal));
     setShowTotalConfirm(false);
   };
   const handleTotalCancel = (): void => {
@@ -1072,10 +1073,10 @@ function InvestmentEditView({ investment }: DetailViewProps) {
     setShowTotalConfirm(false);
   };
 
-  // 收益总额失焦：直接提交
+  // 收益总额失焦：直接提交（允许负值以记录亏损）
   const handleReturnBlur = (): void => {
     const n = parseFloat(totalReturnInput);
-    setTotalReturn(isNaN(n) || n < 0 ? 0 : n);
+    setTotalReturn(isNaN(n) ? 0 : n);
   };
 
   // 投资比例内联编辑
@@ -1205,16 +1206,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
         }
       }
 
-      // 2. 删除投资方
-      for (const invId of deletedInvestorIds) {
-        const res = await deleteInvestor(investmentId, invId);
-        if (!res.success) {
-          toast.error(`删除投资方失败：${res.message}`);
-          return;
-        }
-      }
-
-      // 3. 更新已存在投资方（按"降幅优先"排序，避免中间态合计 > 100%）
+      // 2. 更新已存在投资方（按"降幅优先"排序，避免中间态合计 > 100%）
       const originalById = new Map(
         (investment.investors ?? []).map((inv) => [inv.id, inv]),
       );
@@ -1250,7 +1242,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
         }
       }
 
-      // 4. 新增投资方
+      // 3. 新增投资方
       const toAdd = investors.filter((inv) => !inv.id);
       for (const inv of toAdd) {
         const body: InvestorCreate = {
@@ -1270,6 +1262,15 @@ function InvestmentEditView({ investment }: DetailViewProps) {
         const res = await addInvestor(investmentId, body);
         if (!res.success) {
           toast.error(`添加投资方「${inv.name}」失败：${res.message}`);
+          return;
+        }
+      }
+
+      // 4. 删除投资方（放在最后：不可逆操作，仅在其余操作全部成功后执行）
+      for (const invId of deletedInvestorIds) {
+        const res = await deleteInvestor(investmentId, invId);
+        if (!res.success) {
+          toast.error(`删除投资方失败：${res.message}`);
           return;
         }
       }
