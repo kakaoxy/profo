@@ -390,11 +390,11 @@ export async function deleteInvestor(
 }
 
 /**
- * 批量保存回报率调整
- * 调用 PUT /api/v1/admin/investments/{id}/return-adjustments。
- * 校验由后端执行（调整后收益合计 = total_return）。
+ * 批量保存分配比例调整
+ * 调用 PUT /api/v1/admin/investments/{id}/distribution-adjustments。
+ * 校验由后端执行（分配比例合计 = 100%）。
  */
-export async function adjustReturn(
+export async function adjustDistribution(
   investmentId: string,
   adjustments: ReturnAdjustmentItem[],
 ): Promise<ActionResult<ReturnAdjustmentResponse[]>> {
@@ -402,12 +402,12 @@ export async function adjustReturn(
     const client = await fetchClient();
     const body: ReturnAdjustmentBatchRequest = { adjustments };
     const { data: resData, error } = await client.PUT(
-      "/api/v1/admin/investments/{investment_id}/return-adjustments",
+      "/api/v1/admin/investments/{investment_id}/distribution-adjustments",
       { params: { path: { investment_id: investmentId } }, body },
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "调整回报率失败";
+      const msg = (error as { detail?: string }).detail || "调整分配比例失败";
       return { success: false, message: msg };
     }
 
@@ -418,7 +418,7 @@ export async function adjustReturn(
       data: extractApiData<ReturnAdjustmentResponse[]>(resData),
     };
   } catch (e) {
-    logger.error("调整回报率异常:", e);
+    logger.error("调整分配比例异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

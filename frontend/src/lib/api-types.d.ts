@@ -1221,21 +1221,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/investments/{investment_id}/return-adjustments": {
+    "/api/v1/admin/investments/{investment_id}/distribution-adjustments": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
         /**
-         * 批量保存回报率调整
-         * @description 批量调整回报率：校验调整后收益合计 = total_return；写记录与日志.
+         * 查询分配比例调整记录
+         * @description 查询指定跟投记录的分配比例调整记录（最新一批）.
+         */
+        get: operations["list_distribution_adjustments_api_v1_admin_investments__investment_id__distribution_adjustments_get"];
+        /**
+         * 批量保存分配比例调整
+         * @description 批量调整分配比例：校验分配比例合计 = 100%；写记录与日志.
          *
+         *     分配比例 = 占 total_return 的百分比，默认等于投资占比。
          *     速率限制：200次/小时.
          */
-        put: operations["adjust_return_ratios_api_v1_admin_investments__investment_id__return_adjustments_put"];
+        put: operations["adjust_distribution_ratios_api_v1_admin_investments__investment_id__distribution_adjustments_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3254,7 +3259,7 @@ export interface components {
          * @description 跟投操作日志类型枚举.
          * @enum {string}
          */
-        InvestmentActionType: "create" | "status_change" | "ratio_adjust" | "investor_add" | "investor_edit" | "investor_delete" | "sub_investor_add" | "sub_investor_edit" | "sub_investor_delete" | "total_investment_change" | "total_return_change" | "settle" | "unsettle";
+        InvestmentActionType: "create" | "status_change" | "ratio_adjust" | "distribution_adjust" | "investor_add" | "investor_edit" | "investor_delete" | "sub_investor_add" | "sub_investor_edit" | "sub_investor_delete" | "total_investment_change" | "total_return_change" | "settle" | "unsettle";
         /**
          * InvestmentCreate
          * @description 创建跟投记录请求.
@@ -3479,6 +3484,11 @@ export interface components {
              * @description 母投资方列表(含嵌套子投资人)
              */
             investors?: components["schemas"]["InvestorResponse"][];
+            /**
+             * Return Adjustments
+             * @description 分配比例调整记录列表
+             */
+            return_adjustments?: components["schemas"]["ReturnAdjustmentResponse"][];
             /**
              * Logs
              * @description 操作日志列表(可选)
@@ -6939,7 +6949,7 @@ export interface components {
         };
         /**
          * ReturnAdjustmentBatchRequest
-         * @description 批量回报率调整请求.
+         * @description 批量分配比例调整请求.
          */
         ReturnAdjustmentBatchRequest: {
             /**
@@ -6950,7 +6960,7 @@ export interface components {
         };
         /**
          * ReturnAdjustmentItem
-         * @description 单条回报率调整项.
+         * @description 单条分配比例调整项.
          */
         ReturnAdjustmentItem: {
             /**
@@ -6959,10 +6969,10 @@ export interface components {
              */
             investor_id: string;
             /**
-             * Adjusted Return Ratio
-             * @description 调整后回报率(%)
+             * Adjusted Distribution Ratio
+             * @description 调整后分配比例(%)
              */
-            adjusted_return_ratio: number | string;
+            adjusted_distribution_ratio: number | string;
             /**
              * Remark
              * @description 调整备注
@@ -6971,7 +6981,7 @@ export interface components {
         };
         /**
          * ReturnAdjustmentResponse
-         * @description 回报率调整记录响应.
+         * @description 分配比例调整记录响应.
          */
         ReturnAdjustmentResponse: {
             /**
@@ -6990,15 +7000,15 @@ export interface components {
              */
             investor_id: string;
             /**
-             * Default Return Ratio
-             * @description 默认回报率(%)
+             * Default Distribution Ratio
+             * @description 默认分配比例(%)=投资占比
              */
-            default_return_ratio: string;
+            default_distribution_ratio: string;
             /**
-             * Adjusted Return Ratio
-             * @description 调整后回报率(%)
+             * Adjusted Distribution Ratio
+             * @description 调整后分配比例(%)
              */
-            adjusted_return_ratio: string;
+            adjusted_distribution_ratio: string;
             /**
              * Adjusted Amount
              * @description 调整后收益金额(元)
@@ -10366,7 +10376,39 @@ export interface operations {
             };
         };
     };
-    adjust_return_ratios_api_v1_admin_investments__investment_id__return_adjustments_put: {
+    list_distribution_adjustments_api_v1_admin_investments__investment_id__distribution_adjustments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 跟投记录ID */
+                investment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnAdjustmentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_distribution_ratios_api_v1_admin_investments__investment_id__distribution_adjustments_put: {
         parameters: {
             query?: never;
             header?: never;

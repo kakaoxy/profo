@@ -129,21 +129,21 @@ class InvestorUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ==================== 回报率调整 ====================
+# ==================== 收益分配比例调整 ====================
 
 
 class ReturnAdjustmentItem(BaseModel):
-    """单条回报率调整项."""
+    """单条分配比例调整项."""
 
     investor_id: str = Field(description="投资方ID")
-    adjusted_return_ratio: Decimal = Field(ge=0, description="调整后回报率(%)")
+    adjusted_distribution_ratio: Decimal = Field(ge=0, le=100, description="调整后分配比例(%)")
     remark: str | None = Field(None, description="调整备注")
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ReturnAdjustmentBatchRequest(BaseModel):
-    """批量回报率调整请求."""
+    """批量分配比例调整请求."""
 
     adjustments: list[ReturnAdjustmentItem] = Field(min_length=1, description="调整项列表")
 
@@ -151,13 +151,13 @@ class ReturnAdjustmentBatchRequest(BaseModel):
 
 
 class ReturnAdjustmentResponse(BaseModel):
-    """回报率调整记录响应."""
+    """分配比例调整记录响应."""
 
     id: str = Field(description="调整记录ID")
     investment_id: str = Field(description="关联跟投记录ID")
     investor_id: str = Field(description="关联投资方ID")
-    default_return_ratio: Decimal = Field(description="默认回报率(%)")
-    adjusted_return_ratio: Decimal = Field(description="调整后回报率(%)")
+    default_distribution_ratio: Decimal = Field(description="默认分配比例(%)=投资占比")
+    adjusted_distribution_ratio: Decimal = Field(description="调整后分配比例(%)")
     adjusted_amount: Decimal = Field(description="调整后收益金额(元)")
     adjusted_by: str = Field(description="调整人ID")
     adjusted_at: datetime = Field(description="调整时间")
@@ -237,6 +237,7 @@ class InvestmentResponse(BaseModel):
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
     investors: list[InvestorResponse] = Field(default_factory=list, description="母投资方列表(含嵌套子投资人)")
+    return_adjustments: list[ReturnAdjustmentResponse] = Field(default_factory=list, description="分配比例调整记录列表")
     logs: list[InvestmentLogResponse] | None = Field(None, description="操作日志列表(可选)")
 
     model_config = ConfigDict(from_attributes=True)
