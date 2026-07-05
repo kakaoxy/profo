@@ -125,10 +125,10 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           suffix="元"
         />
         <NumberInputField
-          label="电器金额"
-          value={values.appliance_amount}
-          onChange={(v) => setValue("appliance_amount", v)}
-          placeholder="电器金额"
+          label="墙面处理"
+          value={values.wall_treatment_amount}
+          onChange={(v) => setValue("wall_treatment_amount", v)}
+          placeholder="墙面处理金额"
           disabled={!isEditing}
           suffix="元"
         />

@@ -38,7 +38,7 @@ _RENOVATION_ALLOWED_FIELDS = {
     "soft_detail_attachment",
     "custom_cabinet_amount",
     "window_amount",
-    "appliance_amount",
+    "wall_treatment_amount",
     "design_fee",
     "demolition_fee",
     "garbage_fee",
