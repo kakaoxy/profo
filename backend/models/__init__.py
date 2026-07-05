@@ -13,12 +13,15 @@ from .common import (
     ChangeType,
     FollowUpMethod,
     ImportTaskStatus,
+    InvestmentActionType,
+    InvestorType,
     LeadStatus,
     MediaType,
     ProjectStatus,
     PropertyStatus,
     RecordType,
     RenovationStage,
+    SettlementStatus,
 )
 
 # 线索管理模块
@@ -65,6 +68,14 @@ from .system import FailedRecord, PropertyImportTask
 # 用户权限模块
 from .user import ApiKey, RefreshToken, Role, User
 
+# 投资管理（跟投管理）模块
+from .investment import (
+    Investment,
+    InvestmentLog,
+    Investor,
+    ReturnAdjustment,
+)
+
 __all__ = [
     "ApiKey",
     # 基础
@@ -83,6 +94,11 @@ __all__ = [
     "FinanceRecord",
     "FollowUpMethod",
     "ImportTaskStatus",
+    "Investment",
+    "InvestmentActionType",
+    "InvestmentLog",
+    "Investor",
+    "InvestorType",
     "L4MarketingMedia",
     # L4 市场营销
     "L4MarketingProject",
@@ -113,8 +129,10 @@ __all__ = [
     "PropertyStatus",
     "PublishStatus",
     "RecordType",
+    "ReturnAdjustment",
     "RenovationPhoto",
     "RenovationStage",
+    "SettlementStatus",
     # 用户
     "RefreshToken",
     "Role",

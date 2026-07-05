@@ -24,6 +24,7 @@ from error_handlers import (
     validation_exception_handler,
 )
 from routers.common import files_router, push_router, upload_router
+from routers.investment import investment_router
 from routers.leads import leads_router
 from routers.market import communities_router, properties_router
 from routers.marketing import import_router as marketing_import_router
@@ -108,6 +109,7 @@ app = FastAPI(
         {"name": "lead-prices", "description": "线索价格历史"},
         {"name": "l4-marketing", "description": "L4 市场营销 - 营销房源管理"},
         {"name": "l4-marketing-import", "description": "L4 市场营销 - 数据导入"},
+        {"name": "investment", "description": "财务管理 - 跟投管理"},
         {"name": "auth", "description": "认证授权 - 登录、令牌、API Key"},
         {"name": "users", "description": "用户管理"},
         {"name": "roles", "description": "角色管理"},
@@ -172,6 +174,7 @@ app.include_router(leads_router, prefix=API_V1_PREFIX)
 app.include_router(core_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_import_router, prefix=API_V1_PREFIX)
+app.include_router(investment_router, prefix=API_V1_PREFIX)
 app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(users_router, prefix=API_V1_PREFIX)
 app.include_router(roles_router, prefix=API_V1_PREFIX)
