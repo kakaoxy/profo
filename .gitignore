@@ -184,3 +184,5 @@ backend/static/**/*
 skills-lock.json
 .agents/
 .design_library/
+
+*.tar.gz
