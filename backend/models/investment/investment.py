@@ -143,14 +143,18 @@ class Investor(BaseModel):
 
 
 class ReturnAdjustment(BaseModel):
-    """回报率调整记录表 - 每次批量调整按投资方各存一条."""
+    """收益分配比例调整记录表 - 每次批量调整按母投资方各存一条.
+
+    分配比例 = 该投资方占 total_return 的百分比。默认等于投资占比 share_ratio，
+    可调整以适应优先资金等场景（如投70%只分配30%收益）。
+    """
 
     __tablename__ = "return_adjustments"
 
     investment_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联跟投记录ID(逻辑外键)")
     investor_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联投资方ID(逻辑外键)")
-    default_return_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="默认回报率(%)")
-    adjusted_return_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="调整后回报率(%)")
+    default_distribution_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="默认分配比例(%)=投资占比")
+    adjusted_distribution_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="调整后分配比例(%)")
     adjusted_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="调整后收益金额(元)")
     adjusted_by: Mapped[str] = mapped_column(String(36), nullable=False, comment="调整人ID(逻辑外键)")
     adjusted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="调整时间")

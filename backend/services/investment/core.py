@@ -1,6 +1,6 @@
 """投资管理（跟投管理）Service 层.
 
-职责：跟投记录 CRUD、投资方与子投资人管理、回报率调整、结算流转、操作日志、Excel 导出。
+职责：跟投记录 CRUD、投资方与子投资人管理、收益分配比例调整、结算流转、操作日志、Excel 导出。
 
 文件行数说明（>250 行）：
 本文件约 600 行未拆分，原因：
@@ -179,11 +179,34 @@ class InvestmentService:
             for log in sorted(logs, key=lambda x: x.created_at, reverse=True)
         ]
 
+    def _build_adjustments_response(self, inv: Investment) -> list[ReturnAdjustmentResponse]:
+        """构建分配比例调整记录响应（按时间倒序取最新一批）."""
+        all_adj = list(inv.return_adjustments) if inv.return_adjustments else []
+        if not all_adj:
+            return []
+        latest_at = max(a.adjusted_at for a in all_adj)
+        latest_batch = [a for a in all_adj if a.adjusted_at == latest_at]
+        return [
+            ReturnAdjustmentResponse(
+                id=a.id,
+                investment_id=a.investment_id,
+                investor_id=a.investor_id,
+                default_distribution_ratio=a.default_distribution_ratio,
+                adjusted_distribution_ratio=a.adjusted_distribution_ratio,
+                adjusted_amount=a.adjusted_amount,
+                adjusted_by=a.adjusted_by,
+                adjusted_at=a.adjusted_at,
+                remark=a.remark,
+            )
+            for a in sorted(latest_batch, key=lambda x: x.adjusted_at, reverse=True)
+        ]
+
     def _to_response(self, inv: Investment, include_logs: bool = True) -> InvestmentResponse:
         """将 ORM Investment 转为 InvestmentResponse."""
         investors = list(inv.investors) if inv.investors else []
         investor_tree = self._build_investor_tree(investors)
         logs_resp = self._build_logs_response(list(inv.logs)) if (include_logs and inv.logs) else None
+        adjustments = self._build_adjustments_response(inv)
         return InvestmentResponse(
             id=inv.id,
             project_id=inv.project_id,
@@ -199,6 +222,7 @@ class InvestmentService:
             created_at=inv.created_at,
             updated_at=inv.updated_at,
             investors=investor_tree,
+            return_adjustments=adjustments,
             logs=logs_resp,
         )
 
@@ -389,11 +413,12 @@ class InvestmentService:
         )
 
     def get_investment(self, investment_id: str) -> InvestmentResponse | None:
-        """详情：含投资方树 + 操作日志."""
+        """详情：含投资方树 + 分配比例调整 + 操作日志."""
         inv = (
             self.db.query(Investment)
             .options(
                 selectinload(Investment.investors),
+                selectinload(Investment.return_adjustments),
                 selectinload(Investment.logs),
             )
             .filter(
@@ -715,24 +740,31 @@ class InvestmentService:
         self._write_log(investment_id, action, {"investor_id": investor_id, "name": name}, operator_id)
         self.db.commit()
 
-    # ==================== 回报率调整 ====================
+    # ==================== 收益分配比例调整 ====================
 
-    def adjust_return_ratios(
+    def list_distribution_adjustments(self, investment_id: str) -> list[ReturnAdjustmentResponse]:
+        """查询分配比例调整记录（最新一批）."""
+        inv = self._get_investment_or_404(investment_id)
+        return self._build_adjustments_response(inv)
+
+    def adjust_distribution_ratios(
         self,
         investment_id: str,
         data: ReturnAdjustmentBatchRequest,
         operator_id: str,
     ) -> list[ReturnAdjustmentResponse]:
-        """批量调整回报率：校验 unsettled、调整后收益合计 = total_return；写记录与日志."""
+        """批量调整分配比例：校验 unsettled、分配比例合计 = 100%；写记录与日志.
+
+        分配比例 = 该投资方占 total_return 的百分比。默认 = 投资占比 share_ratio。
+        调整后收益 = total_return × adjusted_distribution_ratio / 100。
+        """
         inv = self._get_investment_or_404(investment_id)
         self._assert_editable(inv)
 
-        if inv.total_return is None or inv.total_investment <= 0:
-            raise ValidationError("投资总额或收益总额未设置，无法调整回报率")
+        if inv.total_return is None or inv.total_return <= 0:
+            raise ValidationError("收益总额未设置，无法调整分配比例")
 
         total_return = inv.total_return
-        total_investment = inv.total_investment
-        default_ratio = _quantize(total_return / total_investment * _HUNDRED)
 
         investors = (
             self.db.query(Investor)
@@ -748,51 +780,38 @@ class InvestmentService:
         if set(adjustments_map.keys()) != set(investor_map.keys()):
             raise ValidationError("调整项与投资方列表不一致")
 
-        results: list[ReturnAdjustmentResponse] = []
-        total_adjusted_amount = Decimal(0)
+        total_ratio = Decimal(0)
         new_records: list[ReturnAdjustment] = []
         now = datetime.now(timezone.utc)
         for inv_id, item in adjustments_map.items():
             investor = investor_map[inv_id]
-            adjusted_ratio = Decimal(str(item.adjusted_return_ratio))
-            adjusted_amount = _quantize(investor.invest_amount * adjusted_ratio / _HUNDRED)
-            total_adjusted_amount += adjusted_amount
+            default_ratio = _quantize(investor.share_ratio)
+            adjusted_ratio = Decimal(str(item.adjusted_distribution_ratio))
+            adjusted_amount = _quantize(total_return * adjusted_ratio / _HUNDRED)
+            total_ratio += adjusted_ratio
             record = ReturnAdjustment(
                 investment_id=investment_id,
                 investor_id=inv_id,
-                default_return_ratio=default_ratio,
-                adjusted_return_ratio=adjusted_ratio,
+                default_distribution_ratio=default_ratio,
+                adjusted_distribution_ratio=adjusted_ratio,
                 adjusted_amount=adjusted_amount,
                 adjusted_by=operator_id,
                 adjusted_at=now,
                 remark=item.remark,
             )
             new_records.append(record)
-            results.append(
-                ReturnAdjustmentResponse(
-                    id=record.id,
-                    investment_id=investment_id,
-                    investor_id=inv_id,
-                    default_return_ratio=default_ratio,
-                    adjusted_return_ratio=adjusted_ratio,
-                    adjusted_amount=adjusted_amount,
-                    adjusted_by=operator_id,
-                    adjusted_at=now,
-                    remark=item.remark,
-                ),
-            )
 
-        if _quantize(total_adjusted_amount) != _quantize(total_return):
+        if _quantize(total_ratio) != _HUNDRED:
             raise ValidationError(
-                f"调整后收益总和 {_quantize(total_adjusted_amount)} 不等于项目总收益 {total_return}，请调整",
+                f"分配比例合计 {total_ratio}% 不等于 100%，请调整",
             )
 
         for r in new_records:
             self.db.add(r)
         self._write_log(
             investment_id,
-            InvestmentActionType.RATIO_ADJUST,
-            {"default_ratio": str(default_ratio), "count": len(new_records)},
+            InvestmentActionType.DISTRIBUTION_ADJUST,
+            {"count": len(new_records)},
             operator_id,
         )
         self.db.commit()
@@ -803,8 +822,8 @@ class InvestmentService:
                 id=r.id,
                 investment_id=r.investment_id,
                 investor_id=r.investor_id,
-                default_return_ratio=r.default_return_ratio,
-                adjusted_return_ratio=r.adjusted_return_ratio,
+                default_distribution_ratio=r.default_distribution_ratio,
+                adjusted_distribution_ratio=r.adjusted_distribution_ratio,
                 adjusted_amount=r.adjusted_amount,
                 adjusted_by=r.adjusted_by,
                 adjusted_at=r.adjusted_at,

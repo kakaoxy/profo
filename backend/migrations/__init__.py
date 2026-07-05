@@ -13,6 +13,7 @@
 - add_renovation_extra_amount_columns: 为 project_renovations 表添加定制柜/窗户/电器金额列
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 - create_investment_tables: 幂等创建跟投管理 4 张表（investments/investors/return_adjustments/investment_logs）
+- rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
 
 """
 
@@ -285,6 +286,29 @@ def create_investment_tables(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
 
 
+def rename_return_adjustment_columns(engine: Engine) -> None:
+    """将 return_adjustments 表的回报率字段重命名为分配比例字段。
+
+    语义变更：default_return_ratio → default_distribution_ratio，
+    adjusted_return_ratio → adjusted_distribution_ratio。
+    旧数据语义不兼容（旧为回报率%，新为分配比例%），迁移时清空旧记录。
+    幂等：新列已存在则跳过。
+    """
+    if _column_exists(engine, "return_adjustments", "adjusted_distribution_ratio"):
+        return
+    if not _column_exists(engine, "return_adjustments", "default_return_ratio"):
+        return
+    logger.info("迁移：重命名 return_adjustments 表字段（回报率 → 分配比例）")
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM return_adjustments"))
+        conn.execute(
+            text("ALTER TABLE return_adjustments RENAME COLUMN default_return_ratio TO default_distribution_ratio")
+        )
+        conn.execute(
+            text("ALTER TABLE return_adjustments RENAME COLUMN adjusted_return_ratio TO adjusted_distribution_ratio")
+        )
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -297,6 +321,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_renovation_extra_amount_columns(engine)
         run_fix_image_urls(engine)
         create_investment_tables(engine)
+        rename_return_adjustment_columns(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

@@ -5,12 +5,12 @@
  *
  * 本文件 >250 行：只读视图（4 个卡片区）与编辑视图共享同一 `investment` prop 与数值
  * 派生逻辑（toNum / 比例计算），拆分会引入大量重复 props 传递。编辑模式按交互边界
- * 抽出 InvestorDialog（investor-dialog.tsx）；Phase 5 弹窗（调整回报率/结算/反结算/复制）
+ * 抽出 InvestorDialog（investor-dialog.tsx）；Phase 5 弹窗（调整分配比例/结算/反结算/复制）
  * 抽出独立组件文件；其余编辑态（基础信息、投资方表格内联编辑、总额联动确认、保存提交）
  * 与只读视图共用派生工具，保留在同文件内。
  */
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -83,7 +83,7 @@ import {
   type LocalInvestor,
   type LocalSubInvestor,
 } from "./investor-dialog";
-import { ReturnRatioDialog } from "./return-ratio-dialog";
+import { DistributionRatioDialog } from "./distribution-ratio-dialog";
 import { SettleDialog } from "./settle-dialog";
 import { UnsettleDialog } from "./unsettle-dialog";
 import { CopyInvestmentDialog } from "./copy-investment-dialog";
@@ -137,9 +137,8 @@ function formatLogContent(
     case "status_change":
       return `状态变更${d.action === "soft_delete" ? "（软删除）" : ""}`;
     case "ratio_adjust":
-      return `调整回报率${
-        d.default_ratio ? `，默认回报率 ${d.default_ratio}%` : ""
-      }${d.count ? `，共 ${d.count} 项` : ""}`;
+    case "distribution_adjust":
+      return `调整分配比例${d.count ? `，共 ${d.count} 项` : ""}`;
     case "investor_add":
       return `添加投资方：${d.name ?? "-"}${
         d.share_ratio ? `（${d.share_ratio}%）` : ""
@@ -648,12 +647,13 @@ function ProfitDistributionCard({
 }: {
   investment: InvestmentResponse;
   onAdjustReturn: () => void;
-  /** 编辑模式下投资方为本地态，调整回报率会与未保存编辑冲突，故禁用 */
+  /** 编辑模式下投资方为本地态，调整分配比例会与未保存编辑冲突，故禁用 */
   adjustDisabled?: boolean;
 }) {
   const investors = investment.investors ?? [];
   const totalInvestment = toNum(investment.total_investment);
   const totalReturn = toNum(investment.total_return);
+  const savedAdjustments = investment.return_adjustments ?? [];
 
   const hasNoInvestors = investors.length === 0;
   const hasNoReturn =
@@ -661,11 +661,14 @@ function ProfitDistributionCard({
     investment.total_return === undefined ||
     totalReturn === 0;
 
-  // 默认回报率 = total_return / total_investment × 100%
-  const defaultRatio =
-    totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : 0;
+  // 已保存的分配比例调整：investor_id → adjusted_distribution_ratio
+  const adjustmentMap = new Map<string, number>();
+  for (const adj of savedAdjustments) {
+    adjustmentMap.set(adj.investor_id, toNum(adj.adjusted_distribution_ratio));
+  }
+  const hasAdjustments = adjustmentMap.size > 0;
 
-  // 调整回报率按钮启用条件：未结算 && 有投资方 && 有收益 && 非编辑禁用
+  // 调整分配比例按钮启用条件：未结算 && 有投资方 && 有收益 && 非编辑禁用
   const canAdjust =
     !adjustDisabled &&
     investment.settlement_status === "unsettled" &&
@@ -688,9 +691,9 @@ function ProfitDistributionCard({
             onClick={onAdjustReturn}
             title={
               adjustDisabled
-                ? "请先保存或取消编辑后再调整回报率"
+                ? "请先保存或取消编辑后再调整分配比例"
                 : canAdjust
-                  ? "调整各投资方回报率"
+                  ? "调整各投资方分配比例"
                   : investment.settlement_status === "settled"
                     ? "已结算，不可调整"
                     : hasNoInvestors
@@ -699,7 +702,7 @@ function ProfitDistributionCard({
             }
           >
             <Settings className="h-4 w-4" />
-            调整回报率
+            调整分配比例
           </Button>
         </div>
 
@@ -723,10 +726,9 @@ function ProfitDistributionCard({
               </span>
               <span>
                 分配方案：
-                <strong className="text-foreground">默认按比例分配</strong>
-              </span>
-              <span>
-                校验状态：<strong className="text-emerald-600">✅ 通过</strong>
+                <strong className="text-foreground">
+                  {hasAdjustments ? "已调整分配比例" : "默认按投资占比分配"}
+                </strong>
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -736,44 +738,79 @@ function ProfitDistributionCard({
                     <TableHead className="min-w-[200px] text-muted-foreground font-medium">
                       投资方
                     </TableHead>
-                    <TableHead className="min-w-[140px] text-right text-muted-foreground font-medium">
+                    <TableHead className="min-w-[120px] text-right text-muted-foreground font-medium">
                       投资金额
                     </TableHead>
                     <TableHead className="min-w-[100px] text-right text-muted-foreground font-medium">
-                      回报率
+                      投资占比
+                    </TableHead>
+                    <TableHead className="min-w-[100px] text-right text-muted-foreground font-medium">
+                      分配比例
                     </TableHead>
                     <TableHead className="min-w-[140px] text-right text-muted-foreground font-medium">
                       收益金额
-                    </TableHead>
-                    <TableHead className="min-w-[100px] text-right text-muted-foreground font-medium">
-                      占收益比例
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {investors.map((inv, idx) => {
                     const amount = toNum(inv.invest_amount);
-                    const profit = (amount * defaultRatio) / 100;
-                    const profitRatio =
-                      totalReturn > 0 ? (profit / totalReturn) * 100 : 0;
+                    const investRatio = toNum(inv.share_ratio);
+                    const distRatio = adjustmentMap.get(inv.id) ?? investRatio;
+                    const profit = (totalReturn * distRatio) / 100;
+                    const subs = inv.sub_investors ?? [];
                     return (
-                      <TableRow key={inv.id || `inv-${idx}`}>
-                        <TableCell className="font-medium">
-                          {inv.name}
-                        </TableCell>
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {formatCNY(inv.invest_amount)}
-                        </TableCell>
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {formatPercent(defaultRatio)}
-                        </TableCell>
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {formatCNY(profit)}
-                        </TableCell>
-                        <TableCell className="font-mono tabular-nums text-right">
-                          {formatPercent(profitRatio)}
-                        </TableCell>
-                      </TableRow>
+                      <Fragment key={inv.id || `inv-${idx}`}>
+                        <TableRow className={subs.length > 0 ? "bg-muted/20" : ""}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <InvestorTypeIcon type={inv.type} />
+                              {inv.name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono tabular-nums text-right">
+                            {formatCNY(amount)}
+                          </TableCell>
+                          <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
+                            {formatPercent(investRatio)}
+                          </TableCell>
+                          <TableCell className="font-mono tabular-nums text-right">
+                            {formatPercent(distRatio)}
+                            {adjustmentMap.has(inv.id) && (
+                              <span className="ml-1 text-xs text-amber-600">●</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono tabular-nums text-right font-semibold">
+                            {formatCNY(profit)}
+                          </TableCell>
+                        </TableRow>
+                        {subs.map((sub, subIdx) => {
+                          const subAmount = toNum(sub.invest_amount);
+                          const subProfit = (profit * toNum(sub.share_ratio)) / 100;
+                          return (
+                            <TableRow
+                              key={sub.id || `sub-${idx}-${subIdx}`}
+                              className="border-l-2 border-muted hover:bg-transparent"
+                            >
+                              <TableCell className="pl-10 text-muted-foreground">
+                                └ {sub.name}
+                              </TableCell>
+                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
+                                {formatCNY(subAmount)}
+                              </TableCell>
+                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
+                                {formatPercent(toNum(sub.share_ratio))}
+                              </TableCell>
+                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
+                                —
+                              </TableCell>
+                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
+                                {formatCNY(subProfit)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </Fragment>
                     );
                   })}
                   <TableRow className="border-t-2 border-foreground hover:bg-transparent">
@@ -781,14 +818,12 @@ function ProfitDistributionCard({
                     <TableCell className="font-mono tabular-nums font-bold text-right">
                       {formatCNY(totalInvestment)}
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      —
+                    <TableCell className="text-right text-muted-foreground">—</TableCell>
+                    <TableCell className="font-mono tabular-nums font-bold text-right">
+                      100.00%
                     </TableCell>
                     <TableCell className="font-mono tabular-nums font-bold text-right">
                       {formatCNY(totalReturn)}
-                    </TableCell>
-                    <TableCell className="font-mono tabular-nums font-bold text-right">
-                      100.00%
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -1857,7 +1892,7 @@ export function InvestmentDetailView({ investment }: DetailViewProps) {
       </div>
 
       {/* Phase 5 弹窗 */}
-      <ReturnRatioDialog
+      <DistributionRatioDialog
         open={showReturnDialog}
         onOpenChange={setShowReturnDialog}
         investment={investment}

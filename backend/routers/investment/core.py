@@ -260,27 +260,42 @@ def delete_investor(
     service.delete_investor(investment_id, investor_id, current_user.id)
 
 
-# ==================== 回报率调整 ====================
+# ==================== 收益分配比例调整 ====================
+
+
+@router.get(
+    "/{investment_id}/distribution-adjustments",
+    summary="查询分配比例调整记录",
+    response_model=list[ReturnAdjustmentResponse],
+)
+def list_distribution_adjustments(
+    investment_id: Annotated[str, Path(description="跟投记录ID")],
+    service: _InvestmentServiceDep,
+    current_user: CurrentInternalUserDep,
+) -> list[ReturnAdjustmentResponse]:
+    """查询指定跟投记录的分配比例调整记录（最新一批）."""
+    return service.list_distribution_adjustments(investment_id)
 
 
 @router.put(
-    "/{investment_id}/return-adjustments",
-    summary="批量保存回报率调整",
+    "/{investment_id}/distribution-adjustments",
+    summary="批量保存分配比例调整",
     response_model=list[ReturnAdjustmentResponse],
 )
 @limiter.limit(RateLimits.INVESTMENT_INVESTOR_WRITE)
-def adjust_return_ratios(
+def adjust_distribution_ratios(
     request: Request,
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: ReturnAdjustmentBatchRequest,
     service: _InvestmentServiceDep,
     current_user: CurrentInternalUserDep,
 ) -> list[ReturnAdjustmentResponse]:
-    """批量调整回报率：校验调整后收益合计 = total_return；写记录与日志.
+    """批量调整分配比例：校验分配比例合计 = 100%；写记录与日志.
 
+    分配比例 = 占 total_return 的百分比，默认等于投资占比。
     速率限制：200次/小时.
     """
-    return service.adjust_return_ratios(investment_id, data, current_user.id)
+    return service.adjust_distribution_ratios(investment_id, data, current_user.id)
 
 
 # ==================== 结算 / 反结算 ====================

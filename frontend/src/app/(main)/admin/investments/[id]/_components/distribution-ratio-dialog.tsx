@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * 调整回报率弹窗（Phase 5.1）
+ * 调整分配比例弹窗
  *
- * 列：投资方 / 投资比例 / 投资金额 / 默认收益 / 回报率输入+进度条 / 调整后收益
- * 校验：所有投资方调整后收益合计 = total_return（容差 0.01 元）
- * 「恢复默认」：将所有回报率重置为默认值（= total_return / total_investment × 100%）
+ * 列：投资方 / 投资占比 / 投资金额 / 默认分配比例 / 分配比例输入+进度条 / 调整后收益
+ * 校验：所有投资方分配比例合计 = 100%
+ * 「恢复默认」：将所有分配比例重置为投资占比（share_ratio）
  *
- * 注意：InvestmentResponse 不暴露已保存的 return_adjustments，弹窗打开时所有
- * 投资方回报率均初始化为默认值；用户调整后提交覆盖后端记录。
+ * 分配比例 = 该投资方占 total_return 的百分比，默认等于投资占比。
+ * 适用于优先资金等场景：投70%但只分配30%收益。
+ * 调整后收益 = total_return × 分配比例 / 100。
  */
 
 import * as React from "react";
@@ -35,12 +36,12 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatCNY, formatPercent } from "@/lib/formatters";
-import { adjustReturn } from "../../actions";
+import { adjustDistribution } from "../../actions";
 import type { components } from "@/lib/api-types";
 
 type InvestmentResponse = components["schemas"]["InvestmentResponse"];
 
-interface ReturnRatioDialogProps {
+interface DistributionRatioDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   investment: InvestmentResponse;
@@ -53,33 +54,36 @@ function toNum(v: string | number | null | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
-/** 合计容差（元） */
+/** 比例合计容差（%） */
 const SUM_EPS = 0.01;
 
-/** 进度条最大值（200%），超过 100% 标红 */
-const PROGRESS_MAX = 200;
+/** 进度条最大值（100%） */
+const PROGRESS_MAX = 100;
 
-export function ReturnRatioDialog({
+export function DistributionRatioDialog({
   open,
   onOpenChange,
   investment,
-}: ReturnRatioDialogProps) {
+}: DistributionRatioDialogProps) {
   const investors = investment.investors ?? [];
-  const totalInvestment = toNum(investment.total_investment);
   const totalReturn = toNum(investment.total_return);
-  const defaultRatio =
-    totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : 0;
+  const savedAdjustments = investment.return_adjustments ?? [];
 
   // ratios: investor_id → 输入文本（保留中间输入态）
   const [ratios, setRatios] = React.useState<Record<string, string>>({});
   const [submitting, setSubmitting] = React.useState(false);
 
-  // 打开时初始化为默认回报率
+  // 打开时初始化：优先用已保存的调整值，否则用投资占比
   React.useEffect(() => {
     if (open) {
+      const savedMap: Record<string, number> = {};
+      for (const adj of savedAdjustments) {
+        savedMap[adj.investor_id] = toNum(adj.adjusted_distribution_ratio);
+      }
       const init: Record<string, string> = {};
       for (const inv of investors) {
-        init[inv.id] = defaultRatio.toFixed(2);
+        const saved = savedMap[inv.id];
+        init[inv.id] = (saved ?? toNum(inv.share_ratio)).toFixed(2);
       }
       setRatios(init);
     }
@@ -88,20 +92,22 @@ export function ReturnRatioDialog({
 
   const rows = investors.map((inv) => {
     const amount = toNum(inv.invest_amount);
+    const defaultRatio = toNum(inv.share_ratio);
     const ratioNum = parseFloat(ratios[inv.id] ?? "") || 0;
-    const defaultProfit = (amount * defaultRatio) / 100;
-    const adjustedProfit = (amount * ratioNum) / 100;
+    const defaultProfit = (totalReturn * defaultRatio) / 100;
+    const adjustedProfit = (totalReturn * ratioNum) / 100;
     return {
       inv,
       amount,
+      defaultRatio,
       ratioNum,
       defaultProfit,
       adjustedProfit,
     };
   });
 
-  const adjustedSum = rows.reduce((s, r) => s + r.adjustedProfit, 0);
-  const diff = adjustedSum - totalReturn;
+  const ratioSum = rows.reduce((s, r) => s + r.ratioNum, 0);
+  const diff = ratioSum - 100;
   const valid = Math.abs(diff) <= SUM_EPS;
   const hasInvestors = investors.length > 0;
 
@@ -112,7 +118,7 @@ export function ReturnRatioDialog({
   const handleResetDefault = (): void => {
     const reset: Record<string, string> = {};
     for (const inv of investors) {
-      reset[inv.id] = defaultRatio.toFixed(2);
+      reset[inv.id] = toNum(inv.share_ratio).toFixed(2);
     }
     setRatios(reset);
   };
@@ -120,23 +126,21 @@ export function ReturnRatioDialog({
   const handleSubmit = async (): Promise<void> => {
     if (!valid) {
       toast.error(
-        `调整后收益合计 ${formatCNY(adjustedSum)} 与总收益 ${formatCNY(
-          totalReturn,
-        )} 不一致（差额 ${formatCNY(diff)}）`,
+        `分配比例合计 ${ratioSum.toFixed(2)}% 不等于 100%（差额 ${diff.toFixed(2)}%）`,
       );
       return;
     }
     setSubmitting(true);
     try {
-      const res = await adjustReturn(
+      const res = await adjustDistribution(
         investment.id,
         rows.map((r) => ({
           investor_id: r.inv.id,
-          adjusted_return_ratio: r.ratioNum,
+          adjusted_distribution_ratio: r.ratioNum,
         })),
       );
       if (res.success) {
-        toast.success("回报率调整已保存");
+        toast.success("分配比例调整已保存");
         onOpenChange(false);
       } else {
         toast.error(res.message);
@@ -152,10 +156,10 @@ export function ReturnRatioDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] grid-rows-[auto_auto_1fr_auto] gap-0 overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>调整回报率</DialogTitle>
+          <DialogTitle>调整分配比例</DialogTitle>
           <DialogDescription className="text-xs">
-            默认回报率 = 收益总额 / 投资总额 × 100% = {formatPercent(defaultRatio)}
-            ；调整后收益合计需等于总收益 {formatCNY(totalReturn)}
+            分配比例 = 占收益总额的百分比，默认等于投资占比。
+            调整后各投资方分配比例合计需等于 100%。总收益 {formatCNY(totalReturn)}
           </DialogDescription>
         </DialogHeader>
 
@@ -169,17 +173,17 @@ export function ReturnRatioDialog({
                       <TableHead className="min-w-[140px] text-muted-foreground font-medium">
                         投资方
                       </TableHead>
-                      <TableHead className="min-w-[90px] text-right text-muted-foreground font-medium">
-                        投资比例
-                      </TableHead>
                       <TableHead className="min-w-[120px] text-right text-muted-foreground font-medium">
                         投资金额
+                      </TableHead>
+                      <TableHead className="min-w-[100px] text-right text-muted-foreground font-medium">
+                        投资占比
                       </TableHead>
                       <TableHead className="min-w-[120px] text-right text-muted-foreground font-medium">
                         默认收益
                       </TableHead>
                       <TableHead className="min-w-[180px] text-muted-foreground font-medium">
-                        回报率(%)
+                        分配比例(%)
                       </TableHead>
                       <TableHead className="min-w-[120px] text-right text-muted-foreground font-medium">
                         调整后收益
@@ -188,22 +192,22 @@ export function ReturnRatioDialog({
                   </TableHeader>
                   <TableBody>
                     {rows.map((r) => {
-                      const overDefault = r.ratioNum > defaultRatio;
+                      const overDefault = r.ratioNum > r.defaultRatio;
                       const overHundred = r.ratioNum > 100;
                       const progressValue = Math.min(
                         (r.ratioNum / PROGRESS_MAX) * 100,
                         100,
                       );
                       return (
-                        <TableRow key={r.inv.id}>
+                        <TableRow key={r.inv.id || `inv-${r.inv.name}`}>
                           <TableCell className="font-medium">
                             {r.inv.name}
                           </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
-                            {formatPercent(toNum(r.inv.share_ratio))}
-                          </TableCell>
                           <TableCell className="font-mono tabular-nums text-right">
                             {formatCNY(r.amount)}
+                          </TableCell>
+                          <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
+                            {formatPercent(r.defaultRatio)}
                           </TableCell>
                           <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
                             {formatCNY(r.defaultProfit)}
@@ -215,7 +219,8 @@ export function ReturnRatioDialog({
                                   type="number"
                                   step="0.01"
                                   min="0"
-                                  placeholder={defaultRatio.toFixed(2)}
+                                  max="100"
+                                  placeholder={r.defaultRatio.toFixed(2)}
                                   value={ratios[r.inv.id] ?? ""}
                                   onChange={(e) =>
                                     handleRatioChange(r.inv.id, e.target.value)
@@ -245,8 +250,8 @@ export function ReturnRatioDialog({
                       );
                     })}
                     <TableRow className="border-t-2 border-foreground hover:bg-transparent">
-                      <TableCell className="font-bold" colSpan={5}>
-                        合计（需 = 总收益 {formatCNY(totalReturn)}）
+                      <TableCell className="font-bold" colSpan={4}>
+                        合计（需 = 100%）
                       </TableCell>
                       <TableCell
                         className={cn(
@@ -254,7 +259,15 @@ export function ReturnRatioDialog({
                           valid ? "text-emerald-600" : "text-red-500",
                         )}
                       >
-                        {formatCNY(adjustedSum)}
+                        {ratioSum.toFixed(2)}%
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          "font-mono tabular-nums text-right font-bold",
+                          valid ? "text-emerald-600" : "text-red-500",
+                        )}
+                      >
+                        {formatCNY(rows.reduce((s, r) => s + r.adjustedProfit, 0))}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -271,10 +284,8 @@ export function ReturnRatioDialog({
               >
                 <span>
                   {valid
-                    ? `✅ 校验通过，调整后收益合计 = 总收益`
-                    : `⚠️ 差额 ${formatCNY(diff)}，需调整至合计 = ${formatCNY(
-                        totalReturn,
-                      )}`}
+                    ? "✅ 校验通过，分配比例合计 = 100%"
+                    : `⚠️ 差额 ${diff.toFixed(2)}%，需调整至合计 = 100%`}
                 </span>
                 <Button
                   type="button"
@@ -291,7 +302,7 @@ export function ReturnRatioDialog({
             </div>
           ) : (
             <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-              暂无投资方，无法调整回报率
+              暂无投资方，无法调整分配比例
             </div>
           )}
         </div>

@@ -159,6 +159,7 @@ class InvestmentActionType(str, enum.Enum):
     CREATE = "create"
     STATUS_CHANGE = "status_change"
     RATIO_ADJUST = "ratio_adjust"
+    DISTRIBUTION_ADJUST = "distribution_adjust"
     INVESTOR_ADD = "investor_add"
     INVESTOR_EDIT = "investor_edit"
     INVESTOR_DELETE = "investor_delete"
