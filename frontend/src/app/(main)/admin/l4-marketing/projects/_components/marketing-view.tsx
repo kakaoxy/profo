@@ -19,8 +19,6 @@ const ROOM_COUNT_REGEX = /(\d+)室/;
 interface MarketingViewProps {
   data: L4MarketingProject[];
   total: number;
-  currentPage: number;
-  pageSize: number;
 }
 
 // 发布状态 Tab：value 直接对应后端 publish_status 参数值
@@ -65,7 +63,7 @@ const createSearchFilter = (searchQuery: string) => {
     project.community_name?.toLowerCase().includes(searchLower);
 };
 
-export function MarketingView({ data, total, currentPage, pageSize }: MarketingViewProps) {
+export function MarketingView({ data, total }: MarketingViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,11 +92,9 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
     });
   }, [data, layoutFilterFn, searchFilterFn]);
 
-  const totalPages = Math.ceil(total / pageSize);
-
   const updateUrlParams = useCallback((updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
-    
+
     Object.entries(updates).forEach(([key, value]) => {
       if (value === undefined || value === "" || value === "all") {
         params.delete(key);
@@ -106,22 +102,12 @@ export function MarketingView({ data, total, currentPage, pageSize }: MarketingV
         params.set(key, value);
       }
     });
-    
+
     // 重置到第一页当过滤条件变化时
     params.set("page", "1");
-    
+
     router.push(`/admin/l4-marketing/projects?${params.toString()}`);
   }, [searchParams, router]);
-
-  // _handlePageChange 保留供将来使用
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handlePageChange = useCallback((page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return;
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", page.toString());
-    router.push(`/admin/l4-marketing/projects?${params.toString()}`);
-  }, [currentPage, totalPages, searchParams, router]);
 
   const handlePublishTabChange = useCallback((value: string) => {
     setPublishTab(value);

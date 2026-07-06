@@ -3,13 +3,11 @@
 import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
-import { Lead, FilterState } from "../types";
+import { Lead } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
-import type { components, operations } from "@/lib/api-types";
+import type { operations } from "@/lib/api-types";
 import { mapBackendToFrontend } from "../lib/utils";
 
-type LeadsQuery =
-  operations["get_leads_api_v1_leads_get"]["parameters"]["query"];
 type LeadCreatePayload =
   operations["create_lead_api_v1_leads_post"]["requestBody"]["content"]["application/json"];
 type LeadUpdatePayload =
@@ -61,30 +59,6 @@ export async function createLeadAction(
     logger.error("Create lead error:", error);
     return { success: false, error: extractErrorMessage(error) };
   }
-}
-
-export async function getLeadsAction(filters: FilterState) {
-  const client = await fetchClient();
-  const query: LeadsQuery = {
-    page: 1,
-    page_size: 100,
-  };
-  if (filters.search) query.search = filters.search;
-
-  if (filters.statuses && filters.statuses.length > 0) {
-    query.statuses = filters.statuses as components["schemas"]["LeadStatus"][];
-  }
-
-  const { data, error } = await client.GET("/api/v1/leads", {
-    params: { query },
-  });
-
-  if (error || !data) {
-    logger.error("Get leads error:", error);
-    return [];
-  }
-
-  return (data.items || []).map(mapBackendToFrontend);
 }
 
 export async function updateLeadAction(

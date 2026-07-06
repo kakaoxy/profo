@@ -246,3 +246,12 @@ class LeadService:
             "lead": lead,
             "follow_ups": follow_ups,
         }
+
+    def get_stats(self) -> dict[str, int]:
+        """获取线索状态统计（不受分页影响）.
+
+        Returns:
+            包含各状态数量的字典
+
+        """
+        return self.query_service.get_status_stats()

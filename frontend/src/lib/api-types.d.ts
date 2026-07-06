@@ -252,6 +252,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leads Stats
+         * @description 获取线索状态统计（不受分页影响）.
+         */
+        get: operations["get_leads_stats_api_v1_leads_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/leads/{lead_id}": {
         parameters: {
             query?: never;
@@ -4501,6 +4521,37 @@ export interface components {
             updated_at: string;
         };
         /**
+         * LeadStatsResponse
+         * @description 线索状态统计响应（不受分页影响）.
+         */
+        LeadStatsResponse: {
+            /**
+             * Pending Assessment
+             * @description 待评估数量
+             */
+            pending_assessment: number;
+            /**
+             * Pending Visit
+             * @description 待看房数量
+             */
+            pending_visit: number;
+            /**
+             * Visited
+             * @description 已看房数量
+             */
+            visited: number;
+            /**
+             * Signed
+             * @description 已签约数量
+             */
+            signed: number;
+            /**
+             * Rejected
+             * @description 已驳回数量
+             */
+            rejected: number;
+        };
+        /**
          * LeadStatus
          * @description 线索状态枚举.
          * @enum {string}
@@ -8234,6 +8285,33 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    get_leads_stats_api_v1_leads_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadStatsResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from sqlalchemy import desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session, joinedload, noload
 
 from models.common import LeadStatus
@@ -166,3 +166,21 @@ class LeadQueryService:
             "visiting": visiting,
             "signed": signed,
         }
+
+    def get_status_stats(self) -> dict[str, int]:
+        """获取线索各状态数量统计（单次 GROUP BY 查询）.
+
+        Returns:
+            包含各状态数量的字典，键为 LeadStatus 枚举值
+
+        """
+        rows = self.db.execute(
+            select(Lead.status, func.count())
+            .where(Lead.is_deleted.is_(False))
+            .group_by(Lead.status)
+        ).all()
+
+        counts = {status.value: 0 for status in LeadStatus}
+        for status, count in rows:
+            counts[status.value] = count
+        return counts

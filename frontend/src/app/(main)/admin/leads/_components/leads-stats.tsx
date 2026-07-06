@@ -8,31 +8,30 @@ import {
   XCircle,
   Eye,
 } from "lucide-react";
-import { Lead, LeadStatus } from "../types";
 
-interface LeadsStatsProps {
-  leads: Lead[];
+export interface LeadStats {
+  pending_assessment: number;
+  pending_visit: number;
+  visited: number;
+  signed: number;
+  rejected: number;
 }
 
-export function LeadsStats({ leads }: LeadsStatsProps) {
-  const stats = {
-    pendingAssessment: leads.filter((l) => l.status === LeadStatus.PENDING_ASSESSMENT).length,
-    pendingVisit: leads.filter((l) => l.status === LeadStatus.PENDING_VISIT).length,
-    visited: leads.filter((l) => l.status === LeadStatus.VISITED).length,
-    signed: leads.filter((l) => l.status === LeadStatus.SIGNED).length,
-    rejected: leads.filter((l) => l.status === LeadStatus.REJECTED).length,
-  };
+interface LeadsStatsProps {
+  stats: LeadStats;
+}
 
+export function LeadsStats({ stats }: LeadsStatsProps) {
   const items: StatItem[] = [
     {
       label: "待评估",
-      value: stats.pendingAssessment,
+      value: stats.pending_assessment,
       icon: ClipboardList,
       color: "bg-primary",
     },
     {
       label: "待看房",
-      value: stats.pendingVisit,
+      value: stats.pending_visit,
       icon: CalendarClock,
       color: "bg-tertiary",
     },

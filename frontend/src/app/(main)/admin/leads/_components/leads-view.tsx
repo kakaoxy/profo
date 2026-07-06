@@ -16,13 +16,12 @@ import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
   CONFIRM_DIALOG,
-  LOADING_TEXT,
 } from "../constants/ui-labels";
-import { LeadsStats } from "./leads-stats";
+import { LeadsStats, type LeadStats } from "./leads-stats";
 import { LeadsTable } from "./leads-table";
 import { LeadsGrid } from "./leads-grid";
 import { LeadsToolbar } from "./leads-toolbar";
-import { Loader2 } from "lucide-react";
+import { LeadsPagination } from "./leads-pagination";
 import { ListView } from "@/components/common";
 
 const LeadDrawer = dynamic(
@@ -37,19 +36,21 @@ const AddLeadModal = dynamic(
 
 interface LeadsViewProps {
   initialLeads: Lead[];
+  total: number;
+  stats: LeadStats;
   initialSelectedLeadId?: string;
 }
 
 export function LeadsView({
   initialLeads,
+  total,
+  stats,
   initialSelectedLeadId,
 }: LeadsViewProps) {
   const router = useRouter();
   const {
     leads,
-    setLeads,
     filteredLeads,
-    isPending,
     refreshLeads,
     activeTab,
     setActiveTab,
@@ -85,7 +86,7 @@ export function LeadsView({
   ) => {
     const result = await updateLeadAction(id, { status, evalPrice, auditReason: reason });
     if (result.success) {
-      setLeads((prev) => prev.map((l) => (l.id === id ? result.data : l)));
+      refreshLeads();
       closeDetail();
       handleSuccess(SUCCESS_MESSAGES.AUDIT_COMPLETED);
     } else {
@@ -96,7 +97,7 @@ export function LeadsView({
   const handleAddFollowUp = async (id: string, method: FollowUpMethod, content: string) => {
     const result = await addFollowUpAction(id, method, content);
     if (result.success) {
-      await refreshLeads();
+      refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);
     } else {
       handleError(result.error, "handleAddFollowUp", { fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED });
@@ -106,7 +107,7 @@ export function LeadsView({
   const handleImagesUpdate = async (id: string, images: string[]) => {
     const result = await updateLeadAction(id, { images });
     if (result.success) {
-      setLeads((prev) => prev.map((l) => (l.id === id ? result.data : l)));
+      refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.LEAD_UPDATED);
     } else {
       handleError(result.error, "handleImagesUpdate", { fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED });
@@ -117,7 +118,7 @@ export function LeadsView({
     if (editingLead) {
       const result = await updateLeadAction(editingLead.id, newLeadData);
       if (result.success) {
-        setLeads((prev) => prev.map((l) => (l.id === editingLead.id ? result.data : l)));
+        refreshLeads();
         handleSuccess(SUCCESS_MESSAGES.LEAD_UPDATED);
         closeAddModal();
       } else {
@@ -126,7 +127,7 @@ export function LeadsView({
     } else {
       const result = await createLeadAction(newLeadData);
       if (result.success) {
-        await refreshLeads();
+        refreshLeads();
         handleSuccess(SUCCESS_MESSAGES.LEAD_CREATED);
         closeAddModal();
       } else {
@@ -139,7 +140,7 @@ export function LeadsView({
     if (!window.confirm(CONFIRM_DIALOG.DELETE_TITLE + CONFIRM_DIALOG.DELETE_DESCRIPTION)) return;
     const result = await deleteLeadAction(id);
     if (result.success) {
-      await refreshLeads();
+      refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.LEAD_DELETED);
     } else {
       handleError(result.error, "handleDeleteLead", { fallbackMessage: ERROR_MESSAGES.DELETE_FAILED });
@@ -154,9 +155,9 @@ export function LeadsView({
           <p className="text-sm text-muted-foreground">管理和跟进房源线索，从初筛到签约的全流程追踪。</p>
         </div>
 
-        <LeadsStats leads={leads} />
+        <LeadsStats stats={stats} />
 
-        <ListView totalCount={leads.length} filteredCount={filteredLeads.length}>
+        <ListView totalCount={total} filteredCount={filteredLeads.length}>
           <LeadsToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -167,37 +168,30 @@ export function LeadsView({
             onAddLead={startAddLead}
           />
 
-          {isPending && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="ml-2 text-sm text-muted-foreground">{LOADING_TEXT.LOADING}</span>
-            </div>
-          )}
-
-          {!isPending && (
-            <>
-              {viewMode === "table" ? (
-                <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <LeadsTable
-                      leads={filteredLeads}
-                      onOpenDetail={openDetail}
-                      onEdit={startEditLead}
-                      onDelete={handleDeleteLead}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <LeadsGrid
+          {viewMode === "table" ? (
+            <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <LeadsTable
                   leads={filteredLeads}
                   onOpenDetail={openDetail}
                   onEdit={startEditLead}
                   onDelete={handleDeleteLead}
                 />
-              )}
-            </>
+              </div>
+            </div>
+          ) : (
+            <LeadsGrid
+              leads={filteredLeads}
+              onOpenDetail={openDetail}
+              onEdit={startEditLead}
+              onDelete={handleDeleteLead}
+            />
           )}
         </ListView>
+
+        <div className="relative z-50 bg-card">
+          <LeadsPagination total={total} />
+        </div>
 
         <LeadDrawer
           lead={selectedLead}

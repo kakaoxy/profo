@@ -203,6 +203,16 @@ class LeadFunnelResponse(BaseModel):
     signed: int = Field(description="已签约数量")
 
 
+class LeadStatsResponse(BaseModel):
+    """线索状态统计响应（不受分页影响）."""
+
+    pending_assessment: int = Field(description="待评估数量")
+    pending_visit: int = Field(description="待看房数量")
+    visited: int = Field(description="已看房数量")
+    signed: int = Field(description="已签约数量")
+    rejected: int = Field(description="已驳回数量")
+
+
 __all__ = [
     # Follow Up
     "FollowUpBase",
@@ -215,6 +225,7 @@ __all__ = [
     "LeadFunnelResponse",
     "LeadListItem",
     "LeadResponse",
+    "LeadStatsResponse",
     "LeadUpdate",
     "PaginatedLeadListResponse",
     "PaginatedLeadResponse",
