@@ -176,7 +176,7 @@ class LeadQueryService:
         """
         rows = self.db.execute(
             select(Lead.status, func.count())
-            .where(Lead.is_deleted.is_(False))
+            .where(Lead.is_deleted.is_(False), Lead.status.is_not(None))
             .group_by(Lead.status)
         ).all()
 

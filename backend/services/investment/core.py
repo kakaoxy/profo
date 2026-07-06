@@ -311,7 +311,11 @@ class InvestmentService:
 
     def _get_project_code(self, project: Project) -> str:
         """获取项目编号：优先使用合同编号，否则回退到项目 ID."""
-        if project.contract is not None and project.contract.contract_no:
+        if (
+            project.contract is not None
+            and not project.contract.is_deleted
+            and project.contract.contract_no
+        ):
             return project.contract.contract_no
         return project.id
 
