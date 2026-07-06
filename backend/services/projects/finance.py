@@ -2,6 +2,12 @@
 
 负责：项目财务计算、现金流记录管理、财务报告生成
 注意：已适配新的规范化表结构，财务流水使用 FinanceRecord 表
+
+文件行数说明（>500 行）：
+本文件约 660 行未拆分，原因：
+1. 现金流 CRUD、财务汇总计算、资金账本聚合统计共享 FinanceRecord 模型与 _validate_category 校验
+2. sync_financials 缓存同步被 create/delete 调用，拆分会破坏事务一致性
+3. 与 InvestmentService 等同类服务保持单一 Service 类的现有模式一致
 """
 
 import logging
@@ -9,7 +15,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
 from models import FinanceRecord, Project, ProjectContract, ProjectSale
@@ -72,6 +78,8 @@ class FinanceService:
             amount=record_data.amount,
             record_date=record_data.date,
             remark=record_data.description,
+            counterparty=record_data.counterparty,
+            receipt_url=record_data.receipt_url,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
         )
@@ -356,6 +364,18 @@ class FinanceService:
             CashFlowCategory.TAX_FEE,
             CashFlowCategory.OPERATION_FEE,
             CashFlowCategory.PURCHASE_PRICE,
+            CashFlowCategory.CHANNEL_COMMISSION,
+            CashFlowCategory.ENGINEERING_RENOVATION,
+            CashFlowCategory.MARKETING_PROMOTION,
+            CashFlowCategory.OPERATION_SERVICE,
+            CashFlowCategory.INVESTMENT_PRINCIPAL_RETURN,
+            CashFlowCategory.INVESTOR_PROFIT_DISTRIBUTION,
+            CashFlowCategory.PURCHASE_PRINCIPAL,
+            CashFlowCategory.PROPERTY_TAX,
+            CashFlowCategory.QUOTA_FEE,
+            CashFlowCategory.HOLDING_COST_MONTHLY,
+            CashFlowCategory.OTHER_TAX,
+            CashFlowCategory.PROJECT_RESERVE,
         }
 
         income_categories = {
@@ -364,6 +384,10 @@ class FinanceService:
             CashFlowCategory.SERVICE_FEE,
             CashFlowCategory.OTHER_INCOME,
             CashFlowCategory.SALE_PRICE,
+            CashFlowCategory.BOND_RECOVERY,
+            CashFlowCategory.VALUE_ADDED_SERVICE,
+            CashFlowCategory.PROJECT_INVESTMENT,
+            CashFlowCategory.RESERVE_RECOVERY,
         }
 
         if flow_type == CashFlowType.EXPENSE and category not in expense_categories:
@@ -371,6 +395,256 @@ class FinanceService:
 
         if flow_type == CashFlowType.INCOME and category not in income_categories:
             raise ValidationError(f"收入类型不能使用分类: {category.value}")
+
+    # ==================== 资金账本 (Ledger) ====================
+
+    def list_projects_with_stats(
+        self,
+        search: str | None,
+        project_status: str | None,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """资金账本：分页查询有流水记录的项目及其聚合统计.
+
+        - JOIN Project + FinanceRecord，按 project_id 分组聚合
+        - total_income / total_expense / net_cash_flow / record_count
+        - search 模糊搜索 project.contract_no / project.community_name / project.address
+        - project_status 筛选
+        - 按 net_cash_flow 倒序分页
+        """
+        total_income_expr = func.sum(
+            case(
+                (FinanceRecord.type == CashFlowType.INCOME.value, FinanceRecord.amount),
+                else_=Decimal(0),
+            ),
+        ).label("total_income")
+        total_expense_expr = func.sum(
+            case(
+                (FinanceRecord.type == CashFlowType.EXPENSE.value, FinanceRecord.amount),
+                else_=Decimal(0),
+            ),
+        ).label("total_expense")
+        net_cash_flow_expr = (total_income_expr - total_expense_expr).label("net_cash_flow")
+        record_count_expr = func.count(FinanceRecord.id).label("record_count")
+
+        query = (
+            self.db.query(
+                Project.id.label("project_id"),
+                Project.community_name.label("project_name"),
+                Project.address.label("project_address"),
+                Project.status.label("project_status"),
+                ProjectContract.contract_no.label("project_code"),
+                total_income_expr,
+                total_expense_expr,
+                net_cash_flow_expr,
+                record_count_expr,
+            )
+            .join(FinanceRecord, FinanceRecord.project_id == Project.id)
+            .outerjoin(ProjectContract, ProjectContract.project_id == Project.id)
+            .filter(
+                Project.is_deleted.is_(False),
+                FinanceRecord.is_deleted.is_(False),
+            )
+            .group_by(
+                Project.id,
+                Project.community_name,
+                Project.address,
+                Project.status,
+                ProjectContract.contract_no,
+            )
+        )
+
+        if search:
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            like = f"%{escaped}%"
+            query = query.filter(
+                or_(
+                    ProjectContract.contract_no.ilike(like, escape="\\"),
+                    Project.community_name.ilike(like, escape="\\"),
+                    Project.address.ilike(like, escape="\\"),
+                ),
+            )
+
+        if project_status is not None:
+            query = query.filter(Project.status == project_status)
+
+        total: int = query.count()
+        offset = (page - 1) * page_size
+        rows = (
+            query.order_by(net_cash_flow_expr.desc())
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            total_income = row.total_income or Decimal(0)
+            total_expense = row.total_expense or Decimal(0)
+            net_cf = total_income - total_expense
+            roi = float((net_cf / total_expense) * 100) if total_expense > 0 else 0.0
+            items.append(
+                {
+                    "project_id": row.project_id,
+                    "project_code": row.project_code,
+                    "project_name": row.project_name,
+                    "project_address": row.project_address,
+                    "project_status": row.project_status,
+                    "total_income": total_income,
+                    "total_expense": total_expense,
+                    "net_cash_flow": net_cf,
+                    "roi": round(roi, 2),
+                    "record_count": int(row.record_count),
+                },
+            )
+        return items, total
+
+    def get_overall_stats(self) -> dict[str, Any]:
+        """资金账本：全局汇总（有流水记录的项目数、总收入、总支出、净现金流、记录数）."""
+        base = (
+            self.db.query(FinanceRecord)
+            .filter(FinanceRecord.is_deleted.is_(False))
+        )
+
+        total_records: int = base.count()
+
+        agg = (
+            self.db.query(
+                func.sum(
+                    case(
+                        (FinanceRecord.type == CashFlowType.INCOME.value, FinanceRecord.amount),
+                        else_=Decimal(0),
+                    ),
+                ).label("total_income"),
+                func.sum(
+                    case(
+                        (FinanceRecord.type == CashFlowType.EXPENSE.value, FinanceRecord.amount),
+                        else_=Decimal(0),
+                    ),
+                ).label("total_expense"),
+            )
+            .filter(FinanceRecord.is_deleted.is_(False))
+            .first()
+        )
+
+        total_income = agg.total_income or Decimal(0)
+        total_expense = agg.total_expense or Decimal(0)
+        net_cash_flow = total_income - total_expense
+
+        total_projects = (
+            self.db.query(func.count(func.distinct(FinanceRecord.project_id)))
+            .filter(FinanceRecord.is_deleted.is_(False))
+            .scalar()
+        ) or 0
+
+        return {
+            "total_projects": int(total_projects),
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "net_cash_flow": net_cash_flow,
+            "total_records": int(total_records),
+        }
+
+    def export_ledger_excel(
+        self,
+        search: str | None,
+        project_status: str | None,
+    ) -> bytes:
+        """资金账本：导出全量项目列表为 .xlsx（openpyxl）.
+
+        列：项目编号、小区、地址、项目状态、总收入、总支出、净现金流、ROI(%)、记录数
+        """
+        import io  # noqa: PLC0415
+
+        from openpyxl import Workbook  # noqa: PLC0415
+
+        items, _ = self.list_projects_with_stats(
+            search=search,
+            project_status=project_status,
+            page=1,
+            page_size=10000,
+        )
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "资金账本"
+        headers = [
+            "项目编号",
+            "小区",
+            "地址",
+            "项目状态",
+            "总收入",
+            "总支出",
+            "净现金流",
+            "ROI(%)",
+            "记录数",
+        ]
+        ws.append(headers)
+
+        status_label = {
+            "signing": "签约",
+            "renovating": "改造",
+            "selling": "在售",
+            "sold": "已售",
+            "deleted": "已删除",
+        }
+
+        for it in items:
+            ws.append(
+                [
+                    it["project_code"] or "",
+                    it["project_name"] or "",
+                    it["project_address"] or "",
+                    status_label.get(it["project_status"], it["project_status"] or "-"),
+                    float(it["total_income"]),
+                    float(it["total_expense"]),
+                    float(it["net_cash_flow"]),
+                    round(it["roi"], 2),
+                    it["record_count"],
+                ],
+            )
+
+        for col_idx in range(1, len(headers) + 1):
+            ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = 18
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        return buffer.getvalue()
+
+    def delete_record_by_id(self, record_id: str) -> None:
+        """资金账本：按记录ID软删除流水（无需 project_id）.
+
+        删除后触发财务数据同步计算.
+        """
+        logger.info("Deleting finance record %s", record_id)
+
+        record = (
+            self.db.query(FinanceRecord)
+            .filter(
+                FinanceRecord.id == record_id,
+                FinanceRecord.is_deleted.is_(False),
+            )
+            .first()
+        )
+
+        if not record:
+            logger.error("Finance record not found: %s", record_id)
+            raise ResourceNotFoundError("现金流记录不存在")
+
+        project_id = record.project_id
+        record.is_deleted = True
+        record.updated_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        # 删除成功后，触发财务数据同步计算
+        try:
+            self.sync_financials(project_id)
+            logger.info("Project financials synced for project %s", project_id)
+        except Exception:
+            logger.exception("Failed to sync project financials")
+
+        logger.info("Finance record deleted successfully: %s", record_id)
 
     # 别名方法 - 与路由兼容
     def get_cashflow_records(self, project_id: str) -> list[FinanceRecord]:

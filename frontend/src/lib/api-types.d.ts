@@ -1334,6 +1334,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账本项目列表
+         * @description 分页查询有流水记录的项目列表（含收入/支出/净现金流/ROI 聚合统计）.
+         */
+        get: operations["list_ledger_projects_api_v1_admin_ledger_get"];
+        put?: never;
+        /**
+         * 创建资金账本流水
+         * @description 创建资金账本流水记录（body 含 project_id）.
+         *
+         *     速率限制：100次/小时.
+         */
+        post: operations["create_ledger_record_api_v1_admin_ledger_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ledger/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取资金账本全局汇总
+         * @description 全局汇总：有流水记录的项目数、总收入、总支出、净现金流、记录数.
+         */
+        get: operations["get_ledger_stats_api_v1_admin_ledger_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ledger/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出资金账本 Excel
+         * @description 导出全量资金账本为 .xlsx（openpyxl）。文件名 资金账本_YYYYMMDD.xlsx.
+         *
+         *     速率限制：10次/小时.
+         */
+        get: operations["export_ledger_api_v1_admin_ledger_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ledger/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取项目资金账本详情
+         * @description 获取项目资金账本详情（含流水记录列表 + 汇总）.
+         */
+        get: operations["get_ledger_detail_api_v1_admin_ledger__project_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ledger/{record_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 删除资金账本流水
+         * @description 软删除资金账本流水记录.
+         *
+         *     速率限制：20次/小时.
+         */
+        delete: operations["delete_ledger_record_api_v1_admin_ledger__record_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/token": {
         parameters: {
             query?: never;
@@ -2631,7 +2741,7 @@ export interface components {
          * @description 现金流分类枚举.
          * @enum {string}
          */
-        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款";
+        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "渠道佣金" | "工程装修费" | "营销推广费" | "运营服务费" | "跟投本金退还" | "投资人利润分配" | "购房本金" | "房屋税费" | "名额费" | "持有成本-月供" | "其他税费" | "项目备用金" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款" | "保证金回收" | "增值服务费" | "项目跟投款" | "备用金回收";
         /**
          * CashFlowRecordCreate
          * @description 创建现金流.
@@ -2650,6 +2760,10 @@ export interface components {
             description?: string | null;
             /** Related Stage */
             related_stage?: string | null;
+            /** Counterparty */
+            counterparty?: string | null;
+            /** Receipt Url */
+            receipt_url?: string | null;
         };
         /**
          * CashFlowRecordResponse
@@ -2680,6 +2794,16 @@ export interface components {
              * @description 经办人ID
              */
             operator_id?: string | null;
+            /**
+             * Counterparty
+             * @description 交易方
+             */
+            counterparty?: string | null;
+            /**
+             * Receipt Url
+             * @description 票据图片URL
+             */
+            receipt_url?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -4595,6 +4719,106 @@ export interface components {
             remarks?: string | null;
             /** Last Follow Up At */
             last_follow_up_at?: string | null;
+        };
+        /**
+         * LedgerListResponse
+         * @description 资金账本列表响应.
+         */
+        LedgerListResponse: {
+            /** Items */
+            items: components["schemas"]["LedgerProjectListItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * LedgerProjectListItem
+         * @description 资金账本项目列表项（含聚合统计）.
+         */
+        LedgerProjectListItem: {
+            /** Project Id */
+            project_id: string;
+            /** Project Code */
+            project_code?: string | null;
+            /** Project Name */
+            project_name?: string | null;
+            /** Project Address */
+            project_address?: string | null;
+            /** Project Status */
+            project_status?: string | null;
+            /** Total Income */
+            total_income: number;
+            /** Total Expense */
+            total_expense: number;
+            /** Net Cash Flow */
+            net_cash_flow: number;
+            /** Roi */
+            roi: number;
+            /** Record Count */
+            record_count: number;
+        };
+        /**
+         * LedgerRecordCreate
+         * @description 资金账本创建流水请求（含 project_id，不通过 URL path 传递）.
+         */
+        LedgerRecordCreate: {
+            /**
+             * Project Id
+             * @description 项目ID
+             */
+            project_id: string;
+            type: components["schemas"]["CashFlowType"];
+            category: components["schemas"]["CashFlowCategory"];
+            /**
+             * Amount
+             * @description 金额(元)
+             */
+            amount: number | string;
+            /**
+             * Date
+             * Format: date-time
+             * @description 发生日期
+             */
+            date: string;
+            /**
+             * Description
+             * @description 备注
+             */
+            description?: string | null;
+            /**
+             * Related Stage
+             * @description 关联阶段(兼容字段)
+             */
+            related_stage?: string | null;
+            /**
+             * Counterparty
+             * @description 交易方
+             */
+            counterparty?: string | null;
+            /**
+             * Receipt Url
+             * @description 票据图片URL
+             */
+            receipt_url?: string | null;
+        };
+        /**
+         * LedgerStatsResponse
+         * @description 资金账本全局汇总.
+         */
+        LedgerStatsResponse: {
+            /** Total Projects */
+            total_projects: number;
+            /** Total Income */
+            total_income: number;
+            /** Total Expense */
+            total_expense: number;
+            /** Net Cash Flow */
+            net_cash_flow: number;
+            /** Total Records */
+            total_records: number;
         };
         /**
          * LoginRequest
@@ -10618,6 +10842,193 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["InvestmentResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_ledger_projects_api_v1_admin_ledger_get: {
+        parameters: {
+            query?: {
+                /** @description 模糊搜索: 项目编号/小区/地址 */
+                search?: string | null;
+                /** @description 项目状态筛选 */
+                project_status?: components["schemas"]["ProjectStatus"] | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_ledger_record_api_v1_admin_ledger_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LedgerRecordCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ledger_stats_api_v1_admin_ledger_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerStatsResponse"];
+                };
+            };
+        };
+    };
+    export_ledger_api_v1_admin_ledger_export_get: {
+        parameters: {
+            query?: {
+                /** @description 模糊搜索 */
+                search?: string | null;
+                /** @description 项目状态筛选 */
+                project_status?: components["schemas"]["ProjectStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ledger_detail_api_v1_admin_ledger__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_ledger_record_api_v1_admin_ledger__record_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 流水记录ID */
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

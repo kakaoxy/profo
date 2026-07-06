@@ -93,6 +93,18 @@ class CashFlowCategory(str, enum.Enum):
     TAX_FEE = "税费"
     OPERATION_FEE = "运营费"
     PURCHASE_PRICE = "收购款"  # 收购款（收购美化独有支出）
+    CHANNEL_COMMISSION = "渠道佣金"
+    ENGINEERING_RENOVATION = "工程装修费"
+    MARKETING_PROMOTION = "营销推广费"
+    OPERATION_SERVICE = "运营服务费"
+    INVESTMENT_PRINCIPAL_RETURN = "跟投本金退还"
+    INVESTOR_PROFIT_DISTRIBUTION = "投资人利润分配"
+    PURCHASE_PRINCIPAL = "购房本金"
+    PROPERTY_TAX = "房屋税费"
+    QUOTA_FEE = "名额费"
+    HOLDING_COST_MONTHLY = "持有成本-月供"
+    OTHER_TAX = "其他税费"
+    PROJECT_RESERVE = "项目备用金"
 
     # 收入类
     BOND_RETURN = "回收保证金"
@@ -100,6 +112,10 @@ class CashFlowCategory(str, enum.Enum):
     SERVICE_FEE = "服务费"
     OTHER_INCOME = "其他收入"
     SALE_PRICE = "售房款"
+    BOND_RECOVERY = "保证金回收"
+    VALUE_ADDED_SERVICE = "增值服务费"
+    PROJECT_INVESTMENT = "项目跟投款"
+    RESERVE_RECOVERY = "备用金回收"
 
 
 class RecordType(str, enum.Enum):

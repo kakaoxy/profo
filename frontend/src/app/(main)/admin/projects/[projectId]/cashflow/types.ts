@@ -1,55 +1,15 @@
 // src/app/(main)/projects/[projectId]/cashflow/types.ts
 
-import type { components } from "@/lib/api-types";
+// 资金账本统一分类常量（与共享弹窗一致，从 @/components/finance/record-dialog 重新导出）
+export {
+  LEDGER_EXPENSE_CATEGORIES,
+  LEDGER_INCOME_CATEGORIES,
+} from "@/components/finance/record-dialog";
 
 // ==========================================
 // 1. 基础类型与常量
 // ==========================================
 export type TransactionType = "income" | "expense";
-
-// 业务形式：agent(代理美化) / wholesale(收购美化)，历史项目为 null
-export type BusinessForm = components["schemas"]["BusinessForm"] | null;
-
-export const EXPENSE_CATEGORIES = [
-  "履约保证金",
-  "中介佣金",
-  "装修费",
-  "营销费",
-  "其他支出",
-  "税费",
-  "运营费",
-  "收购款",
-] as const;
-
-export const INCOME_CATEGORIES = [
-  "回收保证金",
-  "溢价款",
-  "服务费",
-  "其他收入",
-  "售房款",
-] as const;
-
-/**
- * 根据项目业务形式返回可选的支出科目列表。
- *
- * 保守规则（与后端校验完全对齐）：
- * - agent（代理美化）→ 排除「收购款」（后端仅允许 wholesale 录入）
- * - wholesale（收购美化）→ 排除「中介佣金」（后端仅允许 agent 录入）
- * - null/undefined（历史项目 / 未设置）→ 显示全部，兼容历史数据
- *
- * 收入类科目不区分业务形式，调用方无需过滤。
- */
-export function getAvailableExpenseCategories(
-  businessForm: BusinessForm | null | undefined,
-): readonly string[] {
-  if (businessForm === "agent") {
-    return EXPENSE_CATEGORIES.filter((c) => c !== "收购款");
-  }
-  if (businessForm === "wholesale") {
-    return EXPENSE_CATEGORIES.filter((c) => c !== "中介佣金");
-  }
-  return EXPENSE_CATEGORIES;
-}
 
 // ==========================================
 // 2. 前端组件使用的类型 (Frontend Models)
@@ -63,6 +23,8 @@ export interface CashFlowRecord {
   category: string;
   amount: number;
   date: string;
+  counterparty?: string | null;
+  receipt_url?: string | null;
   notes?: string;
   created_at: string;
 }
@@ -90,6 +52,8 @@ export interface CashFlowRecordRaw {
   amount: number;
   date: string; // 后端现在返回 "date"
   description?: string; // 后端现在返回 "description"
+  counterparty?: string | null;
+  receipt_url?: string | null;
   created_at: string;
 }
 
@@ -127,6 +91,8 @@ export function mapToCashFlowRecord(
     category: raw.category,
     amount: Number(raw.amount),
     date: raw.date,
+    counterparty: raw.counterparty ?? null,
+    receipt_url: raw.receipt_url ?? null,
     notes: raw.description,
     created_at: raw.created_at,
   };

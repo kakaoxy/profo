@@ -18,9 +18,7 @@ import { HeaderStats } from "./header-stats";
 import { TrendChart } from "./trend-chart";
 import { LedgerTable } from "./ledger-table";
 import { getProjectCashFlowAction } from "../actions";
-import { getProjectDetailAction } from "../../../actions/core";
 import {
-  BusinessForm,
   CashFlowRecord,
   CashFlowStats,
   mapToCashFlowRecord,
@@ -49,19 +47,13 @@ export function CashFlowSheet() {
     stats: CashFlowStats;
     records: CashFlowRecord[];
   } | null>(null);
-  // 当前项目的业务形式，用于现金流录入时过滤可选支出科目
-  const [businessForm, setBusinessForm] = useState<BusinessForm>(null);
 
   const fetchData = useCallback(async () => {
     if (!projectId) return;
 
     setIsLoading(true);
     try {
-      // 并行获取现金流数据与项目详情（取 business_form）
-      const [apiData, projectRes] = await Promise.all([
-        getProjectCashFlowAction(projectId),
-        getProjectDetailAction(projectId),
-      ]);
+      const apiData = await getProjectCashFlowAction(projectId);
       if (!apiData) {
         toast.error("获取数据失败");
         return;
@@ -73,9 +65,6 @@ export function CashFlowSheet() {
       const stats = mapToCashFlowStats(apiData.summary);
 
       setData({ stats, records });
-      setBusinessForm(
-        projectRes.success ? projectRes.data?.business_form ?? null : null,
-      );
     } catch (error) {
       logger.error(error);
       toast.error("网络错误");
@@ -89,7 +78,6 @@ export function CashFlowSheet() {
       fetchData();
     } else {
       setData(null);
-      setBusinessForm(null);
     }
   }, [isOpen, fetchData]);
 
@@ -150,7 +138,6 @@ export function CashFlowSheet() {
                   <LedgerTable
                     projectId={projectId}
                     data={data.records}
-                    businessForm={businessForm}
                     onRefresh={fetchData}
                   />
                 )}
