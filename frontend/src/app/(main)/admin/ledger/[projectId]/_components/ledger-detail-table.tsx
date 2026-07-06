@@ -153,16 +153,22 @@ export function LedgerDetailTable({
         </Tabs>
         <div className="flex w-full sm:w-auto items-center gap-2">
           <Input
-            placeholder="搜索交易方..."
+            placeholder="搜索交易方…"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="h-9 w-full sm:w-56 bg-card border-border"
+            aria-label="搜索交易方"
+            name="counterparty-search"
+            autoComplete="off"
           />
           <Select
             value={categoryFilter}
             onValueChange={setCategoryFilter}
           >
-            <SelectTrigger className="h-9 w-[140px] bg-card border-border">
+            <SelectTrigger
+              className="h-9 w-[140px] bg-card border-border"
+              aria-label="筛选分类"
+            >
               <SelectValue placeholder="全部分类" />
             </SelectTrigger>
             <SelectContent>
@@ -178,20 +184,23 @@ export function LedgerDetailTable({
       </div>
 
       {/* 筛选汇总条 */}
-      <div className="bg-muted/30 rounded px-3 py-2 text-xs text-muted-foreground">
+      <div
+        className="bg-muted/30 rounded-lg px-3 py-2 text-xs text-muted-foreground tabular-nums"
+        aria-live="polite"
+      >
         共 {summary.count} 笔 · 合计 {formatCNY(summary.total)}
       </div>
 
       {/* 表格 */}
-      <div className="rounded-md border border-border bg-card overflow-x-auto">
+      <div className="rounded-3xl border border-border bg-card overflow-x-auto shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-[120px] text-xs">日期</TableHead>
-              <TableHead className="w-[120px] text-xs">分类</TableHead>
-              <TableHead className="w-[120px] text-xs">交易方</TableHead>
-              <TableHead className="text-right text-xs">金额</TableHead>
-              <TableHead className="w-[60px] text-center text-xs">票据</TableHead>
+              <TableHead className="w-[110px] text-xs">日期</TableHead>
+              <TableHead className="w-[90px] text-center text-xs">交易形式</TableHead>
+              <TableHead className="w-[140px] text-xs">交易方</TableHead>
+              <TableHead className="w-[140px] text-right text-xs">金额</TableHead>
+              <TableHead className="w-[120px] text-center text-xs">票据</TableHead>
               <TableHead className="text-xs">备注</TableHead>
               <TableHead className="w-[60px] text-center text-xs">操作</TableHead>
             </TableRow>
@@ -219,7 +228,7 @@ export function LedgerDetailTable({
                         : "-"}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <Badge
                       variant="outline"
                       className={cn(
@@ -229,12 +238,12 @@ export function LedgerDetailTable({
                           : "border-emerald-200 text-emerald-700 bg-success-container/30",
                       )}
                     >
-                      {record.category}
+                      {record.type === "income" ? "收入" : "支出"}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <span
-                      className="text-muted-foreground truncate block max-w-[120px]"
+                      className="text-muted-foreground truncate block max-w-[140px]"
                       title={record.counterparty ?? ""}
                     >
                       {record.counterparty || "-"}
@@ -256,32 +265,40 @@ export function LedgerDetailTable({
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    {record.receipt_url ? (
-                      <HoverCard>
-                        <HoverCardTrigger asChild>
-                          <a
-                            href={record.receipt_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="查看票据"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={record.receipt_url}
-                              alt="票据"
-                              className="size-8 rounded object-cover"
-                            />
-                          </a>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="p-1 w-auto">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={record.receipt_url}
-                            alt="票据"
-                            className="rounded-lg border max-w-[320px] h-auto"
-                          />
-                        </HoverCardContent>
-                      </HoverCard>
+                    {record.receipt_urls && record.receipt_urls.length > 0 ? (
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {record.receipt_urls.map((url, idx) => (
+                          <HoverCard key={url + idx}>
+                            <HoverCardTrigger asChild>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={`查看票据 ${idx + 1}`}
+                                aria-label={`查看票据 ${idx + 1}`}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={url}
+                                  alt={`票据 ${idx + 1}`}
+                                  width={32}
+                                  height={32}
+                                  loading="lazy"
+                                  className="size-8 rounded object-cover border border-border"
+                                />
+                              </a>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="p-1 w-auto">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt={`票据 ${idx + 1}`}
+                                className="rounded-lg border max-w-[320px] h-auto"
+                              />
+                            </HoverCardContent>
+                          </HoverCard>
+                        ))}
+                      </div>
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
@@ -298,11 +315,11 @@ export function LedgerDetailTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                       onClick={() => setDeleteTarget(record)}
-                      title="删除"
+                      aria-label={`删除 ${record.category} 记录`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -344,7 +361,7 @@ export function LedgerDetailTable({
               {isDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  删除中...
+                  删除中…
                 </>
               ) : (
                 "确认删除"

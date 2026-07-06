@@ -16,6 +16,7 @@
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
 - add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
 - create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
+- add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填（多票据支持）
 
 """
 
@@ -353,6 +354,70 @@ def create_finance_record_logs_table(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=[FinanceRecordLog.__table__], checkfirst=True)
 
 
+def add_finance_record_receipt_urls_column(engine: Engine) -> None:
+    """为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填.
+
+    - 新增 receipt_urls JSON 列（多票据支持）
+    - 旧 receipt_url（VARCHAR）单值回填为单元素数组 [url]
+    - 旧列保留但模型层不再映射（向后兼容）
+    - 幂等：通过 _column_exists 检查跳过 ALTER；回填仅处理 receipt_urls IS NULL 的行
+    - 使用 SQLAlchemy Core update() 确保 PostgreSQL/SQLite 均正确序列化 JSON
+    """
+    from sqlalchemy import JSON, Column, MetaData, String, Table, select, update  # noqa: PLC0415
+
+    if not _column_exists(engine, "finance_records", "receipt_urls"):
+        logger.info("迁移：为 finance_records 表添加 receipt_urls JSON 列")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE finance_records ADD COLUMN receipt_urls JSON"))
+
+    # 旧 receipt_url 列不存在（全新安装）→ 无需回填
+    if not _column_exists(engine, "finance_records", "receipt_url"):
+        return
+
+    # 用 Core API 构造 update，让 SQLAlchemy 按列类型(JSON)正确绑定参数
+    metadata = MetaData()
+    finance_records_tbl = Table(
+        "finance_records",
+        metadata,
+        Column("id", String(36), primary_key=True),
+        Column("receipt_url", String(500)),
+        Column("receipt_urls", JSON),
+    )
+
+    updated = 0
+    last_id = ""
+    while True:
+        with engine.begin() as conn:
+            rows = conn.execute(
+                select(
+                    finance_records_tbl.c.id,
+                    finance_records_tbl.c.receipt_url,
+                )
+                .where(
+                    finance_records_tbl.c.receipt_url.is_not(None),
+                    finance_records_tbl.c.receipt_urls.is_(None),
+                    finance_records_tbl.c.id > last_id,
+                )
+                .order_by(finance_records_tbl.c.id)
+                .limit(_MIGRATION_BATCH_SIZE)
+            ).fetchall()
+            if not rows:
+                break
+
+            for row in rows:
+                rec_id, url = row[0], row[1]
+                conn.execute(
+                    update(finance_records_tbl)
+                    .where(finance_records_tbl.c.id == rec_id)
+                    .values(receipt_urls=[url]),
+                )
+                updated += 1
+            last_id = rows[-1][0]
+
+    if updated:
+        logger.info("迁移：回填 %d 条 receipt_urls 数据", updated)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -368,6 +433,7 @@ def run_startup_migrations(engine: Engine) -> None:
         rename_return_adjustment_columns(engine)
         add_finance_record_counterparty_columns(engine)
         create_finance_record_logs_table(engine)
+        add_finance_record_receipt_urls_column(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

@@ -72,18 +72,21 @@ export function LogsCard({ projectId }: LogsCardProps) {
   }, [projectId]);
 
   return (
-    <Card>
-      <CardContent className="space-y-5">
+    <Card className="rounded-3xl border-border shadow-sm">
+      <CardContent className="space-y-5 p-6">
         <div>
           <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>📝</span>
+            <span aria-hidden="true">📝</span>
             操作日志
           </h2>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            加载中...
+          <div
+            className="flex items-center justify-center py-10 text-sm text-muted-foreground"
+            aria-live="polite"
+          >
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            加载中…
           </div>
         ) : logs.length === 0 ? (
           <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">

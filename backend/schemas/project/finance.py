@@ -9,7 +9,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_serializer
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator
 
 from models.common import CashFlowCategory, CashFlowType, FinanceActionType
 
@@ -25,8 +25,8 @@ class CashFlowRecordCreate(BaseModel):
     date: datetime
     description: str | None = None
     related_stage: str | None = None
-    counterparty: str | None = None
-    receipt_url: str | None = None
+    counterparty: str = Field(..., description="交易方(必填)")
+    receipt_urls: list[str] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -43,9 +43,20 @@ class CashFlowRecordResponse(BaseModel):
     remark: str | None = Field(None, description="备注")  # 新字段名
     operator_id: str | None = Field(None, description="经办人ID")  # 新字段
     counterparty: str | None = Field(None, description="交易方")
-    receipt_url: str | None = Field(None, description="票据图片URL")
+    receipt_urls: list[str] = Field(default_factory=list, description="票据图片URL列表")
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("receipt_urls", mode="before")
+    @classmethod
+    def _coerce_receipt_urls(cls, v: object) -> list[str]:
+        """数据库中旧记录 receipt_urls 可能为 NULL，统一转为空数组."""
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return v
+        # 兼容残留的字符串类型（如未迁移的 receipt_url 单值）
+        return [str(v)]
 
     # 兼容旧字段（用于响应）- 使用 computed_field 确保序列化
     @computed_field
@@ -65,6 +76,12 @@ class CashFlowRecordResponse(BaseModel):
     def related_stage(self) -> str | None:
         """兼容旧字段 related_stage（始终返回 None）."""
         return None
+
+    @computed_field
+    @property
+    def receipt_url(self) -> str | None:
+        """兼容旧字段 receipt_url（返回 receipt_urls 首项，空则 None）."""
+        return self.receipt_urls[0] if self.receipt_urls else None
 
     @field_serializer("amount")
     def serialize_decimal(self, v: Decimal) -> float:
@@ -194,8 +211,8 @@ class LedgerRecordCreate(BaseModel):
     date: datetime = Field(description="发生日期")
     description: str | None = Field(None, description="备注")
     related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
-    counterparty: str | None = Field(None, description="交易方")
-    receipt_url: str | None = Field(None, description="票据图片URL")
+    counterparty: str = Field(..., description="交易方(必填)")
+    receipt_urls: list[str] | None = Field(None, description="票据图片URL列表")
 
     model_config = ConfigDict(from_attributes=True)
 

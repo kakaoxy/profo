@@ -81,7 +81,7 @@ class FinanceService:
             record_date=record_data.date,
             remark=record_data.description,
             counterparty=record_data.counterparty,
-            receipt_url=record_data.receipt_url,
+            receipt_urls=record_data.receipt_urls,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
         )
@@ -429,7 +429,7 @@ class FinanceService:
         - total_income / total_expense / net_cash_flow / record_count
         - search 模糊搜索 project.contract_no / project.community_name / project.address
         - project_status 筛选
-        - 按 net_cash_flow 倒序分页
+        - 按 Project.created_at 倒序分页（与项目列表一致，最新项目排最前）
         """
         total_income_expr = func.sum(
             case(
@@ -452,6 +452,7 @@ class FinanceService:
                 Project.community_name.label("project_name"),
                 Project.address.label("project_address"),
                 Project.status.label("project_status"),
+                Project.created_at.label("project_created_at"),
                 ProjectContract.contract_no.label("project_code"),
                 total_income_expr,
                 total_expense_expr,
@@ -469,6 +470,7 @@ class FinanceService:
                 Project.community_name,
                 Project.address,
                 Project.status,
+                Project.created_at,
                 ProjectContract.contract_no,
             )
         )
@@ -490,7 +492,7 @@ class FinanceService:
         total: int = query.count()
         offset = (page - 1) * page_size
         rows = (
-            query.order_by(net_cash_flow_expr.desc())
+            query.order_by(Project.created_at.desc())
             .offset(offset)
             .limit(page_size)
             .all()
