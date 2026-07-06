@@ -23,7 +23,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # 检查必要命令
 for cmd in docker git gunzip; do
-    if ! command -v $cmd &>/dev/null; then
+    if ! command -v "$cmd" &>/dev/null; then
         log_error "命令 $cmd 未找到，请先安装。"
         exit 1
     fi
