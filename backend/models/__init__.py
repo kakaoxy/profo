@@ -11,6 +11,7 @@ from .common import (
     CashFlowCategory,
     CashFlowType,
     ChangeType,
+    FinanceActionType,
     FollowUpMethod,
     ImportTaskStatus,
     InvestmentActionType,
@@ -39,6 +40,7 @@ from .marketing import (
 # 项目管理模块
 from .project import (
     FinanceRecord,
+    FinanceRecordLog,
     Project,
     ProjectContract,
     ProjectDocument,
@@ -91,7 +93,9 @@ __all__ = [
     "CommunityCompetitor",
     # 系统
     "FailedRecord",
+    "FinanceActionType",
     "FinanceRecord",
+    "FinanceRecordLog",
     "FollowUpMethod",
     "ImportTaskStatus",
     "Investment",

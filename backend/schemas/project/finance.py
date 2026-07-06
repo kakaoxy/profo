@@ -9,9 +9,9 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_serializer
 
-from models.common import CashFlowCategory, CashFlowType
+from models.common import CashFlowCategory, CashFlowType, FinanceActionType
 
 # ========== 现金流记录 (来自 project_finance.py) ==========
 
@@ -242,5 +242,28 @@ class LedgerStatsResponse(BaseModel):
     @field_serializer("total_income", "total_expense", "net_cash_flow")
     def serialize_decimal(self, v: Decimal) -> float:
         return float(v)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ========== 操作日志 ==========
+
+
+class FinanceLogResponse(BaseModel):
+    """资金账本操作日志响应.
+
+    operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
+    """
+
+    id: str = Field(description="日志ID")
+    project_id: str = Field(description="关联项目ID")
+    action_type: FinanceActionType = Field(description="操作类型")
+    detail: dict = Field(default_factory=dict, description="操作详情(JSON)")
+    operator_id: str = Field(
+        description="操作人ID",
+        validation_alias=AliasChoices("operator_id", "operator"),
+    )
+    operator_name: str | None = Field(None, description="操作人名称(冗余)")
+    created_at: datetime = Field(description="操作时间")
 
     model_config = ConfigDict(from_attributes=True)

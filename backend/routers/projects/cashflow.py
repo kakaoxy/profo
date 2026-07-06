@@ -37,7 +37,7 @@ def create_cashflow_record(
     project_id: Annotated[str, Path(description="项目ID")],
 ) -> CashFlowRecordResponse:
     """创建现金流记录."""
-    return service.create_cashflow_record(project_id, record_data)
+    return service.create_cashflow_record(project_id, record_data, _current_user.id)
 
 
 @router.get("/{project_id}/cashflow")

@@ -46,6 +46,7 @@ from .finance import (
     FinanceBase,
     FinanceCreate,
     FinanceListResponse,
+    FinanceLogResponse,
     FinanceResponse,
     FinanceUpdate,
     LedgerListResponse,
@@ -133,6 +134,7 @@ __all__ = [
     "FinanceBase",
     "FinanceCreate",
     "FinanceListResponse",
+    "FinanceLogResponse",
     "FinanceResponse",
     "FinanceUpdate",
     # FollowUp

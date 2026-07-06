@@ -4,10 +4,11 @@
 注意：已适配新的规范化表结构，财务流水使用 FinanceRecord 表
 
 文件行数说明（>500 行）：
-本文件约 660 行未拆分，原因：
-1. 现金流 CRUD、财务汇总计算、资金账本聚合统计共享 FinanceRecord 模型与 _validate_category 校验
+本文件约 730 行未拆分，原因：
+1. 现金流 CRUD、财务汇总计算、资金账本聚合统计、操作日志共享 FinanceRecord 模型与 _validate_category 校验
 2. sync_financials 缓存同步被 create/delete 调用，拆分会破坏事务一致性
-3. 与 InvestmentService 等同类服务保持单一 Service 类的现有模式一致
+3. create_record / delete_record_by_id 写日志需与主操作同事务，拆分会破坏原子性
+4. 与 InvestmentService 等同类服务保持单一 Service 类的现有模式一致
 """
 
 import logging
@@ -18,8 +19,9 @@ from typing import Any
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
-from models import FinanceRecord, Project, ProjectContract, ProjectSale
-from models.common import BusinessForm, CashFlowCategory, CashFlowType
+from models import FinanceRecord, FinanceRecordLog, Project, ProjectContract, ProjectSale, User
+from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType
+from schemas.project import FinanceLogResponse
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -37,7 +39,7 @@ class FinanceService:
         """
         self.db = db
 
-    def create_record(self, project_id: str, record_data: Any) -> FinanceRecord:  # noqa: ANN401
+    def create_record(self, project_id: str, record_data: Any, operator_id: str) -> FinanceRecord:  # noqa: ANN401
         """创建现金流记录."""
         logger.info("Creating cashflow record for project %s", project_id)
 
@@ -85,6 +87,22 @@ class FinanceService:
         )
 
         self.db.add(record)
+
+        # 写入操作日志（与记录同一事务）
+        log = FinanceRecordLog(
+            project_id=project_id,
+            action_type=FinanceActionType.CREATE,
+            detail={
+                "category": record_data.category.value,
+                "amount": str(record_data.amount),
+                "type": record_data.type.value,
+                "counterparty": record_data.counterparty,
+                "date": record_data.date.isoformat() if record_data.date else None,
+            },
+            operator=operator_id,
+        )
+        self.db.add(log)
+
         self.db.commit()
         self.db.refresh(record)
 
@@ -612,7 +630,7 @@ class FinanceService:
         wb.save(buffer)
         return buffer.getvalue()
 
-    def delete_record_by_id(self, record_id: str) -> None:
+    def delete_record_by_id(self, record_id: str, operator_id: str) -> None:
         """资金账本：按记录ID软删除流水（无需 project_id）.
 
         删除后触发财务数据同步计算.
@@ -633,6 +651,22 @@ class FinanceService:
             raise ResourceNotFoundError("现金流记录不存在")
 
         project_id = record.project_id
+
+        # 写入操作日志（与删除同一事务）
+        log = FinanceRecordLog(
+            project_id=project_id,
+            action_type=FinanceActionType.DELETE,
+            detail={
+                "category": record.category.value if record.category else None,
+                "amount": str(record.amount) if record.amount is not None else None,
+                "type": record.type.value if record.type else None,
+                "counterparty": record.counterparty,
+                "date": record.record_date.isoformat() if record.record_date else None,
+            },
+            operator=operator_id,
+        )
+        self.db.add(log)
+
         record.is_deleted = True
         record.updated_at = datetime.now(timezone.utc)
         self.db.commit()
@@ -646,6 +680,37 @@ class FinanceService:
 
         logger.info("Finance record deleted successfully: %s", record_id)
 
+    def list_logs(self, project_id: str) -> list[FinanceLogResponse]:
+        """获取项目资金账本操作日志（按 created_at 降序）.
+
+        联表 User 批量填充 operator_name（参考 InvestmentService._build_logs_response）。
+        """
+        logs = (
+            self.db.query(FinanceRecordLog)
+            .filter(FinanceRecordLog.project_id == project_id)
+            .order_by(FinanceRecordLog.created_at.desc())
+            .all()
+        )
+
+        operator_ids = {log.operator for log in logs}
+        name_map: dict[str, str] = {}
+        if operator_ids:
+            users = self.db.query(User).filter(User.id.in_(operator_ids)).all()
+            name_map = {u.id: (u.nickname or u.username or u.id) for u in users}
+
+        return [
+            FinanceLogResponse(
+                id=log.id,
+                project_id=log.project_id,
+                action_type=log.action_type,
+                detail=log.detail or {},
+                operator_id=log.operator,
+                operator_name=name_map.get(log.operator, log.operator),
+                created_at=log.created_at,
+            )
+            for log in logs
+        ]
+
     # 别名方法 - 与路由兼容
     def get_cashflow_records(self, project_id: str) -> list[FinanceRecord]:
         """获取项目现金流记录（路由兼容别名）."""
@@ -655,9 +720,9 @@ class FinanceService:
         """获取现金流汇总（路由兼容别名）."""
         return self.get_summary(project_id)
 
-    def create_cashflow_record(self, project_id: str, record_data: Any) -> FinanceRecord:  # noqa: ANN401
+    def create_cashflow_record(self, project_id: str, record_data: Any, operator_id: str) -> FinanceRecord:  # noqa: ANN401
         """创建现金流记录（路由兼容别名）."""
-        return self.create_record(project_id, record_data)
+        return self.create_record(project_id, record_data, operator_id)
 
     def delete_cashflow_record(self, record_id: str, project_id: str) -> None:
         """删除现金流记录（路由兼容别名）."""
