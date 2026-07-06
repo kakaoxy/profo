@@ -193,23 +193,24 @@ export function LedgerDetailTable({
 
       {/* 表格 */}
       <div className="rounded-3xl border border-border bg-card overflow-x-auto shadow-sm">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-[110px] text-xs">日期</TableHead>
-              <TableHead className="w-[90px] text-center text-xs">交易形式</TableHead>
-              <TableHead className="w-[140px] text-xs">交易方</TableHead>
-              <TableHead className="w-[140px] text-right text-xs">金额</TableHead>
-              <TableHead className="w-[120px] text-center text-xs">票据</TableHead>
+              <TableHead className="w-[100px] text-xs">日期</TableHead>
+              <TableHead className="w-[80px] text-center text-xs">交易形式</TableHead>
+              <TableHead className="w-[130px] text-xs">交易方</TableHead>
+              <TableHead className="w-[120px] text-xs">分类</TableHead>
+              <TableHead className="w-[130px] text-right text-xs">金额</TableHead>
+              <TableHead className="w-[110px] text-center text-xs">票据</TableHead>
               <TableHead className="text-xs">备注</TableHead>
-              <TableHead className="w-[60px] text-center text-xs">操作</TableHead>
+              <TableHead className="w-[56px] text-center text-xs">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="h-24 text-center text-xs text-muted-foreground"
                 >
                   暂无记录
@@ -243,16 +244,24 @@ export function LedgerDetailTable({
                   </TableCell>
                   <TableCell>
                     <span
-                      className="text-muted-foreground truncate block max-w-[140px]"
+                      className="text-muted-foreground truncate block"
                       title={record.counterparty ?? ""}
                     >
                       {record.counterparty || "-"}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    <span
+                      className="text-foreground truncate block"
+                      title={record.category ?? ""}
+                    >
+                      {record.category || "-"}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">
                     <span
                       className={cn(
-                        "font-mono font-medium text-sm",
+                        "font-mono font-medium text-sm tabular-nums",
                         record.type === "income"
                           ? "text-error"
                           : "text-success",
@@ -281,10 +290,10 @@ export function LedgerDetailTable({
                                 <img
                                   src={url}
                                   alt={`票据 ${idx + 1}`}
-                                  width={32}
-                                  height={32}
+                                  width={28}
+                                  height={28}
                                   loading="lazy"
-                                  className="size-8 rounded object-cover border border-border"
+                                  className="size-7 rounded object-cover border border-border"
                                 />
                               </a>
                             </HoverCardTrigger>
@@ -305,7 +314,7 @@ export function LedgerDetailTable({
                   </TableCell>
                   <TableCell>
                     <div
-                      className="max-w-[200px] truncate text-muted-foreground"
+                      className="truncate text-muted-foreground"
                       title={record.description ?? ""}
                     >
                       {record.description || "-"}
