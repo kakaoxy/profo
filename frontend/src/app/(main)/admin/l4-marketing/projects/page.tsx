@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
 import { MarketingStats } from "./_components/marketing-stats";
 import { MarketingView } from "./_components/marketing-view";
+import { MarketingPagination } from "./_components/marketing-pagination";
 import type { operations } from "@/lib/api-types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -162,12 +163,10 @@ async function ProjectsDataFetcher({
   return (
     <>
       <MarketingStats stats={stats} />
-      <MarketingView
-        data={items}
-        total={total}
-        currentPage={page}
-        pageSize={size}
-      />
+      <MarketingView data={items} total={total} />
+      <div className="relative z-50 bg-card">
+        <MarketingPagination total={total} />
+      </div>
     </>
   );
 }

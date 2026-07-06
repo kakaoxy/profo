@@ -13,6 +13,7 @@ from schemas.lead import (
     LeadFunnelResponse,
     LeadListItem,
     LeadResponse,
+    LeadStatsResponse,
     LeadUpdate,
     PaginatedLeadListResponse,
 )
@@ -103,6 +104,16 @@ def create_lead(
     """创建线索."""
     service = LeadService(db)
     return service.create_lead(lead_in, current_user.id, creator=current_user)
+
+
+@router.get("/stats")
+def get_leads_stats(
+    db: DbSessionDep,
+    _current_user: CurrentInternalUserDep,
+) -> LeadStatsResponse:
+    """获取线索状态统计（不受分页影响）."""
+    service = LeadService(db)
+    return LeadStatsResponse(**service.get_stats())
 
 
 @router.get("/{lead_id}")

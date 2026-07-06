@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useTransition, useRef, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lead, FilterState, LeadTabValue } from "../types";
-import { getLeadsAction } from "../actions";
 
 /** 解析楼层信息，返回"低"/"中"/"高"/"未知" */
 export function getFloorCategory(floorInfo: string): string {
@@ -29,8 +29,18 @@ export function getLayoutRooms(layout: string): string {
   return rooms >= 5 ? "4+" : rooms.toString();
 }
 
+/**
+ * 线索过滤 Hook。
+ *
+ * 服务端筛选（search/statuses/district）通过 URL searchParams 驱动，
+ * 变化时更新 URL 并重置到第 1 页，由 RSC 重新拉取数据。
+ * 客户端筛选（layouts/floors/creator）仅对当前页数据做内存过滤。
+ */
 export function useLeadsFilter(initialLeads: Lead[]) {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // 客户端筛选状态（layouts/floors/creator，目前无 UI 暴露）
   const [filters, setFiltersState] = useState<FilterState>({
     search: "",
     statuses: [],
@@ -39,160 +49,95 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     layouts: [],
     floors: [],
   });
-  const [isPending, startTransition] = useTransition();
-  const latestFetchIdRef = useRef(0);
 
-  const debouncedRefetch = useDebouncedCallback((nextFilters: FilterState) => {
-    const fetchId = ++latestFetchIdRef.current;
-    startTransition(async () => {
-      const data = await getLeadsAction(nextFilters);
-      if (latestFetchIdRef.current !== fetchId) return;
-      setLeads(data);
-    });
+  // 服务端筛选状态从 URL 读取
+  const searchQuery = searchParams.get("search") || "";
+  const statusesParam = searchParams.get("statuses") || "";
+  const activeTab: LeadTabValue = statusesParam
+    ? (statusesParam.split(",")[0] as LeadTabValue)
+    : "all";
+
+  /** 更新 URL 参数，过滤条件变化时重置到第 1 页 */
+  const updateUrlParams = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === "" || value === "all") {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+      params.set("page", "1");
+      router.push(`/admin/leads?${params.toString()}`);
+    },
+    [searchParams, router],
+  );
+
+  /** 搜索输入防抖更新 URL */
+  const debouncedSearchUpdate = useDebouncedCallback((search: string) => {
+    updateUrlParams({ search: search || undefined });
   }, 300);
 
-  const setFilters = useCallback((
-    action: React.SetStateAction<FilterState>
-  ) => {
-    setFiltersState((prevFilters) => {
-      const newFilters =
-        typeof action === "function" ? action(prevFilters) : action;
+  const setSearchQuery = useCallback(
+    (query: string) => {
+      debouncedSearchUpdate(query);
+    },
+    [debouncedSearchUpdate],
+  );
 
-      const serverFiltersChanged =
-        newFilters.search !== prevFilters.search ||
-        JSON.stringify(newFilters.statuses) !==
-          JSON.stringify(prevFilters.statuses) ||
-        newFilters.district !== prevFilters.district;
+  const setActiveTab = useCallback(
+    (tabValue: LeadTabValue) => {
+      updateUrlParams({ statuses: tabValue === "all" ? undefined : tabValue });
+    },
+    [updateUrlParams],
+  );
 
-      if (serverFiltersChanged) {
-        debouncedRefetch(newFilters);
-      }
-
-      return newFilters;
-    });
-  }, [debouncedRefetch]);
-
-  /**
-   * 统一的客户端过滤逻辑
-   * 将之前分散在 leads-view.tsx 中的 activeTab 和 searchQuery 过滤整合到这里
-   * 消除双重过滤问题
-   */
+  /** 客户端过滤（仅 layouts/floors/creator，search/statuses/district 已由服务端处理） */
   const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      // 搜索过滤 - 支持小区名称、区域、商圈
-      const searchLower = filters.search.toLowerCase().trim();
-      const searchMatch =
-        !searchLower ||
-        lead.communityName?.toLowerCase().includes(searchLower) ||
-        lead.district?.toLowerCase().includes(searchLower) ||
-        lead.businessArea?.toLowerCase().includes(searchLower);
-
-      // 状态过滤 - 支持多选状态（从原 activeTab 逻辑迁移）
-      const statusMatch =
-        filters.statuses.length === 0 ||
-        filters.statuses.includes(lead.status);
-
-      // 创建者过滤
+    return initialLeads.filter((lead) => {
       const creatorMatch =
         !filters.creator ||
         lead.creatorName.toLowerCase().includes(filters.creator.toLowerCase());
-
-      // 户型过滤
       const layoutMatch =
         filters.layouts.length === 0 ||
         filters.layouts.includes(getLayoutRooms(lead.layout));
-
-      // 楼层过滤
       const floorMatch =
         filters.floors.length === 0 ||
         filters.floors.includes(getFloorCategory(lead.floorInfo));
-
-      return searchMatch && statusMatch && creatorMatch && layoutMatch && floorMatch;
+      return creatorMatch && layoutMatch && floorMatch;
     });
-  }, [leads, filters]);
-
-  /**
-   * 设置活动 Tab（状态过滤）
-   * 提供向后兼容的接口，将单选状态转换为多选状态数组
-   */
-  const setActiveTab = useCallback((tabValue: LeadTabValue) => {
-    setFiltersState((prev) => {
-      const newStatuses = tabValue === "all" ? [] : [tabValue];
-      const newFilters = { ...prev, statuses: newStatuses };
-      
-      // 检查是否需要触发服务端重新获取
-      const serverFiltersChanged =
-        JSON.stringify(newStatuses) !== JSON.stringify(prev.statuses);
-
-      if (serverFiltersChanged) {
-        debouncedRefetch(newFilters);
-      }
-
-      return newFilters;
-    });
-  }, [debouncedRefetch]);
-
-  /**
-   * 获取当前活动 Tab 值
-   */
-  const activeTab: LeadTabValue = useMemo(() => {
-    return filters.statuses.length === 0 ? "all" : filters.statuses[0];
-  }, [filters.statuses]);
-
-  /**
-   * 设置搜索查询
-   * 提供向后兼容的接口
-   */
-  const setSearchQuery = useCallback((query: string) => {
-    setFiltersState((prev) => {
-      const newFilters = { ...prev, search: query };
-      
-      // 搜索改变需要触发服务端重新获取
-      if (query !== prev.search) {
-        debouncedRefetch(newFilters);
-      }
-
-      return newFilters;
-    });
-  }, [debouncedRefetch]);
-
-  /**
-   * 获取当前搜索查询
-   */
-  const searchQuery = useMemo(() => filters.search, [filters.search]);
+  }, [initialLeads, filters]);
 
   const resetFilters = useCallback(() => {
-    const resetFilters: FilterState = {
+    setFiltersState({
       search: "",
       statuses: [],
       district: "",
       creator: "",
       layouts: [],
       floors: [],
-    };
-    setFiltersState(resetFilters);
-    debouncedRefetch.cancel();
-    startTransition(async () => {
-      const data = await getLeadsAction(resetFilters);
-      setLeads(data);
     });
-  }, [debouncedRefetch]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    params.delete("statuses");
+    params.delete("district");
+    params.set("page", "1");
+    router.push(`/admin/leads?${params.toString()}`);
+  }, [searchParams, router]);
 
-  const refreshLeads = useCallback(async () => {
-    const data = await getLeadsAction(filters);
-    setLeads(data);
-  }, [filters]);
+  /** 变更后刷新（add/edit/delete/audit 等） */
+  const refreshLeads = useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   return {
-    leads,
-    setLeads,
-    filters,
-    setFilters,
+    leads: initialLeads,
     filteredLeads,
-    isPending,
+    filters,
+    setFilters: setFiltersState,
     resetFilters,
     refreshLeads,
-    // 提供向后兼容的接口
     activeTab,
     setActiveTab,
     searchQuery,
