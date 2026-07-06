@@ -188,6 +188,13 @@ class InvestmentActionType(str, enum.Enum):
     UNSETTLE = "unsettle"
 
 
+class FinanceActionType(str, enum.Enum):
+    """资金账本操作日志类型枚举."""
+
+    CREATE = "create"
+    DELETE = "delete"
+
+
 class BaseModel(Base):
     """基础模型，包含公共字段."""
 

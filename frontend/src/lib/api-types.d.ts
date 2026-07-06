@@ -1422,6 +1422,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ledger/{project_id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取项目资金账本操作日志
+         * @description 获取指定项目的资金账本操作日志（按时间降序）.
+         */
+        get: operations["list_project_logs_api_v1_admin_ledger__project_id__logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ledger/{record_id}": {
         parameters: {
             query?: never;
@@ -3199,6 +3219,55 @@ export interface components {
             filename: string;
             /** Thumbnail Url */
             thumbnail_url?: string | null;
+        };
+        /**
+         * FinanceActionType
+         * @description 资金账本操作日志类型枚举.
+         * @enum {string}
+         */
+        FinanceActionType: "create" | "delete";
+        /**
+         * FinanceLogResponse
+         * @description 资金账本操作日志响应.
+         *
+         *     operator_id / operator_name 为冗余字段，由 Service 层联表 User 填充。
+         */
+        FinanceLogResponse: {
+            /**
+             * Id
+             * @description 日志ID
+             */
+            id: string;
+            /**
+             * Project Id
+             * @description 关联项目ID
+             */
+            project_id: string;
+            /** @description 操作类型 */
+            action_type: components["schemas"]["FinanceActionType"];
+            /**
+             * Detail
+             * @description 操作详情(JSON)
+             */
+            detail?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Operator Id
+             * @description 操作人ID
+             */
+            operator_id: string;
+            /**
+             * Operator Name
+             * @description 操作人名称(冗余)
+             */
+            operator_name?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 操作时间
+             */
+            created_at: string;
         };
         /**
          * FloorStats
@@ -10998,6 +11067,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CashFlowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_project_logs_api_v1_admin_ledger__project_id__logs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceLogResponse"][];
                 };
             };
             /** @description Validation Error */

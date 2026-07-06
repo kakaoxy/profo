@@ -1,13 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { Trash2, FileText, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { safeFormatDate } from "@/lib/formatters";
+import { safeFormatDate, formatCNY } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
   Table,
   TableBody,
@@ -43,14 +56,55 @@ export function LedgerDetailTable({
   data,
 }: LedgerDetailTableProps) {
   const [filter, setFilter] = React.useState<FilterTab>("all");
+  const [searchInput, setSearchInput] = React.useState("");
+  const [debouncedSearch, setDebouncedSearch] = React.useState("");
+  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
   const [deleteTarget, setDeleteTarget] =
     React.useState<CashFlowRecordResponse | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
+  // 交易方搜索 300ms 防抖
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // 分类选项来自 data 去重
+  const categoryOptions = React.useMemo(() => {
+    const set = new Set<string>();
+    data.forEach((item) => {
+      if (item.category) set.add(item.category);
+    });
+    return Array.from(set);
+  }, [data]);
+
   const filteredData = React.useMemo(() => {
-    if (filter === "all") return data;
-    return data.filter((item) => item.type === filter);
-  }, [data, filter]);
+    const keyword = debouncedSearch.trim().toLowerCase();
+    return data.filter((item) => {
+      // 1. Tabs（all/income/expense）
+      if (filter !== "all" && item.type !== filter) return false;
+      // 2. 交易方模糊搜索（大小写不敏感）
+      if (keyword) {
+        const cp = (item.counterparty ?? "").toLowerCase();
+        if (!cp.includes(keyword)) return false;
+      }
+      // 3. 分类精确匹配
+      if (categoryFilter !== "all" && item.category !== categoryFilter)
+        return false;
+      return true;
+    });
+  }, [data, filter, debouncedSearch, categoryFilter]);
+
+  // 筛选汇总：笔数与代数和（收入为正、支出为负）
+  const summary = React.useMemo(() => {
+    const total = filteredData.reduce((sum, item) => {
+      const amt = Number(item.amount) || 0;
+      return sum + (item.type === "income" ? amt : -amt);
+    }, 0);
+    return { count: filteredData.length, total };
+  }, [filteredData]);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -72,30 +126,61 @@ export function LedgerDetailTable({
 
   return (
     <div className="space-y-4">
-      {/* Tabs 筛选 */}
-      <Tabs
-        value={filter}
-        onValueChange={(v) => setFilter(v as FilterTab)}
-        className="w-full sm:w-auto"
-      >
-        <TabsList className="bg-muted p-1 h-9">
-          <TabsTrigger value="all" className="text-xs h-7">
-            全部
-          </TabsTrigger>
-          <TabsTrigger
-            value="income"
-            className="text-xs h-7 text-error data-[state=active]:text-error"
+      {/* Tabs 筛选 + 搜索 + 分类筛选 */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <Tabs
+          value={filter}
+          onValueChange={(v) => setFilter(v as FilterTab)}
+          className="w-full sm:w-auto"
+        >
+          <TabsList className="bg-muted p-1 h-9">
+            <TabsTrigger value="all" className="text-xs h-7">
+              全部
+            </TabsTrigger>
+            <TabsTrigger
+              value="income"
+              className="text-xs h-7 text-error data-[state=active]:text-error"
+            >
+              收入
+            </TabsTrigger>
+            <TabsTrigger
+              value="expense"
+              className="text-xs h-7 text-success data-[state=active]:text-success"
+            >
+              支出
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex w-full sm:w-auto items-center gap-2">
+          <Input
+            placeholder="搜索交易方..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="h-9 w-full sm:w-56 bg-card border-border"
+          />
+          <Select
+            value={categoryFilter}
+            onValueChange={setCategoryFilter}
           >
-            收入
-          </TabsTrigger>
-          <TabsTrigger
-            value="expense"
-            className="text-xs h-7 text-success data-[state=active]:text-success"
-          >
-            支出
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+            <SelectTrigger className="h-9 w-[140px] bg-card border-border">
+              <SelectValue placeholder="全部分类" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部分类</SelectItem>
+              {categoryOptions.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 筛选汇总条 */}
+      <div className="bg-muted/30 rounded px-3 py-2 text-xs text-muted-foreground">
+        共 {summary.count} 笔 · 合计 {formatCNY(summary.total)}
+      </div>
 
       {/* 表格 */}
       <div className="rounded-md border border-border bg-card overflow-x-auto">
@@ -172,15 +257,31 @@ export function LedgerDetailTable({
                   </TableCell>
                   <TableCell className="text-center">
                     {record.receipt_url ? (
-                      <a
-                        href={record.receipt_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                        title="查看票据"
-                      >
-                        <FileText className="h-4 w-4" />
-                      </a>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <a
+                            href={record.receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="查看票据"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={record.receipt_url}
+                              alt="票据"
+                              className="size-8 rounded object-cover"
+                            />
+                          </a>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="p-1 w-auto">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={record.receipt_url}
+                            alt="票据"
+                            className="rounded-lg border max-w-[320px] h-auto"
+                          />
+                        </HoverCardContent>
+                      </HoverCard>
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}

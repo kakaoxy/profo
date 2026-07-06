@@ -12,6 +12,7 @@ type LedgerListResponse = components["schemas"]["LedgerListResponse"];
 type LedgerStatsResponse = components["schemas"]["LedgerStatsResponse"];
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
+type FinanceLogResponse = components["schemas"]["FinanceLogResponse"];
 
 type LedgerListQuery = NonNullable<
   paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]
@@ -188,6 +189,36 @@ export async function deleteRecord(
     return { success: true, data: null };
   } catch (e) {
     logger.error("删除资金账本流水异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 获取项目资金账本操作日志（Server Action）
+ *
+ * @param projectId 项目ID
+ */
+export async function fetchLogs(
+  projectId: string,
+): Promise<ActionResult<FinanceLogResponse[]>> {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/ledger/{project_id}/logs",
+      { params: { path: { project_id: projectId } } },
+    );
+
+    if (error) {
+      const msg = (error as { detail?: string }).detail || "获取操作日志失败";
+      return { success: false, message: msg };
+    }
+
+    return {
+      success: true,
+      data: extractApiData<FinanceLogResponse[]>(data) ?? [],
+    };
+  } catch (e) {
+    logger.error("获取资金账本操作日志异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

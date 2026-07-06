@@ -3,10 +3,10 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, Index, Numeric, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Enum as SQLEnum, Index, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel, CashFlowCategory, CashFlowType
+from models.common.base import BaseModel, CashFlowCategory, CashFlowType, FinanceActionType
 
 
 class FinanceRecord(BaseModel):
@@ -39,4 +39,28 @@ class FinanceRecord(BaseModel):
         Index("idx_finance_project_date", "project_id", "record_date"),
         Index("idx_finance_type_category", "type", "category"),
         Index("idx_finance_deleted", "is_deleted"),
+    )
+
+
+class FinanceRecordLog(BaseModel):
+    """资金账本操作日志表 - 每次写操作记录一条.
+
+    detail 使用 JSON 列存储操作详情（category/amount/type/counterparty/date）。
+    operator 为逻辑外键，关联 users.id，级联由 Service 层处理。
+    """
+
+    __tablename__ = "finance_record_logs"
+
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联项目ID(逻辑外键)")
+    action_type: Mapped[FinanceActionType] = mapped_column(
+        SQLEnum(FinanceActionType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        comment="操作类型",
+    )
+    detail: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict, comment="操作详情(JSON)")
+    operator: Mapped[str] = mapped_column(String(36), nullable=False, comment="操作人ID(逻辑外键)")
+
+    __table_args__ = (
+        Index("idx_finance_log_project", "project_id"),
+        Index("idx_finance_log_created", "created_at"),
     )

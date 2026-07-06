@@ -7,6 +7,7 @@ import { TrendChart } from "@/app/(main)/admin/projects/[projectId]/cashflow/_co
 import type { CashFlowRecord, CashFlowStats } from "@/app/(main)/admin/projects/[projectId]/cashflow/types";
 import { LedgerDetailHeader } from "./_components/ledger-detail-header";
 import { LedgerDetailTable } from "./_components/ledger-detail-table";
+import { LogsCard } from "./_components/logs-card";
 
 type CashFlowResponse = components["schemas"]["CashFlowResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -67,14 +68,19 @@ export default async function LedgerDetailPage({ params }: PageProps) {
           <HeaderStats stats={stats} />
         </section>
 
+        {/* 流水明细表格 */}
+        <section>
+          <LedgerDetailTable projectId={projectId} data={ledgerData.records} />
+        </section>
+
         {/* 资金流向趋势 */}
         <section>
           <TrendChart data={records} />
         </section>
 
-        {/* 流水明细表格 */}
+        {/* 操作日志 */}
         <section>
-          <LedgerDetailTable projectId={projectId} data={ledgerData.records} />
+          <LogsCard projectId={projectId} />
         </section>
       </div>
     </div>

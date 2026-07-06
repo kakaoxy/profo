@@ -19,6 +19,7 @@ from models.common import ProjectStatus
 from schemas.project import (
     CashFlowRecordResponse,
     CashFlowResponse,
+    FinanceLogResponse,
     LedgerListResponse,
     LedgerProjectListItem,
     LedgerRecordCreate,
@@ -132,6 +133,19 @@ def get_ledger_detail(
     return CashFlowResponse(records=records, summary=summary)
 
 
+@router.get(
+    "/{project_id}/logs",
+    summary="获取项目资金账本操作日志",
+)
+def list_project_logs(
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: _FinanceServiceDep,
+    _current_user: CurrentInternalUserDep,
+) -> list[FinanceLogResponse]:
+    """获取指定项目的资金账本操作日志（按时间降序）."""
+    return service.list_logs(project_id)
+
+
 # ==================== 流水 CRUD ====================
 
 
@@ -151,7 +165,7 @@ def create_ledger_record(
 
     速率限制：100次/小时.
     """
-    record = service.create_record(data.project_id, data)
+    record = service.create_record(data.project_id, data, _current_user.id)
     return CashFlowRecordResponse.model_validate(record)
 
 
@@ -171,4 +185,4 @@ def delete_ledger_record(
 
     速率限制：20次/小时.
     """
-    service.delete_record_by_id(record_id)
+    service.delete_record_by_id(record_id, _current_user.id)

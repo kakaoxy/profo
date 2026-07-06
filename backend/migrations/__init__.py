@@ -15,6 +15,7 @@
 - create_investment_tables: 幂等创建跟投管理 4 张表（investments/investors/return_adjustments/investment_logs）
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
 - add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
+- create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
 
 """
 
@@ -334,6 +335,24 @@ def add_finance_record_counterparty_columns(engine: Engine) -> None:
             )
 
 
+def create_finance_record_logs_table(engine: Engine) -> None:
+    """幂等创建资金账本操作日志表 finance_record_logs.
+
+    使用 SQLAlchemy Core API 通过模型 __table__ 元数据创建，
+    checkfirst=True 确保表/索引已存在时跳过，避免破坏已有数据。
+    新建表（非加列），CREATE TABLE IF NOT EXISTS 语义。
+    """
+    from models import Base  # noqa: PLC0415
+    from models.project import FinanceRecordLog  # noqa: PLC0415
+
+    inspector = inspect(engine)
+    if FinanceRecordLog.__table__.name in inspector.get_table_names():
+        return
+
+    logger.info("迁移：创建资金账本操作日志表 %s", FinanceRecordLog.__table__.name)
+    Base.metadata.create_all(bind=engine, tables=[FinanceRecordLog.__table__], checkfirst=True)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -348,6 +367,7 @@ def run_startup_migrations(engine: Engine) -> None:
         create_investment_tables(engine)
         rename_return_adjustment_columns(engine)
         add_finance_record_counterparty_columns(engine)
+        create_finance_record_logs_table(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise
