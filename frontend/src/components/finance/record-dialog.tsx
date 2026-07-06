@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2, Check, FileText } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +86,7 @@ export function RecordDialog({
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [counterparty, setCounterparty] = useState("");
-  const [receiptUrl, setReceiptUrl] = useState("");
+  const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
   // 用于强制重置 ImageUpload 内部状态（每次打开弹窗递增）
@@ -105,20 +105,22 @@ export function RecordDialog({
       setAmount("");
       setCategory("");
       setCounterparty("");
-      setReceiptUrl("");
+      setReceiptUrls([]);
       setNotes("");
       setUploadKey((k) => k + 1);
     }
   }, [isOpen]);
 
   const handleReceiptChange = useCallback((items: ImageItem[]) => {
-    const successItem = items.find((i) => i.status === "success");
-    setReceiptUrl(successItem?.url ?? "");
+    const urls = items
+      .filter((i) => i.status === "success" && i.url)
+      .map((i) => i.url as string);
+    setReceiptUrls(urls);
   }, []);
 
   const handleSubmit = async () => {
-    if (!date || !amount || !category) {
-      toast.error("请完善必填信息 (金额、日期、分类)");
+    if (!date || !amount || !category || !counterparty.trim()) {
+      toast.error("请完善必填信息 (金额、日期、分类、交易方)");
       return;
     }
 
@@ -130,8 +132,8 @@ export function RecordDialog({
         category: category as LedgerRecordCreate["category"],
         amount: Number(amount),
         date: format(date, "yyyy-MM-dd"),
-        counterparty: counterparty.trim() || null,
-        receipt_url: receiptUrl || null,
+        counterparty: counterparty.trim(),
+        receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
         description: notes.trim() || null,
       };
 
@@ -166,7 +168,7 @@ export function RecordDialog({
           <DialogTitle>记一笔</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-5 py-2 max-h-[70vh] overflow-y-auto pr-1">
+        <div className="grid gap-5 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
           {/* 1. 收支切换 Tabs */}
           <Tabs
             value={type}
@@ -195,11 +197,14 @@ export function RecordDialog({
               <Label className="text-xs text-muted-foreground">金额 (元)</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                name="amount"
+                autoComplete="off"
                 className={cn(
-                  "font-mono focus-visible:ring-1 text-lg font-semibold",
+                  "font-mono focus-visible:ring-1 text-lg font-semibold tabular-nums",
                   type === "income"
                     ? "text-error focus-visible:ring-error placeholder:text-error/30"
                     : "text-success focus-visible:ring-success placeholder:text-success/30",
@@ -247,7 +252,7 @@ export function RecordDialog({
                     type="button"
                     onClick={() => setCategory(c)}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 flex items-center gap-1.5",
+                      "px-3 py-1.5 rounded-md text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200 flex items-center gap-1.5",
                       !isSelected &&
                         "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
                       isSelected &&
@@ -266,38 +271,34 @@ export function RecordDialog({
             </div>
           </div>
 
-          {/* 5. 交易方 */}
+          {/* 5. 交易方（必填） */}
           <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">交易方</Label>
+            <Label className="text-xs text-muted-foreground">
+              交易方 <span className="text-destructive">*</span>
+            </Label>
             <Input
               value={counterparty}
               onChange={(e) => setCounterparty(e.target.value)}
-              placeholder="例如：张三/某某公司"
+              placeholder="例如：张三/某某公司…"
+              name="counterparty"
+              autoComplete="off"
+              required
             />
           </div>
 
-          {/* 6. 票据上传 */}
+          {/* 6. 票据上传（支持多张） */}
           <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">票据</Label>
+            <Label className="text-xs text-muted-foreground">
+              票据（最多 9 张）
+            </Label>
             <ImageUpload
               key={uploadKey}
-              maxCount={1}
-              gridCols={2}
+              maxCount={9}
+              gridCols={3}
               aspectRatio="aspect-video"
               title="点击或拖拽图片上传票据"
               onChange={handleReceiptChange}
             />
-            {receiptUrl && (
-              <a
-                href={receiptUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                <FileText className="h-3 w-3" />
-                查看已上传票据
-              </a>
-            )}
           </div>
 
           {/* 7. 备注 */}
@@ -306,8 +307,10 @@ export function RecordDialog({
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="例如：支付首期款..."
+              placeholder="例如：支付首期款…"
               className="h-20 resize-none"
+              name="notes"
+              autoComplete="off"
             />
           </div>
         </div>
@@ -317,7 +320,7 @@ export function RecordDialog({
             onClick={handleSubmit}
             disabled={isSubmitting}
             className={cn(
-              "w-full text-white shadow-sm transition-all active:scale-[0.98]",
+              "w-full text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] rounded-full",
               type === "income"
                 ? "bg-error hover:bg-red-700"
                 : "bg-success hover:bg-success",

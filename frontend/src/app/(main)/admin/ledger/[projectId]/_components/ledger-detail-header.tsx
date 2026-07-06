@@ -28,7 +28,7 @@ export function LedgerDetailHeader({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4 min-w-0">
         <Link
           href="/admin/ledger"
           className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
@@ -36,7 +36,7 @@ export function LedgerDetailHeader({
           <ArrowLeft className="h-4 w-4" />
           返回资金账本
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">
           {projectCode ? (
             <span className="font-mono text-base text-muted-foreground mr-2">
               {projectCode}
@@ -49,7 +49,7 @@ export function LedgerDetailHeader({
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 rounded-full"
           onClick={handleExport}
         >
           <Download className="h-4 w-4" />
@@ -57,7 +57,7 @@ export function LedgerDetailHeader({
         </Button>
         <Button
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 rounded-full"
           onClick={() => setIsDialogOpen(true)}
         >
           <Plus className="h-4 w-4" />

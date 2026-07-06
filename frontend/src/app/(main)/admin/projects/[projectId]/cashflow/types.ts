@@ -24,7 +24,8 @@ export interface CashFlowRecord {
   amount: number;
   date: string;
   counterparty?: string | null;
-  receipt_url?: string | null;
+  receipt_urls?: string[] | null;
+  receipt_url?: string | null; // 兼容字段：receipt_urls 首项
   notes?: string;
   created_at: string;
 }
@@ -53,7 +54,8 @@ export interface CashFlowRecordRaw {
   date: string; // 后端现在返回 "date"
   description?: string; // 后端现在返回 "description"
   counterparty?: string | null;
-  receipt_url?: string | null;
+  receipt_urls?: string[] | null;
+  receipt_url?: string | null; // 兼容字段：receipt_urls 首项
   created_at: string;
 }
 
@@ -84,6 +86,7 @@ export function mapToCashFlowRecord(
   raw: CashFlowRecordRaw,
   projectId: string
 ): CashFlowRecord {
+  const receiptUrls = raw.receipt_urls ?? null;
   return {
     id: raw.id,
     project_id: projectId,
@@ -92,7 +95,8 @@ export function mapToCashFlowRecord(
     amount: Number(raw.amount),
     date: raw.date,
     counterparty: raw.counterparty ?? null,
-    receipt_url: raw.receipt_url ?? null,
+    receipt_urls: receiptUrls,
+    receipt_url: receiptUrls && receiptUrls.length > 0 ? receiptUrls[0] : null,
     notes: raw.description,
     created_at: raw.created_at,
   };

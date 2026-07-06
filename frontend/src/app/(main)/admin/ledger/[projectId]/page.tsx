@@ -55,8 +55,8 @@ export default async function LedgerDetailPage({ params }: PageProps) {
   const records = ledgerData.records as unknown as CashFlowRecord[];
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="w-full max-w-[1200px] mx-auto flex flex-col gap-6 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f7f7f8]">
+      <div className="w-full max-w-[1200px] mx-auto flex flex-col gap-12 py-10 px-4 sm:px-6 lg:px-8">
         <LedgerDetailHeader
           projectId={projectId}
           projectCode={projectCode}

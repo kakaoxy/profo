@@ -31,7 +31,7 @@ class FinanceRecord(BaseModel):
     operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="经办人ID")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
     counterparty: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="交易方")
-    receipt_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="票据图片URL")
+    receipt_urls: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, comment="票据图片URL列表")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 

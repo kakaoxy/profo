@@ -2782,8 +2782,8 @@ export interface components {
             related_stage?: string | null;
             /** Counterparty */
             counterparty?: string | null;
-            /** Receipt Url */
-            receipt_url?: string | null;
+            /** Receipt Urls */
+            receipt_urls?: string[] | null;
         };
         /**
          * CashFlowRecordResponse
@@ -2820,10 +2820,10 @@ export interface components {
              */
             counterparty?: string | null;
             /**
-             * Receipt Url
-             * @description 票据图片URL
+             * Receipt Urls
+             * @description 票据图片URL列表
              */
-            receipt_url?: string | null;
+            receipt_urls?: string[];
             /**
              * Created At
              * Format: date-time
@@ -2850,6 +2850,11 @@ export interface components {
              * @description 兼容旧字段 related_stage（始终返回 None）.
              */
             readonly related_stage: string | null;
+            /**
+             * Receipt Url
+             * @description 兼容旧字段 receipt_url（返回 receipt_urls 首项，空则 None）.
+             */
+            readonly receipt_url: string | null;
         };
         /**
          * CashFlowResponse
@@ -4868,10 +4873,10 @@ export interface components {
              */
             counterparty?: string | null;
             /**
-             * Receipt Url
-             * @description 票据图片URL
+             * Receipt Urls
+             * @description 票据图片URL列表
              */
-            receipt_url?: string | null;
+            receipt_urls?: string[] | null;
         };
         /**
          * LedgerStatsResponse
