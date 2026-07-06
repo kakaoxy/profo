@@ -1,254 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2, Check } from "lucide-react";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
-import { createCashFlowRecordAction } from "../actions";
-import {
-  INCOME_CATEGORIES,
-  getAvailableExpenseCategories,
-  BusinessForm,
-  TransactionType,
-} from "../types";
+import { RecordDialog } from "@/components/finance/record-dialog";
 
 interface AddRecordDialogProps {
   projectId: string;
-  /** 当前项目业务形式；agent 排除「收购款」，wholesale 排除「中介佣金」，null 显示全部 */
-  businessForm?: BusinessForm | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
+/**
+ * 记账弹窗（项目资金账本页使用）
+ *
+ * 已替换为引用共享组件 @/components/finance/record-dialog，
+ * 行为与资金账本详情页一致。保留默认导出名以减少调用方改动。
+ */
 export function AddRecordDialog({
   projectId,
-  businessForm,
   isOpen,
   onClose,
   onSuccess,
 }: AddRecordDialogProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 表单状态
-  const [type, setType] = useState<TransactionType>("expense");
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [notes, setNotes] = useState("");
-
-  // 切换收支类型时，重置分类
-  useEffect(() => {
-    setCategory("");
-  }, [type]);
-
-  // 打开弹窗时重置所有状态
-  useEffect(() => {
-    if (isOpen) {
-      setType("expense");
-      setDate(new Date());
-      setAmount("");
-      setCategory("");
-      setNotes("");
-    }
-  }, [isOpen]);
-
-  const handleSubmit = async () => {
-    if (!date || !amount || !category) {
-      toast.error("请完善必填信息 (金额、日期、分类)");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await createCashFlowRecordAction(projectId, {
-        type,
-        category,
-        amount,
-        date: format(date, "yyyy-MM-dd"),
-        notes,
-      });
-
-      if (res.success) {
-        toast.success("记账成功");
-        onClose();
-        if (onSuccess) onSuccess();
-      } else {
-        toast.error(res.message);
-      }
-    } catch {
-      toast.error("网络错误");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const categoryOptions =
-    type === "income"
-      ? INCOME_CATEGORIES
-      : getAvailableExpenseCategories(businessForm);
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[450px]">
-        <DialogHeader>
-          <DialogTitle>记一笔</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-5 py-2">
-          {/* 1. 收支切换 Tabs */}
-          <Tabs
-            value={type}
-            onValueChange={(v) => setType(v as TransactionType)}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger
-                value="expense"
-                className="data-[state=active]:bg-success-container data-[state=active]:text-success"
-              >
-                支出
-              </TabsTrigger>
-              <TabsTrigger
-                value="income"
-                className="data-[state=active]:bg-error-container data-[state=active]:text-error"
-              >
-                收入
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* 2. 金额输入 */}
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">金额 (元)</Label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className={cn(
-                  "font-mono focus-visible:ring-1 text-lg font-semibold", // 字体加大一点
-                  type === "income"
-                    ? "text-error focus-visible:ring-error placeholder:text-error/30"
-                    : "text-success focus-visible:ring-success placeholder:text-success/30"
-                )}
-              />
-            </div>
-
-            {/* 3. 日期选择 */}
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">发生日期</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full pl-3 text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    {date ? format(date, "yyyy-MM-dd") : <span>选日期</span>}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* 4. 分类选择 (Tag 模式) */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">分类</Label>
-            <div className="flex flex-wrap gap-2">
-              {categoryOptions.map((c) => {
-                const isSelected = category === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setCategory(c)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium border transition-all duration-200 flex items-center gap-1.5",
-                      // 未选中样式 (统一灰色)
-                      !isSelected &&
-                        "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                      // 选中样式 (根据收支类型变色)
-                      isSelected &&
-                        type === "expense" &&
-                        "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
-                      isSelected &&
-                        type === "income" &&
-                        "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1"
-                    )}
-                  >
-                    {isSelected && <Check className="h-3 w-3" />}
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 5. 备注 */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">备注说明</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="例如：支付首期款..."
-              className="h-20 resize-none"
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={cn(
-              "w-full text-white shadow-sm transition-all active:scale-[0.98]",
-              type === "income"
-                ? "bg-error hover:bg-red-700"
-                : "bg-success hover:bg-success"
-            )}
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "确认记账"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <RecordDialog
+      projectId={projectId}
+      isOpen={isOpen}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
   );
 }
+
+export default AddRecordDialog;

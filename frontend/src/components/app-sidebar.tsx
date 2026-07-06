@@ -123,6 +123,7 @@ const data: { navMain: NavItem[] } = {
       icon: Wallet,
       items: [
         { title: "跟投管理", url: "/admin/investments" },
+        { title: "资金账本", url: "/admin/ledger" },
       ],
     },
     {

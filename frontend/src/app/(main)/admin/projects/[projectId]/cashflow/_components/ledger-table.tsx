@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { safeFormatDate } from "@/lib/formatters";
-import { Download, Plus, Trash2 } from "lucide-react";
+import { Download, Plus, Trash2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,21 +21,18 @@ import {
 import { deleteCashFlowRecordAction } from "../actions";
 import { toast } from "sonner";
 
-import { BusinessForm, CashFlowRecord } from "../types";
+import { CashFlowRecord } from "../types";
 import { AddRecordDialog } from "./add-record-dialog";
 
 interface LedgerTableProps {
   projectId: string;
   data: CashFlowRecord[];
-  /** 当前项目业务形式，用于过滤录入表单的可选支出科目；未传时显示全部 */
-  businessForm?: BusinessForm | null;
   onRefresh?: () => void;
 }
 
 export function LedgerTable({
   projectId,
   data,
-  businessForm,
   onRefresh,
 }: LedgerTableProps) {
   const [filter, setFilter] = useState("all");
@@ -118,8 +115,10 @@ export function LedgerTable({
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-[120px] text-xs">日期</TableHead>
               <TableHead className="w-[100px] text-xs">分类</TableHead>
-              <TableHead className="text-xs">说明</TableHead>
+              <TableHead className="w-[120px] text-xs">交易方</TableHead>
               <TableHead className="text-right text-xs">金额</TableHead>
+              <TableHead className="w-[60px] text-center text-xs">票据</TableHead>
+              <TableHead className="text-xs">说明</TableHead>
               <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -127,7 +126,7 @@ export function LedgerTable({
             {filteredData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={7}
                   className="h-24 text-center text-xs text-muted-foreground"
                 >
                   暂无记录
@@ -169,12 +168,12 @@ export function LedgerTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div
-                      className="max-w-[200px] truncate text-muted-foreground"
-                      title={record.notes}
+                    <span
+                      className="text-muted-foreground truncate block max-w-[120px]"
+                      title={record.counterparty ?? ""}
                     >
-                      {record.notes || "-"}
-                    </div>
+                      {record.counterparty || "-"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <span
@@ -190,6 +189,29 @@ export function LedgerTable({
                         minimumFractionDigits: 2,
                       })}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {record.receipt_url ? (
+                      <a
+                        href={record.receipt_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                        title="查看票据"
+                      >
+                        <FileText className="h-4 w-4" />
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div
+                      className="max-w-[200px] truncate text-muted-foreground"
+                      title={record.notes}
+                    >
+                      {record.notes || "-"}
+                    </div>
                   </TableCell>
                   <TableCell className="w-[40px]">
                     <button
@@ -208,7 +230,6 @@ export function LedgerTable({
 
       <AddRecordDialog
         projectId={projectId}
-        businessForm={businessForm ?? null}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onSuccess={() => {

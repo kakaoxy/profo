@@ -25,6 +25,8 @@ class CashFlowRecordCreate(BaseModel):
     date: datetime
     description: str | None = None
     related_stage: str | None = None
+    counterparty: str | None = None
+    receipt_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -40,6 +42,8 @@ class CashFlowRecordResponse(BaseModel):
     record_date: datetime = Field(description="发生日期")  # 新字段名
     remark: str | None = Field(None, description="备注")  # 新字段名
     operator_id: str | None = Field(None, description="经办人ID")  # 新字段
+    counterparty: str | None = Field(None, description="交易方")
+    receipt_url: str | None = Field(None, description="票据图片URL")
     created_at: datetime
     updated_at: datetime
 
@@ -175,3 +179,68 @@ class FinanceListResponse(BaseModel):
 
     items: list[FinanceResponse]
     total: int
+
+
+# ========== 资金账本 (Ledger) ==========
+
+
+class LedgerRecordCreate(BaseModel):
+    """资金账本创建流水请求（含 project_id，不通过 URL path 传递）."""
+
+    project_id: str = Field(description="项目ID")
+    type: CashFlowType
+    category: CashFlowCategory
+    amount: Decimal = Field(description="金额(元)")
+    date: datetime = Field(description="发生日期")
+    description: str | None = Field(None, description="备注")
+    related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
+    counterparty: str | None = Field(None, description="交易方")
+    receipt_url: str | None = Field(None, description="票据图片URL")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LedgerProjectListItem(BaseModel):
+    """资金账本项目列表项（含聚合统计）."""
+
+    project_id: str
+    project_code: str | None = None
+    project_name: str | None = None
+    project_address: str | None = None
+    project_status: str | None = None
+    total_income: Decimal
+    total_expense: Decimal
+    net_cash_flow: Decimal
+    roi: float
+    record_count: int
+
+    @field_serializer("total_income", "total_expense", "net_cash_flow")
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LedgerListResponse(BaseModel):
+    """资金账本列表响应."""
+
+    items: list[LedgerProjectListItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class LedgerStatsResponse(BaseModel):
+    """资金账本全局汇总."""
+
+    total_projects: int
+    total_income: Decimal
+    total_expense: Decimal
+    net_cash_flow: Decimal
+    total_records: int
+
+    @field_serializer("total_income", "total_expense", "net_cash_flow")
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
+
+    model_config = ConfigDict(from_attributes=True)

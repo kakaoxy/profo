@@ -14,6 +14,7 @@
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 - create_investment_tables: 幂等创建跟投管理 4 张表（investments/investors/return_adjustments/investment_logs）
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
+- add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
 
 """
 
@@ -310,6 +311,29 @@ def rename_return_adjustment_columns(engine: Engine) -> None:
         )
 
 
+def add_finance_record_counterparty_columns(engine: Engine) -> None:
+    """为 finance_records 表添加 counterparty/receipt_url 列（资金账本）.
+
+    - counterparty: 交易方（VARCHAR(100)）
+    - receipt_url: 票据图片URL（VARCHAR(500)）
+    - SQLite 3.25+ 与 PostgreSQL 均支持 ALTER TABLE ADD COLUMN。
+    - 幂等：通过 _column_exists 检查跳过已存在列。
+    """
+    for column, ddl_type in (
+        ("counterparty", "VARCHAR(100)"),
+        ("receipt_url", "VARCHAR(500)"),
+    ):
+        if _column_exists(engine, "finance_records", column):
+            continue
+        logger.info("迁移：为 finance_records 表添加 %s 列", column)
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    f"ALTER TABLE finance_records ADD COLUMN {column} {ddl_type}"
+                )
+            )
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -323,6 +347,7 @@ def run_startup_migrations(engine: Engine) -> None:
         run_fix_image_urls(engine)
         create_investment_tables(engine)
         rename_return_adjustment_columns(engine)
+        add_finance_record_counterparty_columns(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise
