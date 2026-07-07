@@ -17,7 +17,7 @@
 - add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
 - create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
 - add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填（多票据支持）
-- add_cashflow_category_enum_values: 为 PostgreSQL cashflowcategory enum 类型新增 11 个分类值（记账弹窗分类分组优化）
+- add_cashflow_category_enum_values: 同步 PostgreSQL cashflowcategory enum 与 Python CashFlowCategory 枚举（遍历所有值，幂等）
 
 """
 
@@ -420,10 +420,14 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
 
 
 def add_cashflow_category_enum_values(engine: Engine) -> None:
-    """为 PostgreSQL cashflowcategory enum 类型新增分类值.
+    """同步 PostgreSQL cashflowcategory enum 类型与 Python CashFlowCategory 枚举.
 
     生产环境使用 PostgreSQL，SQLEnum 创建原生 enum 类型 `cashflowcategory`。
-    新增枚举值需 ALTER TYPE ... ADD VALUE IF NOT EXISTS（PG 9.3+ 支持 IF NOT EXISTS）。
+    Python 枚举新增值后，PostgreSQL enum 类型不会自动同步，需 ALTER TYPE ... ADD VALUE
+    （PG 9.3+ 支持 IF NOT EXISTS）。
+
+    本迁移直接遍历 Python CashFlowCategory 枚举的所有值并同步到 PostgreSQL，
+    避免硬编码列表遗漏（曾遗漏 "保证金回收" 等值导致记账 500 错误）。
 
     - SQLite 跳过（测试库随枚举类更新自动重建 CHECK 约束）
     - 幂等：IF NOT EXISTS 保证重复执行不报错
@@ -431,22 +435,11 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
     if engine.dialect.name != "postgresql":
         return
 
-    new_values = [
-        "营销费垫付",
-        "财税成本",
-        "项目激励",
-        "代付佣金",
-        "税费及佣金差额",
-        "购房款-定金",
-        "购房款-首付",
-        "卖房佣金",
-        "卖房税费",
-        "营销推广费抵扣",
-        "业主佣金",
-    ]
+    from models.common import CashFlowCategory  # noqa: PLC0415
 
     added = 0
-    for val in new_values:
+    for member in CashFlowCategory:
+        val = member.value
         # PG 12+ 支持事务内 ALTER TYPE ADD VALUE；IF NOT EXISTS 保证幂等
         with engine.begin() as conn:
             conn.execute(
@@ -455,7 +448,7 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
         added += 1
 
     if added:
-        logger.info("迁移：为 cashflowcategory enum 新增 %d 个分类值", added)
+        logger.info("迁移：同步 cashflowcategory enum（共 %d 个值）", added)
 
 
 def run_startup_migrations(engine: Engine) -> None:
