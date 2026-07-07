@@ -442,10 +442,19 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
         val = member.value
         # PG 12+ 支持事务内 ALTER TYPE ADD VALUE；IF NOT EXISTS 保证幂等
         with engine.begin() as conn:
-            conn.execute(
-                text(f"ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '{val}'")
-            )
-        added += 1
+            exists = conn.execute(
+                text(
+                    "SELECT 1 FROM pg_enum "
+                    "WHERE enumtypid = 'cashflowcategory'::regtype "
+                    "AND enumlabel = :label"
+                ),
+                {"label": val},
+            ).scalar()
+            if not exists:
+                conn.execute(
+                    text(f"ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '{val}'")
+                )
+                added += 1
 
     if added:
         logger.info("迁移：同步 cashflowcategory enum（共 %d 个值）", added)
