@@ -92,7 +92,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
           )}
 
           {/* 中栏 - 资金池 */}
-          <div className={cn("p-6 flex flex-col justify-center space-y-6", cashflowColClass)}>
+          <div className={cn("p-6 flex flex-col justify-center items-center text-center space-y-6", cashflowColClass)}>
             {/* 净现金流 */}
             <div>
               <div className="text-sm text-graphite font-medium mb-1">
@@ -115,7 +115,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
                 <div className="bg-apricot-wash p-1.5 rounded-full">
                   <TrendingUp className="h-4 w-4 text-rust" />
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col items-start">
                   <span className="text-xs text-graphite">总收入</span>
                   <span className="text-sm font-bold text-rust font-mono">
                     ¥{(stats.total_income / 10000).toFixed(2)}万
@@ -127,7 +127,7 @@ export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
                 <div className="bg-sky-wash p-1.5 rounded-full">
                   <TrendingDown className="h-4 w-4 text-ink" />
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col items-start">
                   <span className="text-xs text-graphite">总支出</span>
                   <span className="text-sm font-bold text-ink font-mono">
                     ¥{(stats.total_expense / 10000).toFixed(2)}万
