@@ -130,6 +130,35 @@ export async function exportLedger(
 }
 
 /**
+ * 导出单项目资金账本为 zip（含流水 CSV + 票据图片，返回 ArrayBuffer）
+ */
+export async function exportProjectLedger(
+  projectId: string,
+): Promise<ActionResult<ArrayBuffer>> {
+  try {
+    const token = await getAccessTokenFromCookie();
+    const url = new URL(
+      getApiUrl(`/api/v1/admin/ledger/${projectId}/export`),
+    );
+
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      const msg = `导出失败 (HTTP ${res.status})`;
+      return { success: false, message: msg };
+    }
+
+    const buffer = await res.arrayBuffer();
+    return { success: true, data: buffer };
+  } catch (e) {
+    logger.error("导出项目资金账本异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
  * 创建资金账本流水（成功后 revalidatePath 刷新列表）
  */
 export async function createRecord(

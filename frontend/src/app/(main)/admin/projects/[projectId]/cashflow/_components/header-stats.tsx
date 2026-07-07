@@ -12,17 +12,87 @@ import {
 } from "@/components/ui/tooltip";
 import { CashFlowStats } from "../types";
 
-interface HeaderStatsProps {
-  stats: CashFlowStats;
+export interface ProjectInfo {
+  contract_no: string | null;
+  community_name: string | null;
+  address: string | null;
+  area: string | null;
+  floor_info: string | null;
 }
 
-export function HeaderStats({ stats }: HeaderStatsProps) {
+interface HeaderStatsProps {
+  stats: CashFlowStats;
+  projectInfo?: ProjectInfo | null;
+}
+
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm font-medium text-foreground text-right truncate">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+export function HeaderStats({ stats, projectInfo }: HeaderStatsProps) {
+  const hasProjectInfo = Boolean(projectInfo);
+
+  // 网格布局：有项目信息时 3 栏（3/5/4），否则保持原 2 栏（3/2）
+  const gridClass = hasProjectInfo
+    ? "grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-border"
+    : "grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-border";
+  const cashflowColClass = hasProjectInfo ? "md:col-span-5" : "md:col-span-3";
+  const roiColClass = hasProjectInfo ? "md:col-span-4" : "md:col-span-2";
+
   return (
     <Card className="shadow-sm border-border">
       <CardContent className="p-0">
-        <div className="grid grid-cols-1 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-border">
-          {/* 左侧 (60%) - 资金池 */}
-          <div className="md:col-span-3 p-6 flex flex-col justify-center space-y-6">
+        <div className={gridClass}>
+          {/* 左栏 - 项目基础信息（仅 projectInfo 存在时渲染） */}
+          {hasProjectInfo && (
+            <div className="md:col-span-3 p-6 flex flex-col justify-center space-y-3">
+              <div className="text-sm font-semibold text-foreground mb-1">
+                项目基础信息
+              </div>
+              <InfoRow
+                label="项目编号"
+                value={
+                  projectInfo!.contract_no ? (
+                    <span className="font-mono">
+                      {projectInfo!.contract_no}
+                    </span>
+                  ) : (
+                    "-"
+                  )
+                }
+              />
+              <InfoRow
+                label="小区"
+                value={projectInfo!.community_name || "-"}
+              />
+              <InfoRow
+                label="地址"
+                value={projectInfo!.address || "-"}
+              />
+              <InfoRow
+                label="面积"
+                value={
+                  projectInfo!.area
+                    ? `${projectInfo!.area} m²`
+                    : "-"
+                }
+              />
+              <InfoRow
+                label="楼层"
+                value={projectInfo!.floor_info || "-"}
+              />
+            </div>
+          )}
+
+          {/* 中栏 - 资金池 */}
+          <div className={cn("p-6 flex flex-col justify-center space-y-6", cashflowColClass)}>
             {/* 净现金流 */}
             <div>
               <div className="text-sm text-muted-foreground font-medium mb-1">
@@ -67,8 +137,8 @@ export function HeaderStats({ stats }: HeaderStatsProps) {
             </div>
           </div>
 
-          {/* 右侧 (40%) - 效益分析 */}
-          <div className="md:col-span-2 p-6 bg-muted/50 flex flex-col justify-center space-y-4">
+          {/* 右栏 - 效益分析 */}
+          <div className={cn("p-6 bg-muted/50 flex flex-col justify-center space-y-4", roiColClass)}>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">ROI (投资回报率)</span>
               <span

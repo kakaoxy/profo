@@ -42,13 +42,21 @@ export default async function LedgerDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // 项目详情（用于标题展示，失败时降级为 null）
+  // 项目详情（用于基础信息展示，失败时降级为 null）
   const projectData = projectRes.error
     ? null
     : (extractApiData<ProjectResponse>(projectRes.data) ?? null);
 
-  const projectCode = projectData?.contract_no ?? null;
-  const projectName = projectData?.community_name ?? projectData?.name ?? null;
+  // 项目基础信息（传入 HeaderStats 左栏）
+  const projectInfo = projectData
+    ? {
+        contract_no: projectData.contract_no ?? null,
+        community_name: projectData.community_name ?? null,
+        address: projectData.address ?? null,
+        area: projectData.area ?? null,
+        floor_info: projectData.floor_info ?? null,
+      }
+    : null;
 
   // 复用 HeaderStats / TrendChart：API 类型与组件 props 结构兼容
   const stats = ledgerData.summary as CashFlowStats;
@@ -57,21 +65,20 @@ export default async function LedgerDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
       <div className="w-full max-w-[1200px] mx-auto flex flex-col gap-12 py-10 px-4 sm:px-6 lg:px-8">
-        <LedgerDetailHeader
-          projectId={projectId}
-          projectCode={projectCode}
-          projectName={projectName}
-          businessForm={projectData?.business_form ?? null}
-        />
+        <LedgerDetailHeader />
 
-        {/* 汇总卡片 */}
+        {/* 汇总卡片（三栏：基础信息 | 现金流 | ROI） */}
         <section>
-          <HeaderStats stats={stats} />
+          <HeaderStats stats={stats} projectInfo={projectInfo} />
         </section>
 
         {/* 流水明细表格 */}
         <section>
-          <LedgerDetailTable projectId={projectId} data={ledgerData.records} />
+          <LedgerDetailTable
+            projectId={projectId}
+            data={ledgerData.records}
+            businessForm={projectData?.business_form ?? null}
+          />
         </section>
 
         {/* 资金流向趋势 */}
