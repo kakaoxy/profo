@@ -19,6 +19,7 @@ interface CashFlowCreatePayload {
   category: string;
   amount: number | string;
   date: string;
+  counterparty?: string | null;
   notes?: string;
 }
 
@@ -61,6 +62,7 @@ export async function createCashFlowRecordAction(
     category: payload.category as CashFlowRecordCreate["category"],
     amount: Number(payload.amount),
     date: payload.date,
+    counterparty: payload.counterparty ?? "",
     description: payload.notes,
   };
 
