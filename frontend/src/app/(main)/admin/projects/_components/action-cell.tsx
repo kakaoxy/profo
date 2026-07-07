@@ -44,7 +44,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
   }, []);
 
   const monitorHref = `?monitor_id=${row.original.id}&project_name=${encodeURIComponent(row.original.name)}`;
-  const cashflowHref = `?cashflow_id=${row.original.id}&community_name=${encodeURIComponent(row.original.community_name || "")}&address=${encodeURIComponent(row.original.address || "")}`;
+  const cashflowHref = `/admin/ledger/${row.original.id}`;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -77,7 +77,7 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
           </Button>
         </Link>
 
-        <Link href={cashflowHref} scroll={false} onClick={handleClick}>
+        <Link href={cashflowHref} onClick={handleClick}>
           <Button
             variant="ghost"
             size="sm"
