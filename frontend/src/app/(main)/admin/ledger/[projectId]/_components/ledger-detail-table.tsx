@@ -193,17 +193,27 @@ export function LedgerDetailTable({
 
       {/* 表格 */}
       <div className="rounded-3xl border border-border bg-card overflow-x-auto shadow-sm">
-        <Table className="table-fixed">
+        <Table className="table-fixed w-full">
+          <colgroup>
+            <col className="w-[10%]" />
+            <col className="w-[8%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
+            <col className="w-[11%]" />
+            <col className="w-[26%]" />
+            <col className="w-[6%]" />
+          </colgroup>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="w-[100px] text-xs">日期</TableHead>
-              <TableHead className="w-[80px] text-center text-xs">交易形式</TableHead>
-              <TableHead className="w-[130px] text-xs">交易方</TableHead>
-              <TableHead className="w-[120px] text-xs">分类</TableHead>
-              <TableHead className="w-[130px] text-right text-xs">金额</TableHead>
-              <TableHead className="w-[110px] text-center text-xs">票据</TableHead>
-              <TableHead className="text-xs">备注</TableHead>
-              <TableHead className="w-[56px] text-center text-xs">操作</TableHead>
+              <TableHead className="px-4 py-3 text-xs">日期</TableHead>
+              <TableHead className="px-4 py-3 text-center text-xs">交易形式</TableHead>
+              <TableHead className="px-4 py-3 text-xs">交易方</TableHead>
+              <TableHead className="px-4 py-3 text-xs">分类</TableHead>
+              <TableHead className="px-4 py-3 text-right text-xs">金额</TableHead>
+              <TableHead className="px-4 py-3 text-center text-xs">票据</TableHead>
+              <TableHead className="px-4 py-3 text-xs">备注</TableHead>
+              <TableHead className="px-4 py-3 text-center text-xs">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -222,14 +232,14 @@ export function LedgerDetailTable({
                   key={record.id}
                   className="group text-xs hover:bg-muted"
                 >
-                  <TableCell className="py-3">
+                  <TableCell className="px-4 py-3">
                     <span className="font-medium text-foreground">
                       {record.date
                         ? safeFormatDate(record.date, "yyyy-MM-dd")
                         : "-"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="px-4 py-3 text-center">
                     <Badge
                       variant="outline"
                       className={cn(
@@ -242,7 +252,7 @@ export function LedgerDetailTable({
                       {record.type === "income" ? "收入" : "支出"}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <span
                       className="text-muted-foreground truncate block"
                       title={record.counterparty ?? ""}
@@ -250,7 +260,7 @@ export function LedgerDetailTable({
                       {record.counterparty || "-"}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <span
                       className="text-foreground truncate block"
                       title={record.category ?? ""}
@@ -258,7 +268,7 @@ export function LedgerDetailTable({
                       {record.category || "-"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="px-4 py-3 text-right">
                     <span
                       className={cn(
                         "font-mono font-medium text-sm tabular-nums",
@@ -273,7 +283,7 @@ export function LedgerDetailTable({
                       })}
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="px-4 py-3 text-center">
                     {record.receipt_urls && record.receipt_urls.length > 0 ? (
                       <div className="flex items-center justify-center gap-1 flex-wrap">
                         {record.receipt_urls.map((url, idx) => (
@@ -312,7 +322,7 @@ export function LedgerDetailTable({
                       <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     <div
                       className="truncate text-muted-foreground"
                       title={record.description ?? ""}
@@ -320,7 +330,7 @@ export function LedgerDetailTable({
                       {record.description || "-"}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="px-4 py-3 text-center">
                     <Button
                       variant="ghost"
                       size="sm"
