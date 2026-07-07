@@ -96,9 +96,8 @@ const data: { navMain: NavItem[] } = {
     },
     {
       title: "房源管理",
-      url: "#",
+      url: "/admin/properties",
       icon: Building2,
-      collapsedUrl: "/admin/properties",
       items: [
         { title: "房源列表", url: "/admin/properties" },
         { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
@@ -122,9 +121,8 @@ const data: { navMain: NavItem[] } = {
     },
     {
       title: "财务管理",
-      url: "#",
+      url: "/admin/ledger",
       icon: Wallet,
-      collapsedUrl: "/admin/ledger",
       items: [
         { title: "跟投管理", url: "/admin/investments" },
         { title: "资金账本", url: "/admin/ledger" },
@@ -167,7 +165,7 @@ const MenuButton = React.forwardRef<
   const buttonContent = (
     <SidebarMenuButton
       ref={ref}
-      tooltip={state === "collapsed" && (!hasSubmenu || item.collapsedUrl) ? item.title : undefined}
+      tooltip={state === "collapsed" && !hasSubmenu ? item.title : undefined}
       isActive={isActive}
       className={`
         rounded-lg px-3 py-2.5 transition-all duration-200
@@ -217,6 +215,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       "/admin/projects",
       "/admin/l4-marketing",
       "/admin/investments",
+      "/admin/ledger",
       "/admin/users",
       "/admin/settings",
     ];
@@ -271,28 +270,24 @@ export function AppSidebar({ user }: { user: User | null }) {
               const hasSubmenu = item.items && item.items.length > 0;
               const isActive =
                 pathname === item.url ||
-                pathname === item.collapsedUrl ||
                 item.items?.some((sub) => pathname.startsWith(sub.url));
 
               if (state === "collapsed") {
                 if (hasSubmenu) {
-                  // 折叠态设置了 collapsedUrl：点击图标直接跳转，不弹子菜单
-                  if (item.collapsedUrl) {
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <Link href={item.collapsedUrl} className="w-full">
-                          <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
-                        </Link>
-                      </SidebarMenuItem>
-                    );
-                  }
+                  const hasDirectUrl = item.url && item.url !== "#";
                   return (
                     <SidebarMenuItem key={item.title}>
                       <HoverCard openDelay={100} closeDelay={200}>
                         <HoverCardTrigger asChild>
-                          <div>
-                            <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
-                          </div>
+                          {hasDirectUrl ? (
+                            <Link href={item.url} className="w-full">
+                              <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                            </Link>
+                          ) : (
+                            <div>
+                              <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                            </div>
+                          )}
                         </HoverCardTrigger>
                         <HoverCardContent
                           side="right"
@@ -333,6 +328,51 @@ export function AppSidebar({ user }: { user: User | null }) {
               }
 
               if (hasSubmenu) {
+                const hasDirectUrl = item.url && item.url !== "#";
+
+                // 有直接跳转 URL：hover 弹出 + 点击跳转
+                if (hasDirectUrl) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <HoverCard openDelay={150} closeDelay={250}>
+                        <HoverCardTrigger asChild>
+                          <Link href={item.url} className="w-full">
+                            <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                          </Link>
+                        </HoverCardTrigger>
+                        <HoverCardContent
+                          side="right"
+                          align="start"
+                          sideOffset={8}
+                          className="min-w-52 p-1.5 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-xl z-100"
+                        >
+                          <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            {item.title}
+                          </div>
+                          <div className="flex flex-col gap-1 mt-1">
+                            {item.items!.map((sub) => (
+                              <Link
+                                key={sub.title}
+                                href={sub.url}
+                                className={`
+                                  block px-3 py-2.5 text-sm rounded-lg transition-all duration-150
+                                  ${pathname === sub.url
+                                    ? "bg-muted font-medium text-foreground"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  }
+                                `}
+                              >
+                                {sub.title}
+                              </Link>
+                            ))}
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </SidebarMenuItem>
+                  );
+                }
+
+                // 无直接跳转 URL：保持 Collapsible 展开/折叠
                 return (
                   <Collapsible
                     key={item.title}
