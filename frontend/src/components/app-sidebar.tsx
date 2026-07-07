@@ -77,6 +77,8 @@ interface NavItem {
   // 允许访问该菜单的角色代码列表；不填表示对所有后台角色可见
   roles?: string[];
   items?: NavSubItem[];
+  // 折叠态点击图标直接跳转的目标 URL；不填则保持原弹出子菜单行为
+  collapsedUrl?: string;
 }
 
 // 后台内部角色代码：admin 超级管理员 / operator 运营 / user 普通用户
@@ -96,6 +98,7 @@ const data: { navMain: NavItem[] } = {
       title: "房源管理",
       url: "#",
       icon: Building2,
+      collapsedUrl: "/admin/properties",
       items: [
         { title: "房源列表", url: "/admin/properties" },
         { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
@@ -121,6 +124,7 @@ const data: { navMain: NavItem[] } = {
       title: "财务管理",
       url: "#",
       icon: Wallet,
+      collapsedUrl: "/admin/ledger",
       items: [
         { title: "跟投管理", url: "/admin/investments" },
         { title: "资金账本", url: "/admin/ledger" },
@@ -163,7 +167,7 @@ const MenuButton = React.forwardRef<
   const buttonContent = (
     <SidebarMenuButton
       ref={ref}
-      tooltip={state === "collapsed" && !hasSubmenu ? item.title : undefined}
+      tooltip={state === "collapsed" && (!hasSubmenu || item.collapsedUrl) ? item.title : undefined}
       isActive={isActive}
       className={`
         rounded-lg px-3 py-2.5 transition-all duration-200
@@ -271,6 +275,16 @@ export function AppSidebar({ user }: { user: User | null }) {
 
               if (state === "collapsed") {
                 if (hasSubmenu) {
+                  // 折叠态设置了 collapsedUrl：点击图标直接跳转，不弹子菜单
+                  if (item.collapsedUrl) {
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <Link href={item.collapsedUrl} className="w-full">
+                          <MenuButton item={item} isActive={isActive} state={state} hasSubmenu={hasSubmenu} />
+                        </Link>
+                      </SidebarMenuItem>
+                    );
+                  }
                   return (
                     <SidebarMenuItem key={item.title}>
                       <HoverCard openDelay={100} closeDelay={200}>
