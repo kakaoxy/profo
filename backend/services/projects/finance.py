@@ -11,9 +11,13 @@
 4. 与 InvestmentService 等同类服务保持单一 Service 类的现有模式一致
 """
 
+import csv
+import io
 import logging
+import zipfile
 from datetime import datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import case, func, or_
@@ -23,6 +27,7 @@ from models import FinanceRecord, FinanceRecordLog, Project, ProjectContract, Pr
 from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType
 from schemas.project import FinanceLogResponse
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -642,6 +647,96 @@ class FinanceService:
         buffer = io.BytesIO()
         wb.save(buffer)
         return buffer.getvalue()
+
+    def export_project_records_zip(self, project_id: str) -> tuple[str, bytes]:
+        """资金账本：导出单项目流水为 zip（含 CSV + 票据图片）.
+
+        Returns:
+            (filename_stem, zip_bytes) - filename_stem 形如 "资金账本_XX001_20260707"
+
+        """
+        records = self.get_records(project_id)
+
+        # 查询项目编号用于文件名
+        project = (
+            self.db.query(Project)
+            .filter(Project.id == project_id, Project.is_deleted.is_(False))
+            .first()
+        )
+        contract = (
+            self.db.query(ProjectContract)
+            .filter(ProjectContract.project_id == project_id)
+            .first()
+        )
+        project_code = (
+            (contract.contract_no if contract else None)
+            or (project.name if project else None)
+            or project_id[:8]
+        )
+
+        today = datetime.now().strftime("%Y%m%d")
+        filename_stem = f"资金账本_{project_code}_{today}"
+
+        # 构建 CSV（UTF-8 with BOM，Excel 兼容）
+        csv_buffer = io.StringIO()
+        csv_buffer.write("\ufeff")
+        writer = csv.writer(csv_buffer)
+        writer.writerow(["日期", "交易形式", "交易方", "分类", "金额", "票据", "备注"])
+
+        upload_dir = Path(settings.upload_dir).resolve()
+        receipt_files: list[tuple[str, bytes]] = []
+        seen_filenames: set[str] = set()
+        type_label = {CashFlowType.INCOME.value: "收入", CashFlowType.EXPENSE.value: "支出"}
+
+        for rec in records:
+            date_str = rec.record_date.strftime("%Y-%m-%d") if rec.record_date else ""
+            type_val = rec.type.value if rec.type else ""
+            form_str = type_label.get(type_val, type_val)
+            counterparty = rec.counterparty or ""
+            category = rec.category.value if rec.category else ""
+            amount = f"{float(rec.amount):.2f}" if rec.amount is not None else "0.00"
+            remark = rec.remark or ""
+
+            receipt_names: list[str] = []
+            for url in rec.receipt_urls or []:
+                filename = (
+                    url.split("/static/uploads/")[-1]
+                    if "/static/uploads/" in url
+                    else url.lstrip("/")
+                )
+                receipt_names.append(filename)
+
+                if filename in seen_filenames:
+                    continue
+                seen_filenames.add(filename)
+
+                file_path = upload_dir / filename
+                if file_path.is_file():
+                    try:
+                        receipt_files.append((f"receipts/{filename}", file_path.read_bytes()))
+                    except Exception:
+                        logger.warning("读取票据文件失败: %s", file_path)
+                else:
+                    logger.warning("票据文件不存在: %s", file_path)
+
+            writer.writerow(
+                [date_str, form_str, counterparty, category, amount, ";".join(receipt_names), remark]
+            )
+
+        # 构建 zip
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("流水.csv", csv_buffer.getvalue().encode("utf-8"))
+            for zip_path, file_bytes in receipt_files:
+                zf.writestr(zip_path, file_bytes)
+
+        logger.info(
+            "导出项目 %s 流水 zip 完成：%d 条记录，%d 个票据",
+            project_id,
+            len(records),
+            len(receipt_files),
+        )
+        return filename_stem, zip_buffer.getvalue()
 
     def delete_record_by_id(self, record_id: str, operator_id: str) -> None:
         """资金账本：按记录ID软删除流水（无需 project_id）.

@@ -146,6 +146,34 @@ def list_project_logs(
     return service.list_logs(project_id)
 
 
+@router.get(
+    "/{project_id}/export",
+    summary="导出项目资金账本为 zip",
+)
+@limiter.limit(RateLimits.INVESTMENT_EXPORT)
+def export_project_ledger(
+    request: Request,
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: _FinanceServiceDep,
+) -> StreamingResponse:
+    """导出单项目流水为 zip（含流水 CSV + 票据图片）.
+
+    速率限制：10次/小时.
+    """
+    filename_stem, content = service.export_project_records_zip(project_id)
+    filename = f"{filename_stem}.zip"
+    filename_encoded = urllib.parse.quote(filename)
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename*=UTF-8''{filename_encoded}"
+            ),
+        },
+    )
+
+
 # ==================== 流水 CRUD ====================
 
 

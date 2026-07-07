@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Trash2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Trash2, Loader2, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { safeFormatDate, formatCNY } from "@/lib/formatters";
@@ -39,7 +40,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteRecord } from "../../actions";
+import { RecordDialog } from "@/components/finance/record-dialog";
+import { deleteRecord, exportProjectLedger } from "../../actions";
 import type { components } from "@/lib/api-types";
 
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
@@ -47,6 +49,7 @@ type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 interface LedgerDetailTableProps {
   projectId: string;
   data: CashFlowRecordResponse[];
+  businessForm?: "agent" | "wholesale" | null;
 }
 
 type FilterTab = "all" | "income" | "expense";
@@ -54,7 +57,9 @@ type FilterTab = "all" | "income" | "expense";
 export function LedgerDetailTable({
   projectId,
   data,
+  businessForm,
 }: LedgerDetailTableProps) {
+  const router = useRouter();
   const [filter, setFilter] = React.useState<FilterTab>("all");
   const [searchInput, setSearchInput] = React.useState("");
   const [debouncedSearch, setDebouncedSearch] = React.useState("");
@@ -62,6 +67,8 @@ export function LedgerDetailTable({
   const [deleteTarget, setDeleteTarget] =
     React.useState<CashFlowRecordResponse | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
 
   // 交易方搜索 300ms 防抖
   React.useEffect(() => {
@@ -124,9 +131,35 @@ export function LedgerDetailTable({
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await exportProjectLedger(projectId);
+      if (!res.success) {
+        toast.error(res.message || "导出失败");
+        return;
+      }
+      const blob = new Blob([res.data], { type: "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      a.download = `资金账本_${projectId.slice(0, 8)}_${today}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("导出成功");
+    } catch {
+      toast.error("导出失败，请稍后重试");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Tabs 筛选 + 搜索 + 分类筛选 */}
+      {/* Tabs 筛选 + 搜索 + 分类筛选 + 操作按钮 */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <Tabs
           value={filter}
@@ -151,7 +184,7 @@ export function LedgerDetailTable({
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex w-full sm:w-auto items-center gap-2">
+        <div className="flex w-full sm:w-auto items-center gap-2 flex-wrap">
           <Input
             placeholder="搜索交易方…"
             value={searchInput}
@@ -180,6 +213,28 @@ export function LedgerDetailTable({
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-1.5 rounded-full"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            导出
+          </Button>
+          <Button
+            size="sm"
+            className="h-9 gap-1.5 rounded-full"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            记一笔
+          </Button>
         </div>
       </div>
 
@@ -389,6 +444,14 @@ export function LedgerDetailTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RecordDialog
+        projectId={projectId}
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onSuccess={() => router.refresh()}
+        businessForm={businessForm}
+      />
     </div>
   );
 }
