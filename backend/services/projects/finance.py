@@ -28,6 +28,7 @@ from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceA
 from schemas.project import FinanceLogResponse
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from settings import settings
+from utils.file_security import get_safe_file_path
 
 logger = logging.getLogger(__name__)
 
@@ -710,7 +711,12 @@ class FinanceService:
                     continue
                 seen_filenames.add(filename)
 
-                file_path = upload_dir / filename
+                try:
+                    file_path = get_safe_file_path(upload_dir, filename)
+                except ValueError:
+                    logger.warning("票据文件名不安全或路径非法: %s", filename)
+                    continue
+
                 if file_path.is_file():
                     try:
                         receipt_files.append((f"receipts/{filename}", file_path.read_bytes()))
