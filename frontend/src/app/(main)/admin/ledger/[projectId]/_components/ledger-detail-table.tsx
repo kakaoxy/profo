@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Loader2, Download, Plus } from "lucide-react";
+import { Trash2, Loader2, Download, Plus, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { safeFormatDate, formatCNY } from "@/lib/formatters";
@@ -41,15 +41,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RecordDialog } from "@/components/finance/record-dialog";
+import { SettlementDialog } from "./settlement-dialog";
 import { deleteRecord, exportProjectLedger } from "../../actions";
 import type { components } from "@/lib/api-types";
 
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
+type SettlementStatus = components["schemas"]["SettlementStatus"];
 
 interface LedgerDetailTableProps {
   projectId: string;
   data: CashFlowRecordResponse[];
   businessForm?: "agent" | "wholesale" | null;
+  settlementStatus?: SettlementStatus | null;
 }
 
 type FilterTab = "all" | "income" | "expense";
@@ -58,6 +61,7 @@ export function LedgerDetailTable({
   projectId,
   data,
   businessForm,
+  settlementStatus,
 }: LedgerDetailTableProps) {
   const router = useRouter();
   const [filter, setFilter] = React.useState<FilterTab>("all");
@@ -69,6 +73,10 @@ export function LedgerDetailTable({
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [showSettlementDialog, setShowSettlementDialog] =
+    React.useState(false);
+
+  const isSettled = settlementStatus === "settled";
 
   // 交易方搜索 300ms 防抖
   React.useEffect(() => {
@@ -231,9 +239,43 @@ export function LedgerDetailTable({
             size="sm"
             className="h-9 gap-1.5 rounded-full bg-ink text-pure-white hover:bg-ink/90"
             onClick={() => setIsDialogOpen(true)}
+            disabled={isSettled}
+            title={isSettled ? "已结算，不可记账" : undefined}
           >
             <Plus className="h-4 w-4" />
             记一笔
+          </Button>
+          {settlementStatus && (
+            <Badge
+              variant="secondary"
+              className={cn(
+                "gap-1.5 border-transparent px-3 py-1",
+                isSettled
+                  ? "bg-apricot-wash text-rust"
+                  : "bg-fog text-graphite",
+              )}
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full",
+                  isSettled ? "bg-rust" : "bg-graphite animate-pulse",
+                )}
+              />
+              {isSettled ? "已结算" : "未结算"}
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-9 gap-1.5 rounded-full",
+              isSettled
+                ? "text-rust hover:text-rust hover:bg-apricot-wash/50"
+                : "bg-ink text-pure-white hover:bg-ink/90",
+            )}
+            onClick={() => setShowSettlementDialog(true)}
+          >
+            {isSettled ? "反结算" : "结算"}
           </Button>
         </div>
       </div>
@@ -245,6 +287,14 @@ export function LedgerDetailTable({
       >
         共 {summary.count} 笔 · 合计 {formatCNY(summary.total)}
       </div>
+
+      {/* 已结算编辑锁警示条 */}
+      {isSettled && (
+        <div className="flex items-center gap-2 rounded-lg bg-apricot-wash border border-rust/30 px-4 py-2.5 text-sm text-rust">
+          <Lock className="h-4 w-4 shrink-0" />
+          <span>该资金账本已结算，不可编辑。如需修改请先反结算。</span>
+        </div>
+      )}
 
       {/* 表格 */}
       <div className="rounded-3xl border border-border bg-card overflow-x-auto shadow-sm">
@@ -389,8 +439,14 @@ export function LedgerDetailTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                      className={cn(
+                        "h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-opacity",
+                        isSettled
+                          ? "opacity-0 pointer-events-none"
+                          : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                      )}
                       onClick={() => setDeleteTarget(record)}
+                      disabled={isSettled}
                       aria-label={`删除 ${record.category} 记录`}
                     >
                       <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -451,6 +507,13 @@ export function LedgerDetailTable({
         onClose={() => setIsDialogOpen(false)}
         onSuccess={() => router.refresh()}
         businessForm={businessForm}
+      />
+
+      <SettlementDialog
+        open={showSettlementDialog}
+        onOpenChange={setShowSettlementDialog}
+        projectId={projectId}
+        mode={isSettled ? "unsettle" : "settle"}
       />
     </div>
   );

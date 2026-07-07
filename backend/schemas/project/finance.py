@@ -6,12 +6,12 @@
 3. 规范化财务表 (FinanceCreate, FinanceUpdate, FinanceResponse).
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator
 
-from models.common import CashFlowCategory, CashFlowType, FinanceActionType
+from models.common import CashFlowCategory, CashFlowType, FinanceActionType, SettlementStatus
 
 # ========== 现金流记录 (来自 project_finance.py) ==========
 
@@ -282,5 +282,33 @@ class FinanceLogResponse(BaseModel):
     )
     operator_name: str | None = Field(None, description="操作人名称(冗余)")
     created_at: datetime = Field(description="操作时间")
+
+
+# ========== 结算 / 反结算 ==========
+
+
+class FinanceSettlementChangeRequest(BaseModel):
+    """资金账本结算请求（unsettled → settled）."""
+
+    settled_date: date = Field(description="结算日期")
+    settled_note: str | None = Field(None, max_length=500, description="结算说明")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FinanceUnsettleRequest(BaseModel):
+    """资金账本反结算请求（settled → unsettled）."""
+
+    reason: str = Field(min_length=1, max_length=500, description="反结算原因")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FinanceSettlementResponse(BaseModel):
+    """资金账本结算状态响应."""
+
+    finance_settlement_status: SettlementStatus = Field(description="结算状态")
+    finance_settled_date: str | None = Field(None, description="结算日期")
+    finance_settled_note: str | None = Field(None, description="结算说明")
 
     model_config = ConfigDict(from_attributes=True)

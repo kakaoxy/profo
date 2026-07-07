@@ -24,8 +24,9 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
 from models import FinanceRecord, FinanceRecordLog, Project, ProjectContract, ProjectSale, User
-from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType
+from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType, SettlementStatus
 from schemas.project import FinanceLogResponse
+from schemas.project.finance import FinanceSettlementChangeRequest, FinanceSettlementResponse, FinanceUnsettleRequest
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from settings import settings
 from utils.file_security import get_safe_file_path
@@ -54,6 +55,9 @@ class FinanceService:
         if not project:
             logger.error("Project not found: %s", project_id)
             raise ResourceNotFoundError("项目不存在")
+
+        # 编辑锁：已结算项目不可新增记录
+        self._assert_finance_editable(project)
 
         # 验证现金流类型和分类匹配
         try:
@@ -766,6 +770,11 @@ class FinanceService:
 
         project_id = record.project_id
 
+        # 编辑锁：已结算项目不可删除记录
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+        if project:
+            self._assert_finance_editable(project)
+
         # 写入操作日志（与删除同一事务）
         log = FinanceRecordLog(
             project_id=project_id,
@@ -793,6 +802,90 @@ class FinanceService:
             logger.exception("Failed to sync project financials")
 
         logger.info("Finance record deleted successfully: %s", record_id)
+
+    # ==================== 结算 / 反结算 ====================
+
+    def _assert_finance_editable(self, project: Project) -> None:
+        """编辑锁：已结算项目不可新增/删除流水记录."""
+        if project.finance_settlement_status == SettlementStatus.SETTLED:
+            raise ServiceException("已结算资金账本不可编辑，请先反结算", status_code=400)
+
+    def _build_settlement_response(self, project: Project) -> FinanceSettlementResponse:
+        """构建结算状态响应."""
+        return FinanceSettlementResponse(
+            finance_settlement_status=project.finance_settlement_status,
+            finance_settled_date=project.finance_settled_date,
+            finance_settled_note=project.finance_settled_note,
+        )
+
+    def settle_finance(
+        self,
+        project_id: str,
+        data: FinanceSettlementChangeRequest,
+        operator_id: str,
+    ) -> FinanceSettlementResponse:
+        """结算：unsettled → settled，记录日期与说明，写日志."""
+        project = (
+            self.db.query(Project)
+            .filter(Project.id == project_id, Project.is_deleted.is_(False))
+            .first()
+        )
+        if not project:
+            raise ResourceNotFoundError("项目不存在")
+        if project.finance_settlement_status == SettlementStatus.SETTLED:
+            raise ValidationError("该项目资金账本已结算，无需重复结算")
+
+        project.finance_settlement_status = SettlementStatus.SETTLED
+        project.finance_settled_date = data.settled_date.isoformat()
+        project.finance_settled_note = data.settled_note
+
+        log = FinanceRecordLog(
+            project_id=project_id,
+            action_type=FinanceActionType.SETTLE,
+            detail={
+                "settled_date": data.settled_date.isoformat(),
+                "settled_note": data.settled_note or "",
+            },
+            operator=operator_id,
+        )
+        self.db.add(log)
+        self.db.commit()
+        self.db.refresh(project)
+        logger.info("项目 %s 资金账本已结算", project_id)
+        return self._build_settlement_response(project)
+
+    def unsettle_finance(
+        self,
+        project_id: str,
+        data: FinanceUnsettleRequest,
+        operator_id: str,
+    ) -> FinanceSettlementResponse:
+        """反结算：settled → unsettled，清空结算字段，写日志."""
+        project = (
+            self.db.query(Project)
+            .filter(Project.id == project_id, Project.is_deleted.is_(False))
+            .first()
+        )
+        if not project:
+            raise ResourceNotFoundError("项目不存在")
+        if project.finance_settlement_status != SettlementStatus.SETTLED:
+            raise ValidationError("该项目资金账本未结算，无需反结算")
+
+        project.finance_settlement_status = SettlementStatus.UNSETTLED
+        project.finance_settled_date = None
+        project.finance_settled_note = None
+
+        log = FinanceRecordLog(
+            project_id=project_id,
+            action_type=FinanceActionType.UNSETTLE,
+            detail={"reason": data.reason},
+            operator=operator_id,
+        )
+        self.db.add(log)
+        self.db.commit()
+        self.db.refresh(project)
+        logger.info("项目 %s 资金账本已反结算", project_id)
+        return self._build_settlement_response(project)
 
     def list_logs(self, project_id: str) -> list[FinanceLogResponse]:
         """获取项目资金账本操作日志（按 created_at 降序）.

@@ -11,6 +11,7 @@ import { LogsCard } from "./_components/logs-card";
 
 type CashFlowResponse = components["schemas"]["CashFlowResponse"];
 type ProjectResponse = components["schemas"]["ProjectResponse"];
+type FinanceLogResponse = components["schemas"]["FinanceLogResponse"];
 
 interface PageProps {
   params: Promise<{ projectId: string }>;
@@ -21,12 +22,15 @@ export default async function LedgerDetailPage({ params }: PageProps) {
 
   const client = await fetchClient();
 
-  // 并行获取流水数据与项目详情
-  const [ledgerRes, projectRes] = await Promise.all([
+  // 并行获取流水数据、项目详情、操作日志
+  const [ledgerRes, projectRes, logsRes] = await Promise.all([
     client.GET("/api/v1/admin/ledger/{project_id}", {
       params: { path: { project_id: projectId } },
     }),
     client.GET("/api/v1/projects/{project_id}", {
+      params: { path: { project_id: projectId } },
+    }),
+    client.GET("/api/v1/admin/ledger/{project_id}/logs", {
       params: { path: { project_id: projectId } },
     }),
   ]);
@@ -46,6 +50,11 @@ export default async function LedgerDetailPage({ params }: PageProps) {
   const projectData = projectRes.error
     ? null
     : (extractApiData<ProjectResponse>(projectRes.data) ?? null);
+
+  // 操作日志（失败时降级为空数组）
+  const logs: FinanceLogResponse[] = logsRes.error
+    ? []
+    : (extractApiData<FinanceLogResponse[]>(logsRes.data) ?? []);
 
   // 项目基础信息（传入 HeaderStats 左栏）
   const projectInfo = projectData
@@ -78,6 +87,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
             projectId={projectId}
             data={ledgerData.records}
             businessForm={projectData?.business_form ?? null}
+            settlementStatus={projectData?.finance_settlement_status ?? null}
           />
         </section>
 
@@ -88,7 +98,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
 
         {/* 操作日志 */}
         <section>
-          <LogsCard projectId={projectId} />
+          <LogsCard logs={logs} />
         </section>
       </div>
     </div>

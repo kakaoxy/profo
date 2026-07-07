@@ -13,6 +13,11 @@ type LedgerStatsResponse = components["schemas"]["LedgerStatsResponse"];
 type CashFlowRecordResponse = components["schemas"]["CashFlowRecordResponse"];
 type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
 type FinanceLogResponse = components["schemas"]["FinanceLogResponse"];
+type FinanceSettlementChangeRequest =
+  components["schemas"]["FinanceSettlementChangeRequest"];
+type FinanceUnsettleRequest = components["schemas"]["FinanceUnsettleRequest"];
+type FinanceSettlementResponse =
+  components["schemas"]["FinanceSettlementResponse"];
 
 type LedgerListQuery = NonNullable<
   paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]
@@ -248,6 +253,74 @@ export async function fetchLogs(
     };
   } catch (e) {
     logger.error("获取资金账本操作日志异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 结算项目资金账本（unsettled → settled）
+ *
+ * @param projectId 项目ID
+ * @param data      结算请求（日期 + 说明）
+ */
+export async function settleProjectLedger(
+  projectId: string,
+  data: FinanceSettlementChangeRequest,
+): Promise<ActionResult<FinanceSettlementResponse>> {
+  try {
+    const client = await fetchClient();
+    const { data: resData, error } = await client.POST(
+      "/api/v1/admin/ledger/{project_id}/settle",
+      { params: { path: { project_id: projectId } }, body: data },
+    );
+
+    if (error) {
+      const msg = (error as { detail?: string }).detail || "结算失败";
+      return { success: false, message: msg };
+    }
+
+    revalidatePath(`/admin/ledger/${projectId}`);
+    revalidatePath("/admin/ledger");
+    return {
+      success: true,
+      data: extractApiData<FinanceSettlementResponse>(resData),
+    };
+  } catch (e) {
+    logger.error("结算资金账本异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 反结算项目资金账本（settled → unsettled）
+ *
+ * @param projectId 项目ID
+ * @param data      反结算请求（原因，必填）
+ */
+export async function unsettleProjectLedger(
+  projectId: string,
+  data: FinanceUnsettleRequest,
+): Promise<ActionResult<FinanceSettlementResponse>> {
+  try {
+    const client = await fetchClient();
+    const { data: resData, error } = await client.POST(
+      "/api/v1/admin/ledger/{project_id}/unsettle",
+      { params: { path: { project_id: projectId } }, body: data },
+    );
+
+    if (error) {
+      const msg = (error as { detail?: string }).detail || "反结算失败";
+      return { success: false, message: msg };
+    }
+
+    revalidatePath(`/admin/ledger/${projectId}`);
+    revalidatePath("/admin/ledger");
+    return {
+      success: true,
+      data: extractApiData<FinanceSettlementResponse>(resData),
+    };
+  } catch (e) {
+    logger.error("反结算资金账本异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

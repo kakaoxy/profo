@@ -437,6 +437,15 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
 
     from models.common import CashFlowCategory  # noqa: PLC0415
 
+    # 先检查 enum type 是否存在（避免 ::regtype CAST 对不存在的类型报错）
+    with engine.connect() as conn:
+        type_exists = conn.execute(
+            text("SELECT 1 FROM pg_type WHERE typname = 'cashflowcategory'")
+        ).scalar()
+    if not type_exists:
+        logger.info("迁移：cashflowcategory enum type 不存在，跳过同步（将由 create_all 创建）")
+        return
+
     added = 0
     for member in CashFlowCategory:
         val = member.value
@@ -444,9 +453,9 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
         with engine.begin() as conn:
             exists = conn.execute(
                 text(
-                    "SELECT 1 FROM pg_enum "
-                    "WHERE enumtypid = 'cashflowcategory'::regtype "
-                    "AND enumlabel = :label"
+                    "SELECT 1 FROM pg_enum e "
+                    "JOIN pg_type t ON e.enumtypid = t.oid "
+                    "WHERE t.typname = 'cashflowcategory' AND e.enumlabel = :label"
                 ),
                 {"label": val},
             ).scalar()
@@ -458,6 +467,90 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
 
     if added:
         logger.info("迁移：同步 cashflowcategory enum（共 %d 个值）", added)
+
+
+def add_project_finance_settlement_columns(engine: Engine) -> None:
+    """为 projects 表添加资金账本结算相关列 + 同步 financerecordactiontype enum.
+
+    新增列：
+    - finance_settlement_status: 结算状态（复用 settlementstatus enum 类型）
+    - finance_settled_date: 结算日期
+    - finance_settled_note: 结算说明
+
+    同时同步 PostgreSQL financerecordactiontype enum（新增 settle/unsettle 值）。
+
+    幂等：检查列是否存在，PostgreSQL enum 用 IF NOT EXISTS。
+    """
+    # 1. 添加 projects 表的 3 个新列
+    if not _column_exists(engine, "projects", "finance_settlement_status"):
+        with engine.begin() as conn:
+            if engine.dialect.name == "postgresql":
+                conn.execute(
+                    text(
+                        "ALTER TABLE projects "
+                        "ADD COLUMN finance_settlement_status settlementstatus "
+                        "NOT NULL DEFAULT 'unsettled'"
+                    )
+                )
+            else:
+                conn.execute(
+                    text(
+                        "ALTER TABLE projects "
+                        "ADD COLUMN finance_settlement_status VARCHAR "
+                        "NOT NULL DEFAULT 'unsettled'"
+                    )
+                )
+        logger.info("迁移：projects 表新增 finance_settlement_status 列")
+
+    if not _column_exists(engine, "projects", "finance_settled_date"):
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE projects ADD COLUMN finance_settled_date VARCHAR(10)")
+            )
+        logger.info("迁移：projects 表新增 finance_settled_date 列")
+
+    if not _column_exists(engine, "projects", "finance_settled_note"):
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE projects ADD COLUMN finance_settled_note VARCHAR(500)")
+            )
+        logger.info("迁移：projects 表新增 finance_settled_note 列")
+
+    # 2. 同步 PostgreSQL financeactiontype enum（新增 settle/unsettle）
+    #    SQLEnum(FinanceActionType) 不指定 name，PG type 名为枚举类名小写：financeactiontype
+    if engine.dialect.name == "postgresql":
+        from models.common import FinanceActionType  # noqa: PLC0415
+
+        # 先检查 enum type 是否存在（避免 ::regtype CAST 对不存在的类型报错）
+        with engine.connect() as conn:
+            type_exists = conn.execute(
+                text("SELECT 1 FROM pg_type WHERE typname = 'financeactiontype'")
+            ).scalar()
+        if not type_exists:
+            logger.info("迁移：financeactiontype enum type 不存在，跳过同步（将由 create_all 创建）")
+            return
+
+        added = 0
+        for member in FinanceActionType:
+            val = member.value
+            with engine.begin() as conn:
+                exists = conn.execute(
+                    text(
+                        "SELECT 1 FROM pg_enum e "
+                        "JOIN pg_type t ON e.enumtypid = t.oid "
+                        "WHERE t.typname = 'financeactiontype' AND e.enumlabel = :label"
+                    ),
+                    {"label": val},
+                ).scalar()
+                if not exists:
+                    conn.execute(
+                        text(
+                            f"ALTER TYPE financeactiontype ADD VALUE IF NOT EXISTS '{val}'"
+                        )
+                    )
+                    added += 1
+        if added:
+            logger.info("迁移：同步 financeactiontype enum（共 %d 个值）", added)
 
 
 def run_startup_migrations(engine: Engine) -> None:
@@ -477,6 +570,7 @@ def run_startup_migrations(engine: Engine) -> None:
         create_finance_record_logs_table(engine)
         add_finance_record_receipt_urls_column(engine)
         add_cashflow_category_enum_values(engine)
+        add_project_finance_settlement_columns(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise
