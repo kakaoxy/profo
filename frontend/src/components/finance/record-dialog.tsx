@@ -70,7 +70,7 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
       { stage: "在售", items: ["业主佣金"] },
     ],
     wholesale: [
-      { stage: "在售", items: ["房价款"] },
+      { stage: "已售", items: ["房价款"] },
     ],
   },
 };
