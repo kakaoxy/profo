@@ -271,6 +271,7 @@ export function AppSidebar({ user }: { user: User | null }) {
               const hasSubmenu = item.items && item.items.length > 0;
               const isActive =
                 pathname === item.url ||
+                pathname === item.collapsedUrl ||
                 item.items?.some((sub) => pathname.startsWith(sub.url));
 
               if (state === "collapsed") {
