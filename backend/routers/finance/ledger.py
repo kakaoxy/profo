@@ -25,6 +25,11 @@ from schemas.project import (
     LedgerRecordCreate,
     LedgerStatsResponse,
 )
+from schemas.project.finance import (
+    FinanceSettlementChangeRequest,
+    FinanceSettlementResponse,
+    FinanceUnsettleRequest,
+)
 from services import FinanceService
 from utils.common import RateLimits, limiter
 
@@ -172,6 +177,47 @@ def export_project_ledger(
             ),
         },
     )
+
+
+# ==================== 结算 / 反结算 ====================
+
+
+@router.post(
+    "/{project_id}/settle",
+    summary="结算项目资金账本",
+)
+@limiter.limit(RateLimits.INVESTMENT_SETTLE)
+def settle_project_finance(
+    request: Request,
+    project_id: Annotated[str, Path(description="项目ID")],
+    data: FinanceSettlementChangeRequest,
+    service: _FinanceServiceDep,
+    current_user: CurrentInternalUserDep,
+) -> FinanceSettlementResponse:
+    """结算：锁定该项目资金账本，禁止新增/删除记录.
+
+    速率限制：50次/小时.
+    """
+    return service.settle_finance(project_id, data, current_user.id)
+
+
+@router.post(
+    "/{project_id}/unsettle",
+    summary="反结算项目资金账本",
+)
+@limiter.limit(RateLimits.INVESTMENT_SETTLE)
+def unsettle_project_finance(
+    request: Request,
+    project_id: Annotated[str, Path(description="项目ID")],
+    data: FinanceUnsettleRequest,
+    service: _FinanceServiceDep,
+    current_user: CurrentInternalUserDep,
+) -> FinanceSettlementResponse:
+    """反结算：解锁资金账本，恢复可编辑.
+
+    速率限制：50次/小时.
+    """
+    return service.unsettle_finance(project_id, data, current_user.id)
 
 
 # ==================== 流水 CRUD ====================

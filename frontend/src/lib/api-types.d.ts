@@ -1442,6 +1442,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ledger/{project_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出项目资金账本为 zip
+         * @description 导出单项目流水为 zip（含流水 CSV + 票据图片）.
+         *
+         *     速率限制：10次/小时.
+         */
+        get: operations["export_project_ledger_api_v1_admin_ledger__project_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ledger/{project_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 结算项目资金账本
+         * @description 结算：锁定该项目资金账本，禁止新增/删除记录.
+         *
+         *     速率限制：50次/小时.
+         */
+        post: operations["settle_project_finance_api_v1_admin_ledger__project_id__settle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ledger/{project_id}/unsettle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 反结算项目资金账本
+         * @description 反结算：解锁资金账本，恢复可编辑.
+         *
+         *     速率限制：50次/小时.
+         */
+        post: operations["unsettle_project_finance_api_v1_admin_ledger__project_id__unsettle_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ledger/{record_id}": {
         parameters: {
             query?: never;
@@ -3233,7 +3299,7 @@ export interface components {
          * @description 资金账本操作日志类型枚举.
          * @enum {string}
          */
-        FinanceActionType: "create" | "delete";
+        FinanceActionType: "create" | "delete" | "settle" | "unsettle";
         /**
          * FinanceLogResponse
          * @description 资金账本操作日志响应.
@@ -3276,6 +3342,52 @@ export interface components {
              * @description 操作时间
              */
             created_at: string;
+        };
+        /**
+         * FinanceSettlementChangeRequest
+         * @description 资金账本结算请求（unsettled → settled）.
+         */
+        FinanceSettlementChangeRequest: {
+            /**
+             * Settled Date
+             * Format: date
+             * @description 结算日期
+             */
+            settled_date: string;
+            /**
+             * Settled Note
+             * @description 结算说明
+             */
+            settled_note?: string | null;
+        };
+        /**
+         * FinanceSettlementResponse
+         * @description 资金账本结算状态响应.
+         */
+        FinanceSettlementResponse: {
+            /** @description 结算状态 */
+            finance_settlement_status: components["schemas"]["SettlementStatus"];
+            /**
+             * Finance Settled Date
+             * @description 结算日期
+             */
+            finance_settled_date?: string | null;
+            /**
+             * Finance Settled Note
+             * @description 结算说明
+             */
+            finance_settled_note?: string | null;
+        };
+        /**
+         * FinanceUnsettleRequest
+         * @description 资金账本反结算请求（settled → unsettled）.
+         */
+        FinanceUnsettleRequest: {
+            /**
+             * Reason
+             * @description 反结算原因
+             */
+            reason: string;
         };
         /**
          * FloorStats
@@ -5713,6 +5825,21 @@ export interface components {
             } | null;
             /** @description 项目负责人 */
             project_manager?: components["schemas"]["UserBrief"] | null;
+            /**
+             * @description 资金账本结算状态
+             * @default unsettled
+             */
+            finance_settlement_status: components["schemas"]["SettlementStatus"];
+            /**
+             * Finance Settled Date
+             * @description 资金账本结算日期 YYYY-MM-DD
+             */
+            finance_settled_date?: string | null;
+            /**
+             * Finance Settled Note
+             * @description 资金账本结算说明
+             */
+            finance_settled_note?: string | null;
         };
         /**
          * ProjectStatsResponse
@@ -11107,6 +11234,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FinanceLogResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_project_ledger_api_v1_admin_ledger__project_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_project_finance_api_v1_admin_ledger__project_id__settle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinanceSettlementChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSettlementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsettle_project_finance_api_v1_admin_ledger__project_id__unsettle_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinanceUnsettleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceSettlementResponse"];
                 };
             };
             /** @description Validation Error */

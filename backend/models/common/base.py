@@ -204,6 +204,8 @@ class FinanceActionType(str, enum.Enum):
 
     CREATE = "create"
     DELETE = "delete"
+    SETTLE = "settle"
+    UNSETTLE = "unsettle"
 
 
 class BaseModel(Base):

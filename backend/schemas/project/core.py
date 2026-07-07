@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
-from models.common import BusinessForm, ProjectStatus, RenovationStage
+from models.common import BusinessForm, ProjectStatus, RenovationStage, SettlementStatus
 from schemas.project.contract import SigningMaterial
 from schemas.project.owner import OwnerInlineCreate, OwnerInlineUpdate, OwnerResponse
 from schemas.response import PaginatedResponse
@@ -273,6 +273,12 @@ class ProjectResponse(BaseModel):
     )
 
     project_manager: UserBrief | None = Field(None, description="项目负责人")
+
+    finance_settlement_status: SettlementStatus = Field(
+        default=SettlementStatus.UNSETTLED, description="资金账本结算状态"
+    )
+    finance_settled_date: str | None = Field(None, description="资金账本结算日期 YYYY-MM-DD")
+    finance_settled_note: str | None = Field(None, description="资金账本结算说明")
 
     model_config = ConfigDict(from_attributes=True)
 

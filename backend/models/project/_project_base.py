@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Index, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel, BusinessForm, ProjectStatus, RenovationStage
+from models.common.base import BaseModel, BusinessForm, ProjectStatus, RenovationStage, SettlementStatus
 
 
 class Project(BaseModel):
@@ -50,6 +50,19 @@ class Project(BaseModel):
     )
     commission_end_date: Mapped[str | None] = mapped_column(
         String(10), nullable=True, default=None, comment="委托结束日期 YYYY-MM-DD"
+    )
+
+    finance_settlement_status: Mapped[SettlementStatus] = mapped_column(
+        SQLEnum(SettlementStatus, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=SettlementStatus.UNSETTLED,
+        comment="资金账本结算状态",
+    )
+    finance_settled_date: Mapped[str | None] = mapped_column(
+        String(10), nullable=True, default=None, comment="资金账本结算日期 YYYY-MM-DD"
+    )
+    finance_settled_note: Mapped[str | None] = mapped_column(
+        String(500), nullable=True, default=None, comment="资金账本结算说明"
     )
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")

@@ -95,6 +95,13 @@ class ProjectResponseBuilder:
             "business_form": project.business_form,
             "commission_start_date": project.commission_start_date,
             "commission_end_date": project.commission_end_date,
+            "finance_settlement_status": (
+                project.finance_settlement_status.value
+                if project.finance_settlement_status
+                else "unsettled"
+            ),
+            "finance_settled_date": project.finance_settled_date,
+            "finance_settled_note": project.finance_settled_note,
             "renovation_stage": project.renovation_stage,
             "is_deleted": project.is_deleted,
             "created_at": project.created_at.isoformat() if project.created_at else None,
