@@ -51,7 +51,7 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
     ],
     agent: [
       { stage: "签约", items: ["履约保证金"] },
-      { stage: "在售", items: ["代付佣金", "税费及佣金差额"] },
+      { stage: "已售", items: ["代付佣金", "税费及佣金差额"] },
     ],
     wholesale: [
       { stage: "签约", items: ["购房款-定金", "购房款-首付", "购房款-税费", "名额费", "持有月供"] },
