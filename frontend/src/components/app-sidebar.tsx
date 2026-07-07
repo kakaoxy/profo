@@ -292,7 +292,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <HoverCardContent
                           side="right"
                           align="start"
-                          className="min-w-52 p-1.5 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-xl z-100"
+                          className="min-w-52 p-1.5 bg-card/95 backdrop-blur-xl border border-border shadow-xl rounded-xl z-50"
                         >
                           <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                             {item.title}
