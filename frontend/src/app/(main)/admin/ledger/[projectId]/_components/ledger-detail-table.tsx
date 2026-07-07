@@ -214,9 +214,9 @@ export function LedgerDetailTable({
             </SelectContent>
           </Select>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-9 gap-1.5 rounded-full"
+            className="h-9 gap-1.5 rounded-full text-ink hover:text-rust hover:bg-transparent"
             onClick={handleExport}
             disabled={isExporting}
           >
@@ -229,7 +229,7 @@ export function LedgerDetailTable({
           </Button>
           <Button
             size="sm"
-            className="h-9 gap-1.5 rounded-full"
+            className="h-9 gap-1.5 rounded-full bg-ink text-pure-white hover:bg-ink/90"
             onClick={() => setIsDialogOpen(true)}
           >
             <Plus className="h-4 w-4" />

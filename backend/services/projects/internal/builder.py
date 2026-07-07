@@ -87,6 +87,7 @@ class ProjectResponseBuilder:
             "area": str(project.area) if project.area else None,
             "layout": project.layout,
             "orientation": project.orientation,
+            "floor_info": project.floor_info,
             "electricity_account": project.electricity_account,
             "water_account": project.water_account,
             "gas_account": project.gas_account,
