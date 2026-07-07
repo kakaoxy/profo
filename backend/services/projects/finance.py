@@ -394,6 +394,15 @@ class FinanceService:
             CashFlowCategory.HOLDING_COST_MONTHLY,
             CashFlowCategory.OTHER_TAX,
             CashFlowCategory.PROJECT_RESERVE,
+            CashFlowCategory.MARKETING_ADVANCE,
+            CashFlowCategory.FINANCE_TAX_COST,
+            CashFlowCategory.PROJECT_INCENTIVE,
+            CashFlowCategory.PAID_COMMISSION,
+            CashFlowCategory.TAX_COMMISSION_DIFF,
+            CashFlowCategory.PURCHASE_DEPOSIT,
+            CashFlowCategory.PURCHASE_DOWNPAYMENT,
+            CashFlowCategory.SELLING_COMMISSION,
+            CashFlowCategory.SELLING_TAX,
         }
 
         income_categories = {
@@ -406,6 +415,8 @@ class FinanceService:
             CashFlowCategory.VALUE_ADDED_SERVICE,
             CashFlowCategory.PROJECT_INVESTMENT,
             CashFlowCategory.RESERVE_RECOVERY,
+            CashFlowCategory.MARKETING_PROMOTION_DEDUCTION,
+            CashFlowCategory.OWNER_COMMISSION,
         }
 
         if flow_type == CashFlowType.EXPENSE and category not in expense_categories:

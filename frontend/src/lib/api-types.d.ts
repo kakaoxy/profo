@@ -2761,7 +2761,7 @@ export interface components {
          * @description 现金流分类枚举.
          * @enum {string}
          */
-        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "渠道佣金" | "工程装修费" | "营销推广费" | "运营服务费" | "跟投本金退还" | "投资人利润分配" | "购房本金" | "房屋税费" | "名额费" | "持有成本-月供" | "其他税费" | "项目备用金" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款" | "保证金回收" | "增值服务费" | "项目跟投款" | "备用金回收";
+        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "渠道佣金" | "工程装修费" | "营销推广费" | "运营服务费" | "跟投本金退还" | "投资人利润分配" | "购房本金" | "房屋税费" | "名额费" | "持有成本-月供" | "其他税费" | "项目备用金" | "营销费垫付" | "财税成本" | "项目激励" | "代付佣金" | "税费及佣金差额" | "购房款-定金" | "购房款-首付" | "卖房佣金" | "卖房税费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款" | "保证金回收" | "增值服务费" | "项目跟投款" | "备用金回收" | "营销推广费抵扣" | "业主佣金";
         /**
          * CashFlowRecordCreate
          * @description 创建现金流.
@@ -2780,8 +2780,11 @@ export interface components {
             description?: string | null;
             /** Related Stage */
             related_stage?: string | null;
-            /** Counterparty */
-            counterparty?: string | null;
+            /**
+             * Counterparty
+             * @description 交易方(必填)
+             */
+            counterparty: string;
             /** Receipt Urls */
             receipt_urls?: string[] | null;
         };
@@ -4869,9 +4872,9 @@ export interface components {
             related_stage?: string | null;
             /**
              * Counterparty
-             * @description 交易方
+             * @description 交易方(必填)
              */
-            counterparty?: string | null;
+            counterparty: string;
             /**
              * Receipt Urls
              * @description 票据图片URL列表

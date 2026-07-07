@@ -28,12 +28,14 @@ interface LedgerTableProps {
   projectId: string;
   data: CashFlowRecord[];
   onRefresh?: () => void;
+  businessForm?: "agent" | "wholesale" | null;
 }
 
 export function LedgerTable({
   projectId,
   data,
   onRefresh,
+  businessForm,
 }: LedgerTableProps) {
   const [filter, setFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -235,6 +237,7 @@ export function LedgerTable({
         onSuccess={() => {
           if (onRefresh) onRefresh();
         }}
+        businessForm={businessForm}
       />
     </div>
   );

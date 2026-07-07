@@ -1,11 +1,5 @@
 // src/app/(main)/projects/[projectId]/cashflow/types.ts
 
-// 资金账本统一分类常量（与共享弹窗一致，从 @/components/finance/record-dialog 重新导出）
-export {
-  LEDGER_EXPENSE_CATEGORIES,
-  LEDGER_INCOME_CATEGORIES,
-} from "@/components/finance/record-dialog";
-
 // ==========================================
 // 1. 基础类型与常量
 // ==========================================

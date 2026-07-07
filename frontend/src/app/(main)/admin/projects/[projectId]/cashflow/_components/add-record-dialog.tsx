@@ -7,6 +7,7 @@ interface AddRecordDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  businessForm?: "agent" | "wholesale" | null;
 }
 
 /**
@@ -20,6 +21,7 @@ export function AddRecordDialog({
   isOpen,
   onClose,
   onSuccess,
+  businessForm,
 }: AddRecordDialogProps) {
   return (
     <RecordDialog
@@ -27,6 +29,7 @@ export function AddRecordDialog({
       isOpen={isOpen}
       onClose={onClose}
       onSuccess={onSuccess}
+      businessForm={businessForm}
     />
   );
 }

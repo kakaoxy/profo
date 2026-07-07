@@ -4,11 +4,16 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
+import { fetchClient } from "@/lib/api-server";
+import { extractApiData } from "@/lib/api-helpers";
+import type { components } from "@/lib/api-types";
 import { HeaderStats } from "./_components/header-stats";
 import { TrendChart } from "./_components/trend-chart";
 import { LedgerTable } from "./_components/ledger-table";
 import { getProjectCashFlowAction } from "./actions";
 import { mapToCashFlowRecord, mapToCashFlowStats } from "./types";
+
+type ProjectResponse = components["schemas"]["ProjectResponse"];
 
 interface PageProps {
   params: Promise<{ projectId: string }>;
@@ -17,8 +22,16 @@ interface PageProps {
 export default async function CashFlowPage({ params }: PageProps) {
   const { projectId } = await params;
 
-  // 1. 调用 Server Action 获取真实数据
-  const apiData = await getProjectCashFlowAction(projectId);
+  // 1. 并行获取流水数据与项目详情（项目详情用于 business_form）
+  const [apiData, projectRes] = await Promise.all([
+    getProjectCashFlowAction(projectId),
+    (async () => {
+      const client = await fetchClient();
+      return client.GET("/api/v1/projects/{project_id}", {
+        params: { path: { project_id: projectId } },
+      });
+    })(),
+  ]);
 
   if (!apiData) {
     return notFound();
@@ -26,6 +39,11 @@ export default async function CashFlowPage({ params }: PageProps) {
 
   const records = apiData.records.map((r) => mapToCashFlowRecord(r, projectId));
   const stats = mapToCashFlowStats(apiData.summary);
+
+  const projectData = projectRes.error
+    ? null
+    : (extractApiData<ProjectResponse>(projectRes.data) ?? null);
+  const businessForm = projectData?.business_form ?? null;
 
   return (
     <div className="min-h-screen bg-muted/50 p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1200px] mx-auto">
@@ -61,6 +79,7 @@ export default async function CashFlowPage({ params }: PageProps) {
           <LedgerTable
             projectId={projectId}
             data={records}
+            businessForm={businessForm}
           />
         </Suspense>
       </section>
