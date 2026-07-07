@@ -61,6 +61,7 @@ export default async function LedgerDetailPage({ params }: PageProps) {
           projectId={projectId}
           projectCode={projectCode}
           projectName={projectName}
+          businessForm={projectData?.business_form ?? null}
         />
 
         {/* 汇总卡片 */}

@@ -17,6 +17,7 @@
 - add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
 - create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
 - add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填（多票据支持）
+- add_cashflow_category_enum_values: 为 PostgreSQL cashflowcategory enum 类型新增 11 个分类值（记账弹窗分类分组优化）
 
 """
 
@@ -418,6 +419,45 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
         logger.info("迁移：回填 %d 条 receipt_urls 数据", updated)
 
 
+def add_cashflow_category_enum_values(engine: Engine) -> None:
+    """为 PostgreSQL cashflowcategory enum 类型新增分类值.
+
+    生产环境使用 PostgreSQL，SQLEnum 创建原生 enum 类型 `cashflowcategory`。
+    新增枚举值需 ALTER TYPE ... ADD VALUE IF NOT EXISTS（PG 9.3+ 支持 IF NOT EXISTS）。
+
+    - SQLite 跳过（测试库随枚举类更新自动重建 CHECK 约束）
+    - 幂等：IF NOT EXISTS 保证重复执行不报错
+    """
+    if engine.dialect.name != "postgresql":
+        return
+
+    new_values = [
+        "营销费垫付",
+        "财税成本",
+        "项目激励",
+        "代付佣金",
+        "税费及佣金差额",
+        "购房款-定金",
+        "购房款-首付",
+        "卖房佣金",
+        "卖房税费",
+        "营销推广费抵扣",
+        "业主佣金",
+    ]
+
+    added = 0
+    for val in new_values:
+        # PG 12+ 支持事务内 ALTER TYPE ADD VALUE；IF NOT EXISTS 保证幂等
+        with engine.begin() as conn:
+            conn.execute(
+                text(f"ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '{val}'")
+            )
+        added += 1
+
+    if added:
+        logger.info("迁移：为 cashflowcategory enum 新增 %d 个分类值", added)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）。"""
     try:
@@ -434,6 +474,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_finance_record_counterparty_columns(engine)
         create_finance_record_logs_table(engine)
         add_finance_record_receipt_urls_column(engine)
+        add_cashflow_category_enum_values(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

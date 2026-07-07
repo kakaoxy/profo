@@ -12,12 +12,14 @@ interface LedgerDetailHeaderProps {
   projectId: string;
   projectCode: string | null;
   projectName: string | null;
+  businessForm?: "agent" | "wholesale" | null;
 }
 
 export function LedgerDetailHeader({
   projectId,
   projectCode,
   projectName,
+  businessForm,
 }: LedgerDetailHeaderProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -70,6 +72,7 @@ export function LedgerDetailHeader({
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onSuccess={() => router.refresh()}
+        businessForm={businessForm}
       />
     </div>
   );

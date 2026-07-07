@@ -31,45 +31,80 @@ import { createRecord } from "@/app/(main)/admin/ledger/actions";
 import type { components } from "@/lib/api-types";
 
 type TransactionType = "income" | "expense";
+type BusinessType = "general" | "agent" | "wholesale";
+type StageGroup = { stage: string; items: string[] };
 type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
 
 // ==========================================
-// 资金账本统一分类常量
-// 值与后端 CashFlowCategory 枚举的 .value 一致（中文字符串）
+// 资金账本分类数据（三级结构：收支 → 业务类型 → 阶段 → 分类）
+// 与 docs/jizhang.html 的 DATA 结构一致
 // ==========================================
 
-/** 支出分类（14 项） */
-export const LEDGER_EXPENSE_CATEGORIES: readonly string[] = [
-  "履约保证金",
-  "渠道佣金",
-  "工程装修费",
-  "营销推广费",
-  "运营服务费",
-  "跟投本金退还",
-  "投资人利润分配",
-  "购房本金",
-  "房屋税费",
-  "名额费",
-  "持有成本-月供",
-  "其他税费",
-  "项目备用金",
-  "其他支出",
-] as const;
+const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGroup[]>> = {
+  expense: {
+    general: [
+      { stage: "签约", items: ["渠道佣金"] },
+      { stage: "装修", items: ["工程装修费"] },
+      { stage: "在售", items: ["营销费垫付", "营销推广费", "运营费", "财税成本", "项目激励"] },
+      { stage: "已售", items: ["跟投本金退还", "投资人利润分配"] },
+      { stage: "其他", items: ["项目备用金", "其他支出"] },
+    ],
+    agent: [
+      { stage: "签约", items: ["履约保证金"] },
+      { stage: "在售", items: ["代付佣金", "税费及佣金差额"] },
+    ],
+    wholesale: [
+      { stage: "签约", items: ["购房款-定金", "购房款-首付", "购房款-税费", "名额费", "持有月供"] },
+      { stage: "在售", items: ["卖房佣金", "卖房税费"] },
+    ],
+  },
+  income: {
+    general: [
+      { stage: "在售", items: ["营销推广费抵扣"] },
+      { stage: "已售", items: ["项目跟投款"] },
+      { stage: "备用金", items: ["备用金回收"] },
+      { stage: "其他", items: ["其他费用"] },
+    ],
+    agent: [
+      { stage: "已售", items: ["保证金回收", "增值服务费"] },
+      { stage: "在售", items: ["业主佣金"] },
+    ],
+    wholesale: [
+      { stage: "在售", items: ["房价款"] },
+    ],
+  },
+};
 
-/** 收入分类（5 项） */
-export const LEDGER_INCOME_CATEGORIES: readonly string[] = [
-  "保证金回收",
-  "增值服务费",
-  "项目跟投款",
-  "备用金回收",
-  "其他收入",
-] as const;
+/**
+ * 前端显示名 → 后端枚举值映射表。
+ * 仅列出名称不一致的项；名称一致的无需映射。
+ */
+const CATEGORY_DISPLAY_TO_ENUM: Record<string, string> = {
+  "持有月供": "持有成本-月供",
+  "购房款-税费": "房屋税费",
+  "其他费用": "其他收入",
+  "房价款": "售房款",
+};
+
+const BUSINESS_TYPE_OPTIONS: { value: BusinessType; label: string }[] = [
+  { value: "general", label: "通用" },
+  { value: "agent", label: "代理" },
+  { value: "wholesale", label: "收购" },
+];
+
+/** 根据 businessForm 推断默认业务类型 */
+function getDefaultBusinessType(businessForm?: "agent" | "wholesale" | null): BusinessType {
+  if (businessForm === "agent") return "agent";
+  if (businessForm === "wholesale") return "wholesale";
+  return "general";
+}
 
 interface RecordDialogProps {
   projectId: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  businessForm?: "agent" | "wholesale" | null;
 }
 
 export function RecordDialog({
@@ -77,11 +112,13 @@ export function RecordDialog({
   isOpen,
   onClose,
   onSuccess,
+  businessForm,
 }: RecordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 表单状态
   const [type, setType] = useState<TransactionType>("expense");
+  const [businessType, setBusinessType] = useState<BusinessType>("general");
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -92,15 +129,11 @@ export function RecordDialog({
   // 用于强制重置 ImageUpload 内部状态（每次打开弹窗递增）
   const [uploadKey, setUploadKey] = useState(0);
 
-  // 切换收支类型时，重置分类
-  useEffect(() => {
-    setCategory("");
-  }, [type]);
-
   // 打开弹窗时重置所有状态
   useEffect(() => {
     if (isOpen) {
       setType("expense");
+      setBusinessType(getDefaultBusinessType(businessForm));
       setDate(new Date());
       setAmount("");
       setCategory("");
@@ -109,7 +142,17 @@ export function RecordDialog({
       setNotes("");
       setUploadKey((k) => k + 1);
     }
-  }, [isOpen]);
+  }, [isOpen, businessForm]);
+
+  // 切换收支类型时，重置分类选择
+  useEffect(() => {
+    setCategory("");
+  }, [type]);
+
+  // businessForm 变化时更新默认业务类型（弹窗关闭时也要同步）
+  useEffect(() => {
+    setBusinessType(getDefaultBusinessType(businessForm));
+  }, [businessForm]);
 
   const handleReceiptChange = useCallback((items: ImageItem[]) => {
     const urls = items
@@ -126,10 +169,12 @@ export function RecordDialog({
 
     setIsSubmitting(true);
     try {
+      // 提交时将前端显示名映射为后端枚举值
+      const enumCategory = CATEGORY_DISPLAY_TO_ENUM[category] ?? category;
       const payload: LedgerRecordCreate = {
         project_id: projectId,
         type,
-        category: category as LedgerRecordCreate["category"],
+        category: enumCategory as LedgerRecordCreate["category"],
         amount: Number(amount),
         date: format(date, "yyyy-MM-dd"),
         counterparty: counterparty.trim(),
@@ -153,8 +198,7 @@ export function RecordDialog({
     }
   };
 
-  const categoryOptions =
-    type === "income" ? LEDGER_INCOME_CATEGORIES : LEDGER_EXPENSE_CATEGORIES;
+  const stageGroups = LEDGER_CATEGORY_DATA[type][businessType] ?? [];
 
   return (
     <Dialog
@@ -191,8 +235,23 @@ export function RecordDialog({
             </TabsList>
           </Tabs>
 
+          {/* 2. 交易方（必填，移至顶部） */}
+          <div className="grid gap-2">
+            <Label className="text-xs text-muted-foreground">
+              交易方 <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              value={counterparty}
+              onChange={(e) => setCounterparty(e.target.value)}
+              placeholder="例如：张三/某某公司…"
+              name="counterparty"
+              autoComplete="off"
+              required
+            />
+          </div>
+
+          {/* 3. 金额 + 发生日期 */}
           <div className="grid grid-cols-2 gap-4">
-            {/* 2. 金额输入 */}
             <div className="grid gap-2">
               <Label className="text-xs text-muted-foreground">金额 (元)</Label>
               <Input
@@ -212,7 +271,6 @@ export function RecordDialog({
               />
             </div>
 
-            {/* 3. 日期选择 */}
             <div className="grid gap-2">
               <Label className="text-xs text-muted-foreground">发生日期</Label>
               <Popover>
@@ -240,50 +298,83 @@ export function RecordDialog({
             </div>
           </div>
 
-          {/* 4. 分类选择 (Tag 模式) */}
+          {/* 4. 业务类型（通用/代理/收购，胶囊按钮组） */}
           <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">分类</Label>
-            <div className="flex flex-wrap gap-2">
-              {categoryOptions.map((c) => {
-                const isSelected = category === c;
+            <Label className="text-xs text-muted-foreground">业务类型</Label>
+            <div className="flex gap-2">
+              {BUSINESS_TYPE_OPTIONS.map((opt) => {
+                const isSelected = businessType === opt.value;
                 return (
                   <button
-                    key={c}
+                    key={opt.value}
                     type="button"
-                    onClick={() => setCategory(c)}
+                    onClick={() => {
+                      setBusinessType(opt.value);
+                      setCategory("");
+                    }}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200 flex items-center gap-1.5",
+                      "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
                       !isSelected &&
                         "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
                       isSelected &&
                         type === "expense" &&
-                        "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
+                        "bg-success border-emerald-600 text-white shadow-sm",
                       isSelected &&
                         type === "income" &&
-                        "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1",
+                        "bg-error border-red-600 text-white shadow-sm",
                     )}
                   >
-                    {isSelected && <Check className="h-3 w-3" />}
-                    {c}
+                    {opt.label}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 5. 交易方（必填） */}
+          {/* 5. 分类（按阶段分组渲染） */}
           <div className="grid gap-2">
             <Label className="text-xs text-muted-foreground">
-              交易方 <span className="text-destructive">*</span>
+              分类 <span className="text-destructive">*</span>
             </Label>
-            <Input
-              value={counterparty}
-              onChange={(e) => setCounterparty(e.target.value)}
-              placeholder="例如：张三/某某公司…"
-              name="counterparty"
-              autoComplete="off"
-              required
-            />
+            <div className="grid gap-3">
+              {stageGroups.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">该业务类型下暂无分类配置</p>
+              ) : (
+                stageGroups.map((group) => (
+                  <div key={group.stage} className="grid gap-1.5">
+                    <span className="text-[11px] text-muted-foreground/70 font-medium">
+                      {group.stage}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.items.map((c) => {
+                        const isSelected = category === c;
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setCategory(c)}
+                            className={cn(
+                              "px-2.5 py-1 rounded-md text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200 flex items-center gap-1",
+                              !isSelected &&
+                                "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
+                              isSelected &&
+                                type === "expense" &&
+                                "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
+                              isSelected &&
+                                type === "income" &&
+                                "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1",
+                            )}
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                            {c}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* 6. 票据上传（支持多张） */}
