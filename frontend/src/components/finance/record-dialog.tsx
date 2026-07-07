@@ -45,8 +45,8 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
     general: [
       { stage: "签约", items: ["渠道佣金"] },
       { stage: "装修", items: ["工程装修费"] },
-      { stage: "在售", items: ["营销费垫付", "营销推广费", "运营费", "财税成本", "项目激励"] },
-      { stage: "已售", items: ["跟投本金退还", "投资人利润分配"] },
+      { stage: "在售", items: ["营销费垫付"] },
+      { stage: "已售", items: ["跟投本金退还", "投资人利润分配", "营销推广费", "运营费", "财税成本", "项目激励"] },
       { stage: "其他", items: ["项目备用金", "其他支出"] },
     ],
     agent: [
@@ -55,7 +55,7 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
     ],
     wholesale: [
       { stage: "签约", items: ["购房款-定金", "购房款-首付", "购房款-税费", "名额费", "持有月供"] },
-      { stage: "在售", items: ["卖房佣金", "卖房税费"] },
+      { stage: "已售", items: ["卖房佣金", "卖房税费"] },
     ],
   },
   income: {
