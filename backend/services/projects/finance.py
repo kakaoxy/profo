@@ -151,7 +151,7 @@ class FinanceService:
         logger.info("Deleting cashflow record %s for project %s", record_id, project_id)
 
         # 编辑锁：已结算项目不可删除记录（与 delete_record_by_id 一致，防止 cashflow 路由绕过结算锁）
-        project = self.db.query(Project).filter(Project.id == project_id).first()
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if project:
             self._assert_finance_editable(project)
 
