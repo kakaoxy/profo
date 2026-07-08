@@ -34,12 +34,21 @@ from models import (
     ProjectSale,
     User,
 )
-from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType, SettlementStatus
+from models.common import (
+    BusinessForm,
+    CashFlowCategory,
+    CashFlowType,
+    FinanceActionType,
+    ProjectStatus,
+    SettlementStatus,
+)
 from schemas.project import FinanceLogResponse
 from schemas.project.finance import (
+    CashFlowRecordCreate,
     FinanceSettlementChangeRequest,
     FinanceSettlementResponse,
     FinanceUnsettleRequest,
+    LedgerRecordCreate,
     LedgerStatisticsCommission,
     LedgerStatisticsDeposit,
     LedgerStatisticsInvestment,
@@ -70,7 +79,7 @@ class FinanceService:
         """
         self.db = db
 
-    def create_record(self, project_id: str, record_data: Any, operator_id: str) -> FinanceRecord:  # noqa: ANN401
+    def create_record(self, project_id: str, record_data: LedgerRecordCreate, operator_id: str) -> FinanceRecord:
         """创建现金流记录."""
         logger.info("Creating cashflow record for project %s", project_id)
 
@@ -137,15 +146,15 @@ class FinanceService:
         )
         self.db.add(log)
 
-        self.db.commit()
-        self.db.refresh(record)
-
-        # 创建成功后，触发财务数据同步计算
+        # flush 让 sync 聚合查询能看到新增记录；sync 失败则整体回滚（Fail Loud）
+        self.db.flush()
         try:
-            self.sync_financials(project_id)
-            logger.info("Project financials synced for project %s", project_id)
+            self._sync_financial_cache(project_id)
         except Exception:
             logger.exception("Failed to sync project financials")
+            raise
+        self.db.commit()
+        self.db.refresh(record)
 
         logger.info("Cashflow record created successfully: %s", record.id)
         return record
@@ -195,14 +204,14 @@ class FinanceService:
 
         record.is_deleted = True
         record.updated_at = datetime.now(timezone.utc)
-        self.db.commit()
-
-        # 删除成功后，触发财务数据同步计算
+        # flush 让 sync 聚合查询排除已软删记录；sync 失败则整体回滚（Fail Loud）
+        self.db.flush()
         try:
-            self.sync_financials(project_id)
-            logger.info("Project financials synced for project %s", project_id)
+            self._sync_financial_cache(project_id)
         except Exception:
             logger.exception("Failed to sync project financials")
+            raise
+        self.db.commit()
 
         logger.info("Cashflow record deleted successfully: %s", record_id)
 
@@ -239,13 +248,13 @@ class FinanceService:
                 self.db.query(
                     func.sum(
                         case(
-                            (FinanceRecord.type == "income", FinanceRecord.amount),
+                            (FinanceRecord.type == CashFlowType.INCOME.value, FinanceRecord.amount),
                             else_=0,
                         ),
                     ).label("total_income"),
                     func.sum(
                         case(
-                            (FinanceRecord.type == "expense", FinanceRecord.amount),
+                            (FinanceRecord.type == CashFlowType.EXPENSE.value, FinanceRecord.amount),
                             else_=0,
                         ),
                     ).label("total_expense"),
@@ -268,7 +277,7 @@ class FinanceService:
 
             if start_date:
                 end_date = datetime.now(timezone.utc)
-                if project.status == "sold" and sale and sale.sold_date:
+                if project.status == ProjectStatus.SOLD.value and sale and sale.sold_date:
                     end_date = sale.sold_date
 
                 delta = end_date.date() - start_date.date()
@@ -295,7 +304,20 @@ class FinanceService:
             raise ServiceException("计算现金流汇总失败") from e
 
     def sync_financials(self, project_id: str) -> None:
-        """同步计算项目的财务数据，并更新到 Project 表的缓存字段中."""
+        """同步计算项目的财务数据，并更新到 Project 表的缓存字段中（独立事务）.
+
+        供 facade.sync_project_financials 等外部调用方使用，自带 commit。
+        create_record / delete_record / delete_record_by_id 内部应调用
+        _sync_financial_cache 与主操作同事务，避免假成功（Fail Loud）。
+        """
+        self._sync_financial_cache(project_id)
+        self.db.commit()
+
+    def _sync_financial_cache(self, project_id: str) -> None:
+        """聚合流水计算缓存字段并写入 session（不 commit，由调用方负责事务）.
+
+        失败时抛出异常，调用方未 commit 则整体回滚。
+        """
         # 1. 确认项目存在
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
@@ -306,7 +328,7 @@ class FinanceService:
             self.db.query(func.sum(FinanceRecord.amount))
             .filter(
                 FinanceRecord.project_id == project_id,
-                FinanceRecord.type == "income",
+                FinanceRecord.type == CashFlowType.INCOME.value,
                 FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
@@ -318,7 +340,7 @@ class FinanceService:
             self.db.query(func.sum(FinanceRecord.amount))
             .filter(
                 FinanceRecord.project_id == project_id,
-                FinanceRecord.type == "expense",
+                FinanceRecord.type == CashFlowType.EXPENSE.value,
                 FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
@@ -340,7 +362,6 @@ class FinanceService:
         project.roi = roi
 
         self.db.add(project)
-        self.db.commit()
 
     def get_report(self, project_id: str) -> dict[str, Any]:
         """获取项目财务报告."""
@@ -371,7 +392,7 @@ class FinanceService:
             self.db.query(func.sum(FinanceRecord.amount))
             .filter(
                 FinanceRecord.project_id == project_id,
-                FinanceRecord.type == "income",
+                FinanceRecord.type == CashFlowType.INCOME.value,
                 FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
@@ -382,7 +403,7 @@ class FinanceService:
             self.db.query(func.sum(FinanceRecord.amount))
             .filter(
                 FinanceRecord.project_id == project_id,
-                FinanceRecord.type == "expense",
+                FinanceRecord.type == CashFlowType.EXPENSE.value,
                 FinanceRecord.is_deleted.is_(False),
             )
             .scalar()
@@ -541,12 +562,7 @@ class FinanceService:
 
         total: int = query.count()
         offset = (page - 1) * page_size
-        rows = (
-            query.order_by(Project.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-            .all()
-        )
+        rows = query.order_by(Project.created_at.desc()).offset(offset).limit(page_size).all()
 
         items: list[dict[str, Any]] = []
         for row in rows:
@@ -572,10 +588,7 @@ class FinanceService:
 
     def get_overall_stats(self) -> dict[str, Any]:
         """资金账本：全局汇总（有流水记录的项目数、总收入、总支出、净现金流、记录数）."""
-        base = (
-            self.db.query(FinanceRecord)
-            .filter(FinanceRecord.is_deleted.is_(False))
-        )
+        base = self.db.query(FinanceRecord).filter(FinanceRecord.is_deleted.is_(False))
 
         total_records: int = base.count()
 
@@ -625,8 +638,6 @@ class FinanceService:
 
         列：项目编号、小区、地址、项目状态、总收入、总支出、净现金流、ROI(%)、记录数
         """
-        import io  # noqa: PLC0415
-
         from openpyxl import Workbook  # noqa: PLC0415
 
         items, _ = self.list_projects_with_stats(
@@ -692,20 +703,10 @@ class FinanceService:
         records = self.get_records(project_id)
 
         # 查询项目编号用于文件名
-        project = (
-            self.db.query(Project)
-            .filter(Project.id == project_id, Project.is_deleted.is_(False))
-            .first()
-        )
-        contract = (
-            self.db.query(ProjectContract)
-            .filter(ProjectContract.project_id == project_id)
-            .first()
-        )
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
+        contract = self.db.query(ProjectContract).filter(ProjectContract.project_id == project_id).first()
         project_code = (
-            (contract.contract_no if contract else None)
-            or (project.name if project else None)
-            or project_id[:8]
+            (contract.contract_no if contract else None) or (project.name if project else None) or project_id[:8]
         )
 
         today = datetime.now().strftime("%Y%m%d")
@@ -733,11 +734,7 @@ class FinanceService:
 
             receipt_names: list[str] = []
             for url in rec.receipt_urls or []:
-                filename = (
-                    url.split("/static/uploads/")[-1]
-                    if "/static/uploads/" in url
-                    else url.lstrip("/")
-                )
+                filename = url.split("/static/uploads/")[-1] if "/static/uploads/" in url else url.lstrip("/")
                 receipt_names.append(filename)
 
                 if filename in seen_filenames:
@@ -758,9 +755,7 @@ class FinanceService:
                 else:
                     logger.warning("票据文件不存在: %s", file_path)
 
-            writer.writerow(
-                [date_str, form_str, counterparty, category, amount, ";".join(receipt_names), remark]
-            )
+            writer.writerow([date_str, form_str, counterparty, category, amount, ";".join(receipt_names), remark])
 
         # 构建 zip
         zip_buffer = io.BytesIO()
@@ -784,34 +779,18 @@ class FinanceService:
         单次查询按 (type, category) 分组聚合 FinanceRecord，避免 N+1.
         """
         # 1. 获取项目（404 if not found or soft-deleted）
-        project = (
-            self.db.query(Project)
-            .filter(Project.id == project_id, Project.is_deleted.is_(False))
-            .first()
-        )
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             raise ResourceNotFoundError("项目不存在")
 
         # 2. 获取合同（planned_handover_date = 交房时间）
-        contract = (
-            self.db.query(ProjectContract)
-            .filter(ProjectContract.project_id == project_id)
-            .first()
-        )
+        contract = self.db.query(ProjectContract).filter(ProjectContract.project_id == project_id).first()
 
         # 3. 获取销售（sold_date = 成交时间）
-        sale = (
-            self.db.query(ProjectSale)
-            .filter(ProjectSale.project_id == project_id)
-            .first()
-        )
+        sale = self.db.query(ProjectSale).filter(ProjectSale.project_id == project_id).first()
 
         # 4. 获取装修信息
-        renovation = (
-            self.db.query(ProjectRenovation)
-            .filter(ProjectRenovation.project_id == project_id)
-            .first()
-        )
+        renovation = self.db.query(ProjectRenovation).filter(ProjectRenovation.project_id == project_id).first()
 
         # 5. 获取投资 + 顶级投资方（parent_id is null）
         investment = (
@@ -866,9 +845,7 @@ class FinanceService:
             .group_by(FinanceRecord.counterparty)
             .all()
         )
-        paid_map: dict[str | None, Decimal] = {
-            row.counterparty: row.paid or Decimal(0) for row in paid_rows
-        }
+        paid_map: dict[str | None, Decimal] = {row.counterparty: row.paid or Decimal(0) for row in paid_rows}
 
         # 8. 保证金最近支付/收款时间
         bond_pay_date = (
@@ -896,11 +873,7 @@ class FinanceService:
 
         # --- project_base ---
         today = datetime.now(timezone.utc).date()
-        planned_date = (
-            contract.planned_handover_date.date()
-            if contract and contract.planned_handover_date
-            else None
-        )
+        planned_date = contract.planned_handover_date.date() if contract and contract.planned_handover_date else None
         sold_date = sale.sold_date.date() if sale and sale.sold_date else None
 
         if planned_date is None:
@@ -938,11 +911,7 @@ class FinanceService:
             )
 
         total_unpaid = total_invest_amount - total_paid_amount
-        pay_progress = (
-            float((total_paid_amount / total_invest_amount) * 100)
-            if total_invest_amount > 0
-            else 0.0
-        )
+        pay_progress = float((total_paid_amount / total_invest_amount) * 100) if total_invest_amount > 0 else 0.0
         investment_info = LedgerStatisticsInvestment(
             investors=investor_items,
             total_investment=total_invest_amount,
@@ -964,8 +933,15 @@ class FinanceService:
             other_fee = renovation.other_extra_fee or Decimal(0)
 
             total_fee = (
-                hard_amount + soft_actual + custom_cabinet + window_amount
-                + wall_treatment + design_fee + demolition_fee + garbage_fee + other_fee
+                hard_amount
+                + soft_actual
+                + custom_cabinet
+                + window_amount
+                + wall_treatment
+                + design_fee
+                + demolition_fee
+                + garbage_fee
+                + other_fee
             )
 
             area = project.area or Decimal(0)
@@ -1152,14 +1128,14 @@ class FinanceService:
 
         record.is_deleted = True
         record.updated_at = datetime.now(timezone.utc)
-        self.db.commit()
-
-        # 删除成功后，触发财务数据同步计算
+        # flush 让 sync 聚合查询排除已软删记录；sync 失败则整体回滚（Fail Loud）
+        self.db.flush()
         try:
-            self.sync_financials(project_id)
-            logger.info("Project financials synced for project %s", project_id)
+            self._sync_financial_cache(project_id)
         except Exception:
             logger.exception("Failed to sync project financials")
+            raise
+        self.db.commit()
 
         logger.info("Finance record deleted successfully: %s", record_id)
 
@@ -1185,18 +1161,14 @@ class FinanceService:
         operator_id: str,
     ) -> FinanceSettlementResponse:
         """结算：unsettled → settled，记录日期与说明，写日志."""
-        project = (
-            self.db.query(Project)
-            .filter(Project.id == project_id, Project.is_deleted.is_(False))
-            .first()
-        )
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             raise ResourceNotFoundError("项目不存在")
         if project.finance_settlement_status == SettlementStatus.SETTLED:
             raise ValidationError("该项目资金账本已结算，无需重复结算")
 
         project.finance_settlement_status = SettlementStatus.SETTLED
-        project.finance_settled_date = data.settled_date.isoformat()
+        project.finance_settled_date = data.settled_date
         project.finance_settled_note = data.settled_note
 
         log = FinanceRecordLog(
@@ -1221,11 +1193,7 @@ class FinanceService:
         operator_id: str,
     ) -> FinanceSettlementResponse:
         """反结算：settled → unsettled，清空结算字段，写日志."""
-        project = (
-            self.db.query(Project)
-            .filter(Project.id == project_id, Project.is_deleted.is_(False))
-            .first()
-        )
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             raise ResourceNotFoundError("项目不存在")
         if project.finance_settlement_status != SettlementStatus.SETTLED:
@@ -1287,7 +1255,9 @@ class FinanceService:
         """获取现金流汇总（路由兼容别名）."""
         return self.get_summary(project_id)
 
-    def create_cashflow_record(self, project_id: str, record_data: Any, operator_id: str) -> FinanceRecord:  # noqa: ANN401
+    def create_cashflow_record(
+        self, project_id: str, record_data: CashFlowRecordCreate, operator_id: str
+    ) -> FinanceRecord:
         """创建现金流记录（路由兼容别名）."""
         return self.create_record(project_id, record_data, operator_id)
 
@@ -1296,6 +1266,5 @@ class FinanceService:
         return self.delete_record(record_id, project_id)
 
 
-# 保持向后兼容的别名
-ProjectFinanceService = FinanceService
+# 向后兼容别名,待调用方迁移后删除
 CashFlowService = FinanceService

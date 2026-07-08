@@ -106,7 +106,7 @@ from .project import (
     SalesRecordCreate,
     SalesRecordResponse,
     SalesRolesUpdate,
-    StatusUpdate,
+    ProjectStatusUpdate,
 )
 
 # 3. Property (房源)
@@ -238,7 +238,7 @@ __all__ = [
     "SalesRecordCreate",
     "SalesRecordResponse",
     "SalesRolesUpdate",
-    "StatusUpdate",
+    "ProjectStatusUpdate",
     "TokenResponse",
     "TrendData",
     "TrendResponse",

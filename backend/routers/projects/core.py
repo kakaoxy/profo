@@ -22,19 +22,17 @@ from schemas.project import (
     ProjectResponse,
     ProjectStatsResponse,
     ProjectUpdate,
-    StatusUpdate,
+    ProjectStatusUpdate,
 )
 from services.system.exceptions import ResourceNotFoundError
 from utils.csv_exporter import generate_csv_response
 
-from .cashflow import router as cashflow_router
 from .documents import router as documents_router
 from .renovation import router as renovation_router
 from .sales import router as sales_router
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-router.include_router(cashflow_router, tags=["cashflow"])
 router.include_router(documents_router, tags=["documents"])
 router.include_router(renovation_router, tags=["renovation"])
 router.include_router(sales_router, tags=["sales"])
@@ -249,7 +247,7 @@ def delete_project(
 def update_project_status(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
-    status_update: StatusUpdate,
+    status_update: ProjectStatusUpdate,
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
 ) -> ProjectResponse:

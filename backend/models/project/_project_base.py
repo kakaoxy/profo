@@ -1,8 +1,9 @@
 """项目主表核心模型."""
 
+from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Index, Numeric, String
+from sqlalchemy import Boolean, Date, Index, Numeric, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -45,11 +46,11 @@ class Project(BaseModel):
         default=None,
         comment="业务形式",
     )
-    commission_start_date: Mapped[str | None] = mapped_column(
-        String(10), nullable=True, default=None, comment="委托开始日期 YYYY-MM-DD"
+    commission_start_date: Mapped[date | None] = mapped_column(
+        Date, nullable=True, default=None, comment="委托开始日期"
     )
-    commission_end_date: Mapped[str | None] = mapped_column(
-        String(10), nullable=True, default=None, comment="委托结束日期 YYYY-MM-DD"
+    commission_end_date: Mapped[date | None] = mapped_column(
+        Date, nullable=True, default=None, comment="委托结束日期"
     )
 
     finance_settlement_status: Mapped[SettlementStatus] = mapped_column(
@@ -58,8 +59,8 @@ class Project(BaseModel):
         default=SettlementStatus.UNSETTLED,
         comment="资金账本结算状态",
     )
-    finance_settled_date: Mapped[str | None] = mapped_column(
-        String(10), nullable=True, default=None, comment="资金账本结算日期 YYYY-MM-DD"
+    finance_settled_date: Mapped[date | None] = mapped_column(
+        Date, nullable=True, default=None, comment="资金账本结算日期"
     )
     finance_settled_note: Mapped[str | None] = mapped_column(
         String(500), nullable=True, default=None, comment="资金账本结算说明"

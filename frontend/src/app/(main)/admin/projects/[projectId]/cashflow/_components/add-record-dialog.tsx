@@ -1,5 +1,6 @@
 "use client";
 
+// ⚠️ 过渡方案:转发到 @/components/finance/record-dialog,待调用方迁移后删除
 import { RecordDialog } from "@/components/finance/record-dialog";
 
 interface AddRecordDialogProps {

@@ -16,7 +16,7 @@
 # 核心子服务
 from .core import ProjectCoreService
 from .facade import ProjectService
-from .finance import CashFlowService, FinanceService, ProjectFinanceService
+from .finance import CashFlowService, FinanceService
 
 # 内部组件（如需直接使用）
 from .internal import ProjectQueryService, ProjectResponseBuilder, ProjectStateManager
@@ -29,7 +29,6 @@ __all__ = [
     "FinanceService",
     # 核心服务
     "ProjectCoreService",
-    "ProjectFinanceService",
     # 内部组件
     "ProjectQueryService",
     "ProjectRenovationService",

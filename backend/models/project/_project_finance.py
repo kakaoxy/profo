@@ -27,7 +27,7 @@ class FinanceRecord(BaseModel):
         comment="费用类别",
     )
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="金额(元)")
-    record_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="发生日期")
+    record_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="发生日期")
     operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="经办人ID")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
     counterparty: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="交易方")

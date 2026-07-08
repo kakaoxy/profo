@@ -38,6 +38,8 @@ type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
 // ==========================================
 // 资金账本分类数据（三级结构：收支 → 业务类型 → 阶段 → 分类）
 // 与 docs/jizhang.html 的 DATA 结构一致
+// ⚠️ 未覆盖:后端目前无分类元数据接口,此表与后端 CashFlowCategory 枚举
+// (backend/models/common/base.py)手工同步。待后端提供 /categories 接口后迁移。
 // ==========================================
 
 const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGroup[]>> = {
@@ -78,6 +80,7 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
 /**
  * 前端显示名 → 后端枚举值映射表。
  * 仅列出名称不一致的项；名称一致的无需映射。
+ * ⚠️ 未覆盖:与 LEDGER_CATEGORY_DATA 同步,待后端提供分类接口后一并迁移。
  */
 const CATEGORY_DISPLAY_TO_ENUM: Record<string, string> = {
   "持有月供": "持有成本-月供",

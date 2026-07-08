@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 # 导入模型和 Schema 类型
 from models import ProjectInteraction, ProjectRenovation, RenovationPhoto
 from models.common import BusinessForm
-from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, StatusUpdate
+from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, ProjectStatusUpdate
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from schemas.project.sales import (
     ProjectCompleteRequest,
@@ -98,7 +98,7 @@ class ProjectService:
         """删除项目."""
         return self._core_service.delete_project(project_id)
 
-    def update_status(self, project_id: str, status_update: StatusUpdate) -> ProjectResponse:
+    def update_status(self, project_id: str, status_update: ProjectStatusUpdate) -> ProjectResponse:
         """更新项目状态."""
         return self._core_service.update_status(project_id, status_update)
 

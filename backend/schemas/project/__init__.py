@@ -4,7 +4,7 @@
 """  # noqa: D400, D415
 
 # 1. 导入 Core (基础 CRUD)
-# 6. 导入规范化表 Schema
+# 2. 导入规范化表 Schema
 from .contract import (
     ContractBase,
     ContractCreate,
@@ -21,7 +21,7 @@ from .core import (
     ProjectResponse,
     ProjectStatsResponse,
     ProjectUpdate,
-    StatusUpdate,
+    ProjectStatusUpdate,
 )
 from .document import (
     DocumentCreate,
@@ -37,7 +37,7 @@ from .evaluation import (
     EvaluationUpdate,
 )
 
-# 5. 导入 Finance (财务)
+# 3. 导入 Finance (财务)
 from .finance import (
     CashFlowRecordCreate,
     CashFlowRecordResponse,
@@ -74,7 +74,7 @@ from .owner import (
     OwnerUpdate,
 )
 
-# 3. 导入 Renovation (装修)
+# 4. 导入 Renovation (装修)
 from .renovation import (
     RenovationBase,
     RenovationContractResponse,
@@ -88,7 +88,7 @@ from .renovation import (
     RenovationUpdate,
 )
 
-# 4. 导入 Sales (销售)
+# 5. 导入 Sales (销售)
 from .sales import (
     InteractionBase,
     InteractionCreate,
@@ -201,5 +201,5 @@ __all__ = [
     "StatusLogListResponse",
     "StatusLogResponse",
     "StatusLogUpdate",
-    "StatusUpdate",
+    "ProjectStatusUpdate",
 ]

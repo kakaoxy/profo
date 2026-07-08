@@ -17,6 +17,16 @@ export function ProjectBaseCard({ data }: ProjectBaseCardProps) {
   const dealDate = data.deal_date || "未成交";
   const projectDays = data.project_days ?? 0;
 
+  // 进度条宽度依据项目周期数据:
+  // - 已成交(有 deal_date)→ 100%(周期完成)
+  // - 未交房(无 delivery_date)→ 0%(周期未开始)
+  // - 已交房但未成交 → ⚠️占位值,缺少目标周期数据无法计算进度
+  const progressWidth = data.deal_date
+    ? "100%"
+    : data.delivery_date
+      ? "65%" // ⚠️占位值,待接入目标周期数据
+      : "0%";
+
   return (
     <div className="bg-white rounded-[24px] p-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] h-full animate-in" style={{ animationDelay: "0.25s" }}>
       {/* Section header */}
@@ -83,7 +93,7 @@ export function ProjectBaseCard({ data }: ProjectBaseCardProps) {
           <div className="mt-4 h-1.5 bg-ink/10 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full bg-rust transition-[width] duration-700"
-              style={{ width: "65%" }}
+              style={{ width: progressWidth }}
             />
           </div>
         </div>
