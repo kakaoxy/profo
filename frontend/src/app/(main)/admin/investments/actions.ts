@@ -544,3 +544,44 @@ export async function copyInvestment(
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }
+
+/**
+ * 按项目ID获取项目简要信息（用于新增跟投弹窗预选项目）
+ */
+export async function getProjectBriefById(
+  projectId: string,
+): Promise<ActionResult<ProjectBrief>> {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/projects/{project_id}",
+      { params: { path: { project_id: projectId } } },
+    );
+
+    if (error) {
+      const msg = (error as { detail?: string }).detail || "获取项目信息失败";
+      return { success: false, message: msg };
+    }
+
+    const p = extractApiData<
+      components["schemas"]["ProjectResponse"]
+    >(data);
+    if (!p) {
+      return { success: false, message: "项目不存在" };
+    }
+
+    const brief: ProjectBrief = {
+      id: p.id,
+      name: p.name ?? "",
+      community_name: p.community_name ?? null,
+      address: p.address ?? null,
+      status: p.status ?? null,
+      project_code: p.contract_no ?? null,
+    };
+
+    return { success: true, data: brief };
+  } catch (e) {
+    logger.error("获取项目信息异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}

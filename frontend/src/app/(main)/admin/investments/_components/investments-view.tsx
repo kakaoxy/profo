@@ -49,6 +49,8 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
       settlement_status: parseAsString.withDefault("all"),
       page: parseAsInteger.withDefault(1),
       page_size: parseAsInteger.withDefault(10),
+      create: parseAsString.withDefault(""),
+      project_id: parseAsString.withDefault(""),
     },
     { shallow: false },
   );
@@ -57,6 +59,22 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
   const [searchInput, setSearchInput] = React.useState(query.search);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
+
+  // URL create=1 → 自动打开新增弹框并清除参数（避免刷新重复打开）
+  React.useEffect(() => {
+    if (query.create === "1") {
+      setCreateOpen(true);
+      setQuery({ create: "" });
+    }
+  }, [query.create, setQuery]);
+
+  // 弹框关闭时清除 project_id 参数
+  const handleCreateOpenChange = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open && query.project_id) {
+      setQuery({ project_id: "" });
+    }
+  };
 
   // 外部 URL 变化时同步输入框（如分页重置）
   React.useEffect(() => {
@@ -207,7 +225,11 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
         </div>
       </div>
 
-      <CreateInvestmentDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateInvestmentDialog
+        open={createOpen}
+        onOpenChange={handleCreateOpenChange}
+        prefillProjectId={query.project_id || undefined}
+      />
     </>
   );
 }
