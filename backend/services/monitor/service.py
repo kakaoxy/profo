@@ -407,7 +407,7 @@ class MonitorService:
                 continue
             src = (row.data_source or "").lower()
             count = row.count
-            avg = row.avg_price or 0
+            avg = float(row.avg_price or 0)
 
             all_stats[cid]["listing_count"] += count
             all_stats[cid]["listing_total_price"] += avg * count
@@ -424,7 +424,7 @@ class MonitorService:
                 continue
             src = (row.data_source or "").lower()
             count = row.count
-            avg = row.avg_price or 0
+            avg = float(row.avg_price or 0)
 
             all_stats[cid]["deal_count"] += count
             all_stats[cid]["deal_total_price"] += avg * count
