@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
@@ -20,14 +20,15 @@ export default async function InvestmentDetailPage({ params }: PageProps) {
     { params: { path: { project_id: projectId } } },
   );
 
+  // 跟投记录不存在 → 跳转列表页并弹出新增弹框（预选该项目）
   if (error || !data) {
-    notFound();
+    redirect(`/admin/investments?create=1&project_id=${projectId}`);
   }
 
   const investment = extractApiData<InvestmentResponse>(data);
 
   if (!investment) {
-    notFound();
+    redirect(`/admin/investments?create=1&project_id=${projectId}`);
   }
 
   return (

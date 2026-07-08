@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   createInvestment,
   searchProjects,
+  getProjectBriefById,
   type ProjectBrief,
 } from "../actions";
 import {
@@ -31,11 +32,14 @@ import {
 interface CreateInvestmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** 预选项目ID（从资金账本跳转时传入） */
+  prefillProjectId?: string;
 }
 
 export function CreateInvestmentDialog({
   open,
   onOpenChange,
+  prefillProjectId,
 }: CreateInvestmentDialogProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -49,6 +53,8 @@ export function CreateInvestmentDialog({
   // 搜索项目（防抖 300ms）
   React.useEffect(() => {
     if (!open) return;
+    // 有预选项目时不执行搜索
+    if (prefillProjectId) return;
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
@@ -65,7 +71,29 @@ export function CreateInvestmentDialog({
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, open]);
+  }, [searchQuery, open, prefillProjectId]);
+
+  // 预选项目（从资金账本跳转时）
+  React.useEffect(() => {
+    if (!open || !prefillProjectId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await getProjectBriefById(prefillProjectId);
+        if (!cancelled && res.success && res.data) {
+          setSelected(res.data);
+        }
+      } catch {
+        // 忽略
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, prefillProjectId]);
 
   // 重置表单
   React.useEffect(() => {
