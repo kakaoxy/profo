@@ -1,6 +1,6 @@
 "use client";
 
-import { Pagination } from "@/components/common";
+import { Pagination } from "@/components/common/pagination";
 
 interface LedgerPaginationProps {
   total: number;

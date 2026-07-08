@@ -38,7 +38,7 @@ export function InvestmentCard({ data }: InvestmentCardProps) {
       {investors.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {investors.map((inv, idx) => (
-            <InvestorCard key={idx} investor={inv} index={idx} />
+            <InvestorCard key={`${inv.name}-${idx}`} investor={inv} index={idx} />
           ))}
         </div>
       ) : (

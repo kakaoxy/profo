@@ -95,19 +95,6 @@ export function CreateInvestmentDialog({
     };
   }, [open, prefillProjectId]);
 
-  // 重置表单
-  React.useEffect(() => {
-    if (!open) {
-      setSearchQuery("");
-      setProjects([]);
-      setSelected(null);
-      setAmount("");
-      setRemark("");
-      setLoading(false);
-      setSubmitting(false);
-    }
-  }, [open]);
-
   const handleSelect = (project: ProjectBrief) => {
     setSelected(project);
     setSearchQuery("");

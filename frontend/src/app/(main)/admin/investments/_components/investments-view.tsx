@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useQueryStates, parseAsString, parseAsInteger } from "nuqs";
 import { Plus, Download, Loader2 } from "lucide-react";
@@ -16,8 +17,14 @@ import {
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
 import { InvestmentsTable } from "./investments-table";
-import { CreateInvestmentDialog } from "./create-investment-dialog";
 import { exportInvestments } from "../actions";
+
+// 动态导入弹窗组件（ssr: false，仅在客户端加载）
+const CreateInvestmentDialog = dynamic(
+  () =>
+    import("./create-investment-dialog").then((m) => m.CreateInvestmentDialog),
+  { ssr: false },
+);
 
 type InvestmentListItem = components["schemas"]["InvestmentListItemResponse"];
 
@@ -225,11 +232,13 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
         </div>
       </div>
 
-      <CreateInvestmentDialog
-        open={createOpen}
-        onOpenChange={handleCreateOpenChange}
-        prefillProjectId={query.project_id || undefined}
-      />
+      {createOpen && (
+        <CreateInvestmentDialog
+          open={createOpen}
+          onOpenChange={handleCreateOpenChange}
+          prefillProjectId={query.project_id || undefined}
+        />
+      )}
     </>
   );
 }

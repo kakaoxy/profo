@@ -79,7 +79,7 @@ export async function createCashFlowRecordAction(
     return { success: false, message: errorDetail || "创建失败" };
   }
 
-  revalidatePath(`/projects/${projectId}/cashflow`);
+  revalidatePath(`/admin/projects/${projectId}/cashflow`);
   return { success: true, message: "记录已添加" };
 }
 
@@ -106,6 +106,6 @@ export async function deleteCashFlowRecordAction(
     return { success: false, message: errorDetail || "删除失败" };
   }
 
-  revalidatePath(`/projects/${projectId}/cashflow`);
+  revalidatePath(`/admin/projects/${projectId}/cashflow`);
   return { success: true, message: "删除成功" };
 }

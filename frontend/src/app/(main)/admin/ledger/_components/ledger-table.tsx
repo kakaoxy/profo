@@ -221,11 +221,14 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
   ];
 }
 
+// 模块级常量:buildColumns 无任何组件作用域闭包依赖,提升到模块作用域
+// 避免每次渲染重建数组与内联 cell/header 函数,从而击穿 DataTable 内部 memo
+const columns = buildColumns();
+
 export function LedgerTable({
   data,
   onRowClick,
 }: LedgerTableProps) {
-  const columns = buildColumns();
   return (
     <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">

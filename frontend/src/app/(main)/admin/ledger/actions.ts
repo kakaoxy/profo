@@ -111,6 +111,10 @@ export async function exportLedger(
 ): Promise<ActionResult<ArrayBuffer>> {
   try {
     const token = await getAccessTokenFromCookie();
+    // 鉴权守卫：token 缺失时直接拒绝，避免发送无 Authorization 头的请求
+    if (!token) {
+      return { success: false, message: "未登录或会话已过期，请重新登录" };
+    }
     const url = new URL(getApiUrl("/api/v1/admin/ledger/export"));
     if (params.search && params.search.trim()) {
       url.searchParams.set("search", params.search.trim());
@@ -120,7 +124,7 @@ export async function exportLedger(
     }
 
     const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
@@ -144,12 +148,16 @@ export async function exportProjectLedger(
 ): Promise<ActionResult<ArrayBuffer>> {
   try {
     const token = await getAccessTokenFromCookie();
+    // 鉴权守卫：token 缺失时直接拒绝，避免发送无 Authorization 头的请求
+    if (!token) {
+      return { success: false, message: "未登录或会话已过期，请重新登录" };
+    }
     const url = new URL(
       getApiUrl(`/api/v1/admin/ledger/${projectId}/export`),
     );
 
     const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {
