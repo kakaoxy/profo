@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from models import Project
 from models.common import BusinessForm, ProjectStatus
-from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, StatusUpdate
+from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, ProjectStatusUpdate
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
 
@@ -210,7 +210,7 @@ class ProjectCoreService:
         project.updated_at = datetime.now(timezone.utc)
         self.db.commit()
 
-    def update_status(self, project_id: str, status_update: StatusUpdate) -> ProjectResponse:
+    def update_status(self, project_id: str, status_update: ProjectStatusUpdate) -> ProjectResponse:
         """更新项目状态.
 
         Args:

@@ -285,6 +285,8 @@ class FinanceLogResponse(BaseModel):
 
 
 # ========== 结算 / 反结算 ==========
+# 命名说明：以下 *Request 后缀表示"触发动作"（状态流转），非实体 CRUD，
+# 故不使用 *Create/*Update；与 ProjectCompleteRequest 等保持一致。
 
 
 class FinanceSettlementChangeRequest(BaseModel):
@@ -308,7 +310,7 @@ class FinanceSettlementResponse(BaseModel):
     """资金账本结算状态响应."""
 
     finance_settlement_status: SettlementStatus = Field(description="结算状态")
-    finance_settled_date: str | None = Field(None, description="结算日期")
+    finance_settled_date: date | None = Field(None, description="结算日期")
     finance_settled_note: str | None = Field(None, description="结算说明")
 
     model_config = ConfigDict(from_attributes=True)

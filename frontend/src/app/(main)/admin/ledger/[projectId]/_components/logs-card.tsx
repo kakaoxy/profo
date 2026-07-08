@@ -17,12 +17,31 @@ interface LogsCardProps {
   logs: FinanceLogResponse[];
 }
 
+/**
+ * 操作日志 detail 字段的结构(后端 finance.py 各 action 写入):
+ * - create/delete: { category, amount(str), type, counterparty, date }
+ * - settle: { settled_date, settled_note }
+ * - unsettle: { reason }
+ * 后端 amount 为 str(record.amount),即字符串形式。
+ */
+interface LogDetail {
+  category?: string | null;
+  amount?: string | null;
+  type?: string | null;
+  counterparty?: string;
+  date?: string | null;
+  settled_date?: string | null;
+  settled_note?: string | null;
+  reason?: string | null;
+  [key: string]: unknown;
+}
+
 /** 操作日志内容：action_type 翻译为中文 + detail 摘要 */
 function formatLogContent(
   actionType: FinanceActionType,
   detail: { [key: string]: unknown } | undefined,
 ): string {
-  const d = detail ?? {};
+  const d = (detail ?? {}) as LogDetail;
 
   let action: string;
   let summary = "";
@@ -30,19 +49,19 @@ function formatLogContent(
   switch (actionType) {
     case "create":
       action = "创建记录";
-      summary = [d.category != null ? String(d.category) : "", d.amount != null ? formatCNY(String(d.amount)) : ""].filter(Boolean).join(" · ");
+      summary = [d.category ?? "", d.amount != null ? formatCNY(d.amount) : ""].filter(Boolean).join(" · ");
       break;
     case "delete":
       action = "删除记录";
-      summary = [d.category != null ? String(d.category) : "", d.amount != null ? formatCNY(String(d.amount)) : ""].filter(Boolean).join(" · ");
+      summary = [d.category ?? "", d.amount != null ? formatCNY(d.amount) : ""].filter(Boolean).join(" · ");
       break;
     case "settle":
       action = "结算";
-      summary = [d.settled_date != null ? String(d.settled_date) : "", d.settled_note != null ? String(d.settled_note) : ""].filter(Boolean).join(" · ");
+      summary = [d.settled_date ?? "", d.settled_note ?? ""].filter(Boolean).join(" · ");
       break;
     case "unsettle":
       action = "反结算";
-      summary = d.reason != null ? String(d.reason) : "";
+      summary = d.reason ?? "";
       break;
     default:
       action = actionType;

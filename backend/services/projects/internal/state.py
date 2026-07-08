@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from models import Project
 from models.common import ProjectStatus
-from schemas.project import StatusUpdate
+from schemas.project import ProjectStatusUpdate
 from services.system.exceptions import ValidationError
 
 
@@ -59,7 +59,7 @@ class ProjectStateManager:
     def update_status(
         self,
         project: Project,
-        status_update: StatusUpdate,
+        status_update: ProjectStatusUpdate,
     ) -> Project:
         """更新项目状态.
 
@@ -102,7 +102,7 @@ class ProjectStateManager:
         self,
         project_id: str,
         new_status: str,
-        status_update: StatusUpdate,
+        status_update: ProjectStatusUpdate,
     ) -> None:
         """处理销售状态变更.
 

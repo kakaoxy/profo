@@ -30,7 +30,7 @@ class ChangeType(str, enum.Enum):
 class MediaType(str, enum.Enum):
     """媒体类型枚举."""
 
-    FLOOR_PLAN = "floor_plan"  # 戶型图
+    FLOOR_PLAN = "floor_plan"  # 户型图
     INTERIOR = "interior"  # 室内图
     EXTERIOR = "exterior"  # 外观图
     OTHER = "other"

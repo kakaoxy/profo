@@ -50,7 +50,6 @@ from .projects import (
     CashFlowService,
     FinanceService,
     ProjectCoreService,
-    ProjectFinanceService,
     ProjectQueryService,
     ProjectRenovationService,
     ProjectResponseBuilder,
@@ -93,7 +92,6 @@ __all__ = [
     # Monitor
     "MonitorService",
     "ProjectCoreService",
-    "ProjectFinanceService",
     "ProjectQueryService",
     "ProjectRenovationService",
     "ProjectResponseBuilder",

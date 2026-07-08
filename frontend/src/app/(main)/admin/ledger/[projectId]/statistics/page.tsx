@@ -12,6 +12,8 @@ import { CommissionCard } from "./_components/commission-card";
 import { DepositCard } from "./_components/deposit-card";
 import { MarketingCard } from "./_components/marketing-card";
 import { OperationCard } from "./_components/operation-card";
+// 入场动画样式(:global(.animate-in) 仅此页生效,覆盖 tw-animate-css 默认 animate-in)
+import "./animations.module.css";
 
 type ProjectLedgerStatisticsResponse =
   components["schemas"]["ProjectLedgerStatisticsResponse"];
@@ -42,22 +44,6 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#f7f7f8]">
-      {/* CSS-only entrance animation: fadeInUp + prefers-reduced-motion 兜底 */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            @keyframes fadeInUp {
-              from { opacity: 0; transform: translateY(24px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-in { animation: fadeInUp 0.6s ease-out forwards; opacity: 0; }
-            @media (prefers-reduced-motion: reduce) {
-              .animate-in { animation: none; opacity: 1; }
-            }
-          `,
-        }}
-      />
-
       <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <Link
           href={`/admin/ledger/${projectId}`}

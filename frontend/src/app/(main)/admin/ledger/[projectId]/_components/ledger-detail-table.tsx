@@ -2,32 +2,13 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Loader2, Download, Plus, Lock } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { safeFormatDate, formatCNY } from "@/lib/formatters";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { formatCNY } from "@/lib/formatters";
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import {
@@ -42,6 +23,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RecordDialog } from "@/components/finance/record-dialog";
 import { SettlementDialog } from "./settlement-dialog";
+import { LedgerDetailTableFilter, type FilterTab } from "./ledger-detail-table-filter";
+import { LedgerDetailTableHeader } from "./ledger-detail-table-header";
+import { LedgerDetailTableRow } from "./ledger-detail-table-row";
 import { deleteRecord, exportProjectLedger } from "../../actions";
 import type { components } from "@/lib/api-types";
 
@@ -54,8 +38,6 @@ interface LedgerDetailTableProps {
   businessForm?: "agent" | "wholesale" | null;
   settlementStatus?: SettlementStatus | null;
 }
-
-type FilterTab = "all" | "income" | "expense";
 
 export function LedgerDetailTable({
   projectId,
@@ -168,117 +150,21 @@ export function LedgerDetailTable({
   return (
     <div className="space-y-4">
       {/* Tabs 筛选 + 搜索 + 分类筛选 + 操作按钮 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <Tabs
-          value={filter}
-          onValueChange={(v) => setFilter(v as FilterTab)}
-          className="w-full sm:w-auto"
-        >
-          <TabsList className="bg-muted p-1 h-9">
-            <TabsTrigger value="all" className="text-xs h-7">
-              全部
-            </TabsTrigger>
-            <TabsTrigger
-              value="income"
-              className="text-xs h-7 text-error data-[state=active]:text-error"
-            >
-              收入
-            </TabsTrigger>
-            <TabsTrigger
-              value="expense"
-              className="text-xs h-7 text-success data-[state=active]:text-success"
-            >
-              支出
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex w-full sm:w-auto items-center gap-2 flex-wrap">
-          <Input
-            placeholder="搜索交易方…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="h-9 w-full sm:w-56 bg-card border-border"
-            aria-label="搜索交易方"
-            name="counterparty-search"
-            autoComplete="off"
-          />
-          <Select
-            value={categoryFilter}
-            onValueChange={setCategoryFilter}
-          >
-            <SelectTrigger
-              className="h-9 w-[140px] bg-card border-border"
-              aria-label="筛选分类"
-            >
-              <SelectValue placeholder="全部分类" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部分类</SelectItem>
-              {categoryOptions.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 gap-1.5 rounded-full text-ink hover:text-rust hover:bg-transparent"
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            导出
-          </Button>
-          <Button
-            size="sm"
-            className="h-9 gap-1.5 rounded-full bg-ink text-pure-white hover:bg-ink/90"
-            onClick={() => setIsDialogOpen(true)}
-            disabled={isSettled}
-            title={isSettled ? "已结算，不可记账" : undefined}
-          >
-            <Plus className="h-4 w-4" />
-            记一笔
-          </Button>
-          {settlementStatus && (
-            <Badge
-              variant="secondary"
-              className={cn(
-                "gap-1.5 border-transparent px-3 py-1",
-                isSettled
-                  ? "bg-apricot-wash text-rust"
-                  : "bg-fog text-graphite",
-              )}
-            >
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  isSettled ? "bg-rust" : "bg-graphite animate-pulse",
-                )}
-              />
-              {isSettled ? "已结算" : "未结算"}
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-9 gap-1.5 rounded-full",
-              isSettled
-                ? "text-rust hover:text-rust hover:bg-apricot-wash/50"
-                : "bg-ink text-pure-white hover:bg-ink/90",
-            )}
-            onClick={() => setShowSettlementDialog(true)}
-          >
-            {isSettled ? "反结算" : "结算"}
-          </Button>
-        </div>
-      </div>
+      <LedgerDetailTableFilter
+        filter={filter}
+        onFilterChange={setFilter}
+        searchInput={searchInput}
+        onSearchInputChange={setSearchInput}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        categoryOptions={categoryOptions}
+        isExporting={isExporting}
+        onExport={handleExport}
+        isSettled={isSettled}
+        settlementStatus={settlementStatus}
+        onAddRecord={() => setIsDialogOpen(true)}
+        onSettlement={() => setShowSettlementDialog(true)}
+      />
 
       {/* 筛选汇总条 */}
       <div
@@ -309,18 +195,7 @@ export function LedgerDetailTable({
             <col className="w-[26%]" />
             <col className="w-[6%]" />
           </colgroup>
-          <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="px-4 py-3 text-xs">日期</TableHead>
-              <TableHead className="px-4 py-3 text-center text-xs">交易形式</TableHead>
-              <TableHead className="px-4 py-3 text-xs">交易方</TableHead>
-              <TableHead className="px-4 py-3 text-xs">分类</TableHead>
-              <TableHead className="px-4 py-3 text-right text-xs">金额</TableHead>
-              <TableHead className="px-4 py-3 text-center text-xs">票据</TableHead>
-              <TableHead className="px-4 py-3 text-xs">备注</TableHead>
-              <TableHead className="px-4 py-3 text-center text-xs">操作</TableHead>
-            </TableRow>
-          </TableHeader>
+          <LedgerDetailTableHeader />
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
@@ -333,126 +208,12 @@ export function LedgerDetailTable({
               </TableRow>
             ) : (
               filteredData.map((record) => (
-                <TableRow
+                <LedgerDetailTableRow
                   key={record.id}
-                  className="group text-xs hover:bg-muted"
-                >
-                  <TableCell className="px-4 py-3">
-                    <span className="font-medium text-foreground">
-                      {record.date
-                        ? safeFormatDate(record.date, "yyyy-MM-dd")
-                        : "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-center">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "font-normal",
-                        record.type === "income"
-                          ? "border-error/30 text-red-700 bg-error-container/30"
-                          : "border-emerald-200 text-emerald-700 bg-success-container/30",
-                      )}
-                    >
-                      {record.type === "income" ? "收入" : "支出"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <span
-                      className="text-muted-foreground truncate block"
-                      title={record.counterparty ?? ""}
-                    >
-                      {record.counterparty || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <span
-                      className="text-foreground truncate block"
-                      title={record.category ?? ""}
-                    >
-                      {record.category || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-right">
-                    <span
-                      className={cn(
-                        "font-mono font-medium text-sm tabular-nums",
-                        record.type === "income"
-                          ? "text-error"
-                          : "text-success",
-                      )}
-                    >
-                      {record.type === "income" ? "+" : "-"}
-                      {Number(record.amount).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-center">
-                    {record.receipt_urls && record.receipt_urls.length > 0 ? (
-                      <div className="flex items-center justify-center gap-1 flex-wrap">
-                        {record.receipt_urls.map((url, idx) => (
-                          <HoverCard key={url + idx}>
-                            <HoverCardTrigger asChild>
-                              <a
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title={`查看票据 ${idx + 1}`}
-                                aria-label={`查看票据 ${idx + 1}`}
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={url}
-                                  alt={`票据 ${idx + 1}`}
-                                  width={28}
-                                  height={28}
-                                  loading="lazy"
-                                  className="size-7 rounded object-cover border border-border"
-                                />
-                              </a>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="p-1 w-auto">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={url}
-                                alt={`票据 ${idx + 1}`}
-                                className="rounded-lg border max-w-[320px] h-auto"
-                              />
-                            </HoverCardContent>
-                          </HoverCard>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <div
-                      className="truncate text-muted-foreground"
-                      title={record.description ?? ""}
-                    >
-                      {record.description || "-"}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn(
-                        "h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-opacity",
-                        isSettled
-                          ? "opacity-0 pointer-events-none"
-                          : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                      )}
-                      onClick={() => setDeleteTarget(record)}
-                      disabled={isSettled}
-                      aria-label={`删除 ${record.category} 记录`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                  record={record}
+                  isSettled={isSettled}
+                  onDelete={setDeleteTarget}
+                />
               ))
             )}
           </TableBody>

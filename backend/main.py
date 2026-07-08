@@ -32,6 +32,7 @@ from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
 from routers.monitor import monitor_router
 from routers.projects import core_router
+from routers.projects.cashflow import router as cashflow_router
 from routers.public import (
     public_auth_router,
     public_communities_router,
@@ -174,6 +175,7 @@ app.include_router(properties_router, prefix=API_V1_PREFIX)
 app.include_router(communities_router, prefix=API_V1_PREFIX)
 app.include_router(leads_router, prefix=API_V1_PREFIX)
 app.include_router(core_router, prefix=API_V1_PREFIX)
+app.include_router(cashflow_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_projects_router, prefix=API_V1_PREFIX)
 app.include_router(marketing_import_router, prefix=API_V1_PREFIX)
 app.include_router(investment_router, prefix=API_V1_PREFIX)

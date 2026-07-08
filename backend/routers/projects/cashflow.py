@@ -3,25 +3,24 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Request
-from sqlalchemy.orm import Session
 
-from utils.common import RateLimits, limiter
-from db import get_db
-from dependencies.auth import CurrentInternalUserDep
+from dependencies.auth import CurrentInternalUserDep, DbSessionDep, require_roles
 from schemas.project import (
     CashFlowRecordCreate,
     CashFlowRecordResponse,
     CashFlowResponse,
 )
 from services import CashFlowService
+from utils.common import RateLimits, limiter
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/projects",
+    tags=["cashflow"],
+    dependencies=[Depends(require_roles(["admin", "operator"]))],
+)
 
 
-_get_db_dep = Depends(get_db)
-
-
-def get_cashflow_service(db: Session = _get_db_dep) -> CashFlowService:
+def get_cashflow_service(db: DbSessionDep) -> CashFlowService:
     """获取现金流服务实例."""
     return CashFlowService(db)
 
@@ -30,7 +29,9 @@ CashFlowServiceDep = Annotated[CashFlowService, Depends(get_cashflow_service)]
 
 
 @router.post("/{project_id}/cashflow", status_code=201)
+@limiter.limit(RateLimits.PROJECT_CREATE)
 def create_cashflow_record(
+    request: Request,
     record_data: CashFlowRecordCreate,
     service: CashFlowServiceDep,
     _current_user: CurrentInternalUserDep,

@@ -1,6 +1,6 @@
 """项目相关 Pydantic Schema."""
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
@@ -93,8 +93,8 @@ class ProjectCreate(BaseModel):
     list_price: Decimal | None = Field(None, description="挂牌价(万)")
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
-    commission_start_date: str | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
-    commission_end_date: str | None = Field(None, description="委托结束日期 (YYYY-MM-DD 格式)")
+    commission_start_date: date | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
+    commission_end_date: date | None = Field(None, description="委托结束日期 (YYYY-MM-DD 格式)")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -183,12 +183,12 @@ class ProjectUpdate(BaseModel):
     list_price: Decimal | None = Field(None)
     listing_date: str | None = Field(None, description="上架日期 (YYYY-MM-DD 格式)")
 
-    commission_start_date: str | None = Field(
+    commission_start_date: date | None = Field(
         None,
         validation_alias=AliasChoices("commission_start_date", "commissionStartDate"),
         description="委托开始日期 (YYYY-MM-DD 格式)",
     )
-    commission_end_date: str | None = Field(
+    commission_end_date: date | None = Field(
         None,
         validation_alias=AliasChoices("commission_end_date", "commissionEndDate"),
         description="委托结束日期 (YYYY-MM-DD 格式)",
@@ -248,8 +248,8 @@ class ProjectResponse(BaseModel):
     sold_date: str | None = None
     transaction_status: str | None = None
 
-    commission_start_date: str | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
-    commission_end_date: str | None = Field(None, description="委托结束日期 (YYYY-MM-DD 格式)")
+    commission_start_date: date | None = Field(None, description="委托开始日期 (YYYY-MM-DD 格式)")
+    commission_end_date: date | None = Field(None, description="委托结束日期 (YYYY-MM-DD 格式)")
     days_on_market: int | None = Field(None, description="用时天数（已售项目：sold_date - listing_date）")
 
     channel_manager_id: str | None = Field(None, description="渠道负责人ID")
@@ -297,7 +297,7 @@ class ProjectStatsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class StatusUpdate(BaseModel):
+class ProjectStatusUpdate(BaseModel):
     """项目状态更新请求."""
 
     status: ProjectStatus

@@ -374,52 +374,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/cashflow": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Project Cashflow
-         * @description 获取项目现金流明细和汇总.
-         */
-        get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
-        put?: never;
-        /**
-         * Create Cashflow Record
-         * @description 创建现金流记录.
-         */
-        post: operations["create_cashflow_record_api_v1_projects__project_id__cashflow_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{project_id}/cashflow/{record_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Cashflow Record
-         * @description 删除现金流记录.
-         *
-         *     速率限制：20次/小时.
-         */
-        delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/projects/{project_id}/documents": {
         parameters: {
             query?: never;
@@ -887,6 +841,52 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/cashflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Project Cashflow
+         * @description 获取项目现金流明细和汇总.
+         */
+        get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
+        put?: never;
+        /**
+         * Create Cashflow Record
+         * @description 创建现金流记录.
+         */
+        post: operations["create_cashflow_record_api_v1_projects__project_id__cashflow_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/cashflow/{record_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Cashflow Record
+         * @description 删除现金流记录.
+         *
+         *     速率限制：20次/小时.
+         */
+        delete: operations["delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6098,6 +6098,23 @@ export interface components {
          */
         ProjectStatus: "signing" | "renovating" | "selling" | "sold" | "deleted";
         /**
+         * ProjectStatusUpdate
+         * @description 项目状态更新请求.
+         */
+        ProjectStatusUpdate: {
+            status: components["schemas"]["ProjectStatus"];
+            /**
+             * Listing Date
+             * @description 上架日期 (YYYY-MM-DD 格式)
+             */
+            listing_date?: string | null;
+            /**
+             * List Price
+             * @description 挂牌价(万元)
+             */
+            list_price?: number | string | null;
+        };
+        /**
          * ProjectUpdate
          * @description 更新项目请求模型 (所有字段可选) - 已适配规范化表结构.
          */
@@ -8060,23 +8077,6 @@ export interface components {
             size: number;
         };
         /**
-         * StatusUpdate
-         * @description 项目状态更新请求.
-         */
-        StatusUpdate: {
-            status: components["schemas"]["ProjectStatus"];
-            /**
-             * Listing Date
-             * @description 上架日期 (YYYY-MM-DD 格式)
-             */
-            listing_date?: string | null;
-            /**
-             * List Price
-             * @description 挂牌价(万元)
-             */
-            list_price?: number | string | null;
-        };
-        /**
          * SubInvestorCreate
          * @description 创建子投资人请求（属于某母投资方，内部占比）.
          */
@@ -9289,106 +9289,6 @@ export interface operations {
             };
         };
     };
-    get_project_cashflow_api_v1_projects__project_id__cashflow_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CashFlowResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_cashflow_record_api_v1_projects__project_id__cashflow_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CashFlowRecordCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CashFlowRecordResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 项目ID */
-                project_id: string;
-                /** @description 记录ID */
-                record_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_documents_api_v1_projects__project_id__documents_get: {
         parameters: {
             query?: never;
@@ -10243,7 +10143,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["StatusUpdate"];
+                "application/json": components["schemas"]["ProjectStatusUpdate"];
             };
         };
         responses: {
@@ -10323,6 +10223,106 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProjectReportResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_cashflow_api_v1_projects__project_id__cashflow_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_cashflow_record_api_v1_projects__project_id__cashflow_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashFlowRecordCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_cashflow_record_api_v1_projects__project_id__cashflow__record_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+                /** @description 记录ID */
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

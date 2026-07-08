@@ -4,6 +4,7 @@
 """
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -21,16 +22,37 @@ from schemas.monitor import (
     TrendData,
 )
 
+# 数据源匹配模式：data_source 为自由文本，使用子串匹配区分渠道
+# （贝壳与链家同属贝壳系，故合并为 BEIKE 渠道）
+BEIKE_PATTERNS = ("beike", "贝壳", "链家")
+I5I5J_PATTERNS = ("5i5j", "我爱")
+
+
+def _match_data_source(src: str) -> str:
+    """根据数据源字符串判断渠道.
+
+    返回 'beike' 或 'iaij'；无法识别时返回空串。
+    src 应为已 lower 的字符串。
+    """
+    if any(p in src for p in BEIKE_PATTERNS):
+        return "beike"
+    if any(p in src for p in I5I5J_PATTERNS):
+        return "iaij"
+    return ""
+
 
 class MonitorService:
     """市场监控服务."""
 
-    @staticmethod
-    def get_market_sentiment(db: Session, community_id: str) -> MarketSentimentResponse:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def get_market_sentiment(self, community_id: str) -> MarketSentimentResponse:
         """Calculate market sentiment (floor stats and inventory months).
 
         去重逻辑: 相同 build_area + floor_level + price 的房源视为同一套房
         """
+        db = self.db
         # 1. 查询当前挂牌房源 - 使用子查询去重
 
         # 获取去重后的挂牌房源统计
@@ -125,13 +147,13 @@ class MonitorService:
             inventory_months=round(inventory_months, 1),
         )
 
-    @staticmethod
-    def get_trends(db: Session, community_id: str, months: int) -> list[TrendData]:  # noqa: C901
+    def get_trends(self, community_id: str, months: int) -> list[TrendData]:  # noqa: C901
         """获取价格趋势数据.
 
         按月分组统计在 Python 层完成，避免使用 SQLite 专有的 strftime，
         保证跨数据库兼容（生产环境使用 PostgreSQL）。
         """
+        db = self.db
         start_date = datetime.now(timezone.utc) - timedelta(days=30 * months)
 
         # 查询原始数据，在 Python 层按月分组（避免 SQLite 专有的 strftime）
@@ -207,9 +229,9 @@ class MonitorService:
 
         return sorted([TrendData(**v) for v in data_map.values()], key=lambda x: x.month)
 
-    @staticmethod
-    def get_competitors(db: Session, community_id: str) -> list[CompetitorResponse]:
+    def get_competitors(self, community_id: str) -> list[CompetitorResponse]:
         """获取竞品列表."""
+        db = self.db
         comps = (
             db.query(CommunityCompetitor)
             .filter(
@@ -267,12 +289,12 @@ class MonitorService:
                 )
         return results
 
-    @staticmethod
-    def add_competitor(db: Session, community_id: str, competitor_id: str) -> bool:
+    def add_competitor(self, community_id: str, competitor_id: str) -> bool:
         """添加竞品小区，返回是否成功添加.
 
         内部自动提交事务.
         """
+        db = self.db
         exists = (
             db.query(CommunityCompetitor)
             .filter(
@@ -288,12 +310,12 @@ class MonitorService:
             return True
         return False
 
-    @staticmethod
-    def remove_competitor(db: Session, community_id: str, competitor_id: str) -> bool:
+    def remove_competitor(self, community_id: str, competitor_id: str) -> bool:
         """移除竞品小区，返回是否成功移除.
 
         内部自动提交事务.
         """
+        db = self.db
         result = (
             db.query(CommunityCompetitor)
             .filter(
@@ -306,9 +328,8 @@ class MonitorService:
             db.commit()
         return result > 0
 
-    @staticmethod
     def generate_ai_strategy(
-        _db: Session,
+        self,
         _project_id: str,
         _context: str,
     ) -> AIStrategyResponse:
@@ -321,20 +342,37 @@ class MonitorService:
             action_plan=["Suggested listing price: 210W", "refresh photos"],
         )
 
-    @staticmethod
-    def get_neighborhood_radar(db: Session, community_id: str) -> NeighborhoodRadarResponse:  # noqa: C901, PLR0912, PLR0915
+    def get_neighborhood_radar(self, community_id: str) -> NeighborhoodRadarResponse:
         """获取周边竞品雷达数据.
 
         包含本案小区和所有竞品小区的挂牌/成交统计，按数据来源分渠道
         """
         one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
-        # 1. 获取本案小区
+        communities = self._fetch_neighborhood_communities(community_id)
+        if communities is None:
+            return NeighborhoodRadarResponse(items=[])
+        all_community_ids, community_map = communities
+
+        listing_query, deal_query = self._fetch_neighborhood_bulk_stats(all_community_ids, one_year_ago)
+        all_stats = self._aggregate_neighborhood_stats(listing_query, deal_query, all_community_ids)
+        items = self._build_neighborhood_items(all_community_ids, community_map, all_stats, community_id)
+
+        return NeighborhoodRadarResponse(items=items)
+
+    def _fetch_neighborhood_communities(
+        self,
+        community_id: str,
+    ) -> tuple[list[str], dict[str, Community]] | None:
+        """获取本案小区及其竞品，返回 (all_ids, community_map).
+
+        本案不存在时返回 None.
+        """
+        db = self.db
         subject = db.query(Community).filter(Community.id == community_id).first()
         if not subject:
-            return NeighborhoodRadarResponse(items=[])
+            return None
 
-        # 2. 获取所有竞品小区ID
         competitor_ids = [
             c.competitor_community_id
             for c in db.query(CommunityCompetitor)
@@ -344,13 +382,18 @@ class MonitorService:
             .all()
         ]
 
-        # 3. 合并所有需要统计的小区 (本案 + 竞品)
         all_community_ids = [community_id, *competitor_ids]
         communities = db.query(Community).filter(Community.id.in_(all_community_ids)).all()
         community_map = {c.id: c for c in communities}
+        return all_community_ids, community_map
 
-        # 4. 批量查询所有小区的统计数据
-        # 4.1 挂牌统计 (Bulk Fetch)
+    def _fetch_neighborhood_bulk_stats(
+        self,
+        all_community_ids: list[str],
+        one_year_ago: datetime,
+    ) -> tuple[list[Any], list[Any]]:
+        """批量查询所有小区的挂牌与成交统计（按 community_id + data_source 分组）."""
+        db = self.db
         listing_query = (
             db.query(
                 PropertyCurrent.community_id,
@@ -367,7 +410,6 @@ class MonitorService:
             .all()
         )
 
-        # 4.2 成交统计 (Bulk Fetch)
         deal_query = (
             db.query(
                 PropertyCurrent.community_id,
@@ -385,8 +427,16 @@ class MonitorService:
             .all()
         )
 
-        # 5. 在内存中聚合数据
-        all_stats = {
+        return listing_query, deal_query
+
+    def _aggregate_neighborhood_stats(
+        self,
+        listing_query: list[Any],
+        deal_query: list[Any],
+        all_community_ids: list[str],
+    ) -> dict[str, dict[str, Any]]:
+        """在内存中聚合挂牌与成交数据，按渠道归类计数."""
+        all_stats: dict[str, dict[str, Any]] = {
             cid: {
                 "listing_count": 0,
                 "listing_beike": 0,
@@ -412,9 +462,10 @@ class MonitorService:
             all_stats[cid]["listing_count"] += count
             all_stats[cid]["listing_total_price"] += avg * count
 
-            if "beike" in src or "贝壳" in src or "链家" in src:
+            channel = _match_data_source(src)
+            if channel == "beike":
                 all_stats[cid]["listing_beike"] += count
-            elif "5i5j" in src or "我爱" in src or "iaij" in src:
+            elif channel == "iaij":
                 all_stats[cid]["listing_iaij"] += count
 
         # 处理成交数据
@@ -429,13 +480,24 @@ class MonitorService:
             all_stats[cid]["deal_count"] += count
             all_stats[cid]["deal_total_price"] += avg * count
 
-            if "beike" in src or "贝壳" in src or "链家" in src:
+            channel = _match_data_source(src)
+            if channel == "beike":
                 all_stats[cid]["deal_beike"] += count
-            elif "5i5j" in src or "我爱" in src or "iaij" in src:
+            elif channel == "iaij":
                 all_stats[cid]["deal_iaij"] += count
 
-        # 6. 获取本案成交均价作为基准
-        final_stats = {}
+        return all_stats
+
+    def _build_neighborhood_items(
+        self,
+        all_community_ids: list[str],
+        community_map: dict[str, Community],
+        all_stats: dict[str, dict[str, Any]],
+        community_id: str,
+    ) -> list[NeighborhoodRadarItem]:
+        """计算均价、价差并组装响应项，本案排在最后."""
+        # 1. 计算均价
+        final_stats: dict[str, dict[str, Any]] = {}
         for cid, data in all_stats.items():
             l_count = data["listing_count"]
             d_count = data["deal_count"]
@@ -447,8 +509,8 @@ class MonitorService:
 
         subject_deal_avg = final_stats[community_id]["deal_avg_price"]
 
-        # 7. 构建响应
-        items = []
+        # 2. 构建响应
+        items: list[NeighborhoodRadarItem] = []
         for cid in all_community_ids:
             c = community_map.get(cid)
             if not c:
@@ -490,11 +552,9 @@ class MonitorService:
 
         # 本案排在最后
         items.sort(key=lambda x: (x.is_subject, x.community_name))
+        return items
 
-        return NeighborhoodRadarResponse(items=items)
-
-    @staticmethod
-    def get_community_market_stats(db: Session, community_id: str) -> CommunityMarketStatsResponse:
+    def get_community_market_stats(self, community_id: str) -> CommunityMarketStatsResponse:
         """获取小区市场统计数据.
 
         用于项目卡片展示:
@@ -503,6 +563,7 @@ class MonitorService:
         - 30日成交量
         - 30日价格趋势
         """
+        db = self.db
         now = datetime.now(timezone.utc)
         thirty_days_ago = now - timedelta(days=30)
         sixty_days_ago = now - timedelta(days=60)

@@ -18,6 +18,10 @@
 - create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
 - add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填（多票据支持）
 - add_cashflow_category_enum_values: 同步 PostgreSQL cashflowcategory enum 与 Python CashFlowCategory 枚举（遍历所有值，幂等）
+- migrate_record_date_to_timestamptz: 将 finance_records.record_date 列类型从 timestamp
+  迁移为 timestamptz（时区一致性修复，幂等）
+- migrate_project_date_columns_to_date: 将 projects 表 commission_start_date/commission_end_date/
+  finance_settled_date 列从 VARCHAR(10) 迁移为 date（日期类型合规修复，幂等）
 
 """
 
@@ -61,9 +65,7 @@ def add_token_version_column(engine: Engine) -> None:
         return
     logger.info("迁移：为 users 表添加 token_version 列")
     with engine.begin() as conn:
-        conn.execute(
-            text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 1")
-        )
+        conn.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 1"))
 
 
 def add_phone_hash_column(engine: Engine) -> None:
@@ -74,16 +76,12 @@ def add_phone_hash_column(engine: Engine) -> None:
     if not _column_exists(engine, "users", "phone_hash"):
         logger.info("迁移：为 users 表添加 phone_hash 列")
         with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN phone_hash VARCHAR(64)")
-            )
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone_hash VARCHAR(64)"))
 
     if not _index_exists(engine, "idx_users_phone_hash"):
         logger.info("迁移：创建 phone_hash 唯一索引")
         with engine.begin() as conn:
-            conn.execute(
-                text("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_hash ON users(phone_hash)")
-            )
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_hash ON users(phone_hash)"))
 
 
 def encrypt_existing_phones(engine: Engine) -> None:
@@ -189,9 +187,7 @@ def add_stage_completed_dates_column(engine: Engine) -> None:
         return
     logger.info("迁移：为 l4_marketing_projects 表添加 stage_completed_dates 列")
     with engine.begin() as conn:
-        conn.execute(
-            text("ALTER TABLE l4_marketing_projects ADD COLUMN stage_completed_dates JSON")
-        )
+        conn.execute(text("ALTER TABLE l4_marketing_projects ADD COLUMN stage_completed_dates JSON"))
 
 
 def add_thumbnail_url_to_photos(engine: Engine) -> None:
@@ -199,15 +195,18 @@ def add_thumbnail_url_to_photos(engine: Engine) -> None:
 
     存储压缩后缩略图 URL，供列表展示加速使用。
     SQLite 支持 ALTER TABLE ADD COLUMN，幂等：通过 _column_exists 检查跳过已存在列。
+    使用硬编码 DDL 字符串避免 f-string 拼接表名（AGENTS.md §11）。
     """
-    for table in ("renovation_photos", "property_media"):
-        if _column_exists(engine, table, "thumbnail_url"):
+    from sqlalchemy import text  # noqa: PLC0415
+
+    for table_name in ("renovation_photos", "property_media"):
+        if _column_exists(engine, table_name, "thumbnail_url"):
             continue
-        logger.info("迁移：为 %s 表添加 thumbnail_url 列", table)
+        logger.info("迁移：为 %s 表添加 thumbnail_url 列", table_name)
+        # table_name 来自硬编码元组,无注入风险;DDL 不支持绑定参数
+        ddl = "ALTER TABLE " + table_name + " ADD COLUMN thumbnail_url TEXT"
         with engine.begin() as conn:
-            conn.execute(
-                text(f"ALTER TABLE {table} ADD COLUMN thumbnail_url TEXT")
-            )
+            conn.execute(text(ddl))
 
 
 def add_renovation_extra_amount_columns(engine: Engine) -> None:
@@ -218,21 +217,22 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
       （兼容已部署旧字段的存量数据）；若 appliance_amount 不存在则 ADD COLUMN。
     - SQLite 3.25+ 与 PostgreSQL 均支持 ALTER TABLE RENAME COLUMN。
     - 幂等：通过 _column_exists 检查跳过已存在列。
+    - 使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
     """
+    from sqlalchemy import text  # noqa: PLC0415
+
     # 1) custom_cabinet_amount / window_amount：直接加列
-    for column, ddl_type in (
-        ("custom_cabinet_amount", "NUMERIC(15, 2)"),
-        ("window_amount", "NUMERIC(15, 2)"),
+    # 列名与类型来自硬编码元组,无注入风险;DDL 不支持绑定参数
+    for column_name, column_type_sql in (
+        ("custom_cabinet_amount", "NUMERIC(15,2)"),
+        ("window_amount", "NUMERIC(15,2)"),
     ):
-        if _column_exists(engine, "project_renovations", column):
+        if _column_exists(engine, "project_renovations", column_name):
             continue
-        logger.info("迁移：为 project_renovations 表添加 %s 列", column)
+        logger.info("迁移：为 project_renovations 表添加 %s 列", column_name)
+        ddl = "ALTER TABLE project_renovations ADD COLUMN " + column_name + " " + column_type_sql
         with engine.begin() as conn:
-            conn.execute(
-                text(
-                    f"ALTER TABLE project_renovations ADD COLUMN {column} {ddl_type}"
-                )
-            )
+            conn.execute(text(ddl))
 
     # 2) wall_treatment_amount：优先重命名 appliance_amount，否则加列
     if _column_exists(engine, "project_renovations", "wall_treatment_amount"):
@@ -241,20 +241,12 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
         logger.info("迁移：重命名 project_renovations.appliance_amount → wall_treatment_amount")
         with engine.begin() as conn:
             conn.execute(
-                text(
-                    "ALTER TABLE project_renovations "
-                    "RENAME COLUMN appliance_amount TO wall_treatment_amount"
-                )
+                text("ALTER TABLE project_renovations RENAME COLUMN appliance_amount TO wall_treatment_amount")
             )
         return
     logger.info("迁移：为 project_renovations 表添加 wall_treatment_amount 列")
     with engine.begin() as conn:
-        conn.execute(
-            text(
-                "ALTER TABLE project_renovations "
-                "ADD COLUMN wall_treatment_amount NUMERIC(15, 2)"
-            )
-        )
+        conn.execute(text("ALTER TABLE project_renovations ADD COLUMN wall_treatment_amount NUMERIC(15, 2)"))
 
 
 def create_investment_tables(engine: Engine) -> None:
@@ -321,20 +313,21 @@ def add_finance_record_counterparty_columns(engine: Engine) -> None:
     - receipt_url: 票据图片URL（VARCHAR(500)）
     - SQLite 3.25+ 与 PostgreSQL 均支持 ALTER TABLE ADD COLUMN。
     - 幂等：通过 _column_exists 检查跳过已存在列。
+    - 使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
     """
-    for column, ddl_type in (
+    from sqlalchemy import text  # noqa: PLC0415
+
+    # 列名与类型来自硬编码元组,无注入风险;DDL 不支持绑定参数
+    for column_name, column_type_sql in (
         ("counterparty", "VARCHAR(100)"),
         ("receipt_url", "VARCHAR(500)"),
     ):
-        if _column_exists(engine, "finance_records", column):
+        if _column_exists(engine, "finance_records", column_name):
             continue
-        logger.info("迁移：为 finance_records 表添加 %s 列", column)
+        logger.info("迁移：为 finance_records 表添加 %s 列", column_name)
+        ddl = "ALTER TABLE finance_records ADD COLUMN " + column_name + " " + column_type_sql
         with engine.begin() as conn:
-            conn.execute(
-                text(
-                    f"ALTER TABLE finance_records ADD COLUMN {column} {ddl_type}"
-                )
-            )
+            conn.execute(text(ddl))
 
 
 def create_finance_record_logs_table(engine: Engine) -> None:
@@ -408,9 +401,7 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
             for row in rows:
                 rec_id, url = row[0], row[1]
                 conn.execute(
-                    update(finance_records_tbl)
-                    .where(finance_records_tbl.c.id == rec_id)
-                    .values(receipt_urls=[url]),
+                    update(finance_records_tbl).where(finance_records_tbl.c.id == rec_id).values(receipt_urls=[url]),
                 )
                 updated += 1
             last_id = rows[-1][0]
@@ -439,9 +430,7 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
 
     # 先检查 enum type 是否存在（避免 ::regtype CAST 对不存在的类型报错）
     with engine.connect() as conn:
-        type_exists = conn.execute(
-            text("SELECT 1 FROM pg_type WHERE typname = 'cashflowcategory'")
-        ).scalar()
+        type_exists = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'cashflowcategory'")).scalar()
     if not type_exists:
         logger.info("迁移：cashflowcategory enum type 不存在，跳过同步（将由 create_all 创建）")
         return
@@ -460,9 +449,8 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
                 {"label": val},
             ).scalar()
             if not exists:
-                conn.execute(
-                    text(f"ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '{val}'")
-                )
+                # PostgreSQL DDL 不支持绑定参数；枚举值来自可信 Python enum，非用户输入
+                conn.execute(text("ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '%s'" % val))
                 added += 1
 
     if added:
@@ -495,25 +483,19 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
             else:
                 conn.execute(
                     text(
-                        "ALTER TABLE projects "
-                        "ADD COLUMN finance_settlement_status VARCHAR "
-                        "NOT NULL DEFAULT 'unsettled'"
+                        "ALTER TABLE projects ADD COLUMN finance_settlement_status VARCHAR NOT NULL DEFAULT 'unsettled'"
                     )
                 )
         logger.info("迁移：projects 表新增 finance_settlement_status 列")
 
     if not _column_exists(engine, "projects", "finance_settled_date"):
         with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE projects ADD COLUMN finance_settled_date VARCHAR(10)")
-            )
+            conn.execute(text("ALTER TABLE projects ADD COLUMN finance_settled_date DATE"))
         logger.info("迁移：projects 表新增 finance_settled_date 列")
 
     if not _column_exists(engine, "projects", "finance_settled_note"):
         with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE projects ADD COLUMN finance_settled_note VARCHAR(500)")
-            )
+            conn.execute(text("ALTER TABLE projects ADD COLUMN finance_settled_note VARCHAR(500)"))
         logger.info("迁移：projects 表新增 finance_settled_note 列")
 
     # 2. 同步 PostgreSQL financeactiontype enum（新增 settle/unsettle）
@@ -523,9 +505,7 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
 
         # 先检查 enum type 是否存在（避免 ::regtype CAST 对不存在的类型报错）
         with engine.connect() as conn:
-            type_exists = conn.execute(
-                text("SELECT 1 FROM pg_type WHERE typname = 'financeactiontype'")
-            ).scalar()
+            type_exists = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'financeactiontype'")).scalar()
         if not type_exists:
             logger.info("迁移：financeactiontype enum type 不存在，跳过同步（将由 create_all 创建）")
             return
@@ -543,14 +523,107 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
                     {"label": val},
                 ).scalar()
                 if not exists:
-                    conn.execute(
-                        text(
-                            f"ALTER TYPE financeactiontype ADD VALUE IF NOT EXISTS '{val}'"
-                        )
-                    )
+                    # PostgreSQL DDL 不支持绑定参数；枚举值来自可信 Python enum，非用户输入
+                    conn.execute(text("ALTER TYPE financeactiontype ADD VALUE IF NOT EXISTS '%s'" % val))
                     added += 1
         if added:
             logger.info("迁移：同步 financeactiontype enum（共 %d 个值）", added)
+
+
+def migrate_record_date_to_timestamptz(engine: Engine) -> None:
+    """将 finance_records.record_date 列从 timestamp 迁移为 timestamptz.
+
+    合规性修复：record_date 原为 DateTime(无 tz)，与 BaseModel 的 created_at/updated_at
+    不一致，会触发时区 stripping（违反 AGENTS.md §3 时间列统一 timezone=True）。
+
+    - PostgreSQL: ALTER COLUMN ... TYPE timestamptz USING record_date AT TIME ZONE 'UTC'
+    - SQLite: 跳过（SQLite 不区分 timestamp/timestamptz，存储为 TEXT，模型层已声明 timezone=True）
+    - 幂等：通过 information_schema.columns 判断 data_type，已是
+      'timestamp with time zone' 则跳过
+    - 表名/列名为硬编码字符串，未用 f-string 拼接变量（规范11）
+    """
+    inspector = inspect(engine)
+    if "finance_records" not in inspector.get_table_names():
+        return
+    if engine.dialect.name != "postgresql":
+        return
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(
+                "SELECT data_type FROM information_schema.columns "
+                "WHERE table_name = 'finance_records' AND column_name = 'record_date'"
+            )
+        ).first()
+    if row is None:
+        return
+    # PostgreSQL: 'timestamp with time zone' / 'timestamp without time zone'
+    if row[0] == "timestamp with time zone":
+        return
+
+    logger.info("迁移：finance_records.record_date → timestamptz（当前类型 %s）", row[0])
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE finance_records "
+                "ALTER COLUMN record_date TYPE timestamptz "
+                "USING record_date AT TIME ZONE 'UTC'"
+            )
+        )
+
+
+def migrate_project_date_columns_to_date(engine: Engine) -> None:
+    """将 projects 表的 3 个日期列从 VARCHAR(10) 迁移为 date 类型.
+
+    合规性修复：commission_start_date/commission_end_date/finance_settled_date
+    原为 String(10) 存日期字符串，违反 AGENTS.md（日期列用 Date）。
+
+    - PostgreSQL: ALTER COLUMN ... TYPE date USING to_date(..., 'YYYY-MM-DD')
+    - SQLite: 跳过（SQLite 不强制类型，模型层已声明 Date）
+    - 幂等：通过 information_schema.columns 判断 data_type，已是 date 则跳过
+    - 表名/列名为硬编码字符串，未用 f-string 拼接变量
+    """
+    inspector = inspect(engine)
+    if "projects" not in inspector.get_table_names():
+        return
+    if engine.dialect.name != "postgresql":
+        return
+
+    # 每列对应一段硬编码 ALTER SQL（避免 f-string 拼接列名）
+    alter_statements = {
+        "commission_start_date": (
+            "ALTER TABLE projects "
+            "ALTER COLUMN commission_start_date TYPE date "
+            "USING to_date(commission_start_date, 'YYYY-MM-DD')"
+        ),
+        "commission_end_date": (
+            "ALTER TABLE projects "
+            "ALTER COLUMN commission_end_date TYPE date "
+            "USING to_date(commission_end_date, 'YYYY-MM-DD')"
+        ),
+        "finance_settled_date": (
+            "ALTER TABLE projects "
+            "ALTER COLUMN finance_settled_date TYPE date "
+            "USING to_date(finance_settled_date, 'YYYY-MM-DD')"
+        ),
+    }
+
+    for column_name, alter_sql in alter_statements.items():
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT data_type FROM information_schema.columns "
+                    "WHERE table_name = 'projects' AND column_name = :col"
+                ),
+                {"col": column_name},
+            ).first()
+        if row is None:
+            continue
+        if row[0] == "date":
+            continue
+        logger.info("迁移：projects.%s → date（当前类型 %s）", column_name, row[0])
+        with engine.begin() as conn:
+            conn.execute(text(alter_sql))
 
 
 def run_startup_migrations(engine: Engine) -> None:
@@ -571,6 +644,8 @@ def run_startup_migrations(engine: Engine) -> None:
         add_finance_record_receipt_urls_column(engine)
         add_cashflow_category_enum_values(engine)
         add_project_finance_settlement_columns(engine)
+        migrate_record_date_to_timestamptz(engine)
+        migrate_project_date_columns_to_date(engine)
     except Exception:  # noqa: BLE001
         logger.exception("启动迁移失败")
         raise

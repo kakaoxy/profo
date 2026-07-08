@@ -84,7 +84,7 @@ class ProjectResponseBuilder:
             "community_id": project.community_id,
             "community_name": project.community_name,
             "address": project.address,
-            "area": str(project.area) if project.area else None,
+            "area": project.area if project.area else None,
             "layout": project.layout,
             "orientation": project.orientation,
             "floor_info": project.floor_info,
@@ -134,11 +134,11 @@ class ProjectResponseBuilder:
 
         return {
             "contract_no": contract.contract_no,
-            "signing_price": float(contract.signing_price) if contract.signing_price is not None else None,
+            "signing_price": contract.signing_price,
             "signing_date": contract.signing_date.strftime("%Y-%m-%d") if contract.signing_date else None,
             "signing_period": contract.signing_period,
             "extension_period": contract.extension_period,
-            "extension_rent": float(contract.extension_rent) if contract.extension_rent is not None else None,
+            "extension_rent": contract.extension_rent,
             "cost_assumption_type": contract.cost_assumption_type,
             "cost_assumption_other": contract.cost_assumption_other,
             "planned_handover_date": (
@@ -205,9 +205,9 @@ class ProjectResponseBuilder:
 
         return {
             "listing_date": sale.listing_date.strftime("%Y-%m-%d") if sale.listing_date else None,
-            "list_price": float(sale.list_price) if sale.list_price else None,
+            "list_price": sale.list_price if sale.list_price else None,
             "sold_date": sale.sold_date.strftime("%Y-%m-%d") if sale.sold_date else None,
-            "sold_price": float(sale.sold_price) if sale.sold_price else None,
+            "sold_price": sale.sold_price if sale.sold_price else None,
             "transaction_status": sale.transaction_status,
             "channel_manager_id": sale.channel_manager_id,
             "property_agent_id": sale.property_agent_id,

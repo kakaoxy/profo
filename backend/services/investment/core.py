@@ -311,17 +311,13 @@ class InvestmentService:
 
     def _get_project_code(self, project: Project) -> str:
         """获取项目编号：优先使用合同编号，否则回退到项目 ID."""
-        if (
-            project.contract is not None
-            and not project.contract.is_deleted
-            and project.contract.contract_no
-        ):
+        if project.contract is not None and not project.contract.is_deleted and project.contract.contract_no:
             return project.contract.contract_no
         return project.id
 
     # ==================== 列表 / 统计 / 详情 ====================
 
-    def list_investments(  # noqa: PLR0913
+    def list_investments(  # noqa: PLR0913 - 3 过滤 + 2 分页参数，合并需引入 Filter DTO 属过度设计
         self,
         search: str | None = None,
         project_status: ProjectStatus | None = None,
@@ -369,12 +365,7 @@ class InvestmentService:
 
         total: int = query.count()
         offset = (page - 1) * page_size
-        rows = (
-            query.order_by(Investment.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-            .all()
-        )
+        rows = query.order_by(Investment.created_at.desc()).offset(offset).limit(page_size).all()
 
         items: list[InvestmentListItemResponse] = []
         for inv, proj_status, proj_address, inv_count in rows:
@@ -405,10 +396,12 @@ class InvestmentService:
         """5 张汇总卡片统计."""
         base = self.db.query(Investment).filter(Investment.deleted_at.is_(None))
         total_projects: int = base.count()
-        total_investment: Decimal = base.with_entities(func.coalesce(func.sum(Investment.total_investment), 0)).scalar() or Decimal(0)
-        total_return: Decimal = (
-            base.with_entities(func.coalesce(func.sum(Investment.total_return), 0)).scalar() or Decimal(0)
-        )
+        total_investment: Decimal = base.with_entities(
+            func.coalesce(func.sum(Investment.total_investment), 0)
+        ).scalar() or Decimal(0)
+        total_return: Decimal = base.with_entities(
+            func.coalesce(func.sum(Investment.total_return), 0)
+        ).scalar() or Decimal(0)
         unsettled_count: int = base.filter(Investment.settlement_status == SettlementStatus.UNSETTLED).count()
 
         if total_investment > 0:
@@ -640,98 +633,76 @@ class InvestmentService:
             ],
         )
 
-    def update_investor(  # noqa: PLR0912, PLR0915
+    def _update_investor_share_ratio(
         self,
-        investment_id: str,
-        investor_id: str,
-        data: InvestorUpdate,
-        operator_id: str,
-    ) -> InvestorResponse:
-        """更新投资方：校验同 add_investor；sub_investors 整体替换."""
-        inv = self._get_investment_or_404(investment_id)
-        self._assert_editable(inv)
-
-        investor = (
-            self.db.query(Investor)
-            .filter(Investor.id == investor_id, Investor.investment_id == investment_id)
-            .first()
-        )
-        if investor is None:
-            raise ResourceNotFoundError("投资方不存在")
-
-        update_data = data.model_dump(exclude_unset=True)
-
-        if "name" in update_data and update_data["name"] is not None:
-            self._validate_name_unique(investment_id, update_data["name"], investor.parent_id, exclude_investor_id=investor_id)
-            investor.name = update_data["name"]
-
-        if "type" in update_data and update_data["type"] is not None:
-            investor.type = update_data["type"]
-
-        if "remark" in update_data:
-            investor.remark = update_data["remark"]
-
+        inv: Investment,
+        investor: Investor,
+        new_ratio: Decimal,
+    ) -> None:
+        """更新投资方分配比例（含母/子投资方校验与金额重算）."""
         is_parent = investor.parent_id is None
-        if "share_ratio" in update_data and update_data["share_ratio"] is not None:
-            new_ratio = Decimal(str(update_data["share_ratio"]))
-            if is_parent:
-                self._validate_investor_ratios(inv, new_ratio, exclude_investor_id=investor_id)
-                investor.share_ratio = new_ratio
-                investor.invest_amount = self._calc_parent_amount(inv.total_investment, new_ratio)
-            else:
-                investor.share_ratio = new_ratio
-                parent_investor = (
-                    self.db.query(Investor).filter(Investor.id == investor.parent_id).first()
-                )
-                if parent_investor is not None:
-                    self._validate_sub_ratios(
-                        [
-                            SubInvestorCreate(name=s.name, share_ratio=s.share_ratio, remark=None)
-                            for s in parent_investor.sub_investors
-                            if s.id != investor_id
-                        ]
-                        + [SubInvestorCreate(name="_new", share_ratio=new_ratio, remark=None)]
-                    )
-                    investor.invest_amount = self._calc_sub_amount(parent_investor.invest_amount, new_ratio)
+        if is_parent:
+            self._validate_investor_ratios(inv, new_ratio, exclude_investor_id=investor.id)
+            investor.share_ratio = new_ratio
+            investor.invest_amount = self._calc_parent_amount(inv.total_investment, new_ratio)
+            return
 
-        if "sub_investors" in update_data and is_parent:
-            for old_sub in list(investor.sub_investors):
-                self.db.delete(old_sub)
-            new_subs = update_data["sub_investors"] or []
+        investor.share_ratio = new_ratio
+        parent_investor = self.db.query(Investor).filter(Investor.id == investor.parent_id).first()
+        if parent_investor is not None:
             self._validate_sub_ratios(
-                [SubInvestorCreate(name=s["name"], share_ratio=Decimal(str(s["share_ratio"])), remark=None) for s in new_subs]
+                [
+                    SubInvestorCreate(name=s.name, share_ratio=s.share_ratio, remark=None)
+                    for s in parent_investor.sub_investors
+                    if s.id != investor.id
+                ]
+                + [SubInvestorCreate(name="_new", share_ratio=new_ratio, remark=None)]
             )
-            created_subs: list[Investor] = []
-            for sub_data in new_subs:
-                sub_amount = self._calc_sub_amount(investor.invest_amount, Decimal(str(sub_data["share_ratio"])))
-                sub = Investor(
-                    investment_id=investment_id,
-                    name=sub_data["name"],
-                    type=investor.type,
-                    share_ratio=Decimal(str(sub_data["share_ratio"])),
-                    invest_amount=sub_amount,
-                    parent_id=investor.id,
-                    sort_order=None,
-                    remark=sub_data.get("remark"),
+            investor.invest_amount = self._calc_sub_amount(parent_investor.invest_amount, new_ratio)
+
+    def _replace_investor_sub_investors(
+        self,
+        investor: Investor,
+        new_subs: list[dict[str, Any]],
+    ) -> None:
+        """整体替换母投资方的子投资人列表（先删后建）."""
+        for old_sub in list(investor.sub_investors):
+            self.db.delete(old_sub)
+        self._validate_sub_ratios(
+            [
+                SubInvestorCreate(
+                    name=s["name"],
+                    share_ratio=Decimal(str(s["share_ratio"])),
+                    remark=None,
                 )
-                self.db.add(sub)
-                created_subs.append(sub)
-
-        self._write_log(
-            investment_id,
-            InvestmentActionType.INVESTOR_EDIT,
-            {"investor_id": investor_id, "name": investor.name},
-            operator_id,
+                for s in new_subs
+            ]
         )
-        self.db.commit()
-        self.db.refresh(investor)
+        for sub_data in new_subs:
+            sub_amount = self._calc_sub_amount(investor.invest_amount, Decimal(str(sub_data["share_ratio"])))
+            sub = Investor(
+                investment_id=investor.investment_id,
+                name=sub_data["name"],
+                type=investor.type,
+                share_ratio=Decimal(str(sub_data["share_ratio"])),
+                invest_amount=sub_amount,
+                parent_id=investor.id,
+                sort_order=None,
+                remark=sub_data.get("remark"),
+            )
+            self.db.add(sub)
 
+    def _build_investor_with_subs_response(
+        self,
+        investor: Investor,
+        include_subs: bool,
+    ) -> InvestorResponse:
+        """构建投资方响应（母投资方含子投资人列表）."""
         subs = (
-            self.db.query(Investor)
-            .filter(Investor.parent_id == investor.id)
-            .order_by(Investor.created_at)
-            .all()
-        ) if is_parent else []
+            (self.db.query(Investor).filter(Investor.parent_id == investor.id).order_by(Investor.created_at).all())
+            if include_subs
+            else []
+        )
         return InvestorResponse(
             id=investor.id,
             investment_id=investor.investment_id,
@@ -759,15 +730,62 @@ class InvestmentService:
             ],
         )
 
+    def update_investor(
+        self,
+        investment_id: str,
+        investor_id: str,
+        data: InvestorUpdate,
+        operator_id: str,
+    ) -> InvestorResponse:
+        """更新投资方：校验同 add_investor；sub_investors 整体替换."""
+        inv = self._get_investment_or_404(investment_id)
+        self._assert_editable(inv)
+
+        investor = (
+            self.db.query(Investor).filter(Investor.id == investor_id, Investor.investment_id == investment_id).first()
+        )
+        if investor is None:
+            raise ResourceNotFoundError("投资方不存在")
+
+        update_data = data.model_dump(exclude_unset=True)
+        is_parent = investor.parent_id is None
+
+        if "name" in update_data and update_data["name"] is not None:
+            self._validate_name_unique(
+                investment_id, update_data["name"], investor.parent_id, exclude_investor_id=investor_id
+            )
+            investor.name = update_data["name"]
+
+        if "type" in update_data and update_data["type"] is not None:
+            investor.type = update_data["type"]
+
+        if "remark" in update_data:
+            investor.remark = update_data["remark"]
+
+        if "share_ratio" in update_data and update_data["share_ratio"] is not None:
+            self._update_investor_share_ratio(inv, investor, Decimal(str(update_data["share_ratio"])))
+
+        if "sub_investors" in update_data and is_parent:
+            self._replace_investor_sub_investors(investor, update_data["sub_investors"] or [])
+
+        self._write_log(
+            investment_id,
+            InvestmentActionType.INVESTOR_EDIT,
+            {"investor_id": investor_id, "name": investor.name},
+            operator_id,
+        )
+        self.db.commit()
+        self.db.refresh(investor)
+
+        return self._build_investor_with_subs_response(investor, is_parent)
+
     def delete_investor(self, investment_id: str, investor_id: str, operator_id: str) -> None:
         """删除投资方：母投资方级联删除子投资人；写日志."""
         inv = self._get_investment_or_404(investment_id)
         self._assert_editable(inv)
 
         investor = (
-            self.db.query(Investor)
-            .filter(Investor.id == investor_id, Investor.investment_id == investment_id)
-            .first()
+            self.db.query(Investor).filter(Investor.id == investor_id, Investor.investment_id == investment_id).first()
         )
         if investor is None:
             raise ResourceNotFoundError("投资方不存在")
@@ -1023,7 +1041,7 @@ class InvestmentService:
             project_status=project_status,
             settlement_status=settlement_status,
             page=1,
-            page_size=100000,
+            page_size=100000,  # 导出需全量数据，非普通查询
         )
 
         wb = Workbook()
