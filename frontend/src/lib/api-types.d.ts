@@ -1444,6 +1444,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ledger/{project_id}/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取项目资金账本统计
+         * @description 获取项目资金账本统计页面聚合数据.
+         *
+         *     一次性返回 8 分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
+         */
+        get: operations["get_project_statistics_api_v1_admin_ledger__project_id__statistics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ledger/{project_id}/logs": {
         parameters: {
             query?: never;
@@ -5016,6 +5038,184 @@ export interface components {
             receipt_urls?: string[] | null;
         };
         /**
+         * LedgerStatisticsCommission
+         * @description 统计页面 - 渠道佣金及税费.
+         */
+        LedgerStatisticsCommission: {
+            /** Channel Commission */
+            channel_commission?: number | null;
+            /** Agent Commission */
+            agent_commission?: number | null;
+            /** Owner Commission */
+            owner_commission?: number | null;
+            /** Tax Diff */
+            tax_diff?: number | null;
+            /** Total */
+            total?: number | null;
+        };
+        /**
+         * LedgerStatisticsDeposit
+         * @description 统计页面 - 履约保证金.
+         */
+        LedgerStatisticsDeposit: {
+            /** Amount */
+            amount?: number | null;
+            /** Pay Date */
+            pay_date?: string | null;
+            /** Recovery */
+            recovery?: number | null;
+            /** Receive Date */
+            receive_date?: string | null;
+            /** Is Refunded */
+            is_refunded?: string | null;
+            /** Diff */
+            diff?: number | null;
+        };
+        /**
+         * LedgerStatisticsInvestment
+         * @description 统计页面 - 投资情况.
+         */
+        LedgerStatisticsInvestment: {
+            /** Investors */
+            investors?: components["schemas"]["LedgerStatisticsInvestor"][];
+            /** Total Investment */
+            total_investment?: number | null;
+            /** Total Paid */
+            total_paid?: number | null;
+            /** Total Unpaid */
+            total_unpaid?: number | null;
+            /**
+             * Pay Progress
+             * @default 0
+             */
+            pay_progress: number;
+        };
+        /**
+         * LedgerStatisticsInvestor
+         * @description 统计页面 - 跟投人项.
+         */
+        LedgerStatisticsInvestor: {
+            /** Name */
+            name?: string | null;
+            /** Share Ratio */
+            share_ratio?: number | null;
+            /** Invest Amount */
+            invest_amount?: number | null;
+            /** Paid Amount */
+            paid_amount?: number | null;
+        };
+        /**
+         * LedgerStatisticsMarketing
+         * @description 统计页面 - 营销推广费.
+         */
+        LedgerStatisticsMarketing: {
+            /** Marketing Fee */
+            marketing_fee?: number | null;
+            /** Advance */
+            advance?: number | null;
+            /** Deduction */
+            deduction?: number | null;
+            /** Total */
+            total?: number | null;
+        };
+        /**
+         * LedgerStatisticsOperation
+         * @description 统计页面 - 运营成本.
+         */
+        LedgerStatisticsOperation: {
+            /** Operation Fee */
+            operation_fee?: number | null;
+            /** Maintenance Reserve */
+            maintenance_reserve?: number | null;
+            /** Tax Cost */
+            tax_cost?: number | null;
+            /** Total */
+            total?: number | null;
+        };
+        /**
+         * LedgerStatisticsProjectBase
+         * @description 统计页面 - 项目基础信息.
+         */
+        LedgerStatisticsProjectBase: {
+            /** Community Name */
+            community_name?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Area */
+            area?: number | null;
+            /** Status */
+            status?: string | null;
+            /** Delivery Date */
+            delivery_date?: string | null;
+            /** Deal Date */
+            deal_date?: string | null;
+            /**
+             * Project Days
+             * @default 0
+             */
+            project_days: number;
+        };
+        /**
+         * LedgerStatisticsRenovation
+         * @description 统计页面 - 装修预算.
+         */
+        LedgerStatisticsRenovation: {
+            /** Company */
+            company?: string | null;
+            /** Total Fee */
+            total_fee?: number | null;
+            /** Hard Amount */
+            hard_amount?: number | null;
+            /** Hard Unit Price */
+            hard_unit_price?: number | null;
+            /** Soft Actual */
+            soft_actual?: number | null;
+            /** Custom Cabinet */
+            custom_cabinet?: number | null;
+            /** Window */
+            window?: number | null;
+            /** Wall Treatment */
+            wall_treatment?: number | null;
+            /** Other Fee */
+            other_fee?: number | null;
+            /**
+             * Days
+             * @default 0
+             */
+            days: number;
+        };
+        /**
+         * LedgerStatisticsSummary
+         * @description 统计页面 - 资金汇总 KPI.
+         */
+        LedgerStatisticsSummary: {
+            /** Total Expense */
+            total_expense?: number | null;
+            /** Initial Investment */
+            initial_investment?: number | null;
+            /** Gross Profit */
+            gross_profit?: number | null;
+            /** Net Profit */
+            net_profit?: number | null;
+            /**
+             * Occupy Days
+             * @default 0
+             */
+            occupy_days: number;
+            /**
+             * Roi
+             * @default 0
+             */
+            roi: number;
+            /**
+             * Annual Roi
+             * @default 0
+             */
+            annual_roi: number;
+            /** Investor Profit */
+            investor_profit?: number | null;
+        };
+        /**
          * LedgerStatsResponse
          * @description 资金账本全局汇总.
          */
@@ -5611,6 +5811,20 @@ export interface components {
              * @description 委托结束日期 (YYYY-MM-DD 格式)
              */
             commission_end_date?: string | null;
+        };
+        /**
+         * ProjectLedgerStatisticsResponse
+         * @description 资金账本统计页面聚合响应（8 分组）.
+         */
+        ProjectLedgerStatisticsResponse: {
+            project_base: components["schemas"]["LedgerStatisticsProjectBase"];
+            investment: components["schemas"]["LedgerStatisticsInvestment"];
+            renovation: components["schemas"]["LedgerStatisticsRenovation"];
+            deposit: components["schemas"]["LedgerStatisticsDeposit"];
+            commission: components["schemas"]["LedgerStatisticsCommission"];
+            marketing: components["schemas"]["LedgerStatisticsMarketing"];
+            operation: components["schemas"]["LedgerStatisticsOperation"];
+            summary: components["schemas"]["LedgerStatisticsSummary"];
         };
         /**
          * ProjectReportResponse
@@ -11256,6 +11470,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CashFlowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_statistics_api_v1_admin_ledger__project_id__statistics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectLedgerStatisticsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -18,6 +18,8 @@ type FinanceSettlementChangeRequest =
 type FinanceUnsettleRequest = components["schemas"]["FinanceUnsettleRequest"];
 type FinanceSettlementResponse =
   components["schemas"]["FinanceSettlementResponse"];
+type ProjectLedgerStatisticsResponse =
+  components["schemas"]["ProjectLedgerStatisticsResponse"];
 
 type LedgerListQuery = NonNullable<
   paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]
@@ -253,6 +255,36 @@ export async function fetchLogs(
     };
   } catch (e) {
     logger.error("获取资金账本操作日志异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 获取项目资金账本统计数据（Server Action）
+ *
+ * @param projectId 项目ID
+ */
+export async function fetchProjectStatistics(
+  projectId: string,
+): Promise<ActionResult<ProjectLedgerStatisticsResponse>> {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/ledger/{project_id}/statistics",
+      { params: { path: { project_id: projectId } } },
+    );
+
+    if (error) {
+      const msg = (error as { detail?: string }).detail || "获取统计数据失败";
+      return { success: false, message: msg };
+    }
+
+    return {
+      success: true,
+      data: extractApiData<ProjectLedgerStatisticsResponse>(data),
+    };
+  } catch (e) {
+    logger.error("获取资金账本统计数据异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

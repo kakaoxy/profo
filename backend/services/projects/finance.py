@@ -4,8 +4,8 @@
 注意：已适配新的规范化表结构，财务流水使用 FinanceRecord 表
 
 文件行数说明（>500 行）：
-本文件约 730 行未拆分，原因：
-1. 现金流 CRUD、财务汇总计算、资金账本聚合统计、操作日志共享 FinanceRecord 模型与 _validate_category 校验
+本文件约 1100 行未拆分，原因：
+1. 现金流 CRUD、财务汇总计算、资金账本聚合统计（含 get_statistics 八分组）、操作日志共享 FinanceRecord 模型与 _validate_category 校验
 2. sync_financials 缓存同步被 create/delete 调用，拆分会破坏事务一致性
 3. create_record / delete_record_by_id 写日志需与主操作同事务，拆分会破坏原子性
 4. 与 InvestmentService 等同类服务保持单一 Service 类的现有模式一致
@@ -23,10 +23,34 @@ from typing import Any
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
-from models import FinanceRecord, FinanceRecordLog, Project, ProjectContract, ProjectSale, User
+from models import (
+    FinanceRecord,
+    FinanceRecordLog,
+    Investment,
+    Investor,
+    Project,
+    ProjectContract,
+    ProjectRenovation,
+    ProjectSale,
+    User,
+)
 from models.common import BusinessForm, CashFlowCategory, CashFlowType, FinanceActionType, SettlementStatus
 from schemas.project import FinanceLogResponse
-from schemas.project.finance import FinanceSettlementChangeRequest, FinanceSettlementResponse, FinanceUnsettleRequest
+from schemas.project.finance import (
+    FinanceSettlementChangeRequest,
+    FinanceSettlementResponse,
+    FinanceUnsettleRequest,
+    LedgerStatisticsCommission,
+    LedgerStatisticsDeposit,
+    LedgerStatisticsInvestment,
+    LedgerStatisticsInvestor,
+    LedgerStatisticsMarketing,
+    LedgerStatisticsOperation,
+    LedgerStatisticsProjectBase,
+    LedgerStatisticsRenovation,
+    LedgerStatisticsSummary,
+    ProjectLedgerStatisticsResponse,
+)
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 from settings import settings
 from utils.file_security import get_safe_file_path
@@ -752,6 +776,337 @@ class FinanceService:
             len(receipt_files),
         )
         return filename_stem, zip_buffer.getvalue()
+
+    def get_statistics(self, project_id: str) -> ProjectLedgerStatisticsResponse:
+        """资金账本统计页面：一次性聚合项目统计数据.
+
+        聚合 8 个分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
+        单次查询按 (type, category) 分组聚合 FinanceRecord，避免 N+1.
+        """
+        # 1. 获取项目（404 if not found or soft-deleted）
+        project = (
+            self.db.query(Project)
+            .filter(Project.id == project_id, Project.is_deleted.is_(False))
+            .first()
+        )
+        if not project:
+            raise ResourceNotFoundError("项目不存在")
+
+        # 2. 获取合同（planned_handover_date = 交房时间）
+        contract = (
+            self.db.query(ProjectContract)
+            .filter(ProjectContract.project_id == project_id)
+            .first()
+        )
+
+        # 3. 获取销售（sold_date = 成交时间）
+        sale = (
+            self.db.query(ProjectSale)
+            .filter(ProjectSale.project_id == project_id)
+            .first()
+        )
+
+        # 4. 获取装修信息
+        renovation = (
+            self.db.query(ProjectRenovation)
+            .filter(ProjectRenovation.project_id == project_id)
+            .first()
+        )
+
+        # 5. 获取投资 + 顶级投资方（parent_id is null）
+        investment = (
+            self.db.query(Investment)
+            .filter(Investment.project_id == project_id, Investment.deleted_at.is_(None))
+            .first()
+        )
+        investors: list[Investor] = []
+        if investment:
+            investors = (
+                self.db.query(Investor)
+                .filter(Investor.investment_id == investment.id, Investor.parent_id.is_(None))
+                .order_by(Investor.sort_order)
+                .all()
+            )
+
+        # 6. 聚合 FinanceRecord by (type, category)，单次查询
+        agg_rows = (
+            self.db.query(
+                FinanceRecord.type,
+                FinanceRecord.category,
+                func.sum(FinanceRecord.amount).label("total"),
+            )
+            .filter(
+                FinanceRecord.project_id == project_id,
+                FinanceRecord.is_deleted.is_(False),
+            )
+            .group_by(FinanceRecord.type, FinanceRecord.category)
+            .all()
+        )
+        agg: dict[tuple[str, str], Decimal] = {}
+        for row in agg_rows:
+            type_key = row.type.value if hasattr(row.type, "value") else str(row.type)
+            cat_key = row.category.value if hasattr(row.category, "value") else str(row.category)
+            agg[(type_key, cat_key)] = row.total or Decimal(0)
+
+        def _amount(flow_type: CashFlowType, category: CashFlowCategory) -> Decimal:
+            return agg.get((flow_type.value, category.value), Decimal(0))
+
+        # 7. 跟投实付：按 counterparty 匹配 PROJECT_INVESTMENT (income)
+        paid_rows = (
+            self.db.query(
+                FinanceRecord.counterparty,
+                func.sum(FinanceRecord.amount).label("paid"),
+            )
+            .filter(
+                FinanceRecord.project_id == project_id,
+                FinanceRecord.is_deleted.is_(False),
+                FinanceRecord.type == CashFlowType.INCOME.value,
+                FinanceRecord.category == CashFlowCategory.PROJECT_INVESTMENT,
+            )
+            .group_by(FinanceRecord.counterparty)
+            .all()
+        )
+        paid_map: dict[str | None, Decimal] = {
+            row.counterparty: row.paid or Decimal(0) for row in paid_rows
+        }
+
+        # 8. 保证金最近支付/收款时间
+        bond_pay_date = (
+            self.db.query(func.max(FinanceRecord.record_date))
+            .filter(
+                FinanceRecord.project_id == project_id,
+                FinanceRecord.is_deleted.is_(False),
+                FinanceRecord.type == CashFlowType.EXPENSE.value,
+                FinanceRecord.category == CashFlowCategory.PERFORMANCE_BOND,
+            )
+            .scalar()
+        )
+        bond_receive_date = (
+            self.db.query(func.max(FinanceRecord.record_date))
+            .filter(
+                FinanceRecord.project_id == project_id,
+                FinanceRecord.is_deleted.is_(False),
+                FinanceRecord.type == CashFlowType.INCOME.value,
+                FinanceRecord.category == CashFlowCategory.BOND_RECOVERY,
+            )
+            .scalar()
+        )
+
+        # ==================== 构建响应各分组 ====================
+
+        # --- project_base ---
+        today = datetime.now(timezone.utc).date()
+        planned_date = (
+            contract.planned_handover_date.date()
+            if contract and contract.planned_handover_date
+            else None
+        )
+        sold_date = sale.sold_date.date() if sale and sale.sold_date else None
+
+        if planned_date is None:
+            project_days = 0
+        elif sold_date is not None:
+            project_days = (sold_date - planned_date).days
+        else:
+            project_days = (today - planned_date).days
+
+        project_base = LedgerStatisticsProjectBase(
+            community_name=project.community_name,
+            address=project.address,
+            area=project.area,
+            status=project.status.value if project.status else None,
+            delivery_date=contract.planned_handover_date if contract else None,
+            deal_date=sale.sold_date if sale else None,
+            project_days=project_days,
+        )
+
+        # --- investment ---
+        investor_items: list[LedgerStatisticsInvestor] = []
+        total_invest_amount = Decimal(0)
+        total_paid_amount = Decimal(0)
+        for inv in investors:
+            inv_paid = paid_map.get(inv.name, Decimal(0))
+            total_invest_amount += inv.invest_amount
+            total_paid_amount += inv_paid
+            investor_items.append(
+                LedgerStatisticsInvestor(
+                    name=inv.name,
+                    share_ratio=inv.share_ratio,
+                    invest_amount=inv.invest_amount,
+                    paid_amount=inv_paid,
+                ),
+            )
+
+        total_unpaid = total_invest_amount - total_paid_amount
+        pay_progress = (
+            float((total_paid_amount / total_invest_amount) * 100)
+            if total_invest_amount > 0
+            else 0.0
+        )
+        investment_info = LedgerStatisticsInvestment(
+            investors=investor_items,
+            total_investment=total_invest_amount,
+            total_paid=total_paid_amount,
+            total_unpaid=total_unpaid,
+            pay_progress=round(pay_progress, 1),
+        )
+
+        # --- renovation ---
+        if renovation:
+            hard_amount = renovation.hard_contract_amount or Decimal(0)
+            soft_actual = renovation.soft_actual_cost or Decimal(0)
+            custom_cabinet = renovation.custom_cabinet_amount or Decimal(0)
+            window_amount = renovation.window_amount or Decimal(0)
+            wall_treatment = renovation.wall_treatment_amount or Decimal(0)
+            design_fee = renovation.design_fee or Decimal(0)
+            demolition_fee = renovation.demolition_fee or Decimal(0)
+            garbage_fee = renovation.garbage_fee or Decimal(0)
+            other_fee = renovation.other_extra_fee or Decimal(0)
+
+            total_fee = (
+                hard_amount + soft_actual + custom_cabinet + window_amount
+                + wall_treatment + design_fee + demolition_fee + garbage_fee + other_fee
+            )
+
+            area = project.area or Decimal(0)
+            hard_unit_price = hard_amount / area if area > 0 else Decimal(0)
+
+            reno_start = renovation.actual_start_date or renovation.contract_start_date
+            reno_end = renovation.actual_end_date or datetime.now(timezone.utc)
+            if reno_start:
+                reno_days = (reno_end.date() - reno_start.date()).days
+            else:
+                reno_days = 0
+
+            renovation_info = LedgerStatisticsRenovation(
+                company=renovation.renovation_company,
+                total_fee=total_fee,
+                hard_amount=hard_amount,
+                hard_unit_price=hard_unit_price,
+                soft_actual=soft_actual,
+                custom_cabinet=custom_cabinet,
+                window=window_amount,
+                wall_treatment=wall_treatment,
+                other_fee=other_fee,
+                days=reno_days,
+            )
+        else:
+            renovation_info = LedgerStatisticsRenovation()
+
+        # --- deposit ---
+        deposit_amount = _amount(CashFlowType.EXPENSE, CashFlowCategory.PERFORMANCE_BOND)
+        deposit_recovery = _amount(CashFlowType.INCOME, CashFlowCategory.BOND_RECOVERY)
+        if deposit_amount > 0:
+            is_refunded = "已退还" if (deposit_amount - deposit_recovery) == 0 else "部分退还"
+        else:
+            is_refunded = "未支付"
+        deposit_diff = abs(deposit_amount - deposit_recovery)
+        deposit_info = LedgerStatisticsDeposit(
+            amount=deposit_amount,
+            pay_date=bond_pay_date,
+            recovery=deposit_recovery,
+            receive_date=bond_receive_date,
+            is_refunded=is_refunded,
+            diff=deposit_diff,
+        )
+
+        # --- commission ---
+        channel_commission = _amount(CashFlowType.EXPENSE, CashFlowCategory.CHANNEL_COMMISSION)
+        agent_commission = _amount(CashFlowType.EXPENSE, CashFlowCategory.PAID_COMMISSION)
+        owner_commission = _amount(CashFlowType.INCOME, CashFlowCategory.OWNER_COMMISSION)
+        tax_diff = _amount(CashFlowType.EXPENSE, CashFlowCategory.TAX_COMMISSION_DIFF)
+        commission_total = owner_commission - agent_commission - channel_commission - tax_diff
+        commission_info = LedgerStatisticsCommission(
+            channel_commission=channel_commission,
+            agent_commission=agent_commission,
+            owner_commission=owner_commission,
+            tax_diff=tax_diff,
+            total=commission_total,
+        )
+
+        # --- marketing ---
+        marketing_fee = _amount(CashFlowType.EXPENSE, CashFlowCategory.MARKETING_PROMOTION)
+        marketing_advance = _amount(CashFlowType.EXPENSE, CashFlowCategory.MARKETING_ADVANCE)
+        marketing_deduction = _amount(CashFlowType.INCOME, CashFlowCategory.MARKETING_PROMOTION_DEDUCTION)
+        marketing_total = marketing_fee - marketing_advance + marketing_deduction
+        marketing_info = LedgerStatisticsMarketing(
+            marketing_fee=marketing_fee,
+            advance=marketing_advance,
+            deduction=marketing_deduction,
+            total=marketing_total,
+        )
+
+        # --- operation ---
+        operation_fee = _amount(CashFlowType.EXPENSE, CashFlowCategory.OPERATION_FEE)
+        maintenance_reserve = _amount(CashFlowType.EXPENSE, CashFlowCategory.PROJECT_RESERVE)
+        tax_cost = _amount(CashFlowType.EXPENSE, CashFlowCategory.FINANCE_TAX_COST)
+        operation_total = operation_fee + maintenance_reserve + tax_cost
+        operation_info = LedgerStatisticsOperation(
+            operation_fee=operation_fee,
+            maintenance_reserve=maintenance_reserve,
+            tax_cost=tax_cost,
+            total=operation_total,
+        )
+
+        # --- summary ---
+        total_expense = Decimal(0)
+        total_income = Decimal(0)
+        for (ft, _cat), amt in agg.items():
+            if ft == CashFlowType.EXPENSE.value:
+                total_expense += amt
+            elif ft == CashFlowType.INCOME.value:
+                total_income += amt
+
+        initial_investment = (
+            _amount(CashFlowType.EXPENSE, CashFlowCategory.CHANNEL_COMMISSION)
+            + _amount(CashFlowType.EXPENSE, CashFlowCategory.PURCHASE_DEPOSIT)
+            + _amount(CashFlowType.EXPENSE, CashFlowCategory.PURCHASE_DOWNPAYMENT)
+            + _amount(CashFlowType.EXPENSE, CashFlowCategory.PROPERTY_TAX)
+            + _amount(CashFlowType.EXPENSE, CashFlowCategory.QUOTA_FEE)
+            + _amount(CashFlowType.EXPENSE, CashFlowCategory.HOLDING_COST_MONTHLY)
+            + _amount(CashFlowType.EXPENSE, CashFlowCategory.ENGINEERING_RENOVATION)
+        )
+
+        selling_commission = _amount(CashFlowType.EXPENSE, CashFlowCategory.SELLING_COMMISSION)
+        selling_tax = _amount(CashFlowType.EXPENSE, CashFlowCategory.SELLING_TAX)
+
+        gross_profit = (
+            (total_income - owner_commission)
+            - initial_investment
+            - agent_commission
+            - tax_diff
+            - selling_commission
+            - selling_tax
+            + owner_commission
+        )
+
+        net_profit = gross_profit - marketing_total - operation_fee - tax_cost
+
+        occupy_days = project_days
+        roi = round(float(net_profit / initial_investment * 100), 1) if initial_investment != 0 else 0.0
+        annual_roi = round(roi * 365 / occupy_days, 1) if occupy_days != 0 else 0.0
+
+        summary_info = LedgerStatisticsSummary(
+            total_expense=total_expense,
+            initial_investment=initial_investment,
+            gross_profit=gross_profit,
+            net_profit=net_profit,
+            occupy_days=occupy_days,
+            roi=roi,
+            annual_roi=annual_roi,
+            investor_profit=net_profit,
+        )
+
+        return ProjectLedgerStatisticsResponse(
+            project_base=project_base,
+            investment=investment_info,
+            renovation=renovation_info,
+            deposit=deposit_info,
+            commission=commission_info,
+            marketing=marketing_info,
+            operation=operation_info,
+            summary=summary_info,
+        )
 
     def delete_record_by_id(self, record_id: str, operator_id: str) -> None:
         """资金账本：按记录ID软删除流水（无需 project_id）.

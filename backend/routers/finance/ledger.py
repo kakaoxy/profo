@@ -24,6 +24,7 @@ from schemas.project import (
     LedgerProjectListItem,
     LedgerRecordCreate,
     LedgerStatsResponse,
+    ProjectLedgerStatisticsResponse,
 )
 from schemas.project.finance import (
     FinanceSettlementChangeRequest,
@@ -136,6 +137,21 @@ def get_ledger_detail(
     records = service.get_records(project_id)
     summary = service.get_summary(project_id)
     return CashFlowResponse(records=records, summary=summary)
+
+
+@router.get(
+    "/{project_id}/statistics",
+    summary="获取项目资金账本统计",
+)
+def get_project_statistics(
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: _FinanceServiceDep,
+) -> ProjectLedgerStatisticsResponse:
+    """获取项目资金账本统计页面聚合数据.
+
+    一次性返回 8 分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
+    """
+    return service.get_statistics(project_id)
 
 
 @router.get(
