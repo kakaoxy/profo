@@ -12,8 +12,6 @@ import { CommissionCard } from "./_components/commission-card";
 import { DepositCard } from "./_components/deposit-card";
 import { MarketingCard } from "./_components/marketing-card";
 import { OperationCard } from "./_components/operation-card";
-// 入场动画样式(:global(.animate-in) 仅此页生效,覆盖 tw-animate-css 默认 animate-in)
-import "./animations.module.css";
 
 type ProjectLedgerStatisticsResponse =
   components["schemas"]["ProjectLedgerStatisticsResponse"];
