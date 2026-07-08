@@ -79,7 +79,7 @@ export function SettleDialog({
         toast.success("已结算");
         onOpenChange(false);
         // 切回只读模式（清除 ?edit=1）
-        router.replace(`/admin/investments/${investment.id}`);
+        router.replace(`/admin/investments/${investment.project_id}`);
         router.refresh();
       } else {
         toast.error(res.message);

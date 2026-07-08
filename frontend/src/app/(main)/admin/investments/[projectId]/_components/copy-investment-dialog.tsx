@@ -116,7 +116,7 @@ export function CopyInvestmentDialog({
       if (res.success) {
         toast.success("复制成功，已跳转至新跟投详情页");
         onOpenChange(false);
-        router.push(`/admin/investments/${res.data.id}`);
+        router.push(`/admin/investments/${res.data.project_id}`);
       } else {
         toast.error(res.message);
       }

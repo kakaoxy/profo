@@ -1137,7 +1137,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
 
   // 退出编辑模式
   const handleExit = (): void => {
-    router.replace(`/admin/investments/${investment.id}`);
+    router.replace(`/admin/investments/${investment.project_id}`);
   };
 
   // 保存前校验所有规则
@@ -1277,7 +1277,7 @@ function InvestmentEditView({ investment }: DetailViewProps) {
 
       toast.success("保存成功");
       router.refresh();
-      router.replace(`/admin/investments/${investmentId}`);
+      router.replace(`/admin/investments/${investment.project_id}`);
     } catch {
       toast.error("保存失败，请稍后重试");
     } finally {

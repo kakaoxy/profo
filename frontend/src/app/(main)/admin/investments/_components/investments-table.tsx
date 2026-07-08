@@ -53,8 +53,8 @@ function ReturnRatioCell({ ratio }: { ratio: number }) {
 }
 
 function ActionCell({ row }: { row: InvestmentListItem }) {
-  const viewHref = `/admin/investments/${row.id}`;
-  const editHref = `/admin/investments/${row.id}?edit=1`;
+  const viewHref = `/admin/investments/${row.project_id}`;
+  const editHref = `/admin/investments/${row.project_id}?edit=1`;
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (

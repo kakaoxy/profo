@@ -277,7 +277,7 @@ export async function updateInvestment(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${id}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     revalidatePath("/admin/investments");
     return {
       success: true,
@@ -309,7 +309,7 @@ export async function addInvestor(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${investmentId}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     return {
       success: true,
       data: extractApiData<InvestorResponse>(resData),
@@ -346,7 +346,7 @@ export async function updateInvestor(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${investmentId}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     return {
       success: true,
       data: extractApiData<InvestorResponse>(resData),
@@ -381,7 +381,7 @@ export async function deleteInvestor(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${investmentId}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     return { success: true, data: null };
   } catch (e) {
     logger.error("删除投资方异常:", e);
@@ -411,7 +411,7 @@ export async function adjustDistribution(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${investmentId}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     revalidatePath("/admin/investments");
     return {
       success: true,
@@ -443,7 +443,7 @@ export async function settleInvestment(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${investmentId}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     revalidatePath("/admin/investments");
     return {
       success: true,
@@ -475,7 +475,7 @@ export async function unsettleInvestment(
       return { success: false, message: msg };
     }
 
-    revalidatePath(`/admin/investments/${investmentId}`);
+    revalidatePath("/admin/investments/[projectId]", "page");
     revalidatePath("/admin/investments");
     return {
       success: true,

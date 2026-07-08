@@ -8,16 +8,16 @@ import { InvestmentDetailView } from "./_components/investment-detail-view";
 type InvestmentResponse = components["schemas"]["InvestmentResponse"];
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ projectId: string }>;
 }
 
 export default async function InvestmentDetailPage({ params }: PageProps) {
-  const { id } = await params;
+  const { projectId } = await params;
 
   const client = await fetchClient();
   const { data, error } = await client.GET(
-    "/api/v1/admin/investments/{investment_id}",
-    { params: { path: { investment_id: id } } },
+    "/api/v1/admin/investments/by-project/{project_id}",
+    { params: { path: { project_id: projectId } } },
   );
 
   if (error || !data) {
