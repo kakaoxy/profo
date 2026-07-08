@@ -162,22 +162,24 @@ export async function batchAddL4PhotosAction(
   const results = [];
   const errors: string[] = [];
 
-  let sortOrder = 0;
-  for (const photoId of photoIds) {
-    const result = await createL4MarketingMediaAction(projectId, {
-      file_url: "",
-      media_type: "image",
-      photo_category: "marketing",
-      origin_media_id: photoId,
-      renovation_stage: null,
-      sort_order: sortOrder,
-    });
+  const responses = await Promise.all(
+    photoIds.map((photoId, i) =>
+      createL4MarketingMediaAction(projectId, {
+        file_url: "",
+        media_type: "image",
+        photo_category: "marketing",
+        origin_media_id: photoId,
+        renovation_stage: null,
+        sort_order: i,
+      })
+    )
+  );
 
+  for (const [i, result] of responses.entries()) {
     if (result.success && result.data) {
       results.push(result.data);
-      sortOrder += 1;
     } else {
-      errors.push(`ID: ${photoId}`);
+      errors.push(`ID: ${photoIds[i]}`);
     }
   }
 

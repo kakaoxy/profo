@@ -44,14 +44,6 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
   const [photos, setPhotos] = useState<L4MarketingMedia[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 初始化数据 - 只在 initialProject 变化时更新
-  useEffect(() => {
-    if (initialProject) {
-      setProject(initialProject);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProject?.id]);
-
   // 加载详情数据（带请求去重）
   const loadDetailData = useCallback(async (projectId: number) => {
     if (isFetchingRef.current) return;

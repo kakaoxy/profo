@@ -36,6 +36,8 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
   const [loading, setLoading] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const openStartTimeRef = useRef<number>(0);
+  const idleHandleRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { logMetric, metrics } = usePerformanceMonitor("photo-library-picker", {
     enableFPS: false,
@@ -54,6 +56,8 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
     if (!l3ProjectId) return;
 
     const loadData = async () => {
+      idleHandleRef.current = null;
+      timerRef.current = null;
       setLoading(true);
       const fetchStartTime = performance.now();
 
@@ -62,30 +66,22 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
         const fetchEndTime = performance.now();
 
         if (result.success && result.data) {
-          const processData = () => {
-            const formattedPhotos: RenovationPhoto[] = result.data!.map((photo: unknown) => {
-              const p = photo as Record<string, unknown>;
-              return {
-                id: p.id ? String(p.id) : String(-Date.now()),
-                project_id: String(p.project_id),
-                stage: String(p.stage || ""),
-                url: String(p.url || ""),
-                thumbnail_url: p.thumbnail_url ? String(p.thumbnail_url) : null,
-                filename: p.filename ? String(p.filename) : null,
-                description: p.description ? String(p.description) : null,
-                created_at: String(p.created_at || ""),
-              };
-            });
-            setPhotos(formattedPhotos);
-            logMetric("data_fetch", fetchEndTime - fetchStartTime);
-            logMetric("data_process", performance.now() - fetchEndTime);
-          };
-
-          if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-            window.requestIdleCallback(processData, { timeout: 100 });
-          } else {
-            setTimeout(processData, 0);
-          }
+          const formattedPhotos: RenovationPhoto[] = result.data.map((photo: unknown) => {
+            const p = photo as Record<string, unknown>;
+            return {
+              id: p.id ? String(p.id) : String(-Date.now()),
+              project_id: String(p.project_id),
+              stage: String(p.stage || ""),
+              url: String(p.url || ""),
+              thumbnail_url: p.thumbnail_url ? String(p.thumbnail_url) : null,
+              filename: p.filename ? String(p.filename) : null,
+              description: p.description ? String(p.description) : null,
+              created_at: String(p.created_at || ""),
+            };
+          });
+          setPhotos(formattedPhotos);
+          logMetric("data_fetch", fetchEndTime - fetchStartTime);
+          logMetric("data_process", performance.now() - fetchEndTime);
         } else {
           toast.error(result.message || "获取照片失败");
           setPhotos([]);
@@ -100,11 +96,32 @@ export function usePhotoLibrary({ l3ProjectId, open }: UsePhotoLibraryProps): Us
     };
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(loadData, { timeout: 200 });
+      idleHandleRef.current = window.requestIdleCallback(loadData, { timeout: 200 });
+    } else if (typeof window !== "undefined") {
+      timerRef.current = setTimeout(loadData, 50);
     } else {
-      setTimeout(loadData, 50);
+      // SSR 安全 fallback:直接执行
+      void loadData();
     }
   }, [l3ProjectId, logMetric]);
+
+  // 卸载时取消待执行的 idle callback / setTimeout,避免 setPhotos/setLoading 触发警告
+  useEffect(() => {
+    return () => {
+      if (
+        idleHandleRef.current != null &&
+        typeof window !== "undefined" &&
+        "cancelIdleCallback" in window
+      ) {
+        window.cancelIdleCallback(idleHandleRef.current);
+        idleHandleRef.current = null;
+      }
+      if (timerRef.current != null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (open) {

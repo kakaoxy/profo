@@ -129,10 +129,8 @@ export function usePhotoDragAndDrop({
       const updatedPhotos = reordered.map((p, idx) => ({ ...p, sort_order: idx }));
 
       // 合并更新
-      const newPhotos = photos.map((p) => {
-        const updated = updatedPhotos.find((u) => u.id === p.id);
-        return updated || p;
-      });
+      const updateMap = new Map(updatedPhotos.map((u) => [u.id, u]));
+      const newPhotos = photos.map((p) => updateMap.get(p.id) ?? p);
 
       onPhotosChange(newPhotos);
 

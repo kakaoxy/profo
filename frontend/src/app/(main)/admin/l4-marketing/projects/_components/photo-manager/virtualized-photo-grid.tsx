@@ -29,6 +29,7 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
   onTogglePhoto,
 }: VirtualizedPhotoGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(600);
   const [scrollTop, setScrollTop] = useState(0);
@@ -78,26 +79,31 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
     };
   }, [scrollTop, rowCount, columnCount, photos.length, containerHeight]);
 
-  // 滚动处理 - 使用requestAnimationFrame节流
+  // 滚动处理 - 使用requestAnimationFrame节流并去重
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const targetScrollTop = e.currentTarget.scrollTop;
-
-    requestAnimationFrame(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
       setScrollTop(targetScrollTop);
     });
   }, []);
 
-  // 获取指定索引的照片
-  const getPhotoAtIndex = useCallback((index: number): RenovationPhoto | undefined => {
-    return photos[index];
-  }, [photos]);
+  // 卸载时取消未执行的 rAF
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
 
   // 渲染可见的网格项
   const visibleItems = useMemo(() => {
     const items: React.ReactElement[] = [];
 
     for (let i = visibleRange.start; i < visibleRange.end; i++) {
-      const photo = getPhotoAtIndex(i);
+      const photo = photos[i];
       if (!photo) continue;
 
       const rowIndex = Math.floor(i / columnCount);
@@ -122,7 +128,7 @@ export const VirtualizedPhotoGrid = memo(function VirtualizedPhotoGrid({
     }
 
     return items;
-  }, [visibleRange, getPhotoAtIndex, columnCount, selectedIds, existingPhotoUrls, onTogglePhoto, containerWidth]);
+  }, [visibleRange, photos, columnCount, selectedIds, existingPhotoUrls, onTogglePhoto, containerWidth]);
 
   if (loading) {
     return (

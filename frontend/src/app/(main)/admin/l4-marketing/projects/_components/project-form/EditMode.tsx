@@ -9,16 +9,34 @@ import { BasicConfigFields } from "./BasicConfigFields";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import { useProjectImport } from "./useProjectImport";
 import type { EditModeProps } from "../form-types";
-import { DualPhotoManager } from "../photo-manager";
+import dynamic from "next/dynamic";
 import { ProjectSelector } from "../project-selector/ProjectSelector";
 import { ImportPreview } from "../project-selector/ImportPreview";
 import { ProjectImportButton } from "./ProjectImportButton";
-import { getCurrentUserAction } from "@/app/(main)/admin/projects/actions/sales";
-import { logger } from "@/lib/logger";
 import Link from "next/link";
 import type { L4MarketingMedia } from "../../types";
 import type { MediaFile } from "../form-schema";
 import type { ImportableMedia } from "../project-selector/types";
+
+function PhotoManagerSkeleton() {
+  return (
+    <div className="bg-primary/5 rounded-2xl p-8 animate-pulse">
+      <div className="h-6 w-32 bg-muted rounded mb-6" />
+      <div className="space-y-4">
+        <div className="h-10 bg-muted rounded" />
+        <div className="h-32 bg-muted rounded" />
+      </div>
+    </div>
+  );
+}
+
+const DualPhotoManager = dynamic(
+  () => import("../photo-manager").then((m) => m.DualPhotoManager),
+  {
+    ssr: false,
+    loading: () => <PhotoManagerSkeleton />,
+  }
+);
 
 /**
  * 验证媒体项是否有有效的 file_url
@@ -65,12 +83,32 @@ function convertImportableToL4Media(media: ImportableMedia[]): L4MarketingMedia[
     }));
 }
 
-export function EditMode({ mode, project, photos, actions }: EditModeProps) {
+/**
+ * 计算照片是否有变更（编辑模式检测）
+ * 数量变化或存在临时ID（负数或大于特定值的ID表示新上传）即视为有变更
+ */
+function computeHasPhotoChanges(
+  mode: "create" | "edit",
+  photos: L4MarketingMedia[],
+  initialCount: number
+): boolean {
+  if (mode !== "edit") return false;
+  if (photos.length !== initialCount) return true;
+  return photos.some((p) => {
+    const id = Number(p.id);
+    return id < 0 || id > 1000000000000;
+  });
+}
+
+export function EditMode({ mode, project, photos, actions, defaultConsultantId }: EditModeProps) {
   const [localPhotos, setLocalPhotos] = React.useState<L4MarketingMedia[]>(photos);
-  // 跟踪照片是否有变更（用于编辑模式检测）
-  const [hasPhotoChanges, setHasPhotoChanges] = React.useState(false);
-  // 保存初始照片数量用于比较
-  const initialPhotoCountRef = React.useRef(photos.length);
+  // 保存初始照片数量用于比较（惰性初始化，组件生命周期内不变）
+  const [initialPhotoCount] = React.useState(photos.length);
+  // 派生状态：跟踪照片是否有变更（用于编辑模式检测）
+  const hasPhotoChanges = React.useMemo(
+    () => computeHasPhotoChanges(mode, localPhotos, initialPhotoCount),
+    [mode, localPhotos, initialPhotoCount]
+  );
 
   // 创建模式下，从 localPhotos 构建 mediaFiles
   const mediaFiles = React.useMemo(() => {
@@ -86,33 +124,8 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
     actions,
     mediaFiles,
     hasPhotoChanges,
+    defaultConsultantId,
   });
-
-  // 创建模式下，房源顾问默认为当前登录用户
-  React.useEffect(() => {
-    if (mode !== "create") return;
-    let mounted = true;
-    getCurrentUserAction()
-      .then((result) => {
-        if (!mounted) return;
-        if (result.success && result.data) {
-          const current = form.getValues("consultant_id");
-          if (!current) {
-            form.setValue("consultant_id", result.data.id, {
-              shouldDirty: false,
-              shouldTouch: false,
-              shouldValidate: false,
-            });
-          }
-        }
-      })
-      .catch((err) => {
-        logger.error("加载当前用户失败:", err);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [mode, form]);
 
   // 处理导入的媒体数据
   const handleMediaImport = React.useCallback((importedMedia: ImportableMedia[]) => {
@@ -143,21 +156,9 @@ export function EditMode({ mode, project, photos, actions }: EditModeProps) {
       const newPhotos = typeof update === "function"
         ? (update as (prev: L4MarketingMedia[]) => L4MarketingMedia[])(prev)
         : update;
-
-      // 编辑模式下，检测照片是否有变更（数量变化或有新上传的照片）
-      if (mode === "edit") {
-        const hasChanges = newPhotos.length !== initialPhotoCountRef.current ||
-          newPhotos.some(p => {
-            // 检测临时ID（负数或大于特定值的ID表示新上传）
-            const id = Number(p.id);
-            return id < 0 || id > 1000000000000; // 临时ID通常是负数或时间戳
-          });
-        setHasPhotoChanges(hasChanges);
-      }
-
       return newPhotos;
     });
-  }, [mode]);
+  }, []);
 
   const submitButtonText = isSubmitting
     ? mode === "create"

@@ -277,7 +277,7 @@ class ProjectResponse(BaseModel):
     finance_settlement_status: SettlementStatus = Field(
         default=SettlementStatus.UNSETTLED, description="资金账本结算状态"
     )
-    finance_settled_date: str | None = Field(None, description="资金账本结算日期 YYYY-MM-DD")
+    finance_settled_date: date | None = Field(None, description="资金账本结算日期")
     finance_settled_note: str | None = Field(None, description="资金账本结算说明")
 
     model_config = ConfigDict(from_attributes=True)

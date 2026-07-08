@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useCallback, Suspense, useRef, useEffect } from "react";
+import React, { memo, useState, useCallback, useMemo, Suspense, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,11 @@ export const PhotosSection = memo(function PhotosSection({
   useEffect(() => {
     photosRef.current = photos;
   }, [photos]);
+
+  const existingPhotoUrls = useMemo(
+    () => new Set(photos.map((p) => p.file_url)),
+    [photos]
+  );
 
   // 适配器：将完整列表转换为新增照片数组
   const handlePhotosChange = useCallback(
@@ -257,7 +262,7 @@ export const PhotosSection = memo(function PhotosSection({
           onOpenChange={setPickerOpen}
           nextSortOrderStart={photos.length}
           onPhotosAdded={handlePhotosAdded}
-          existingPhotoUrls={new Set(photos.map((p) => p.file_url))}
+          existingPhotoUrls={existingPhotoUrls}
         />
       </Suspense>
     </div>

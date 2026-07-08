@@ -165,31 +165,31 @@ export function useImageUpload({
           );
           onPhotosChangeRef.current([...currentPhotos, ...newPhotos]);
         } else {
-          // 编辑模式：逐个调用后端接口创建媒体记录
-          const newMedias: L4MarketingMedia[] = [];
-
-          for (const { response, index } of succeeded) {
-            const createResult = await createL4MarketingMediaAction(
-              projectId,
-              {
+          // 编辑模式：并行调用后端接口创建媒体记录
+          const responses = await Promise.all(
+            succeeded.map(({ response, index }) =>
+              createL4MarketingMediaAction(projectId, {
                 file_url: response.url,
                 media_type: "image",
                 photo_category: uploadCategory,
                 renovation_stage:
                   uploadCategory === "renovation" ? uploadStage : null,
                 sort_order: baseSortOrderRef.current + index,
-              },
-            );
+              }),
+            ),
+          );
 
-            if (createResult.success && createResult.data) {
-              newMedias.push(createResult.data);
+          const newMedias: L4MarketingMedia[] = [];
+          responses.forEach((r, i) => {
+            if (r.success && r.data) {
+              newMedias.push(r.data);
             } else {
               failed.push({
-                filename: fileArray[index].name,
-                file: fileArray[index],
+                filename: succeeded[i].file.name,
+                file: succeeded[i].file,
               });
             }
-          }
+          });
 
           if (newMedias.length > 0) {
             onPhotosChangeRef.current([...currentPhotos, ...newMedias]);
