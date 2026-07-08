@@ -56,6 +56,7 @@ from .finance import (
     LedgerProjectListItem,
     LedgerRecordCreate,
     LedgerStatsResponse,
+    ProjectLedgerStatisticsResponse,
     ProjectReportResponse,
 )
 from .followup import (
@@ -155,6 +156,7 @@ __all__ = [
     "LedgerProjectListItem",
     "LedgerRecordCreate",
     "LedgerStatsResponse",
+    "ProjectLedgerStatisticsResponse",
     # Owner
     "OwnerBase",
     "OwnerCreate",
