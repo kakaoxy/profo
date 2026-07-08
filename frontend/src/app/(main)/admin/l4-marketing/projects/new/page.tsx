@@ -1,10 +1,14 @@
 import React from "react";
 import { MiniProjectForm } from "../_components/mini-project-form";
+import { getCurrentUserAction } from "@/app/(main)/admin/projects/actions/sales";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default async function ProjectCreatePage() {
+  const userResult = await getCurrentUserAction();
+  const currentUser = userResult.success && userResult.data ? userResult.data.id : undefined;
+
   return (
     <div className="min-h-screen bg-muted/50">
       <div className="w-full max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -35,7 +39,7 @@ export default async function ProjectCreatePage() {
         </div>
 
         {/* Content */}
-        <MiniProjectForm mode="create" />
+        <MiniProjectForm mode="create" defaultConsultantId={currentUser} />
       </div>
     </div>
   );

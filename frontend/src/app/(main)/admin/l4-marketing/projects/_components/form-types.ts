@@ -21,6 +21,7 @@ export interface MiniProjectFormProps {
   initialProject?: L4MarketingProject;
   initialPhotos?: L4MarketingMedia[];
   actions?: MiniProjectFormActions;
+  defaultConsultantId?: string;
 }
 
 export interface ViewModeProps {
@@ -33,6 +34,7 @@ export interface EditModeProps {
   project?: L4MarketingProject;
   photos: L4MarketingMedia[];
   actions: MiniProjectFormActions;
+  defaultConsultantId?: string;
 }
 
 export interface MarketingInfoViewProps {

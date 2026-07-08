@@ -19,14 +19,15 @@ interface UseMiniProjectFormProps {
   actions: MiniProjectFormActions;
   mediaFiles?: MediaFile[];
   hasPhotoChanges?: boolean;
+  defaultConsultantId?: string;
 }
 
-export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhotoChanges }: UseMiniProjectFormProps) {
+export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhotoChanges, defaultConsultantId }: UseMiniProjectFormProps) {
   const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: getDefaultValues(mode, project),
+    defaultValues: getDefaultValues(mode, project, defaultConsultantId),
     mode: "onSubmit",
   });
 
@@ -104,7 +105,8 @@ export function useMiniProjectForm({ mode, project, actions, mediaFiles, hasPhot
  */
 function getDefaultValues(
   mode: "create" | "edit",
-  project?: L4MarketingProject
+  project?: L4MarketingProject,
+  defaultConsultantId?: string,
 ): FormValues {
   if (mode === "create") {
     return {
@@ -121,7 +123,7 @@ function getDefaultValues(
       decoration_style: "",
       publish_status: "草稿",
       project_status: "在途",
-      consultant_id: undefined,
+      consultant_id: defaultConsultantId,
     };
   }
 

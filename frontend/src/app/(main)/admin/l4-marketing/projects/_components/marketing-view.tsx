@@ -36,6 +36,15 @@ const PROJECT_STATUS_TABS = [
   { value: "已售", label: "已售" },
 ] as const;
 
+// 户型 Tab：value 用于客户端过滤
+const LAYOUT_TABS = [
+  { value: "all", label: "全部" },
+  { value: "1", label: "1室" },
+  { value: "2", label: "2室" },
+  { value: "3", label: "3室" },
+  { value: "other", label: "其他" },
+] as const;
+
 const createLayoutFilter = (layoutFilter: string) => {
   if (layoutFilter === "all") return () => true;
 
@@ -139,14 +148,6 @@ export function MarketingView({ data, total }: MarketingViewProps) {
     setIsSheetOpen(true);
   }, []);
 
-  const layoutTabs = [
-    { value: "all", label: "全部" },
-    { value: "1", label: "1室" },
-    { value: "2", label: "2室" },
-    { value: "3", label: "3室" },
-    { value: "other", label: "其他" },
-  ];
-
   return (
     <>
       <ListView
@@ -160,7 +161,7 @@ export function MarketingView({ data, total }: MarketingViewProps) {
         filterTabs={
           <>
             <div className="flex p-1 bg-muted rounded-lg">
-              {layoutTabs.map((tab) => (
+              {LAYOUT_TABS.map((tab) => (
                 <button
                   key={tab.value}
                   onClick={() => handleLayoutChange(tab.value)}

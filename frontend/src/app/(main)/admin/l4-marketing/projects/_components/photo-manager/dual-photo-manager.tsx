@@ -71,6 +71,11 @@ export function DualPhotoManager({
     [photos]
   );
 
+  const existingPhotoUrls = useMemo(
+    () => new Set(photos.map((p) => p.file_url)),
+    [photos]
+  );
+
   const {
     activeId,
     sensors,
@@ -285,7 +290,7 @@ export function DualPhotoManager({
             onOpenChange={setPickerOpen}
             nextSortOrderStart={photos.length}
             onPhotosAdded={(addedPhotos) => onPhotosChange([...photos, ...addedPhotos])}
-            existingPhotoUrls={new Set(photos.map((p) => p.file_url))}
+            existingPhotoUrls={existingPhotoUrls}
           />
         </Suspense>
       ) : null}

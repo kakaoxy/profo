@@ -20,6 +20,7 @@ export function MiniProjectForm({
   initialProject,
   initialPhotos = [],
   actions,
+  defaultConsultantId,
 }: MiniProjectFormProps) {
   const resolvedActions = actions ?? defaultActions;
 
@@ -38,6 +39,7 @@ export function MiniProjectForm({
       project={initialProject}
       photos={initialPhotos}
       actions={resolvedActions}
+      defaultConsultantId={defaultConsultantId}
     />
   );
 }
