@@ -44,6 +44,19 @@ export const MarketingDetailSheet = memo(function MarketingDetailSheet({
   const [photos, setPhotos] = useState<L4MarketingMedia[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 当 initialProject 变化时同步 project state
+  // 使用 render 期间调整 state 模式（React 官方推荐），避免 effect 额外渲染提交
+  // 参考：https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevInitialProjectId, setPrevInitialProjectId] = useState<number | undefined>(
+    initialProject?.id
+  );
+  if (initialProject?.id !== prevInitialProjectId) {
+    setPrevInitialProjectId(initialProject?.id);
+    setProject(initialProject);
+    // 重置已加载标记，让 loadDetailData 重新拉取新项目数据
+    fetchedProjectIdRef.current = null;
+  }
+
   // 加载详情数据（带请求去重）
   const loadDetailData = useCallback(async (projectId: number) => {
     if (isFetchingRef.current) return;
