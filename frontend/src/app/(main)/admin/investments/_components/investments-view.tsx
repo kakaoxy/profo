@@ -78,7 +78,7 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
   }, [searchInput]);
 
   const handleRowClick = (row: InvestmentListItem) => {
-    router.push(`/admin/investments/${row.id}`);
+    router.push(`/admin/investments/${row.project_id}`);
   };
 
   const handleExport = async () => {

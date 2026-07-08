@@ -159,6 +159,24 @@ def get_investment(
     return item
 
 
+@router.get(
+    "/by-project/{project_id}",
+    summary="按项目ID获取跟投详情",
+)
+def get_investment_by_project(
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: _InvestmentServiceDep,
+) -> InvestmentResponse:
+    """按项目ID查询跟投记录详情（每个项目最多一条跟投记录）.
+
+    返回 404 当项目不存在跟投记录。
+    """
+    item = service.get_investment_by_project(project_id)
+    if item is None:
+        raise ResourceNotFoundError("该项目暂无跟投记录")
+    return item
+
+
 @router.put(
     "/{investment_id}",
     summary="更新跟投记录",

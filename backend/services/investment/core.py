@@ -443,6 +443,25 @@ class InvestmentService:
             return None
         return self._to_response(inv)
 
+    def get_investment_by_project(self, project_id: str) -> InvestmentResponse | None:
+        """按项目ID查询跟投记录（每个项目最多一条）."""
+        inv = (
+            self.db.query(Investment)
+            .options(
+                selectinload(Investment.investors),
+                selectinload(Investment.return_adjustments),
+                selectinload(Investment.logs),
+            )
+            .filter(
+                Investment.project_id == project_id,
+                Investment.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if inv is None:
+            return None
+        return self._to_response(inv)
+
     # ==================== 跟投记录 CRUD ====================
 
     def create_investment(self, data: InvestmentCreate, operator_id: str) -> InvestmentResponse:

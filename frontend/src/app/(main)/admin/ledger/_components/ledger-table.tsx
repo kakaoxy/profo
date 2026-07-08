@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye } from "lucide-react";
+import { Eye, HandCoins } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -63,6 +63,26 @@ function ActionCell({ row }: { row: LedgerProjectListItem }) {
           aria-label="查看"
         >
           <Eye className="h-4 w-4" />
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+function InvestmentCell({ row }: { row: LedgerProjectListItem }) {
+  const href = `/admin/investments/${row.project_id}`;
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
+  return (
+    <div className="flex items-center justify-center">
+      <Link href={href} onClick={stop} title="跟投">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8 p-0 rounded-full"
+          aria-label="跟投"
+        >
+          <HandCoins className="h-4 w-4" />
         </Button>
       </Link>
     </div>
@@ -179,6 +199,15 @@ function buildColumns(): ColumnDef<LedgerProjectListItem>[] {
           {row.original.record_count}
         </div>
       ),
+    },
+    {
+      id: "investment",
+      header: () => (
+        <div className="text-center text-muted-foreground font-medium">
+          跟投
+        </div>
+      ),
+      cell: ({ row }) => <InvestmentCell row={row.original} />,
     },
     {
       id: "actions",

@@ -111,7 +111,7 @@ export function CreateInvestmentDialog({
       if (res.success) {
         toast.success("跟投记录创建成功");
         onOpenChange(false);
-        router.push(`/admin/investments/${res.data.id}`);
+        router.push(`/admin/investments/${res.data.project_id}`);
       } else {
         toast.error(res.message || "创建失败");
       }
