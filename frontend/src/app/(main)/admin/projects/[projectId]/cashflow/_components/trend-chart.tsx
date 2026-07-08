@@ -8,35 +8,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CashFlowRecord } from "../types";
 import { getChartColors } from "@/lib/chart-colors";
+import type { ChartDataPoint } from "./chart-renderer";
 
-// 动态导入 Recharts 组件，减少初始包大小
-const ResponsiveContainer = dynamic(
-  () => import("recharts").then((mod) => mod.ResponsiveContainer),
-  { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> }
-);
-const BarChart = dynamic(() => import("recharts").then((mod) => mod.BarChart), {
+// 单一动态导入：将所有 recharts 组件打包到同一 chunk，客户端按需加载（ssr: false）
+const ChartRenderer = dynamic(() => import("./chart-renderer"), {
   ssr: false,
+  loading: () => <Skeleton className="h-[250px] w-full" />,
 });
-const Bar = dynamic(() => import("recharts").then((mod) => mod.Bar), {
-  ssr: false,
-});
-const XAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), {
-  ssr: false,
-});
-const YAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), {
-  ssr: false,
-});
-const CartesianGrid = dynamic(
-  () => import("recharts").then((mod) => mod.CartesianGrid),
-  { ssr: false }
-);
-const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), {
-  ssr: false,
-});
-const ReferenceLine = dynamic(
-  () => import("recharts").then((mod) => mod.ReferenceLine),
-  { ssr: false }
-);
 
 interface TrendChartProps {
   data: CashFlowRecord[];
@@ -46,7 +24,7 @@ export function TrendChart({ data }: TrendChartProps) {
   const colors = useMemo(() => getChartColors(), []);
 
   // 数据预处理：按日期聚合
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartDataPoint[]>(() => {
     const grouped = data.reduce((acc, curr) => {
       // 过滤掉没有日期的记录
       if (!curr.date) return acc;
@@ -54,7 +32,13 @@ export function TrendChart({ data }: TrendChartProps) {
       const dateKey = safeFormatDate(curr.date, "yyyy-MM-dd");
       if (dateKey === "-") return acc;
       if (!acc[dateKey]) {
-        acc[dateKey] = { date: dateKey, income: 0, expense: 0 };
+        acc[dateKey] = {
+          date: dateKey,
+          income: 0,
+          expense: 0,
+          // 预计算时间戳，避免 sort 比较时重复构造 Date 对象
+          timestamp: new Date(dateKey).getTime(),
+        };
       }
       if (curr.type === "income") {
         acc[dateKey].income += curr.amount;
@@ -63,12 +47,10 @@ export function TrendChart({ data }: TrendChartProps) {
         acc[dateKey].expense -= curr.amount;
       }
       return acc;
-    }, {} as Record<string, { date: string; income: number; expense: number }>);
+    }, {} as Record<string, ChartDataPoint>);
 
-    // 排序
-    return Object.values(grouped).sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    // 排序：直接比较预计算的数字时间戳
+    return Object.values(grouped).sort((a, b) => a.timestamp - b.timestamp);
   }, [data]);
 
   const COLOR_INCOME = colors.positive;
@@ -82,82 +64,12 @@ export function TrendChart({ data }: TrendChartProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0 pl-0 h-[250px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              stroke={colors.grid}
-            />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 10, fill: colors.label }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(val) => safeFormatDate(val, "MM-dd")}
-            />
-            <YAxis
-              tick={{ fontSize: 10, fill: colors.label }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(val) => `¥${Math.abs(val) / 10000}w`}
-            />
-            <Tooltip
-              cursor={{ fill: colors.gridSubtle }}
-              contentStyle={{
-                borderRadius: "8px",
-                border: "none",
-                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-              }}
-              formatter={(value) => {
-                // ValueType 可能是 string | number | readonly (string | number)[]
-                // 我们只处理数值情况
-                const numericValue = typeof value === 'number' ? value :
-                                    typeof value === 'string' ? parseFloat(value) : 0;
-                const val = Number.isNaN(numericValue) ? 0 : numericValue;
-                return [
-                  `¥${Math.abs(val).toLocaleString()}`,
-                  val > 0 ? "收入" : "支出",
-                ];
-              }}
-            />
-            <ReferenceLine y={0} stroke={colors.label} />
-            <Bar
-              dataKey="income"
-              fill={COLOR_INCOME}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-              label={{
-                position: "top",
-                fill: COLOR_INCOME,
-                fontSize: 10,
-                formatter: (value) =>
-                  typeof value === "number" && value !== 0
-                    ? `¥${value.toLocaleString()}`
-                    : "", // ← 0 或非数字时返回空字符串，Recharts 会自动隐藏标签
-              }}
-            />
-
-            <Bar
-              dataKey="expense"
-              fill={COLOR_EXPENSE}
-              radius={[0, 0, 4, 4]}
-              maxBarSize={40}
-              label={{
-                position: "bottom",
-                fill: COLOR_EXPENSE,
-                fontSize: 10,
-                formatter: (value) =>
-                  typeof value === "number" && value !== 0
-                    ? `¥${Math.abs(value).toLocaleString()}`
-                    : "",
-              }}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <ChartRenderer
+          chartData={chartData}
+          colors={colors}
+          colorIncome={COLOR_INCOME}
+          colorExpense={COLOR_EXPENSE}
+        />
       </CardContent>
     </Card>
   );

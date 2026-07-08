@@ -78,17 +78,6 @@ export function CopyInvestmentDialog({
     return () => clearTimeout(timer);
   }, [searchQuery, open, investment.project_id]);
 
-  // 重置
-  React.useEffect(() => {
-    if (!open) {
-      setSearchQuery("");
-      setProjects([]);
-      setSelected(null);
-      setLoading(false);
-      setSubmitting(false);
-    }
-  }, [open]);
-
   const handleSelect = (project: ProjectBrief): void => {
     setSelected(project);
     setSearchQuery("");

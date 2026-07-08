@@ -1,7 +1,7 @@
 // src/app/(main)/projects/[projectId]/cashflow/_components/ledger-table.tsx
 "use client";
 
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { safeFormatDate } from "@/lib/formatters";
 import { Download, Plus, Trash2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,103 @@ interface LedgerTableProps {
   businessForm?: "agent" | "wholesale" | null;
 }
 
+// 独立行组件：用 React.memo 避免无关行的重渲染
+interface LedgerTableRowProps {
+  record: CashFlowRecord;
+  onDelete: (id: string) => void;
+}
+
+const LedgerTableRow = memo(function LedgerTableRow({
+  record,
+  onDelete,
+}: LedgerTableRowProps) {
+  return (
+    <TableRow key={record.id} className="group text-xs hover:bg-muted">
+      <TableCell className="py-3">
+        <div className="flex flex-col">
+          {record.date ? (
+            <>
+              <span className="font-medium text-foreground">
+                {safeFormatDate(record.date, "yyyy-MM-dd")}
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-0.5">
+                {safeFormatDate(record.date, "EEEE")}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium text-muted-foreground">-</span>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant="outline"
+          className={cn(
+            "font-normal",
+            record.type === "income"
+              ? "border-error/30 text-red-700 bg-error-container/30"
+              : "border-emerald-200 text-emerald-700 bg-success-container/30"
+          )}
+        >
+          {record.category}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <span
+          className="text-muted-foreground truncate block max-w-[120px]"
+          title={record.counterparty ?? ""}
+        >
+          {record.counterparty || "-"}
+        </span>
+      </TableCell>
+      <TableCell className="text-right">
+        <span
+          className={cn(
+            "font-mono font-medium text-sm",
+            record.type === "income" ? "text-error" : "text-success"
+          )}
+        >
+          {record.type === "income" ? "+" : "-"}
+          {record.amount.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+          })}
+        </span>
+      </TableCell>
+      <TableCell className="text-center">
+        {record.receipt_url ? (
+          <a
+            href={record.receipt_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+            title="查看票据"
+          >
+            <FileText className="h-4 w-4" />
+          </a>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <div
+          className="max-w-[200px] truncate text-muted-foreground"
+          title={record.notes}
+        >
+          {record.notes || "-"}
+        </div>
+      </TableCell>
+      <TableCell className="w-[40px]">
+        <button
+          onClick={() => onDelete(record.id)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/50 hover:text-error"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </TableCell>
+    </TableRow>
+  );
+});
+
 export function LedgerTable({
   projectId,
   data,
@@ -40,32 +137,38 @@ export function LedgerTable({
   const [filter, setFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const filteredData = data.filter((item) => {
-    if (filter === "all") return true;
-    if (filter === "income") return item.type === "income";
-    if (filter === "expense") return item.type === "expense";
-    if (filter === "renovation") return item.category.includes("装修");
-    if (filter === "operation") return item.category.includes("运营");
-    return true;
-  });
+  // 过滤计算用 useMemo 缓存，避免每次渲染重算
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      if (filter === "all") return true;
+      if (filter === "income") return item.type === "income";
+      if (filter === "expense") return item.type === "expense";
+      if (filter === "renovation") return item.category.includes("装修");
+      if (filter === "operation") return item.category.includes("运营");
+      return true;
+    });
+  }, [data, filter]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("确定删除这条记录吗？")) return;
-    const res = await deleteCashFlowRecordAction(projectId, id);
-    if (res.success) {
-      toast.success("已删除");
-      if (onRefresh) onRefresh();
-    } else {
-      toast.error("删除失败");
-    }
-  };
+  // 用 useCallback 稳定回调引用，使 LedgerTableRow 的 memo 真正生效
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("确定删除这条记录吗？")) return;
+      const res = await deleteCashFlowRecordAction(projectId, id);
+      if (res.success) {
+        toast.success("已删除");
+        if (onRefresh) onRefresh();
+      } else {
+        toast.error("删除失败");
+      }
+    },
+    [projectId, onRefresh]
+  );
 
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <Tabs
-          defaultValue="all"
           value={filter}
           onValueChange={setFilter}
           className="w-full sm:w-auto"
@@ -136,94 +239,11 @@ export function LedgerTable({
               </TableRow>
             ) : (
               filteredData.map((record) => (
-                <TableRow
+                <LedgerTableRow
                   key={record.id}
-                  className="group text-xs hover:bg-muted"
-                >
-                  <TableCell className="py-3">
-                    <div className="flex flex-col">
-                      {record.date ? (
-                        <>
-                          <span className="font-medium text-foreground">
-                            {safeFormatDate(record.date, "yyyy-MM-dd")}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground mt-0.5">
-                            {safeFormatDate(record.date, "EEEE")}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="font-medium text-muted-foreground">-</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "font-normal",
-                        record.type === "income"
-                          ? "border-error/30 text-red-700 bg-error-container/30"
-                          : "border-emerald-200 text-emerald-700 bg-success-container/30"
-                      )}
-                    >
-                      {record.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className="text-muted-foreground truncate block max-w-[120px]"
-                      title={record.counterparty ?? ""}
-                    >
-                      {record.counterparty || "-"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span
-                      className={cn(
-                        "font-mono font-medium text-sm",
-                        record.type === "income"
-                          ? "text-error"
-                          : "text-success"
-                      )}
-                    >
-                      {record.type === "income" ? "+" : "-"}
-                      {record.amount.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {record.receipt_url ? (
-                      <a
-                        href={record.receipt_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                        title="查看票据"
-                      >
-                        <FileText className="h-4 w-4" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className="max-w-[200px] truncate text-muted-foreground"
-                      title={record.notes}
-                    >
-                      {record.notes || "-"}
-                    </div>
-                  </TableCell>
-                  <TableCell className="w-[40px]">
-                    <button
-                      onClick={() => handleDelete(record.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground/50 hover:text-error"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </TableCell>
-                </TableRow>
+                  record={record}
+                  onDelete={handleDelete}
+                />
               ))
             )}
           </TableBody>

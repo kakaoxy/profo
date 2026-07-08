@@ -3,37 +3,44 @@
 /**
  * 跟投详情视图（Phase 3 只读 + Phase 4 编辑模式 + Phase 5 收益分配/结算流转）
  *
- * 本文件 >250 行：只读视图（4 个卡片区）与编辑视图共享同一 `investment` prop 与数值
- * 派生逻辑（toNum / 比例计算），拆分会引入大量重复 props 传递。编辑模式按交互边界
- * 抽出 InvestorDialog（investor-dialog.tsx）；Phase 5 弹窗（调整分配比例/结算/反结算/复制）
- * 抽出独立组件文件；其余编辑态（基础信息、投资方表格内联编辑、总额联动确认、保存提交）
- * 与只读视图共用派生工具，保留在同文件内。
+ * 拆分后的文件结构（同目录 _components/）：
+ *   - shared.tsx                    共享工具函数（toNum/ratioColorClass/countTotalInvestors）、
+ *                                   RATIO_EPS 常量、小型组件（InvestorTypeIcon/InfoCell/SettlementBadge）、
+ *                                   共用 API 类型别名
+ *   - ratio-input.tsx               比例内联输入（带中间输入态同步）
+ *   - investor-edit-row-group.tsx   编辑态投资方行组（母投资方 + 子投资人 + 小计）
+ *   - detail-header.tsx             只读模式顶部操作栏
+ *   - basic-info-card.tsx           基础信息卡（只读）
+ *   - investors-card.tsx            投资方管理卡（只读，含 InvestorRowGroup）
+ *   - profit-distribution-card.tsx  收益分配卡
+ *   - logs-card.tsx                 操作日志卡（含 formatLogContent）
+ *   - investor-dialog.tsx           添加/编辑投资方弹窗（Phase 4，既有）
+ *   - distribution-ratio-dialog.tsx 调整分配比例弹窗（Phase 5，既有）
+ *   - settle-dialog.tsx             结算弹窗（Phase 5，既有）
+ *   - unsettle-dialog.tsx           反结算弹窗（Phase 5，既有）
+ *   - copy-investment-dialog.tsx    复制跟投配置弹窗（Phase 5，既有）
+ *
+ * 本文件保留：
+ *   - InvestmentEditView：编辑模式主体（~700 行）。内部 state（投资方列表、总额联动、
+ *     各类弹窗开关、保存校验与提交）高度耦合，抽离需传递 >8 个 props 且引入额外回调
+ *     透传，收益低、风险高，故保留在同文件内。
+ *   - InvestmentDetailView：顶层路由组件，根据 ?edit=1 切换只读/编辑视图。
+ *   - investorChanged / buildSyntheticInvestment / toLocalSub：仅 InvestmentEditView 使用的
+ *     编辑态辅助函数。
+ *
+ * >500 行不拆理由：InvestmentEditView 的 state（totalInvestment/totalReturn/investors/
+ * deletedInvestorIds/各弹窗开关/isSaving）与 handlers（handleSave/handleTotalBlur/
+ * handleRatioChange/handleDeleteConfirm 等）在同一闭包内相互引用，拆分为子组件需将
+ * 全部 state 与 handler 通过 props 下传，违反 AGENTS.md「>8 props 抽离收益低」原则。
  */
 
-import { Fragment, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Pencil,
-  Download,
-  Plus,
-  Settings,
-  Lock,
-  Building2,
-  User,
-  Trash2,
-  Save,
-  X,
-  AlertTriangle,
-  MoreHorizontal,
-  CheckCircle,
-  RotateCcw,
-  Copy,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, Plus, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,12 +62,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Table,
   TableBody,
   TableCell,
@@ -69,7 +70,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { formatCNY, formatPercent, safeFormatDate } from "@/lib/formatters";
+import { formatCNY, formatPercent } from "@/lib/formatters";
 import type { components } from "@/lib/api-types";
 import {
   addInvestor,
@@ -78,850 +79,57 @@ import {
   updateInvestment,
   updateInvestor,
 } from "../../actions";
-import {
-  InvestorDialog,
-  type LocalInvestor,
-  type LocalSubInvestor,
-} from "./investor-dialog";
-import { DistributionRatioDialog } from "./distribution-ratio-dialog";
-import { SettleDialog } from "./settle-dialog";
-import { UnsettleDialog } from "./unsettle-dialog";
-import { CopyInvestmentDialog } from "./copy-investment-dialog";
+import { type LocalInvestor, type LocalSubInvestor } from "./investor-dialog";
 
-type InvestmentResponse = components["schemas"]["InvestmentResponse"];
-type InvestorResponse = components["schemas"]["InvestorResponse"];
-type InvestmentLogResponse = components["schemas"]["InvestmentLogResponse"];
-type InvestmentActionType = components["schemas"]["InvestmentActionType"];
+// 动态导入弹窗组件（ssr: false，仅在客户端加载；条件渲染保证关闭时卸载）
+const InvestorDialog = dynamic(
+  () => import("./investor-dialog").then((m) => m.InvestorDialog),
+  { ssr: false },
+);
+const DistributionRatioDialog = dynamic(
+  () =>
+    import("./distribution-ratio-dialog").then(
+      (m) => m.DistributionRatioDialog,
+    ),
+  { ssr: false },
+);
+const SettleDialog = dynamic(
+  () => import("./settle-dialog").then((m) => m.SettleDialog),
+  { ssr: false },
+);
+const UnsettleDialog = dynamic(
+  () => import("./unsettle-dialog").then((m) => m.UnsettleDialog),
+  { ssr: false },
+);
+const CopyInvestmentDialog = dynamic(
+  () =>
+    import("./copy-investment-dialog").then((m) => m.CopyInvestmentDialog),
+  { ssr: false },
+);
+// 抽取的子组件
+import { DetailHeader } from "./detail-header";
+import { BasicInfoCard } from "./basic-info-card";
+import { InvestorsCard } from "./investors-card";
+import { ProfitDistributionCard } from "./profit-distribution-card";
+import { LogsCard } from "./logs-card";
+import { InvestorEditRowGroup } from "./investor-edit-row-group";
+// 共享工具与小型组件
+import {
+  type InvestmentResponse,
+  type InvestorResponse,
+  InfoCell,
+  RATIO_EPS,
+  SettlementBadge,
+  ratioColorClass,
+  toNum,
+} from "./shared";
+
 type InvestmentUpdate = components["schemas"]["InvestmentUpdate"];
 type InvestorCreate = components["schemas"]["InvestorCreate"];
 type InvestorUpdate = components["schemas"]["InvestorUpdate"];
 
 interface DetailViewProps {
   investment: InvestmentResponse;
-}
-
-/** 字符串/数字安全转 number，空或非法返回 0 */
-function toNum(v: string | number | null | undefined): number {
-  if (v === null || v === undefined || v === "") return 0;
-  const n = typeof v === "string" ? parseFloat(v) : v;
-  return isNaN(n) ? 0 : n;
-}
-
-/** 回报率配色：正绿 / 负红 / 零灰 */
-function ratioColorClass(ratio: number): string {
-  if (ratio > 0) return "text-emerald-600 dark:text-emerald-400";
-  if (ratio < 0) return "text-red-600 dark:text-red-400";
-  return "text-muted-foreground";
-}
-
-/** 投资人总数 = 各母投资方子投资人数之和，无子投资人则母投资方算 1 人 */
-function countTotalInvestors(investors: InvestorResponse[]): number {
-  return investors.reduce((sum, inv) => {
-    const subCount = inv.sub_investors?.length ?? 0;
-    return sum + (subCount > 0 ? subCount : 1);
-  }, 0);
-}
-
-/** 操作日志内容：action_type 翻译为中文 + detail 摘要 */
-function formatLogContent(
-  actionType: InvestmentActionType,
-  detail: { [key: string]: unknown } | undefined,
-): string {
-  const d = detail ?? {};
-  const str = (v: unknown): string => (v == null ? "" : String(v));
-  switch (actionType) {
-    case "create":
-      return `创建跟投记录${
-        d.total_investment ? `，投资总额 ${formatCNY(str(d.total_investment))}` : ""
-      }`;
-    case "status_change":
-      return `状态变更${d.action === "soft_delete" ? "（软删除）" : ""}`;
-    case "ratio_adjust":
-    case "distribution_adjust":
-      return `调整分配比例${d.count ? `，共 ${d.count} 项` : ""}`;
-    case "investor_add":
-      return `添加投资方：${d.name ?? "-"}${
-        d.share_ratio ? `（${d.share_ratio}%）` : ""
-      }${d.sub_count ? `，含 ${d.sub_count} 位子投资人` : ""}`;
-    case "investor_edit":
-      return `编辑投资方：${d.name ?? "-"}`;
-    case "investor_delete":
-      return `删除投资方：${d.name ?? "-"}`;
-    case "sub_investor_add":
-      return `添加子投资人${d.name ? `：${d.name}` : ""}`;
-    case "sub_investor_edit":
-      return `编辑子投资人${d.name ? `：${d.name}` : ""}`;
-    case "sub_investor_delete":
-      return `删除子投资人${d.name ? `：${d.name}` : ""}`;
-    case "total_investment_change": {
-      const ti = d.total_investment as { from?: string; to?: string } | undefined;
-      return `修改投资总额${
-        ti ? `：${formatCNY(ti.from)} → ${formatCNY(ti.to)}` : ""
-      }`;
-    }
-    case "total_return_change": {
-      const tr = d.total_return as { from?: string; to?: string } | undefined;
-      return `修改收益总额${
-        tr ? `：${formatCNY(tr.from)} → ${formatCNY(tr.to)}` : ""
-      }`;
-    }
-    case "settle":
-      return `结算跟投记录${
-        d.settled_date ? `，结算日期 ${d.settled_date}` : ""
-      }`;
-    case "unsettle":
-      return `反结算：${d.reason ?? "-"}`;
-    default:
-      return actionType;
-  }
-}
-
-function SettlementBadge({ status }: { status: string }) {
-  if (status === "settled") {
-    return (
-      <Badge
-        variant="secondary"
-        className="gap-1.5 bg-emerald-500/10 text-emerald-600 border-transparent px-3 py-1"
-      >
-        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-        跟投状态：已结算
-      </Badge>
-    );
-  }
-  return (
-    <Badge
-      variant="secondary"
-      className="gap-1.5 bg-blue-500/10 text-blue-600 border-transparent px-3 py-1"
-    >
-      <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-      跟投状态：未结算
-    </Badge>
-  );
-}
-
-function DetailHeader({
-  investment,
-  onSettle,
-  onUnsettle,
-  onDelete,
-  onCopy,
-}: {
-  investment: InvestmentResponse;
-  onSettle: () => void;
-  onUnsettle: () => void;
-  onDelete: () => void;
-  onCopy: () => void;
-}) {
-  const isSettled = investment.settlement_status === "settled";
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <Link
-            href="/admin/investments"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            返回跟投列表
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            💰 跟投详情 — {investment.project_code || "-"}{" "}
-            {investment.project_name || ""}
-          </h1>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <SettlementBadge status={investment.settlement_status} />
-          {isSettled ? (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="gap-1.5"
-              title="已结算，不可编辑"
-            >
-              <Pencil className="h-4 w-4" />
-              编辑
-            </Button>
-          ) : (
-            <Button asChild variant="outline" size="sm" className="gap-1.5">
-              <Link href={`?edit=1`} prefetch={false}>
-                <Pencil className="h-4 w-4" />
-                编辑
-              </Link>
-            </Button>
-          )}
-          {isSettled ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={onUnsettle}
-            >
-              <RotateCcw className="h-4 w-4" />
-              反结算
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={onSettle}
-            >
-              <CheckCircle className="h-4 w-4" />
-              结算
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            className="gap-1.5 text-muted-foreground"
-            title="导出功能暂未实现"
-          >
-            <Download className="h-4 w-4" />
-            导出
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1.5">
-                <MoreHorizontal className="h-4 w-4" />
-                更多操作
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onCopy}>
-                <Copy className="h-4 w-4" />
-                复制跟投配置
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-                删除跟投记录
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      {isSettled && (
-        <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
-          <Lock className="h-4 w-4 shrink-0" />
-          <span>该项目已结算，不可编辑</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InfoCell({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        {label}
-      </label>
-      <div className="text-sm font-medium text-foreground">{children}</div>
-    </div>
-  );
-}
-
-function BasicInfoCard({ investment }: { investment: InvestmentResponse }) {
-  const totalInvestment = toNum(investment.total_investment);
-  const totalReturn = toNum(investment.total_return);
-  const returnRatio =
-    totalInvestment > 0 ? (totalReturn / totalInvestment) * 100 : null;
-  const investors = investment.investors ?? [];
-  const totalInvestorCount = countTotalInvestors(investors);
-  const createdBy = investment.created_by
-    ? investment.created_by.slice(0, 8)
-    : "-";
-
-  return (
-    <Card>
-      <CardContent className="space-y-6">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>📋</span>
-            基础信息
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
-          <InfoCell label="项目编号">
-            <span className="font-mono text-xs">
-              {investment.project_code || "-"}
-            </span>
-          </InfoCell>
-          <InfoCell label="小区">
-            {investment.project_name || "-"}
-          </InfoCell>
-          <InfoCell label="物业地址">-</InfoCell>
-          <InfoCell label="项目状态">-</InfoCell>
-          <InfoCell label="投资总额">
-            <span className="font-mono text-base font-semibold tabular-nums">
-              {formatCNY(investment.total_investment)}
-            </span>
-          </InfoCell>
-          <InfoCell label="收益总额">
-            <span
-              className={cn(
-                "font-mono text-base font-semibold tabular-nums",
-                totalReturn > 0 && "text-emerald-600 dark:text-emerald-400",
-              )}
-            >
-              {investment.total_return ? formatCNY(investment.total_return) : "-"}
-            </span>
-          </InfoCell>
-          <InfoCell label="回报率">
-            {returnRatio === null ? (
-              <span className="text-muted-foreground">-</span>
-            ) : (
-              <span
-                className={cn(
-                  "font-mono text-lg font-bold tabular-nums",
-                  ratioColorClass(returnRatio),
-                )}
-              >
-                {formatPercent(returnRatio)}
-              </span>
-            )}
-          </InfoCell>
-          <InfoCell label="投资方数量">
-            {investors.length} 个
-          </InfoCell>
-          <InfoCell label="投资人总数">
-            {totalInvestorCount} 人
-          </InfoCell>
-          <InfoCell label="创建人">
-            <span className="font-mono text-xs">{createdBy}</span>
-          </InfoCell>
-          <InfoCell label="创建时间">
-            <span className="font-mono text-xs">
-              {safeFormatDate(investment.created_at, "yyyy-MM-dd HH:mm")}
-            </span>
-          </InfoCell>
-          <InfoCell label="更新时间">
-            <span className="font-mono text-xs">
-              {safeFormatDate(investment.updated_at, "yyyy-MM-dd HH:mm")}
-            </span>
-          </InfoCell>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function InvestorTypeIcon({ type }: { type: InvestorResponse["type"] }) {
-  if (type === "enterprise") {
-    return (
-      <span className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-      </span>
-    );
-  }
-  return (
-    <span className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-      <User className="h-4 w-4 text-muted-foreground" />
-    </span>
-  );
-}
-
-function InvestorsCard({ investment }: { investment: InvestmentResponse }) {
-  const investors = investment.investors ?? [];
-  const totalInvestment = toNum(investment.total_investment);
-  const totalInvestorCount = countTotalInvestors(investors);
-  const totalRatio = investors.reduce(
-    (sum, inv) => sum + toNum(inv.share_ratio),
-    0,
-  );
-
-  if (investors.length === 0) {
-    return (
-      <Card>
-        <CardContent className="space-y-5">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-              <span>👥</span>
-              投资方管理
-            </h2>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="gap-1.5"
-              title="只读模式不可用"
-            >
-              <Plus className="h-4 w-4" />
-              添加投资方
-            </Button>
-          </div>
-          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-            <span className="text-3xl">📭</span>
-            <p className="text-sm text-muted-foreground">暂无投资方</p>
-            <p className="text-xs text-muted-foreground">
-              点击下方按钮开始录入投资方信息
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="gap-1.5"
-              title="只读模式不可用"
-            >
-              <Plus className="h-4 w-4" />
-              添加投资方
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardContent className="space-y-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>👥</span>
-            投资方管理
-          </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled
-            className="gap-1.5"
-            title="只读模式不可用"
-          >
-            <Plus className="h-4 w-4" />
-            添加投资方
-          </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="min-w-[240px] text-muted-foreground font-medium">
-                  投资方
-                </TableHead>
-                <TableHead className="min-w-[100px] text-muted-foreground font-medium">
-                  投资占比
-                </TableHead>
-                <TableHead className="min-w-[160px] text-right text-muted-foreground font-medium">
-                  投资金额
-                </TableHead>
-                <TableHead className="min-w-[60px] text-center text-muted-foreground font-medium">
-                  子投资人
-                </TableHead>
-                <TableHead className="w-16 text-center text-muted-foreground font-medium">
-                  操作
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {investors.map((inv) => {
-                const subs = inv.sub_investors ?? [];
-                const subCount = subs.length;
-                const subRatioSum = subs.reduce(
-                  (s, sub) => s + toNum(sub.share_ratio),
-                  0,
-                );
-                const subAmountSum = subs.reduce(
-                  (s, sub) => s + toNum(sub.invest_amount),
-                  0,
-                );
-                return (
-                  <InvestorRowGroup
-                    key={inv.id}
-                    investor={inv}
-                    subCount={subCount}
-                    subRatioSum={subRatioSum}
-                    subAmountSum={subAmountSum}
-                  />
-                );
-              })}
-              <TableRow className="border-t-2 border-foreground hover:bg-transparent">
-                <TableCell className="font-bold">合计</TableCell>
-                <TableCell className="font-mono tabular-nums font-bold">
-                  {formatPercent(totalRatio)}
-                </TableCell>
-                <TableCell className="font-mono tabular-nums font-bold text-right">
-                  {formatCNY(totalInvestment)}
-                </TableCell>
-                <TableCell className="text-center font-bold">
-                  {totalInvestorCount}人
-                </TableCell>
-                <TableCell className="text-center text-muted-foreground">
-                  —
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function InvestorRowGroup({
-  investor,
-  subCount,
-  subRatioSum,
-  subAmountSum,
-}: {
-  investor: InvestorResponse;
-  subCount: number;
-  subRatioSum: number;
-  subAmountSum: number;
-}) {
-  const subs = investor.sub_investors ?? [];
-  return (
-    <>
-      <TableRow className="bg-muted/30 hover:bg-muted/40">
-        <TableCell>
-          <div className="flex items-center gap-2.5">
-            <InvestorTypeIcon type={investor.type} />
-            <span className="font-medium">{investor.name}</span>
-          </div>
-        </TableCell>
-        <TableCell className="font-mono tabular-nums">
-          {formatPercent(toNum(investor.share_ratio))}
-        </TableCell>
-        <TableCell className="font-mono tabular-nums text-right">
-          {formatCNY(investor.invest_amount)}
-        </TableCell>
-        <TableCell className="text-center">
-          {subCount > 0 ? `${subCount}人` : "—"}
-        </TableCell>
-        <TableCell className="text-center text-muted-foreground">—</TableCell>
-      </TableRow>
-      {subs.map((sub) => (
-        <TableRow
-          key={sub.id}
-          className="border-l-2 border-accent hover:bg-transparent"
-        >
-          <TableCell className="pl-12 font-normal text-muted-foreground">
-            {sub.name}
-          </TableCell>
-          <TableCell className="pl-12 font-mono tabular-nums font-normal text-muted-foreground">
-            {formatPercent(toNum(sub.share_ratio))}
-          </TableCell>
-          <TableCell className="pl-12 font-mono tabular-nums text-right font-normal text-muted-foreground">
-            {formatCNY(sub.invest_amount)}
-          </TableCell>
-          <TableCell className="pl-12 text-center text-muted-foreground">
-            —
-          </TableCell>
-          <TableCell className="text-center text-muted-foreground">—</TableCell>
-        </TableRow>
-      ))}
-      {subCount > 0 && (
-        <TableRow className="border-t border-dashed border-border hover:bg-transparent">
-          <TableCell className="pl-12 italic text-muted-foreground text-sm">
-            小计
-          </TableCell>
-          <TableCell className="pl-12 font-mono tabular-nums italic text-muted-foreground text-sm">
-            {formatPercent(subRatioSum)}
-          </TableCell>
-          <TableCell className="pl-12 font-mono tabular-nums text-right italic text-muted-foreground text-sm">
-            {formatCNY(subAmountSum)}
-          </TableCell>
-          <TableCell className="pl-12 text-center text-muted-foreground">
-            —
-          </TableCell>
-          <TableCell className="text-center text-muted-foreground">—</TableCell>
-        </TableRow>
-      )}
-    </>
-  );
-}
-
-function ProfitDistributionCard({
-  investment,
-  onAdjustReturn,
-  adjustDisabled = false,
-}: {
-  investment: InvestmentResponse;
-  onAdjustReturn: () => void;
-  /** 编辑模式下投资方为本地态，调整分配比例会与未保存编辑冲突，故禁用 */
-  adjustDisabled?: boolean;
-}) {
-  const investors = investment.investors ?? [];
-  const totalInvestment = toNum(investment.total_investment);
-  const totalReturn = toNum(investment.total_return);
-  const savedAdjustments = investment.return_adjustments ?? [];
-
-  const hasNoInvestors = investors.length === 0;
-  const hasNoReturn =
-    investment.total_return === null ||
-    investment.total_return === undefined ||
-    totalReturn === 0;
-
-  // 已保存的分配比例调整：investor_id → adjusted_distribution_ratio
-  const adjustmentMap = new Map<string, number>();
-  for (const adj of savedAdjustments) {
-    adjustmentMap.set(adj.investor_id, toNum(adj.adjusted_distribution_ratio));
-  }
-  const hasAdjustments = adjustmentMap.size > 0;
-
-  // 调整分配比例按钮启用条件：未结算 && 有投资方 && 有收益 && 非编辑禁用
-  const canAdjust =
-    !adjustDisabled &&
-    investment.settlement_status === "unsettled" &&
-    !hasNoInvestors &&
-    !hasNoReturn;
-
-  return (
-    <Card>
-      <CardContent className="space-y-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>📊</span>
-            收益分配
-          </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            disabled={!canAdjust}
-            onClick={onAdjustReturn}
-            title={
-              adjustDisabled
-                ? "请先保存或取消编辑后再调整分配比例"
-                : canAdjust
-                  ? "调整各投资方分配比例"
-                  : investment.settlement_status === "settled"
-                    ? "已结算，不可调整"
-                    : hasNoInvestors
-                      ? "暂无投资方"
-                      : "暂无收益数据"
-            }
-          >
-            <Settings className="h-4 w-4" />
-            调整分配比例
-          </Button>
-        </div>
-
-        {hasNoInvestors ? (
-          <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-            <span>⚠️</span>
-            <span>暂无投资方，请先添加投资方后再配置收益分配</span>
-          </div>
-        ) : hasNoReturn ? (
-          <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-            暂无收益数据
-          </div>
-        ) : (
-          <>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground rounded-lg bg-muted/40 px-4 py-2.5">
-              <span>
-                总收益：
-                <strong className="font-mono tabular-nums text-foreground">
-                  {formatCNY(investment.total_return)}
-                </strong>
-              </span>
-              <span>
-                分配方案：
-                <strong className="text-foreground">
-                  {hasAdjustments ? "已调整分配比例" : "默认按投资占比分配"}
-                </strong>
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="min-w-[200px] text-muted-foreground font-medium">
-                      投资方
-                    </TableHead>
-                    <TableHead className="min-w-[120px] text-right text-muted-foreground font-medium">
-                      投资金额
-                    </TableHead>
-                    <TableHead className="min-w-[100px] text-right text-muted-foreground font-medium">
-                      投资占比
-                    </TableHead>
-                    <TableHead className="min-w-[100px] text-right text-muted-foreground font-medium">
-                      分配比例
-                    </TableHead>
-                    <TableHead className="min-w-[140px] text-right text-muted-foreground font-medium">
-                      收益金额
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {investors.map((inv, idx) => {
-                    const amount = toNum(inv.invest_amount);
-                    const investRatio = toNum(inv.share_ratio);
-                    const distRatio = adjustmentMap.get(inv.id) ?? investRatio;
-                    const profit = (totalReturn * distRatio) / 100;
-                    const subs = inv.sub_investors ?? [];
-                    return (
-                      <Fragment key={inv.id || `inv-${idx}`}>
-                        <TableRow className={subs.length > 0 ? "bg-muted/20" : ""}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <InvestorTypeIcon type={inv.type} />
-                              {inv.name}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {formatCNY(amount)}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
-                            {formatPercent(investRatio)}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right">
-                            {formatPercent(distRatio)}
-                            {adjustmentMap.has(inv.id) && (
-                              <span className="ml-1 text-xs text-amber-600">●</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono tabular-nums text-right font-semibold">
-                            {formatCNY(profit)}
-                          </TableCell>
-                        </TableRow>
-                        {subs.map((sub, subIdx) => {
-                          const subAmount = toNum(sub.invest_amount);
-                          const subProfit = (profit * toNum(sub.share_ratio)) / 100;
-                          return (
-                            <TableRow
-                              key={sub.id || `sub-${idx}-${subIdx}`}
-                              className="border-l-2 border-muted hover:bg-transparent"
-                            >
-                              <TableCell className="pl-10 text-muted-foreground">
-                                └ {sub.name}
-                              </TableCell>
-                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
-                                {formatCNY(subAmount)}
-                              </TableCell>
-                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
-                                {formatPercent(toNum(sub.share_ratio))}
-                              </TableCell>
-                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
-                                —
-                              </TableCell>
-                              <TableCell className="font-mono tabular-nums text-right text-muted-foreground">
-                                {formatCNY(subProfit)}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </Fragment>
-                    );
-                  })}
-                  <TableRow className="border-t-2 border-foreground hover:bg-transparent">
-                    <TableCell className="font-bold">合计</TableCell>
-                    <TableCell className="font-mono tabular-nums font-bold text-right">
-                      {formatCNY(totalInvestment)}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">—</TableCell>
-                    <TableCell className="font-mono tabular-nums font-bold text-right">
-                      100.00%
-                    </TableCell>
-                    <TableCell className="font-mono tabular-nums font-bold text-right">
-                      {formatCNY(totalReturn)}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function LogsCard({ investment }: { investment: InvestmentResponse }) {
-  const logs = investment.logs ?? [];
-
-  return (
-    <Card>
-      <CardContent className="space-y-5">
-        <div>
-          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-            <span>📝</span>
-            操作日志
-          </h2>
-        </div>
-        {logs.length === 0 ? (
-          <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-            暂无操作日志
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="min-w-[150px] text-muted-foreground font-medium">
-                    时间
-                  </TableHead>
-                  <TableHead className="min-w-[130px] text-muted-foreground font-medium">
-                    操作人
-                  </TableHead>
-                  <TableHead className="min-w-[280px] text-muted-foreground font-medium">
-                    操作内容
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log: InvestmentLogResponse) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-mono text-xs whitespace-nowrap">
-                      {safeFormatDate(log.created_at, "yyyy-MM-dd HH:mm")}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {log.operator_name || log.operator_id.slice(0, 8)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {formatLogContent(log.action_type, log.detail)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/** 数值容差（浮点合计比较） */
-const RATIO_EPS = 0.01;
-
-/** 比例内联输入（保留中间输入态，避免小数点被吞） */
-function RatioInput({
-  value,
-  onChange,
-  className,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  className?: string;
-}) {
-  const [text, setText] = useState(String(value));
-  useEffect(() => {
-    setText(String(value));
-  }, [value]);
-  return (
-    <Input
-      type="number"
-      step="0.01"
-      min="0"
-      max="100"
-      value={text}
-      onChange={(e) => {
-        setText(e.target.value);
-        onChange(parseFloat(e.target.value) || 0);
-      }}
-      className={className}
-    />
-  );
 }
 
 /** 判断本地投资方是否相对原始数据有变更（决定是否需要 PUT） */
@@ -1207,19 +415,19 @@ function InvestmentEditView({ investment }: DetailViewProps) {
       }
 
       // 2. 更新已存在投资方（按"降幅优先"排序，避免中间态合计 > 100%）
+      //    先 map 配对 {inv, orig}，再 filter/sort，避免重复 Map 查找
       const originalById = new Map(
         (investment.investors ?? []).map((inv) => [inv.id, inv]),
       );
       const toUpdate = investors
-        .filter(
-          (inv) =>
-            inv.id && originalById.has(inv.id) && investorChanged(inv, originalById.get(inv.id)!),
+        .map((inv) => ({ inv, orig: inv.id ? originalById.get(inv.id) : undefined }))
+        .filter(({ inv, orig }) => orig !== undefined && investorChanged(inv, orig))
+        .sort(
+          (a, b) =>
+            a.inv.share_ratio - toNum(a.orig!.share_ratio) -
+            (b.inv.share_ratio - toNum(b.orig!.share_ratio)),
         )
-        .sort((a, b) => {
-          const da = a.share_ratio - toNum(originalById.get(a.id!)!.share_ratio);
-          const db = b.share_ratio - toNum(originalById.get(b.id!)!.share_ratio);
-          return da - db;
-        });
+        .map(({ inv }) => inv);
       for (const inv of toUpdate) {
         const body: InvestorUpdate = {
           name: inv.name,
@@ -1285,19 +493,26 @@ function InvestmentEditView({ investment }: DetailViewProps) {
     }
   };
 
-  // 弹窗参数
-  const dialogExistingNames = investors
-    .filter((_, i) => i !== editingIndex)
-    .map((inv) => inv.name.trim());
-  const dialogOtherRatioSum = investors
-    .filter((_, i) => i !== editingIndex)
-    .reduce((s, inv) => s + inv.share_ratio, 0);
+  // 弹窗参数（useMemo 避免每次渲染重复计算）
+  const dialogExistingNames = useMemo(
+    () =>
+      investors
+        .filter((_, i) => i !== editingIndex)
+        .map((inv) => inv.name.trim()),
+    [investors, editingIndex],
+  );
+  const dialogOtherRatioSum = useMemo(
+    () =>
+      investors
+        .filter((_, i) => i !== editingIndex)
+        .reduce((s, inv) => s + inv.share_ratio, 0),
+    [investors, editingIndex],
+  );
 
-  const syntheticInvestment = buildSyntheticInvestment(
-    investment,
-    totalInvestment,
-    totalReturn,
-    investors,
+  // 合成投资数据（供只读 ProfitDistributionCard 复用展示编辑态预览）
+  const syntheticInvestment = useMemo(
+    () => buildSyntheticInvestment(investment, totalInvestment, totalReturn, investors),
+    [investment, totalInvestment, totalReturn, investors],
   );
 
   return (
@@ -1678,160 +893,18 @@ function InvestmentEditView({ investment }: DetailViewProps) {
       </AlertDialog>
 
       {/* 添加/编辑投资方弹窗 */}
-      <InvestorDialog
-        open={investorDialogOpen}
-        onOpenChange={setInvestorDialogOpen}
-        onSave={handleSaveInvestor}
-        investor={editingInvestor}
-        totalInvestment={totalInvestment}
-        existingNames={dialogExistingNames}
-        otherRatioSum={dialogOtherRatioSum}
-      />
-    </div>
-  );
-}
-
-/** 编辑态投资方行组（母投资方 + 子投资人 + 小计） */
-function InvestorEditRowGroup({
-  inv,
-  idx,
-  amount,
-  subs,
-  subAmountSum,
-  onRatioChange,
-  onEdit,
-  onAddSub,
-  onDeleteInvestor,
-  onDeleteSub,
-  disabled,
-}: {
-  inv: LocalInvestor;
-  idx: number;
-  amount: number;
-  subs: LocalSubInvestor[];
-  subAmountSum: number;
-  onRatioChange: (idx: number, n: number) => void;
-  onEdit: (idx: number) => void;
-  onAddSub: (idx: number) => void;
-  onDeleteInvestor: (idx: number, name: string) => void;
-  onDeleteSub: (investorIdx: number, subIdx: number, name: string) => void;
-  disabled: boolean;
-}) {
-  const subRatioSum = subs.reduce((s, sub) => s + sub.share_ratio, 0);
-  return (
-    <>
-      <TableRow className="bg-muted/30 hover:bg-muted/40">
-        <TableCell>
-          <div className="flex items-center gap-2.5">
-            <InvestorTypeIcon type={inv.type} />
-            <span className="font-medium">{inv.name}</span>
-          </div>
-        </TableCell>
-        <TableCell>
-          <div className="flex items-center gap-1">
-            <RatioInput
-              value={inv.share_ratio}
-              onChange={(n) => onRatioChange(idx, n)}
-              className="h-8 w-24 font-mono tabular-nums"
-            />
-            <span className="text-sm font-medium text-muted-foreground">%</span>
-          </div>
-        </TableCell>
-        <TableCell className="font-mono tabular-nums text-right">
-          {formatCNY(amount)}
-        </TableCell>
-        <TableCell className="text-center">
-          {subs.length > 0 ? `${subs.length}人` : "—"}
-        </TableCell>
-        <TableCell className="text-right">
-          <div className="flex items-center justify-end gap-1.5 flex-wrap">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs text-secondary"
-              onClick={() => onAddSub(idx)}
-              disabled={disabled}
-              title="添加子投资人"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              子投资人
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => onEdit(idx)}
-              disabled={disabled}
-              title="编辑"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-              onClick={() => onDeleteInvestor(idx, inv.name)}
-              disabled={disabled}
-              title="删除"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </TableCell>
-      </TableRow>
-      {subs.map((sub, j) => {
-        const subAmount = (amount * sub.share_ratio) / 100;
-        return (
-          <TableRow
-            key={`${idx}-${j}`}
-            className="border-l-2 border-accent hover:bg-transparent"
-          >
-            <TableCell className="pl-12 font-normal text-muted-foreground">
-              {sub.name}
-            </TableCell>
-            <TableCell className="pl-12 font-mono tabular-nums font-normal text-muted-foreground">
-              {formatPercent(sub.share_ratio)}
-            </TableCell>
-            <TableCell className="pl-12 font-mono tabular-nums text-right font-normal text-muted-foreground">
-              {formatCNY(subAmount)}
-            </TableCell>
-            <TableCell className="pl-12 text-center text-muted-foreground">—</TableCell>
-            <TableCell className="pl-12 text-right">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                onClick={() => onDeleteSub(idx, j, sub.name)}
-                disabled={disabled}
-                title="删除"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </TableCell>
-          </TableRow>
-        );
-      })}
-      {subs.length > 0 && (
-        <TableRow className="border-t border-dashed border-border hover:bg-transparent">
-          <TableCell className="pl-12 italic text-muted-foreground text-sm">
-            小计
-          </TableCell>
-          <TableCell
-            className={cn(
-              "pl-12 font-mono tabular-nums italic text-muted-foreground text-sm",
-              Math.abs(subRatioSum - 100) > RATIO_EPS && "text-red-500",
-            )}
-          >
-            {formatPercent(subRatioSum)}
-          </TableCell>
-          <TableCell className="pl-12 font-mono tabular-nums text-right italic text-muted-foreground text-sm">
-            {formatCNY(subAmountSum)}
-          </TableCell>
-          <TableCell className="pl-12 text-center text-muted-foreground">—</TableCell>
-          <TableCell />
-        </TableRow>
+      {investorDialogOpen && (
+        <InvestorDialog
+          open={investorDialogOpen}
+          onOpenChange={setInvestorDialogOpen}
+          onSave={handleSaveInvestor}
+          investor={editingInvestor}
+          totalInvestment={totalInvestment}
+          existingNames={dialogExistingNames}
+          otherRatioSum={dialogOtherRatioSum}
+        />
       )}
-    </>
+    </div>
   );
 }
 
@@ -1893,26 +966,34 @@ export function InvestmentDetailView({ investment }: DetailViewProps) {
       </div>
 
       {/* Phase 5 弹窗 */}
-      <DistributionRatioDialog
-        open={showReturnDialog}
-        onOpenChange={setShowReturnDialog}
-        investment={investment}
-      />
-      <SettleDialog
-        open={showSettleDialog}
-        onOpenChange={setShowSettleDialog}
-        investment={investment}
-      />
-      <UnsettleDialog
-        open={showUnsettleDialog}
-        onOpenChange={setShowUnsettleDialog}
-        investment={investment}
-      />
-      <CopyInvestmentDialog
-        open={showCopyDialog}
-        onOpenChange={setShowCopyDialog}
-        investment={investment}
-      />
+      {showReturnDialog && (
+        <DistributionRatioDialog
+          open={showReturnDialog}
+          onOpenChange={setShowReturnDialog}
+          investment={investment}
+        />
+      )}
+      {showSettleDialog && (
+        <SettleDialog
+          open={showSettleDialog}
+          onOpenChange={setShowSettleDialog}
+          investment={investment}
+        />
+      )}
+      {showUnsettleDialog && (
+        <UnsettleDialog
+          open={showUnsettleDialog}
+          onOpenChange={setShowUnsettleDialog}
+          investment={investment}
+        />
+      )}
+      {showCopyDialog && (
+        <CopyInvestmentDialog
+          open={showCopyDialog}
+          onOpenChange={setShowCopyDialog}
+          investment={investment}
+        />
+      )}
 
       {/* 删除跟投记录确认（SubTask 5.4.1） */}
       <AlertDialog

@@ -1,8 +1,6 @@
 // src/app/(main)/projects/[projectId]/cashflow/page.tsx
 
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { Loader2 } from "lucide-react";
 
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
@@ -67,21 +65,13 @@ export default async function CashFlowPage({ params }: PageProps) {
         <TrendChart data={records} />
       </section>
 
-      {/* 3. 微观账本 */}
+      {/* 3. 微观账本（数据已 await 完成，客户端组件无需 Suspense 边界） */}
       <section>
-        <Suspense
-          fallback={
-            <div className="flex justify-center p-8">
-              <Loader2 className="animate-spin" />
-            </div>
-          }
-        >
-          <LedgerTable
-            projectId={projectId}
-            data={records}
-            businessForm={businessForm}
-          />
-        </Suspense>
+        <LedgerTable
+          projectId={projectId}
+          data={records}
+          businessForm={businessForm}
+        />
       </section>
     </div>
   );

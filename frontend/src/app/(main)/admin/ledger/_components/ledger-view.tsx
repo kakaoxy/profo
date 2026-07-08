@@ -49,24 +49,31 @@ export function LedgerView({ data, total }: LedgerViewProps) {
   const [searchInput, setSearchInput] = React.useState(query.search);
   const [exporting, setExporting] = React.useState(false);
 
-  // 外部 URL 变化时同步输入框（如分页重置）
+  // 用 ref 保存 query.search 与 searchInput 最新值，effect 内通过 ref 读取
+  // 避免闭包过期，且无需把对应值加入依赖数组（加入会引发覆盖用户输入或重置定时器）
+  const querySearchRef = React.useRef(query.search);
+  querySearchRef.current = query.search;
+  const searchInputRef = React.useRef(searchInput);
+  searchInputRef.current = searchInput;
+
+  // 外部 URL 变化时同步输入框（如分页重置或点击清除）
+  // 通过 ref 读取最新 searchInput，避免用户输入过程中被覆盖
   React.useEffect(() => {
-    if (query.search !== searchInput) {
+    if (query.search !== searchInputRef.current) {
       setSearchInput(query.search);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query.search]);
 
   // 防抖 300ms 推送搜索到 URL
+  // 通过 ref 读取最新 query.search，避免闭包内读到过期值导致重复 setQuery
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.search !== searchInput) {
+      if (querySearchRef.current !== searchInput) {
         setQuery({ search: searchInput, page: 1 });
       }
     }, 300);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
+  }, [searchInput, setQuery]);
 
   const handleRowClick = (row: LedgerProjectListItem) => {
     router.push(`/admin/ledger/${row.project_id}`);

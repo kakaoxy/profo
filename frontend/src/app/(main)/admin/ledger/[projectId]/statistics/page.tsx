@@ -21,9 +21,8 @@ interface PageProps {
 }
 
 export default async function LedgerStatisticsPage({ params }: PageProps) {
-  const { projectId } = await params;
-
-  const client = await fetchClient();
+  // params 与 fetchClient 无依赖,并行化避免串行 await
+  const [{ projectId }, client] = await Promise.all([params, fetchClient()]);
   const statsRes = await client.GET(
     "/api/v1/admin/ledger/{project_id}/statistics",
     { params: { path: { project_id: projectId } } },
