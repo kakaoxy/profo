@@ -37,6 +37,7 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
   // 2. 搜索框状态（初始值为 URL 中的 search 参数）
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "");
 
+  // useReactTable 返回函数无法被 React Compiler 安全 memoize，需显式禁用规则
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,

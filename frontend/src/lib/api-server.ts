@@ -1,4 +1,5 @@
 // src/lib/api-server.ts
+import { cache } from "react";
 import { logger } from "@/lib/logger";
 import createClient from "openapi-fetch";
 import type { paths } from "./api-types";
@@ -12,11 +13,15 @@ import { redirect } from "next/navigation";
  *
  * Proxy 层（proxy.ts）已保证 cookie 中 token 有效，
  * 此处仅从 cookie 读取，保留 401 重试一次作为兜底。
+ *
+ * 使用 React.cache() 包裹：同一请求内多次调用复用同一 client 实例，
+ * 避免重复创建闭包。token 仍在每次 fetch 调用时从 cookie 现读，无安全影响。
+ * 规则: server-cache-react
  */
 /** 最大重试次数，防止极端情况下反复刷新 */
 const MAX_RETRIES = 1;
 
-export async function fetchClient() {
+async function createServerClient() {
   const fetchWithAutoRefresh: typeof fetch = async (input, init) => {
     const makeRequest = async (bearerToken: string | null) => {
       const requestHeaders =
@@ -69,3 +74,9 @@ export async function fetchClient() {
     fetch: fetchWithAutoRefresh,
   });
 }
+
+/**
+ * 对外暴露的缓存版 client。
+ * React.cache() 保证同一请求内多次调用返回同一实例，避免重复创建闭包。
+ */
+export const fetchClient = cache(createServerClient);

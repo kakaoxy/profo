@@ -1,9 +1,9 @@
 "use client";
 
 import { logger } from "@/lib/logger";
-import { useEffect, useState } from "react";
+import useSWR from "swr";
+import Image from "next/image";
 import { useQueryState } from "nuqs";
-import { components } from "@/lib/api-types";
 import { getPropertyDetailAction } from "../actions";
 import {
   Sheet,
@@ -17,9 +17,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Home, Calendar, Tag, Layers, LucideIcon } from "lucide-react";
 import { getProjectStatusBadgeClass } from "@/lib/status-colors";
 
-// 获取详情接口的返回类型
-type PropertyDetail = components["schemas"]["PropertyDetailResponse"];
-
 // 定义 Field 组件的 Props 类型，解决 'any' 报错
 interface FieldProps {
   label: string;
@@ -28,45 +25,45 @@ interface FieldProps {
   full?: boolean;
 }
 
+// 提升到模块级：避免父组件每次渲染都生成新组件类型，破坏 reconciliation
+// 规则: rerender-no-inline-components
+function Field({ label, value, icon: Icon, full = false }: FieldProps) {
+  return (
+    <div className={`flex flex-col gap-1 ${full ? "col-span-2" : ""}`}>
+      <span className="text-xs text-muted-foreground flex items-center gap-1">
+        {Icon && <Icon className="w-3 h-3" />} {label}
+      </span>
+      <span className="text-sm font-medium wrap-break-word">
+        {value === null || value === undefined || value === "" ? "-" : value}
+      </span>
+    </div>
+  );
+}
+
 export function PropertyDetailSheet() {
   // 1. 监听 URL 中的 propertyId
   const [propertyId, setPropertyId] = useQueryState("propertyId", { shallow: true });
-  
-  const [data, setData] = useState<PropertyDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const isOpen = !!propertyId;
+  // 2. 派生 id（number | null），作为 SWR key
+  // 规则: rerender-derived-state-no-effect（派生状态在 render 期间计算，不放入 effect）
+  const id = propertyId ? Number.parseInt(propertyId) : null;
 
-  // 2. 当 ID 变化时，请求接口
-  useEffect(() => {
-    if (!propertyId) {
-      setData(null);
-      return;
-    }
+  // 3. SWR 接管数据获取：自动去重、自动取消旧请求、消除 race condition
+  // 规则: client-swr-dedup / rerender-derived-state-no-effect
+  // 关闭重试与聚焦重验以保持原有"失败即停止"语义，避免行为变化
+  const { data, error, isLoading } = useSWR(
+    id === null ? null : ["property-detail", id],
+    () => getPropertyDetailAction(id as number),
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+      keepPreviousData: false,
+      // 错误日志放在 onError 回调，避免 render 期间产生副作用
+      onError: (err) => logger.error(err),
+    },
+  );
 
-    const loadData = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        // ❌ 删除原来的 fetchClient 调用
-        // const client = await fetchClient();
-        // const { data: detail, error: apiError } = await client.GET(...)
-        
-        // ✅ 改为调用 Server Action
-        const detail = await getPropertyDetailAction(parseInt(propertyId));
-
-        setData(detail ?? null);
-      } catch (err) {
-        logger.error(err);
-        setError("无法加载房源数据，请稍后重试。");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [propertyId]);
+  const isOpen = id !== null;
 
   // 关闭抽屉时，清空 URL 参数
   const handleClose = (open: boolean) => {
@@ -75,17 +72,8 @@ export function PropertyDetailSheet() {
     }
   };
 
-  // 辅助渲染函数：显示字段
-  const Field = ({ label, value, icon: Icon, full = false }: FieldProps) => (
-    <div className={`flex flex-col gap-1 ${full ? "col-span-2" : ""}`}>
-      <span className="text-xs text-muted-foreground flex items-center gap-1">
-        {Icon && <Icon className="w-3 h-3" />} {label}
-      </span>
-      <span className="text-sm font-medium break-words">
-        {value === null || value === undefined || value === "" ? "-" : value}
-      </span>
-    </div>
-  );
+  // 错误信息映射：保持与原实现一致的中文文案
+  const errorMsg = error ? "无法加载房源数据，请稍后重试。" : "";
 
   // 价格显示逻辑：如果有成交价显示成交价，否则显示挂牌价
   const displayPrice = data?.sold_price_wan || data?.listed_price_wan || 0;
@@ -106,7 +94,7 @@ export function PropertyDetailSheet() {
             <span className="text-xs text-muted-foreground ml-auto">ID: {propertyId}</span>
           </div>
           <SheetTitle className="text-xl leading-snug">
-            {loading ? "加载中..." : data?.community_name || "房源详情"}
+            {isLoading ? "加载中..." : data?.community_name || "房源详情"}
           </SheetTitle>
           <SheetDescription>
             {/* 修复：删除了不存在的 address 字段 */}
@@ -118,19 +106,19 @@ export function PropertyDetailSheet() {
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-8">
             
-            {loading && (
+            {isLoading && (
               <div className="flex h-40 items-center justify-center text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin" />
               </div>
             )}
 
-            {error && (
+            {errorMsg && (
               <div className="p-4 bg-error-container text-error rounded-md text-sm">
-                {error}
+                {errorMsg}
               </div>
             )}
 
-            {data && !loading && (
+            {data && !isLoading && (
               <>
                 {/* 1. 核心价格与面积 */}
                 <div className="grid grid-cols-3 gap-4 bg-card p-4 rounded-lg border shadow-sm">
@@ -161,15 +149,21 @@ export function PropertyDetailSheet() {
                       </h3>
                       <div className="grid grid-cols-3 gap-2">
                         {data.picture_links.slice(0, 6).map((link, idx) => (
-                           // eslint-disable-next-line @next/next/no-img-element
-                           <img 
-                              key={idx} 
-                              src={link} 
-                              alt={`图${idx}`} 
-                              className="w-full aspect-[4/3] object-cover rounded border bg-muted" 
-                              loading="lazy"
-                              referrerPolicy="no-referrer"
-                           />
+                           // 使用 next/image 与 columns.tsx 对齐；unoptimized 保留外链原 URL
+                           <div
+                              key={idx}
+                              className="relative w-full aspect-4/3 rounded border bg-muted overflow-hidden"
+                           >
+                              <Image
+                                 src={link}
+                                 alt={`图${idx}`}
+                                 fill
+                                 sizes="(max-width: 600px) 50vw, 200px"
+                                 className="object-cover"
+                                 referrerPolicy="no-referrer"
+                                 unoptimized
+                              />
+                           </div>
                         ))}
                       </div>
                    </div>
