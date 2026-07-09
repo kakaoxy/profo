@@ -5212,8 +5212,8 @@ export interface components {
              * @default 0
              */
             annual_roi: number;
-            /** Investor Profit */
-            investor_profit?: number | null;
+            /** Project Income */
+            project_income?: number | null;
         };
         /**
          * LedgerStatsResponse
@@ -6068,7 +6068,7 @@ export interface components {
             finance_settlement_status: components["schemas"]["SettlementStatus"];
             /**
              * Finance Settled Date
-             * @description 资金账本结算日期 YYYY-MM-DD
+             * @description 资金账本结算日期
              */
             finance_settled_date?: string | null;
             /**

@@ -465,9 +465,9 @@ class LedgerStatisticsSummary(BaseModel):
     occupy_days: int = 0
     roi: float = 0.0
     annual_roi: float = 0.0
-    investor_profit: Decimal | None = Decimal(0)
+    project_income: Decimal | None = Decimal(0)
 
-    @field_serializer("total_expense", "initial_investment", "gross_profit", "net_profit", "investor_profit")
+    @field_serializer("total_expense", "initial_investment", "gross_profit", "net_profit", "project_income")
     def _serialize_decimal(self, v: Decimal | None) -> float | None:
         return float(v) if v is not None else None
 

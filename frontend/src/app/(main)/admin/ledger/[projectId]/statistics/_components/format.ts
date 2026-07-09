@@ -35,3 +35,16 @@ export function formatPercent(
   if (value == null || isNaN(value)) return "0%";
   return `${value.toFixed(digits)}%`;
 }
+
+/**
+ * 格式化日期，去除时间部分（T00:00:00），仅保留 YYYY-MM-DD
+ * @param value ISO 日期字符串（可为 null/undefined）
+ * @param fallback 空值回退文案，默认 "-"
+ */
+export function formatDate(
+  value: string | null | undefined,
+  fallback = "-",
+): string {
+  if (!value) return fallback;
+  return value.slice(0, 10);
+}
