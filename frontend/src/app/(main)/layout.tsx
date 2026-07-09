@@ -1,5 +1,6 @@
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
@@ -7,6 +8,27 @@ import { ErrorBoundary } from "@/components/error-boundary";
 
 // 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
 export const dynamic = 'force-dynamic';
+
+// 仅 admin / operator 可访问的后台受限路径前缀
+const RESTRICTED_ADMIN_PATHS = ["/admin/users", "/admin/settings"];
+
+// 允许访问受限路径的角色代码
+const ADMIN_ACCESS_ROLES = ["admin", "operator"];
+
+/**
+ * 判断路径是否为后台受限路径（仅 admin/operator 可访问）。
+ * 用于服务端角色守卫，提前在 layout 层拦截越权访问。
+ */
+export function isRestrictedAdminPath(pathname: string): boolean {
+  return RESTRICTED_ADMIN_PATHS.some((p) => pathname.startsWith(p));
+}
+
+/**
+ * 判断角色代码是否具备受限路径访问权限（仅 admin/operator）。
+ */
+export function hasAdminAccess(roleCode: string | undefined | null): boolean {
+  return roleCode != null && ADMIN_ACCESS_ROLES.includes(roleCode);
+}
 
 async function getUser() {
   try {
@@ -42,6 +64,14 @@ export default async function DashboardLayout({
 
   if (!user) {
     redirect("/admin/login");
+  }
+
+  // 服务端角色守卫：受限路径（/admin/users、/admin/settings）仅 admin/operator 可访问
+  const headersList = await headers();
+  const pathname =
+    headersList.get("x-invoke-path") ?? headersList.get("x-pathname") ?? "";
+  if (isRestrictedAdminPath(pathname) && !hasAdminAccess(user?.role?.code)) {
+    redirect("/admin");
   }
 
   return (

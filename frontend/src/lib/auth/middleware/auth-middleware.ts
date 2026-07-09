@@ -41,13 +41,19 @@ export interface AuthMiddlewareResult {
  * // "/dashboard/:path*"  → matches /dashboard, /dashboard/settings, etc.
  * // "/user/:id"          → matches /user/123 but not /user/123/profile
  */
-function patternToRegex(pattern: string): RegExp {
+const regexCache = new Map<string, RegExp>();
+
+export function patternToRegex(pattern: string): RegExp {
+  const cached = regexCache.get(pattern);
+  if (cached) return cached;
   const escaped = pattern
     .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
     .replace(/\/:[\w]+\*/g, "(?:/.*)?")
     .replace(/:[\w]+\*/g, ".*")
     .replace(/:[\w]+/g, "[^/]+");
-  return new RegExp(`^${escaped}\\/?$`);
+  const regex = new RegExp(`^${escaped}\\/?$`);
+  regexCache.set(pattern, regex);
+  return regex;
 }
 
 /**

@@ -15,6 +15,7 @@ import type {
 } from "../types";
 import { TokenPairSchema } from "../types";
 import { getGlobalAuthConfig, debugLog } from "../config";
+import { sanitizeCallbackUrl } from "../utils/sanitize-callback-url";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -39,19 +40,10 @@ function isNextRedirectError(error: unknown): boolean {
   );
 }
 
-/**
- * Validates a callbackUrl to prevent open-redirect attacks.
- * Only root-relative paths (starting with "/" but not "//") are allowed.
- * Any other value — absolute URLs, protocol-relative URLs, empty strings —
- * is rejected and returns undefined, falling back to pages.home.
- */
-function sanitizeCallbackUrl(url: string | undefined): string | undefined {
-  if (!url) return undefined;
-  // Allow root-relative paths only — blocks `//evil.com` and `https://evil.com`
-  if (url.startsWith("/") && !url.startsWith("//")) return url;
-  debugLog("sanitizeCallbackUrl: rejected unsafe callbackUrl", { url });
-  return undefined;
-}
+// sanitizeCallbackUrl extracted to ../utils/sanitize-callback-url so client
+// components can import it without pulling in a "use server" module.
+// Re-exported here for backwards compatibility with existing callers.
+export { sanitizeCallbackUrl };
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 

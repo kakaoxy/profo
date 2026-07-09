@@ -5,6 +5,9 @@ import { auth } from "@/auth";
 import { debugLog } from "@/lib/auth/config";
 import { dedupServerRefresh } from "@/lib/auth/server/refresh-dedup";
 
+// Module-level singleton: library design intends one resolver reused across requests
+const resolveAuth = auth.createMiddleware();
+
 const PROTECTED_C_PREFIXES = ["/valuation", "/leads", "/my", "/profile"];
 
 const ADMIN_DOMAINS = (process.env.ADMIN_DOMAINS || "admin.fangmengchina.com")
@@ -68,7 +71,6 @@ export default async function proxy(request: NextRequest) {
   // ── 2. C-side protected paths: 用 library middleware 检查认证 + 自动刷新 ──
   // Skip admin paths for C-side auth
   if (!pathname.startsWith("/admin") && isProtectedCPath(pathname)) {
-    const resolveAuth = auth.createMiddleware();
     const session = await resolveAuth(request);
 
     if (!session.isAuthenticated) {
