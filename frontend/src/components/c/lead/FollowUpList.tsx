@@ -53,7 +53,7 @@ export function FollowUpList({ followUps }: FollowUpListProps) {
                 <span className="text-[15px] font-medium tracking-[-0.009em] text-ink">{item.method}</span>
                 <span className="text-[12px] text-graphite">{item.followed_at}</span>
               </div>
-              <p className="mt-1 text-[14px] leading-[1.5] text-ash">{item.content}</p>
+              <p className="mt-1 text-[14px] leading-normal text-ash">{item.content}</p>
             </div>
           </li>
         ))}

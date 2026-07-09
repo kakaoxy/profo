@@ -1,10 +1,14 @@
 import type { components } from "@/lib/api-types";
+import { cn } from "@/lib/utils";
 import { formatCurrency, formatNumber, formatPercent } from "./format";
+import { CalcBreakdownDialog } from "./calc-breakdown-dialog";
 
 type SummaryStats = components["schemas"]["LedgerStatisticsSummary"];
+type CalcBreakdown = components["schemas"]["LedgerStatisticsCalcBreakdown"];
 
 interface StatisticsHeroProps {
   summary: SummaryStats;
+  calcBreakdown: CalcBreakdown;
 }
 
 /**
@@ -12,9 +16,9 @@ interface StatisticsHeroProps {
  * - 居中标题 (Signifier 44px) + 副标题
  * - 8 个 KPI 卡片，2 行 × 4 列
  * - Row1: 总支出/前期投入/毛利/净利 (Apricot Wash 渐变)
- * - Row2: 资金占用时间/投资回报率/年化回报率/项目收入 (白底)
+ * - Row2: 项目收入/资金占用时间/投资回报率/年化回报率 (白底)
  */
-export function StatisticsHero({ summary }: StatisticsHeroProps) {
+export function StatisticsHero({ summary, calcBreakdown }: StatisticsHeroProps) {
   return (
     <div className="text-center">
       {/* 标题 */}
@@ -66,6 +70,12 @@ export function StatisticsHero({ summary }: StatisticsHeroProps) {
         style={{ animationDelay: "0.2s" }}
       >
         <KpiCard
+          label="项目收入"
+          value={formatCurrency(summary.project_income)}
+          variant="plain"
+          accent="rust"
+        />
+        <KpiCard
           label="资金占用时间"
           value={formatNumber(summary.occupy_days)}
           suffix="天"
@@ -78,18 +88,15 @@ export function StatisticsHero({ summary }: StatisticsHeroProps) {
           variant="plain"
           accent="ink"
         />
-        <KpiCard
-          label="年化回报率"
-          value={formatPercent(summary.annual_roi)}
-          variant="plain"
-          accent="ink"
-        />
-        <KpiCard
-          label="项目收入"
-          value={formatCurrency(summary.project_income)}
-          variant="plain"
-          accent="rust"
-        />
+        <CalcBreakdownDialog breakdown={calcBreakdown}>
+          <KpiCard
+            label="年化回报率"
+            value={formatPercent(summary.annual_roi)}
+            variant="plain"
+            accent="ink"
+            className="cursor-pointer"
+          />
+        </CalcBreakdownDialog>
       </div>
     </div>
   );
@@ -104,9 +111,17 @@ interface KpiCardProps {
   suffix?: string;
   variant: KpiVariant;
   accent: KpiAccent;
+  className?: string;
 }
 
-function KpiCard({ label, value, suffix, variant, accent }: KpiCardProps) {
+function KpiCard({
+  label,
+  value,
+  suffix,
+  variant,
+  accent,
+  className,
+}: KpiCardProps) {
   const cardBg =
     variant === "warm"
       ? "linear-gradient(135deg, #fbe1d1 0%, rgba(251, 225, 209, 0.5) 100%)"
@@ -115,7 +130,10 @@ function KpiCard({ label, value, suffix, variant, accent }: KpiCardProps) {
 
   return (
     <div
-      className="text-center px-5 py-7 rounded-[20px] shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] transition-transform duration-300 hover:-translate-y-1"
+      className={cn(
+        "text-center px-5 py-7 rounded-[20px] shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] transition-transform duration-300 hover:-translate-y-1",
+        className,
+      )}
       style={{ background: cardBg }}
     >
       <p className="text-[14px] mb-2 text-graphite leading-[1.5]">{label}</p>

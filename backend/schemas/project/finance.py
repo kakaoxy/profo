@@ -140,8 +140,12 @@ class ProjectReportResponse(BaseModel):
     signing_price: Decimal | None = None
 
     @field_serializer(
-        "total_investment", "total_income", "net_profit",
-        "sale_price", "list_price", "signing_price",
+        "total_investment",
+        "total_income",
+        "net_profit",
+        "sale_price",
+        "list_price",
+        "signing_price",
     )
     def serialize_decimal(self, v: Decimal | None) -> float | None:
         return float(v) if v is not None else None
@@ -383,8 +387,14 @@ class LedgerStatisticsRenovation(BaseModel):
     days: int = 0
 
     @field_serializer(
-        "total_fee", "hard_amount", "hard_unit_price", "soft_actual",
-        "custom_cabinet", "window", "wall_treatment", "other_fee",
+        "total_fee",
+        "hard_amount",
+        "hard_unit_price",
+        "soft_actual",
+        "custom_cabinet",
+        "window",
+        "wall_treatment",
+        "other_fee",
     )
     def _serialize_decimal(self, v: Decimal | None) -> float | None:
         return float(v) if v is not None else None
@@ -474,6 +484,35 @@ class LedgerStatisticsSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LedgerStatisticsCalcItem(BaseModel):
+    """计算明细项."""
+
+    label: str
+    sign: str = ""
+    amount: float | None = None
+    text: str | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LedgerStatisticsCalcSection(BaseModel):
+    """计算区段."""
+
+    title: str
+    formula: str
+    items: list[LedgerStatisticsCalcItem]
+    result: float
+    result_type: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LedgerStatisticsCalcBreakdown(BaseModel):
+    """资金汇总计算明细."""
+
+    business_form: str | None = None
+    sections: list[LedgerStatisticsCalcSection]
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProjectLedgerStatisticsResponse(BaseModel):
     """资金账本统计页面聚合响应（8 分组）."""
 
@@ -485,5 +524,6 @@ class ProjectLedgerStatisticsResponse(BaseModel):
     marketing: LedgerStatisticsMarketing
     operation: LedgerStatisticsOperation
     summary: LedgerStatisticsSummary
+    calc_breakdown: LedgerStatisticsCalcBreakdown
 
     model_config = ConfigDict(from_attributes=True)

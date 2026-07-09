@@ -5038,6 +5038,49 @@ export interface components {
             receipt_urls?: string[] | null;
         };
         /**
+         * LedgerStatisticsCalcBreakdown
+         * @description 资金汇总计算明细.
+         */
+        LedgerStatisticsCalcBreakdown: {
+            /** Business Form */
+            business_form?: string | null;
+            /** Sections */
+            sections: components["schemas"]["LedgerStatisticsCalcSection"][];
+        };
+        /**
+         * LedgerStatisticsCalcItem
+         * @description 计算明细项.
+         */
+        LedgerStatisticsCalcItem: {
+            /** Label */
+            label: string;
+            /**
+             * Sign
+             * @default
+             */
+            sign: string;
+            /** Amount */
+            amount?: number | null;
+            /** Text */
+            text?: string | null;
+        };
+        /**
+         * LedgerStatisticsCalcSection
+         * @description 计算区段.
+         */
+        LedgerStatisticsCalcSection: {
+            /** Title */
+            title: string;
+            /** Formula */
+            formula: string;
+            /** Items */
+            items: components["schemas"]["LedgerStatisticsCalcItem"][];
+            /** Result */
+            result: number;
+            /** Result Type */
+            result_type: string;
+        };
+        /**
          * LedgerStatisticsCommission
          * @description 统计页面 - 渠道佣金及税费.
          */
@@ -5825,6 +5868,7 @@ export interface components {
             marketing: components["schemas"]["LedgerStatisticsMarketing"];
             operation: components["schemas"]["LedgerStatisticsOperation"];
             summary: components["schemas"]["LedgerStatisticsSummary"];
+            calc_breakdown: components["schemas"]["LedgerStatisticsCalcBreakdown"];
         };
         /**
          * ProjectReportResponse
