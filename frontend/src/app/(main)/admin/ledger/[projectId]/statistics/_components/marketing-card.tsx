@@ -20,7 +20,7 @@ export function MarketingCard({ data }: MarketingCardProps) {
 
   return (
     <div
-      className="bg-white rounded-[24px] p-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] h-full animate-in"
+      className="bg-white rounded-cards p-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] h-full animate-in"
       style={{ animationDelay: "0.5s" }}
     >
       {/* Section header */}
@@ -28,7 +28,7 @@ export function MarketingCard({ data }: MarketingCardProps) {
         <h2 className="text-[26px] leading-[1.18] tracking-[-0.23px] text-ink text-balance">
           营销推广费
         </h2>
-        <p className="text-[14px] leading-[1.5] mt-1 text-graphite">
+        <p className="text-[14px] leading-normal mt-1 text-graphite">
           Marketing Expense
         </p>
       </div>
@@ -51,7 +51,7 @@ export function MarketingCard({ data }: MarketingCardProps) {
         />
 
         {/* Total row */}
-        <div className="flex justify-between items-center py-3 px-4 rounded-[12px] bg-rust/[0.06] border-l-[3px] border-rust">
+        <div className="flex justify-between items-center py-3 px-4 rounded-images bg-rust/6 border-l-[3px] border-rust">
           <span className="text-[14px] font-medium text-rust">合计</span>
           <span className="text-[18px] font-medium text-rust tabular-nums">
             {formatCurrency(total)}
@@ -74,7 +74,7 @@ function DataRow({
   return (
     <div className="flex justify-between items-center py-2.5 border-b border-dove/25 last:border-b-0">
       <span className="text-[14px] text-graphite">{label}</span>
-      <span className={`text-[15px] font-medium tabular-nums ${valueColor} break-words`}>
+      <span className={`text-[15px] font-medium tabular-nums ${valueColor} wrap-break-word`}>
         {value}
       </span>
     </div>
