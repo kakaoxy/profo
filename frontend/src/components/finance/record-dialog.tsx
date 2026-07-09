@@ -37,7 +37,6 @@ type LedgerRecordCreate = components["schemas"]["LedgerRecordCreate"];
 
 // ==========================================
 // 资金账本分类数据（三级结构：收支 → 业务类型 → 阶段 → 分类）
-// 与 docs/jizhang.html 的 DATA 结构一致
 // ⚠️ 未覆盖:后端目前无分类元数据接口,此表与后端 CashFlowCategory 枚举
 // (backend/models/common/base.py)手工同步。待后端提供 /categories 接口后迁移。
 // ==========================================
@@ -48,28 +47,26 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
       { stage: "签约", items: ["渠道佣金"] },
       { stage: "装修", items: ["工程装修费"] },
       { stage: "在售", items: ["营销费垫付"] },
-      { stage: "已售", items: ["跟投本金退还", "投资人利润分配", "营销推广费", "运营费", "财税成本", "项目激励"] },
+      { stage: "已售", items: ["营销推广费", "运营费", "财税成本", "项目激励", "跟投本金退还", "投资人利润分配"] },
       { stage: "其他", items: ["项目备用金", "其他支出"] },
     ],
     agent: [
       { stage: "签约", items: ["履约保证金"] },
-      { stage: "已售", items: ["代付佣金", "税费及佣金差额"] },
+      { stage: "已售", items: ["税费及佣金差额", "代付佣金"] },
     ],
     wholesale: [
       { stage: "签约", items: ["购房款-定金", "购房款-首付", "购房款-税费", "名额费", "持有月供"] },
-      { stage: "已售", items: ["卖房佣金", "卖房税费"] },
+      { stage: "已售", items: ["卖房税费", "卖房佣金"] },
     ],
   },
   income: {
     general: [
-      { stage: "在售", items: ["营销推广费抵扣"] },
-      { stage: "已售", items: ["项目跟投款"] },
-      { stage: "备用金", items: ["备用金回收"] },
-      { stage: "其他", items: ["其他费用"] },
+      { stage: "在售", items: ["项目跟投款"] },
+      { stage: "已售", items: ["营销推广费抵扣"] },
+      { stage: "其他", items: ["其他费用", "备用金回收"] },
     ],
     agent: [
-      { stage: "已售", items: ["保证金回收", "增值服务费"] },
-      { stage: "在售", items: ["业主佣金"] },
+      { stage: "已售", items: ["保证金回收", "增值服务费", "业主佣金"] },
     ],
     wholesale: [
       { stage: "已售", items: ["房价款"] },
