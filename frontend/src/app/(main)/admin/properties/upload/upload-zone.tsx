@@ -30,6 +30,14 @@ import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+// 可取消的状态集合：提升到模块级，避免每次渲染重建数组字面量
+// 规则: js-set-map-lookups / js-cache-function-results
+// 导出以便单元测试验证等价性（不改变业务逻辑）
+export const CANCELLABLE_STATUSES: ReadonlySet<string> = new Set([
+  "pending",
+  "processing",
+]);
+
 // 状态显示映射
 const statusMap: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "等待处理", color: "bg-yellow-100 text-yellow-700", icon: <Clock className="h-4 w-4" /> },
@@ -132,10 +140,9 @@ export function UploadZone() {
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging((prev) => {
-      if (!prev) return true;
-      return prev;
-    });
+    // 事件处理器内 setState 已批处理，直接设置即可
+    // 规则: rerender-functional-setstate（仅当依赖前值时才用函数式更新）
+    setIsDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -193,8 +200,9 @@ export function UploadZone() {
     }
   }, [currentFile, startUpload]);
 
-  // 判断是否可以取消
-  const canCancel = isPolling && taskStatus && ["pending", "processing"].includes(taskStatus.status);
+  // 判断是否可以取消：使用模块级 Set 查找，O(1) 且避免重建数组
+  // 规则: js-set-map-lookups
+  const canCancel = isPolling && !!taskStatus && CANCELLABLE_STATUSES.has(taskStatus.status);
 
   return (
     <div className="space-y-6">

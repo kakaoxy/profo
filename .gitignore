@@ -188,3 +188,4 @@ skills-lock.json
 *.tar.gz
 
 investment-management-design/
+.agent-browser/

@@ -3,6 +3,7 @@ import { fetchClient } from "@/lib/api-server";
 import { extractPaginatedData } from "@/lib/api-helpers";
 import type { components } from "@/lib/api-types";
 import { GovernanceView } from "./governance-view";
+import { pickCommunityFields } from "./pick-community-fields";
 
 interface GovernancePageProps {
   searchParams: Promise<{
@@ -41,6 +42,10 @@ export default async function GovernancePage(props: GovernancePageProps) {
   const { items, total } =
     extractPaginatedData<components["schemas"]["CommunityResponse"]>(data);
 
+  // RSC 序列化精简：仅保留前端实际使用的字段，剔除 city_id / avg_price_wan
+  // 规则: server-serialization（最小化传给客户端组件的数据）
+  const minimalItems = items.map(pickCommunityFields);
+
   return (
     <div className="container h-full flex flex-col gap-4 sm:gap-6 p-4 sm:p-8 m-x-8">
       <div className="flex flex-col gap-1 sm:gap-2">
@@ -54,7 +59,7 @@ export default async function GovernancePage(props: GovernancePageProps) {
 
       {/* 核心治理视图 */}
       <GovernanceView
-        data={items}
+        data={minimalItems}
         total={total || 0}
         page={page}
         pageSize={pageSize}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import Image from "next/image";
 import { components } from "@/lib/api-types";
@@ -24,8 +24,11 @@ import { DEFAULT_SORT_BY, DEFAULT_SORT_ORDER } from "./search-params";
 
 export type Property = components["schemas"]["PropertyResponse"];
 
-// --- 1. 移植过来的户型图取数逻辑 ---
-const getFloorPlan = (
+// --- 1. 户型图取数逻辑 ---
+// 优化点：单次循环缓存 toLowerCase 结果，避免重复调用；合并两次 find 为一次遍历
+// 规则: js-cache-property-access / js-combine-iterations
+// 导出以便单元测试验证等价性（不改变业务逻辑）
+export const getFloorPlan = (
   dataSource: string | null | undefined,
   links: string[] | null | undefined,
 ): string | null => {
@@ -36,14 +39,28 @@ const getFloorPlan = (
   }
 
   const source = dataSource || "";
+  let hdicFrameImage: string | undefined;
+  let floorPlanImage: string | undefined;
+
+  // 单次循环：同时匹配 hdic-frame 与 floorplan/layout，缓存 toLowerCase 结果
+  for (const link of validLinks) {
+    const lower = link.toLowerCase();
+    if (!hdicFrameImage && lower.includes("hdic-frame")) {
+      hdicFrameImage = link;
+    }
+    if (
+      !floorPlanImage &&
+      (lower.includes("floorplan") || lower.includes("layout"))
+    ) {
+      floorPlanImage = link;
+    }
+    if (hdicFrameImage && floorPlanImage) break;
+  }
+
   let imageUrl: string | undefined;
 
   // 根据数据源选择户型图
   if (source === "贝壳") {
-    // 贝壳：优先取包含 'hdic-frame' 的图片链接
-    const hdicFrameImage = validLinks.find((link) =>
-      link.toLowerCase().includes("hdic-frame"),
-    );
     // 优先级：hdic-frame -> 第3张 -> 第1张
     // 注意：JS数组越界访问返回 undefined，不会报错，逻辑是安全的
     imageUrl = hdicFrameImage || validLinks[2] || validLinks[0];
@@ -53,12 +70,6 @@ const getFloorPlan = (
       imageUrl += "!m_fill,w_1000,h_750,l_bk,f_jpg,ls_50";
     }
   } else if (source === "我爱我家") {
-    // 我爱我家：优先取包含 'floorPlan' 或 'layout' 的图片链接
-    const floorPlanImage = validLinks.find(
-      (link) =>
-        link.toLowerCase().includes("floorplan") ||
-        link.toLowerCase().includes("layout"),
-    );
     // 优先级：匹配到的 -> 最后一张
     imageUrl = floorPlanImage || validLinks[validLinks.length - 1];
   } else {
@@ -70,6 +81,7 @@ const getFloorPlan = (
 };
 
 // --- 2. 通用排序表头组件 ---
+// 注意：内部订阅 useQueryState，排序变化时必然重渲染，memo 无效，故不加
 const SortableHeader = ({ title, value }: { title: string; value: string }) => {
   const [sortBy, setSortBy] = useQueryState("sort_by", {
     shallow: false,
@@ -115,6 +127,7 @@ const SortableHeader = ({ title, value }: { title: string; value: string }) => {
 
 const ActionCell = ({ id }: { id: number }) => {
   // 使用 nuqs 的 hook
+  // 注意：内部订阅 useQueryState(propertyId)，propertyId 变化时必然重渲染，memo 无效
   const [, setPropertyId] = useQueryState("propertyId", { shallow: true });
 
   return (
@@ -133,7 +146,10 @@ const ActionCell = ({ id }: { id: number }) => {
   );
 };
 
-const FloorPlanPreview = ({
+// FloorPlanPreview 包含 Image + HoverCard，且不订阅 URL state。
+// 当表格因 propertyId/sort 变化重渲染时，memo 可避免 50 行图片组件重渲染。
+// 规则: rerender-memo（仅对 expensive 组件加 memo）
+const FloorPlanPreviewImpl = ({
   cover,
   dataSource,
 }: {
@@ -198,6 +214,7 @@ const FloorPlanPreview = ({
     </HoverCard>
   );
 };
+const FloorPlanPreview = memo(FloorPlanPreviewImpl);
 
 export const columns: ColumnDef<Property>[] = [
   // 1. 房源ID
