@@ -2,18 +2,11 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { LoginResponseSchema } from "@/lib/auth/schemas";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { createActionLogger } from "@/lib/logger";
 
 const logger = createActionLogger("login");
-
-// 定义登录接口返回的结构
-interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
-}
 
 export type LoginState = {
   error?: string;
@@ -21,6 +14,11 @@ export type LoginState = {
   username?: string;            // 新增：回传用户名以便修改密码使用
   tempToken?: string;           // 新增：如果有临时Token
 } | null;
+
+// changePasswordAction 专用返回类型：成功/失败为判别联合，强制调用方用 success 字段判断
+export type ChangePasswordState =
+  | { success: true }
+  | { success: false; error: string; mustChangePassword: true; username: string };
 
 export async function loginAction(prevState: LoginState, formData: FormData): Promise<LoginState> {
   const username = formData.get("username") as string;
@@ -77,7 +75,12 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
     }
     // --- 核心修复逻辑结束 ---
 
-    const data: LoginResponse = await response.json();
+    const parsed = LoginResponseSchema.safeParse(await response.json());
+    if (!parsed.success) {
+      logger.error("登录响应格式异常", { issues: parsed.error.issues });
+      return { error: "登录响应格式异常" };
+    }
+    const data = parsed.data;
 
     // 3. 写入 Cookies (access_token 和 refresh_token)
     const cookieStore = await cookies();
@@ -111,14 +114,14 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
 }
 
 // --- 新增：修改初始密码 Action ---
-export async function changePasswordAction(prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const username = formData.get("username") as string;
+export async function changePasswordAction(prevState: ChangePasswordState | null, formData: FormData): Promise<ChangePasswordState> {
+  const username = (formData.get("username") as string) ?? "";
   const currentPassword = formData.get("current_password") as string;
   const newPassword = formData.get("new_password") as string;
   const tempToken = formData.get("temp_token") as string;
 
   if (!newPassword || newPassword.length < 8) {
-    return { error: "新密码长度至少需要 8 位", mustChangePassword: true, username };
+    return { success: false, error: "新密码长度至少需要 8 位", mustChangePassword: true, username };
   }
 
   // 注意：这里调用的是修改密码接口
@@ -147,21 +150,28 @@ export async function changePasswordAction(prevState: LoginState, formData: Form
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return {
+        success: false,
         error: errorData.detail || "修改密码失败",
         mustChangePassword: true, // 保持在修改密码界面
         username
       };
     }
 
-    // 修改成功后，通常需要用新密码重新登录一次
-    // 或者如果后端直接返回了新 Token，我们可以在这里 set cookie
-    // 这里简单起见，提示成功并让用户重新登录
-    return { error: undefined }; // Success state
-
+    // 修改密码成功：立即失效 Token（清 cookie），满足 project_memory 硬约束
+    // Token 必须在密码变更时立即失效
+    const cookieStore = await cookies();
+    cookieStore.delete({ name: "access_token", path: "/" });
+    cookieStore.delete({ name: "refresh_token", path: "/" });
   } catch (error) {
     logger.error("修改密码请求失败", error);
-    return { error: "请求失败，请稍后重试", mustChangePassword: true, username };
+    return { success: false, error: "请求失败，请稍后重试", mustChangePassword: true, username };
   }
+
+  // redirect 必须放在 try/catch 之外：next/navigation 的 redirect() 会抛出
+  // NEXT_REDIRECT 内部错误以中止执行，若被 try/catch 吞掉会导致流程异常
+  redirect("/admin/login");
+  // redirect 内部会抛出 NEXT_REDIRECT 中止执行，下面 return 仅为满足 TS 类型完备性
+  return { success: true };
 }
 
 export async function logoutAction() {

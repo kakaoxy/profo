@@ -37,8 +37,6 @@ const authMiddleware: Middleware = {
       const { success: refreshed } = await refreshTokensDedup(C_REFRESH_ENDPOINT);
 
       if (refreshed) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-
         const storedBody = requestBodyStore.get(request);
         requestBodyStore.delete(request);
 

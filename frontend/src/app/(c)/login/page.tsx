@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/client";
+import { sanitizeCallbackUrl } from "@/lib/auth/utils/sanitize-callback-url";
 import {
   User,
   Lock,
@@ -20,7 +21,11 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   // 兼容 redirect 与 callbackUrl 两种参数名（统一为 redirect，callbackUrl 作为回退）
-  const redirect = searchParams.get("redirect") || searchParams.get("callbackUrl") || "/";
+  // sanitizeCallbackUrl 拦截 //evil.com / https://evil.com 等开放重定向攻击，失败回退 /
+  const redirect =
+    sanitizeCallbackUrl(
+      searchParams.get("redirect") || searchParams.get("callbackUrl") || "/",
+    ) ?? "/";
 
   const { login } = useAuth();
   const [errorMessage, setErrorMessage] = useState("");

@@ -10,6 +10,7 @@ import React, {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import { getGlobalAuthConfig } from "../config";
 import type {
   ClientSession,
   Session,
@@ -275,20 +276,25 @@ export function AuthProvider({
         return;
       }
 
+      const wasAuthenticated = sessionRef.current.status === "authenticated";
       const result = await actionsRef.current.fetchSession();
 
       if (!result.success || !result.data) {
         setSession(UNAUTHENTICATED);
-        // The user was authenticated when they tabbed away — this is an expiry.
-        onSessionExpiredRef.current?.();
+        // Only refresh RSCs / fire the expiry callback when the session
+        // actually transitioned from authenticated → unauthenticated. Calling
+        // router.refresh() on every successful revalidation causes unnecessary
+        // RSC re-renders and conflicts with SWR's revalidateOnFocus: false.
+        if (wasAuthenticated) {
+          onSessionExpiredRef.current?.();
+          // Re-run server components so middleware and requireSession() guards
+          // can act on the expired session (redirect away from protected pages).
+          router.refresh();
+        }
       } else {
         setSession(buildAuthenticatedState(result.data));
+        // Session is still valid — no need to re-render server components.
       }
-
-      // Re-run server components so middleware and requireSession() guards can
-      // act on the latest session state (redirect away from protected pages if
-      // the session expired, or refresh data if it was renewed).
-      router.refresh();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -385,18 +391,51 @@ export function useSession(): ClientSession {
 }
 
 /**
+ * Return type of {@link useAuth}.
+ *
+ * `oauthLogin` is OPTIONAL: it is only present when OAuth providers are
+ * configured via `Auth({ providers: [...] })`. When no providers are
+ * registered, `oauthLogin` is `undefined` so consumers cannot trigger a
+ * redirect to a non-existent `/api/auth/:id/login` endpoint (the OAuth
+ * route handlers are stubs until OAuth is enabled).
+ */
+export interface UseAuthReturn {
+  login: AuthActions["login"];
+  logout: AuthActions["logout"];
+  fetchSession: AuthActions["fetchSession"];
+  updateSessionToken: AuthActions["updateSessionToken"];
+  /**
+   * Initiates an OAuth login flow by redirecting to the provider's login endpoint.
+   * Only present when OAuth providers are configured in `Auth()`.
+   *
+   * @example
+   * const { oauthLogin } = useAuth();
+   * if (oauthLogin) oauthLogin("google");
+   * // or with a callbackUrl:
+   * if (oauthLogin) oauthLogin("github", { callbackUrl: "/dashboard" });
+   */
+  oauthLogin?: (
+    providerId: OAuthProviderId,
+    options?: { callbackUrl?: string },
+  ) => void;
+}
+
+/**
  * Returns auth action handlers.
  * Must be called inside a component wrapped by `<AuthProvider>`.
  *
  * Loading state is intentionally not included — wrap calls in your own
  * `useTransition()` or `useState` to track pending state where you need it.
  *
+ * `oauthLogin` is only included when OAuth providers are configured via
+ * `Auth()`; otherwise it is `undefined`.
+ *
  * @returns Object with:
  *   - `login(credentials, options?)` — calls the login action and updates session state.
  *   - `logout(options?)` — optimistically clears session state and calls the logout action.
  *   - `fetchSession()` — manually re-fetches the session from the server.
  *   - `updateSessionToken(newAccessToken)` — syncs a new access token into the HTTP-only cookie.
- *   - `oauthLogin(providerId, options?)` — initiates an OAuth login redirect.
+ *   - `oauthLogin?(providerId, options?)` — initiates an OAuth login redirect. Only when OAuth providers are configured.
  *
  * @example
  * const { login, logout } = useAuth();
@@ -415,7 +454,7 @@ export function useSession(): ClientSession {
  * const result = await logout({ redirect: false });
  * if (result.success) router.replace("/");
  */
-export function useAuth() {
+export function useAuth(): UseAuthReturn {
   const ctx = useContext(AuthContext);
   if (!ctx) {
     throw new Error(
@@ -423,27 +462,28 @@ export function useAuth() {
         "Wrap your app in <AuthProvider> in your root layout.",
     );
   }
+
+  // Only expose oauthLogin when OAuth providers are registered via Auth().
+  // Without this guard, calling oauthLogin("google", ...) would redirect to
+  // /api/auth/google/login — a stub endpoint that does not exist (404).
+  const hasOAuth = (getGlobalAuthConfig().providers ?? []).length > 0;
+
+  const oauthLogin = (
+    providerId: OAuthProviderId,
+    options?: { callbackUrl?: string },
+  ) => {
+    const base = `/api/auth/${providerId}/login`;
+    const url = options?.callbackUrl
+      ? `${base}?callbackUrl=${encodeURIComponent(options.callbackUrl)}`
+      : base;
+    window.location.href = url;
+  };
+
   return {
     login: ctx.login,
     logout: ctx.logout,
     fetchSession: ctx.fetchSession,
     updateSessionToken: ctx.updateSessionToken,
-    /**
-     * Initiates an OAuth login flow by redirecting to the provider's login endpoint.
-     *
-     * @example
-     * const { oauthLogin } = useAuth();
-     * <button onClick={() => oauthLogin("google")}>Login with Google</button>
-     * <button onClick={() => oauthLogin("github", { callbackUrl: "/dashboard" })}>
-     *   Login with GitHub
-     * </button>
-     */
-    oauthLogin(providerId: OAuthProviderId, options?: { callbackUrl?: string }) {
-      const base = `/api/auth/${providerId}/login`;
-      const url = options?.callbackUrl
-        ? `${base}?callbackUrl=${encodeURIComponent(options.callbackUrl)}`
-        : base;
-      window.location.href = url;
-    },
+    ...(hasOAuth ? { oauthLogin } : {}),
   };
 }

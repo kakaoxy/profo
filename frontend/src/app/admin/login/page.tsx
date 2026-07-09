@@ -36,10 +36,9 @@ export default function LoginPage() {
 
   // 监听修改密码成功的情况
   useEffect(() => {
-    // 如果是在修改密码流程中，且没有 error，且也没有 mustChangePassword (说明成功退出了该状态)
-    // 但这里的逻辑稍显复杂，我们简单点：
-    // changeAction 如果返回空 error，说明成功。
-    if (changeState && !changeState.error && !changeState.mustChangePassword) {
+    // changePasswordAction 成功时已在服务端 redirect("/admin/login")，
+    // 此分支作为类型完备性兜底（实际不会执行到）
+    if (changeState?.success === true) {
       toast.success("密码修改成功，请使用新密码登录");
       // 刷新页面重置状态
       window.location.reload();
@@ -47,9 +46,13 @@ export default function LoginPage() {
   }, [changeState]);
 
   // 判断当前显示哪个模式
+  // changePasswordAction 所有失败分支均带 mustChangePassword: true
   const isChangePasswordMode =
-    loginState?.mustChangePassword || changeState?.mustChangePassword;
-  const currentUsername = loginState?.username || changeState?.username || "";
+    loginState?.mustChangePassword || changeState?.success === false;
+  const currentUsername =
+    loginState?.username ||
+    (changeState?.success === false ? changeState.username : "") ||
+    "";
   const tempToken = loginState?.tempToken || "";
 
   return (
@@ -91,7 +94,7 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                {changeState?.error && (
+                {changeState?.success === false && (
                   <div className="text-sm text-error font-medium">
                     {changeState.error}
                   </div>

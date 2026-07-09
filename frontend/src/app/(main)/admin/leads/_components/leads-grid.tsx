@@ -49,7 +49,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
             onClick={() => onOpenDetail(lead.id)}
           >
             {/* Image Area */}
-            <div className="relative aspect-[4/3] flex items-center justify-center bg-muted overflow-hidden">
+            <div className="relative aspect-4/3 flex items-center justify-center bg-muted overflow-hidden">
               {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
                 <Image
                   src={lead.images[0]}
