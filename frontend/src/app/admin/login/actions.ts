@@ -170,8 +170,6 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
   // redirect 必须放在 try/catch 之外：next/navigation 的 redirect() 会抛出
   // NEXT_REDIRECT 内部错误以中止执行，若被 try/catch 吞掉会导致流程异常
   redirect("/admin/login");
-  // redirect 内部会抛出 NEXT_REDIRECT 中止执行，下面 return 仅为满足 TS 类型完备性
-  return { success: true };
 }
 
 export async function logoutAction() {
