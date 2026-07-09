@@ -1028,38 +1028,103 @@ class FinanceService:
         )
 
         # --- summary ---
-        total_expense = Decimal(0)
-        total_income = Decimal(0)
-        for (ft, _cat), amt in agg.items():
-            if ft == CashFlowType.EXPENSE.value:
-                total_expense += amt
-            elif ft == CashFlowType.INCOME.value:
-                total_income += amt
+        # 按业务形式分支计算（None 回退 AGENT）
+        is_wholesale = project.business_form == BusinessForm.WHOLESALE
 
-        initial_investment = (
-            _amount(CashFlowType.EXPENSE, CashFlowCategory.CHANNEL_COMMISSION)
-            + _amount(CashFlowType.EXPENSE, CashFlowCategory.PURCHASE_DEPOSIT)
-            + _amount(CashFlowType.EXPENSE, CashFlowCategory.PURCHASE_DOWNPAYMENT)
-            + _amount(CashFlowType.EXPENSE, CashFlowCategory.PROPERTY_TAX)
-            + _amount(CashFlowType.EXPENSE, CashFlowCategory.QUOTA_FEE)
-            + _amount(CashFlowType.EXPENSE, CashFlowCategory.HOLDING_COST_MONTHLY)
-            + _amount(CashFlowType.EXPENSE, CashFlowCategory.ENGINEERING_RENOVATION)
-        )
+        # 公共科目金额
+        channel_commission_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.CHANNEL_COMMISSION)
+        engineering_renovation_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.ENGINEERING_RENOVATION)
+        marketing_advance_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.MARKETING_ADVANCE)
+        marketing_promotion_deduction_inc = _amount(CashFlowType.INCOME, CashFlowCategory.MARKETING_PROMOTION_DEDUCTION)
+        project_incentive_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PROJECT_INCENTIVE)
+        marketing_promotion_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.MARKETING_PROMOTION)
+        operation_fee_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.OPERATION_FEE)
+        finance_tax_cost_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.FINANCE_TAX_COST)
+        other_expense_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.OTHER_EXPENSE)
 
-        selling_commission = _amount(CashFlowType.EXPENSE, CashFlowCategory.SELLING_COMMISSION)
-        selling_tax = _amount(CashFlowType.EXPENSE, CashFlowCategory.SELLING_TAX)
+        if is_wholesale:
+            # 收购美化 - WHOLESALE 业务分支
+            purchase_deposit_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PURCHASE_DEPOSIT)
+            purchase_downpayment_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PURCHASE_DOWNPAYMENT)
+            property_tax_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PROPERTY_TAX)
+            quota_fee_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.QUOTA_FEE)
+            holding_cost_monthly_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.HOLDING_COST_MONTHLY)
+            selling_commission_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.SELLING_COMMISSION)
+            selling_tax_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.SELLING_TAX)
 
-        gross_profit = (
-            (total_income - owner_commission)
-            - initial_investment
-            - agent_commission
-            - tax_diff
-            - selling_commission
-            - selling_tax
-            + owner_commission
-        )
+            total_expense = (
+                purchase_deposit_exp
+                + purchase_downpayment_exp
+                + property_tax_exp
+                + quota_fee_exp
+                + holding_cost_monthly_exp
+                + channel_commission_exp
+                + engineering_renovation_exp
+                + marketing_advance_exp
+                - marketing_promotion_deduction_inc
+                + selling_commission_exp
+                + selling_tax_exp
+                + project_incentive_exp
+                + marketing_promotion_exp
+                + operation_fee_exp
+                + finance_tax_cost_exp
+                + other_expense_exp
+            )
+            initial_investment = (
+                purchase_deposit_exp
+                + purchase_downpayment_exp
+                + property_tax_exp
+                + quota_fee_exp
+                + holding_cost_monthly_exp
+                + channel_commission_exp
+                + engineering_renovation_exp
+                + marketing_advance_exp
+            )
+            project_income = _amount(CashFlowType.INCOME, CashFlowCategory.SALE_PRICE)
+            gross_profit = (
+                project_income
+                - initial_investment
+                - selling_commission_exp
+                - selling_tax_exp
+                - project_incentive_exp
+                - other_expense_exp
+            )
+        else:
+            # 代理美化(AGENT) 或 business_form=None 回退
+            performance_bond_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PERFORMANCE_BOND)
+            tax_commission_diff_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.TAX_COMMISSION_DIFF)
+            paid_commission_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PAID_COMMISSION)
+            owner_commission_inc = _amount(CashFlowType.INCOME, CashFlowCategory.OWNER_COMMISSION)
 
-        net_profit = gross_profit - marketing_total - operation_fee - tax_cost
+            total_expense = (
+                channel_commission_exp
+                + engineering_renovation_exp
+                + tax_commission_diff_exp
+                + paid_commission_exp
+                - owner_commission_inc
+                + marketing_advance_exp
+                - marketing_promotion_deduction_inc
+                + project_incentive_exp
+                + marketing_promotion_exp
+                + operation_fee_exp
+                + finance_tax_cost_exp
+                + other_expense_exp
+            )
+            initial_investment = (
+                performance_bond_exp + channel_commission_exp + engineering_renovation_exp + marketing_advance_exp
+            )
+            project_income = _amount(CashFlowType.INCOME, CashFlowCategory.VALUE_ADDED_SERVICE)
+            gross_profit = (
+                project_income
+                - initial_investment
+                - tax_commission_diff_exp
+                - paid_commission_exp
+                + owner_commission_inc
+                - project_incentive_exp
+                - other_expense_exp
+            )
+
+        net_profit = gross_profit - marketing_promotion_exp - operation_fee_exp - finance_tax_cost_exp
 
         occupy_days = project_days
         roi = round(float(net_profit / initial_investment * 100), 1) if initial_investment != 0 else 0.0
@@ -1073,7 +1138,7 @@ class FinanceService:
             occupy_days=occupy_days,
             roi=roi,
             annual_roi=annual_roi,
-            investor_profit=net_profit,
+            project_income=project_income,
         )
 
         return ProjectLedgerStatisticsResponse(

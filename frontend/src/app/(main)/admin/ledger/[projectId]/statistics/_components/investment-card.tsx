@@ -21,7 +21,7 @@ export function InvestmentCard({ data }: InvestmentCardProps) {
 
   return (
     <div
-      className="bg-white rounded-[24px] p-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] h-full animate-in"
+      className="bg-white rounded-cards p-6 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.06)_0px_12px_16px_-4px] h-full animate-in"
       style={{ animationDelay: "0.3s" }}
     >
       {/* Section header */}
@@ -29,7 +29,7 @@ export function InvestmentCard({ data }: InvestmentCardProps) {
         <h2 className="text-[26px] leading-[1.18] tracking-[-0.23px] text-ink text-balance">
           投资情况
         </h2>
-        <p className="text-[14px] leading-[1.5] mt-1 text-graphite">
+        <p className="text-[14px] leading-normal mt-1 text-graphite">
           Investment Overview
         </p>
       </div>
@@ -82,15 +82,15 @@ function InvestorCard({ investor, index }: { investor: Investor; index: number }
   const payRatio = amount > 0 ? Math.min(100, Math.round((paid / amount) * 100)) : 0;
 
   return (
-    <div className="bg-white rounded-[16px] p-5 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_8px_12px_-3px]">
-      <div className="flex items-center justify-between mb-4 gap-2">
-        <div className="flex items-center gap-3 min-w-0">
+    <div className="bg-white rounded-inputs p-5 shadow-[rgba(4,23,43,0.04)_0px_0px_0px_1px,rgba(0,0,0,0.04)_0px_8px_12px_-3px]">
+      <div className="flex items-start justify-between mb-4 gap-2">
+        <div className="flex items-start gap-3 min-w-0">
           <div
             className={`w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium text-ink shrink-0 ${AVATAR_BG[index % AVATAR_BG.length]}`}
           >
             {name.charAt(0)}
           </div>
-          <span className="text-[15px] font-medium text-ink truncate">
+          <span className="text-[15px] font-medium text-ink wrap-break-word leading-snug">
             {name}
           </span>
         </div>

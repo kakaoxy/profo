@@ -12,7 +12,7 @@ interface StatisticsHeroProps {
  * - 居中标题 (Signifier 44px) + 副标题
  * - 8 个 KPI 卡片，2 行 × 4 列
  * - Row1: 总支出/前期投入/毛利/净利 (Apricot Wash 渐变)
- * - Row2: 资金占用时间/投资回报率/年化回报率/投资人利润 (白底)
+ * - Row2: 资金占用时间/投资回报率/年化回报率/项目收入 (白底)
  */
 export function StatisticsHero({ summary }: StatisticsHeroProps) {
   return (
@@ -85,8 +85,8 @@ export function StatisticsHero({ summary }: StatisticsHeroProps) {
           accent="ink"
         />
         <KpiCard
-          label="投资人利润"
-          value={formatCurrency(summary.investor_profit)}
+          label="项目收入"
+          value={formatCurrency(summary.project_income)}
           variant="plain"
           accent="rust"
         />
