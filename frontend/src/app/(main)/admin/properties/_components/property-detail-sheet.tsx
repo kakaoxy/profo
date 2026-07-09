@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import useSWR from "swr";
 import Image from "next/image";
 import { useQueryState } from "nuqs";
+import { components } from "@/lib/api-types";
 import { getPropertyDetailAction } from "../actions";
 import {
   Sheet,
@@ -16,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Home, Calendar, Tag, Layers, LucideIcon } from "lucide-react";
 import { getProjectStatusBadgeClass } from "@/lib/status-colors";
+
+type PropertyDetail = components["schemas"]["PropertyDetailResponse"];
 
 // 定义 Field 组件的 Props 类型，解决 'any' 报错
 interface FieldProps {
@@ -51,7 +54,7 @@ export function PropertyDetailSheet() {
   // 3. SWR 接管数据获取：自动去重、自动取消旧请求、消除 race condition
   // 规则: client-swr-dedup / rerender-derived-state-no-effect
   // 关闭重试与聚焦重验以保持原有"失败即停止"语义，避免行为变化
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading } = useSWR<PropertyDetail>(
     id === null ? null : ["property-detail", id],
     () => getPropertyDetailAction(id as number),
     {
