@@ -54,7 +54,10 @@ export default async function LedgerStatisticsPage({ params }: PageProps) {
       {/* Hero + KPI */}
       <section className="py-12">
         <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-          <StatisticsHero summary={stats.summary} />
+          <StatisticsHero
+            summary={stats.summary}
+            calcBreakdown={stats.calc_breakdown}
+          />
         </div>
       </section>
 

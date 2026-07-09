@@ -11,7 +11,7 @@ export function ErrorState({ title = "加载失败", description = "请检查网
     <div className="flex flex-col items-center justify-center py-16 text-graphite">
       <AlertCircle className="mb-4 h-12 w-12 text-c-error/50" aria-hidden="true" />
       <p className="text-[18px] font-medium leading-[1.35] text-ink">{title}</p>
-      <p className="mt-1.5 text-[14px] leading-[1.5] text-graphite">{description}</p>
+      <p className="mt-1.5 text-[14px] leading-normal text-graphite">{description}</p>
       {onRetry && (
         <button
           type="button"

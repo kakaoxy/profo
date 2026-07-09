@@ -45,7 +45,7 @@ export function LeadListItem({
               {statusDisplay}
             </span>
           </div>
-          <div className="text-[14px] leading-[1.5] text-ash">
+          <div className="text-[14px] leading-normal text-ash">
             {layout && <span>{layout}</span>}
             {layout && area != null && <span>&nbsp;·&nbsp;</span>}
             {area != null && <span>{area}㎡</span>}
