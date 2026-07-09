@@ -148,4 +148,118 @@ describe("DashboardLayout role guard", () => {
     expect(mockRedirect).not.toHaveBeenCalled();
     expect(screen.getByText("content")).toBeInTheDocument();
   });
+
+  // Issue 1: 缺失路径 — /admin/properties/upload 应限制为 admin/operator
+  it("user with role.code='user' accessing /admin/properties/upload should redirect to /admin", async () => {
+    mockUserState.user = {
+      username: "u",
+      role: { code: "user", name: "User" },
+    };
+    mockPathnameState.pathname = "/admin/properties/upload";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    await expect(
+      DashboardLayout({
+        children: React.createElement("div", null, "content"),
+      }),
+    ).rejects.toThrow("__REDIRECT__/admin");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/admin");
+  });
+
+  // Issue 1: 缺失路径 — /admin/properties/governance 应限制为 admin/operator
+  it("user with role.code='user' accessing /admin/properties/governance should redirect to /admin", async () => {
+    mockUserState.user = {
+      username: "u",
+      role: { code: "user", name: "User" },
+    };
+    mockPathnameState.pathname = "/admin/properties/governance";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    await expect(
+      DashboardLayout({
+        children: React.createElement("div", null, "content"),
+      }),
+    ).rejects.toThrow("__REDIRECT__/admin");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/admin");
+  });
+
+  // Issue 1: 角色粒度 — /admin/users 应为 admin only，operator 应被拦截
+  it("user with role.code='operator' accessing /admin/users should redirect to /admin (admin-only path)", async () => {
+    mockUserState.user = {
+      username: "op",
+      role: { code: "operator", name: "Operator" },
+    };
+    mockPathnameState.pathname = "/admin/users";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    await expect(
+      DashboardLayout({
+        children: React.createElement("div", null, "content"),
+      }),
+    ).rejects.toThrow("__REDIRECT__/admin");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/admin");
+  });
+
+  // Issue 1: 正向 — operator 访问 admin/operator 路径应放行
+  it("user with role.code='operator' accessing /admin/properties/upload should NOT redirect", async () => {
+    mockUserState.user = {
+      username: "op",
+      role: { code: "operator", name: "Operator" },
+    };
+    mockPathnameState.pathname = "/admin/properties/upload";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    const result = await DashboardLayout({
+      children: React.createElement("div", null, "content"),
+    });
+    render(result);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+    expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  // Issue 1: 正向 — operator 访问 /admin/settings/api-key 应放行
+  it("user with role.code='operator' accessing /admin/settings/api-key should NOT redirect", async () => {
+    mockUserState.user = {
+      username: "op",
+      role: { code: "operator", name: "Operator" },
+    };
+    mockPathnameState.pathname = "/admin/settings/api-key";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    const result = await DashboardLayout({
+      children: React.createElement("div", null, "content"),
+    });
+    render(result);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+    expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  // Issue 1: 非受限路径 — /admin/leads 对所有后台角色开放（对齐 sidebar 无 roles 配置）
+  it("user with role.code='user' accessing /admin/leads should NOT redirect (open to all admin roles)", async () => {
+    mockUserState.user = {
+      username: "u",
+      role: { code: "user", name: "User" },
+    };
+    mockPathnameState.pathname = "/admin/leads";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    const result = await DashboardLayout({
+      children: React.createElement("div", null, "content"),
+    });
+    render(result);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+    expect(screen.getByText("content")).toBeInTheDocument();
+  });
 });
