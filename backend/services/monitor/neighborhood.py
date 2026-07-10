@@ -21,13 +21,13 @@ I5I5J_PATTERNS = ("5i5j", "我爱")
 def _match_data_source(src: str) -> str:
     """根据数据源字符串判断渠道.
 
-    返回 'beike' 或 'iaij'；无法识别时返回空串。
+    返回 'beike' 或 'i5i5j'；无法识别时返回空串。
     src 应为已 lower 的字符串。
     """
     if any(p in src for p in BEIKE_PATTERNS):
         return "beike"
     if any(p in src for p in I5I5J_PATTERNS):
-        return "iaij"
+        return "i5i5j"
     return ""
 
 
@@ -160,7 +160,7 @@ class NeighborhoodRadarService:
             channel = _match_data_source(src)
             if channel == "beike":
                 all_stats[cid]["listing_beike"] += count
-            elif channel == "iaij":
+            elif channel == "i5i5j":
                 all_stats[cid]["listing_iaij"] += count
 
         # 处理成交数据
@@ -178,7 +178,7 @@ class NeighborhoodRadarService:
             channel = _match_data_source(src)
             if channel == "beike":
                 all_stats[cid]["deal_beike"] += count
-            elif channel == "iaij":
+            elif channel == "i5i5j":
                 all_stats[cid]["deal_iaij"] += count
 
         return all_stats
