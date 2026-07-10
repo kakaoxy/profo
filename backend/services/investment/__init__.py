@@ -6,6 +6,6 @@
     from services.investment import InvestmentService
 """
 
-from .core import InvestmentService
+from .service import InvestmentService
 
 __all__ = ["InvestmentService"]

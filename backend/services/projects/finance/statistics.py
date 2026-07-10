@@ -16,7 +16,7 @@ from models import (
     ProjectSale,
 )
 from models.common import BusinessForm, CashFlowCategory, CashFlowType
-from schemas.project.finance import (
+from schemas.project.ledger_statistics import (
     LedgerStatisticsCommission,
     LedgerStatisticsDeposit,
     LedgerStatisticsInvestment,

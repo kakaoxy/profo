@@ -13,6 +13,7 @@ from .error import save_failed_record
 from .init_service import SystemInitService, init_service
 from .role import RoleService, role_service
 from .user import UserService, user_service
+from .wechat import WeChatAuthService
 
 __all__ = [
     "ApiKeyService",
@@ -20,6 +21,7 @@ __all__ = [
     "RoleService",
     "SystemInitService",
     "UserService",
+    "WeChatAuthService",
     "init_service",
     "role_service",
     "save_failed_record",
