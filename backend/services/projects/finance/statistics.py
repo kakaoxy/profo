@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 
 from models import (
     FinanceRecord,
@@ -44,19 +44,19 @@ class _StatisticsMixin:
         聚合 8 个分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
         单次查询按 (type, category) 分组聚合 FinanceRecord，避免 N+1.
         """
-        # 1. 获取项目（404 if not found or soft-deleted）
-        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
-        if not project:
+        # 1-4. 一次 JOIN 获取项目+合同+销售+装修（减少3次串行查询）
+        row = (
+            self.db.query(Project, ProjectContract, ProjectSale, ProjectRenovation)
+            .outerjoin(ProjectContract, ProjectContract.project_id == Project.id)
+            .outerjoin(ProjectSale, ProjectSale.project_id == Project.id)
+            .outerjoin(ProjectRenovation, ProjectRenovation.project_id == Project.id)
+            .filter(Project.id == project_id, Project.is_deleted.is_(False))
+            .first()
+        )
+        if not row:
             raise ResourceNotFoundError("项目不存在")
 
-        # 2. 获取合同（planned_handover_date = 交房时间）
-        contract = self.db.query(ProjectContract).filter(ProjectContract.project_id == project_id).first()
-
-        # 3. 获取销售（sold_date = 成交时间）
-        sale = self.db.query(ProjectSale).filter(ProjectSale.project_id == project_id).first()
-
-        # 4. 获取装修信息
-        renovation = self.db.query(ProjectRenovation).filter(ProjectRenovation.project_id == project_id).first()
+        project, contract, sale, renovation = row
 
         # 5. 获取投资 + 顶级投资方（parent_id is null）
         investment = (
@@ -96,44 +96,52 @@ class _StatisticsMixin:
         def _amount(flow_type: CashFlowType, category: CashFlowCategory) -> Decimal:
             return agg.get((flow_type.value, category.value), Decimal(0))
 
-        # 7. 跟投实付：按 counterparty 匹配 PROJECT_INVESTMENT (income)
-        paid_rows = (
+        # 7-8. 合并3次查询为1次：跟投实付 + 保证金最近支付/收款时间
+        combined = (
             self.db.query(
                 FinanceRecord.counterparty,
-                func.sum(FinanceRecord.amount).label("paid"),
+                func.sum(
+                    case(
+                        (
+                            (FinanceRecord.type == CashFlowType.INCOME.value)
+                            & (FinanceRecord.category == CashFlowCategory.PROJECT_INVESTMENT),
+                            FinanceRecord.amount,
+                        ),
+                        else_=Decimal(0),
+                    ),
+                ).label("paid"),
+                func.max(
+                    case(
+                        (
+                            (FinanceRecord.type == CashFlowType.EXPENSE.value)
+                            & (FinanceRecord.category == CashFlowCategory.PERFORMANCE_BOND),
+                            FinanceRecord.record_date,
+                        ),
+                    ),
+                ).label("bond_pay_date"),
+                func.max(
+                    case(
+                        (
+                            (FinanceRecord.type == CashFlowType.INCOME.value)
+                            & (FinanceRecord.category == CashFlowCategory.BOND_RECOVERY),
+                            FinanceRecord.record_date,
+                        ),
+                    ),
+                ).label("bond_receive_date"),
             )
             .filter(
                 FinanceRecord.project_id == project_id,
                 FinanceRecord.is_deleted.is_(False),
-                FinanceRecord.type == CashFlowType.INCOME.value,
-                FinanceRecord.category == CashFlowCategory.PROJECT_INVESTMENT,
             )
             .group_by(FinanceRecord.counterparty)
             .all()
         )
-        paid_map: dict[str | None, Decimal] = {row.counterparty: row.paid or Decimal(0) for row in paid_rows}
 
-        # 8. 保证金最近支付/收款时间
-        bond_pay_date = (
-            self.db.query(func.max(FinanceRecord.record_date))
-            .filter(
-                FinanceRecord.project_id == project_id,
-                FinanceRecord.is_deleted.is_(False),
-                FinanceRecord.type == CashFlowType.EXPENSE.value,
-                FinanceRecord.category == CashFlowCategory.PERFORMANCE_BOND,
-            )
-            .scalar()
-        )
-        bond_receive_date = (
-            self.db.query(func.max(FinanceRecord.record_date))
-            .filter(
-                FinanceRecord.project_id == project_id,
-                FinanceRecord.is_deleted.is_(False),
-                FinanceRecord.type == CashFlowType.INCOME.value,
-                FinanceRecord.category == CashFlowCategory.BOND_RECOVERY,
-            )
-            .scalar()
-        )
+        paid_map: dict[str | None, Decimal] = {
+            r.counterparty: r.paid or Decimal(0) for r in combined if (r.paid or Decimal(0)) > 0
+        }
+        bond_pay_date = max((r.bond_pay_date for r in combined if r.bond_pay_date), default=None)
+        bond_receive_date = max((r.bond_receive_date for r in combined if r.bond_receive_date), default=None)
 
         # ==================== 构建响应各分组 ====================
 
