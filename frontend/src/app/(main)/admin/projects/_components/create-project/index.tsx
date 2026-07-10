@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Plus, Loader2, Save, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Loader2, Save, Trash2, AlertCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -69,6 +69,9 @@ export function CreateProjectDialog({
 
   const hasErrors = errorEntries.length > 0;
 
+  // 已售项目限制：后端只允许修改部分字段，其余字段修改会被静默丢弃
+  const isSoldProject = isEditMode && project?.status === "sold";
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -111,6 +114,19 @@ export function CreateProjectDialog({
           </div>
         </DialogHeader>
 
+        {/* 已售项目限制提示 */}
+        {isSoldProject && (
+          <div className="mx-7 mt-4 mb-0 shrink-0 rounded-inputs border border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-2.5">
+            <Lock className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="text-[13px] text-amber-800 leading-relaxed">
+              <div className="font-medium mb-0.5">此项目已售，部分字段不可修改</div>
+              <div className="text-amber-700">
+                仅可更新：小区、地址、面积、户型、朝向、楼层、户号、备注、业主信息。其他字段（如业务形式、合同、签约信息等）的修改将不会保存。
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* --- Body --- */}
         <div className="flex-1 min-h-0 overflow-hidden bg-fog">
           <Form {...form}>
@@ -137,10 +153,10 @@ export function CreateProjectDialog({
                 {/* Tabs 导航 — Steep: pill-style tabs on Fog canvas */}
                 <div className="px-7 pt-5 shrink-0">
                 <TabsList className="grid w-full grid-cols-4 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
-                    <TabsTrigger value="basic" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">基础信息</TabsTrigger>
-                    <TabsTrigger value="agency" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">代理协议</TabsTrigger>
-                    <TabsTrigger value="owner" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">业主信息</TabsTrigger>
-                    <TabsTrigger value="attachments" className="rounded-[12px] text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">附件上传</TabsTrigger>
+                    <TabsTrigger value="basic" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">基础信息</TabsTrigger>
+                    <TabsTrigger value="agency" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">代理协议</TabsTrigger>
+                    <TabsTrigger value="owner" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">业主信息</TabsTrigger>
+                    <TabsTrigger value="attachments" className="rounded-images text-[14px] font-medium data-[state=active]:bg-ink data-[state=active]:text-pure-white data-[state=active]:shadow-none data-[state=active]:hover:bg-ink/90">附件上传</TabsTrigger>
                   </TabsList>
                 </div>
 

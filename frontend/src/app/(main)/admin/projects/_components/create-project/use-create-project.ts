@@ -142,7 +142,13 @@ export const useCreateProject = ({
       }
 
       if (res.success) {
-        toast.success(isEditMode ? "项目更新成功" : "项目创建成功");
+        // 已售项目后端会静默过滤非白名单字段，需明确提示用户
+        const isSold = isEditMode && project?.status === "sold";
+        if (isSold) {
+          toast.warning("已售项目仅更新了允许修改的字段，其他字段未生效");
+        } else {
+          toast.success(isEditMode ? "项目更新成功" : "项目创建成功");
+        }
 
         // AC-4.3: 项目保存成功后，若用户手动修改了行政区或商圈，回写到小区对应字段
         // 仅当值非空且与小区原始值不一致时才调用，失败不阻塞项目成功
