@@ -388,7 +388,10 @@ class _LedgerMixin:
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("流水.csv", csv_buffer.getvalue().encode("utf-8"))
             for zip_path, file_path in receipt_file_paths:
-                zf.write(file_path, zip_path)
+                try:
+                    zf.write(file_path, zip_path)
+                except Exception:
+                    logger.warning("写入票据文件到zip失败: %s", file_path)
 
         logger.info(
             "导出项目 %s 流水 zip 完成：%d 条记录，%d 个票据",
