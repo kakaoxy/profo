@@ -33,7 +33,7 @@ export async function addFollowUpAction(
       return { success: false, error: extractErrorMessage(error) };
     }
 
-    revalidatePath("/leads");
+    revalidatePath("/admin/leads");
     return { success: true, data: undefined };
   } catch (error) {
     logger.error("Add follow-up error:", error);

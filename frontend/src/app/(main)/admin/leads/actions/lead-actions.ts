@@ -53,7 +53,7 @@ export async function createLeadAction(
       return { success: false, error: extractErrorMessage(error) };
     }
 
-    revalidatePath("/leads");
+    revalidatePath("/admin/leads");
     return { success: true, data: mapBackendToFrontend(responseData) };
   } catch (error) {
     logger.error("Create lead error:", error);
@@ -82,7 +82,7 @@ export async function updateLeadAction(
       return { success: false, error: extractErrorMessage(error) };
     }
 
-    revalidatePath("/leads");
+    revalidatePath("/admin/leads");
     return { success: true, data: mapBackendToFrontend(responseData) };
   } catch (error) {
     logger.error("Update lead error:", error);
@@ -104,7 +104,7 @@ export async function deleteLeadAction(
       return { success: false, error: extractErrorMessage(error) };
     }
 
-    revalidatePath("/leads");
+    revalidatePath("/admin/leads");
     return { success: true, data: undefined };
   } catch (error) {
     logger.error("Delete lead error:", error);

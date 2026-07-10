@@ -91,7 +91,7 @@ export async function createUserAction(data: UserCreate) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/users");
+    revalidatePath("/admin/users");
     return { success: true, message: "用户创建成功" };
   } catch (error) {
     logger.error("Create user exception:", error);
@@ -112,7 +112,7 @@ export async function updateUserAction(userId: string, data: UserUpdate) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/users");
+    revalidatePath("/admin/users");
     return { success: true, message: "用户更新成功" };
   } catch (error) {
     logger.error("Update user exception:", error);
@@ -132,7 +132,7 @@ export async function deleteUserAction(userId: string) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/users");
+    revalidatePath("/admin/users");
     return { success: true, message: "用户删除成功" };
   } catch (error) {
     logger.error("Delete user exception:", error);
