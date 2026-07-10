@@ -31,7 +31,7 @@ export async function deleteRenovationPhotoAction(
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "照片已删除" };
   } catch (e) {
     logger.error("删除照片异常:", e);
@@ -101,7 +101,7 @@ export async function addRenovationPhotoAction(payload: {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "上传成功" };
   } catch (e) {
     logger.error("上传照片异常:", e);
@@ -136,7 +136,7 @@ export async function updateRenovationStageAction(payload: {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "阶段更新成功" };
   } catch (e) {
     logger.error("更新阶段异常:", e);
@@ -193,7 +193,7 @@ export async function updateRenovationContractAction(
     }
 
     const contract = extractApiData<Record<string, unknown>>(data);
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, data: contract, message: "装修合同信息已更新" };
   } catch (e) {
     logger.error("更新装修合同信息异常:", e);

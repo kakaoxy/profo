@@ -34,7 +34,7 @@ export async function createProjectAction(data: ProjectCreate) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "项目创建成功" };
   } catch (e) {
     logger.error("创建项目异常:", e);
@@ -58,7 +58,7 @@ export async function updateProjectAction(id: string, data: ProjectUpdate) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "项目更新成功" };
   } catch (e) {
     logger.error("更新项目异常:", e);
@@ -81,7 +81,7 @@ export async function deleteProjectAction(id: string) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "项目已删除" };
   } catch (e) {
     logger.error("删除项目异常:", e);
@@ -115,7 +115,7 @@ export async function updateProjectStatusAction(
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "状态已更新" };
   } catch (e) {
     logger.error("更新状态异常:", e);
