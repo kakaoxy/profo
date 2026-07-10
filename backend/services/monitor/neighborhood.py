@@ -135,11 +135,11 @@ class NeighborhoodRadarService:
             cid: {
                 "listing_count": 0,
                 "listing_beike": 0,
-                "listing_iaij": 0,
+                "listing_i5i5j": 0,
                 "listing_total_price": 0.0,
                 "deal_count": 0,
                 "deal_beike": 0,
-                "deal_iaij": 0,
+                "deal_i5i5j": 0,
                 "deal_total_price": 0.0,
             }
             for cid in all_community_ids
@@ -161,7 +161,7 @@ class NeighborhoodRadarService:
             if channel == "beike":
                 all_stats[cid]["listing_beike"] += count
             elif channel == "i5i5j":
-                all_stats[cid]["listing_iaij"] += count
+                all_stats[cid]["listing_i5i5j"] += count
 
         # 处理成交数据
         for row in deal_query:
@@ -179,7 +179,7 @@ class NeighborhoodRadarService:
             if channel == "beike":
                 all_stats[cid]["deal_beike"] += count
             elif channel == "i5i5j":
-                all_stats[cid]["deal_iaij"] += count
+                all_stats[cid]["deal_i5i5j"] += count
 
         return all_stats
 
@@ -234,11 +234,11 @@ class NeighborhoodRadarService:
                     is_subject=is_subject,
                     listing_count=stats["listing_count"],
                     listing_beike=stats["listing_beike"],
-                    listing_iaij=stats["listing_iaij"],
+                    listing_iaij=stats["listing_i5i5j"],
                     listing_avg_price=stats["listing_avg_price"],
                     deal_count=stats["deal_count"],
                     deal_beike=stats["deal_beike"],
-                    deal_iaij=stats["deal_iaij"],
+                    deal_iaij=stats["deal_i5i5j"],
                     deal_avg_price=stats["deal_avg_price"],
                     spread_percent=round(spread_percent, 1),
                     spread_label=spread_label,

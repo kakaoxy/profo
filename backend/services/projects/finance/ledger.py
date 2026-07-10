@@ -166,6 +166,97 @@ class _LedgerMixin:
             "total_records": int(total_records),
         }
 
+    def _list_all_projects_with_stats(
+        self,
+        search: str | None,
+        project_status: str | None,
+    ) -> list[dict[str, Any]]:
+        """资金账本：不分页全量查询项目统计（仅用于导出）.
+
+        与 list_projects_with_stats 共享查询逻辑但不分页，避免 page_size 硬编码截断。
+        """
+        total_income_expr = func.sum(
+            case(
+                (FinanceRecord.type == CashFlowType.INCOME.value, FinanceRecord.amount),
+                else_=Decimal(0),
+            ),
+        ).label("total_income")
+        total_expense_expr = func.sum(
+            case(
+                (FinanceRecord.type == CashFlowType.EXPENSE.value, FinanceRecord.amount),
+                else_=Decimal(0),
+            ),
+        ).label("total_expense")
+        net_cash_flow_expr = (total_income_expr - total_expense_expr).label("net_cash_flow")
+        record_count_expr = func.count(FinanceRecord.id).label("record_count")
+
+        query = (
+            self.db.query(
+                Project.id.label("project_id"),
+                Project.community_name.label("project_name"),
+                Project.address.label("project_address"),
+                Project.status.label("project_status"),
+                Project.created_at.label("project_created_at"),
+                ProjectContract.contract_no.label("project_code"),
+                total_income_expr,
+                total_expense_expr,
+                net_cash_flow_expr,
+                record_count_expr,
+            )
+            .join(FinanceRecord, FinanceRecord.project_id == Project.id)
+            .outerjoin(ProjectContract, ProjectContract.project_id == Project.id)
+            .filter(
+                Project.is_deleted.is_(False),
+                FinanceRecord.is_deleted.is_(False),
+            )
+            .group_by(
+                Project.id,
+                Project.community_name,
+                Project.address,
+                Project.status,
+                Project.created_at,
+                ProjectContract.contract_no,
+            )
+        )
+
+        if search:
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            like = f"%{escaped}%"
+            query = query.filter(
+                or_(
+                    ProjectContract.contract_no.ilike(like, escape="\\"),
+                    Project.community_name.ilike(like, escape="\\"),
+                    Project.address.ilike(like, escape="\\"),
+                ),
+            )
+
+        if project_status is not None:
+            query = query.filter(Project.status == project_status)
+
+        rows = query.order_by(Project.created_at.desc()).all()
+
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            total_income = row.total_income or Decimal(0)
+            total_expense = row.total_expense or Decimal(0)
+            net_cf = total_income - total_expense
+            roi = float((net_cf / total_expense) * 100) if total_expense > 0 else 0.0
+            items.append(
+                {
+                    "project_id": row.project_id,
+                    "project_code": row.project_code,
+                    "project_name": row.project_name,
+                    "project_address": row.project_address,
+                    "project_status": row.project_status,
+                    "total_income": total_income,
+                    "total_expense": total_expense,
+                    "net_cash_flow": net_cf,
+                    "roi": round(roi, 2),
+                    "record_count": int(row.record_count),
+                },
+            )
+        return items
+
     def export_ledger_excel(
         self,
         search: str | None,
@@ -177,11 +268,9 @@ class _LedgerMixin:
         """
         from openpyxl import Workbook  # noqa: PLC0415
 
-        items, _ = self.list_projects_with_stats(
+        items = self._list_all_projects_with_stats(
             search=search,
             project_status=project_status,
-            page=1,
-            page_size=10000,
         )
 
         wb = Workbook()
@@ -256,7 +345,7 @@ class _LedgerMixin:
         writer.writerow(["日期", "交易形式", "交易方", "分类", "金额", "票据", "备注"])
 
         upload_dir = Path(settings.upload_dir).resolve()
-        receipt_files: list[tuple[str, bytes]] = []
+        receipt_file_paths: list[tuple[str, Path]] = []
         seen_filenames: set[str] = set()
         type_label = {CashFlowType.INCOME.value: "收入", CashFlowType.EXPENSE.value: "支出"}
 
@@ -286,7 +375,7 @@ class _LedgerMixin:
 
                 if file_path.is_file():
                     try:
-                        receipt_files.append((f"receipts/{filename}", file_path.read_bytes()))
+                        receipt_file_paths.append((f"receipts/{filename}", file_path))
                     except Exception:
                         logger.warning("读取票据文件失败: %s", file_path)
                 else:
@@ -298,13 +387,13 @@ class _LedgerMixin:
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("流水.csv", csv_buffer.getvalue().encode("utf-8"))
-            for zip_path, file_bytes in receipt_files:
-                zf.writestr(zip_path, file_bytes)
+            for zip_path, file_path in receipt_file_paths:
+                zf.write(file_path, zip_path)
 
         logger.info(
             "导出项目 %s 流水 zip 完成：%d 条记录，%d 个票据",
             project_id,
             len(records),
-            len(receipt_files),
+            len(receipt_file_paths),
         )
         return filename_stem, zip_buffer.getvalue()

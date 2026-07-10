@@ -9,6 +9,7 @@ from sqlalchemy import case, func
 
 from models import FinanceRecord, Project, ProjectContract, ProjectSale
 from models.common import CashFlowType, ProjectStatus
+from schemas.project.finance import CashFlowSummary
 from services.system.exceptions import ResourceNotFoundError, ServiceException
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class _SummaryMixin:
     """现金流汇总与财务报告方法."""
 
-    def get_summary(self, project_id: str) -> dict[str, Any]:
+    def get_summary(self, project_id: str) -> CashFlowSummary:
         """获取现金流汇总."""
         logger.info("Getting cashflow summary for project %s", project_id)
 
@@ -51,13 +52,13 @@ class _SummaryMixin:
                     func.sum(
                         case(
                             (FinanceRecord.type == CashFlowType.INCOME.value, FinanceRecord.amount),
-                            else_=0,
+                            else_=Decimal(0),
                         ),
                     ).label("total_income"),
                     func.sum(
                         case(
                             (FinanceRecord.type == CashFlowType.EXPENSE.value, FinanceRecord.amount),
-                            else_=0,
+                            else_=Decimal(0),
                         ),
                     ).label("total_expense"),
                 )
@@ -90,17 +91,19 @@ class _SummaryMixin:
             if holding_days > 0:
                 annualized_return = (roi / holding_days) * 365
 
-            summary = {
-                "total_income": total_income,
-                "total_expense": total_expense,
-                "net_cash_flow": net_cash_flow,
-                "roi": round(roi, 2),
-                "holding_days": holding_days,
-                "annualized_return": round(annualized_return, 2),
-            }
+            summary = CashFlowSummary(
+                total_income=total_income,
+                total_expense=total_expense,
+                net_cash_flow=net_cash_flow,
+                roi=round(roi, 2),
+                holding_days=holding_days,
+                annualized_return=round(annualized_return, 2),
+            )
 
-            logger.info("Cashflow summary calculated for project %s: %s", project_id, summary)
+            logger.info("Cashflow summary calculated for project %s", project_id)
             return summary  # noqa: TRY300
+        except (ResourceNotFoundError, ServiceException):
+            raise
         except Exception as e:
             logger.exception("Error calculating cashflow summary for project %s", project_id)
             raise ServiceException("计算现金流汇总失败") from e

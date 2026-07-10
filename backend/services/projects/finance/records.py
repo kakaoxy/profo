@@ -2,11 +2,10 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 from models import FinanceRecord, FinanceRecordLog, Project
 from models.common import BusinessForm, CashFlowCategory, FinanceActionType
-from schemas.project.finance import CashFlowRecordCreate, LedgerRecordCreate
+from schemas.project.finance import CashFlowRecordCreate, CashFlowSummary, LedgerRecordCreate
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -52,6 +51,7 @@ class _RecordMixin:
                 raise ValidationError("中介佣金仅适用于代理美化项目")
 
         # 创建新的 FinanceRecord
+        now = datetime.now(timezone.utc)
         record = FinanceRecord(
             project_id=project_id,
             type=record_data.type.value,
@@ -61,8 +61,8 @@ class _RecordMixin:
             remark=record_data.description,
             counterparty=record_data.counterparty,
             receipt_urls=record_data.receipt_urls,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=now,
+            updated_at=now,
         )
 
         self.db.add(record)
@@ -217,7 +217,7 @@ class _RecordMixin:
         """获取项目现金流记录（路由兼容别名）."""
         return self.get_records(project_id)
 
-    def get_cashflow_summary(self, project_id: str) -> dict[str, Any]:
+    def get_cashflow_summary(self, project_id: str) -> CashFlowSummary:
         """获取现金流汇总（路由兼容别名）."""
         return self.get_summary(project_id)
 
