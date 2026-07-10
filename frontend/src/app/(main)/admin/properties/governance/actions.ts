@@ -44,7 +44,7 @@ export async function mergeCommunitiesAction(
     }
 
     // 成功后刷新治理页面，让列表更新
-    revalidatePath("/properties/governance");
+    revalidatePath("/admin/properties/governance");
 
     const resultData = extractApiData<{
       message?: string;

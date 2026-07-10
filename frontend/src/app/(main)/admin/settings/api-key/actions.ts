@@ -52,7 +52,7 @@ export async function deleteApiKeyAction() {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/settings/api-key");
+    revalidatePath("/admin/settings/api-key");
     return { success: true, message: "API Key 已删除" };
   } catch (error) {
     logger.error("Delete API key exception:", error);

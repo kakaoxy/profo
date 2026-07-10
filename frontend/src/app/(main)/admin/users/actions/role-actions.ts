@@ -45,7 +45,7 @@ export async function createRoleAction(data: RoleCreate) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/users/roles");
+    revalidatePath("/admin/users/roles");
     return { success: true, message: "角色创建成功" };
   } catch (error) {
     logger.error("Create role exception:", error);
@@ -66,7 +66,7 @@ export async function updateRoleAction(roleId: string, data: RoleUpdate) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/users/roles");
+    revalidatePath("/admin/users/roles");
     return { success: true, message: "角色更新成功" };
   } catch (error) {
     logger.error("Update role exception:", error);
@@ -86,7 +86,7 @@ export async function deleteRoleAction(roleId: string) {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/users/roles");
+    revalidatePath("/admin/users/roles");
     return { success: true, message: "角色删除成功" };
   } catch (error) {
     logger.error("Delete role exception:", error);
