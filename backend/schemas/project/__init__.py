@@ -56,9 +56,10 @@ from .finance import (
     LedgerProjectListItem,
     LedgerRecordCreate,
     LedgerStatsResponse,
-    ProjectLedgerStatisticsResponse,
     ProjectReportResponse,
 )
+# 3.1 导入 Ledger 统计页面 Schema（从 finance.py 拆分）
+from .ledger_statistics import ProjectLedgerStatisticsResponse
 from .followup import (
     FollowUpBase,
     FollowUpCreate,

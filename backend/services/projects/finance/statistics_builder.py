@@ -8,7 +8,7 @@ from datetime import date
 from decimal import Decimal
 
 from models.common import BusinessForm, CashFlowCategory
-from schemas.project.finance import (
+from schemas.project.ledger_statistics import (
     LedgerStatisticsCalcBreakdown,
     LedgerStatisticsCalcItem,
     LedgerStatisticsCalcSection,

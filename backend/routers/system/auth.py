@@ -25,7 +25,7 @@ from schemas.user import (
     WechatAuthUrlResponse,
     WechatLoginRequest,
 )
-from services.system import ApiKeyService, AuthService
+from services.system import ApiKeyService, AuthService, WeChatAuthService
 from services.system.exceptions import AuthenticationError, BusinessLogicError, ResourceNotFoundError
 from settings import settings
 
@@ -114,7 +114,7 @@ def wechat_authorize(
     redirect_uri: Annotated[str | None, Query(description="重定向URL")] = None,
 ) -> WechatAuthUrlResponse:
     """生成微信登录授权URL（含随机 state，回调时校验防 CSRF）."""
-    auth_url, _state = AuthService.generate_wechat_auth_url(redirect_uri)
+    auth_url, _state = WeChatAuthService.generate_wechat_auth_url(redirect_uri)
     return WechatAuthUrlResponse(auth_url=auth_url)
 
 
@@ -128,20 +128,20 @@ async def wechat_callback(
 
     严格校验 state 与服务端签发的一致，防止 CSRF / 登录态劫持。
     """
-    if not AuthService.consume_wechat_state(state):
+    if not WeChatAuthService.consume_wechat_state(state):
         logger.warning("微信回调 state 校验失败，疑似 CSRF 攻击")
         raise BusinessLogicError("state 校验失败，请重新发起微信登录")
 
-    token_data = await AuthService.fetch_wechat_access_token(code)
+    token_data = await WeChatAuthService.fetch_wechat_access_token(code)
 
     openid = token_data.get("openid")
     access_token = token_data.get("access_token")
     unionid = token_data.get("unionid")
 
-    userinfo_data = await AuthService.fetch_wechat_user_info(access_token, openid)
+    userinfo_data = await WeChatAuthService.fetch_wechat_user_info(access_token, openid)
 
     user = await run_in_threadpool(
-        AuthService.login_or_register_wechat_user,
+        WeChatAuthService.login_or_register_wechat_user,
         db=db,
         openid=openid,
         unionid=unionid,
@@ -150,7 +150,7 @@ async def wechat_callback(
 
     result = await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
 
-    auth_code = AuthService.store_temp_token(
+    auth_code = WeChatAuthService.store_temp_token(
         access_token=result["access_token"],
         refresh_token=result["refresh_token"],
     )
@@ -171,7 +171,7 @@ def exchange_token(
     速率限制：10次/分钟.
     """
     try:
-        entry = AuthService.exchange_temp_code(exchange_data.code)
+        entry = WeChatAuthService.exchange_temp_code(exchange_data.code)
     except AuthenticationError:
         raise
     return TokenResponse(
@@ -194,7 +194,7 @@ async def wechat_app_login(
     Async for HTTP, run_in_threadpool for DB
     速率限制：5次/分钟.
     """
-    auth_data = await AuthService.fetch_wechat_miniapp_session(login_data.code)
+    auth_data = await WeChatAuthService.fetch_wechat_miniapp_session(login_data.code)
 
     openid = auth_data.get("openid")
     session_key = auth_data.get("session_key")
@@ -204,7 +204,7 @@ async def wechat_app_login(
         raise AuthenticationError("微信登录失败，未获取到用户标识")
 
     user = await run_in_threadpool(
-        AuthService.login_or_register_wechat_user,
+        WeChatAuthService.login_or_register_wechat_user,
         db=db,
         openid=openid,
         unionid=unionid,

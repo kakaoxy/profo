@@ -176,10 +176,13 @@ class _RecordMixin:
 
         project_id = record.project_id
 
-        # 编辑锁：已结算项目不可删除记录
-        project = self.db.query(Project).filter(Project.id == project_id).first()
-        if project:
-            self._assert_finance_editable(project)
+        # 编辑锁：已结算项目不可删除记录（与 delete_record 一致，防止资金账本路由绕过结算锁）
+        # 项目不存在或已软删除 -> 404，避免 `if project:` 在软删除场景跳过结算锁
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
+        if not project:
+            logger.error("Project not found or soft-deleted: %s", project_id)
+            raise ResourceNotFoundError("项目不存在")
+        self._assert_finance_editable(project)
 
         # 写入操作日志（与删除同一事务）
         log = FinanceRecordLog(
