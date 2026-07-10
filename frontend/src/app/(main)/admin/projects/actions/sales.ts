@@ -50,7 +50,7 @@ export async function updateSalesRolesAction(
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "保存成功" };
   } catch (e) {
     logger.error("更新销售角色异常:", e);
@@ -191,7 +191,7 @@ export async function createSalesRecordAction(payload: {
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "记录已添加" };
   } catch (e) {
     logger.error("添加销售记录异常:", e);
@@ -225,7 +225,7 @@ export async function deleteSalesRecordAction(
       return { success: false, message: errorMsg };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     return { success: true, message: "记录已删除" };
   } catch (e) {
     logger.error("删除销售记录异常:", e);
@@ -260,7 +260,7 @@ export async function completeProjectAction(
       return { success: false, message: "操作失败，请重试" };
     }
 
-    revalidatePath("/projects");
+    revalidatePath("/admin/projects");
     const resultData = extractApiData<unknown>(data);
     return { success: true, message: "恭喜！项目已成交", data: resultData };
   } catch (e) {
