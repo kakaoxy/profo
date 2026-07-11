@@ -20,6 +20,7 @@ from starlette.concurrency import run_in_threadpool
 from services.system import save_failed_record
 from services.system.exceptions import ServiceException
 from utils.error_formatters import (
+    _is_unique_violation,
     format_database_error,
     format_request_validation_error,
 )
@@ -133,10 +134,7 @@ async def sqlalchemy_exception_handler(
 
     # 根据错误类型确定状态码
     if isinstance(exc, IntegrityError):
-        if "UNIQUE constraint failed" in str(exc):
-            status_code = status.HTTP_409_CONFLICT
-        else:
-            status_code = status.HTTP_400_BAD_REQUEST
+        status_code = status.HTTP_409_CONFLICT if _is_unique_violation(exc) else status.HTTP_400_BAD_REQUEST
     else:
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 

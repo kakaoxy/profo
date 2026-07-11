@@ -72,7 +72,9 @@ def get_projects(
     _current_user: CurrentInternalUserDep,
     pagination: PaginationDep,
     filters: Annotated[ProjectFilter, Depends()],
-    include_interactions: Annotated[bool, Query(description="是否包含互动记录(sales_records)，工作台重点监控卡片需传 true")] = False,
+    include_interactions: Annotated[
+        bool, Query(description="是否包含互动记录(sales_records)，工作台重点监控卡片需传 true")
+    ] = False,
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表."""
     result = service.get_projects(

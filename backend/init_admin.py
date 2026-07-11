@@ -8,6 +8,7 @@
 使用方法:
     python init_admin.py
 """
+
 import sys
 from pathlib import Path
 
@@ -18,8 +19,7 @@ from services.system.init_service import init_service
 
 
 def init_admin_user():
-    """初始化管理员用户和角色
-    """
+    """初始化管理员用户和角色"""
     print("=" * 60)
     print("  开始初始化管理员用户和角色...")
     print("=" * 60)
@@ -72,6 +72,7 @@ def init_admin_user():
     except Exception as e:
         print(f"\n  初始化失败: {e!s}")
         import traceback
+
         traceback.print_exc()
         print("=" * 60)
         return False

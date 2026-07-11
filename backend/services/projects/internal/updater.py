@@ -82,7 +82,10 @@ class ProjectUpdater:
             old_enum = BusinessForm(old_business_form) if old_business_form else None
             new_enum = BusinessForm(new_business_form) if new_business_form else None
             documents.sync_documents_on_business_form_change(
-                self.db, project.id, old_enum, new_enum,
+                self.db,
+                project.id,
+                old_enum,
+                new_enum,
             )
 
         project.updated_at = datetime.now(timezone.utc)

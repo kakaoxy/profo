@@ -141,7 +141,10 @@ async def get_current_user(
             try:
                 # 按目标系统校验受众
                 return await run_in_threadpool(
-                    AuthService.authenticate_by_token, db, cookie_token, expected_audience,
+                    AuthService.authenticate_by_token,
+                    db,
+                    cookie_token,
+                    expected_audience,
                 )
             except AuthenticationError:
                 raise AuthenticationError("无法验证凭据") from None
@@ -149,7 +152,10 @@ async def get_current_user(
         # Header token — 校验受众，避免C端Token用于后台或反之
         try:
             return await run_in_threadpool(
-                AuthService.authenticate_by_token, db, token, expected_audience,
+                AuthService.authenticate_by_token,
+                db,
+                token,
+                expected_audience,
             )
         except AuthenticationError:
             raise AuthenticationError("无法验证凭据") from None

@@ -107,14 +107,14 @@ class CommunityQueryService:
         )
 
         if search:
-            search_pattern = f"%{search}%"
-            stmt = stmt.filter(Community.name.like(search_pattern))
+            search_pattern = f"%{escape_like(search)}%"
+            stmt = stmt.filter(Community.name.like(search_pattern, escape="\\"))
 
         stmt = stmt.group_by(Community.id)
 
         count_query = db.query(func.count(Community.id)).filter(Community.is_active.is_(True))
         if search:
-            count_query = count_query.filter(Community.name.like(f"%{search}%"))
+            count_query = count_query.filter(Community.name.like(f"%{escape_like(search)}%", escape="\\"))
         total = count_query.scalar()
 
         stmt = stmt.order_by(Community.name).offset((page - 1) * effective_page_size).limit(effective_page_size)
@@ -178,7 +178,7 @@ class CommunityQueryService:
         )
 
         if search:
-            query = query.filter(target_column.like(f"%{search}%"))
+            query = query.filter(target_column.like(f"%{escape_like(search)}%", escape="\\"))
 
         query = query.order_by(target_column).limit(limit)
 
@@ -302,7 +302,7 @@ def _find_existing_community_by_name(db: Session, name: str) -> Community | None
     return (
         db.query(Community)
         .filter(
-            Community.name.ilike(name),
+            func.lower(Community.name).like(escape_like(name).lower(), escape="\\"),
             Community.is_active.is_(True),
         )
         .first()

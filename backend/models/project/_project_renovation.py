@@ -29,22 +29,58 @@ class ProjectRenovation(BaseModel):
 
     renovation_company: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="合作装修公司")
 
-    contract_start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="合同约定进场时间")
-    contract_end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="合同约定竣工交房时间")
+    contract_start_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="合同约定进场时间",
+    )
+    contract_end_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="合同约定竣工交房时间",
+    )
 
-    actual_start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="实际开工时间")
-    actual_end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="实际竣工时间")
+    actual_start_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="实际开工时间",
+    )
+    actual_end_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="实际竣工时间",
+    )
 
-    hard_contract_amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="硬装合同总金额")
+    hard_contract_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(15, 2),
+        nullable=True,
+        comment="硬装合同总金额",
+    )
 
     payment_node_1: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="第一笔款项支付节点")
-    payment_ratio_1: Mapped[Decimal | None] = mapped_column(Numeric(6, 4), nullable=True, comment="第一笔款项支付比例(支持小数点后4位)")
+    payment_ratio_1: Mapped[Decimal | None] = mapped_column(
+        Numeric(6, 4),
+        nullable=True,
+        comment="第一笔款项支付比例(支持小数点后4位)",
+    )
     payment_node_2: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="第二笔款项支付节点")
-    payment_ratio_2: Mapped[Decimal | None] = mapped_column(Numeric(6, 4), nullable=True, comment="第二笔款项支付比例(支持小数点后4位)")
+    payment_ratio_2: Mapped[Decimal | None] = mapped_column(
+        Numeric(6, 4),
+        nullable=True,
+        comment="第二笔款项支付比例(支持小数点后4位)",
+    )
     payment_node_3: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="第三笔款项支付节点")
-    payment_ratio_3: Mapped[Decimal | None] = mapped_column(Numeric(6, 4), nullable=True, comment="第三笔款项支付比例(支持小数点后4位)")
+    payment_ratio_3: Mapped[Decimal | None] = mapped_column(
+        Numeric(6, 4),
+        nullable=True,
+        comment="第三笔款项支付比例(支持小数点后4位)",
+    )
     payment_node_4: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="第四笔款项支付节点")
-    payment_ratio_4: Mapped[Decimal | None] = mapped_column(Numeric(6, 4), nullable=True, comment="第四笔款项支付比例(支持小数点后4位)")
+    payment_ratio_4: Mapped[Decimal | None] = mapped_column(
+        Numeric(6, 4),
+        nullable=True,
+        comment="第四笔款项支付比例(支持小数点后4位)",
+    )
 
     soft_budget: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="软装预算金额")
     soft_actual_cost: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="软装实际发生成本")
@@ -61,7 +97,11 @@ class ProjectRenovation(BaseModel):
     other_extra_fee: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="其他额外费用")
     other_fee_reason: Mapped[str | None] = mapped_column(Text, nullable=True, comment="其他费用原因")
 
-    stage_completed_dates: Mapped[dict | None] = mapped_column(JSON, nullable=True, comment="各阶段完成日期记录，格式: {stage: date_string}")
+    stage_completed_dates: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="各阶段完成日期记录，格式: {stage: date_string}",
+    )
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 

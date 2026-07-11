@@ -216,7 +216,10 @@ class _InvestorMixin:
 
         if "name" in update_data and update_data["name"] is not None:
             self._validate_name_unique(
-                investment_id, update_data["name"], investor.parent_id, exclude_investor_id=investor_id,
+                investment_id,
+                update_data["name"],
+                investor.parent_id,
+                exclude_investor_id=investor_id,
             )
             investor.name = update_data["name"]
 

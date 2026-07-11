@@ -27,7 +27,11 @@ class PropertyMedia(Base):
     thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True, comment="缩略图URL")
     description: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="描述")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, comment="排序")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
 
     __table_args__ = (
         UniqueConstraint("data_source", "source_property_id", "url", name="uq_property_media_url"),

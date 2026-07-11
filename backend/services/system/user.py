@@ -3,6 +3,7 @@
 处理用户管理的业务逻辑.
 """
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models import User
@@ -10,6 +11,7 @@ from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserU
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
 from utils.crypto import hash_phone
+from utils.formatters import escape_like
 
 from .auth import AuthService
 from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
@@ -36,9 +38,10 @@ class UserService:
         query = db.query(User)
 
         if username:
-            query = query.filter(User.username.like(f"%{username}%"))
+            query = query.filter(User.username.like(f"%{escape_like(username)}%", escape="\\"))
         if nickname:
-            query = query.filter(User.nickname.like(f"%{nickname}%"))
+            query = query.filter(User.nickname.like(f"%{escape_like(nickname)}%", escape="\\"))
+
         if role_id:
             query = query.filter(User.role_id == role_id)
         if user_status:
@@ -195,11 +198,7 @@ class UserService:
 
         """
         phone_hash_value = hash_phone(phone)
-        existing = (
-            db.query(User)
-            .filter(User.phone_hash == phone_hash_value, User.id != exclude_user_id)
-            .first()
-        )
+        existing = db.query(User).filter(User.phone_hash == phone_hash_value, User.id != exclude_user_id).first()
         if existing:
             msg = "手机号已被其他账号绑定"
             raise ValidationError(msg)
@@ -305,8 +304,8 @@ class UserService:
         if nickname:
             query = query.filter(
                 or_(
-                    User.nickname.ilike(f"%{nickname}%"),
-                    User.username.ilike(f"%{nickname}%"),
+                    func.lower(User.nickname).like(f"%{escape_like(nickname).lower()}%", escape="\\"),
+                    func.lower(User.username).like(f"%{escape_like(nickname).lower()}%", escape="\\"),
                 ),
             )
 

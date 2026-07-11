@@ -24,11 +24,7 @@ _get_db_dep = Depends(get_db)
 
 def _get_project(db: Session, project_id: str) -> Project:
     """获取项目，不存在抛 404."""
-    project = (
-        db.query(Project)
-        .filter(Project.id == project_id, Project.is_deleted.is_(False))
-        .first()
-    )
+    project = db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
     if project is None:
         raise HTTPException(status_code=404, detail={"message": "项目不存在"})
     return project

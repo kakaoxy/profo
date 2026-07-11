@@ -33,9 +33,14 @@ class Community(Base):
     avg_price_wan: Mapped[float | None] = mapped_column(Float, nullable=True, comment="小区均价(万)")
     total_properties: Mapped[int] = mapped_column(Integer, default=0, comment="房源总数")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活(软删除)")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        comment="创建时间",
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
@@ -43,8 +48,16 @@ class Community(Base):
     )
 
     # 关系
-    properties = relationship("PropertyCurrent", back_populates="community", primaryjoin="Community.id == foreign(PropertyCurrent.community_id)")
-    aliases = relationship("CommunityAlias", back_populates="community", primaryjoin="Community.id == foreign(CommunityAlias.community_id)")
+    properties = relationship(
+        "PropertyCurrent",
+        back_populates="community",
+        primaryjoin="Community.id == foreign(PropertyCurrent.community_id)",
+    )
+    aliases = relationship(
+        "CommunityAlias",
+        back_populates="community",
+        primaryjoin="Community.id == foreign(CommunityAlias.community_id)",
+    )
 
     # 索引
     __table_args__ = (
@@ -71,10 +84,19 @@ class CommunityAlias(Base):
     alias_name: Mapped[str] = mapped_column(String(200), nullable=False, comment="别名")
     data_source: Mapped[str] = mapped_column(String(50), nullable=False, comment="数据来源")
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        comment="创建时间",
+    )
 
     # 关系
-    community = relationship("Community", back_populates="aliases", primaryjoin="foreign(CommunityAlias.community_id) == Community.id")
+    community = relationship(
+        "Community",
+        back_populates="aliases",
+        primaryjoin="foreign(CommunityAlias.community_id) == Community.id",
+    )
 
     __table_args__ = (
         UniqueConstraint("alias_name", "data_source", name="uq_alias_source"),
@@ -94,7 +116,12 @@ class CommunityCompetitor(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="主小区ID")
     competitor_community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="竞品小区ID")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        comment="创建时间",
+    )
 
     __table_args__ = (UniqueConstraint("community_id", "competitor_community_id", name="uq_community_competitor"),)
 

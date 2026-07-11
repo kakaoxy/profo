@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload, noload
 from models.common import LeadStatus
 from models.lead import Lead
 from settings import settings
+from utils.formatters import escape_like
 
 
 class LeadQueryService:
@@ -77,30 +78,47 @@ class LeadQueryService:
         """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
         # 构建查询，优化关系加载
-        query = self.db.query(Lead).options(
-            joinedload(Lead.creator),
-            noload(Lead.auditor),
-            noload(Lead.follow_ups),
-            noload(Lead.price_history),
-        ).filter(Lead.is_deleted.is_(False))
+        query = (
+            self.db.query(Lead)
+            .options(
+                joinedload(Lead.creator),
+                noload(Lead.auditor),
+                noload(Lead.follow_ups),
+                noload(Lead.price_history),
+            )
+            .filter(Lead.is_deleted.is_(False))
+        )
 
         # 应用过滤条件
         if search:
-            query = query.filter(Lead.community_name.contains(search))
+            query = query.filter(
+                func.lower(Lead.community_name).like(f"%{escape_like(search).lower()}%", escape="\\"),
+            )
         if statuses:
             query = query.filter(Lead.status.in_(statuses))
         if district:
-            query = query.filter(Lead.district.contains(district))
+            query = query.filter(
+                func.lower(Lead.district).like(f"%{escape_like(district).lower()}%", escape="\\"),
+            )
         if creator_id:
             query = query.filter(Lead.creator_id == creator_id)
         if layout:
-            query = query.filter(Lead.layout.contains(layout))
+            query = query.filter(
+                func.lower(Lead.layout).like(f"%{escape_like(layout).lower()}%", escape="\\"),
+            )
         if floor:
-            query = query.filter(Lead.floor_info.contains(floor))
+            query = query.filter(
+                func.lower(Lead.floor_info).like(f"%{escape_like(floor).lower()}%", escape="\\"),
+            )
 
         # 计算总数和获取分页数据
         total = query.count()
-        items = query.order_by(desc(Lead.created_at)).offset((page - 1) * effective_page_size).limit(effective_page_size).all()
+        items = (
+            query.order_by(desc(Lead.created_at))
+            .offset((page - 1) * effective_page_size)
+            .limit(effective_page_size)
+            .all()
+        )
 
         return {
             "items": items,

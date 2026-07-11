@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import Float, func
 from sqlalchemy.orm import Session
 
 from models import Community, CommunityCompetitor, PropertyCurrent, PropertyStatus
@@ -94,7 +94,9 @@ class NeighborhoodRadarService:
                 PropertyCurrent.community_id,
                 PropertyCurrent.data_source,
                 func.count().label("count"),
-                func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_price"),
+                func.avg(func.cast(PropertyCurrent.listed_price_wan, Float) / PropertyCurrent.build_area * 10000).label(
+                    "avg_price",
+                ),
             )
             .filter(
                 PropertyCurrent.community_id.in_(all_community_ids),
@@ -110,7 +112,9 @@ class NeighborhoodRadarService:
                 PropertyCurrent.community_id,
                 PropertyCurrent.data_source,
                 func.count().label("count"),
-                func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000).label("avg_price"),
+                func.avg(func.cast(PropertyCurrent.sold_price_wan, Float) / PropertyCurrent.build_area * 10000).label(
+                    "avg_price",
+                ),
             )
             .filter(
                 PropertyCurrent.community_id.in_(all_community_ids),

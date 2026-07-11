@@ -80,7 +80,11 @@ class L4MarketingProject(BaseModel):
     # 面积与价格
     area: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, comment="面积(m²)，保留两位小数")
     total_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, comment="总价(万元)，保留两位小数")
-    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, comment="单价(万元/m²)，自动计算，保留两位小数")
+    unit_price: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        nullable=False,
+        comment="单价(万元/m²)，自动计算，保留两位小数",
+    )
 
     # 营销信息
     title: Mapped[str] = mapped_column(String(255), nullable=False, comment="标题，最大长度255")
@@ -111,21 +115,29 @@ class L4MarketingProject(BaseModel):
     )
 
     # 软引用关联
-    project_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="关联L3项目ID(软引用)，可为空表示独立项目")
-    consultant_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="关联顾问ID(软引用User表)，User表id为String(36) UUID")
+    project_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="关联L3项目ID(软引用)，可为空表示独立项目",
+    )
+    consultant_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="关联顾问ID(软引用User表)，User表id为String(36) UUID",
+    )
 
     # 逻辑删除
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     # 时间戳（覆盖基类，使用数据库默认值）
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="创建时间",
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
@@ -251,13 +263,13 @@ class L4MarketingMedia(BaseModel):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="创建时间",
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),

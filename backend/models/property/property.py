@@ -59,11 +59,11 @@ class PropertyCurrent(Base):
 
     # 价格信息 - 在售
     listed_price_wan: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="挂牌价(万)")
-    listed_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="上架时间")
+    listed_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="上架时间")
 
     # 价格信息 - 成交
     sold_price_wan: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="成交价(万)")
-    sold_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="成交时间")
+    sold_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="成交时间")
 
     # 建筑信息
     build_year: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="建筑年代")
@@ -84,16 +84,24 @@ class PropertyCurrent(Base):
     owner_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推送用户ID")
     visibility: Mapped[str] = mapped_column(String(20), default="private", comment="可见性(预留)")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, comment="是否激活")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         comment="更新时间",
     )
 
     # 关系
-    community = relationship("Community", back_populates="properties", primaryjoin="foreign(PropertyCurrent.community_id) == Community.id")
+    community = relationship(
+        "Community",
+        back_populates="properties",
+        primaryjoin="foreign(PropertyCurrent.community_id) == Community.id",
+    )
     property_media = relationship(
         "PropertyMedia",
         primaryjoin="and_(PropertyCurrent.data_source==PropertyMedia.data_source, "
@@ -145,7 +153,11 @@ class PropertyHistory(Base):
 
     # 变更信息
     change_type: Mapped[ChangeType] = mapped_column(SQLEnum(ChangeType), nullable=False, comment="变更类型")
-    captured_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="快照时间")
+    captured_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="快照时间",
+    )
 
     # 快照的核心字段
     status: Mapped[PropertyStatus] = mapped_column(SQLEnum(PropertyStatus), nullable=False, comment="状态")
@@ -154,8 +166,8 @@ class PropertyHistory(Base):
     build_area: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True, comment="建筑面积")
     listed_price_wan: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="挂牌价(万)")
     sold_price_wan: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="成交价(万)")
-    listed_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="上架时间")
-    sold_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="成交时间")
+    listed_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="上架时间")
+    sold_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="成交时间")
 
     # 其他可能变化的字段
     floor_original: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="楼层")

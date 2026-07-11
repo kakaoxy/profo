@@ -275,7 +275,8 @@ class ProjectResponse(BaseModel):
     project_manager: UserBrief | None = Field(None, description="项目负责人")
 
     finance_settlement_status: SettlementStatus = Field(
-        default=SettlementStatus.UNSETTLED, description="资金账本结算状态",
+        default=SettlementStatus.UNSETTLED,
+        description="资金账本结算状态",
     )
     finance_settled_date: date | None = Field(None, description="资金账本结算日期")
     finance_settled_note: str | None = Field(None, description="资金账本结算说明")

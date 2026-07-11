@@ -19,15 +19,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from db import engine
 from models import Base
-from settings import settings
 
 
 def init_database() -> bool | None:
     """初始化数据库 - 创建所有表."""
     try:
         Base.metadata.create_all(bind=engine)
-
-        settings.database_url.replace("sqlite:///", "")
     except Exception:  # noqa: BLE001
         return False
     else:

@@ -37,7 +37,9 @@ class Project(BaseModel):
         comment="项目状态",
     )
     renovation_stage: Mapped[RenovationStage | None] = mapped_column(
-        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]), nullable=True, comment="改造子阶段",
+        SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x]),
+        nullable=True,
+        comment="改造子阶段",
     )
 
     business_form: Mapped[BusinessForm | None] = mapped_column(
@@ -47,10 +49,16 @@ class Project(BaseModel):
         comment="业务形式",
     )
     commission_start_date: Mapped[date | None] = mapped_column(
-        Date, nullable=True, default=None, comment="委托开始日期",
+        Date,
+        nullable=True,
+        default=None,
+        comment="委托开始日期",
     )
     commission_end_date: Mapped[date | None] = mapped_column(
-        Date, nullable=True, default=None, comment="委托结束日期",
+        Date,
+        nullable=True,
+        default=None,
+        comment="委托结束日期",
     )
 
     finance_settlement_status: Mapped[SettlementStatus] = mapped_column(
@@ -60,10 +68,16 @@ class Project(BaseModel):
         comment="资金账本结算状态",
     )
     finance_settled_date: Mapped[date | None] = mapped_column(
-        Date, nullable=True, default=None, comment="资金账本结算日期",
+        Date,
+        nullable=True,
+        default=None,
+        comment="资金账本结算日期",
     )
     finance_settled_note: Mapped[str | None] = mapped_column(
-        String(500), nullable=True, default=None, comment="资金账本结算说明",
+        String(500),
+        nullable=True,
+        default=None,
+        comment="资金账本结算说明",
     )
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")

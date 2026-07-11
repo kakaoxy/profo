@@ -79,7 +79,10 @@ def update_phone(
 ) -> PublicPhoneResponse:
     """C端用户修改手机号，需密码确认身份."""
     updated_user = user_service.update_phone_with_verification(
-        db, current_user, body.phone, body.password,
+        db,
+        current_user,
+        body.phone,
+        body.password,
     )
 
     return PublicPhoneResponse(phone=mask_phone(updated_user.phone))

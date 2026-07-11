@@ -80,7 +80,10 @@ def create_document(db: Session, project_id: str, payload: DocumentCreate) -> Pr
 
 
 def update_document(
-    db: Session, project_id: str, document_id: str, payload: DocumentUpdate,
+    db: Session,
+    project_id: str,
+    document_id: str,
+    payload: DocumentUpdate,
 ) -> ProjectDocument | None:
     """更新文书。含项目归属校验。状态变化时联动 archive_date。
 
@@ -182,7 +185,8 @@ def initialize_documents(db: Session, project_id: str, business_form: BusinessFo
         return 0
 
     existing_names = {
-        name for (name,) in db.query(ProjectDocument.document_name)
+        name
+        for (name,) in db.query(ProjectDocument.document_name)
         .filter(
             ProjectDocument.project_id == project_id,
             ProjectDocument.is_deleted.is_(False),
@@ -195,17 +199,19 @@ def initialize_documents(db: Session, project_id: str, business_form: BusinessFo
     for tpl in templates:
         if tpl.document_name in existing_names:
             continue
-        new_docs.append(ProjectDocument(
-            id=str(uuid.uuid4()),
-            project_id=project_id,
-            document_name=tpl.document_name,
-            signoff_status=DocumentSignoffStatus.UNSIGNED.value,
-            archive_date=None,
-            display_order=tpl.display_order,
-            is_deleted=False,
-            created_at=now,
-            updated_at=now,
-        ))
+        new_docs.append(
+            ProjectDocument(
+                id=str(uuid.uuid4()),
+                project_id=project_id,
+                document_name=tpl.document_name,
+                signoff_status=DocumentSignoffStatus.UNSIGNED.value,
+                archive_date=None,
+                display_order=tpl.display_order,
+                is_deleted=False,
+                created_at=now,
+                updated_at=now,
+            )
+        )
 
     if new_docs:
         db.add_all(new_docs)

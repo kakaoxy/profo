@@ -109,7 +109,12 @@ class PublicProjectService:
             query = query.filter(L4MarketingProject.community_name.like(f"%{escape_like(community_name)}%"))
 
         total = query.count()
-        items = query.order_by(desc(L4MarketingProject.created_at)).offset((page - 1) * effective_page_size).limit(effective_page_size).all()
+        items = (
+            query.order_by(desc(L4MarketingProject.created_at))
+            .offset((page - 1) * effective_page_size)
+            .limit(effective_page_size)
+            .all()
+        )
 
         return items, total
 

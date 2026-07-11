@@ -203,11 +203,7 @@ def get_project_detail(
 
     project_images = project.images or []
     if not project_images:
-        project_images = [
-            m.file_url
-            for m in media_items
-            if m.media_type == "image" and m.file_url
-        ]
+        project_images = [m.file_url for m in media_items if m.media_type == "image" and m.file_url]
 
     return PublicProjectDetail(
         id=project.id,

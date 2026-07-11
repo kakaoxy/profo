@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from models import Role, User
 from schemas.user import RoleCreate, RoleUpdate
 from settings import settings
+from utils.formatters import escape_like
 
 from .exceptions import ConflictError, ResourceNotFoundError
 
@@ -32,9 +33,9 @@ class RoleService:
         query = db.query(Role)
 
         if name:
-            query = query.filter(Role.name.like(f"%{name}%"))
+            query = query.filter(Role.name.like(f"%{escape_like(name)}%", escape="\\"))
         if code:
-            query = query.filter(Role.code.like(f"%{code}%"))
+            query = query.filter(Role.code.like(f"%{escape_like(code)}%", escape="\\"))
         if is_active is not None:
             query = query.filter(Role.is_active == is_active)
 

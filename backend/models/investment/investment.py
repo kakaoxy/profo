@@ -108,7 +108,9 @@ class Investor(BaseModel):
         nullable=False,
         comment="投资方类型: enterprise/individual",
     )
-    share_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="占比(母:占项目比例; 子:内部占比)")
+    share_ratio: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False, comment="占比(母:占项目比例; 子:内部占比)"
+    )
     invest_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="投资金额(元)")
     parent_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="母投资方ID(自关联)")
     sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="排序序号")
@@ -155,8 +157,12 @@ class ReturnAdjustment(BaseModel):
 
     investment_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联跟投记录ID(逻辑外键)")
     investor_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="关联投资方ID(逻辑外键)")
-    default_distribution_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="默认分配比例(%)=投资占比")
-    adjusted_distribution_ratio: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, comment="调整后分配比例(%)")
+    default_distribution_ratio: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False, comment="默认分配比例(%)=投资占比"
+    )
+    adjusted_distribution_ratio: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False, comment="调整后分配比例(%)"
+    )
     adjusted_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="调整后收益金额(元)")
     adjusted_by: Mapped[str] = mapped_column(String(36), nullable=False, comment="调整人ID(逻辑外键)")
     adjusted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="调整时间")

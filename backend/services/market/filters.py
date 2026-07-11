@@ -10,6 +10,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Query
 
 from models import Community, PropertyCurrent, PropertyStatus
+from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ def apply_filters(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     # 小区名称模糊搜索
     if community_name:
-        query = query.filter(Community.name.like(f"%{community_name}%"))
+        query = query.filter(Community.name.like(f"%{escape_like(community_name)}%", escape="\\"))
 
     # 小区ID精确筛选（多选，优先于名称模糊匹配）
     if community_ids:

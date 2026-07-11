@@ -15,6 +15,7 @@ from models import FinanceRecord, Project, ProjectContract
 from models.common import CashFlowType
 from settings import settings
 from utils.file_security import get_safe_file_path
+from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -84,13 +85,12 @@ class _LedgerMixin:
         )
 
         if search:
-            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            like = f"%{escaped}%"
+            like = f"%{escape_like(search).lower()}%"
             query = query.filter(
                 or_(
-                    ProjectContract.contract_no.ilike(like, escape="\\"),
-                    Project.community_name.ilike(like, escape="\\"),
-                    Project.address.ilike(like, escape="\\"),
+                    func.lower(ProjectContract.contract_no).like(like, escape="\\"),
+                    func.lower(Project.community_name).like(like, escape="\\"),
+                    func.lower(Project.address).like(like, escape="\\"),
                 ),
             )
 
@@ -220,13 +220,12 @@ class _LedgerMixin:
         )
 
         if search:
-            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            like = f"%{escaped}%"
+            like = f"%{escape_like(search).lower()}%"
             query = query.filter(
                 or_(
-                    ProjectContract.contract_no.ilike(like, escape="\\"),
-                    Project.community_name.ilike(like, escape="\\"),
-                    Project.address.ilike(like, escape="\\"),
+                    func.lower(ProjectContract.contract_no).like(like, escape="\\"),
+                    func.lower(Project.community_name).like(like, escape="\\"),
+                    func.lower(Project.address).like(like, escape="\\"),
                 ),
             )
 

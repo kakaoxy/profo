@@ -3,12 +3,14 @@
 负责项目数据的查询和加载.
 """
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import Project
 from models.common import BusinessForm
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
+from utils.formatters import escape_like
 
 
 class ProjectQueryService:
@@ -134,7 +136,9 @@ class ProjectQueryService:
             query = query.filter(Project.status == status)
 
         if community_name:
-            query = query.filter(Project.community_name.contains(community_name))
+            query = query.filter(
+                func.lower(Project.community_name).like(f"%{escape_like(community_name).lower()}%", escape="\\"),
+            )
 
         if business_form:
             query = query.filter(Project.business_form == business_form)
