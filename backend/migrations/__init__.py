@@ -47,7 +47,7 @@ _MIGRATION_BATCH_SIZE = 500
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
-    """检查某列是否已存在（跨方言）。."""
+    """检查某列是否已存在（跨方言）."""
     inspector = inspect(engine)
     if table not in inspector.get_table_names():
         return False
@@ -55,7 +55,7 @@ def _column_exists(engine: Engine, table: str, column: str) -> bool:
 
 
 def _index_exists(engine: Engine, index_name: str) -> bool:
-    """检查某索引是否已存在。."""
+    """检查某索引是否已存在."""
     if engine.dialect.name == "postgresql":
         with engine.connect() as conn:
             return bool(
@@ -72,7 +72,7 @@ def _index_exists(engine: Engine, index_name: str) -> bool:
 
 
 def add_token_version_column(engine: Engine) -> None:
-    """为 users 表添加 token_version INTEGER NOT NULL DEFAULT 1。.
+    """为 users 表添加 token_version INTEGER NOT NULL DEFAULT 1.
 
     SQLite 支持 ALTER TABLE ADD COLUMN，幂等。
     """
@@ -815,7 +815,7 @@ def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
 
 
 def run_startup_migrations(engine: Engine) -> None:
-    """执行所有启动时迁移（幂等）。."""
+    """执行所有启动时迁移（幂等）."""
     try:
         add_token_version_column(engine)
         add_phone_hash_column(engine)

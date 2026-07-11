@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class NormalTokenResult(TypedDict):
-    """正常令牌结果（登录/刷新成功）。."""
+    """正常令牌结果（登录/刷新成功）."""
 
     require_password_change: Literal[False]
     access_token: str
@@ -47,7 +47,7 @@ class NormalTokenResult(TypedDict):
 
 
 class TempTokenResult(TypedDict):
-    """临时令牌结果（需修改密码）。."""
+    """临时令牌结果（需修改密码）."""
 
     require_password_change: Literal[True]
     temp_token: str
