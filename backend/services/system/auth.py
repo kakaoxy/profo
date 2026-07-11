@@ -9,7 +9,7 @@
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import ClassVar
+from typing import ClassVar, Literal, TypedDict
 
 from sqlalchemy.orm import Session, joinedload
 
@@ -33,6 +33,27 @@ from .exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class NormalTokenResult(TypedDict):
+    """正常令牌结果（登录/刷新成功）。"""
+
+    require_password_change: Literal[False]
+    access_token: str
+    refresh_token: str
+    token_type: str
+    expires_in: int
+    user: User
+
+
+class TempTokenResult(TypedDict):
+    """临时令牌结果（需修改密码）。"""
+
+    require_password_change: Literal[True]
+    temp_token: str
+
+
+TokenResult = NormalTokenResult | TempTokenResult
 
 
 class AuthService:
@@ -241,7 +262,7 @@ class AuthService:
         force_temp_token: bool = False,
         update_login_time: bool = True,
         audience: str | None = None,
-    ) -> dict[str, object]:
+    ) -> TokenResult:
         """为用户生成令牌 (Sync).
 
         处理登录后更新时间、生成 Token 的逻辑.
@@ -300,7 +321,7 @@ class AuthService:
                 jti=refresh_jti,
                 audience=audience,
                 expires_at=datetime.now(timezone.utc) + refresh_token_expires,
-            )
+            ),
         )
         db.commit()
 
@@ -320,7 +341,7 @@ class AuthService:
         db: Session,
         refresh_token: str,
         expected_audience: str | None = None,
-    ) -> dict[str, object]:
+    ) -> NormalTokenResult:
         """刷新 Token (Sync).
 
         注意：此方法不在刷新时更新 last_login_at，避免事务冲突。
@@ -349,7 +370,7 @@ class AuthService:
             msg = "刷新令牌无效"
             raise AuthenticationError(msg)
 
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
         if user is None:
             msg = "用户不存在"
             raise AuthenticationError(msg)
@@ -383,7 +404,10 @@ class AuthService:
         # 刷新token时不更新登录时间，避免事务冲突
         # create_tokens_for_user 会签发新 jti 并写入跟踪记录
         return AuthService.create_tokens_for_user(
-            db, user, update_login_time=False, audience=inherited_audience
+            db,
+            user,
+            update_login_time=False,
+            audience=inherited_audience,
         )
 
     @staticmethod
@@ -402,3 +426,32 @@ class AuthService:
             RefreshToken.revoked.is_(False),
         ).update({RefreshToken.revoked: True})
         db.commit()
+
+    @staticmethod
+    def revoke_refresh_token(db: Session, refresh_token: str, expected_audience: str | None = None) -> None:
+        """撤销指定 refresh_token（按 jti 撤销），用于 logout (Sync).
+
+        即使 token 无效也不报错（幂等），避免攻击者通过响应推测 token 有效性。
+
+        Args:
+            db: 数据库会话
+            refresh_token: 待撤销的刷新令牌
+            expected_audience: 期望的受众标识（如 "c"），传入时校验 aud 匹配
+
+        """
+        payload = validate_token(
+            refresh_token,
+            token_type=AuthService._REFRESH_TOKEN_TYPE,
+            audience=expected_audience,
+        )
+        if not payload:
+            return
+
+        jti = payload.get("jti")
+        if not jti:
+            return
+
+        record = db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
+        if record and not record.revoked:
+            record.revoked = True
+            db.commit()

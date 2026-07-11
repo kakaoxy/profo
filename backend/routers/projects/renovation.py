@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep
 from dependencies.projects import ProjectServiceDep
 from schemas.project import ProjectResponse, RenovationPhotoResponse, RenovationUpdate
@@ -13,6 +12,7 @@ from schemas.project.renovation import (
     RenovationContractUpdate,
     RenovationPhotoListResponse,
 )
+from utils.common import RateLimits, limiter
 
 router = APIRouter()
 

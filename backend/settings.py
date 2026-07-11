@@ -1,4 +1,9 @@
-"""应用配置文件."""
+"""应用配置文件.
+
+备注: 当前 Settings 类混合了 JWT、WeChat、上传、CORS 等多领域配置。
+未来可考虑按领域拆分为独立 BaseSettings 子类（如 JWTConfig、WechatConfig），
+但需评估全项目 settings.* 引用点，收益相对较低，暂保持现状。
+"""
 
 import sys
 from pathlib import Path
@@ -19,13 +24,15 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # 数据库配置
-    database_url: str = "sqlite:///./data.db"  # 开发默认 SQLite；生产用 PostgreSQL: postgresql+psycopg://user:pass@host:5432/dbname
+    database_url: str  # 必填，从环境变量读取（PostgreSQL: postgresql+psycopg://user:pass@host:5432/dbname）
     database_echo: bool = False  # 是否打印 SQL 语句
 
     # API 配置
     api_prefix: str = "/api"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
-    frontend_url: str = "http://localhost:3000"  # 前端URL（用于微信回调重定向等，生产环境通过 FRONTEND_URL 环境变量配置）
+    frontend_url: str = (
+        "http://localhost:3000"  # 前端URL（用于微信回调重定向等，生产环境通过 FRONTEND_URL 环境变量配置）
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod

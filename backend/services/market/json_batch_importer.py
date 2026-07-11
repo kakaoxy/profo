@@ -93,7 +93,7 @@ class JSONBatchImporter:
 
                     logger.warning("第 %s 条记录验证失败: %s", index, error_msg)
 
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     db.rollback()
                     failed += 1
                     error_msg = f"处理失败: {e!s}"

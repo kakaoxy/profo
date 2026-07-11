@@ -2,7 +2,8 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SQLEnum, Index, String, Text
+from sqlalchemy import DateTime, Index, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel, ProjectStatus

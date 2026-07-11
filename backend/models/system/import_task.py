@@ -6,7 +6,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SQLEnum, Float, Index, Integer, String, Text
+from sqlalchemy import DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import Base, ImportTaskStatus

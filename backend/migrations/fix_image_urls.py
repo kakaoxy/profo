@@ -42,22 +42,22 @@ def run_fix_image_urls(engine: Engine) -> None:
     with engine.begin() as conn:
         # 1. renovation_photos.url
         rows = conn.execute(text(
-            "SELECT id, url FROM renovation_photos WHERE url LIKE 'http://%'"
+            "SELECT id, url FROM renovation_photos WHERE url LIKE 'http://%'",
         )).fetchall()
         for row in rows:
             conn.execute(text(
-                "UPDATE renovation_photos SET url = :url WHERE id = :id"
+                "UPDATE renovation_photos SET url = :url WHERE id = :id",
             ), {"url": _strip_host(row[1]), "id": row[0]})
         if rows:
             logger.info("renovation_photos.url: 修正 %d 条 URL", len(rows))
 
         # 2. property_media.url
         rows = conn.execute(text(
-            "SELECT id, url FROM property_media WHERE url LIKE 'http://%'"
+            "SELECT id, url FROM property_media WHERE url LIKE 'http://%'",
         )).fetchall()
         for row in rows:
             conn.execute(text(
-                "UPDATE property_media SET url = :url WHERE id = :id"
+                "UPDATE property_media SET url = :url WHERE id = :id",
             ), {"url": _strip_host(row[1]), "id": row[0]})
         if rows:
             logger.info("property_media.url: 修正 %d 条 URL", len(rows))
@@ -65,11 +65,11 @@ def run_fix_image_urls(engine: Engine) -> None:
         # 3. l4_marketing_media.file_url / thumbnail_url
         for col in ("file_url", "thumbnail_url"):
             rows = conn.execute(text(
-                f"SELECT id, {col} FROM l4_marketing_media WHERE {col} LIKE 'http://%'"
+                f"SELECT id, {col} FROM l4_marketing_media WHERE {col} LIKE 'http://%'",
             )).fetchall()
             for row in rows:
                 conn.execute(text(
-                    f"UPDATE l4_marketing_media SET {col} = :url WHERE id = :id"
+                    f"UPDATE l4_marketing_media SET {col} = :url WHERE id = :id",
                 ), {"url": _strip_host(row[1]), "id": row[0]})
             if rows:
                 logger.info("l4_marketing_media.%s: 修正 %d 条 URL", col, len(rows))
@@ -78,12 +78,12 @@ def run_fix_image_urls(engine: Engine) -> None:
         # images 为 JSON 列：PostgreSQL 不支持 JSON LIKE text（SQLite 经 text 亲和性允许），
         # 统一 CAST AS text 跨方言兼容
         rows = conn.execute(text(
-            "SELECT id, images FROM l4_marketing_projects WHERE CAST(images AS text) LIKE '%http://%'"
+            "SELECT id, images FROM l4_marketing_projects WHERE CAST(images AS text) LIKE '%http://%'",
         )).fetchall()
         for row in rows:
             if row[1]:
                 conn.execute(text(
-                    "UPDATE l4_marketing_projects SET images = :images WHERE id = :id"
+                    "UPDATE l4_marketing_projects SET images = :images WHERE id = :id",
                 ), {"images": _fix_json_array(row[1]), "id": row[0]})
         if rows:
             logger.info("l4_marketing_projects.images: 修正 %d 条 JSON", len(rows))

@@ -14,7 +14,6 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.common import limiter
 from db import engine, init_db
 from error_handlers import (
     general_exception_handler,
@@ -44,6 +43,7 @@ from routers.public import (
 from routers.system import auth_router, roles_router, users_router
 from services.system.exceptions import ServiceException
 from settings import settings
+from utils.common import limiter
 
 logging.basicConfig(
     level=logging.INFO,

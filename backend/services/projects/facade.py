@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 # 导入模型和 Schema 类型
 from models import ProjectInteraction, ProjectRenovation, RenovationPhoto
 from models.common import BusinessForm
-from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, ProjectStatusUpdate
+from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from schemas.project.sales import (
     ProjectCompleteRequest,

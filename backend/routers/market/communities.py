@@ -8,7 +8,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from schemas.community import (
@@ -23,6 +22,7 @@ from schemas.community import (
 from services.market import CommunityMerger, get_community_service
 from services.market.community_service import CommunityQueryService
 from services.system.exceptions import ServiceException, ValidationError
+from utils.common import RateLimits, limiter
 
 logger = logging.getLogger(__name__)
 

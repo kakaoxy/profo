@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-初始化管理员用户和角色脚本
+"""初始化管理员用户和角色脚本
 
 功能:
 - 创建默认角色（管理员、运营人员、普通用户）
@@ -19,8 +18,7 @@ from services.system.init_service import init_service
 
 
 def init_admin_user():
-    """
-    初始化管理员用户和角色
+    """初始化管理员用户和角色
     """
     print("=" * 60)
     print("  开始初始化管理员用户和角色...")
@@ -51,16 +49,16 @@ def init_admin_user():
             temp_admin = result.get("temp_admin", {})
             print(f"   用户名: {temp_admin.get('username', 'admin')}")
             print(f"   密码: {temp_admin.get('temp_password', '')}")
-            print(f"   角色: 管理员")
-            print(f"   权限: 所有权限")
+            print("   角色: 管理员")
+            print("   权限: 所有权限")
 
         print()
         print("=" * 60)
         print("  管理员初始化完成！")
         print("=" * 60)
         print("  使用以下凭证登录系统:")
-        print(f"   用户名: {temp_admin.get('username', 'admin')}" if 'temp_admin' in result else "   用户名: admin")
-        if 'temp_admin' in result:
+        print(f"   用户名: {temp_admin.get('username', 'admin')}" if "temp_admin" in result else "   用户名: admin")
+        if "temp_admin" in result:
             print(f"   密码: {result['temp_admin']['temp_password']}")
         print("   角色: 管理员")
         print("=" * 60)
@@ -72,7 +70,7 @@ def init_admin_user():
         return True
 
     except Exception as e:
-        print(f"\n  初始化失败: {str(e)}")
+        print(f"\n  初始化失败: {e!s}")
         import traceback
         traceback.print_exc()
         print("=" * 60)

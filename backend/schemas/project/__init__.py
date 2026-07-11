@@ -20,8 +20,8 @@ from .core import (
     ProjectListResponse,
     ProjectResponse,
     ProjectStatsResponse,
-    ProjectUpdate,
     ProjectStatusUpdate,
+    ProjectUpdate,
 )
 from .document import (
     DocumentCreate,
@@ -58,8 +58,6 @@ from .finance import (
     LedgerStatsResponse,
     ProjectReportResponse,
 )
-# 3.1 导入 Ledger 统计页面 Schema（从 finance.py 拆分）
-from .ledger_statistics import ProjectLedgerStatisticsResponse
 from .followup import (
     FollowUpBase,
     FollowUpCreate,
@@ -67,6 +65,9 @@ from .followup import (
     FollowUpResponse,
     FollowUpUpdate,
 )
+
+# 3.1 导入 Ledger 统计页面 Schema（从 finance.py 拆分）
+from .ledger_statistics import ProjectLedgerStatisticsResponse
 from .owner import (
     OwnerBase,
     OwnerCreate,

@@ -14,8 +14,7 @@ from sqlalchemy.orm import Session
 
 from models import Project
 from models.common import BusinessForm, ProjectStatus
-from schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate, ProjectStatusUpdate
-from services.system.exceptions import ResourceNotFoundError
+from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from settings import settings
 
 from .internal import (
@@ -158,7 +157,7 @@ class ProjectCoreService:
 
         items = [
             ProjectResponse.model_validate(
-                self.response_builder.build(p, slim=True, include_interactions=include_interactions)
+                self.response_builder.build(p, slim=True, include_interactions=include_interactions),
             )
             for p in result["items"]
         ]

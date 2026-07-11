@@ -7,7 +7,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep
 from dependencies.common import PaginationDep
 from schemas.public import (
@@ -26,6 +25,7 @@ from schemas.public import (
 from services.marketing.public import PublicProjectService
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
+from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public", tags=["public-projects"])
@@ -37,7 +37,7 @@ router = APIRouter(prefix="/public", tags=["public-projects"])
     description="获取已发布的房源列表，无需登录",
 )
 @limiter.limit(RateLimits.PUBLIC_PROJECT_LIST)
-def get_projects(  # noqa: PLR0913
+def get_projects(
     request: Request,
     db: DbSessionDep,
     pagination: PaginationDep,

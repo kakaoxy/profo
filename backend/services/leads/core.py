@@ -144,7 +144,7 @@ class LeadService:
         )
 
     def update_lead(
-        self, lead_id: str, update_data: LeadUpdate, updater_id: str, *, creator: User | None = None
+        self, lead_id: str, update_data: LeadUpdate, updater_id: str, *, creator: User | None = None,
     ) -> Lead:
         """更新线索信息.
 

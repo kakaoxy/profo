@@ -84,7 +84,7 @@ class ProjectResponseBuilder:
             "community_id": project.community_id,
             "community_name": project.community_name,
             "address": project.address,
-            "area": project.area if project.area else None,
+            "area": project.area or None,
             "layout": project.layout,
             "orientation": project.orientation,
             "floor_info": project.floor_info,
@@ -205,9 +205,9 @@ class ProjectResponseBuilder:
 
         return {
             "listing_date": sale.listing_date.strftime("%Y-%m-%d") if sale.listing_date else None,
-            "list_price": sale.list_price if sale.list_price else None,
+            "list_price": sale.list_price or None,
             "sold_date": sale.sold_date.strftime("%Y-%m-%d") if sale.sold_date else None,
-            "sold_price": sale.sold_price if sale.sold_price else None,
+            "sold_price": sale.sold_price or None,
             "transaction_status": sale.transaction_status,
             "channel_manager_id": sale.channel_manager_id,
             "property_agent_id": sale.property_agent_id,

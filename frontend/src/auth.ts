@@ -139,7 +139,8 @@ export const auth = Auth({
       try {
         await fetch(getApiUrl(apiPaths.cAuth.logout), {
           method: "POST",
-          headers: { Authorization: `Bearer ${tokens.accessToken}` },
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: tokens.refreshToken }),
         });
       } catch {
         // 后端登出失败不阻塞，cookie 仍会被清除

@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, Request, status
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentAdminUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from schemas.user import (
@@ -15,12 +14,13 @@ from schemas.user import (
 )
 from services.system import role_service
 from services.system.exceptions import ResourceNotFoundError
+from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
 
 @router.get("")
-def get_roles(  # noqa: PLR0913
+def get_roles(
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
     pagination: PaginationDep,

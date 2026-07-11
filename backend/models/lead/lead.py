@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime, timezone
-
 from decimal import Decimal
 
 from sqlalchemy import (
@@ -16,7 +15,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import Base, FollowUpMethod, LeadStatus
 

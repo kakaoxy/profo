@@ -18,7 +18,6 @@ from models.common import (
     SettlementStatus,
 )
 
-
 # ==================== 跟投记录 ====================
 
 

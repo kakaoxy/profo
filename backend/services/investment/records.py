@@ -27,7 +27,7 @@ class _RecordMixin:
 
     # ==================== 列表 / 统计 / 详情 ====================
 
-    def list_investments(  # noqa: PLR0913 - 3 过滤 + 2 分页参数，合并需引入 Filter DTO 属过度设计
+    def list_investments(
         self,
         search: str | None = None,
         project_status: ProjectStatus | None = None,
@@ -107,10 +107,10 @@ class _RecordMixin:
         base = self.db.query(Investment).filter(Investment.deleted_at.is_(None))
         total_projects: int = base.count()
         total_investment: Decimal = base.with_entities(
-            func.coalesce(func.sum(Investment.total_investment), 0)
+            func.coalesce(func.sum(Investment.total_investment), 0),
         ).scalar() or Decimal(0)
         total_return: Decimal = base.with_entities(
-            func.coalesce(func.sum(Investment.total_return), 0)
+            func.coalesce(func.sum(Investment.total_return), 0),
         ).scalar() or Decimal(0)
         unsettled_count: int = base.filter(Investment.settlement_status == SettlementStatus.UNSETTLED).count()
 

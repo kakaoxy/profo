@@ -4,10 +4,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep
 from schemas.public import PublicCommunitySearchItem
 from services.market.community_service import CommunityQueryService
+from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/public/communities", tags=["public-communities"])
 

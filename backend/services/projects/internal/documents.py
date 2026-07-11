@@ -80,7 +80,7 @@ def create_document(db: Session, project_id: str, payload: DocumentCreate) -> Pr
 
 
 def update_document(
-    db: Session, project_id: str, document_id: str, payload: DocumentUpdate
+    db: Session, project_id: str, document_id: str, payload: DocumentUpdate,
 ) -> ProjectDocument | None:
     """更新文书。含项目归属校验。状态变化时联动 archive_date。
 

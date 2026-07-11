@@ -34,7 +34,7 @@ class RefreshToken(BaseModel):
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="是否已撤销")
 
     # 过期时间：到期后记录可清理；校验时也用于拒绝过期 token
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="过期时间")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="过期时间")
 
     __table_args__ = (
         Index("idx_refresh_token_user_id", "user_id"),
@@ -45,6 +45,5 @@ class RefreshToken(BaseModel):
     def __repr__(self) -> str:
         """返回字符串表示."""
         return (
-            f"<RefreshToken(id='{self.id}', user_id='{self.user_id}', "
-            f"jti='{self.jti[:8]}...', revoked={self.revoked})>"
+            f"<RefreshToken(id='{self.id}', user_id='{self.user_id}', jti='{self.jti[:8]}...', revoked={self.revoked})>"
         )

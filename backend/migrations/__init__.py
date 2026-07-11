@@ -22,6 +22,8 @@
   迁移为 timestamptz（时区一致性修复，幂等）
 - migrate_project_date_columns_to_date: 将 projects 表 commission_start_date/commission_end_date/
   finance_settled_date 列从 VARCHAR(10) 迁移为 date（日期类型合规修复，幂等）
+- migrate_user_datetime_columns_to_timestamptz: 将 users/refresh_tokens/api_keys 表的 5 个
+  DateTime 列迁移为 timestamptz（时区一致性修复，幂等）
 
 """
 
@@ -101,7 +103,7 @@ def encrypt_existing_phones(engine: Engine) -> None:
                 text(
                     "SELECT id, phone FROM users "
                     "WHERE phone IS NOT NULL AND id > :last_id "
-                    "ORDER BY id LIMIT :batch_size"
+                    "ORDER BY id LIMIT :batch_size",
                 ),
                 {"last_id": last_id, "batch_size": _MIGRATION_BATCH_SIZE},
             ).fetchall()
@@ -126,7 +128,7 @@ def encrypt_existing_phones(engine: Engine) -> None:
                         {"phone": ciphertext, "id": user_id},
                     )
                     updated += 1
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.exception("加密用户手机号失败 user_id=%s", user_id)
         last_id = rows[-1][0]
 
@@ -150,7 +152,7 @@ def populate_phone_hash(engine: Engine) -> None:
                 text(
                     "SELECT id, phone FROM users "
                     "WHERE phone IS NOT NULL AND phone_hash IS NULL AND id > :last_id "
-                    "ORDER BY id LIMIT :batch_size"
+                    "ORDER BY id LIMIT :batch_size",
                 ),
                 {"last_id": last_id, "batch_size": _MIGRATION_BATCH_SIZE},
             ).fetchall()
@@ -169,7 +171,7 @@ def populate_phone_hash(engine: Engine) -> None:
                         {"h": phone_hash_value, "id": user_id},
                     )
                     updated += 1
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.exception("回填 phone_hash 失败 user_id=%s", user_id)
         last_id = rows[-1][0]
 
@@ -241,7 +243,7 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
         logger.info("迁移：重命名 project_renovations.appliance_amount → wall_treatment_amount")
         with engine.begin() as conn:
             conn.execute(
-                text("ALTER TABLE project_renovations RENAME COLUMN appliance_amount TO wall_treatment_amount")
+                text("ALTER TABLE project_renovations RENAME COLUMN appliance_amount TO wall_treatment_amount"),
             )
         return
     logger.info("迁移：为 project_renovations 表添加 wall_treatment_amount 列")
@@ -299,10 +301,10 @@ def rename_return_adjustment_columns(engine: Engine) -> None:
         logger.info("迁移：清空 return_adjustments 旧数据（语义不兼容：回报率% → 分配比例%）")
         conn.execute(text("DELETE FROM return_adjustments"))
         conn.execute(
-            text("ALTER TABLE return_adjustments RENAME COLUMN default_return_ratio TO default_distribution_ratio")
+            text("ALTER TABLE return_adjustments RENAME COLUMN default_return_ratio TO default_distribution_ratio"),
         )
         conn.execute(
-            text("ALTER TABLE return_adjustments RENAME COLUMN adjusted_return_ratio TO adjusted_distribution_ratio")
+            text("ALTER TABLE return_adjustments RENAME COLUMN adjusted_return_ratio TO adjusted_distribution_ratio"),
         )
 
 
@@ -393,7 +395,7 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
                     finance_records_tbl.c.id > last_id,
                 )
                 .order_by(finance_records_tbl.c.id)
-                .limit(_MIGRATION_BATCH_SIZE)
+                .limit(_MIGRATION_BATCH_SIZE),
             ).fetchall()
             if not rows:
                 break
@@ -444,7 +446,7 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
                 text(
                     "SELECT 1 FROM pg_enum e "
                     "JOIN pg_type t ON e.enumtypid = t.oid "
-                    "WHERE t.typname = 'cashflowcategory' AND e.enumlabel = :label"
+                    "WHERE t.typname = 'cashflowcategory' AND e.enumlabel = :label",
                 ),
                 {"label": val},
             ).scalar()
@@ -477,14 +479,14 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
                     text(
                         "ALTER TABLE projects "
                         "ADD COLUMN finance_settlement_status settlementstatus "
-                        "NOT NULL DEFAULT 'unsettled'"
-                    )
+                        "NOT NULL DEFAULT 'unsettled'",
+                    ),
                 )
             else:
                 conn.execute(
                     text(
-                        "ALTER TABLE projects ADD COLUMN finance_settlement_status VARCHAR NOT NULL DEFAULT 'unsettled'"
-                    )
+                        "ALTER TABLE projects ADD COLUMN finance_settlement_status VARCHAR NOT NULL DEFAULT 'unsettled'",
+                    ),
                 )
         logger.info("迁移：projects 表新增 finance_settlement_status 列")
 
@@ -518,7 +520,7 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
                     text(
                         "SELECT 1 FROM pg_enum e "
                         "JOIN pg_type t ON e.enumtypid = t.oid "
-                        "WHERE t.typname = 'financeactiontype' AND e.enumlabel = :label"
+                        "WHERE t.typname = 'financeactiontype' AND e.enumlabel = :label",
                     ),
                     {"label": val},
                 ).scalar()
@@ -552,8 +554,8 @@ def migrate_record_date_to_timestamptz(engine: Engine) -> None:
         row = conn.execute(
             text(
                 "SELECT data_type FROM information_schema.columns "
-                "WHERE table_name = 'finance_records' AND column_name = 'record_date'"
-            )
+                "WHERE table_name = 'finance_records' AND column_name = 'record_date'",
+            ),
         ).first()
     if row is None:
         return
@@ -567,8 +569,8 @@ def migrate_record_date_to_timestamptz(engine: Engine) -> None:
             text(
                 "ALTER TABLE finance_records "
                 "ALTER COLUMN record_date TYPE timestamptz "
-                "USING record_date AT TIME ZONE 'UTC'"
-            )
+                "USING record_date AT TIME ZONE 'UTC'",
+            ),
         )
 
 
@@ -613,7 +615,7 @@ def migrate_project_date_columns_to_date(engine: Engine) -> None:
             row = conn.execute(
                 text(
                     "SELECT data_type FROM information_schema.columns "
-                    "WHERE table_name = 'projects' AND column_name = :col"
+                    "WHERE table_name = 'projects' AND column_name = :col",
                 ),
                 {"col": column_name},
             ).first()
@@ -622,6 +624,67 @@ def migrate_project_date_columns_to_date(engine: Engine) -> None:
         if row[0] == "date":
             continue
         logger.info("迁移：projects.%s → date（当前类型 %s）", column_name, row[0])
+        with engine.begin() as conn:
+            conn.execute(text(alter_sql))
+
+
+def migrate_user_datetime_columns_to_timestamptz(engine: Engine) -> None:
+    """将 users/refresh_tokens/api_keys 表的 5 个 DateTime 列迁移为 timestamptz.
+
+    合规性修复：这些列原为 DateTime(无 tz)，与 AGENTS.md §3 "时间列统一 timezone=True" 不一致，
+    会触发时区 stripping。模型层已改为 DateTime(timezone=True)，此迁移同步已存在的 PG 表列类型。
+
+    涉及列：
+    - users.last_login_at
+    - refresh_tokens.expires_at
+    - api_keys.last_used_at / expires_at / deleted_at
+
+    - PostgreSQL: ALTER COLUMN ... TYPE timestamptz USING ... AT TIME ZONE 'UTC'
+    - SQLite: 跳过（SQLite 不区分 timestamp/timestamptz，存储为 TEXT）
+    - 幂等：通过 information_schema.columns 判断 data_type，已是
+      'timestamp with time zone' 则跳过
+    - 表名/列名为硬编码字符串，未用 f-string 拼接变量（规范11）
+    """
+    inspector = inspect(engine)
+    if engine.dialect.name != "postgresql":
+        return
+
+    # 每列对应一段硬编码 ALTER SQL（避免 f-string 拼接列名）
+    alter_statements = {
+        ("users", "last_login_at"): (
+            "ALTER TABLE users ALTER COLUMN last_login_at TYPE timestamptz USING last_login_at AT TIME ZONE 'UTC'"
+        ),
+        ("refresh_tokens", "expires_at"): (
+            "ALTER TABLE refresh_tokens ALTER COLUMN expires_at TYPE timestamptz USING expires_at AT TIME ZONE 'UTC'"
+        ),
+        ("api_keys", "last_used_at"): (
+            "ALTER TABLE api_keys ALTER COLUMN last_used_at TYPE timestamptz USING last_used_at AT TIME ZONE 'UTC'"
+        ),
+        ("api_keys", "expires_at"): (
+            "ALTER TABLE api_keys ALTER COLUMN expires_at TYPE timestamptz USING expires_at AT TIME ZONE 'UTC'"
+        ),
+        ("api_keys", "deleted_at"): (
+            "ALTER TABLE api_keys ALTER COLUMN deleted_at TYPE timestamptz USING deleted_at AT TIME ZONE 'UTC'"
+        ),
+    }
+
+    existing_tables = set(inspector.get_table_names())
+    for (table_name, column_name), alter_sql in alter_statements.items():
+        if table_name not in existing_tables:
+            continue
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT data_type FROM information_schema.columns WHERE table_name = :table AND column_name = :col"
+                ),
+                {"table": table_name, "col": column_name},
+            ).first()
+        if row is None:
+            continue
+        # PostgreSQL: 'timestamp with time zone' / 'timestamp without time zone'
+        if row[0] == "timestamp with time zone":
+            continue
+        logger.info("迁移：%s.%s → timestamptz（当前类型 %s）", table_name, column_name, row[0])
         with engine.begin() as conn:
             conn.execute(text(alter_sql))
 
@@ -646,6 +709,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_project_finance_settlement_columns(engine)
         migrate_record_date_to_timestamptz(engine)
         migrate_project_date_columns_to_date(engine)
-    except Exception:  # noqa: BLE001
+        migrate_user_datetime_columns_to_timestamptz(engine)
+    except Exception:
         logger.exception("启动迁移失败")
         raise

@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
@@ -18,6 +17,7 @@ from schemas.lead import (
     PaginatedLeadListResponse,
 )
 from services.leads import LeadService
+from utils.common import RateLimits, limiter
 
 router = APIRouter()
 
