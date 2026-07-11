@@ -75,7 +75,7 @@ get_backend_health() {
 
 # 等待指定秒数，同时检查状态
 elapsed=0
-while [ $elapsed -lt $HEALTH_TIMEOUT ]; do
+while [ "$elapsed" -lt "$HEALTH_TIMEOUT" ]; do
     health_status=$(get_backend_health)
     case "$health_status" in
         healthy)
