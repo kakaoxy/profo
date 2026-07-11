@@ -5,11 +5,13 @@
 
 import logging
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import Community, PropertyCurrent
 from schemas import CommunitySearchResponse, PropertyDetailResponse
 from services.system.exceptions import ResourceNotFoundError
+from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +72,12 @@ class PropertyService:
             list[CommunitySearchResponse]: 匹配的小区列表
 
         """
-        results = db.query(Community).filter(Community.name.contains(q)).limit(20).all()
+        results = (
+            db.query(Community)
+            .filter(func.lower(Community.name).like(f"%{escape_like(q).lower()}%", escape="\\"))
+            .limit(20)
+            .all()
+        )
         return [
             CommunitySearchResponse(
                 id=c.id,

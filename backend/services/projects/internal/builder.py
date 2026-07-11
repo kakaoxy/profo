@@ -96,9 +96,7 @@ class ProjectResponseBuilder:
             "commission_start_date": project.commission_start_date,
             "commission_end_date": project.commission_end_date,
             "finance_settlement_status": (
-                project.finance_settlement_status.value
-                if project.finance_settlement_status
-                else "unsettled"
+                project.finance_settlement_status.value if project.finance_settlement_status else "unsettled"
             ),
             "finance_settled_date": project.finance_settled_date,
             "finance_settled_note": project.finance_settled_note,

@@ -28,7 +28,7 @@ class ProjectStatusLog(BaseModel):
     )
     trigger_event: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="触发事件")
     operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="操作人ID")
-    operate_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="变更时间")
+    operate_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="变更时间")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="变更说明")
 
     __table_args__ = (

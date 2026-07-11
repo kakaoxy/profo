@@ -222,7 +222,10 @@ class _RecordMixin:
         return self.get_summary(project_id)
 
     def create_cashflow_record(
-        self, project_id: str, record_data: CashFlowRecordCreate, operator_id: str,
+        self,
+        project_id: str,
+        record_data: CashFlowRecordCreate,
+        operator_id: str,
     ) -> FinanceRecord:
         """创建现金流记录（路由兼容别名）."""
         return self.create_record(project_id, record_data, operator_id)

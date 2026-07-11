@@ -25,7 +25,7 @@ class ProjectFollowUp(BaseModel):
         comment="跟进方式",
     )
     content: Mapped[str | None] = mapped_column(Text, nullable=True, comment="跟进详情")
-    follow_up_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="跟进时间")
+    follow_up_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="跟进时间")
     follower_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="跟进人ID")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
@@ -48,7 +48,7 @@ class ProjectEvaluation(BaseModel):
     evaluation_price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="评估价格(万)")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="评估备注")
     evaluator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="评估人ID")
-    evaluation_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="评估时间")
+    evaluation_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="评估时间")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 

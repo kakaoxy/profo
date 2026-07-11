@@ -115,9 +115,7 @@ def export_ledger(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": (
-                f"attachment; filename*=UTF-8''{filename_encoded}"
-            ),
+            "Content-Disposition": (f"attachment; filename*=UTF-8''{filename_encoded}"),
         },
     )
 
@@ -188,9 +186,7 @@ def export_project_ledger(
         iter([content]),
         media_type="application/zip",
         headers={
-            "Content-Disposition": (
-                f"attachment; filename*=UTF-8''{filename_encoded}"
-            ),
+            "Content-Disposition": (f"attachment; filename*=UTF-8''{filename_encoded}"),
         },
     )
 

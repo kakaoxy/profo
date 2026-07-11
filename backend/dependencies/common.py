@@ -18,7 +18,8 @@ class PaginationParams(BaseModel):
 def pagination(
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[
-        int, Query(ge=1, le=settings.max_page_size, description="每页数量"),
+        int,
+        Query(ge=1, le=settings.max_page_size, description="每页数量"),
     ] = settings.default_page_size,
 ) -> PaginationParams:
     """解析分页参数.

@@ -21,9 +21,13 @@ class FailedRecord(Base):
     payload: Mapped[str] = mapped_column(Text, nullable=False, comment="原始数据(JSON)")
     failure_type: Mapped[str] = mapped_column(String(50), nullable=False, comment="失败类型")
     failure_reason: Mapped[str] = mapped_column(Text, nullable=False, comment="失败原因")
-    occurred_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="发生时间")
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="发生时间",
+    )
     is_handled: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否已处理")
-    handled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="处理时间")
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="处理时间")
     handler_notes: Mapped[str | None] = mapped_column(Text, nullable=True, comment="处理备注")
 
     __table_args__ = (Index("idx_unhandled", "data_source", "is_handled", "occurred_at"),)

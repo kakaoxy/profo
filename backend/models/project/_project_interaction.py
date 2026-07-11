@@ -24,7 +24,7 @@ class ProjectInteraction(BaseModel):
     )
     interaction_target: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="互动对象")
     content: Mapped[str | None] = mapped_column(Text, nullable=True, comment="互动详情")
-    interaction_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, comment="互动时间")
+    interaction_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="互动时间")
     operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="操作人ID")
 
     price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="出价金额(万)")

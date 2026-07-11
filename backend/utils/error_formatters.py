@@ -104,8 +104,114 @@ def format_request_validation_error(error: RequestValidationError) -> str:  # no
     return "; ".join(error_messages) if error_messages else "请求参数验证失败"
 
 
+def _get_pgcode(exc: SQLAlchemyError) -> str | None:
+    """从 SQLAlchemy 异常中提取 PostgreSQL sqlstate 代码.
+
+    优先读取 ``exc.orig.pgcode``（psycopg2/psycopg3 提供），
+    不可用时返回 None（如 SQLite 环境）。
+
+    Args:
+        exc: SQLAlchemy 异常
+
+    Returns:
+        str | None: PG sqlstate 代码，或 None
+
+    """
+    orig = getattr(exc, "orig", None)
+    if orig is None:
+        return None
+    return getattr(orig, "pgcode", None)
+
+
+def _get_pg_column_name(exc: SQLAlchemyError) -> str | None:
+    """从 PostgreSQL not_null_violation 异常中提取列名.
+
+    psycopg2/psycopg3 在 ``orig.diag.column_name`` 中提供列名，
+    不可用时返回 None。
+
+    Args:
+        exc: SQLAlchemy 异常
+
+    Returns:
+        str | None: 列名，或 None
+
+    """
+    orig = getattr(exc, "orig", None)
+    if orig is None:
+        return None
+    diag = getattr(orig, "diag", None)
+    if diag is None:
+        return None
+    column = getattr(diag, "column_name", None)
+    return str(column) if column else None
+
+
+def _is_unique_violation(exc: SQLAlchemyError) -> bool:
+    """判断是否为唯一约束冲突（兼容 PostgreSQL 与 SQLite）.
+
+    PostgreSQL 下通过 sqlstate ``23505`` 判断；
+    回退到 SQLite 文本 ``UNIQUE constraint failed`` 匹配（测试环境兼容）。
+
+    Args:
+        exc: SQLAlchemy 异常
+
+    Returns:
+        bool: 是否为唯一约束冲突
+
+    """
+    if _get_pgcode(exc) == "23505":
+        return True
+    return "UNIQUE constraint failed" in str(exc)
+
+
+def _format_unique_violation_message(error_str: str) -> str:  # noqa: C901, PLR0911, PLR0912
+    """根据约束/表名生成唯一约束冲突的中文信息.
+
+    PG 与 SQLite 共用：约束名在两种数据库的错误消息中均会出现。
+
+    Args:
+        error_str: 异常的字符串表示
+
+    Returns:
+        str: 格式化的中文错误信息
+
+    """
+    if "uq_source_property" in error_str:
+        return "房源已存在（数据源和房源ID重复）"
+    if "communities.name" in error_str:
+        return "小区名称已存在"
+    if "uq_alias_source" in error_str:
+        return "小区别名已存在"
+    if "uq_community_competitor" in error_str:
+        return "竞品关联已存在"
+    if "uq_property_media_url" in error_str:
+        return "媒体资源已存在"
+    if "project_contracts.contract_no" in error_str:
+        return "合同编号已存在"
+    if "project_contracts.project_id" in error_str:
+        return "该项目已存在合同记录"
+    if "project_sales.project_id" in error_str:
+        return "该项目已存在销售记录"
+    if "project_renovations.project_id" in error_str:
+        return "该项目已存在装修记录"
+    if "roles.name" in error_str:
+        return "角色名称已存在"
+    if "roles.code" in error_str:
+        return "角色代码已存在"
+    if "users.username" in error_str:
+        return "用户名已存在"
+    if "users.phone" in error_str:
+        return "手机号已存在"
+    if "users.wechat_openid" in error_str or "users.wechat_unionid" in error_str:
+        return "微信账号已绑定"
+    return "数据重复，违反唯一性约束"
+
+
 def format_database_error(error: SQLAlchemyError) -> str:  # noqa: C901, PLR0911, PLR0912
     """格式化数据库错误为中文友好信息.
+
+    优先使用 PostgreSQL sqlstate（``pgcode``）判断错误类型，
+    回退到 SQLite 文本匹配以保持测试环境兼容。
 
     Args:
         error: SQLAlchemy 错误
@@ -115,39 +221,22 @@ def format_database_error(error: SQLAlchemyError) -> str:  # noqa: C901, PLR0911
 
     """
     error_str = str(error)
+    pgcode = _get_pgcode(error)
 
     if isinstance(error, IntegrityError):
+        # PostgreSQL sqlstate 优先
+        if pgcode == "23505":
+            return _format_unique_violation_message(error_str)
+        if pgcode == "23503":
+            return "关联数据不存在，请检查小区ID等外键字段"
+        if pgcode == "23502":
+            column = _get_pg_column_name(error)
+            if column:
+                return f"必填字段 {column} 不能为空"
+            return "必填字段不能为空"
+        # SQLite 文本回退（测试环境兼容）
         if "UNIQUE constraint failed" in error_str:
-            # 提取约束名称
-            if "uq_source_property" in error_str:
-                return "房源已存在（数据源和房源ID重复）"
-            if "communities.name" in error_str:
-                return "小区名称已存在"
-            if "uq_alias_source" in error_str:
-                return "小区别名已存在"
-            if "uq_community_competitor" in error_str:
-                return "竞品关联已存在"
-            if "uq_property_media_url" in error_str:
-                return "媒体资源已存在"
-            if "project_contracts.contract_no" in error_str:
-                return "合同编号已存在"
-            if "project_contracts.project_id" in error_str:
-                return "该项目已存在合同记录"
-            if "project_sales.project_id" in error_str:
-                return "该项目已存在销售记录"
-            if "project_renovations.project_id" in error_str:
-                return "该项目已存在装修记录"
-            if "roles.name" in error_str:
-                return "角色名称已存在"
-            if "roles.code" in error_str:
-                return "角色代码已存在"
-            if "users.username" in error_str:
-                return "用户名已存在"
-            if "users.phone" in error_str:
-                return "手机号已存在"
-            if "users.wechat_openid" in error_str or "users.wechat_unionid" in error_str:
-                return "微信账号已绑定"
-            return "数据重复，违反唯一性约束"
+            return _format_unique_violation_message(error_str)
         if "FOREIGN KEY constraint failed" in error_str:
             return "关联数据不存在，请检查小区ID等外键字段"
         if "NOT NULL constraint failed" in error_str:
@@ -159,6 +248,12 @@ def format_database_error(error: SQLAlchemyError) -> str:  # noqa: C901, PLR0911
         return "数据完整性错误"
 
     if isinstance(error, OperationalError):
+        # PostgreSQL sqlstate 优先
+        if pgcode == "42P01":
+            return "数据库表不存在，请先初始化数据库"
+        if pgcode == "42703":
+            return "数据库字段不存在，请检查数据库结构"
+        # SQLite 文本回退（测试环境兼容）
         if "database is locked" in error_str:
             return "数据库被锁定，请稍后重试"
         if "no such table" in error_str:

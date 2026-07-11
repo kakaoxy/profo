@@ -61,6 +61,8 @@ DELETION_ORDER: list[str] = [
 
 INSERTION_ORDER: list[str] = list(reversed(DELETION_ORDER))
 
+BATCH_SIZE = 500
+
 
 def _get_urls() -> tuple[str, str]:
     """从环境变量读取源/目标数据库 URL.
@@ -138,8 +140,7 @@ def _migrate(src_engine: Engine, dst_engine: Engine) -> int:
     for name in DELETION_ORDER:
         if name not in tables_meta:
             raise RuntimeError(
-                f"Table {name!r} not found in Base.metadata.tables. "
-                "Check model definitions.",
+                f"Table {name!r} not found in Base.metadata.tables. Check model definitions.",
             )
 
     total: int = 0
@@ -153,7 +154,8 @@ def _migrate(src_engine: Engine, dst_engine: Engine) -> int:
                 table_obj = tables_meta[name]
                 rows = _read_rows(src_engine, table_obj)
                 if rows:
-                    conn.execute(table_obj.insert(), rows)
+                    for i in range(0, len(rows), BATCH_SIZE):
+                        conn.execute(table_obj.insert(), rows[i : i + BATCH_SIZE])
                 print(f"{name}: migrated {len(rows)} rows")
                 total += len(rows)
     except Exception as e:

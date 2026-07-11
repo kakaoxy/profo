@@ -18,6 +18,7 @@ from schemas.investment import (
     InvestmentUpdate,
 )
 from services.system.exceptions import ConflictError
+from utils.formatters import escape_like
 
 from .base import _HUNDRED, _quantize
 
@@ -59,13 +60,12 @@ class _RecordMixin:
         )
 
         if search:
-            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            like = f"%{escaped}%"
+            like = f"%{escape_like(search).lower()}%"
             query = query.filter(
                 or_(
-                    Investment.project_code.ilike(like, escape="\\"),
-                    Investment.project_name.ilike(like, escape="\\"),
-                    Project.address.ilike(like, escape="\\"),
+                    func.lower(Investment.project_code).like(like, escape="\\"),
+                    func.lower(Investment.project_name).like(like, escape="\\"),
+                    func.lower(Project.address).like(like, escape="\\"),
                 ),
             )
         if project_status is not None:

@@ -6,7 +6,7 @@
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func
+from sqlalchemy import Float, func
 from sqlalchemy.orm import Session
 
 from models import Community, CommunityCompetitor, PropertyCurrent, PropertyStatus
@@ -237,7 +237,9 @@ class MonitorService:
             db.query(
                 PropertyCurrent.community_id,
                 func.count().label("count"),
-                func.avg(PropertyCurrent.listed_price_wan / PropertyCurrent.build_area * 10000).label("avg_price"),
+                func.avg(func.cast(PropertyCurrent.listed_price_wan, Float) / PropertyCurrent.build_area * 10000).label(
+                    "avg_price",
+                ),
             )
             .filter(
                 PropertyCurrent.community_id.in_(competitor_ids),
@@ -356,7 +358,7 @@ class MonitorService:
 
         # 2. 查询最近30天成交均价（同时用于显示和趋势计算）
         avg_price_query = db.query(
-            func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000),
+            func.avg(func.cast(PropertyCurrent.sold_price_wan, Float) / PropertyCurrent.build_area * 10000),
         ).filter(
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.SOLD,
@@ -385,7 +387,7 @@ class MonitorService:
         # 前30天成交均价 (30-60天前)
         previous_avg_result = (
             db.query(
-                func.avg(PropertyCurrent.sold_price_wan / PropertyCurrent.build_area * 10000),
+                func.avg(func.cast(PropertyCurrent.sold_price_wan, Float) / PropertyCurrent.build_area * 10000),
             )
             .filter(
                 PropertyCurrent.community_id == community_id,

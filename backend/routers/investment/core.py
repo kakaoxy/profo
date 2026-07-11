@@ -115,9 +115,7 @@ def export_investments(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": (
-                f"attachment; filename*=UTF-8''{filename_encoded}"
-            ),
+            "Content-Disposition": (f"attachment; filename*=UTF-8''{filename_encoded}"),
         },
     )
 

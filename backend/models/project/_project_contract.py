@@ -27,15 +27,25 @@ class ProjectContract(BaseModel):
 
     contract_no: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="合同编号")
     signing_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="签约价格(万)")
-    signing_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="签约日期")
+    signing_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="签约日期")
     signing_period: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="合同周期(天)")
     extension_period: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="顺延期(天)")
     extension_rent: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="顺延期租金(元/月)")
     cost_assumption_type: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, comment="税费及佣金承担方类型: meifangbao/owner/respective/other",
+        String(20),
+        nullable=True,
+        comment="税费及佣金承担方类型: meifangbao/owner/respective/other",
     )
-    cost_assumption_other: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="税费及佣金承担方其他说明")
-    planned_handover_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="业主交房时间")
+    cost_assumption_other: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        comment="税费及佣金承担方其他说明",
+    )
+    planned_handover_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="业主交房时间",
+    )
     other_agreements: Mapped[str | None] = mapped_column(Text, nullable=True, comment="其他约定条款")
     signing_materials: Mapped[list | None] = mapped_column(JSON, nullable=True, comment="合同附件URLs")
 

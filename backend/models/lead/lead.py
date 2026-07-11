@@ -44,10 +44,15 @@ class Lead(Base):
     eval_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), comment="评估价格(万)")
 
     # Status & Workflow
-    status: Mapped[LeadStatus] = mapped_column(SQLEnum(LeadStatus), default=LeadStatus.PENDING_ASSESSMENT, nullable=False, comment="状态")
+    status: Mapped[LeadStatus] = mapped_column(
+        SQLEnum(LeadStatus),
+        default=LeadStatus.PENDING_ASSESSMENT,
+        nullable=False,
+        comment="状态",
+    )
     audit_reason: Mapped[str | None] = mapped_column(Text, comment="审核/驳回理由")
     auditor_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="审核人ID")
-    audit_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="审核时间")
+    audit_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="审核时间")
 
     # Metadata
     images: Mapped[list | None] = mapped_column(JSON, default=list, comment="图片列表")
@@ -63,10 +68,18 @@ class Lead(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
 
     # Timestamps
-    last_follow_up_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最后跟进时间")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
+    last_follow_up_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="最后跟进时间",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="创建时间",
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         comment="更新时间",
@@ -75,8 +88,16 @@ class Lead(Base):
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id], primaryjoin="foreign(Lead.creator_id) == User.id")
     auditor = relationship("User", foreign_keys=[auditor_id], primaryjoin="foreign(Lead.auditor_id) == User.id")
-    follow_ups = relationship("LeadFollowUp", back_populates="lead", primaryjoin="Lead.id == foreign(LeadFollowUp.lead_id)")
-    price_history = relationship("LeadPriceHistory", back_populates="lead", primaryjoin="Lead.id == foreign(LeadPriceHistory.lead_id)")
+    follow_ups = relationship(
+        "LeadFollowUp",
+        back_populates="lead",
+        primaryjoin="Lead.id == foreign(LeadFollowUp.lead_id)",
+    )
+    price_history = relationship(
+        "LeadPriceHistory",
+        back_populates="lead",
+        primaryjoin="Lead.id == foreign(LeadPriceHistory.lead_id)",
+    )
 
     @property
     def creator_name(self) -> str | None:
@@ -101,17 +122,28 @@ class LeadFollowUp(Base):
 
     method: Mapped[FollowUpMethod] = mapped_column(SQLEnum(FollowUpMethod), nullable=False, comment="跟进方式")
     content: Mapped[str] = mapped_column(Text, nullable=False, comment="跟进内容")
-    followed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="跟进时间")
+    followed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="跟进时间",
+    )
 
     created_by_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="跟进人ID")
 
     # Relationships
-    lead = relationship("Lead", back_populates="follow_ups", foreign_keys=[lead_id], primaryjoin="foreign(LeadFollowUp.lead_id) == Lead.id")
-    created_by = relationship("User", foreign_keys=[created_by_id], primaryjoin="foreign(LeadFollowUp.created_by_id) == User.id")
-
-    __table_args__ = (
-        Index("idx_lead_followup_lead", "lead_id"),
+    lead = relationship(
+        "Lead",
+        back_populates="follow_ups",
+        foreign_keys=[lead_id],
+        primaryjoin="foreign(LeadFollowUp.lead_id) == Lead.id",
     )
+    created_by = relationship(
+        "User",
+        foreign_keys=[created_by_id],
+        primaryjoin="foreign(LeadFollowUp.created_by_id) == User.id",
+    )
+
+    __table_args__ = (Index("idx_lead_followup_lead", "lead_id"),)
 
     @property
     def created_by_name(self) -> str | None:
@@ -129,17 +161,28 @@ class LeadPriceHistory(Base):
 
     price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="授权价格(万)")
     remark: Mapped[str | None] = mapped_column(Text, comment="调整备注/原因")
-    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), comment="记录时间")
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="记录时间",
+    )
 
     created_by_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="记录人ID")
 
     # Relationships
-    lead = relationship("Lead", back_populates="price_history", foreign_keys=[lead_id], primaryjoin="foreign(LeadPriceHistory.lead_id) == Lead.id")
-    created_by = relationship("User", foreign_keys=[created_by_id], primaryjoin="foreign(LeadPriceHistory.created_by_id) == User.id")
-
-    __table_args__ = (
-        Index("idx_lead_price_history_lead", "lead_id"),
+    lead = relationship(
+        "Lead",
+        back_populates="price_history",
+        foreign_keys=[lead_id],
+        primaryjoin="foreign(LeadPriceHistory.lead_id) == Lead.id",
     )
+    created_by = relationship(
+        "User",
+        foreign_keys=[created_by_id],
+        primaryjoin="foreign(LeadPriceHistory.created_by_id) == User.id",
+    )
+
+    __table_args__ = (Index("idx_lead_price_history_lead", "lead_id"),)
 
     @property
     def created_by_name(self) -> str | None:

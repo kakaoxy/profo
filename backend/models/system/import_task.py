@@ -21,7 +21,12 @@ class PropertyImportTask(Base):
 
     __tablename__ = "property_import_tasks"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment="任务ID (UUID)")
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        comment="任务ID (UUID)",
+    )
     # 注意：User.id 为 String(36) UUID，此处保持一致
     user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True, comment="创建用户ID(UUID字符串)")
 
@@ -50,9 +55,14 @@ class PropertyImportTask(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True, comment="错误信息(失败时)")
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False, comment="创建时间")
-    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="开始处理时间")
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="完成时间")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.now,
+        nullable=False,
+        comment="创建时间",
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="开始处理时间")
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="完成时间")
 
     processing_duration: Mapped[float | None] = mapped_column(Float, nullable=True, comment="处理时长(秒)")
 

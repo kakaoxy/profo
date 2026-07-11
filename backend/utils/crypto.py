@@ -15,8 +15,7 @@ from cryptography.fernet import Fernet
 from settings import settings
 
 _KEY_NOT_CONFIGURED_MSG = (
-    "ENCRYPTION_KEY 未配置：请在环境变量或 .env 中设置 ENCRYPTION_KEY"
-    "（可通过 Fernet.generate_key() 生成）"
+    "ENCRYPTION_KEY 未配置：请在环境变量或 .env 中设置 ENCRYPTION_KEY（可通过 Fernet.generate_key() 生成）"
 )
 
 _fernet_instance: Fernet | None = None
