@@ -31,9 +31,18 @@ class EncryptedString(TypeDecorator):
         self.plaintext_length = length
 
     def process_bind_param(self, value: str | None, dialect: object) -> str | None:  # noqa: ARG002
-        """写入数据库时加密."""
+        """写入数据库时加密.
+
+        若 ``self.plaintext_length`` 不为 None，加密前校验明文长度，
+        超长时抛 ``ValueError`` 阻止写入。
+        """
         if value is None:
             return None
+        if self.plaintext_length is not None and len(value) > self.plaintext_length:
+            msg = (
+                f"明文长度 {len(value)} 超过限制 {self.plaintext_length}"
+            )
+            raise ValueError(msg)
         from utils.crypto import encrypt
 
         return encrypt(value)
