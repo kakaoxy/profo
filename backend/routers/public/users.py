@@ -5,7 +5,6 @@
 
 from fastapi import APIRouter, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from schemas.public import (
     PublicPhoneCreate,
@@ -15,6 +14,7 @@ from schemas.public import (
     PublicUserProfileResponse,
 )
 from services.system.user import user_service
+from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public/users", tags=["public-users"])
@@ -79,7 +79,7 @@ def update_phone(
 ) -> PublicPhoneResponse:
     """C端用户修改手机号，需密码确认身份."""
     updated_user = user_service.update_phone_with_verification(
-        db, current_user, body.phone, body.password
+        db, current_user, body.phone, body.password,
     )
 
     return PublicPhoneResponse(phone=mask_phone(updated_user.phone))

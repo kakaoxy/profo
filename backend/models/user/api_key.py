@@ -32,13 +32,21 @@ class ApiKey(BaseModel):
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False, comment="Key状态")
 
     # 时间戳
-    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最后使用时间")
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="过期时间")
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="删除时间(软删除)")
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="最后使用时间"
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="过期时间")
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="删除时间(软删除)"
+    )
 
     # 关联关系
     user = relationship(
-        "User", primaryjoin="ApiKey.user_id == User.id", foreign_keys="[ApiKey.user_id]", uselist=False, viewonly=True,
+        "User",
+        primaryjoin="ApiKey.user_id == User.id",
+        foreign_keys="[ApiKey.user_id]",
+        uselist=False,
+        viewonly=True,
     )
 
     # 索引

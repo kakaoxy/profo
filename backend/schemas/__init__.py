@@ -54,10 +54,10 @@ from .l4_marketing import (
     L4MarketingProjectQuery,
     L4MarketingProjectResponse,
     L4MarketingProjectUpdate,
+    L4MediaType,
     L4RefreshResponse,
     L4SyncResponse,
     MarketingProjectStatus,
-    L4MediaType,
     PhotoCategory,
     PublishStatus,
 )
@@ -99,6 +99,7 @@ from .project import (
     ProjectReportResponse,
     ProjectResponse,
     ProjectStatsResponse,
+    ProjectStatusUpdate,
     ProjectUpdate,
     RenovationPhotoResponse,
     RenovationPhotoUpload,
@@ -106,7 +107,6 @@ from .project import (
     SalesRecordCreate,
     SalesRecordResponse,
     SalesRolesUpdate,
-    ProjectStatusUpdate,
 )
 
 # 3. Property (房源)

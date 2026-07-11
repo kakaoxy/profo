@@ -3,7 +3,8 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, Index, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel, RecordType

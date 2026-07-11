@@ -177,7 +177,7 @@ class LeadQueryService:
         rows = self.db.execute(
             select(Lead.status, func.count())
             .where(Lead.is_deleted.is_(False), Lead.status.is_not(None))
-            .group_by(Lead.status)
+            .group_by(Lead.status),
         ).all()
 
         counts = {status.value: 0 for status in LeadStatus}

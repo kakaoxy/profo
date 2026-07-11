@@ -9,11 +9,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
-from schemas.response import PaginatedResponse
 from schemas.project import (
     ProjectCompleteRequest,
     ProjectCreate,
@@ -21,10 +19,12 @@ from schemas.project import (
     ProjectReportResponse,
     ProjectResponse,
     ProjectStatsResponse,
-    ProjectUpdate,
     ProjectStatusUpdate,
+    ProjectUpdate,
 )
+from schemas.response import PaginatedResponse
 from services.system.exceptions import ResourceNotFoundError
+from utils.common import RateLimits, limiter
 from utils.csv_exporter import generate_csv_response
 
 from .documents import router as documents_router

@@ -4,6 +4,7 @@
 """
 
 # 导入关系定义
+from . import project as _project_relationships  # noqa: F401
 from ._project_base import Project
 from ._project_contract import ProjectContract
 from ._project_document import ProjectDocument
@@ -14,8 +15,6 @@ from ._project_owner import ProjectOwner
 from ._project_renovation import ProjectRenovation, RenovationPhoto
 from ._project_sale import ProjectSale
 from ._project_status_log import ProjectStatusLog
-
-from . import project as _project_relationships  # noqa: F401
 
 __all__ = [
     "FinanceRecord",

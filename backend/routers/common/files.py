@@ -8,15 +8,15 @@ from pathlib import Path
 from typing import Annotated
 
 import filetype
-from fastapi import APIRouter, Depends, File, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from utils.common import RateLimits, limiter
 from db import get_db
 from dependencies.auth import CurrentOperatorUserDep
 from services.system.exceptions import FileProcessingError, ValidationError
 from settings import settings
+from utils.common import RateLimits, limiter
 from utils.file_security import get_safe_file_path, sanitize_filename
 from utils.image_processing import generate_thumbnail
 
@@ -53,6 +53,7 @@ def save_upload_file(
 
     Returns:
         FileUploadResponse: 包含 url 与 filename 的响应
+
     """
     try:
         safe_name = sanitize_filename(file.filename)

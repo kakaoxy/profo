@@ -27,6 +27,7 @@ def generate_thumbnail(
         800px 宽度适用于轮播图展示（1200px 容器，略放大但可接受），
         同时兼顾网格缩略图（64-200px，浏览器缩放）。
         WebP quality=80 时，800px 图片约 100-200KB，远小于 3MB+ 原图。
+
     """
     try:
         target_path.parent.mkdir(parents=True, exist_ok=True)

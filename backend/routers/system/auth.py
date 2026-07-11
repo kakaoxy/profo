@@ -10,9 +10,7 @@ from fastapi import APIRouter, Body, Depends, Query, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from slowapi.util import get_remote_address
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentActiveUserDep, CurrentInternalUserDep, DbSessionDep
 from schemas.user import (
     ApiKeyCreateResponse,
@@ -26,20 +24,24 @@ from schemas.user import (
     WechatLoginRequest,
 )
 from services.system import ApiKeyService, AuthService, WeChatAuthService
-from services.system.exceptions import AuthenticationError, BusinessLogicError, ResourceNotFoundError
+from services.system.exceptions import AuthenticationError, BusinessLogicError
 from settings import settings
+from utils.common import RateLimits, limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def get_rate_key(request: Request, username: str = "") -> str:
-    """获取速率限制的 key，基于 IP + 用户名."""
-    return f"{get_remote_address(request)}:{username}"
-
-
-@router.post("/token")
+@router.post(
+    "/token",
+    responses={
+        401: {"description": "用户名或密码错误"},
+        403: {"description": "账号被禁用或无权登录后台"},
+        422: {"description": "首次登录需修改密码"},
+        429: {"description": "请求过于频繁"},
+    },
+)
 @limiter.limit(RateLimits.AUTH_LOGIN)
 def login_for_access_token(
     request: Request,
@@ -56,7 +58,7 @@ def login_for_access_token(
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
-    if result.get("require_password_change"):
+    if result["require_password_change"]:
         raise BusinessLogicError(
             "首次登录必须修改密码",
             headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
@@ -65,7 +67,15 @@ def login_for_access_token(
     return result
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    responses={
+        401: {"description": "用户名或密码错误"},
+        403: {"description": "账号被禁用或无权登录后台"},
+        422: {"description": "首次登录需修改密码"},
+        429: {"description": "请求过于频繁"},
+    },
+)
 @limiter.limit(RateLimits.AUTH_LOGIN)
 def login(
     request: Request,
@@ -82,7 +92,7 @@ def login(
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
-    if result.get("require_password_change"):
+    if result["require_password_change"]:
         raise BusinessLogicError(
             "首次登录必须修改密码",
             headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
@@ -91,7 +101,13 @@ def login(
     return result
 
 
-@router.post("/refresh")
+@router.post(
+    "/refresh",
+    responses={
+        401: {"description": "刷新令牌无效或已失效"},
+        429: {"description": "请求过于频繁"},
+    },
+)
 @limiter.limit(RateLimits.AUTH_REFRESH)
 def refresh_access_token(
     request: Request,
@@ -105,7 +121,9 @@ def refresh_access_token(
     仅接受后台受众(aud=admin)的刷新令牌，拒绝C端Token.
     """
     return AuthService.refresh_user_token(
-        db, refresh_data.refresh_token, expected_audience="admin"
+        db,
+        refresh_data.refresh_token,
+        expected_audience="admin",
     )
 
 
@@ -159,7 +177,13 @@ async def wechat_callback(
     return RedirectResponse(url=frontend_url, status_code=status.HTTP_302_FOUND)
 
 
-@router.post("/exchange-token")
+@router.post(
+    "/exchange-token",
+    responses={
+        401: {"description": "授权码无效或已过期"},
+        429: {"description": "请求过于频繁"},
+    },
+)
 @limiter.limit(RateLimits.AUTH_REFRESH)
 def exchange_token(
     request: Request,
@@ -170,10 +194,7 @@ def exchange_token(
 
     速率限制：10次/分钟.
     """
-    try:
-        entry = WeChatAuthService.exchange_temp_code(exchange_data.code)
-    except AuthenticationError:
-        raise
+    entry = WeChatAuthService.exchange_temp_code(exchange_data.code)
     return TokenResponse(
         access_token=entry["access_token"],
         refresh_token=entry["refresh_token"],
@@ -182,7 +203,13 @@ def exchange_token(
     )
 
 
-@router.post("/wechat/login")
+@router.post(
+    "/wechat/login",
+    responses={
+        401: {"description": "微信登录失败或用户标识无效"},
+        429: {"description": "请求过于频繁"},
+    },
+)
 @limiter.limit(RateLimits.AUTH_LOGIN)
 async def wechat_app_login(
     request: Request,
@@ -214,15 +241,27 @@ async def wechat_app_login(
     return await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
 
 
-@router.get("/me")
-async def get_current_user_info(
+@router.get(
+    "/me",
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "账号已禁用"},
+    },
+)
+def get_current_user_info(
     current_user: CurrentActiveUserDep,
 ) -> UserResponse:
     """获取当前用户信息."""
     return current_user
 
 
-@router.post("/api-key")
+@router.post(
+    "/api-key",
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "无权限（仅限内部角色）"},
+    },
+)
 def create_api_key(
     current_user: CurrentInternalUserDep,
     db: DbSessionDep,
@@ -242,7 +281,14 @@ def create_api_key(
     )
 
 
-@router.get("/api-key", response_model=ApiKeyInfoResponse | None)
+@router.get(
+    "/api-key",
+    response_model=ApiKeyInfoResponse | None,
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "无权限（仅限内部角色）"},
+    },
+)
 def get_api_key_info(
     current_user: CurrentInternalUserDep,
     db: DbSessionDep,
@@ -266,7 +312,15 @@ def get_api_key_info(
     )
 
 
-@router.delete("/api-key", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/api-key",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "无权限（仅限内部角色）"},
+        429: {"description": "请求过于频繁"},
+    },
+)
 @limiter.limit(RateLimits.AUTH_API_KEY_DELETE)
 def delete_api_key(
     request: Request,

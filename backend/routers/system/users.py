@@ -5,9 +5,8 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, Query, Request
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import (
     CurrentActiveUserDep,
     CurrentAdminUserDep,
@@ -27,6 +26,7 @@ from schemas.user import (
 from services.system import user_service
 from services.system.exceptions import ResourceNotFoundError, ServiceException
 from services.system.init_service import init_service
+from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/users", tags=["users"])
 

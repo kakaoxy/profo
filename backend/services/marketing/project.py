@@ -8,12 +8,12 @@ from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from models import L4MarketingMedia, L4MarketingProject
+from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.l4_marketing import (
     L4MarketingProjectCreate,
     L4MarketingProjectSummary,
     L4MarketingProjectUpdate,
 )
-from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 
 
 class MarketingProjectService:

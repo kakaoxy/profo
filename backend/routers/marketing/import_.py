@@ -5,7 +5,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query
 
 from dependencies.auth import DbSessionDep, require_roles
 from dependencies.common import PaginationDep

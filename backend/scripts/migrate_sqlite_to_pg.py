@@ -37,10 +37,9 @@ from sqlalchemy.types import JSON, TypeDecorator
 # 使脚本可作为脚本直接运行: 将 backend 目录加入 sys.path 以便 `from models import Base`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from models import Base  # noqa: E402
-from models.common.encrypted import EncryptedString  # noqa: E402
-from utils.crypto import decrypt  # noqa: E402
-
+from models import Base
+from models.common.encrypted import EncryptedString
+from utils.crypto import decrypt
 
 # 子表优先(删除顺序); 插入时反序(父表优先).
 # 注意: 模型实际表名为 "project_follow_ups"(中间有下划线),
@@ -71,6 +70,7 @@ def _get_urls() -> tuple[str, str]:
 
     Raises:
         RuntimeError: 若 DATABASE_URL 未设置.
+
     """
     src_url: str = os.environ.get("SQLITE_SOURCE_URL", "sqlite:///./data.db")
     dst_url: str | None = os.environ.get("DATABASE_URL")
@@ -78,7 +78,7 @@ def _get_urls() -> tuple[str, str]:
         raise RuntimeError(
             "DATABASE_URL environment variable is not set. "
             "Set it to the target PostgreSQL URL, e.g. "
-            "postgresql+psycopg://user:pass@host:5432/dbname"
+            "postgresql+psycopg://user:pass@host:5432/dbname",
         )
     return src_url, dst_url
 
@@ -139,7 +139,7 @@ def _migrate(src_engine: Engine, dst_engine: Engine) -> int:
         if name not in tables_meta:
             raise RuntimeError(
                 f"Table {name!r} not found in Base.metadata.tables. "
-                "Check model definitions."
+                "Check model definitions.",
             )
 
     total: int = 0

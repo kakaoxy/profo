@@ -25,6 +25,14 @@ from .common import (
     SettlementStatus,
 )
 
+# 投资管理（跟投管理）模块
+from .investment import (
+    Investment,
+    InvestmentLog,
+    Investor,
+    ReturnAdjustment,
+)
+
 # 线索管理模块
 from .lead import Lead, LeadFollowUp, LeadPriceHistory
 
@@ -69,14 +77,6 @@ from .system import FailedRecord, PropertyImportTask
 
 # 用户权限模块
 from .user import ApiKey, RefreshToken, Role, User
-
-# 投资管理（跟投管理）模块
-from .investment import (
-    Investment,
-    InvestmentLog,
-    Investor,
-    ReturnAdjustment,
-)
 
 __all__ = [
     "ApiKey",

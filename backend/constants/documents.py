@@ -50,6 +50,7 @@ def get_documents_for_business_form(form: BusinessForm | None) -> list[DocumentT
 
     Returns:
         对应业务形式的文书清单副本；form=None 返回空列表.
+
     """
     if form is None:
         return []

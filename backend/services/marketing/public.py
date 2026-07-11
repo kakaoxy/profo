@@ -147,6 +147,7 @@ class PublicProjectService:
 
         Returns:
             (total_owners, on_sale_count, total_sold)
+
         """
         stats = self.db.query(
             func.count(

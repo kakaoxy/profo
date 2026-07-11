@@ -8,7 +8,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep, require_roles
 from models import User
 from schemas.public import (
@@ -21,6 +20,7 @@ from schemas.public import (
 )
 from services.system.auth import AuthService
 from services.system.exceptions import PermissionDeniedError
+from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public/auth", tags=["public-auth"])
@@ -44,6 +44,11 @@ def _build_user_info(user: User) -> PublicUserInfo:
     status_code=status.HTTP_201_CREATED,
     summary="C端用户注册",
     description="注册C端用户账号，自动分配customer角色",
+    responses={
+        409: {"description": "用户名或手机号已存在"},
+        422: {"description": "密码强度不足或字段校验失败"},
+        429: {"description": "请求过于频繁"},
+    },
 )
 @limiter.limit(RateLimits.PUBLIC_REGISTER)
 def register(
@@ -75,6 +80,11 @@ def register(
     "/token",
     summary="C端用户登录",
     description="C端用户使用用户名密码登录，返回JWT令牌",
+    responses={
+        401: {"description": "用户名或密码错误"},
+        403: {"description": "非C端用户或账号被禁用"},
+        429: {"description": "请求过于频繁"},
+    },
 )
 @limiter.limit(RateLimits.AUTH_LOGIN)
 def login_for_access_token(
@@ -103,6 +113,10 @@ def login_for_access_token(
     "/refresh",
     summary="C端刷新令牌",
     description="使用refresh_token获取新的access_token",
+    responses={
+        401: {"description": "刷新令牌无效或已失效"},
+        429: {"description": "请求过于频繁"},
+    },
 )
 @limiter.limit(RateLimits.AUTH_REFRESH)
 def refresh_access_token(
@@ -115,7 +129,9 @@ def refresh_access_token(
     仅接受C端受众(aud=c)的刷新令牌，拒绝后台Token.
     """
     token_data = AuthService.refresh_user_token(
-        db, refresh_data.refresh_token, expected_audience="c"
+        db,
+        refresh_data.refresh_token,
+        expected_audience="c",
     )
 
     return PublicLoginResponse(
@@ -130,6 +146,10 @@ def refresh_access_token(
     "/me",
     summary="C端获取当前用户信息",
     description="返回当前登录的C端用户信息（供前端Server Component鉴权使用）",
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "非C端用户或账号已禁用"},
+    },
 )
 @limiter.limit(RateLimits.PUBLIC_PROFILE_READ)
 def get_current_user_info(
@@ -143,12 +163,24 @@ def get_current_user_info(
 @router.post(
     "/logout",
     summary="C端退出登录",
-    description="C端用户退出登录（当前JWT无状态机制下，服务端不撤销token，客户端应删除本地存储的token）",
+    description="C端用户退出登录，服务端撤销当前 refresh_token（access_token 短期过期自然失效）",
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "非C端用户"},
+        429: {"description": "请求过于频繁"},
+    },
 )
 @limiter.limit(RateLimits.PUBLIC_LOGOUT)
 def logout(
     request: Request,  # noqa: ARG001
+    body: PublicRefreshTokenRequest,
     _current_user: Annotated[User, Depends(require_roles(["customer"]))],
+    db: DbSessionDep,
 ) -> PublicLogoutResponse:
-    """C端退出登录，客户端应清除本地存储的token."""
+    """C端退出登录，撤销当前 refresh_token.
+
+    access_token 为 JWT 无状态令牌，短期过期自然失效；
+    refresh_token 按 jti 撤销，防止退出后被重放刷新。
+    """
+    AuthService.revoke_refresh_token(db, body.refresh_token, expected_audience="c")
     return PublicLogoutResponse(message="退出登录成功")

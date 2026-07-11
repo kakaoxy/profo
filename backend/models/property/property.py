@@ -17,7 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import Base, ChangeType, PropertyStatus
 

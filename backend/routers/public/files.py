@@ -8,9 +8,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Request, UploadFile, status
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep
 from routers.common.files import FileUploadResponse, save_upload_file
+from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/public/files", tags=["public-files"])
 

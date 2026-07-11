@@ -16,6 +16,8 @@ from models import Base, Role, User
 from utils.auth import create_access_token, get_password_hash
 
 
+# 备注: 测试基础设施暂用 SQLite 内存数据库（生产代码已弃用 SQLite，见 settings.py / db.py）。
+# 未来可改用 PostgreSQL testcontainers 做集成测试。
 def _enable_sqlite_fk(dbapi_conn: Any, connection_record: Any) -> None:  # noqa: ANN401
     cursor = dbapi_conn.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
@@ -48,7 +50,7 @@ def _profo_test_env() -> None:
             return
 
 
-@pytest.fixture()
+@pytest.fixture
 def db_session() -> Generator[Session, None, None]:
     """提供隔离的数据库会话，每个测试用例使用独立内存数据库."""
     engine = create_engine(
@@ -71,7 +73,12 @@ def db_session() -> Generator[Session, None, None]:
 def _seed_roles_and_users(session: Session) -> dict[str, User]:
     """种子数据：创建角色和管理员/普通用户."""
     roles = [
-        Role(id="admin-role", name="管理员", code="admin", permissions=["view_data", "edit_data", "manage_users", "manage_roles"]),
+        Role(
+            id="admin-role",
+            name="管理员",
+            code="admin",
+            permissions=["view_data", "edit_data", "manage_users", "manage_roles"],
+        ),
         Role(id="operator-role", name="运营人员", code="operator", permissions=["view_data", "edit_data"]),
         Role(id="user-role", name="普通用户", code="user", permissions=["view_data"]),
         Role(id="customer-role", name="C端用户", code="customer", permissions=["view_data"]),
@@ -103,14 +110,14 @@ def _seed_roles_and_users(session: Session) -> dict[str, User]:
     return {"admin": admin_user, "normal": normal_user}
 
 
-@pytest.fixture()
+@pytest.fixture
 def seeded_db(db_session: Session) -> dict[str, Any]:
     """提供含种子数据的数据库会话."""
     users = _seed_roles_and_users(db_session)
     return {"session": db_session, "users": users}
 
 
-@pytest.fixture()
+@pytest.fixture
 def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     """已认证的管理员 httpx 客户端."""
     from main import app
@@ -129,7 +136,7 @@ def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]
     app.dependency_overrides.clear()
 
 
-@pytest.fixture()
+@pytest.fixture
 def user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     """已认证的普通用户 httpx 客户端."""
     from main import app

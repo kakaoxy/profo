@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.monitor import (
     AddCompetitorRequest,
@@ -18,6 +17,7 @@ from schemas.monitor import (
 )
 from services.monitor import MonitorService
 from services.system.exceptions import ConflictError, ResourceNotFoundError
+from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 

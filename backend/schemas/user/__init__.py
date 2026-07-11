@@ -15,7 +15,7 @@ class BaseUser(BaseModel):
 
     username: str = Field(min_length=3, max_length=100, description="用户名")
     nickname: str | None = Field(None, max_length=100, description="昵称")
-    phone: str | None = Field(None, max_length=20, description="手机号")
+    phone: str | None = Field(None, max_length=20, description="完整手机号(仅后台可见，C端使用脱敏)")
     avatar: str | None = Field(None, max_length=500, description="头像")
 
 

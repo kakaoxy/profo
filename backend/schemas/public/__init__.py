@@ -1,6 +1,5 @@
 """C端公开接口 Pydantic Schema."""
 
-import re
 from datetime import datetime
 from typing import Literal
 
@@ -8,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from models.common import FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
+from utils.auth.password import validate_password_strength
 
 
 class PublicProjectFilter(BaseModel):
@@ -46,18 +46,9 @@ class PublicRegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password_complexity(cls, v: str) -> str:
-        """校验密码复杂度（与后台 validate_password_strength 保持一致）."""
-        if not re.search(r"[a-z]", v):
-            msg = "密码必须包含至少一个小写字母"
-            raise ValueError(msg)
-        if not re.search(r"[A-Z]", v):
-            msg = "密码必须包含至少一个大写字母"
-            raise ValueError(msg)
-        if not re.search(r"\d", v):
-            msg = "密码必须包含至少一个数字"
-            raise ValueError(msg)
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
-            msg = '密码必须包含至少一个特殊字符 (!@#$%^&*(),.?":{}|<>)'
+        """校验密码复杂度（复用 utils.auth.password.validate_password_strength）."""
+        ok, msg = validate_password_strength(v)
+        if not ok:
             raise ValueError(msg)
         return v
 

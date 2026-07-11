@@ -5,9 +5,8 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Request, status
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from schemas.lead import LeadCreate
@@ -20,6 +19,7 @@ from schemas.public import (
     PublicLeadResponse,
 )
 from services.leads.core import LeadService
+from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/public/leads", tags=["public-leads"])
 

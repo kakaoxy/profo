@@ -120,7 +120,7 @@ class _InvestorMixin:
                     for s in parent_investor.sub_investors
                     if s.id != investor.id
                 ]
-                + [SubInvestorCreate(name="_new", share_ratio=new_ratio, remark=None)]
+                + [SubInvestorCreate(name="_new", share_ratio=new_ratio, remark=None)],
             )
             investor.invest_amount = self._calc_sub_amount(parent_investor.invest_amount, new_ratio)
 
@@ -140,7 +140,7 @@ class _InvestorMixin:
                     remark=None,
                 )
                 for s in new_subs
-            ]
+            ],
         )
         for sub_data in new_subs:
             sub_amount = self._calc_sub_amount(investor.invest_amount, Decimal(str(sub_data["share_ratio"])))
@@ -216,7 +216,7 @@ class _InvestorMixin:
 
         if "name" in update_data and update_data["name"] is not None:
             self._validate_name_unique(
-                investment_id, update_data["name"], investor.parent_id, exclude_investor_id=investor_id
+                investment_id, update_data["name"], investor.parent_id, exclude_investor_id=investor_id,
             )
             investor.name = update_data["name"]
 

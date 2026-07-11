@@ -45,7 +45,9 @@ class User(BaseModel):
     avatar: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="头像")
     # phone 使用 Fernet 加密存储；由于加密使用随机 IV，唯一性由 phone_hash 维持
     phone: Mapped[str | None] = mapped_column(EncryptedString(20), nullable=True, comment="手机号(加密存储)")
-    phone_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, comment="手机号HMAC哈希(用于唯一性约束)")
+    phone_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, unique=True, comment="手机号HMAC哈希(用于唯一性约束)"
+    )
 
     # 微信相关信息
     wechat_openid: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, comment="微信OpenID")
@@ -57,14 +59,20 @@ class User(BaseModel):
 
     # 状态
     status: Mapped[str] = mapped_column(String(20), default="active", comment="用户状态: active/inactive/banned")
-    last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最后登录时间")
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, comment="最后登录时间"
+    )
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, comment="是否必须修改密码")
     # Token 版本号：用于服务端撤销已签发 JWT（修改密码/禁用/删除用户时递增）
     # authenticate_by_token 会校验 Token 中的 ver 与当前值是否一致
-    token_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False, comment="Token版本号，递增以撤销已签发Token")
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=1, nullable=False, comment="Token版本号，递增以撤销已签发Token"
+    )
 
     # 关联关系
-    role = relationship("Role", back_populates="users", foreign_keys=[role_id], primaryjoin="foreign(User.role_id) == Role.id")
+    role = relationship(
+        "Role", back_populates="users", foreign_keys=[role_id], primaryjoin="foreign(User.role_id) == Role.id"
+    )
 
     # 索引
     __table_args__ = (

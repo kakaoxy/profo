@@ -7,7 +7,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from utils.common import RateLimits, limiter
 from dependencies.auth import DbSessionDep, require_roles
 from dependencies.common import PaginationDep
 from schemas.l4_marketing import (
@@ -29,6 +28,7 @@ from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
 )
 from services.system.exceptions import ResourceNotFoundError
+from utils.common import RateLimits, limiter
 
 router = APIRouter(
     prefix="/admin/l4-marketing",
