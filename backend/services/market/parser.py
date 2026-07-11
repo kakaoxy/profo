@@ -28,7 +28,7 @@ class FloorParser:
     LEVEL_HIGH = "高楼层"
 
     @staticmethod
-    def parse_floor(floor_original: str) -> FloorInfo:  # noqa: C901
+    def parse_floor(floor_original: str) -> FloorInfo:
         """解析楼层字符串.
 
         支持格式:

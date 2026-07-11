@@ -235,11 +235,13 @@ class CommunityQueryService:
             existing = _find_existing_community_by_name(db, body.name)
             if existing:
                 return CommunityQueryService.build_response_from_community(existing)
-            raise ServiceException("创建小区失败") from e
+            msg = "创建小区失败"
+            raise ServiceException(msg) from e
         except Exception:
             db.rollback()
             logger.exception("创建小区发生数据库错误")
-            raise ServiceException("创建小区失败")
+            msg = "创建小区失败"
+            raise ServiceException(msg) from None
 
         return CommunityQueryService.build_response_from_community(new_community)
 
@@ -265,7 +267,8 @@ class CommunityQueryService:
         """
         community = db.query(Community).filter(Community.id == community_id).first()
         if not community:
-            raise ResourceNotFoundError("小区不存在")
+            msg = "小区不存在"
+            raise ResourceNotFoundError(msg)
 
         update_data = body.model_dump(exclude_unset=True)
 
@@ -279,11 +282,13 @@ class CommunityQueryService:
         except IntegrityError as e:
             db.rollback()
             logger.warning("更新小区时发生唯一约束冲突: %s, 错误: %s", community_id, e)
-            raise ConflictError("小区名称已存在") from e
+            msg = "小区名称已存在"
+            raise ConflictError(msg) from e
         except Exception:
             db.rollback()
             logger.exception("更新小区发生数据库错误")
-            raise ServiceException("更新小区失败")
+            msg = "更新小区失败"
+            raise ServiceException(msg) from None
 
         return CommunityQueryService.build_response_from_community(community)
 

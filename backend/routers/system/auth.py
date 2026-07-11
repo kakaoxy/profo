@@ -59,8 +59,9 @@ def login_for_access_token(
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
     if result["require_password_change"]:
+        msg = "首次登录必须修改密码"
         raise BusinessLogicError(
-            "首次登录必须修改密码",
+            msg,
             headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
         )
 
@@ -93,8 +94,9 @@ def login(
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
     if result["require_password_change"]:
+        msg = "首次登录必须修改密码"
         raise BusinessLogicError(
-            "首次登录必须修改密码",
+            msg,
             headers={"X-Must-Change-Password": "true", "X-Temp-Token": result["temp_token"]},
         )
 
@@ -148,7 +150,8 @@ async def wechat_callback(
     """
     if not WeChatAuthService.consume_wechat_state(state):
         logger.warning("微信回调 state 校验失败，疑似 CSRF 攻击")
-        raise BusinessLogicError("state 校验失败，请重新发起微信登录")
+        msg = "state 校验失败，请重新发起微信登录"
+        raise BusinessLogicError(msg)
 
     token_data = await WeChatAuthService.fetch_wechat_access_token(code)
 
@@ -198,7 +201,7 @@ def exchange_token(
     return TokenResponse(
         access_token=entry["access_token"],
         refresh_token=entry["refresh_token"],
-        token_type="bearer",
+        token_type="bearer",  # noqa: S106
         expires_in=settings.jwt_access_token_expire_minutes * 60,
     )
 
@@ -228,7 +231,8 @@ async def wechat_app_login(
     unionid = auth_data.get("unionid")
 
     if not openid:
-        raise AuthenticationError("微信登录失败，未获取到用户标识")
+        msg = "微信登录失败，未获取到用户标识"
+        raise AuthenticationError(msg)
 
     user = await run_in_threadpool(
         WeChatAuthService.login_or_register_wechat_user,

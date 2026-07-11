@@ -101,10 +101,11 @@ class LeadService:
         """
         lead = self.get_lead(lead_id)
         if not lead:
-            raise ResourceNotFoundError("线索不存在")
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
         return lead
 
-    def get_leads(  # noqa: PLR0913
+    def get_leads(
         self,
         page: int = 1,
         page_size: int | None = None,
@@ -240,10 +241,12 @@ class LeadService:
         """
         lead = self.query_service.get_by_id(lead_id, load_creator=False)
         if not lead:
-            raise ResourceNotFoundError("线索不存在")
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
 
         if lead.creator_id != user_id:
-            raise PermissionDeniedError("无权查看该线索")
+            msg = "无权查看该线索"
+            raise PermissionDeniedError(msg)
 
         follow_ups = self.followup_service.get_follow_ups(lead_id)
 

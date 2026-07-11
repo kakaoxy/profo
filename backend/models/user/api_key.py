@@ -33,11 +33,15 @@ class ApiKey(BaseModel):
 
     # 时间戳
     last_used_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, comment="最后使用时间"
+        DateTime(timezone=True),
+        nullable=True,
+        comment="最后使用时间",
     )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, comment="过期时间")
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, comment="删除时间(软删除)"
+        DateTime(timezone=True),
+        nullable=True,
+        comment="删除时间(软删除)",
     )
 
     # 关联关系

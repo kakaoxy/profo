@@ -156,7 +156,8 @@ def get_project_detail(
     project = svc.get_project_detail(project_id)
 
     if not project:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
 
     media_list = svc.get_project_media(project_id)
 
@@ -244,7 +245,8 @@ def get_consultant_contact(
     project = svc.get_project_detail(project_id)
 
     if not project:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
 
     if project.consultant_id:
         consultant = svc.get_consultant(project.consultant_id)

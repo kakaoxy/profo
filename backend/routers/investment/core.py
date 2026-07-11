@@ -8,7 +8,7 @@
 """
 
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
@@ -108,7 +108,7 @@ def export_investments(
         project_status=project_status,
         settlement_status=settlement_status,
     )
-    filename = f"跟投列表_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    filename = f"跟投列表_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.xlsx"
     # 中文文件名需 RFC5987 编码
     filename_encoded = urllib.parse.quote(filename)
     return StreamingResponse(
@@ -153,7 +153,8 @@ def get_investment(
     """获取跟投记录详情（含投资方树 + 操作日志）."""
     item = service.get_investment(investment_id)
     if item is None:
-        raise ResourceNotFoundError("跟投记录不存在")
+        msg = "跟投记录不存在"
+        raise ResourceNotFoundError(msg)
     return item
 
 
@@ -171,7 +172,8 @@ def get_investment_by_project(
     """
     item = service.get_investment_by_project(project_id)
     if item is None:
-        raise ResourceNotFoundError("该项目暂无跟投记录")
+        msg = "该项目暂无跟投记录"
+        raise ResourceNotFoundError(msg)
     return item
 
 
@@ -282,7 +284,6 @@ def delete_investor(
 @router.get(
     "/{investment_id}/distribution-adjustments",
     summary="查询分配比例调整记录",
-    response_model=list[ReturnAdjustmentResponse],
 )
 def list_distribution_adjustments(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
@@ -296,7 +297,6 @@ def list_distribution_adjustments(
 @router.put(
     "/{investment_id}/distribution-adjustments",
     summary="批量保存分配比例调整",
-    response_model=list[ReturnAdjustmentResponse],
 )
 @limiter.limit(RateLimits.INVESTMENT_INVESTOR_WRITE)
 def adjust_distribution_ratios(

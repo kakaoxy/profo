@@ -23,7 +23,7 @@ _USER_ALLOWED_FIELDS = {"nickname", "phone", "avatar", "role_id", "status"}
 class UserService:
     """用户服务."""
 
-    def get_users(  # noqa: PLR0913
+    def get_users(
         self,
         db: Session,
         username: str | None = None,

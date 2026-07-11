@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import DataError, IntegrityError, OperationalError, SQLAlchemyError
 
 
-def format_validation_error(error: ValidationError) -> str:  # noqa: C901, PLR0912
+def format_validation_error(error: ValidationError) -> str:
     """格式化 Pydantic 验证错误为中文友好信息.
 
     Args:
@@ -55,7 +55,7 @@ def format_validation_error(error: ValidationError) -> str:  # noqa: C901, PLR09
     return "; ".join(error_messages)
 
 
-def format_request_validation_error(error: RequestValidationError) -> str:  # noqa: C901, PLR0912
+def format_request_validation_error(error: RequestValidationError) -> str:
     """格式化 FastAPI 请求验证错误为中文友好信息.
 
     Args:
@@ -164,7 +164,7 @@ def _is_unique_violation(exc: SQLAlchemyError) -> bool:
     return "UNIQUE constraint failed" in str(exc)
 
 
-def _format_unique_violation_message(error_str: str) -> str:  # noqa: C901, PLR0911, PLR0912
+def _format_unique_violation_message(error_str: str) -> str:  # noqa: PLR0911
     """根据约束/表名生成唯一约束冲突的中文信息.
 
     PG 与 SQLite 共用：约束名在两种数据库的错误消息中均会出现。
@@ -207,7 +207,7 @@ def _format_unique_violation_message(error_str: str) -> str:  # noqa: C901, PLR0
     return "数据重复，违反唯一性约束"
 
 
-def format_database_error(error: SQLAlchemyError) -> str:  # noqa: C901, PLR0911, PLR0912
+def format_database_error(error: SQLAlchemyError) -> str:  # noqa: PLR0911
     """格式化数据库错误为中文友好信息.
 
     优先使用 PostgreSQL sqlstate（``pgcode``）判断错误类型，

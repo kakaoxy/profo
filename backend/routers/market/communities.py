@@ -101,7 +101,7 @@ def merge_communities(
         )
 
         if not result.success:
-            raise ValueError(result.message)  # noqa: TRY301
+            raise ValueError(result.message)
 
         logger.info("小区合并成功: %s", result.message)
         return CommunityMergeResponse(
@@ -115,7 +115,8 @@ def merge_communities(
         raise ValidationError(str(e)) from e
     except Exception:
         logger.exception("小区合并发生未知错误")
-        raise ServiceException("合并操作失败，请联系管理员")
+        msg = "合并操作失败，请联系管理员"
+        raise ServiceException(msg) from None
 
 
 @router.post("/communities")

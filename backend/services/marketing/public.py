@@ -38,7 +38,7 @@ class PublicProjectService:
                 cover_image = first_media.file_url
         return cover_image
 
-    def get_published_projects(  # noqa: PLR0913
+    def get_published_projects(
         self,
         project_status: str | None = None,
         community_name: str | None = None,

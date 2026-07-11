@@ -73,7 +73,8 @@ def get_projects(
     pagination: PaginationDep,
     filters: Annotated[ProjectFilter, Depends()],
     include_interactions: Annotated[
-        bool, Query(description="是否包含互动记录(sales_records)，工作台重点监控卡片需传 true")
+        bool,
+        Query(description="是否包含互动记录(sales_records)，工作台重点监控卡片需传 true"),
     ] = False,
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表."""
@@ -206,7 +207,8 @@ def get_project(
     """获取项目详情."""
     project = service.get_project(project_id, include_all=full)
     if not project:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return project
 
 
@@ -225,7 +227,8 @@ def update_project(
     """
     project = service.update_project(project_id, update_data)
     if not project:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return project
 
 
@@ -259,7 +262,8 @@ def update_project_status(
     """
     project = service.update_status(project_id, status_update)
     if not project:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return project
 
 
@@ -273,7 +277,8 @@ def complete_project(
     """完成项目."""
     project = service.complete_project(project_id, complete_data)
     if not project:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return project
 
 
@@ -286,5 +291,6 @@ def get_project_report(
     """获取项目报告."""
     report = service.get_project_report(project_id)
     if not report:
-        raise ResourceNotFoundError("报告不存在")
+        msg = "报告不存在"
+        raise ResourceNotFoundError(msg)
     return report

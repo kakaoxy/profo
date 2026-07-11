@@ -127,7 +127,7 @@ class ImportTaskService:
         db.commit()
         logger.info("任务状态更新: %s -> %s", task_id, status.value)
 
-    def update_task_progress(  # noqa: PLR0913
+    def update_task_progress(
         self,
         task_id: str,
         processed: int,

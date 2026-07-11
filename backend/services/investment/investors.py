@@ -209,7 +209,8 @@ class _InvestorMixin:
             self.db.query(Investor).filter(Investor.id == investor_id, Investor.investment_id == investment_id).first()
         )
         if investor is None:
-            raise ResourceNotFoundError("投资方不存在")
+            msg = "投资方不存在"
+            raise ResourceNotFoundError(msg)
 
         update_data = data.model_dump(exclude_unset=True)
         is_parent = investor.parent_id is None
@@ -255,7 +256,8 @@ class _InvestorMixin:
             self.db.query(Investor).filter(Investor.id == investor_id, Investor.investment_id == investment_id).first()
         )
         if investor is None:
-            raise ResourceNotFoundError("投资方不存在")
+            msg = "投资方不存在"
+            raise ResourceNotFoundError(msg)
 
         is_parent = investor.parent_id is None
         name = investor.name

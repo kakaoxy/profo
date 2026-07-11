@@ -62,7 +62,8 @@ class RenovationService:
     def _get_project(self, project_id: str) -> Project:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         return project
 
     def _get_or_create_renovation(self, project_id: str) -> ProjectRenovation:
@@ -101,7 +102,8 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise BusinessLogicError("当前状态不允许更新改造进度")
+            msg = "当前状态不允许更新改造进度"
+            raise BusinessLogicError(msg)
 
         # 获取或创建装修记录
         renovation = self._get_or_create_renovation(project_id)
@@ -156,7 +158,8 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise BusinessLogicError("当前状态不允许更新装修信息")
+            msg = "当前状态不允许更新装修信息"
+            raise BusinessLogicError(msg)
 
         renovation = self._get_or_create_renovation(project_id)
 
@@ -189,7 +192,8 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise BusinessLogicError("当前状态不允许上传装修照片")
+            msg = "当前状态不允许上传装修照片"
+            raise BusinessLogicError(msg)
 
         # 获取装修记录ID
         renovation = (
@@ -237,7 +241,8 @@ class RenovationService:
         )
 
         if not photo:
-            raise ResourceNotFoundError("照片不存在")
+            msg = "照片不存在"
+            raise ResourceNotFoundError(msg)
 
         photo.is_deleted = True
         self.db.commit()
@@ -262,7 +267,8 @@ class RenovationService:
             ProjectStatus.SOLD.value,
         ]
         if project.status not in allowed_statuses:
-            raise BusinessLogicError("当前状态不允许更新装修合同信息")
+            msg = "当前状态不允许更新装修合同信息"
+            raise BusinessLogicError(msg)
 
         renovation = self._get_or_create_renovation(project_id)
 

@@ -33,7 +33,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("")
 @limiter.limit(RateLimits.USER_LIST)
-def get_users(  # noqa: PLR0913
+def get_users(
     request: Request,
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
@@ -103,7 +103,8 @@ def get_user(
     """获取指定用户信息."""
     user = user_service.get_user_by_id(db, user_id)
     if not user:
-        raise ResourceNotFoundError("用户不存在")
+        msg = "用户不存在"
+        raise ResourceNotFoundError(msg)
     return user
 
 

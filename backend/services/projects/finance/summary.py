@@ -26,7 +26,8 @@ class _SummaryMixin:
             # 1. 获取项目基本信息用于日期计算
             project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
             if not project:
-                raise ResourceNotFoundError("项目不存在")  # noqa: TRY301
+                msg = "项目不存在"
+                raise ResourceNotFoundError(msg)
 
             # 从 ProjectContract 获取签约日期
             contract = (
@@ -106,13 +107,15 @@ class _SummaryMixin:
             raise
         except Exception as e:
             logger.exception("Error calculating cashflow summary for project %s", project_id)
-            raise ServiceException("计算现金流汇总失败") from e
+            msg = "计算现金流汇总失败"
+            raise ServiceException(msg) from e
 
     def get_report(self, project_id: str) -> dict[str, Any]:
         """获取项目财务报告."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
 
         # 从 ProjectContract 获取签约价格
         contract = (

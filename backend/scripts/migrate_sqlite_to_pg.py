@@ -37,6 +37,8 @@ from sqlalchemy.types import JSON, TypeDecorator
 # 使脚本可作为脚本直接运行: 将 backend 目录加入 sys.path 以便 `from models import Base`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import contextlib
+
 from models import Base
 from models.common.encrypted import EncryptedString
 from utils.crypto import decrypt
@@ -77,10 +79,13 @@ def _get_urls() -> tuple[str, str]:
     src_url: str = os.environ.get("SQLITE_SOURCE_URL", "sqlite:///./data.db")
     dst_url: str | None = os.environ.get("DATABASE_URL")
     if not dst_url:
-        raise RuntimeError(
+        msg = (
             "DATABASE_URL environment variable is not set. "
             "Set it to the target PostgreSQL URL, e.g. "
-            "postgresql+psycopg://user:pass@host:5432/dbname",
+            "postgresql+psycopg://user:pass@host:5432/dbname"
+        )
+        raise RuntimeError(
+            msg,
         )
     return src_url, dst_url
 
@@ -118,10 +123,8 @@ def _read_rows(src_engine: Engine, table_obj: Table) -> list[dict]:
                     if "encrypted" in kinds and isinstance(value, str) and value:
                         value = decrypt(value)
                     elif "json" in kinds and isinstance(value, str) and value:
-                        try:
+                        with contextlib.suppress(json.JSONDecodeError, ValueError):
                             value = json.loads(value)
-                        except (json.JSONDecodeError, ValueError):
-                            pass
                     elif isinstance(value, datetime) and value.tzinfo is None:
                         value = value.replace(tzinfo=timezone.utc)
                 row_dict[key] = value
@@ -139,8 +142,9 @@ def _migrate(src_engine: Engine, dst_engine: Engine) -> int:
     tables_meta = Base.metadata.tables
     for name in DELETION_ORDER:
         if name not in tables_meta:
+            msg = f"Table {name!r} not found in Base.metadata.tables. Check model definitions."
             raise RuntimeError(
-                f"Table {name!r} not found in Base.metadata.tables. Check model definitions.",
+                msg,
             )
 
     total: int = 0
@@ -156,10 +160,10 @@ def _migrate(src_engine: Engine, dst_engine: Engine) -> int:
                 if rows:
                     for i in range(0, len(rows), BATCH_SIZE):
                         conn.execute(table_obj.insert(), rows[i : i + BATCH_SIZE])
-                print(f"{name}: migrated {len(rows)} rows")
                 total += len(rows)
     except Exception as e:
-        raise RuntimeError(f"Migration failed (transaction rolled back): {e}") from e
+        msg = f"Migration failed (transaction rolled back): {e}"
+        raise RuntimeError(msg) from e
     return total
 
 
@@ -169,16 +173,14 @@ def main() -> int:
         src_url, dst_url = _get_urls()
         src_engine: Engine = create_engine(src_url)
         dst_engine: Engine = create_engine(dst_url)
-        try:
-            total = _migrate(src_engine, dst_engine)
-        finally:
-            src_engine.dispose()
-            dst_engine.dispose()
-        print(f"Migration complete. Total: {total} rows across 12 tables.")
-        return 0
-    except Exception as e:
-        print(f"Migration failed: {e}", file=sys.stderr)
+    except Exception:  # noqa: BLE001
         return 1
+    try:
+        _migrate(src_engine, dst_engine)
+    finally:
+        src_engine.dispose()
+        dst_engine.dispose()
+    return 0
 
 
 if __name__ == "__main__":

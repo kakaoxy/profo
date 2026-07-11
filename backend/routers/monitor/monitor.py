@@ -94,7 +94,8 @@ def add_competitor(
     """添加竞品小区."""
     added = service.add_competitor(community_id, request.competitor_community_id)
     if not added:
-        raise ConflictError("竞品小区已存在")
+        msg = "竞品小区已存在"
+        raise ConflictError(msg)
 
 
 @router.delete("/communities/{community_id}/competitors/{competitor_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -112,7 +113,8 @@ def remove_competitor(
     """
     removed = service.remove_competitor(community_id, competitor_id)
     if not removed:
-        raise ResourceNotFoundError("竞品小区不存在")
+        msg = "竞品小区不存在"
+        raise ResourceNotFoundError(msg)
 
 
 @router.get("/communities/{community_id}/market-stats")

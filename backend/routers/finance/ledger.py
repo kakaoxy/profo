@@ -8,7 +8,7 @@
 """
 
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
@@ -108,7 +108,7 @@ def export_ledger(
         search=search,
         project_status=project_status.value if project_status else None,
     )
-    filename = f"资金账本_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    filename = f"资金账本_{datetime.now(tz=timezone.utc).strftime('%Y%m%d')}.xlsx"
     # 中文文件名需 RFC5987 编码
     filename_encoded = urllib.parse.quote(filename)
     return StreamingResponse(

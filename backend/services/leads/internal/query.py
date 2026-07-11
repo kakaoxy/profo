@@ -49,7 +49,7 @@ class LeadQueryService:
             query = query.options(joinedload(Lead.creator))
         return query.filter(Lead.id == lead_id, Lead.is_deleted.is_(False)).first()
 
-    def get_list(  # noqa: PLR0913
+    def get_list(
         self,
         page: int = 1,
         page_size: int | None = None,

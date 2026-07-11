@@ -110,15 +110,15 @@ class JSONBatchImporter:
                     if success > 0:
                         rollback_reason = f"批次回滚(此前 {success} 条成功记录已失效): {e!s}"
                         failed_indices = {err["index"] for err in errors}
-                        for prev in range(index):
-                            if prev not in failed_indices:
-                                errors.append(
-                                    {
-                                        "index": prev,
-                                        "source_property_id": self._extract_source_id(properties[prev]),
-                                        "reason": rollback_reason,
-                                    },
-                                )
+                        errors.extend(
+                            {
+                                "index": prev,
+                                "source_property_id": self._extract_source_id(properties[prev]),
+                                "reason": rollback_reason,
+                            }
+                            for prev in range(index)
+                            if prev not in failed_indices
+                        )
                         failed += success
                         success = 0
 

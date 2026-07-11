@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class PropertyQueryService:
     """房源查询服务."""
 
-    def query_properties(  # noqa: PLR0913
+    def query_properties(
         self,
         db: Session,
         status: str | None = None,

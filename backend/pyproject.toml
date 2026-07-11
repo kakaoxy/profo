@@ -58,10 +58,33 @@ ignore = [
     "RUF003",
     "D203",
     "D213",
+    # 以下规则与项目风格冲突，全局忽略
+    "D102",   # 公开方法缺 docstring（field_serializer 等无需注释）
+    "D104",   # 公开包缺 docstring
+    "D107",   # __init__ 缺 docstring
+    "FBT001", # 布尔类型位置参数（FastAPI Query 需要）
+    "FBT002", # 布尔默认位置参数（FastAPI Query 需要）
+    "PLR0913", # 函数参数过多（FastAPI 端点天然多参数）
+    "TRY301", # try 内 raise（校验模式常见）
+    "C901",   # 复杂度（统计聚合方法天然复杂）
+    "PLR0912", # 分支过多
+    "PLR0915", # 语句过多
+    "COM812",  # 与 ruff format 冲突，由 formatter 处理尾逗号
+    # TC001/TC002/TC003: 将仅类型注解用的 import 移入 TYPE_CHECKING 块
+    # 与 Pydantic + from __future__ import annotations 冲突（model_rebuild 运行时需要类型可用）
+    "TC001",
+    "TC002",
+    "TC003",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["S101", "D100", "D101", "D102", "D103", "D104", "PLR2004", "ARG001", "PLC0415"]
+# routers: slowapi @limiter.limit 要求 request 参数；FastAPI 依赖注入要求 current_user
+"routers/**/*.py" = ["ARG001"]
+# 迁移脚本: 循环变量转换、复杂度
+"scripts/*.py" = ["PLW2901"]
+# 统计聚合方法: try-except 在循环内（跳过坏文件）
+"services/projects/finance/ledger.py" = ["PERF203"]
 
 [tool.ruff.format]
 quote-style = "double"

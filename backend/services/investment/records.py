@@ -81,10 +81,7 @@ class _RecordMixin:
         for inv, proj_status, proj_address, inv_count in rows:
             total_inv = inv.total_investment
             total_ret = inv.total_return or Decimal(0)
-            if total_inv > 0:
-                return_ratio = float(_quantize(total_ret / total_inv * _HUNDRED))
-            else:
-                return_ratio = 0.0
+            return_ratio = float(_quantize(total_ret / total_inv * _HUNDRED)) if total_inv > 0 else 0.0
             items.append(
                 InvestmentListItemResponse(
                     id=inv.id,
@@ -114,10 +111,7 @@ class _RecordMixin:
         ).scalar() or Decimal(0)
         unsettled_count: int = base.filter(Investment.settlement_status == SettlementStatus.UNSETTLED).count()
 
-        if total_investment > 0:
-            avg_return_ratio = float(_quantize(total_return / total_investment * _HUNDRED))
-        else:
-            avg_return_ratio = 0.0
+        avg_return_ratio = float(_quantize(total_return / total_investment * _HUNDRED)) if total_investment > 0 else 0.0
 
         return InvestmentStatsResponse(
             total_projects=total_projects,
@@ -180,7 +174,8 @@ class _RecordMixin:
             .first()
         )
         if duplicate is not None:
-            raise ConflictError("该项目已存在跟投记录")
+            msg = "该项目已存在跟投记录"
+            raise ConflictError(msg)
 
         inv = Investment(
             project_id=proj.id,
@@ -284,7 +279,8 @@ class _RecordMixin:
             .first()
         )
         if duplicate is not None:
-            raise ConflictError("目标项目已存在跟投记录")
+            msg = "目标项目已存在跟投记录"
+            raise ConflictError(msg)
 
         new_inv = Investment(
             project_id=target_proj.id,

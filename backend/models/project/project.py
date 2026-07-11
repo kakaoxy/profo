@@ -146,10 +146,14 @@ RenovationPhoto.renovation = relationship(
 from models.user.user import User  # noqa: E402
 
 Project.project_manager = relationship(
-    "User", back_populates="managed_projects", primaryjoin="foreign(Project.project_manager_id) == User.id"
+    "User",
+    back_populates="managed_projects",
+    primaryjoin="foreign(Project.project_manager_id) == User.id",
 )
 User.managed_projects = relationship(
-    "Project", back_populates="project_manager", primaryjoin="foreign(Project.project_manager_id) == User.id"
+    "Project",
+    back_populates="project_manager",
+    primaryjoin="foreign(Project.project_manager_id) == User.id",
 )
 
 __all__ = [

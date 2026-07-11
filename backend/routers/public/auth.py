@@ -52,7 +52,7 @@ def _build_user_info(user: User) -> PublicUserInfo:
 )
 @limiter.limit(RateLimits.PUBLIC_REGISTER)
 def register(
-    request: Request,  # noqa: ARG001
+    request: Request,
     body: PublicRegisterRequest,
     db: DbSessionDep,
 ) -> PublicRegisterResponse:
@@ -88,7 +88,7 @@ def register(
 )
 @limiter.limit(RateLimits.AUTH_LOGIN)
 def login_for_access_token(
-    request: Request,  # noqa: ARG001
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbSessionDep,
 ) -> PublicLoginResponse:
@@ -96,7 +96,8 @@ def login_for_access_token(
     user = AuthService.authenticate_user(db, form_data.username, form_data.password)
 
     if user.role.code != "customer":
-        raise PermissionDeniedError("此接口仅限C端用户登录")
+        msg = "此接口仅限C端用户登录"
+        raise PermissionDeniedError(msg)
 
     token_data = AuthService.create_tokens_for_user(db, user)
 
@@ -120,7 +121,7 @@ def login_for_access_token(
 )
 @limiter.limit(RateLimits.AUTH_REFRESH)
 def refresh_access_token(
-    request: Request,  # noqa: ARG001
+    request: Request,
     refresh_data: PublicRefreshTokenRequest,
     db: DbSessionDep,
 ) -> PublicLoginResponse:
@@ -153,7 +154,7 @@ def refresh_access_token(
 )
 @limiter.limit(RateLimits.PUBLIC_PROFILE_READ)
 def get_current_user_info(
-    request: Request,  # noqa: ARG001
+    request: Request,
     current_user: CurrentCustomerUserDep,
 ) -> PublicUserInfo:
     """获取当前登录的C端用户信息."""
@@ -172,7 +173,7 @@ def get_current_user_info(
 )
 @limiter.limit(RateLimits.PUBLIC_LOGOUT)
 def logout(
-    request: Request,  # noqa: ARG001
+    request: Request,
     body: PublicRefreshTokenRequest,
     _current_user: Annotated[User, Depends(require_roles(["customer"]))],
     db: DbSessionDep,

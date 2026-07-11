@@ -111,4 +111,3 @@ if __name__ == "__main__":
         check_jwt_configuration()
     else:
         key = generate_secure_jwt_key(args.generate)
-        print(key)

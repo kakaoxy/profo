@@ -159,7 +159,7 @@ def safe_log_dict(data: dict[str, Any] | None) -> dict[str, Any] | None:
 def create_safe_log_message(
     message: str,
     data: dict[str, Any] | None = None,
-    include_data: bool = True,  # noqa: FBT001, FBT002
+    include_data: bool = True,
 ) -> str:
     """创建安全的日志消息.
 
