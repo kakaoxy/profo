@@ -45,4 +45,5 @@ def generate_thumbnail(
     except (UnidentifiedImageError, OSError, ValueError) as e:
         logger.warning("缩略图生成失败: %s -> %s, 错误: %s", source_path, target_path, e)
         return False
-    return True
+    else:
+        return True

@@ -20,7 +20,7 @@ class SystemInitService:
     """系统初始化服务."""
 
     def initialize(self, db: Session) -> dict:
-        """初始化系统数据，包括默认角色和管理员用户。幂等操作。."""
+        """初始化系统数据，包括默认角色和管理员用户。幂等操作."""
         existing_roles = {r.code for r in db.query(Role).all()}
         existing_admin = db.query(User).filter(User.username == "admin").first()
 
