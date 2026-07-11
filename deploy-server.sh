@@ -7,8 +7,9 @@ BACKEND_IMAGE="profo-backend:prod"
 FRONTEND_IMAGE="profo-frontend:prod"
 BACKEND_TAR="profo-backend.tar.gz"
 FRONTEND_TAR="profo-frontend.tar.gz"
-WAIT_BACKEND=30          # backend 启动+迁移等待秒数
-WAIT_FRONTEND=10
+HEALTH_TIMEOUT=120          # 等待 backend 健康的最大秒数
+HEALTH_INTERVAL=3           # 每次检查间隔（秒）
+FRONTEND_WAIT=10            # 前端启动后简单等待（无健康检查时）
 # ===============================================
 
 # 颜色输出
@@ -58,26 +59,59 @@ else
     exit 1
 fi
 
-# 3. 重建 backend（自动执行迁移）
+# 3. 启动 backend（容器内会自动运行迁移）
 log_info "重启 backend（迁移将自动运行）..."
 docker compose up -d --force-recreate --no-build backend
 
-log_info "等待 ${WAIT_BACKEND}s 让迁移执行完成..."
-sleep "$WAIT_BACKEND"
+# ---------- 健康检查轮询 ----------
+log_info "等待 backend 健康检查通过（超时 ${HEALTH_TIMEOUT}s）..."
 
-# 检查 backend 容器状态
-if docker compose ps --filter "status=running" --format "table {{.Name}}" | grep -q "backend"; then
-    log_info "✅ backend 运行中"
-else
-    log_error "backend 未正常运行，请检查日志: docker compose logs backend"
+# 定义获取后端健康状态的函数
+get_backend_health() {
+    # 返回容器健康状态：healthy / unhealthy / starting / none
+    docker compose ps --format "{{.Name}}\t{{.Health}}" 2>/dev/null | \
+        grep -E "backend" | awk '{print $2}' | head -1
+}
+
+# 等待指定秒数，同时检查状态
+elapsed=0
+while [ $elapsed -lt $HEALTH_TIMEOUT ]; do
+    health_status=$(get_backend_health)
+    case "$health_status" in
+        healthy)
+            log_info "✅ backend 已健康"
+            break
+            ;;
+        unhealthy)
+            log_error "❌ backend 健康状态为 unhealthy，请检查日志: docker compose logs backend"
+            exit 1
+            ;;
+        starting|"")
+            # 尚未就绪，继续等待
+            sleep $HEALTH_INTERVAL
+            elapsed=$((elapsed + HEALTH_INTERVAL))
+            ;;
+        *)
+            # 未知状态，继续等待
+            sleep $HEALTH_INTERVAL
+            elapsed=$((elapsed + HEALTH_INTERVAL))
+            ;;
+    esac
+done
+
+# 超时处理
+if [ $elapsed -ge $HEALTH_TIMEOUT ]; then
+    log_error "等待 backend 健康超时（${HEALTH_TIMEOUT}s），当前状态：$(get_backend_health)"
+    log_error "请检查日志: docker compose logs backend"
     exit 1
 fi
 
-# 4. 重建 frontend
+# 4. 启动 frontend
 log_info "重启 frontend..."
 docker compose up -d --force-recreate --no-build frontend
 
-sleep "$WAIT_FRONTEND"
+# 简单等待前端启动（若前端也有 healthcheck，可类似轮询，但通常前端只是服务）
+sleep "$FRONTEND_WAIT"
 if docker compose ps --filter "status=running" --format "table {{.Name}}" | grep -q "frontend"; then
     log_info "✅ frontend 运行中"
 else
@@ -90,4 +124,5 @@ rm -f "$BACKEND_TAR" "$FRONTEND_TAR"
 
 log_info "🎉 部署完成！"
 log_info "当前容器状态："
-docker compose ps
+docker compose ps --format "table {{.Name}}\t{{.Status}}"
+log_info "✅ 服务器端部署完成！"
