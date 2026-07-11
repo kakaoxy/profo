@@ -60,13 +60,15 @@ def save_upload_file(
         ext = Path(safe_name).suffix.lower()
         effective_ext = allowed_ext if allowed_ext is not None else settings.allowed_extensions
         if ext not in effective_ext:
-            raise ValidationError(f"不支持的文件扩展名。允许的扩展名: {', '.join(sorted(effective_ext))}")
+            msg = f"不支持的文件扩展名。允许的扩展名: {', '.join(sorted(effective_ext))}"
+            raise ValidationError(msg)
 
         file.file.seek(0, 2)
         file_size = file.file.tell()
         file.file.seek(0)
         if file_size > settings.max_upload_size:
-            raise ValidationError(f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes")
+            msg = f"文件大小超过限制。最大允许: {settings.max_upload_size} bytes"
+            raise ValidationError(msg)
 
         header = file.file.read(2048)
         file.file.seek(0)
@@ -76,11 +78,14 @@ def save_upload_file(
             if ext in TEXT_BASED_EXTENSIONS:
                 guessed_mime = TEXT_BASED_EXTENSIONS[ext]
                 if guessed_mime not in settings.allowed_mime_types:
-                    raise ValidationError(f"不支持的文件类型。检测到的MIME类型: {guessed_mime}")
+                    msg = f"不支持的文件类型。检测到的MIME类型: {guessed_mime}"
+                    raise ValidationError(msg)
             else:
-                raise ValidationError("无法识别的文件类型")
+                msg = "无法识别的文件类型"
+                raise ValidationError(msg)
         elif kind.mime not in settings.allowed_mime_types:
-            raise ValidationError(f"不支持的文件类型。检测到的MIME类型: {kind.mime}")
+            msg = f"不支持的文件类型。检测到的MIME类型: {kind.mime}"
+            raise ValidationError(msg)
 
         filename = f"{datetime.now(timezone.utc).strftime('%Y%m%d')}_{uuid.uuid4().hex[:8]}{ext}"
         upload_path = Path(settings.upload_dir)
@@ -105,7 +110,8 @@ def save_upload_file(
         raise
     except Exception:
         logger.exception("文件上传失败")
-        raise FileProcessingError("文件上传失败，请稍后重试")
+        msg = "文件上传失败，请稍后重试"
+        raise FileProcessingError(msg) from None
 
 
 @router.post("/upload", summary="上传文件")

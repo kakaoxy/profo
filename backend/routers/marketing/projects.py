@@ -55,7 +55,7 @@ _MediaServiceDep = Annotated[L4MarketingMediaService, Depends(get_media_service)
     "/projects",
     summary="获取营销项目列表",
 )
-def list_marketing_projects(  # noqa: PLR0913
+def list_marketing_projects(
     service: _ProjectServiceDep,
     pagination: PaginationDep,
     publish_status: Annotated[str | None, Query(description="发布状态: 草稿/发布")] = None,
@@ -119,7 +119,8 @@ def get_marketing_project(
     """获取营销项目详情."""
     item = service.get_project(project_id)
     if not item:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return item
 
 
@@ -140,7 +141,8 @@ def update_marketing_project(
     """
     item = service.update_project(project_id, data)
     if not item:
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return item
 
 
@@ -160,7 +162,8 @@ def delete_marketing_project(
     速率限制：20次/小时.
     """
     if not service.delete_project(project_id):
-        raise ResourceNotFoundError("项目不存在")
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
 
 
 @router.get(
@@ -214,7 +217,8 @@ def update_marketing_media(
     """
     item = service.update_media(media_id, data)
     if not item:
-        raise ResourceNotFoundError("媒体不存在")
+        msg = "媒体不存在"
+        raise ResourceNotFoundError(msg)
     return item
 
 
@@ -234,7 +238,8 @@ def delete_marketing_media(
     速率限制：20次/小时.
     """
     if not service.delete_media(media_id):
-        raise ResourceNotFoundError("媒体不存在")
+        msg = "媒体不存在"
+        raise ResourceNotFoundError(msg)
 
 
 @router.put(

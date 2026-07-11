@@ -76,7 +76,8 @@ async def create_import_task(
             db,
             error_message=f"启动后台处理任务失败: {task.id}",
         )
-        raise FileProcessingError("导入任务启动失败，请稍后重试")
+        msg_0 = "导入任务启动失败，请稍后重试"
+        raise FileProcessingError(msg_0) from None
 
     return ImportTaskCreateResponse(
         task_id=task.id,
@@ -103,7 +104,8 @@ def get_task_status(
         raise ResourceNotFoundError(msg)
 
     if task.user_id != current_user.id:
-        raise PermissionDeniedError("无权查看此任务")
+        msg_0 = "无权查看此任务"
+        raise PermissionDeniedError(msg_0)
 
     return ImportTaskStatusResponse.model_validate(task)
 
@@ -142,7 +144,8 @@ def cancel_task(
     success = task_service.cancel_task(task_id, current_user.id, db)
 
     if not success:
-        raise ValidationError("任务不存在或无法取消（只能取消待处理或处理中的任务）")
+        msg = "任务不存在或无法取消（只能取消待处理或处理中的任务）"
+        raise ValidationError(msg)
 
     return CancelTaskResponse(message="任务已取消", task_id=task_id)
 
@@ -164,7 +167,8 @@ def download_failed_file(
         filepath = get_safe_file_path(str(temp_dir), filename)
     except ValueError as e:
         logger.warning("检测到非法文件名尝试: %s, 错误: %s", filename, e)
-        raise ValidationError("无效的文件名")
+        msg = "无效的文件名"
+        raise ValidationError(msg) from e
 
     file_path = Path(filepath)
     if not file_path.exists() or file_path.is_dir():
@@ -173,7 +177,8 @@ def download_failed_file(
 
     if not is_safe_path(str(temp_dir), filepath):
         logger.error("路径安全检查失败: %s", filepath)
-        raise PermissionDeniedError("访问被拒绝")
+        msg_0 = "访问被拒绝"
+        raise PermissionDeniedError(msg_0)
 
     safe_filename = file_path.name
 

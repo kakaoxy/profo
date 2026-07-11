@@ -53,7 +53,7 @@ def search_communities(
 
 
 @router.get("")
-def get_properties(  # noqa: PLR0913
+def get_properties(
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
@@ -109,7 +109,7 @@ def get_properties(  # noqa: PLR0913
 
 
 @router.get("/export")
-def export_properties(  # noqa: PLR0913
+def export_properties(
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,

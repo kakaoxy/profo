@@ -18,9 +18,9 @@ __all__ = [
     "FloorInfo",
     "PaginatedPropertyResponse",
     "PropertyDetailResponse",
-    "PropertyHistoryResponse",
     # Core
     "PropertyFilter",
+    "PropertyHistoryResponse",
     "PropertyIngestionModel",
     # Response
     "PropertyResponse",

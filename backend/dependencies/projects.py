@@ -1,4 +1,4 @@
-"""项目服务相关依赖注入函数."""  # noqa: INP001
+"""项目服务相关依赖注入函数."""
 
 from typing import Annotated
 

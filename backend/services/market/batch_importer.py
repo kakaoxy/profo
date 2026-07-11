@@ -84,7 +84,7 @@ class CSVBatchImporter:
         logger.warning("所有编码尝试失败，使用 UTF-8 忽略错误模式")
         return content.decode("utf-8", errors="ignore")
 
-    def parse_csv_file(self, file_content: str) -> tuple[list[dict[str, Any]], list[str]]:  # noqa: C901
+    def parse_csv_file(self, file_content: str) -> tuple[list[dict[str, Any]], list[str]]:
         """安全解析 CSV 内容，容忍字段缺失或格式异常.
 
         返回解析后的行数据和原始字段顺序.
@@ -106,7 +106,7 @@ class CSVBatchImporter:
             headers = next(reader, None)
             if not headers:
                 msg = "CSV 文件无表头"
-                raise FileProcessingError(msg)  # noqa: TRY301
+                raise FileProcessingError(msg)
 
             clean_headers = []
             for h in headers:
@@ -138,7 +138,7 @@ class CSVBatchImporter:
         else:
             return rows, clean_headers
 
-    def batch_import_csv(  # noqa: C901, PLR0912, PLR0915
+    def batch_import_csv(
         self,
         file: UploadFile,
         db: Session,
@@ -155,7 +155,7 @@ class CSVBatchImporter:
             content = file.file.read()
             if not content:
                 msg = "上传的 CSV 文件为空"
-                raise FileProcessingError(msg)  # noqa: TRY301
+                raise FileProcessingError(msg)
 
             file_content = self._decode_file_content(content)
             rows, original_headers = self.parse_csv_file(file_content)

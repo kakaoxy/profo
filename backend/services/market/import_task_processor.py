@@ -267,7 +267,7 @@ class ImportTaskProcessor:
         else:
             return {"success": result.success, "error": result.error}
 
-    def _commit_batch(  # noqa: PLR0913
+    def _commit_batch(
         self,
         task_id: str,
         processed: int,

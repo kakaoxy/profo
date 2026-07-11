@@ -16,6 +16,7 @@ from schemas.monitor import (
     CompetitorResponse,
     FloorStats,
     MarketSentimentResponse,
+    NeighborhoodRadarResponse,
     RiskPoints,
     TrendData,
 )
@@ -130,7 +131,7 @@ class MonitorService:
             inventory_months=round(inventory_months, 1),
         )
 
-    def get_trends(self, community_id: str, months: int) -> list[TrendData]:  # noqa: C901
+    def get_trends(self, community_id: str, months: int) -> list[TrendData]:
         """获取价格趋势数据.
 
         按月分组统计在 Python 层完成，避免使用 SQLite 专有的 strftime，
@@ -327,7 +328,7 @@ class MonitorService:
             action_plan=["Suggested listing price: 210W", "refresh photos"],
         )
 
-    def get_neighborhood_radar(self, community_id: str):
+    def get_neighborhood_radar(self, community_id: str) -> NeighborhoodRadarResponse:
         """获取周边竞品雷达数据（委托至 NeighborhoodRadarService）."""
         return self._neighborhood_service.get_neighborhood_radar(community_id)
 

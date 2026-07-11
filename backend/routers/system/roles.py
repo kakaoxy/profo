@@ -48,7 +48,8 @@ def get_role(
     """获取指定角色信息."""
     role = role_service.get_role_by_id(db, role_id)
     if not role:
-        raise ResourceNotFoundError("角色不存在")
+        msg = "角色不存在"
+        raise ResourceNotFoundError(msg)
     return role
 
 

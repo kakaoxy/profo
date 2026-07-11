@@ -135,15 +135,18 @@ class _FinanceServiceBase:
         }
 
         if flow_type == CashFlowType.EXPENSE and category not in expense_categories:
-            raise ValidationError(f"支出类型不能使用分类: {category.value}")
+            msg = f"支出类型不能使用分类: {category.value}"
+            raise ValidationError(msg)
 
         if flow_type == CashFlowType.INCOME and category not in income_categories:
-            raise ValidationError(f"收入类型不能使用分类: {category.value}")
+            msg = f"收入类型不能使用分类: {category.value}"
+            raise ValidationError(msg)
 
     def _assert_finance_editable(self, project: Project) -> None:
         """编辑锁：已结算项目不可新增/删除流水记录."""
         if project.finance_settlement_status == SettlementStatus.SETTLED:
-            raise ServiceException("已结算资金账本不可编辑，请先反结算", status_code=400)
+            msg = "已结算资金账本不可编辑，请先反结算"
+            raise ServiceException(msg, status_code=400)
 
     def _build_settlement_response(self, project: Project) -> FinanceSettlementResponse:
         """构建结算状态响应."""

@@ -52,7 +52,6 @@ __all__ = [
     "L4MarketingMediaListResponse",
     "L4MarketingMediaResponse",
     "L4MarketingMediaUpdate",
-    "L4MediaType",
     # Project
     "L4MarketingProjectBase",
     "L4MarketingProjectCreate",
@@ -62,6 +61,7 @@ __all__ = [
     "L4MarketingProjectResponse",
     "L4MarketingProjectSummary",
     "L4MarketingProjectUpdate",
+    "L4MediaType",
     "L4RefreshResponse",
     "L4SyncResponse",
     "MarketingProjectStatus",

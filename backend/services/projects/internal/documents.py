@@ -37,7 +37,7 @@ def list_documents(db: Session, project_id: str) -> list[ProjectDocument]:
 
 
 def create_document(db: Session, project_id: str, payload: DocumentCreate) -> ProjectDocument:
-    """新增文书。display_order 默认追加末尾（当前 max +1）。
+    """新增文书。display_order 默认追加末尾（当前 max +1）。.
 
     Args:
         db: SQLAlchemy 数据库会话
@@ -85,7 +85,7 @@ def update_document(
     document_id: str,
     payload: DocumentUpdate,
 ) -> ProjectDocument | None:
-    """更新文书。含项目归属校验。状态变化时联动 archive_date。
+    """更新文书。含项目归属校验。状态变化时联动 archive_date。.
 
     - 状态回退为 unsigned 时清空 archive_date
     - 状态变 archived：payload 含 archive_date 时用 payload 值，否则自动填今天（与前端语义一致）
@@ -132,7 +132,7 @@ def update_document(
 
 
 def delete_document(db: Session, project_id: str, document_id: str) -> bool:
-    """逻辑删除文书。返回是否找到并删除。
+    """逻辑删除文书。返回是否找到并删除。.
 
     Args:
         db: SQLAlchemy 数据库会话
@@ -161,7 +161,7 @@ def delete_document(db: Session, project_id: str, document_id: str) -> bool:
 
 
 def initialize_documents(db: Session, project_id: str, business_form: BusinessForm | None) -> int:
-    """幂等初始化文书清单。返回新增数量。business_form=None 抛 ValueError。
+    """幂等初始化文书清单。返回新增数量。business_form=None 抛 ValueError。.
 
     查已有 document_name 集合（未删除），仅 insert 缺失项。
 
@@ -178,7 +178,8 @@ def initialize_documents(db: Session, project_id: str, business_form: BusinessFo
 
     """
     if business_form is None:
-        raise ValueError("business_form is None")
+        msg = "business_form is None"
+        raise ValueError(msg)
 
     templates = get_documents_for_business_form(business_form)
     if not templates:
@@ -210,7 +211,7 @@ def initialize_documents(db: Session, project_id: str, business_form: BusinessFo
                 is_deleted=False,
                 created_at=now,
                 updated_at=now,
-            )
+            ),
         )
 
     if new_docs:
@@ -225,7 +226,7 @@ def sync_documents_on_business_form_change(
     old_form: BusinessForm | None,
     new_form: BusinessForm | None,
 ) -> None:
-    """业务形式变更时追加新业务形式独有的文书（不删除已有记录）。
+    """业务形式变更时追加新业务形式独有的文书（不删除已有记录）。.
 
     - new_form=None：不操作
     - old_form == new_form：不操作（幂等）

@@ -117,7 +117,7 @@ class PropertyExportParams(BaseModel):
     sort_order: str = "desc"
 
     @classmethod
-    def from_query_params(  # noqa: PLR0913
+    def from_query_params(
         cls,
         status: str | None = None,
         community_name: str | None = None,

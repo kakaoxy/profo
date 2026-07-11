@@ -19,12 +19,12 @@ _ROLE_ALLOWED_FIELDS = {"name", "code", "description", "permissions", "is_active
 class RoleService:
     """角色服务."""
 
-    def get_roles(  # noqa: PLR0913
+    def get_roles(
         self,
         db: Session,
         name: str | None = None,
         code: str | None = None,
-        is_active: bool | None = None,  # noqa: FBT001
+        is_active: bool | None = None,
         page: int = 1,
         page_size: int | None = None,
     ) -> tuple[int, list[Role]]:

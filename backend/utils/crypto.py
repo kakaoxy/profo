@@ -32,7 +32,7 @@ def _get_fernet() -> Fernet:
         RuntimeError: ENCRYPTION_KEY 未配置时抛出（Fail Loud）
 
     """
-    global _fernet_instance
+    global _fernet_instance  # noqa: PLW0603
     if _fernet_instance is not None:
         return _fernet_instance
     with _lock:

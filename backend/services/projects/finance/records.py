@@ -22,7 +22,8 @@ class _RecordMixin:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             logger.error("Project not found: %s", project_id)
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
 
         # 编辑锁：已结算项目不可新增记录
         self._assert_finance_editable(project)
@@ -43,12 +44,14 @@ class _RecordMixin:
                 record_data.category == CashFlowCategory.PURCHASE_PRICE
                 and project.business_form != BusinessForm.WHOLESALE
             ):
-                raise ValidationError("收购款科目仅适用于收购美化项目")
+                msg = "收购款科目仅适用于收购美化项目"
+                raise ValidationError(msg)
             if (
                 record_data.category == CashFlowCategory.AGENCY_COMMISSION
                 and project.business_form == BusinessForm.WHOLESALE
             ):
-                raise ValidationError("中介佣金仅适用于代理美化项目")
+                msg = "中介佣金仅适用于代理美化项目"
+                raise ValidationError(msg)
 
         # 创建新的 FinanceRecord
         now = datetime.now(timezone.utc)
@@ -110,7 +113,8 @@ class _RecordMixin:
             )
         except Exception as e:
             logger.exception("Error getting cashflow records for project %s", project_id)
-            raise ServiceException("获取现金流记录失败") from e
+            msg = "获取现金流记录失败"
+            raise ServiceException(msg) from e
         else:
             logger.info("Found %d cashflow records for project %s", len(records), project_id)
             return records
@@ -124,7 +128,8 @@ class _RecordMixin:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             logger.error("Project not found or soft-deleted: %s", project_id)
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         self._assert_finance_editable(project)
 
         record = (
@@ -139,7 +144,8 @@ class _RecordMixin:
 
         if not record:
             logger.error("Cashflow record not found: %s for project %s", record_id, project_id)
-            raise ResourceNotFoundError("现金流记录不存在")
+            msg = "现金流记录不存在"
+            raise ResourceNotFoundError(msg)
 
         record.is_deleted = True
         record.updated_at = datetime.now(timezone.utc)
@@ -172,7 +178,8 @@ class _RecordMixin:
 
         if not record:
             logger.error("Finance record not found: %s", record_id)
-            raise ResourceNotFoundError("现金流记录不存在")
+            msg = "现金流记录不存在"
+            raise ResourceNotFoundError(msg)
 
         project_id = record.project_id
 
@@ -181,7 +188,8 @@ class _RecordMixin:
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             logger.error("Project not found or soft-deleted: %s", project_id)
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         self._assert_finance_editable(project)
 
         # 写入操作日志（与删除同一事务）

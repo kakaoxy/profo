@@ -34,7 +34,7 @@ def update_renovation_stage(
 
 
 @router.post("/{project_id}/renovation/photos")
-def upload_renovation_photo(  # noqa: PLR0913
+def upload_renovation_photo(
     project_id: Annotated[str, Path(description="项目ID")],
     stage: Annotated[str, Query(description="改造阶段")],
     url: Annotated[str, Query(description="图片URL")],

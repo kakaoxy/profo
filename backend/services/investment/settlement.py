@@ -42,7 +42,8 @@ class _SettlementMixin:
         self._assert_editable(inv)
 
         if inv.total_return is None:
-            raise ValidationError("收益总额未设置，无法调整分配比例")
+            msg = "收益总额未设置，无法调整分配比例"
+            raise ValidationError(msg)
 
         total_return = inv.total_return
 
@@ -58,7 +59,8 @@ class _SettlementMixin:
 
         adjustments_map = {a.investor_id: a for a in data.adjustments}
         if set(adjustments_map.keys()) != set(investor_map.keys()):
-            raise ValidationError("调整项与投资方列表不一致")
+            msg = "调整项与投资方列表不一致"
+            raise ValidationError(msg)
 
         total_ratio = Decimal(0)
         new_records: list[ReturnAdjustment] = []
@@ -82,8 +84,9 @@ class _SettlementMixin:
             new_records.append(record)
 
         if _quantize(total_ratio) != _HUNDRED:
+            msg = f"分配比例合计 {total_ratio}% 不等于 100%，请调整"
             raise ValidationError(
-                f"分配比例合计 {total_ratio}% 不等于 100%，请调整",
+                msg,
             )
 
         for r in new_records:
@@ -123,7 +126,8 @@ class _SettlementMixin:
         """结算：unsettled → settled，记录日期与说明，写日志."""
         inv = self._get_investment_or_404(investment_id)
         if inv.settlement_status == SettlementStatus.SETTLED:
-            raise ValidationError("该项目已结算，无需重复结算")
+            msg = "该项目已结算，无需重复结算"
+            raise ValidationError(msg)
         inv.settlement_status = SettlementStatus.SETTLED
         inv.settled_date = data.settled_date
         inv.settled_note = data.settled_note
@@ -146,7 +150,8 @@ class _SettlementMixin:
         """反结算：settled → unsettled，清空结算字段，写日志."""
         inv = self._get_investment_or_404(investment_id)
         if inv.settlement_status != SettlementStatus.SETTLED:
-            raise ValidationError("该项目未结算，无需反结算")
+            msg = "该项目未结算，无需反结算"
+            raise ValidationError(msg)
         inv.settlement_status = SettlementStatus.UNSETTLED
         inv.settled_date = None
         inv.settled_note = None

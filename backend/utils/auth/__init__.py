@@ -21,9 +21,9 @@ __all__ = [
     "create_access_token",
     "create_refresh_token",
     "decode_token",
-    "validate_token",
     # password.py
     "get_password_hash",
     "validate_password_strength",
+    "validate_token",
     "verify_password",
 ]

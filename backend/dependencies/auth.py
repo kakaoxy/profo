@@ -1,4 +1,4 @@
-"""认证相关依赖注入函数."""  # noqa: INP001
+"""认证相关依赖注入函数."""
 
 from collections.abc import Callable
 from typing import Annotated
@@ -60,10 +60,12 @@ async def _authenticate_by_api_key(db: DbSessionDep, api_key: str) -> User:
         # 使用run_in_threadpool调用同步的数据库操作
         user = await run_in_threadpool(ApiKeyService.authenticate_by_api_key, db, api_key)
     except Exception:  # noqa: BLE001
-        raise AuthenticationError("API Key 无效") from None
+        msg = "API Key 无效"
+        raise AuthenticationError(msg) from None
     # 角色二次校验：仅允许后台内部角色
     if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
-        raise PermissionDeniedError("该账号无权使用 API Key 调用机器接口")
+        msg = "该账号无权使用 API Key 调用机器接口"
+        raise PermissionDeniedError(msg)
     return user
 
 
@@ -91,7 +93,8 @@ async def require_api_key(
     # 只接受 X-API-Key Header
     api_key = request.headers.get("X-API-Key")
     if not api_key:
-        raise AuthenticationError("需要提供有效的 API Key")
+        msg = "需要提供有效的 API Key"
+        raise AuthenticationError(msg)
     return await _authenticate_by_api_key(db, api_key)
 
 
@@ -147,7 +150,8 @@ async def get_current_user(
                     expected_audience,
                 )
             except AuthenticationError:
-                raise AuthenticationError("无法验证凭据") from None
+                msg = "无法验证凭据"
+                raise AuthenticationError(msg) from None
     else:
         # Header token — 校验受众，避免C端Token用于后台或反之
         try:
@@ -158,7 +162,8 @@ async def get_current_user(
                 expected_audience,
             )
         except AuthenticationError:
-            raise AuthenticationError("无法验证凭据") from None
+            msg = "无法验证凭据"
+            raise AuthenticationError(msg) from None
 
     # 如果没有JWT token，尝试从X-API-Key Header获取API Key
     api_key = request.headers.get("X-API-Key")
@@ -166,7 +171,8 @@ async def get_current_user(
         return await _authenticate_by_api_key(db, api_key)
 
     # 没有任何认证信息
-    raise AuthenticationError("无法验证凭据")
+    msg = "无法验证凭据"
+    raise AuthenticationError(msg)
 
 
 # 当前用户依赖类型
@@ -189,7 +195,8 @@ def get_current_active_user(
 
     """
     if current_user.status != "active":
-        raise PermissionDeniedError("用户未激活")
+        msg = "用户未激活"
+        raise PermissionDeniedError(msg)
 
     return current_user
 
@@ -211,7 +218,8 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
 
     def role_checker(user: CurrentActiveUserDep) -> User:
         if user.role is None or user.role.code not in required_roles:
-            raise PermissionDeniedError("权限不足")
+            msg = "权限不足"
+            raise PermissionDeniedError(msg)
         return user
 
     return role_checker

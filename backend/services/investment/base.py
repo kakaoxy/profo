@@ -62,13 +62,15 @@ class _InvestmentServiceBase:
             .first()
         )
         if inv is None:
-            raise ResourceNotFoundError("跟投记录不存在")
+            msg = "跟投记录不存在"
+            raise ResourceNotFoundError(msg)
         return inv
 
     def _assert_editable(self, investment: Investment) -> None:
         """已结算项目拒绝写操作."""
         if investment.settlement_status == SettlementStatus.SETTLED:
-            raise ServiceException("已结算项目不可编辑，请先反结算", status_code=400)
+            msg = "已结算项目不可编辑，请先反结算"
+            raise ServiceException(msg, status_code=400)
 
     def _write_log(
         self,
@@ -227,7 +229,8 @@ class _InvestmentServiceBase:
             total += inv.share_ratio
         total += new_ratio
         if total > _HUNDRED:
-            raise ValidationError(f"所有投资方比例之和不能超过100%（当前合计 {total}%）")
+            msg = f"所有投资方比例之和不能超过100%（当前合计 {total}%）"
+            raise ValidationError(msg)
 
     def _validate_sub_ratios(self, sub_investors: list[SubInvestorCreate]) -> None:
         """校验子投资人内部占比合计 = 100%."""
@@ -235,7 +238,8 @@ class _InvestmentServiceBase:
             return
         total = sum((s.share_ratio for s in sub_investors), Decimal(0))
         if total != _HUNDRED:
-            raise ValidationError(f"子投资人内部占比之和必须等于100%（当前合计 {total}%）")
+            msg = f"子投资人内部占比之和必须等于100%（当前合计 {total}%）"
+            raise ValidationError(msg)
 
     def _validate_name_unique(
         self,
@@ -256,7 +260,8 @@ class _InvestmentServiceBase:
         if exclude_investor_id:
             query = query.filter(Investor.id != exclude_investor_id)
         if query.first() is not None:
-            raise ValidationError("该投资方名称已存在")
+            msg = "该投资方名称已存在"
+            raise ValidationError(msg)
 
     def _recalc_all_investor_amounts(self, investment: Investment) -> None:
         """按现有比例重算所有投资方及子投资人金额."""
@@ -285,7 +290,8 @@ class _InvestmentServiceBase:
             .first()
         )
         if proj is None:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         return proj
 
     def _get_project_code(self, project: Project) -> str:

@@ -45,7 +45,8 @@ class SalesService:
         """内部辅助：获取项目实例."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         return project
 
     def _validate_user_ids(self, sale: ProjectSale) -> None:
@@ -117,7 +118,8 @@ class SalesService:
 
         # 严格校验
         if project.status != ProjectStatus.SELLING.value:
-            raise BusinessLogicError("只有在售阶段才能添加销售记录")
+            msg = "只有在售阶段才能添加销售记录"
+            raise BusinessLogicError(msg)
 
         # 创建互动记录
         record = ProjectInteraction(
@@ -175,7 +177,8 @@ class SalesService:
         )
 
         if not record:
-            raise ResourceNotFoundError("销售记录不存在")
+            msg = "销售记录不存在"
+            raise ResourceNotFoundError(msg)
 
         record.is_deleted = True
         record.updated_at = datetime.now(timezone.utc)
@@ -187,7 +190,8 @@ class SalesService:
 
         # 允许从 在售 或 已售(修改信息) 状态操作
         if project.status not in [ProjectStatus.SELLING.value, ProjectStatus.SOLD.value]:
-            raise BusinessLogicError("只有在售或已售阶段的项目才能标记为已售")
+            msg = "只有在售或已售阶段的项目才能标记为已售"
+            raise BusinessLogicError(msg)
 
         # 更新状态
         project.status = ProjectStatus.SOLD.value

@@ -72,7 +72,8 @@ class LeadPriceService:
         """
         lead = self.db.query(Lead).filter(Lead.id == lead_id).first()
         if not lead:
-            raise ResourceNotFoundError("线索不存在")
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
 
         # 创建价格记录
         rec = LeadPriceHistory(

@@ -58,7 +58,7 @@ def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
 
 
 @router.get("")
-def get_leads(  # noqa: PLR0913
+def get_leads(
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     pagination: PaginationDep,

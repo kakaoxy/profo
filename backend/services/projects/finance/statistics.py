@@ -54,7 +54,8 @@ class _StatisticsMixin:
             .first()
         )
         if not row:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
 
         project, contract, sale, renovation = row
 
@@ -223,10 +224,7 @@ class _StatisticsMixin:
 
             reno_start = renovation.actual_start_date or renovation.contract_start_date
             reno_end = renovation.actual_end_date or datetime.now(timezone.utc)
-            if reno_start:
-                reno_days = (reno_end.date() - reno_start.date()).days
-            else:
-                reno_days = 0
+            reno_days = (reno_end.date() - reno_start.date()).days if reno_start else 0
 
             renovation_info = LedgerStatisticsRenovation(
                 company=renovation.renovation_company,

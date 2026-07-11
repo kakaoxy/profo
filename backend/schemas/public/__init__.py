@@ -9,6 +9,8 @@ from models.common import FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
 from utils.auth.password import validate_password_strength
 
+_MAX_IMAGE_URL_LENGTH = 500
+
 
 class PublicProjectFilter(BaseModel):
     """C端项目筛选参数."""
@@ -285,12 +287,15 @@ class PublicLeadCreate(BaseModel):
         """校验户型图 URL：允许相对路径（/开头，上传接口返回格式）或 http(s) URL，过滤脏数据."""
         for url in v:
             if not url.strip():
-                raise ValueError("图片 URL 不能为空")
+                msg = "图片 URL 不能为空"
+                raise ValueError(msg)
             if url.startswith("/"):
-                if len(url) > 500:
-                    raise ValueError("图片 URL 过长")
+                if len(url) > _MAX_IMAGE_URL_LENGTH:
+                    msg = "图片 URL 过长"
+                    raise ValueError(msg)
             elif not url.startswith(("http://", "https://")):
-                raise ValueError(f"无效的图片 URL: {url}")
+                msg = f"无效的图片 URL: {url}"
+                raise ValueError(msg)
         return v
 
 

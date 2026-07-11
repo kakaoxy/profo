@@ -18,7 +18,7 @@ from utils.auth import create_access_token, get_password_hash
 
 # 备注: 测试基础设施暂用 SQLite 内存数据库（生产代码已弃用 SQLite，见 settings.py / db.py）。
 # 未来可改用 PostgreSQL testcontainers 做集成测试。
-def _enable_sqlite_fk(dbapi_conn: Any, connection_record: Any) -> None:  # noqa: ANN401
+def _enable_sqlite_fk(dbapi_conn: Any, connection_record: Any) -> None:  # noqa: ANN401, ARG001
     cursor = dbapi_conn.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
@@ -120,7 +120,7 @@ def seeded_db(db_session: Session) -> dict[str, Any]:
 @pytest.fixture
 def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     """已认证的管理员 httpx 客户端."""
-    from main import app
+    from main import app  # noqa: PLC0415
 
     session = seeded_db["session"]
     admin_user = seeded_db["users"]["admin"]
@@ -139,7 +139,7 @@ def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]
 @pytest.fixture
 def user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     """已认证的普通用户 httpx 客户端."""
-    from main import app
+    from main import app  # noqa: PLC0415
 
     session = seeded_db["session"]
     normal_user = seeded_db["users"]["normal"]

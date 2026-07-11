@@ -4,7 +4,7 @@ import csv
 import io
 import logging
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -334,7 +334,7 @@ class _LedgerMixin:
             (contract.contract_no if contract else None) or (project.name if project else None) or project_id[:8]
         )
 
-        today = datetime.now().strftime("%Y%m%d")
+        today = datetime.now(tz=timezone.utc).strftime("%Y%m%d")
         filename_stem = f"资金账本_{project_code}_{today}"
 
         # 构建 CSV（UTF-8 with BOM，Excel 兼容）
@@ -373,10 +373,7 @@ class _LedgerMixin:
                     continue
 
                 if file_path.is_file():
-                    try:
-                        receipt_file_paths.append((f"receipts/{filename}", file_path))
-                    except Exception:
-                        logger.warning("读取票据文件失败: %s", file_path)
+                    receipt_file_paths.append((f"receipts/{filename}", file_path))
                 else:
                     logger.warning("票据文件不存在: %s", file_path)
 
@@ -389,7 +386,7 @@ class _LedgerMixin:
             for zip_path, file_path in receipt_file_paths:
                 try:
                     zf.write(file_path, zip_path)
-                except Exception:
+                except OSError:
                     logger.warning("写入票据文件到zip失败: %s", file_path)
 
         logger.info(

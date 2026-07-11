@@ -29,9 +29,11 @@ class _SettlementMixin:
         """结算：unsettled → settled，记录日期与说明，写日志."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         if project.finance_settlement_status == SettlementStatus.SETTLED:
-            raise ValidationError("该项目资金账本已结算，无需重复结算")
+            msg = "该项目资金账本已结算，无需重复结算"
+            raise ValidationError(msg)
 
         project.finance_settlement_status = SettlementStatus.SETTLED
         project.finance_settled_date = data.settled_date
@@ -61,9 +63,11 @@ class _SettlementMixin:
         """反结算：settled → unsettled，清空结算字段，写日志."""
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
-            raise ResourceNotFoundError("项目不存在")
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
         if project.finance_settlement_status != SettlementStatus.SETTLED:
-            raise ValidationError("该项目资金账本未结算，无需反结算")
+            msg = "该项目资金账本未结算，无需反结算"
+            raise ValidationError(msg)
 
         project.finance_settlement_status = SettlementStatus.UNSETTLED
         project.finance_settled_date = None

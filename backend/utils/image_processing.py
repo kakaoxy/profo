@@ -31,8 +31,9 @@ def generate_thumbnail(
     """
     try:
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        with Image.open(source_path) as img:
+        with Image.open(source_path) as src_img:
             # 按比例缩放，原图小于 max_width 时不放大
+            img = src_img
             if img.width > max_width:
                 ratio = max_width / img.width
                 new_height = int(img.height * ratio)
@@ -41,7 +42,7 @@ def generate_thumbnail(
             if img.mode == "P":
                 img = img.convert("RGBA")
             img.save(target_path, format="WEBP", quality=80)
-        return True
     except (UnidentifiedImageError, OSError, ValueError) as e:
         logger.warning("缩略图生成失败: %s -> %s, 错误: %s", source_path, target_path, e)
         return False
+    return True

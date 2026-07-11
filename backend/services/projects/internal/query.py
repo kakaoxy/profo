@@ -124,6 +124,7 @@ class ProjectQueryService:
             business_form: 业务形式筛选条件（精确匹配）
             page: 页码，从1开始
             page_size: 每页数量
+            include_interactions: 是否包含互动记录（sales_records）
 
         Returns:
             包含项目列表和分页信息的字典

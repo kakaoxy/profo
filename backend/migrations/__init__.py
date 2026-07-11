@@ -16,8 +16,9 @@
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
 - add_finance_record_counterparty_columns: 为 finance_records 表添加 counterparty/receipt_url 列（资金账本）
 - create_finance_record_logs_table: 幂等创建资金账本操作日志表（finance_record_logs）
-- add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填（多票据支持）
-- add_cashflow_category_enum_values: 同步 PostgreSQL cashflowcategory enum 与 Python CashFlowCategory 枚举（遍历所有值，幂等）
+- add_finance_record_receipt_urls_column: 为 finance_records 表添加 receipt_urls JSON 列并从旧 receipt_url 回填
+  （多票据支持）
+- add_cashflow_category_enum_values: 同步 PostgreSQL cashflowcategory enum 与 Python 枚举（幂等）
 - migrate_record_date_to_timestamptz: 将 finance_records.record_date 列类型从 timestamp
   迁移为 timestamptz（时区一致性修复，幂等）
 - migrate_project_date_columns_to_date: 将 projects 表 commission_start_date/commission_end_date/
@@ -46,7 +47,7 @@ _MIGRATION_BATCH_SIZE = 500
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
-    """检查某列是否已存在（跨方言）。"""
+    """检查某列是否已存在（跨方言）。."""
     inspector = inspect(engine)
     if table not in inspector.get_table_names():
         return False
@@ -54,14 +55,14 @@ def _column_exists(engine: Engine, table: str, column: str) -> bool:
 
 
 def _index_exists(engine: Engine, index_name: str) -> bool:
-    """检查某索引是否已存在。"""
+    """检查某索引是否已存在。."""
     if engine.dialect.name == "postgresql":
         with engine.connect() as conn:
             return bool(
                 conn.execute(
                     text("SELECT 1 FROM pg_indexes WHERE indexname = :index LIMIT 1"),
                     {"index": index_name},
-                ).first()
+                ).first(),
             )
     inspector = inspect(engine)
     for table in inspector.get_table_names():
@@ -71,7 +72,7 @@ def _index_exists(engine: Engine, index_name: str) -> bool:
 
 
 def add_token_version_column(engine: Engine) -> None:
-    """为 users 表添加 token_version INTEGER NOT NULL DEFAULT 1。
+    """为 users 表添加 token_version INTEGER NOT NULL DEFAULT 1。.
 
     SQLite 支持 ALTER TABLE ADD COLUMN，幂等。
     """
@@ -83,7 +84,7 @@ def add_token_version_column(engine: Engine) -> None:
 
 
 def add_phone_hash_column(engine: Engine) -> None:
-    """为 users 表添加 phone_hash 列及唯一索引（H-006）。
+    """为 users 表添加 phone_hash 列及唯一索引（H-006）。.
 
     Fernet 加密随机 IV 导致 phone 列无法维持唯一性，新增 phone_hash 列承载唯一约束。
     """
@@ -99,7 +100,7 @@ def add_phone_hash_column(engine: Engine) -> None:
 
 
 def encrypt_existing_phones(engine: Engine) -> None:
-    """将 users 表中明文手机号加密为 Fernet 密文。
+    """将 users 表中明文手机号加密为 Fernet 密文。.
 
     判定规则：Fernet 密文以 'gAAAAA' 开头；不以该前缀开头视为明文并加密。
     幂等：已是密文则跳过。
@@ -149,7 +150,7 @@ def encrypt_existing_phones(engine: Engine) -> None:
 
 
 def populate_phone_hash(engine: Engine) -> None:
-    """为已存用户回填 phone_hash（基于解密后的明文手机号）。
+    """为已存用户回填 phone_hash（基于解密后的明文手机号）。.
 
     必须在 encrypt_existing_phones 之后执行。
     使用基于 id 的游标分页，避免大数据量下 fetchall 导致 OOM。
@@ -192,7 +193,7 @@ def populate_phone_hash(engine: Engine) -> None:
 
 
 def add_stage_completed_dates_column(engine: Engine) -> None:
-    """为 l4_marketing_projects 表添加 stage_completed_dates 列。
+    """为 l4_marketing_projects 表添加 stage_completed_dates 列。.
 
     存储各改造阶段完成日期，JSON 格式 {stage: "YYYY-MM-DD"}。
     SQLite 支持 ALTER TABLE ADD COLUMN，幂等。
@@ -205,7 +206,7 @@ def add_stage_completed_dates_column(engine: Engine) -> None:
 
 
 def add_thumbnail_url_to_photos(engine: Engine) -> None:
-    """为 renovation_photos 与 property_media 表添加 thumbnail_url 列。
+    """为 renovation_photos 与 property_media 表添加 thumbnail_url 列。.
 
     存储压缩后缩略图 URL，供列表展示加速使用。
     SQLite 支持 ALTER TABLE ADD COLUMN，幂等：通过 _column_exists 检查跳过已存在列。
@@ -224,7 +225,7 @@ def add_thumbnail_url_to_photos(engine: Engine) -> None:
 
 
 def add_renovation_extra_amount_columns(engine: Engine) -> None:
-    """为 project_renovations 表添加定制柜/窗户/墙面处理金额列。
+    """为 project_renovations 表添加定制柜/窗户/墙面处理金额列。.
 
     - custom_cabinet_amount / window_amount: 直接 ADD COLUMN（幂等）
     - wall_treatment_amount: 优先 RENAME COLUMN appliance_amount TO wall_treatment_amount
@@ -297,7 +298,7 @@ def create_investment_tables(engine: Engine) -> None:
 
 
 def rename_return_adjustment_columns(engine: Engine) -> None:
-    """将 return_adjustments 表的回报率字段重命名为分配比例字段。
+    """将 return_adjustments 表的回报率字段重命名为分配比例字段。.
 
     语义变更：default_return_ratio → default_distribution_ratio，
     adjusted_return_ratio → adjusted_distribution_ratio。
@@ -464,7 +465,7 @@ def add_cashflow_category_enum_values(engine: Engine) -> None:
             ).scalar()
             if not exists:
                 # PostgreSQL DDL 不支持绑定参数；枚举值来自可信 Python enum，非用户输入
-                conn.execute(text("ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '%s'" % val))
+                conn.execute(text(f"ALTER TYPE cashflowcategory ADD VALUE IF NOT EXISTS '{val}'"))
                 added += 1
 
     if added:
@@ -497,7 +498,8 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
             else:
                 conn.execute(
                     text(
-                        "ALTER TABLE projects ADD COLUMN finance_settlement_status VARCHAR NOT NULL DEFAULT 'unsettled'",
+                        "ALTER TABLE projects ADD COLUMN finance_settlement_status "
+                        "VARCHAR NOT NULL DEFAULT 'unsettled'",
                     ),
                 )
         logger.info("迁移：projects 表新增 finance_settlement_status 列")
@@ -538,7 +540,7 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
                 ).scalar()
                 if not exists:
                     # PostgreSQL DDL 不支持绑定参数；枚举值来自可信 Python enum，非用户输入
-                    conn.execute(text("ALTER TYPE financeactiontype ADD VALUE IF NOT EXISTS '%s'" % val))
+                    conn.execute(text(f"ALTER TYPE financeactiontype ADD VALUE IF NOT EXISTS '{val}'"))
                     added += 1
         if added:
             logger.info("迁移：同步 financeactiontype enum（共 %d 个值）", added)
@@ -571,7 +573,7 @@ def migrate_record_date_to_timestamptz(engine: Engine) -> None:
         ).first()
     if row is None:
         return
-    # PostgreSQL: 'timestamp with time zone' / 'timestamp without time zone'
+    # PostgreSQL 类型：timestamp with/without time zone
     if row[0] == "timestamp with time zone":
         return
 
@@ -693,7 +695,7 @@ def migrate_user_datetime_columns_to_timestamptz(engine: Engine) -> None:
             ).first()
         if row is None:
             continue
-        # PostgreSQL: 'timestamp with time zone' / 'timestamp without time zone'
+        # PostgreSQL 类型：timestamp with/without time zone
         if row[0] == "timestamp with time zone":
             continue
         logger.info("迁移：%s.%s → timestamptz（当前类型 %s）", table_name, column_name, row[0])
@@ -744,7 +746,7 @@ def migrate_encrypted_columns_to_text(engine: Engine) -> None:
             ).first()
         if row is None:
             continue
-        # PostgreSQL: 'text' / 'character varying'
+        # PostgreSQL 类型：text / character varying
         if row[0] == "text":
             continue
         logger.info("迁移：%s.%s → text（当前类型 %s）", table_name, column_name, row[0])
@@ -813,7 +815,7 @@ def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
 
 
 def run_startup_migrations(engine: Engine) -> None:
-    """执行所有启动时迁移（幂等）。"""
+    """执行所有启动时迁移（幂等）。."""
     try:
         add_token_version_column(engine)
         add_phone_hash_column(engine)

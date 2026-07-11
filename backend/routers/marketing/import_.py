@@ -101,10 +101,12 @@ def import_from_l3_project(
     采用写时复制(CoW)模式，L4独立存储数据
     """
     if not query_service.check_project_exists(project_id):
-        raise ResourceNotFoundError("项目不存在或已删除")
+        msg = "项目不存在或已删除"
+        raise ResourceNotFoundError(msg)
 
     result = import_service.import_from_l3_project(project_id)
     if not result:
-        raise ServiceException("导入数据失败")
+        msg = "导入数据失败"
+        raise ServiceException(msg)
 
     return result

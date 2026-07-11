@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 PROPERTY_EXPIRATION_DAYS = 30
 
 
-def apply_filters(  # noqa: C901, PLR0912, PLR0913, PLR0915
+def apply_filters(
     query: Query,
     status: str | None = None,
     community_name: str | None = None,

@@ -65,7 +65,7 @@ class MarketingProjectService:
 
         return query
 
-    def get_projects(  # noqa: PLR0913
+    def get_projects(
         self,
         skip: int = 0,
         limit: int = 20,

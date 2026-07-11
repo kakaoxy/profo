@@ -133,12 +133,12 @@ __all__ = [
     "PropertyStatus",
     "PublishStatus",
     "RecordType",
-    "ReturnAdjustment",
-    "RenovationPhoto",
-    "RenovationStage",
-    "SettlementStatus",
     # 用户
     "RefreshToken",
+    "RenovationPhoto",
+    "RenovationStage",
+    "ReturnAdjustment",
     "Role",
+    "SettlementStatus",
     "User",
 ]
