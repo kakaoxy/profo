@@ -202,6 +202,7 @@ class _StatisticsMixin:
             custom_cabinet = renovation.custom_cabinet_amount or Decimal(0)
             window_amount = renovation.window_amount or Decimal(0)
             wall_treatment = renovation.wall_treatment_amount or Decimal(0)
+            other_decoration = renovation.other_decoration_amount or Decimal(0)
             design_fee = renovation.design_fee or Decimal(0)
             demolition_fee = renovation.demolition_fee or Decimal(0)
             garbage_fee = renovation.garbage_fee or Decimal(0)
@@ -213,6 +214,7 @@ class _StatisticsMixin:
                 + custom_cabinet
                 + window_amount
                 + wall_treatment
+                + other_decoration
                 + design_fee
                 + demolition_fee
                 + garbage_fee
@@ -235,6 +237,7 @@ class _StatisticsMixin:
                 custom_cabinet=custom_cabinet,
                 window=window_amount,
                 wall_treatment=wall_treatment,
+                other_decoration=other_decoration,
                 other_fee=other_fee,
                 days=reno_days,
             )
@@ -303,6 +306,21 @@ class _StatisticsMixin:
         # 公共科目金额
         channel_commission_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.CHANNEL_COMMISSION)
         engineering_renovation_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.ENGINEERING_RENOVATION)
+        hard_decoration_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.HARD_DECORATION)
+        soft_decoration_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.SOFT_DECORATION)
+        custom_cabinet_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.CUSTOM_CABINET_DECORATION)
+        window_decoration_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.WINDOW_DECORATION)
+        wall_decoration_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.WALL_DECORATION)
+        other_decoration_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.OTHER_DECORATION)
+        total_renovation_exp = (
+            hard_decoration_exp
+            + soft_decoration_exp
+            + custom_cabinet_exp
+            + window_decoration_exp
+            + wall_decoration_exp
+            + other_decoration_exp
+            + engineering_renovation_exp
+        )
         marketing_advance_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.MARKETING_ADVANCE)
         marketing_promotion_deduction_inc = _amount(CashFlowType.INCOME, CashFlowCategory.MARKETING_PROMOTION_DEDUCTION)
         project_incentive_exp = _amount(CashFlowType.EXPENSE, CashFlowCategory.PROJECT_INCENTIVE)
@@ -342,7 +360,7 @@ class _StatisticsMixin:
                 + quota_fee_exp
                 + holding_cost_monthly_exp
                 + channel_commission_exp
-                + engineering_renovation_exp
+                + total_renovation_exp
                 + marketing_advance_exp
                 - marketing_promotion_deduction_inc
                 + selling_commission_exp
@@ -360,7 +378,7 @@ class _StatisticsMixin:
                 + quota_fee_exp
                 + holding_cost_monthly_exp
                 + channel_commission_exp
-                + engineering_renovation_exp
+                + total_renovation_exp
                 + marketing_advance_exp
             )
             project_income = _amount(CashFlowType.INCOME, CashFlowCategory.SALE_PRICE)
@@ -381,7 +399,7 @@ class _StatisticsMixin:
 
             total_expense = (
                 channel_commission_exp
-                + engineering_renovation_exp
+                + total_renovation_exp
                 + tax_commission_diff_exp
                 + paid_commission_exp
                 - owner_commission_inc
@@ -394,7 +412,7 @@ class _StatisticsMixin:
                 + other_expense_exp
             )
             initial_investment = (
-                performance_bond_exp + channel_commission_exp + engineering_renovation_exp + marketing_advance_exp
+                performance_bond_exp + channel_commission_exp + total_renovation_exp + marketing_advance_exp
             )
             project_income = _amount(CashFlowType.INCOME, CashFlowCategory.VALUE_ADDED_SERVICE)
             gross_profit = (
@@ -431,6 +449,12 @@ class _StatisticsMixin:
                 is_wholesale=is_wholesale,
                 channel_commission_exp=channel_commission_exp,
                 engineering_renovation_exp=engineering_renovation_exp,
+                hard_decoration_exp=hard_decoration_exp,
+                soft_decoration_exp=soft_decoration_exp,
+                custom_cabinet_exp=custom_cabinet_exp,
+                window_decoration_exp=window_decoration_exp,
+                wall_decoration_exp=wall_decoration_exp,
+                other_decoration_exp=other_decoration_exp,
                 marketing_advance_exp=marketing_advance_exp,
                 marketing_promotion_deduction_inc=marketing_promotion_deduction_inc,
                 project_incentive_exp=project_incentive_exp,

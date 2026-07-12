@@ -39,6 +39,7 @@ _RENOVATION_ALLOWED_FIELDS = {
     "custom_cabinet_amount",
     "window_amount",
     "wall_treatment_amount",
+    "other_decoration_amount",
     "design_fee",
     "demolition_fee",
     "garbage_fee",

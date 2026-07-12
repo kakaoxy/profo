@@ -265,6 +265,17 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
         conn.execute(text("ALTER TABLE project_renovations ADD COLUMN wall_treatment_amount NUMERIC(15, 2)"))
 
 
+def add_other_decoration_amount_column(engine: Engine) -> None:
+    """为 project_renovations 表添加 other_decoration_amount 列（幂等）."""
+    from sqlalchemy import text  # noqa: PLC0415
+
+    if _column_exists(engine, "project_renovations", "other_decoration_amount"):
+        return
+    logger.info("迁移：为 project_renovations 表添加 other_decoration_amount 列")
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE project_renovations ADD COLUMN other_decoration_amount NUMERIC(15, 2)"))
+
+
 def create_investment_tables(engine: Engine) -> None:
     """幂等创建跟投管理 4 张表与索引.
 
@@ -863,6 +874,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_stage_completed_dates_column(engine)
         add_thumbnail_url_to_photos(engine)
         add_renovation_extra_amount_columns(engine)
+        add_other_decoration_amount_column(engine)
         run_fix_image_urls(engine)
         create_investment_tables(engine)
         rename_return_adjustment_columns(engine)

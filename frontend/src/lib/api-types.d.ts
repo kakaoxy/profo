@@ -2149,7 +2149,8 @@ export interface paths {
          *     **需要通过 X-API-Key Header 进行认证。**
          *
          *     Args:
-         *         properties: 房源数据列表（原始字典）
+         *         request: FastAPI 请求对象（速率限制所需）
+         *         properties: 房源数据列表（Pydantic 模型校验后的数据）
          *         db: 数据库会话
          *         current_user: 当前认证用户（通过 API Key）
          *
@@ -2434,7 +2435,7 @@ export interface paths {
         put?: never;
         /**
          * C端退出登录
-         * @description C端用户退出登录（当前JWT无状态机制下，服务端不撤销token，客户端应删除本地存储的token）
+         * @description C端用户退出登录，服务端撤销当前 refresh_token（access_token 短期过期自然失效）
          */
         post: operations["logout_api_v1_public_auth_logout_post"];
         delete?: never;
@@ -2871,7 +2872,7 @@ export interface components {
          * @description 现金流分类枚举.
          * @enum {string}
          */
-        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "渠道佣金" | "工程装修费" | "营销推广费" | "运营服务费" | "跟投本金退还" | "投资人利润分配" | "购房本金" | "房屋税费" | "名额费" | "持有成本-月供" | "其他税费" | "项目备用金" | "营销费垫付" | "财税成本" | "项目激励" | "代付佣金" | "税费及佣金差额" | "购房款-定金" | "购房款-首付" | "卖房佣金" | "卖房税费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款" | "保证金回收" | "增值服务费" | "项目跟投款" | "备用金回收" | "营销推广费抵扣" | "业主佣金";
+        CashFlowCategory: "履约保证金" | "中介佣金" | "装修费" | "营销费" | "其他支出" | "税费" | "运营费" | "收购款" | "渠道佣金" | "工程装修费" | "硬装" | "软装" | "定制柜" | "窗户" | "墙面" | "其他装修" | "营销推广费" | "运营服务费" | "跟投本金退还" | "投资人利润分配" | "购房本金" | "房屋税费" | "名额费" | "持有成本-月供" | "其他税费" | "项目备用金" | "营销费垫付" | "财税成本" | "项目激励" | "代付佣金" | "税费及佣金差额" | "购房款-定金" | "购房款-首付" | "卖房佣金" | "卖房税费" | "回收保证金" | "溢价款" | "服务费" | "其他收入" | "售房款" | "保证金回收" | "增值服务费" | "项目跟投款" | "备用金回收" | "营销推广费抵扣" | "业主佣金";
         /**
          * CashFlowRecordCreate
          * @description 创建现金流.
@@ -5219,6 +5220,8 @@ export interface components {
             window?: number | null;
             /** Wall Treatment */
             wall_treatment?: number | null;
+            /** Other Decoration */
+            other_decoration?: number | null;
             /** Other Fee */
             other_fee?: number | null;
             /**
@@ -6361,6 +6364,158 @@ export interface components {
             updated_at: string;
         };
         /**
+         * PropertyIngestionModel
+         * @description 统一的数据接收模型，支持 CSV 和 JSON.
+         *
+         *     使用 Field 的 alias 参数支持中文字段名.
+         */
+        PropertyIngestionModel: {
+            /**
+             * 数据源
+             * @description 数据来源平台
+             */
+            "\u6570\u636E\u6E90": string;
+            /**
+             * 房源Id
+             * @description 来源平台的房源ID
+             */
+            "\u623F\u6E90ID": string;
+            /** @description 房源状态 */
+            "\u72B6\u6001": components["schemas"]["PropertyStatus"];
+            /**
+             * 小区名
+             * @description 小区名称
+             */
+            "\u5C0F\u533A\u540D": string;
+            /**
+             * 室
+             * @description 室数量
+             */
+            "\u5BA4": number;
+            /**
+             * 厅
+             * @description 厅数量
+             * @default 0
+             */
+            "\u5385": number;
+            /**
+             * 卫
+             * @description 卫生间数量
+             * @default 0
+             */
+            "\u536B": number;
+            /**
+             * 朝向
+             * @description 房屋朝向
+             */
+            "\u671D\u5411": string;
+            /**
+             * 楼层
+             * @description 原始楼层字符串
+             */
+            "\u697C\u5C42": string;
+            /**
+             * 面积
+             * @description 建筑面积(㎡)
+             */
+            "\u9762\u79EF": number;
+            /**
+             * 套内面积
+             * @description 套内面积(㎡)
+             */
+            "\u5957\u5185\u9762\u79EF"?: number | null;
+            /**
+             * 挂牌价
+             * @description 挂牌价(万)
+             */
+            "\u6302\u724C\u4EF7"?: number | null;
+            /**
+             * 上架时间
+             * @description 上架时间
+             */
+            "\u4E0A\u67B6\u65F6\u95F4"?: string | null;
+            /**
+             * 成交价
+             * @description 成交价(万)
+             */
+            "\u6210\u4EA4\u4EF7"?: number | null;
+            /**
+             * 成交时间
+             * @description 成交时间
+             */
+            "\u6210\u4EA4\u65F6\u95F4"?: string | null;
+            /**
+             * 物业类型
+             * @description 物业类型
+             */
+            "\u7269\u4E1A\u7C7B\u578B"?: string | null;
+            /**
+             * 建筑年代
+             * @description 建筑年代
+             */
+            "\u5EFA\u7B51\u5E74\u4EE3"?: number | null;
+            /**
+             * 建筑结构
+             * @description 建筑结构
+             */
+            "\u5EFA\u7B51\u7ED3\u6784"?: string | null;
+            /**
+             * 装修情况
+             * @description 装修情况
+             */
+            "\u88C5\u4FEE\u60C5\u51B5"?: string | null;
+            /**
+             * 电梯
+             * @description 是否有电梯
+             */
+            "\u7535\u68AF"?: boolean | null;
+            /**
+             * 产权性质
+             * @description 产权性质
+             */
+            "\u4EA7\u6743\u6027\u8D28"?: string | null;
+            /**
+             * 产权年限
+             * @description 产权年限
+             */
+            "\u4EA7\u6743\u5E74\u9650"?: number | null;
+            /**
+             * 上次交易
+             * @description 上次交易信息
+             */
+            "\u4E0A\u6B21\u4EA4\u6613"?: string | null;
+            /**
+             * 供暖方式
+             * @description 供暖方式
+             */
+            "\u4F9B\u6696\u65B9\u5F0F"?: string | null;
+            /**
+             * 房源描述
+             * @description 房源描述
+             */
+            "\u623F\u6E90\u63CF\u8FF0"?: string | null;
+            /**
+             * 图片链接
+             * @description 房源图片URL列表
+             */
+            "\u56FE\u7247\u94FE\u63A5"?: string[] | null;
+            /**
+             * 城市Id
+             * @description 城市ID
+             */
+            "\u57CE\u5E02ID"?: number | null;
+            /**
+             * 行政区
+             * @description 行政区
+             */
+            "\u884C\u653F\u533A"?: string | null;
+            /**
+             * 商圈
+             * @description 商圈
+             */
+            "\u5546\u5708"?: string | null;
+        };
+        /**
          * PropertyResponse
          * @description 房源列表响应模型，包含计算字段.
          */
@@ -6430,6 +6585,12 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * PropertyStatus
+         * @description 房源状态枚举.
+         * @enum {string}
+         */
+        PropertyStatus: "在售" | "成交";
         /**
          * PublicCommunitySearchItem
          * @description C端小区搜索项.
@@ -7513,6 +7674,8 @@ export interface components {
             window_amount?: string | null;
             /** Wall Treatment Amount */
             wall_treatment_amount?: string | null;
+            /** Other Decoration Amount */
+            other_decoration_amount?: string | null;
             /** Design Fee */
             design_fee?: string | null;
             /** Demolition Fee */
@@ -7639,6 +7802,11 @@ export interface components {
              * @description 墙面处理金额
              */
             wall_treatment_amount?: number | string | null;
+            /**
+             * Other Decoration Amount
+             * @description 其他装修金额
+             */
+            other_decoration_amount?: number | string | null;
             /**
              * Design Fee
              * @description 设计费用
@@ -8237,7 +8405,7 @@ export interface components {
             nickname?: string | null;
             /**
              * Phone
-             * @description 手机号
+             * @description 完整手机号(仅后台可见，C端使用脱敏)
              */
             phone?: string | null;
             /**
@@ -8312,7 +8480,7 @@ export interface components {
             nickname?: string | null;
             /**
              * Phone
-             * @description 手机号
+             * @description 完整手机号(仅后台可见，C端使用脱敏)
              */
             phone?: string | null;
             /**
@@ -11747,14 +11915,33 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 用户名或密码错误 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 账号被禁用或无权登录后台 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 首次登录需修改密码 */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
         };
     };
@@ -11780,14 +11967,33 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 用户名或密码错误 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 账号被禁用或无权登录后台 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 首次登录需修改密码 */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
         };
     };
@@ -11813,6 +12019,13 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
+            /** @description 刷新令牌无效或已失效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -11821,6 +12034,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -11912,6 +12132,13 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
+            /** @description 授权码无效或已过期 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -11920,6 +12147,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -11945,6 +12179,13 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
+            /** @description 微信登录失败或用户标识无效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -11953,6 +12194,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -11974,6 +12222,20 @@ export interface operations {
                     "application/json": components["schemas"]["UserResponse"];
                 };
             };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 账号已禁用 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     get_api_key_info_api_v1_auth_api_key_get: {
@@ -11993,6 +12255,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ApiKeyInfoResponse"] | null;
                 };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 无权限（仅限内部角色） */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -12014,6 +12290,27 @@ export interface operations {
                     "application/json": components["schemas"]["ApiKeyCreateResponse"];
                 };
             };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 无权限（仅限内部角色） */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     delete_api_key_api_v1_auth_api_key_delete: {
@@ -12027,6 +12324,27 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 无权限（仅限内部角色） */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12693,9 +13011,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                }[];
+                "application/json": components["schemas"]["PropertyIngestionModel"][];
             };
         };
         responses: {
@@ -13037,14 +13353,26 @@ export interface operations {
                     "application/json": components["schemas"]["PublicRegisterResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description 用户名或手机号已存在 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 密码强度不足或字段校验失败 */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                content?: never;
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
                 };
+                content?: never;
             };
         };
     };
@@ -13070,6 +13398,20 @@ export interface operations {
                     "application/json": components["schemas"]["PublicLoginResponse"];
                 };
             };
+            /** @description 用户名或密码错误 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 非C端用户或账号被禁用 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -13078,6 +13420,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -13103,6 +13452,13 @@ export interface operations {
                     "application/json": components["schemas"]["PublicLoginResponse"];
                 };
             };
+            /** @description 刷新令牌无效或已失效 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -13111,6 +13467,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -13132,6 +13495,20 @@ export interface operations {
                     "application/json": components["schemas"]["PublicUserInfo"];
                 };
             };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 非C端用户或账号已禁用 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     logout_api_v1_public_auth_logout_post: {
@@ -13141,7 +13518,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicRefreshTokenRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -13151,6 +13532,36 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PublicLogoutResponse"];
                 };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 非C端用户 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
