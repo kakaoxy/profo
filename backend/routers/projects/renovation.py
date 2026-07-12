@@ -37,12 +37,12 @@ def update_renovation_stage(
 def upload_renovation_photo(
     project_id: Annotated[str, Path(description="项目ID")],
     stage: Annotated[str, Query(description="改造阶段")],
-    url: Annotated[str, Query(description="图片URL")],
+    url: Annotated[str, Query(description="图片URL", pattern=r"^https?://[^\s]+$")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
     filename: Annotated[str | None, Query(description="文件名")] = None,
     description: Annotated[str | None, Query(description="描述")] = None,
-    thumbnail_url: Annotated[str | None, Query(description="缩略图URL")] = None,
+    thumbnail_url: Annotated[str | None, Query(description="缩略图URL", pattern=r"^https?://[^\s]+$")] = None,
 ) -> RenovationPhotoResponse:
     """上传改造阶段照片."""
     return service.add_renovation_photo(project_id, stage, url, filename, description, thumbnail_url)

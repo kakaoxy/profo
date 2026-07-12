@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # 应用基础配置
     app_name: str = "Profo 房产数据中心"
     app_version: str = "0.9.0"
-    debug: bool = True
+    debug: bool = False
 
     # 数据库配置
     database_url: str  # 必填，从环境变量读取（PostgreSQL: postgresql+psycopg://user:pass@host:5432/dbname）

@@ -92,6 +92,9 @@ export async function exportInvestments(
 ): Promise<ActionResult<ArrayBuffer>> {
   try {
     const token = await getAccessTokenFromCookie();
+    if (!token) {
+      return { success: false, message: "登录已过期，请重新登录" };
+    }
     const url = new URL(getApiUrl("/api/v1/admin/investments/export"));
     if (params.search && params.search.trim()) {
       url.searchParams.set("search", params.search.trim());

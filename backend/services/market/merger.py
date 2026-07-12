@@ -59,10 +59,10 @@ class CommunityMerger:
             logger.info(success_msg)
             return MergeResult(success=True, affected_properties=affected_count, message=success_msg)
 
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             db.rollback()
-            error_msg = f"数据库错误: {e!s}"
-            logger.exception("合并失败: %s", error_msg)
+            error_msg = "数据库操作失败，请稍后重试或联系管理员"
+            logger.exception("合并失败")
             return MergeResult(success=False, affected_properties=0, message=error_msg)
 
         except ValueError as e:
@@ -73,8 +73,8 @@ class CommunityMerger:
 
         except Exception as e:
             db.rollback()
-            error_msg = f"系统未知错误: {e!s}"
-            logger.critical("合并发生未预期错误: %s", error_msg, exc_info=True)
+            error_msg = "系统内部错误，请联系管理员"
+            logger.critical("合并发生未预期错误: %s", e, exc_info=True)
             return MergeResult(success=False, affected_properties=0, message=error_msg)
 
     def _validate_communities(self, primary_id: int, merge_ids: list[int], db: Session) -> Community:

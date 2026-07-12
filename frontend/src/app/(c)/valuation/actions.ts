@@ -79,6 +79,10 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
       return createErrorResult(errorData.detail || cLocale.valuationAction.submitFailed);
     }
     const data = await response.json();
+    // 校验 id 格式，防止路径穿越或非预期重定向
+    if (!data?.id || typeof data.id !== "string" || !/^[\w-]+$/.test(data.id)) {
+      return createErrorResult(cLocale.common.error.networkRetry);
+    }
     redirect(`/leads/${data.id}`);
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;

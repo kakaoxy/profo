@@ -55,7 +55,7 @@ export async function POST() {
       }
 
       return NextResponse.json(
-        { error: "Token refresh failed", details: errorText },
+        { error: "Token refresh failed" },
         { status: response.status }
       );
     }
