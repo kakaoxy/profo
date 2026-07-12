@@ -95,6 +95,12 @@ class CashFlowCategory(str, enum.Enum):
     PURCHASE_PRICE = "收购款"  # 收购款（收购美化独有支出）
     CHANNEL_COMMISSION = "渠道佣金"
     ENGINEERING_RENOVATION = "工程装修费"
+    HARD_DECORATION = "硬装"
+    SOFT_DECORATION = "软装"
+    CUSTOM_CABINET_DECORATION = "定制柜"
+    WINDOW_DECORATION = "窗户"
+    WALL_DECORATION = "墙面"
+    OTHER_DECORATION = "其他装修"
     MARKETING_PROMOTION = "营销推广费"
     OPERATION_SERVICE = "运营服务费"
     INVESTMENT_PRINCIPAL_RETURN = "跟投本金退还"

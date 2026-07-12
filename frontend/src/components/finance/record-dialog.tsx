@@ -45,7 +45,7 @@ const LEDGER_CATEGORY_DATA: Record<TransactionType, Record<BusinessType, StageGr
   expense: {
     general: [
       { stage: "签约", items: ["渠道佣金"] },
-      { stage: "装修", items: ["工程装修费"] },
+      { stage: "装修", items: ["硬装", "软装", "定制柜", "窗户", "墙面", "其他装修"] },
       { stage: "在售", items: ["营销费垫付"] },
       { stage: "已售", items: ["营销推广费", "运营费", "财税成本", "项目激励", "跟投本金退还", "投资人利润分配"] },
       { stage: "其他", items: ["项目备用金", "其他支出"] },

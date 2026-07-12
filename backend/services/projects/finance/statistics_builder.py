@@ -24,6 +24,12 @@ class CalcBreakdownContext:
     # Common amounts
     channel_commission_exp: Decimal
     engineering_renovation_exp: Decimal
+    hard_decoration_exp: Decimal
+    soft_decoration_exp: Decimal
+    custom_cabinet_exp: Decimal
+    window_decoration_exp: Decimal
+    wall_decoration_exp: Decimal
+    other_decoration_exp: Decimal
     marketing_advance_exp: Decimal
     marketing_promotion_deduction_inc: Decimal
     project_incentive_exp: Decimal
@@ -77,7 +83,17 @@ def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreak
             _amt(CashFlowCategory.QUOTA_FEE.value, "+", ctx.quota_fee_exp),
             _amt(CashFlowCategory.HOLDING_COST_MONTHLY.value, "+", ctx.holding_cost_monthly_exp),
             _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "+", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.ENGINEERING_RENOVATION.value, "+", ctx.engineering_renovation_exp),
+            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
+            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
+            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
+            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
+            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
+            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
+            *(
+                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
+                if ctx.engineering_renovation_exp > 0
+                else []
+            ),
             _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
             _amt(CashFlowCategory.MARKETING_PROMOTION_DEDUCTION.value, "-", ctx.marketing_promotion_deduction_inc),
             _amt(CashFlowCategory.SELLING_COMMISSION.value, "+", ctx.selling_commission_exp),
@@ -95,7 +111,17 @@ def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreak
             _amt(CashFlowCategory.QUOTA_FEE.value, "+", ctx.quota_fee_exp),
             _amt(CashFlowCategory.HOLDING_COST_MONTHLY.value, "+", ctx.holding_cost_monthly_exp),
             _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "+", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.ENGINEERING_RENOVATION.value, "+", ctx.engineering_renovation_exp),
+            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
+            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
+            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
+            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
+            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
+            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
+            *(
+                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
+                if ctx.engineering_renovation_exp > 0
+                else []
+            ),
             _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
         ]
         s3_label = CashFlowCategory.SALE_PRICE.value
@@ -109,17 +135,28 @@ def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreak
         ]
         s1_formula = (
             "购房款-定金 + 购房款-首付 + 房屋税费 + 名额费 + 持有成本-月供 + "
-            "渠道佣金 + 工程装修费 + 营销费垫付 - 营销推广费抵扣 + "
+            "渠道佣金 + 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 营销费垫付 - 营销推广费抵扣 + "
             "卖房佣金 + 卖房税费 + 项目激励 + 营销推广费 + 运营费 + 财税成本 + 其他支出"
         )
         s2_formula = (
-            "购房款-定金 + 购房款-首付 + 房屋税费 + 名额费 + 持有成本-月供 + 渠道佣金 + 工程装修费 + 营销费垫付"
+            "购房款-定金 + 购房款-首付 + 房屋税费 + 名额费 + 持有成本-月供 + 渠道佣金 + "
+            "硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 营销费垫付"
         )
         s4_formula = "售房款 - 项目前期投入 - 卖房佣金 - 卖房税费 - 项目激励 - 其他支出"
     else:
         s1_items = [
             _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.ENGINEERING_RENOVATION.value, "+", ctx.engineering_renovation_exp),
+            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
+            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
+            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
+            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
+            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
+            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
+            *(
+                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
+                if ctx.engineering_renovation_exp > 0
+                else []
+            ),
             _amt(CashFlowCategory.TAX_COMMISSION_DIFF.value, "+", ctx.tax_commission_diff_exp),
             _amt(CashFlowCategory.PAID_COMMISSION.value, "+", ctx.paid_commission_exp),
             _amt(CashFlowCategory.OWNER_COMMISSION.value, "-", ctx.owner_commission_inc),
@@ -134,7 +171,17 @@ def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreak
         s2_items = [
             _amt(CashFlowCategory.PERFORMANCE_BOND.value, "", ctx.performance_bond_exp),
             _amt(CashFlowCategory.CHANNEL_COMMISSION.value, "+", ctx.channel_commission_exp),
-            _amt(CashFlowCategory.ENGINEERING_RENOVATION.value, "+", ctx.engineering_renovation_exp),
+            _amt(CashFlowCategory.HARD_DECORATION.value, "+", ctx.hard_decoration_exp),
+            _amt(CashFlowCategory.SOFT_DECORATION.value, "+", ctx.soft_decoration_exp),
+            _amt(CashFlowCategory.CUSTOM_CABINET_DECORATION.value, "+", ctx.custom_cabinet_exp),
+            _amt(CashFlowCategory.WINDOW_DECORATION.value, "+", ctx.window_decoration_exp),
+            _amt(CashFlowCategory.WALL_DECORATION.value, "+", ctx.wall_decoration_exp),
+            _amt(CashFlowCategory.OTHER_DECORATION.value, "+", ctx.other_decoration_exp),
+            *(
+                [_amt(CashFlowCategory.ENGINEERING_RENOVATION.value + "(历史)", "+", ctx.engineering_renovation_exp)]
+                if ctx.engineering_renovation_exp > 0
+                else []
+            ),
             _amt(CashFlowCategory.MARKETING_ADVANCE.value, "+", ctx.marketing_advance_exp),
         ]
         s3_label = CashFlowCategory.VALUE_ADDED_SERVICE.value
@@ -148,10 +195,10 @@ def build_calc_breakdown(ctx: CalcBreakdownContext) -> LedgerStatisticsCalcBreak
             _amt(CashFlowCategory.OTHER_EXPENSE.value, "-", ctx.other_expense_exp),
         ]
         s1_formula = (
-            "渠道佣金 + 工程装修费 + 税费及佣金差额 + 代付佣金 - 业主佣金 + "
+            "渠道佣金 + 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 税费及佣金差额 + 代付佣金 - 业主佣金 + "
             "营销费垫付 - 营销推广费抵扣 + 项目激励 + 营销推广费 + 运营费 + 财税成本 + 其他支出"
         )
-        s2_formula = "履约保证金 + 渠道佣金 + 工程装修费 + 营销费垫付"
+        s2_formula = "履约保证金 + 渠道佣金 + 硬装 + 软装 + 定制柜 + 窗户 + 墙面 + 其他装修 + 营销费垫付"
         s4_formula = "增值服务费 - 项目前期投入 - 税费及佣金差额 - 代付佣金 + 业主佣金 - 项目激励 - 其他支出"
 
     # 通用 S5-S8

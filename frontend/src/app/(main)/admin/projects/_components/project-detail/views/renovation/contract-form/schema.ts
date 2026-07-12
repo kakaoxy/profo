@@ -27,13 +27,13 @@ export const renovationContractSchema = z.object({
 
   // 软装费用
   soft_budget: z.number().optional(),
-  soft_actual_cost: z.number().optional(),
   soft_detail_attachment: z.string().max(500).optional(),
 
-  // 定制柜/窗户/墙面处理扩展金额
+  // 定制柜/窗户/墙面/其他装修扩展金额
   custom_cabinet_amount: z.number().optional(),
   window_amount: z.number().optional(),
   wall_treatment_amount: z.number().optional(),
+  other_decoration_amount: z.number().optional(),
 
   // 其他费用
   design_fee: z.number().optional(),

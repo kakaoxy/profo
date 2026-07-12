@@ -75,7 +75,7 @@ export function TimeSection({ values, setValue, isEditing }: ContractSectionsPro
   );
 }
 
-// 装修费用（硬装+软装+定制柜+窗户+电器）
+// 装修费用（硬装+软装+定制柜+窗户+墙面+其他装修）
 export function DecorationCostSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
@@ -85,39 +85,31 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
       </h4>
       <div className="grid grid-cols-3 gap-3">
         <NumberInputField
-          label="硬装金额"
+          label="硬装"
           value={values.hard_contract_amount}
           onChange={(v) => setValue("hard_contract_amount", v)}
-          placeholder="硬装合同金额"
+          placeholder="硬装金额"
           disabled={!isEditing}
           suffix="元"
         />
         <NumberInputField
-          label="软装预算"
+          label="软装"
           value={values.soft_budget}
           onChange={(v) => setValue("soft_budget", v)}
-          placeholder="软装预算"
+          placeholder="软装金额"
           disabled={!isEditing}
           suffix="元"
         />
         <NumberInputField
-          label="软装实际"
-          value={values.soft_actual_cost}
-          onChange={(v) => setValue("soft_actual_cost", v)}
-          placeholder="软装实际成本"
-          disabled={!isEditing}
-          suffix="元"
-        />
-        <NumberInputField
-          label="定制柜定额"
+          label="定制柜"
           value={values.custom_cabinet_amount}
           onChange={(v) => setValue("custom_cabinet_amount", v)}
-          placeholder="定制柜定额"
+          placeholder="定制柜金额"
           disabled={!isEditing}
           suffix="元"
         />
         <NumberInputField
-          label="窗户金额"
+          label="窗户"
           value={values.window_amount}
           onChange={(v) => setValue("window_amount", v)}
           placeholder="窗户金额"
@@ -125,10 +117,18 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           suffix="元"
         />
         <NumberInputField
-          label="墙面处理"
+          label="墙面"
           value={values.wall_treatment_amount}
           onChange={(v) => setValue("wall_treatment_amount", v)}
-          placeholder="墙面处理金额"
+          placeholder="墙面金额"
+          disabled={!isEditing}
+          suffix="元"
+        />
+        <NumberInputField
+          label="其他装修"
+          value={values.other_decoration_amount}
+          onChange={(v) => setValue("other_decoration_amount", v)}
+          placeholder="其他装修金额"
           disabled={!isEditing}
           suffix="元"
         />
