@@ -86,7 +86,14 @@ class ProjectStateManager:
         new_status = status_update.status.value
 
         # 锁定 project 行防止并发状态更新（TOCTOU）
-        locked_project = self.db.query(Project).filter(Project.id == project.id).with_for_update().first()
+        # populate_existing() 强制从数据库刷新属性，避免 identity map 返回陈旧对象
+        locked_project = (
+            self.db.query(Project)
+            .filter(Project.id == project.id)
+            .with_for_update()
+            .populate_existing()
+            .first()
+        )
         if locked_project is None:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
