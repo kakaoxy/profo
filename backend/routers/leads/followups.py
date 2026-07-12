@@ -2,17 +2,20 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Request
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.lead import FollowUpCreate, FollowUpResponse
 from services.leads import LeadFollowUpService
+from utils.common import RateLimits, limiter
 
 router = APIRouter()
 
 
 @router.post("/{lead_id}/follow-ups")
+@limiter.limit(RateLimits.LEAD_UPDATE)
 def add_follow_up(
+    request: Request,
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],

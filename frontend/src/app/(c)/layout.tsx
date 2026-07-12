@@ -38,7 +38,7 @@ export default async function CLayout({
 
   return (
     <AuthProvider
-      initialSession={session}
+      initialSession={session ? { user: session.user } : null}
       actions={auth.actions}
     >
       <ClientShell>{children}</ClientShell>

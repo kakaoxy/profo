@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, act, renderHook } from "@testing-library/react";
 import React from "react";
 import type {
-  Session,
+  ClientSessionData,
   SessionActionData,
   ActionResult,
   ResolvedAuthConfig,
@@ -35,9 +35,7 @@ vi.mock("../config", () => ({
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const authenticatedSession: Session = {
-  accessToken: "access.jwt.token",
-  refreshToken: "refresh.jwt.token",
+const authenticatedSession: ClientSessionData = {
   user: { id: "u-1", email: "user@example.com" },
 };
 

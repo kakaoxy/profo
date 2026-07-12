@@ -109,8 +109,8 @@ def export_projects(
     request: Request,
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
-    status: Annotated[str | None, Query(description="项目状态筛选")] = None,
-    community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
+    status: Annotated[str | None, Query(max_length=100, description="项目状态筛选")] = None,
+    community_name: Annotated[str | None, Query(max_length=100, description="小区名称筛选")] = None,
 ) -> StreamingResponse:
     """导出项目数据为 CSV 文件.
 

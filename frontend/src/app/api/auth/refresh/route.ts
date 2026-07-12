@@ -81,13 +81,8 @@ export async function POST() {
 
     debugLog("[admin refresh route] Token 刷新成功");
 
-    // 返回新的 access_token，让客户端可以使用
-    // 注意：refresh_token 仍然是 httpOnly cookie，不会返回给客户端
-    return NextResponse.json({
-      success: true,
-      access_token: data.access_token,
-      expires_in: data.expires_in,
-    });
+    // [安全修复] Token 仅通过 httpOnly cookie 传递，不返回到 JS 可读的响应体
+    return NextResponse.json({ success: true });
   } catch (error) {
     debugLog("[admin refresh route] 刷新时发生异常", {
       error: error instanceof Error ? error.message : String(error),

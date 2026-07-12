@@ -11,6 +11,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import ClassVar, Literal, TypedDict
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from models import RefreshToken, Role, User
@@ -121,8 +122,13 @@ class AuthService:
             status="active",
         )
         db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
+        try:
+            db.commit()
+            db.refresh(db_user)
+        except IntegrityError as e:
+            db.rollback()
+            msg = "用户名或手机号已被占用"
+            raise ConflictError(msg) from e
 
         return db_user
 
@@ -389,14 +395,16 @@ class AuthService:
             msg = "刷新令牌已失效，请重新登录"
             raise AuthenticationError(msg)
 
-        record = db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
-        if record is None or record.revoked:
+        # 原子条件 UPDATE：防止并发刷新竞态（两个请求同时读到 revoked=False）
+        updated = (
+            db.query(RefreshToken)
+            .filter(RefreshToken.jti == jti, RefreshToken.revoked.is_(False))
+            .update({RefreshToken.revoked: True})
+        )
+        db.commit()
+        if updated == 0:
             msg = "刷新令牌已失效，请重新登录"
             raise AuthenticationError(msg)
-
-        # 撤销旧 jti，防止同一 refresh_token 被重复利用
-        record.revoked = True
-        db.commit()
 
         # 继承原 Token 的受众，避免刷新后跨系统
         inherited_audience = payload.get("aud")
@@ -419,7 +427,10 @@ class AuthService:
         refresh_token 也无法再换取新 access_token（纵深防御）。
 
         """
-        user.token_version = (user.token_version or 0) + 1
+        # 原子递增 token_version，防止并发 read-modify-write 竞态
+        db.query(User).filter(User.id == user.id).update(
+            {User.token_version: User.token_version + 1}, synchronize_session=False
+        )
         # 撤销该用户所有未撤销的 refresh_token 记录
         db.query(RefreshToken).filter(
             RefreshToken.user_id == user.id,

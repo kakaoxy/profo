@@ -51,16 +51,21 @@ class _InvestmentServiceBase:
 
     # ==================== 私有 helper ====================
 
-    def _get_investment_or_404(self, investment_id: str) -> Investment:
-        """获取跟投记录，不存在或已软删抛 404."""
-        inv = (
-            self.db.query(Investment)
-            .filter(
-                Investment.id == investment_id,
-                Investment.deleted_at.is_(None),
-            )
-            .first()
+    def _get_investment_or_404(self, investment_id: str, *, for_update: bool = False) -> Investment:
+        """获取跟投记录，不存在或已软删抛 404.
+
+        Args:
+            investment_id: 跟投记录 ID
+            for_update: 是否加行级锁（用于结算/反结算等需要并发控制的场景）
+
+        """
+        query = self.db.query(Investment).filter(
+            Investment.id == investment_id,
+            Investment.deleted_at.is_(None),
         )
+        if for_update:
+            query = query.with_for_update()
+        inv = query.first()
         if inv is None:
             msg = "跟投记录不存在"
             raise ResourceNotFoundError(msg)

@@ -59,7 +59,7 @@ _InvestmentServiceDep = Annotated[InvestmentService, Depends(get_investment_serv
 )
 def list_investments(
     service: _InvestmentServiceDep,
-    search: Annotated[str | None, Query(description="模糊搜索: 项目编号/小区/地址")] = None,
+    search: Annotated[str | None, Query(max_length=100, description="模糊搜索: 项目编号/小区/地址")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
     settlement_status: Annotated[SettlementStatus | None, Query(description="跟投状态筛选")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
@@ -95,7 +95,7 @@ def get_investment_stats(
 def export_investments(
     request: Request,
     service: _InvestmentServiceDep,
-    search: Annotated[str | None, Query(description="模糊搜索")] = None,
+    search: Annotated[str | None, Query(max_length=100, description="模糊搜索")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
     settlement_status: Annotated[SettlementStatus | None, Query(description="跟投状态筛选")] = None,
 ) -> StreamingResponse:

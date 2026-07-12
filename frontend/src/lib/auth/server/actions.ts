@@ -110,7 +110,7 @@ export async function fetchSessionAction(): Promise<
 
     const user = await config.adapter.fetchUser(accessToken);
     debugLog("fetchSessionAction: session resolved", { userId: user.id });
-    return { success: true, data: { accessToken, refreshToken, user } };
+    return { success: true, data: { user } };
   } catch (error) {
     debugLog("fetchSessionAction: unexpected error", {
       error: error instanceof Error ? error.message : String(error),
@@ -173,11 +173,7 @@ export async function loginAction(
 
     const result: ActionResult<SessionActionData> = {
       success: true,
-      data: {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user,
-      },
+      data: { user },
     };
 
     if (shouldRedirect) {
@@ -320,11 +316,7 @@ export async function updateSessionTokenAction(
 
     return {
       success: true,
-      data: {
-        accessToken: validated.accessToken,
-        refreshToken: validated.refreshToken,
-        user,
-      },
+      data: { user },
     };
   } catch (error) {
     debugLog("updateSessionTokenAction: unexpected error", {

@@ -24,8 +24,8 @@ def get_roles(
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
     pagination: PaginationDep,
-    name: Annotated[str | None, Query(description="角色名称搜索")] = None,
-    code: Annotated[str | None, Query(description="角色代码搜索")] = None,
+    name: Annotated[str | None, Query(max_length=100, description="角色名称搜索")] = None,
+    code: Annotated[str | None, Query(max_length=100, description="角色代码搜索")] = None,
     is_active: Annotated[bool | None, Query(description="是否激活筛选")] = None,
 ) -> RoleListResponse:
     """获取角色列表，支持搜索和筛选."""

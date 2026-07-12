@@ -84,6 +84,7 @@ class ApiKeyService:
                     ApiKey.status == "active",
                     ApiKey.deleted_at.is_(None),
                 )
+                .with_for_update()
                 .first()
             )
 

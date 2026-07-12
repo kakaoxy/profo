@@ -124,7 +124,7 @@ class _SettlementMixin:
         operator_id: str,
     ) -> InvestmentResponse:
         """结算：unsettled → settled，记录日期与说明，写日志."""
-        inv = self._get_investment_or_404(investment_id)
+        inv = self._get_investment_or_404(investment_id, for_update=True)
         if inv.settlement_status == SettlementStatus.SETTLED:
             msg = "该项目已结算，无需重复结算"
             raise ValidationError(msg)
@@ -148,7 +148,7 @@ class _SettlementMixin:
         operator_id: str,
     ) -> InvestmentResponse:
         """反结算：settled → unsettled，清空结算字段，写日志."""
-        inv = self._get_investment_or_404(investment_id)
+        inv = self._get_investment_or_404(investment_id, for_update=True)
         if inv.settlement_status != SettlementStatus.SETTLED:
             msg = "该项目未结算，无需反结算"
             raise ValidationError(msg)

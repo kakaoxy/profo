@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from services.system import save_failed_record
+from utils.csv_exporter import sanitize_csv_cell
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ class FailedRecordHandler:
                     "错误原因": record["error"],
                 }
                 for key in fieldnames[2:]:
-                    out_row[key] = record["data"].get(key, "")
+                    out_row[key] = sanitize_csv_cell(record["data"].get(key, ""))
                 writer.writerow(out_row)
 
         logger.info("失败记录文件已生成: %s", filepath)

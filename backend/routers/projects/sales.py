@@ -35,7 +35,9 @@ def update_sales_roles(
 
 
 @router.post("/{project_id}/selling/viewings", status_code=201)
+@limiter.limit(RateLimits.SALES_UPDATE)
 def create_viewing_record(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
@@ -46,7 +48,9 @@ def create_viewing_record(
 
 
 @router.post("/{project_id}/selling/offers", status_code=201)
+@limiter.limit(RateLimits.SALES_UPDATE)
 def create_offer_record(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
@@ -57,7 +61,9 @@ def create_offer_record(
 
 
 @router.post("/{project_id}/selling/negotiations", status_code=201)
+@limiter.limit(RateLimits.SALES_UPDATE)
 def create_negotiation_record(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
@@ -72,7 +78,7 @@ def get_sales_records(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
-    record_type: Annotated[str | None, Query(description="记录类型筛选")] = None,
+    record_type: Annotated[str | None, Query(max_length=100, description="记录类型筛选")] = None,
 ) -> SalesRecordListResponse:
     """获取销售记录."""
     records = service.get_sales_records(project_id, record_type)

@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
 from db import engine, init_db
@@ -57,15 +58,12 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     """应用生命周期管理.
 
     在应用启动时初始化数据库和验证配置.
     """
     logger.info("Starting Profo Real Estate Data Center...")
-
-    app.state.limiter = limiter
-    logger.info("速率限制器已初始化")
 
     try:
         from utils.jwt_validator import check_jwt_configuration  # noqa: PLC0415
@@ -151,6 +149,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID", "X-Requested-With"],
 )
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 
 @app.middleware("http")

@@ -1,6 +1,7 @@
 """跟投列表 Excel 导出."""
 
 from models.common import ProjectStatus, SettlementStatus
+from utils.csv_exporter import sanitize_csv_cell
 
 
 class _ExporterMixin:
@@ -57,8 +58,8 @@ class _ExporterMixin:
         for it in items:
             ws.append(
                 [
-                    it.project_code,
-                    it.project_name,
+                    sanitize_csv_cell(it.project_code),
+                    sanitize_csv_cell(it.project_name),
                     status_label.get(it.project_status, "-") if it.project_status else "-",
                     settle_label.get(it.settlement_status, "-"),
                     float(it.total_investment),

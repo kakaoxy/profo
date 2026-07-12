@@ -41,6 +41,11 @@ export interface Session {
   user: SessionUser;
 }
 
+/** 客户端安全的 session 数据（不含 token，防止 XSS 窃取）. */
+export interface ClientSessionData {
+  user: SessionUser;
+}
+
 // ─── OAuth ────────────────────────────────────────────────────────────────────
 
 /**
@@ -250,20 +255,14 @@ export type ClientSession =
   | {
       status: "loading";
       user: null;
-      accessToken: null;
-      refreshToken: null;
     }
   | {
       status: "authenticated";
       user: SessionUser;
-      accessToken: string;
-      refreshToken: string;
     }
   | {
       status: "unauthenticated";
       user: null;
-      accessToken: null;
-      refreshToken: null;
     };
 
 // ─── Action Results ───────────────────────────────────────────────────────────
@@ -273,7 +272,7 @@ export type ActionResult<TData> =
   | { success: true; data: TData }
   | { success: false; error: string };
 
-export type SessionActionData = Session;
+export type SessionActionData = ClientSessionData;
 
 /**
  * Options accepted by the login Server Action.

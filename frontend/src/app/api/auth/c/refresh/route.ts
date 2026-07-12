@@ -12,7 +12,7 @@ import {
  *
  * cClient (openapi-fetch) 与 swr.ts 在收到 401 时会调用此路由刷新 token。
  * 内部走 library adapter.refreshToken，写回 c_access_token / c_refresh_token cookies。
- * 返回 { success, access_token, expires_in } 兼容既有客户端中间件协议。
+ * 返回 { success: true }，token 仅通过 httpOnly cookie 传递，不暴露给客户端 JS。
  */
 export async function POST() {
   const config = auth.config;
@@ -40,10 +40,8 @@ export async function POST() {
     const refreshed = await config.adapter.refreshToken(tokens.refreshToken);
     await setTokenCookies(refreshed, config);
 
-    return NextResponse.json({
-      success: true,
-      access_token: refreshed.accessToken,
-    });
+    // [安全修复] Token 仅通过 httpOnly cookie 传递，不返回到 JS 可读的响应体
+    return NextResponse.json({ success: true });
   } catch (error) {
     // 刷新失败（后端拒绝等）：清 cookies
     await clearTokenCookies(config);

@@ -49,8 +49,8 @@ def get_import_service(db: DbSessionDep) -> L4MarketingImportService:
 def list_available_projects(
     service: Annotated[L4MarketingQueryService, Depends(get_query_service)],
     pagination: PaginationDep,
-    community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
-    status: Annotated[str | None, Query(description="项目状态筛选")] = None,
+    community_name: Annotated[str | None, Query(max_length=100, description="小区名称筛选")] = None,
+    status: Annotated[str | None, Query(max_length=100, description="项目状态筛选")] = None,
 ) -> L3ProjectListResponse:
     """获取可用于关联的L3项目列表.
 

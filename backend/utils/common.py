@@ -3,11 +3,28 @@
 用于避免循环导入.
 """
 
+from fastapi import Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
+
+TRUSTED_PROXIES = {"127.0.0.1", "::1"}
+
+
+def _get_client_ip(request: Request) -> str:
+    """获取客户端真实 IP.
+
+    仅当直接连接来自可信代理时才读取 X-Forwarded-For，
+    防止攻击者伪造 XFF 头绕过速率限制。
+    """
+    client_host = request.client.host if request.client else "unknown"
+    if client_host in TRUSTED_PROXIES:
+        xff = request.headers.get("X-Forwarded-For")
+        if xff:
+            return xff.split(",")[0].strip()
+    return client_host
+
 
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=_get_client_ip,
     default_limits=["200/day", "50/hour"],
     config_filename=".slowapi.env",
 )
@@ -24,6 +41,7 @@ class RateLimits:
     AUTH_LOGIN = "5/minute"
     AUTH_REFRESH = "10/minute"
     AUTH_API_KEY_DELETE = "20/hour"
+    AUTH_API_KEY_CREATE = "20/hour"
 
     # ==================== 用户管理模块 ====================
     USER_LIST = "60/minute"
@@ -84,6 +102,9 @@ class RateLimits:
     # ==================== 文件上传模块 ====================
     FILE_UPLOAD = "50/hour"
     CSV_IMPORT = "30/hour"
+
+    # ==================== 推送模块 ====================
+    PUSH_API = "10/hour"
 
     # ==================== C端公开接口 ====================
     PUBLIC_PROFILE_UPDATE = "20/minute"

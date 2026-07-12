@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { randomUUID } from "crypto";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { auth } from "@/auth";
 import { debugLog } from "@/lib/auth/config";
@@ -41,10 +42,12 @@ function isTokenExpired(token: string, bufferMs = 5 * 60 * 1000): boolean {
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
   // HSTS 由 TLS 终止层（nginx）负责配置，不在应用代理层设置
-  // CSP 先以 Report-Only 模式上线观察，确认无业务影响后切换为强制模式
+  // CSP 使用 nonce 替代 unsafe-inline，先以 Report-Only 模式上线观察
+  const nonce = randomUUID();
+  response.headers.set("x-nonce", nonce);
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'nonce-${nonce}'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "connect-src 'self'",

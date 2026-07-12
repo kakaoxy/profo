@@ -1,4 +1,9 @@
-import { tryRefreshTokenClient } from "./api-client";
+import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
+
+function getRefreshEndpoint(): string {
+  const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
+}
 
 export class AuthError extends Error {
   constructor() {
@@ -17,12 +22,9 @@ export class ForbiddenError extends Error {
 export async function fetcher<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
   if (res.status === 401) {
-    const newToken = await tryRefreshTokenClient();
-    if (newToken) {
-      const retryRes = await fetch(url, {
-        credentials: "include",
-        headers: { Authorization: `Bearer ${newToken}` },
-      });
+    const { success: refreshed } = await refreshTokensDedup(getRefreshEndpoint());
+    if (refreshed) {
+      const retryRes = await fetch(url, { credentials: "include" });
       if (retryRes.status === 401 || retryRes.status === 403) throw new AuthError();
       if (!retryRes.ok) {
         const error = await retryRes.json().catch(() => ({ detail: "请求失败" }));
