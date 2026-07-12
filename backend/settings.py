@@ -42,6 +42,19 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",")]
         return v
 
+    # 可信代理 IP/CIDR 列表（用于 _get_client_ip 读取 X-Forwarded-For）
+    # Docker bridge 网络下 nginx/容器 IP 不在 127.0.0.1 中，需通过环境变量配置代理网段
+    # 示例：TRUSTED_PROXIES=["127.0.0.1","::1","172.16.0.0/12"]
+    trusted_proxies: list[str] = ["127.0.0.1", "::1"]
+
+    @field_validator("trusted_proxies", mode="before")
+    @classmethod
+    def parse_trusted_proxies(cls, v: Any) -> Any:  # noqa: ANN401
+        """解析逗号分隔的可信代理列表为列表."""
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        return v
+
     @field_validator("allowed_extensions", "allowed_mime_types", mode="before")
     @classmethod
     def parse_set_from_json(cls, v: Any) -> Any:  # noqa: ANN401

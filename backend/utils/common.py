@@ -3,10 +3,31 @@
 用于避免循环导入.
 """
 
+import ipaddress
+
 from fastapi import Request
 from slowapi import Limiter
 
-TRUSTED_PROXIES = {"127.0.0.1", "::1"}
+from settings import settings
+
+# 预编译可信代理网段，避免每请求 try/except（PERF203）
+# 启动期即校验配置，TRUSTED_PROXIES 拼写错误时 fail loud
+_TRUSTED_PROXY_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = [
+    ipaddress.ip_network(entry, strict=False) for entry in settings.trusted_proxies
+]
+
+
+def _is_trusted_proxy(host: str) -> bool:
+    """检查 host 是否在可信代理列表中（支持精确 IP 与 CIDR 段）.
+
+    Docker bridge 网络下代理 IP 动态分配，需通过 CIDR 段（如 172.16.0.0/12）
+    覆盖；固定 IP 方案在每次 compose up 后会失效。
+    """
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(ip in network for network in _TRUSTED_PROXY_NETWORKS)
 
 
 def _get_client_ip(request: Request) -> str:
@@ -14,9 +35,11 @@ def _get_client_ip(request: Request) -> str:
 
     仅当直接连接来自可信代理时才读取 X-Forwarded-For，
     防止攻击者伪造 XFF 头绕过速率限制。
+    Docker bridge 网络下需通过 TRUSTED_PROXIES 环境变量配置代理网段，
+    否则所有请求将共享代理 IP 对应的限流桶。
     """
     client_host = request.client.host if request.client else "unknown"
-    if client_host in TRUSTED_PROXIES:
+    if _is_trusted_proxy(client_host):
         xff = request.headers.get("X-Forwarded-For")
         if xff:
             return xff.split(",")[0].strip()
