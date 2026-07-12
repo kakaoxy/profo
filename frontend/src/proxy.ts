@@ -127,7 +127,7 @@ export default async function proxy(request: NextRequest) {
     pathname.startsWith("/static") ||
     pathname === "/favicon.ico"
   ) {
-    return NextResponse.next();
+    return applyCsp(nextWithNonce(request, nonce), nonce);
   }
 
   // ── 4. Admin-side token refresh ──
