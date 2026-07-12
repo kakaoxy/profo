@@ -14,6 +14,7 @@ from sqlalchemy import case, func, or_
 from models import FinanceRecord, Project, ProjectContract
 from models.common import CashFlowType
 from settings import settings
+from utils.csv_exporter import sanitize_csv_cell
 from utils.file_security import get_safe_file_path
 from utils.formatters import escape_like
 
@@ -299,9 +300,9 @@ class _LedgerMixin:
         for it in items:
             ws.append(
                 [
-                    it["project_code"] or "",
-                    it["project_name"] or "",
-                    it["project_address"] or "",
+                    sanitize_csv_cell(it["project_code"] or ""),
+                    sanitize_csv_cell(it["project_name"] or ""),
+                    sanitize_csv_cell(it["project_address"] or ""),
                     status_label.get(it["project_status"], it["project_status"] or "-"),
                     float(it["total_income"]),
                     float(it["total_expense"]),

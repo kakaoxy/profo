@@ -98,7 +98,7 @@ def get_sold_projects(
     request: Request,
     db: DbSessionDep,
     pagination: PaginationDep,
-    community_name: Annotated[str | None, Query(description="小区名称筛选")] = None,
+    community_name: Annotated[str | None, Query(max_length=100, description="小区名称筛选")] = None,
 ) -> PublicSoldProjectListResponse:
     """获取已成交的房源案例列表."""
     svc = PublicProjectService(db)

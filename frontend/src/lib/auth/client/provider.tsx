@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 import { getGlobalAuthConfig } from "../config";
 import type {
   ClientSession,
-  Session,
+  ClientSessionData,
   ActionResult,
   LoginActionOptions,
   SessionActionData,
@@ -54,23 +54,17 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const LOADING_SESSION: ClientSession = {
   status: "loading",
   user: null,
-  accessToken: null,
-  refreshToken: null,
 };
 
 const UNAUTHENTICATED: ClientSession = {
   status: "unauthenticated",
   user: null,
-  accessToken: null,
-  refreshToken: null,
 };
 
 function buildAuthenticatedState(data: SessionActionData): ClientSession {
   return {
     status: "authenticated",
     user: data.user,
-    accessToken: data.accessToken,
-    refreshToken: data.refreshToken,
   };
 }
 
@@ -89,7 +83,7 @@ function buildAuthenticatedState(data: SessionActionData): ClientSession {
  *   - `null`      means "I checked and there is no session" → trust the server.
  */
 function buildInitialState(
-  initialSession: Session | null | undefined,
+  initialSession: ClientSessionData | null | undefined,
 ): ClientSession {
   if (initialSession === undefined) return LOADING_SESSION;
   if (initialSession === null) return UNAUTHENTICATED;
@@ -118,7 +112,7 @@ export interface AuthProviderProps {
    * // Client-only apps — omit initialSession, the client will fetch on mount
    * <AuthProvider actions={auth.actions}>
    */
-  initialSession?: Session | null;
+  initialSession?: ClientSessionData | null;
   /** The server actions object from `auth.actions`. */
   actions: AuthActions;
   /**
@@ -370,7 +364,7 @@ export function AuthProvider({
  *
  * Always check `session.status` before accessing `session.user`:
  *   - "loading"         — session is being fetched, render a skeleton/spinner
- *   - "authenticated"   — session.user, session.accessToken are available
+ *   - "authenticated"   — session.user is available
  *   - "unauthenticated" — no session exists
  *
  * @example

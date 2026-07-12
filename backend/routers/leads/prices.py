@@ -2,11 +2,12 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Request
 
 from dependencies.auth import CurrentInternalUserDep, DbSessionDep
 from schemas.lead import PriceHistoryCreate, PriceHistoryResponse
 from services.leads import LeadPriceService
+from utils.common import RateLimits, limiter
 
 router = APIRouter()
 
@@ -23,7 +24,9 @@ def get_price_history(
 
 
 @router.post("/{lead_id}/prices")
+@limiter.limit(RateLimits.LEAD_UPDATE)
 def add_price_record(
+    request: Request,
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     lead_id: Annotated[str, Path(description="线索ID")],

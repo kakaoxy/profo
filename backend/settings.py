@@ -91,7 +91,7 @@ class Settings(BaseSettings):
 
     # 分页配置
     default_page_size: int = 50
-    max_page_size: int = 1000
+    max_page_size: int = 200  # 限制单页大小，防止配合 joinedload 消耗过多内存
 
     # 数据导入配置
     batch_commit_size: int = 1000  # 批量提交大小

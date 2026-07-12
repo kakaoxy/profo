@@ -130,9 +130,11 @@ def refresh_access_token(
 
 
 @router.get("/wechat/authorize")
+@limiter.limit(RateLimits.AUTH_LOGIN)
 def wechat_authorize(
+    request: Request,
     db: DbSessionDep,
-    redirect_uri: Annotated[str | None, Query(description="重定向URL")] = None,
+    redirect_uri: Annotated[str | None, Query(max_length=100, description="重定向URL")] = None,
 ) -> WechatAuthUrlResponse:
     """生成微信登录授权URL（含随机 state，回调时校验防 CSRF）."""
     auth_url, _state = WeChatAuthService.generate_wechat_auth_url(db, redirect_uri)
@@ -140,9 +142,11 @@ def wechat_authorize(
 
 
 @router.get("/wechat/callback")
+@limiter.limit(RateLimits.AUTH_LOGIN)
 async def wechat_callback(
-    code: Annotated[str, Query(description="微信授权码")],
-    state: Annotated[str, Query(description="状态参数，用于防 CSRF")],
+    request: Request,
+    code: Annotated[str, Query(max_length=100, description="微信授权码")],
+    state: Annotated[str, Query(max_length=100, description="状态参数，用于防 CSRF")],
     db: DbSessionDep,
 ) -> RedirectResponse:
     """微信授权回调 (Async for HTTP, run_in_threadpool for DB).
@@ -266,9 +270,12 @@ def get_current_user_info(
     responses={
         401: {"description": "未认证"},
         403: {"description": "无权限（仅限内部角色）"},
+        429: {"description": "请求过于频繁"},
     },
 )
+@limiter.limit(RateLimits.AUTH_API_KEY_CREATE)
 def create_api_key(
+    request: Request,
     current_user: CurrentInternalUserDep,
     db: DbSessionDep,
 ) -> ApiKeyCreateResponse:

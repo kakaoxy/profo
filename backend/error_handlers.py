@@ -28,6 +28,18 @@ from utils.security_logger import safe_log_request_body
 
 logger = logging.getLogger(__name__)
 
+# 日志文本 CRLF 清理表：将回车/换行/制表符替换为空格，防止日志注入
+_LOG_SANITIZE_TABLE = str.maketrans({"\r": " ", "\n": " ", "\t": " "})
+
+
+def _sanitize_log_text(value: object) -> str:
+    """清理日志文本中的 CRLF 字符，防止日志注入.
+
+    将回车、换行、制表符替换为空格，避免攻击者通过构造含 CRLF 的输入伪造日志条目。
+    """
+    return str(value).translate(_LOG_SANITIZE_TABLE)
+
+
 # ==================== 公共函数 ====================
 
 
@@ -67,7 +79,7 @@ async def service_exception_handler(_request: Request, exc: ServiceException) ->
 
     符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
     """
-    logger.warning("服务层业务异常: %s - %s", exc.status_code, exc.message)
+    logger.warning("服务层业务异常: %s - %s", exc.status_code, _sanitize_log_text(exc.message))
 
     return JSONResponse(
         status_code=exc.status_code,
@@ -99,12 +111,16 @@ async def validation_exception_handler(
     if safe_body:
         logger.warning(
             "请求验证失败: %s, 请求体: %s, 原始错误: %s",
-            error_message,
+            _sanitize_log_text(error_message),
             json.dumps(safe_body, ensure_ascii=False),
-            exc.errors(),
+            _sanitize_log_text(json.dumps(exc.errors(), ensure_ascii=False, default=str)),
         )
     else:
-        logger.warning("请求验证失败: %s, 原始错误: %s", error_message, exc.errors())
+        logger.warning(
+            "请求验证失败: %s, 原始错误: %s",
+            _sanitize_log_text(error_message),
+            _sanitize_log_text(json.dumps(exc.errors(), ensure_ascii=False, default=str)),
+        )
 
     # 尝试保存失败记录（使用脱敏后的数据）
     await save_failed_record_safely(
@@ -130,7 +146,7 @@ async def sqlalchemy_exception_handler(
     """
     error_message = format_database_error(exc)
 
-    logger.error("数据库错误: %s - %s", error_message, exc)
+    logger.error("数据库错误: %s - %s", error_message, _sanitize_log_text(exc))
 
     # 根据错误类型确定状态码
     if isinstance(exc, IntegrityError):
@@ -151,7 +167,7 @@ async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONR
     FastAPI 的 HTTPException 默认格式已经是 {"detail": "..."}
     直接透传，保持格式一致.
     """
-    logger.warning("HTTP 异常: %s - %s", exc.status_code, exc.detail)
+    logger.warning("HTTP 异常: %s - %s", exc.status_code, _sanitize_log_text(exc.detail))
 
     # HTTPException 默认就是 {"detail": "..."} 格式，直接透传
     return JSONResponse(
@@ -167,7 +183,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     已修复：使用安全日志记录请求体，脱敏敏感信息.
     """
     error_traceback = traceback.format_exc()
-    logger.error("未处理的异常: %s\n%s", exc, error_traceback)
+    logger.error("未处理的异常: %s\n%s", _sanitize_log_text(exc), error_traceback)
 
     # 尝试保存失败记录（使用脱敏后的数据）
     await save_failed_record_safely(

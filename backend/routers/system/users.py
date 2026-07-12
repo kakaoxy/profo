@@ -38,10 +38,10 @@ def get_users(
     db: DbSessionDep,
     _current_user: CurrentAdminUserDep,
     pagination: PaginationDep,
-    username: Annotated[str | None, Query(description="用户名搜索")] = None,
-    nickname: Annotated[str | None, Query(description="昵称搜索")] = None,
-    role_id: Annotated[str | None, Query(description="角色ID筛选")] = None,
-    status: Annotated[str | None, Query(description="用户状态筛选")] = None,
+    username: Annotated[str | None, Query(max_length=100, description="用户名搜索")] = None,
+    nickname: Annotated[str | None, Query(max_length=100, description="昵称搜索")] = None,
+    role_id: Annotated[str | None, Query(max_length=100, description="角色ID筛选")] = None,
+    status: Annotated[str | None, Query(max_length=100, description="用户状态筛选")] = None,
 ) -> UserListResponse:
     """获取用户列表，支持搜索和筛选.
 
@@ -69,8 +69,8 @@ def get_users(
 def get_users_simple(
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
-    nickname: Annotated[str | None, Query(description="昵称搜索")] = None,
-    status: Annotated[str | None, Query(description="用户状态筛选")] = "active",
+    nickname: Annotated[str | None, Query(max_length=100, description="昵称搜索")] = None,
+    status: Annotated[str | None, Query(max_length=100, description="用户状态筛选")] = "active",
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=500, description="每页数量")] = 100,
 ) -> UserSimpleListResponse:

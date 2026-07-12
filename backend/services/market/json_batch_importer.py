@@ -60,23 +60,15 @@ class JSONBatchImporter:
         try:
             for index, raw_data in enumerate(properties):
                 try:
-                    validated_data = PropertyIngestionModel(**raw_data)
-
-                    result = self.importer.import_property(validated_data, db, user_id)
-
-                    if result.success:
-                        success += 1
-                    else:
-                        failed += 1
-                        errors.append(
-                            {
-                                "index": index,
-                                "source_property_id": self._extract_source_id(raw_data),
-                                "reason": result.error,
-                            },
-                        )
-
-                        self._save_failed_record_raw(raw_data, result.error)
+                    # 使用 SAVEPOINT 隔离每条记录：单条失败只回滚该条，不影响其他记录
+                    with db.begin_nested():
+                        validated_data = PropertyIngestionModel(**raw_data)
+                        result = self.importer.import_property(validated_data, db, user_id)
+                        if not result.success:
+                            # 业务失败：主动抛异常让 SAVEPOINT 回滚
+                            msg = result.error or "导入失败"
+                            raise ValueError(msg)
+                    success += 1
 
                 except ValidationError as e:  # noqa: PERF203
                     failed += 1
@@ -93,8 +85,22 @@ class JSONBatchImporter:
 
                     logger.warning("第 %s 条记录验证失败: %s", index, error_msg)
 
+                except ValueError as e:
+                    # 业务失败（result.success=False）：SAVEPOINT 已自动回滚
+                    failed += 1
+                    error_msg = str(e)
+                    errors.append(
+                        {
+                            "index": index,
+                            "source_property_id": self._extract_source_id(raw_data),
+                            "reason": error_msg,
+                        },
+                    )
+
+                    self._save_failed_record_raw(raw_data, error_msg)
+
                 except Exception as e:
-                    db.rollback()
+                    # 未预期异常：SAVEPOINT 已自动回滚，外层事务继续
                     failed += 1
                     error_msg = f"处理失败: {e!s}"
                     errors.append(
@@ -104,23 +110,6 @@ class JSONBatchImporter:
                             "reason": error_msg,
                         },
                     )
-
-                    # rollback 会清除 session 中所有未提交的变更，
-                    # 之前成功的记录也被回滚，需同步修正统计
-                    if success > 0:
-                        rollback_reason = f"批次回滚(此前 {success} 条成功记录已失效): {e!s}"
-                        failed_indices = {err["index"] for err in errors}
-                        errors.extend(
-                            {
-                                "index": prev,
-                                "source_property_id": self._extract_source_id(properties[prev]),
-                                "reason": rollback_reason,
-                            }
-                            for prev in range(index)
-                            if prev not in failed_indices
-                        )
-                        failed += success
-                        success = 0
 
                     self._save_failed_record_raw(raw_data, error_msg)
 
@@ -137,31 +126,16 @@ class JSONBatchImporter:
                 failed,
             )
 
-            error_map = {err["index"]: err for err in errors}
-            rollback_errors = []
-            for idx, raw_data in enumerate(properties):
-                source_id = self._extract_source_id(raw_data)
-                existing = error_map.get(idx)
-                if existing and existing.get("reason"):
-                    rollback_errors.append(
-                        {
-                            "index": idx,
-                            "source_property_id": source_id,
-                            "reason": existing["reason"],
-                        },
-                    )
-                else:
-                    rollback_errors.append(
-                        {
-                            "index": idx,
-                            "source_property_id": source_id,
-                            "reason": f"批次提交失败(原成功记录已回滚): {e!s}",
-                        },
-                    )
-
             failed = total
             success = 0
-            errors = rollback_errors
+            errors = [
+                {
+                    "index": idx,
+                    "source_property_id": self._extract_source_id(raw_data),
+                    "reason": f"批次提交失败(原成功记录已回滚): {e!s}",
+                }
+                for idx, raw_data in enumerate(properties)
+            ]
 
         return PushResult(
             total=total,

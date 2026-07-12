@@ -14,6 +14,16 @@ from fastapi.responses import StreamingResponse
 logger = logging.getLogger(__name__)
 
 
+def sanitize_csv_cell(value: object) -> object:
+    r"""转义 CSV/Excel 公式注入.
+
+    对以 =、+、-、@、\t、\r 开头的字符串前缀单引号，防止 Excel 执行公式。
+    """
+    if isinstance(value, str) and value and value[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return f"'{value}"
+    return value
+
+
 def generate_csv_response(
     headers: Sequence[str],
     rows: Sequence[Sequence[object]],
@@ -35,7 +45,7 @@ def generate_csv_response(
 
     writer.writerow(headers)
     for row in rows:
-        writer.writerow(row)
+        writer.writerow([sanitize_csv_cell(cell) for cell in row])
 
     csv_content = output.getvalue()
     output.close()
@@ -49,7 +59,7 @@ def generate_csv_response(
         iter([csv_content.encode("utf-8-sig")]),
         media_type="text/csv",
         headers={
-            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "text/csv; charset=utf-8",
         },
     )

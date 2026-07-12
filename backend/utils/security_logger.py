@@ -8,9 +8,15 @@ from typing import Any
 
 # 敏感字段列表，这些字段在日志中会被脱敏
 SENSITIVE_FIELDS = {
+    # 密码与令牌类
     "password",
     "current_password",
     "new_password",
+    "pwd",
+    "passwd",
+    "passcode",
+    "pin",
+    "otp",
     "token",
     "access_token",
     "refresh_token",
@@ -23,10 +29,28 @@ SENSITIVE_FIELDS = {
     "authorization",
     "cookie",
     "session",
-    "credit_card",
-    "cvv",
+    "verification_code",
+    "captcha",
+    # 身份证号类
+    "id_card",
+    "id_number",
+    "citizen_id",
+    "resident_id",
     "ssn",
     "social_security",
+    # 银行卡与支付类
+    "credit_card",
+    "cvv",
+    "bank_account",
+    "bank_card",
+    "card_number",
+    "card_no",
+    "account",
+    "account_number",
+    # 手机号类
+    "mobile",
+    "phone",
+    "tel",
 }
 
 _SHORT_VALUE_THRESHOLD = 6

@@ -78,13 +78,17 @@ class CommunityMerger:
             return MergeResult(success=False, affected_properties=0, message=error_msg)
 
     def _validate_communities(self, primary_id: int, merge_ids: list[int], db: Session) -> Community:
-        """验证主小区和待合并小区是否存在且有效."""
+        """验证主小区和待合并小区是否存在且有效.
+
+        使用 with_for_update 加行级锁，防止并发合并导致房源归属不一致。
+        """
         primary = (
             db.query(Community)
             .filter(
                 Community.id == primary_id,
                 Community.is_active.is_(True),
             )
+            .with_for_update()
             .first()
         )
 
@@ -92,16 +96,17 @@ class CommunityMerger:
             msg = f"主小区 ID {primary_id} 不存在或已被删除"
             raise ValueError(msg)
 
-        existing_count = (
+        existing = (
             db.query(Community)
             .filter(
                 Community.id.in_(merge_ids),
                 Community.is_active.is_(True),
             )
-            .count()
+            .with_for_update()
+            .all()
         )
 
-        if existing_count != len(merge_ids):
+        if len(existing) != len(merge_ids):
             msg = "提供的合并列表中包含无效或已删除的小区 ID"
             raise ValueError(msg)
 

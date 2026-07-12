@@ -37,7 +37,7 @@ def get_communities(
     _current_user: CurrentOperatorUserDep,
     pagination: PaginationDep,
     service: CommunityServiceDep,
-    search: Annotated[str | None, Query(description="小区名称搜索（模糊匹配）")] = None,
+    search: Annotated[str | None, Query(max_length=100, description="小区名称搜索（模糊匹配）")] = None,
 ) -> CommunityListResponse:
     """查询小区列表."""
     return service.query_communities(
@@ -56,8 +56,8 @@ def get_dictionaries(
     db: DbSessionDep,
     _current_user: CurrentOperatorUserDep,
     service: CommunityServiceDep,
-    dict_type: Annotated[str, Query(description="字典类型: district | business_circle")],
-    search: Annotated[str | None, Query(description="模糊搜索关键词")] = None,
+    dict_type: Annotated[str, Query(max_length=100, description="字典类型: district | business_circle")],
+    search: Annotated[str | None, Query(max_length=100, description="模糊搜索关键词")] = None,
     limit: Annotated[int, Query(ge=1, le=500, description="返回数量上限")] = 50,
 ) -> DictionaryResponse:
     """返回行政区或商圈的去重列表."""

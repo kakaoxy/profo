@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -16,6 +16,7 @@ from schemas.project import (
     DocumentUpdate,
 )
 from services.projects.internal import documents as documents_service
+from utils.common import RateLimits, limiter
 
 router = APIRouter()
 
@@ -43,7 +44,9 @@ def list_documents(
 
 
 @router.post("/{project_id}/documents", status_code=201)
+@limiter.limit(RateLimits.PROJECT_UPDATE)
 def create_document(
+    request: Request,
     payload: DocumentCreate,
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
@@ -56,7 +59,9 @@ def create_document(
 
 
 @router.patch("/{project_id}/documents/{document_id}")
+@limiter.limit(RateLimits.PROJECT_UPDATE)
 def update_document(
+    request: Request,
     payload: DocumentUpdate,
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
@@ -86,7 +91,9 @@ def delete_document(
 
 
 @router.post("/{project_id}/documents/initialize")
+@limiter.limit(RateLimits.PROJECT_UPDATE)
 def initialize_documents(
+    request: Request,
     db: Annotated[Session, _get_db_dep],
     _current_user: CurrentInternalUserDep,
     project_id: Annotated[str, Path(description="项目ID")],

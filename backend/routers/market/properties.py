@@ -43,7 +43,7 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 
 @router.get("/communities/search")
 def search_communities(
-    q: Annotated[str, Query(min_length=1, description="搜索关键词")],
+    q: Annotated[str, Query(min_length=1, max_length=100, description="搜索关键词")],
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     detail_service: DetailServiceDep,
@@ -58,18 +58,26 @@ def get_properties(
     _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
     pagination: PaginationDep,
-    status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
-    community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
-    community_ids: Annotated[str | None, Query(description="小区ID，逗号分隔，例如: uuid1,uuid2")] = None,
-    districts: Annotated[str | None, Query(description="行政区，逗号分隔，例如: 徐汇,静安")] = None,
-    business_circles: Annotated[str | None, Query(description="商圈，逗号分隔，例如: 五角场,中关村")] = None,
-    orientations: Annotated[str | None, Query(description="朝向关键词，逗号分隔，例如: 南,东南")] = None,
-    floor_levels: Annotated[str | None, Query(description="楼层级别，逗号分隔: 低楼层,中楼层,高楼层")] = None,
+    status: Annotated[str | None, Query(max_length=100, description="房源状态: 在售 | 成交")] = None,
+    community_name: Annotated[str | None, Query(max_length=100, description="小区名称（模糊搜索）")] = None,
+    community_ids: Annotated[
+        str | None, Query(max_length=500, description="小区ID，逗号分隔，例如: uuid1,uuid2")
+    ] = None,
+    districts: Annotated[str | None, Query(max_length=500, description="行政区，逗号分隔，例如: 徐汇,静安")] = None,
+    business_circles: Annotated[
+        str | None, Query(max_length=500, description="商圈，逗号分隔，例如: 五角场,中关村")
+    ] = None,
+    orientations: Annotated[
+        str | None, Query(max_length=500, description="朝向关键词，逗号分隔，例如: 南,东南")
+    ] = None,
+    floor_levels: Annotated[
+        str | None, Query(max_length=500, description="楼层级别，逗号分隔: 低楼层,中楼层,高楼层")
+    ] = None,
     min_price: Annotated[float | None, Query(ge=0, description="最低价格（万）")] = None,
     max_price: Annotated[float | None, Query(ge=0, description="最高价格（万）")] = None,
     min_area: Annotated[float | None, Query(ge=0, description="最小面积（㎡）")] = None,
     max_area: Annotated[float | None, Query(ge=0, description="最大面积（㎡）")] = None,
-    rooms: Annotated[str | None, Query(description="室数量，逗号分隔，例如: 1,2,3")] = None,
+    rooms: Annotated[str | None, Query(max_length=500, description="室数量，逗号分隔，例如: 1,2,3")] = None,
     rooms_gte: Annotated[int | None, Query(ge=0, description="最少室数量，例如: 5 表示5室以上")] = None,
     sort_by: Annotated[str, Query(description="排序字段")] = "updated_at",
     sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc",
@@ -113,18 +121,18 @@ def export_properties(
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     service: PropertyServiceDep,
-    status: Annotated[str | None, Query(description="房源状态: 在售 | 成交")] = None,
-    community_name: Annotated[str | None, Query(description="小区名称（模糊搜索）")] = None,
-    community_ids: Annotated[str | None, Query(description="小区ID，逗号分隔")] = None,
-    districts: Annotated[str | None, Query(description="行政区，逗号分隔")] = None,
-    business_circles: Annotated[str | None, Query(description="商圈，逗号分隔")] = None,
-    orientations: Annotated[str | None, Query(description="朝向关键词，逗号分隔")] = None,
-    floor_levels: Annotated[str | None, Query(description="楼层级别，逗号分隔")] = None,
+    status: Annotated[str | None, Query(max_length=100, description="房源状态: 在售 | 成交")] = None,
+    community_name: Annotated[str | None, Query(max_length=100, description="小区名称（模糊搜索）")] = None,
+    community_ids: Annotated[str | None, Query(max_length=500, description="小区ID，逗号分隔")] = None,
+    districts: Annotated[str | None, Query(max_length=500, description="行政区，逗号分隔")] = None,
+    business_circles: Annotated[str | None, Query(max_length=500, description="商圈，逗号分隔")] = None,
+    orientations: Annotated[str | None, Query(max_length=500, description="朝向关键词，逗号分隔")] = None,
+    floor_levels: Annotated[str | None, Query(max_length=500, description="楼层级别，逗号分隔")] = None,
     min_price: Annotated[float | None, Query(ge=0, description="最低价格（万）")] = None,
     max_price: Annotated[float | None, Query(ge=0, description="最高价格（万）")] = None,
     min_area: Annotated[float | None, Query(ge=0, description="最小面积（㎡）")] = None,
     max_area: Annotated[float | None, Query(ge=0, description="最大面积（㎡）")] = None,
-    rooms: Annotated[str | None, Query(description="室数量，逗号分隔，例如: 1,2,3")] = None,
+    rooms: Annotated[str | None, Query(max_length=500, description="室数量，逗号分隔，例如: 1,2,3")] = None,
     rooms_gte: Annotated[int | None, Query(ge=0, description="最少室数量")] = None,
     sort_by: Annotated[str, Query(description="排序字段")] = "updated_at",
     sort_order: Annotated[str, Query(description="排序方向: asc | desc")] = "desc",

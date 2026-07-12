@@ -4,6 +4,7 @@
 """
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import User
@@ -86,8 +87,13 @@ class UserService:
             password=get_password_hash(user_data.password),
         )
         db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
+        try:
+            db.commit()
+            db.refresh(db_user)
+        except IntegrityError as e:
+            db.rollback()
+            msg = "用户名或手机号已被使用"
+            raise ConflictError(msg) from e
 
         return db_user
 

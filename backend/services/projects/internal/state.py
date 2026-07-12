@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from models import Project
 from models.common import ProjectStatus
 from schemas.project import ProjectStatusUpdate
-from services.system.exceptions import ValidationError
+from services.system.exceptions import ResourceNotFoundError, ValidationError
 
 
 class ProjectStateManager:
@@ -68,6 +68,9 @@ class ProjectStateManager:
         - 更新销售记录状态
         - 初始化装修阶段（如进入装修状态）
 
+        使用 ``with_for_update()`` 行级锁防止并发状态更新冲突，
+        锁定后用最新状态再次校验流转合法性。
+
         Args:
             project: 项目模型实例
             status_update: 状态更新数据
@@ -75,28 +78,37 @@ class ProjectStateManager:
         Returns:
             更新后的项目模型实例
 
+        Raises:
+            ResourceNotFoundError: 项目不存在
+            ValidationError: 状态流转不合法
+
         """
         new_status = status_update.status.value
-        current_status = project.status
 
-        # 验证状态流转
-        self.validate_transition(current_status, new_status)
+        # 锁定 project 行防止并发状态更新（TOCTOU）
+        locked_project = self.db.query(Project).filter(Project.id == project.id).with_for_update().first()
+        if locked_project is None:
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
+
+        # 用锁定后的最新状态验证流转合法性（防止并发期间状态已变更）
+        self.validate_transition(locked_project.status, new_status)
 
         # 更新状态
-        project.status = new_status
-        project.updated_at = datetime.now(timezone.utc)
+        locked_project.status = new_status
+        locked_project.updated_at = datetime.now(timezone.utc)
 
         # 处理销售状态变更
-        self._handle_sale_status_change(project.id, new_status, status_update)
+        self._handle_sale_status_change(locked_project.id, new_status, status_update)
 
         # 如果进入装修阶段且当前没有子阶段，初始化为第一个阶段
-        if new_status == ProjectStatus.RENOVATING.value and not project.renovation_stage:
-            project.renovation_stage = "拆除"
+        if new_status == ProjectStatus.RENOVATING.value and not locked_project.renovation_stage:
+            locked_project.renovation_stage = "拆除"
 
         self.db.commit()
-        self.db.refresh(project)
+        self.db.refresh(locked_project)
 
-        return project
+        return locked_project
 
     def _handle_sale_status_change(
         self,

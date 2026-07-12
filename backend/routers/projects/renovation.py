@@ -34,15 +34,19 @@ def update_renovation_stage(
 
 
 @router.post("/{project_id}/renovation/photos")
+@limiter.limit(RateLimits.RENOVATION_UPDATE)
 def upload_renovation_photo(
+    request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
-    stage: Annotated[str, Query(description="改造阶段")],
-    url: Annotated[str, Query(description="图片URL", pattern=r"^https?://[^\s]+$")],
+    stage: Annotated[str, Query(max_length=100, description="改造阶段")],
+    url: Annotated[str, Query(max_length=100, description="图片URL", pattern=r"^https?://[^\s]+$")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
-    filename: Annotated[str | None, Query(description="文件名")] = None,
-    description: Annotated[str | None, Query(description="描述")] = None,
-    thumbnail_url: Annotated[str | None, Query(description="缩略图URL", pattern=r"^https?://[^\s]+$")] = None,
+    filename: Annotated[str | None, Query(max_length=100, description="文件名")] = None,
+    description: Annotated[str | None, Query(max_length=100, description="描述")] = None,
+    thumbnail_url: Annotated[
+        str | None, Query(max_length=100, description="缩略图URL", pattern=r"^https?://[^\s]+$")
+    ] = None,
 ) -> RenovationPhotoResponse:
     """上传改造阶段照片."""
     return service.add_renovation_photo(project_id, stage, url, filename, description, thumbnail_url)
@@ -53,7 +57,7 @@ def get_renovation_photos(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
-    stage: Annotated[str | None, Query(description="改造阶段筛选")] = None,
+    stage: Annotated[str | None, Query(max_length=100, description="改造阶段筛选")] = None,
 ) -> RenovationPhotoListResponse:
     """获取改造阶段照片."""
     photos = service.get_renovation_photos(project_id, stage)

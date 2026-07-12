@@ -74,7 +74,7 @@
     "baseline-browser-mapping": "^2.10.8",
     "caniuse-lite": "^1.0.30001699",
     "eslint": "^9.39.2",
-    "eslint-config-next": "16.0.8",
+    "eslint-config-next": "16.1.7",
     "jsdom": "^26.1.0",
     "openapi-typescript": "^7.10.1",
     "tailwindcss": "^4.3.0",

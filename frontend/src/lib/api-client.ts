@@ -8,14 +8,6 @@ function getRefreshEndpoint(): string {
   return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
 }
 
-/**
- * 触发 token 刷新，返回新的 access_token 或 null。
- * 跨文件共享去重（与 api-c/client.ts 共用同一 registry）。
- */
-export function tryRefreshTokenClient(): Promise<string | null> {
-  return refreshTokensDedup(getRefreshEndpoint()).then((r) => r.accessToken);
-}
-
 const requestBodyStore = new WeakMap<Request, string>();
 
 const credentialsMiddleware: Middleware = {
@@ -48,19 +40,15 @@ const authMiddleware: Middleware = {
         return response;
       }
 
-      const { accessToken: newToken } = await refreshTokensDedup(getRefreshEndpoint());
+      const { success: refreshed } = await refreshTokensDedup(getRefreshEndpoint());
 
-      if (newToken) {
+      if (refreshed) {
         const storedBody = requestBodyStore.get(request);
         requestBodyStore.delete(request);
-
-        const headers = new Headers(request.headers);
-        headers.set("Authorization", `Bearer ${newToken}`);
 
         const init: RequestInit = {
           credentials: "include",
           signal: request.signal,
-          headers,
         };
         if (storedBody !== undefined) {
           init.body = storedBody;

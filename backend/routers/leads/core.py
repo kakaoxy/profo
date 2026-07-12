@@ -62,12 +62,12 @@ def get_leads(
     db: DbSessionDep,
     _current_user: CurrentInternalUserDep,
     pagination: PaginationDep,
-    search: Annotated[str | None, Query(description="小区名称搜索")] = None,
+    search: Annotated[str | None, Query(max_length=100, description="小区名称搜索")] = None,
     statuses: Annotated[list[LeadStatus] | None, Query(description="状态筛选")] = None,
-    district: Annotated[str | None, Query(description="行政区筛选")] = None,
-    creator_id: Annotated[str | None, Query(description="创建人筛选")] = None,
-    layout: Annotated[str | None, Query(description="户型筛选")] = None,
-    floor: Annotated[str | None, Query(description="楼层筛选")] = None,
+    district: Annotated[str | None, Query(max_length=100, description="行政区筛选")] = None,
+    creator_id: Annotated[str | None, Query(max_length=100, description="创建人筛选")] = None,
+    layout: Annotated[str | None, Query(max_length=100, description="户型筛选")] = None,
+    floor: Annotated[str | None, Query(max_length=100, description="楼层筛选")] = None,
 ) -> PaginatedLeadListResponse:
     """获取线索列表.
 
@@ -96,7 +96,9 @@ def get_leads(
 
 
 @router.post("")
+@limiter.limit(RateLimits.LEAD_UPDATE)
 def create_lead(
+    request: Request,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
     lead_in: LeadCreate,
