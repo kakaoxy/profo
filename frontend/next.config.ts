@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
     serverActions: {
       bodySizeLimit: "10mb",
+      // allowedOrigins 是「额外」允许的 origin（Next.js 自动允许同源 Host）
+      // 只要 nginx 反代正确传递 Host 头（proxy_set_header Host $host），
+      // Server Actions 自动工作，PRODUCTION_DOMAIN 非必需。
+      // 仅当 nginx 不传递 Host（如 CDN/二级反代）时才需配置 PRODUCTION_DOMAIN。
       allowedOrigins: [
         "localhost:3000",
         "127.0.0.1:3000",

@@ -13,7 +13,12 @@ echo ">> 构建 backend (amd64)..."
 docker build --platform linux/amd64 -t profo-backend:prod ./backend
 
 echo ">> 构建 frontend (amd64)..."
-docker build --platform linux/amd64 -t profo-frontend:prod ./frontend
+# PRODUCTION_DOMAIN 是可选的（Next.js 自动允许同源 Host）
+# 仅当 nginx 不传递 Host 头时才需要设置：
+#   export PRODUCTION_DOMAIN=你的域名
+docker build --platform linux/amd64 \
+    --build-arg PRODUCTION_DOMAIN="${PRODUCTION_DOMAIN:-}" \
+    -t profo-frontend:prod ./frontend
 
 # ---- 导出为 tar.gz ----
 echo ">> 导出镜像..."

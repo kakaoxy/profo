@@ -17,6 +17,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 默认值用于本地 dev；Docker 部署通过 docker-compose.yml build args 覆盖为 http://backend:8000
 ARG SERVER_API_URL=http://127.0.0.1:8000
 ENV SERVER_API_URL=${SERVER_API_URL}
+# 构建时注入 PRODUCTION_DOMAIN，让 next.config.ts 的 serverActions.allowedOrigins
+# 在 build 阶段拿到生产域名（Next.js config 在 build 时评估）
+# 缺失时若反代导致 Host/Origin 不一致，Server Actions 会被拒
+ARG PRODUCTION_DOMAIN=
+ENV PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN}
 RUN pnpm build
 
 # ---- Stage 3: runner ----
