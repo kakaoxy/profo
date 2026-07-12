@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   reactCompiler: true,
+  // Host 头校验由 nginx 反向代理层负责（Next.js 16 NextConfig 无 allowedHosts 字段）
   turbopack: {
     root: import.meta.dirname, // 明确指定项目根目录，避免 lockfile 警告
   },
@@ -11,6 +12,11 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react", "date-fns", "recharts"],
     serverActions: {
       bodySizeLimit: "10mb",
+      allowedOrigins: [
+        "localhost:3000",
+        "127.0.0.1:3000",
+        ...(process.env.PRODUCTION_DOMAIN ? [process.env.PRODUCTION_DOMAIN] : []),
+      ],
     },
   },
   // [修复] API 代理重写规则 - 解决跨域 Cookie 问题

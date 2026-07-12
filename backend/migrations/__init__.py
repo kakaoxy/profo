@@ -29,6 +29,7 @@
   timestamp without time zone 的列统一迁移为 timestamptz（通用时区修复，幂等）
 - migrate_encrypted_columns_to_text: 将 EncryptedString 列从 character varying 迁移为 text
   （Fernet 密文远超声明长度，PG 严格强制 VARCHAR 长度会报错，幂等）
+- create_wechat_oauth_tables: 幂等创建微信 OAuth state/temp_code 表并清理过期记录
 
 """
 
@@ -814,6 +815,44 @@ def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
         logger.info("迁移：共 %d 个 DateTime 列转为 timestamptz", migrated)
 
 
+def create_wechat_oauth_tables(engine: Engine) -> None:
+    """幂等创建微信 OAuth state/temp_code 表并清理过期记录.
+
+    使用 SQLAlchemy Core API 通过模型 __table__ 元数据创建，
+    checkfirst=True 确保表/索引已存在时跳过。
+    创建后清理上次运行残留的过期 state/code 记录。
+    """
+    from models import Base  # noqa: PLC0415
+    from models.system import WeChatOAuthState, WeChatTempCode  # noqa: PLC0415
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    target_tables = [WeChatOAuthState.__table__, WeChatTempCode.__table__]
+    missing_tables = [t for t in target_tables if t.name not in existing_tables]
+
+    if missing_tables:
+        table_names = [t.name for t in missing_tables]
+        logger.info("迁移：创建微信 OAuth 表 %s", table_names)
+        Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
+
+    # 清理上次运行残留的过期记录
+    now_sql = "DELETE FROM wechat_oauth_states WHERE expires_at < NOW()"
+    if engine.dialect.name == "sqlite":
+        now_sql = "DELETE FROM wechat_oauth_states WHERE expires_at < datetime('now')"
+    with engine.begin() as conn:
+        deleted = conn.execute(text(now_sql)).rowcount
+    if deleted:
+        logger.info("迁移：清理 %d 条过期微信 OAuth state 记录", deleted)
+
+    now_sql = "DELETE FROM wechat_temp_codes WHERE expires_at < NOW()"
+    if engine.dialect.name == "sqlite":
+        now_sql = "DELETE FROM wechat_temp_codes WHERE expires_at < datetime('now')"
+    with engine.begin() as conn:
+        deleted = conn.execute(text(now_sql)).rowcount
+    if deleted:
+        logger.info("迁移：清理 %d 条过期微信临时码记录", deleted)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
@@ -837,6 +876,7 @@ def run_startup_migrations(engine: Engine) -> None:
         migrate_user_datetime_columns_to_timestamptz(engine)
         migrate_encrypted_columns_to_text(engine)
         migrate_all_datetime_columns_to_timestamptz(engine)
+        create_wechat_oauth_tables(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

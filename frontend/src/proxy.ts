@@ -40,12 +40,20 @@ function isTokenExpired(token: string, bufferMs = 5 * 60 * 1000): boolean {
 }
 
 function addSecurityHeaders(response: NextResponse): NextResponse {
-  if (process.env.NODE_ENV === "production") {
-    response.headers.set(
-      "Strict-Transport-Security",
-      "max-age=63072000; includeSubDomains; preload"
-    );
-  }
+  // HSTS 由 TLS 终止层（nginx）负责配置，不在应用代理层设置
+  // CSP 先以 Report-Only 模式上线观察，确认无业务影响后切换为强制模式
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "connect-src 'self'",
+    "font-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+  response.headers.set("Content-Security-Policy-Report-Only", csp);
   return response;
 }
 

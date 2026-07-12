@@ -11,7 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from dependencies.auth import DbSessionDep, require_api_key
 from models import User
-from schemas import PushResult
+from schemas import PropertyIngestionModel, PushResult
 from services.market.json_batch_importer import JSONBatchImporter
 from services.system.exceptions import BusinessLogicError, ValidationError
 
@@ -24,7 +24,7 @@ _MAX_PUSH_RECORDS = 10000
 
 @router.post("")
 async def push_properties(
-    properties: Annotated[list[dict], Body()],
+    properties: Annotated[list[PropertyIngestionModel], Body()],
     db: DbSessionDep,
     current_user: Annotated[User, Depends(require_api_key)],
 ) -> PushResult:
@@ -34,7 +34,7 @@ async def push_properties(
     **需要通过 X-API-Key Header 进行认证。**
 
     Args:
-        properties: 房源数据列表（原始字典）
+        properties: 房源数据列表（Pydantic 模型校验后的数据）
         db: 数据库会话
         current_user: 当前认证用户（通过 API Key）
 
@@ -56,11 +56,14 @@ async def push_properties(
 
     logger.info("接收到 JSON 推送请求，包含 %d 条记录", len(properties))
 
+    # 转换为 dict 列表传给 importer（importer 内部仍会构造模型，双重校验无害）
+    properties_data = [p.model_dump(by_alias=True, exclude_unset=True) for p in properties]
+
     try:
         importer = JSONBatchImporter()
         return await run_in_threadpool(
             importer.batch_import_json,
-            properties,
+            properties_data,
             db,
             current_user.id,
         )

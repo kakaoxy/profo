@@ -5,5 +5,12 @@
 
 from .error import FailedRecord
 from .import_task import ImportTaskStatus, PropertyImportTask
+from .wechat_oauth import WeChatOAuthState, WeChatTempCode
 
-__all__ = ["FailedRecord", "ImportTaskStatus", "PropertyImportTask"]
+__all__ = [
+    "FailedRecord",
+    "ImportTaskStatus",
+    "PropertyImportTask",
+    "WeChatOAuthState",
+    "WeChatTempCode",
+]
