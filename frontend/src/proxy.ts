@@ -40,11 +40,27 @@ function isTokenExpired(token: string, bufferMs = 5 * 60 * 1000): boolean {
   return payload.exp * 1000 - Date.now() < bufferMs;
 }
 
-function addSecurityHeaders(response: NextResponse): NextResponse {
-  // HSTS 由 TLS 终止层（nginx）负责配置，不在应用代理层设置
-  // CSP 使用 nonce 替代 unsafe-inline，先以 Report-Only 模式上线观察
-  const nonce = randomUUID();
-  response.headers.set("x-nonce", nonce);
+/**
+ * 创建带 nonce 请求头的 NextResponse.next()。
+ *
+ * 将 nonce 写入 **请求头**（而非响应头），使 Server Components 可通过
+ * `headers()` 读取。Next.js 会自动将 `x-nonce` 请求头注入到框架自身
+ * 生成的内联脚本（RSC payload 等），切换到 CSP 强制模式时不会误拦。
+ */
+function nextWithNonce(request: NextRequest, nonce: string): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+}
+
+/**
+ * 将 CSP 头写入响应（当前为 Report-Only 模式）。
+ *
+ * HSTS 由 TLS 终止层（nginx）负责配置，不在应用代理层设置。
+ */
+function applyCsp(response: NextResponse, nonce: string): NextResponse {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'`,
@@ -65,6 +81,7 @@ export default async function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const hostname = host.split(":")[0];
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const nonce = randomUUID();
 
   // ── 1. Domain routing ──
   if (!isLocalhost) {
@@ -93,12 +110,12 @@ export default async function proxy(request: NextRequest) {
     }
 
     // 已认证：写回可能刷新后的 token cookies
-    return addSecurityHeaders(session.response(NextResponse.next()));
+    return applyCsp(session.response(nextWithNonce(request, nonce)), nonce);
   }
 
   // ── 3. Admin-side: only process /admin paths ──
   if (!pathname.startsWith("/admin")) {
-    return addSecurityHeaders(NextResponse.next());
+    return applyCsp(nextWithNonce(request, nonce), nonce);
   }
 
   // Admin: skip paths that don't need auth
@@ -154,7 +171,7 @@ export default async function proxy(request: NextRequest) {
 
     if (refreshResult.ok) {
       const data = refreshResult.data;
-      const nextResponse = NextResponse.next();
+      const nextResponse = nextWithNonce(request, nonce);
 
       nextResponse.cookies.set("access_token", data.access_token, {
         httpOnly: true,
@@ -173,7 +190,7 @@ export default async function proxy(request: NextRequest) {
       });
 
       debugLog("proxy: admin token refresh successful", { pathname });
-      return addSecurityHeaders(nextResponse);
+      return applyCsp(nextResponse, nonce);
     }
 
     if ("networkError" in refreshResult) {
@@ -194,7 +211,7 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  return addSecurityHeaders(NextResponse.next());
+  return applyCsp(nextWithNonce(request, nonce), nonce);
 }
 
 export const config = {
