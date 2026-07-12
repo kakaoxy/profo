@@ -83,7 +83,6 @@ class ProjectRenovation(BaseModel):
     )
 
     soft_budget: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="软装预算金额")
-    soft_actual_cost: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="软装实际发生成本")
     soft_detail_attachment: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="软装明细附件")
 
     # 定制柜/窗户/墙面/其他装修扩展金额

@@ -66,7 +66,6 @@ class LedgerStatisticsRenovation(BaseModel):
     total_fee: Decimal | None = Decimal(0)
     hard_amount: Decimal | None = Decimal(0)
     hard_unit_price: Decimal | None = Decimal(0)
-    soft_actual: Decimal | None = Decimal(0)
     custom_cabinet: Decimal | None = Decimal(0)
     window: Decimal | None = Decimal(0)
     wall_treatment: Decimal | None = Decimal(0)
@@ -78,7 +77,6 @@ class LedgerStatisticsRenovation(BaseModel):
         "total_fee",
         "hard_amount",
         "hard_unit_price",
-        "soft_actual",
         "custom_cabinet",
         "window",
         "wall_treatment",

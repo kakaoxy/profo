@@ -89,7 +89,6 @@ class RenovationContractUpdate(BaseModel):
 
     # 软装费用
     soft_budget: Decimal | None = Field(None, description="软装预算金额")
-    soft_actual_cost: Decimal | None = Field(None, description="软装实际发生成本")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
     # 定制柜/窗户/墙面/其他装修扩展金额
@@ -128,7 +127,6 @@ class RenovationContractResponse(BaseModel):
     payment_node_4: str | None = None
     payment_ratio_4: Decimal | None = None
     soft_budget: Decimal | None = None
-    soft_actual_cost: Decimal | None = None
     soft_detail_attachment: str | None = None
     custom_cabinet_amount: Decimal | None = None
     window_amount: Decimal | None = None
@@ -169,7 +167,6 @@ class RenovationBase(BaseModel):
 
     # 软装费用
     soft_budget: Decimal | None = Field(None, description="软装预算金额")
-    soft_actual_cost: Decimal | None = Field(None, description="软装实际发生成本")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
     # 定制柜/窗户/墙面/其他装修扩展金额
@@ -212,7 +209,6 @@ class RenovationInfoUpdate(BaseModel):
     payment_node_4: str | None = None
     payment_ratio_4: Decimal | None = None
     soft_budget: Decimal | None = None
-    soft_actual_cost: Decimal | None = None
     soft_detail_attachment: str | None = None
     custom_cabinet_amount: Decimal | None = None
     window_amount: Decimal | None = None

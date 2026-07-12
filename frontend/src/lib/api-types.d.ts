@@ -5212,8 +5212,6 @@ export interface components {
             hard_amount?: number | null;
             /** Hard Unit Price */
             hard_unit_price?: number | null;
-            /** Soft Actual */
-            soft_actual?: number | null;
             /** Custom Cabinet */
             custom_cabinet?: number | null;
             /** Window */
@@ -7664,8 +7662,6 @@ export interface components {
             payment_ratio_4?: string | null;
             /** Soft Budget */
             soft_budget?: string | null;
-            /** Soft Actual Cost */
-            soft_actual_cost?: string | null;
             /** Soft Detail Attachment */
             soft_detail_attachment?: string | null;
             /** Custom Cabinet Amount */
@@ -7777,11 +7773,6 @@ export interface components {
              * @description 软装预算金额
              */
             soft_budget?: number | string | null;
-            /**
-             * Soft Actual Cost
-             * @description 软装实际发生成本
-             */
-            soft_actual_cost?: number | string | null;
             /**
              * Soft Detail Attachment
              * @description 软装明细附件

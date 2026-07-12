@@ -198,7 +198,6 @@ class _StatisticsMixin:
         # --- renovation ---
         if renovation:
             hard_amount = renovation.hard_contract_amount or Decimal(0)
-            soft_actual = renovation.soft_actual_cost or Decimal(0)
             custom_cabinet = renovation.custom_cabinet_amount or Decimal(0)
             window_amount = renovation.window_amount or Decimal(0)
             wall_treatment = renovation.wall_treatment_amount or Decimal(0)
@@ -210,7 +209,6 @@ class _StatisticsMixin:
 
             total_fee = (
                 hard_amount
-                + soft_actual
                 + custom_cabinet
                 + window_amount
                 + wall_treatment
@@ -233,7 +231,6 @@ class _StatisticsMixin:
                 total_fee=total_fee,
                 hard_amount=hard_amount,
                 hard_unit_price=hard_unit_price,
-                soft_actual=soft_actual,
                 custom_cabinet=custom_cabinet,
                 window=window_amount,
                 wall_treatment=wall_treatment,
