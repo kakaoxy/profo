@@ -34,7 +34,6 @@ _RENOVATION_ALLOWED_FIELDS = {
     "payment_node_4",
     "payment_ratio_4",
     "soft_budget",
-    "soft_actual_cost",
     "soft_detail_attachment",
     "custom_cabinet_amount",
     "window_amount",

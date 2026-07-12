@@ -106,7 +106,6 @@ export interface ProjectRenovation {
   payment_node_4?: string;
   payment_ratio_4?: number;
   soft_budget?: number;
-  soft_actual_cost?: number;
   soft_detail_attachment?: string;
   design_fee?: number;
   demolition_fee?: number;

@@ -276,6 +276,21 @@ def add_other_decoration_amount_column(engine: Engine) -> None:
         conn.execute(text("ALTER TABLE project_renovations ADD COLUMN other_decoration_amount NUMERIC(15, 2)"))
 
 
+def drop_soft_actual_cost_column(engine: Engine) -> None:
+    """移除 project_renovations 表的 soft_actual_cost 列（幂等）.
+
+    前端已移除"软装实际"录入项，后端模型/Schema/Service 白名单同步移除，
+    DB 列也需移除以避免脏数据风险。SQLite 3.35+ 与 PostgreSQL 均支持 DROP COLUMN。
+    """
+    from sqlalchemy import text  # noqa: PLC0415
+
+    if not _column_exists(engine, "project_renovations", "soft_actual_cost"):
+        return
+    logger.info("迁移：移除 project_renovations.soft_actual_cost 列")
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE project_renovations DROP COLUMN soft_actual_cost"))
+
+
 def create_investment_tables(engine: Engine) -> None:
     """幂等创建跟投管理 4 张表与索引.
 
@@ -875,6 +890,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_thumbnail_url_to_photos(engine)
         add_renovation_extra_amount_columns(engine)
         add_other_decoration_amount_column(engine)
+        drop_soft_actual_cost_column(engine)
         run_fix_image_urls(engine)
         create_investment_tables(engine)
         rename_return_adjustment_columns(engine)
