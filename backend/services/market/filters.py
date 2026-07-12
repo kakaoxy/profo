@@ -143,7 +143,9 @@ def apply_filters(
 
     # 朝向筛选（包含任意关键字）
     if orientations:
-        orientation_conditions = [PropertyCurrent.orientation.like(f"%{ori}%") for ori in orientations if ori]
+        orientation_conditions = [
+            PropertyCurrent.orientation.like(f"%{escape_like(ori)}%", escape="\\") for ori in orientations if ori
+        ]
         if orientation_conditions:
             query = query.filter(or_(*orientation_conditions))
 

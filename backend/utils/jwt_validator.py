@@ -7,6 +7,10 @@ import sys
 logger = logging.getLogger(__name__)
 
 _DEFAULT_DEV_KEY = "your-secret-key-here-minimum-32-characters-for-production"
+_KNOWN_WEAK_KEYS = {
+    _DEFAULT_DEV_KEY,
+    "Profo-Dev-Key-2024!@#$%^&*()_+-=[]{}|;:,.<>?",
+}
 _MIN_KEY_LENGTH = 32
 
 
@@ -27,12 +31,12 @@ def validate_jwt_secret_key() -> bool:
         logger.error("JWT_SECRET_KEY 未设置")
         return False
 
-    # 检查是否为开发环境的默认值（仅用于开发环境）
-    if secret_key == _DEFAULT_DEV_KEY:
+    # 检查是否为已知弱密钥（开发占位值或 .env.example 示例值）
+    if secret_key in _KNOWN_WEAK_KEYS:
         if not settings.debug:
-            logger.error("生产环境禁止使用开发默认 JWT 密钥（JWT_SECRET_KEY 为占位值）")
+            logger.error("生产环境禁止使用已知弱 JWT 密钥（JWT_SECRET_KEY 为占位值或示例值）")
             return False
-        logger.warning("警告：正在使用开发环境默认JWT密钥")
+        logger.warning("警告：正在使用已知弱 JWT 密钥")
         logger.warning("   建议：生产环境请设置强随机密钥")
         return True  # 开发环境允许使用默认值
 
