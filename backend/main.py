@@ -130,23 +130,52 @@ app = FastAPI(
     contact={
         "name": "ProFo Team",
     },
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
+    openapi_url="/openapi.json" if settings.debug else None,
 )
 
 
 upload_dir_abs = Path(settings.upload_dir).resolve()
 upload_dir_abs.mkdir(parents=True, exist_ok=True)
 # 始终从代码目录挂载 static，uploads 子目录通过软链指向持久化目录（生产）或直接存在（开发）
+# 生产环境 bind mount（非符号链接）不需要 follow_symlink；开发环境 soft link 需要
 static_root = Path(__file__).resolve().parent / "static"
-app.mount("/static", StaticFiles(directory=str(static_root), follow_symlink=True), name="static")
+app.mount("/static", StaticFiles(directory=str(static_root), follow_symlink=settings.debug), name="static")
 
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID", "X-Requested-With"],
 )
+
+
+@app.middleware("http")
+async def csrf_protect(request: Request, call_next):  # noqa: ANN001, ANN201
+    """CSRF 防护：纯 Cookie 认证的非安全方法请求必须携带 X-Requested-With 头。
+
+    Server Actions / API Key 请求使用 Authorization / X-API-Key 头认证，
+    不依赖 Cookie，不受此中间件影响。浏览器跨站表单无法设置自定义头，
+    因此 X-Requested-With 可有效区分 legitimate 请求与 CSRF 攻击。
+    """  # noqa: D400, D415
+    safe_methods = {"GET", "HEAD", "OPTIONS"}
+    if request.method in safe_methods:
+        return await call_next(request)
+
+    has_cookie = request.cookies.get("access_token") or request.cookies.get("c_access_token")
+    has_auth_header = request.headers.get("authorization")
+    has_api_key = request.headers.get("X-API-Key")
+
+    # 仅当依赖 Cookie 认证（无 Authorization / X-API-Key 头）时校验
+    if has_cookie and not has_auth_header and not has_api_key and not request.headers.get("X-Requested-With"):
+        return JSONResponse(
+            status_code=403,
+            content={"code": 403, "message": "缺少 CSRF 防护头"},
+        )
+    return await call_next(request)
 
 
 @app.get("/")

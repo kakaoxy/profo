@@ -5,27 +5,29 @@
 
 设计：
 - 方法保持 static/classmethod 风格，与原 AuthService 一致，无需实例化。
-- state / temp_code 使用进程内 ClassVar 字典存储（与原实现一致）。
+- state / temp_code 存储在数据库表中（带 TTL），支持多 Worker 部署。
 """
 
 import logging
 import secrets
-import time
 import uuid
-from datetime import datetime, timezone
-from typing import ClassVar
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
 from sqlalchemy.orm import Session
 
 from models import Role, User
+from models.system import WeChatOAuthState, WeChatTempCode
 from settings import settings
 from utils.auth import get_password_hash
 
 from .exceptions import AuthenticationError, ResourceNotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
+
+_STATE_TTL_SECONDS = 600  # 10 分钟
+_CODE_TTL_SECONDS = 60
 
 
 class WeChatAuthService:
@@ -36,16 +38,16 @@ class WeChatAuthService:
     """
 
     @staticmethod
-    def generate_wechat_auth_url(redirect_uri: str | None = None) -> tuple[str, str]:
+    def generate_wechat_auth_url(db: Session, redirect_uri: str | None = None) -> tuple[str, str]:
         """生成微信授权 URL 与随机 state.
 
-        返回 (auth_url, state)。state 同时存入服务端临时存储，回调时必须校验。
+        返回 (auth_url, state)。state 同时存入数据库，回调时必须校验。
         避免固定 state 导致的 CSRF / 登录态劫持。
 
         """
         callback_url = redirect_uri or settings.wechat_redirect_uri
         state = secrets.token_urlsafe(16)
-        WeChatAuthService._store_wechat_state(state)
+        WeChatAuthService._store_wechat_state(db, state)
         params = {
             "appid": settings.wechat_appid,
             "redirect_uri": callback_url,
@@ -56,23 +58,22 @@ class WeChatAuthService:
         }
         return settings.wechat_auth_url_base + "?" + urlencode(params) + "#wechat_redirect", state
 
-    # 微信 OAuth state 临时存储（随机 state + TTL，防 CSRF）
-    _wechat_state_store: ClassVar[dict[str, float]] = {}
-    _state_ttl: ClassVar[int] = 600  # 10 分钟
+    @staticmethod
+    def _store_wechat_state(db: Session, state: str) -> None:
+        """存储微信 OAuth state（带 TTL），顺带清理过期记录."""
+        now = datetime.now(timezone.utc)
+        # 清理过期 state（避免积压）
+        db.query(WeChatOAuthState).filter(WeChatOAuthState.expires_at < now).delete()
+        db.add(
+            WeChatOAuthState(
+                state=state,
+                expires_at=now + timedelta(seconds=_STATE_TTL_SECONDS),
+            )
+        )
+        db.commit()
 
-    @classmethod
-    def _cleanup_expired_states(cls) -> None:
-        now = time.time()
-        cls._wechat_state_store = {k: v for k, v in cls._wechat_state_store.items() if v > now}
-
-    @classmethod
-    def _store_wechat_state(cls, state: str) -> None:
-        """存储微信 OAuth state（带 TTL）."""
-        cls._cleanup_expired_states()
-        cls._wechat_state_store[state] = time.time() + cls._state_ttl
-
-    @classmethod
-    def consume_wechat_state(cls, state: str | None) -> bool:
+    @staticmethod
+    def consume_wechat_state(db: Session, state: str | None) -> bool:
         """校验并消费微信 OAuth state（一次性）.
 
         Returns:
@@ -81,41 +82,61 @@ class WeChatAuthService:
         """
         if not state:
             return False
-        cls._cleanup_expired_states()
-        return cls._wechat_state_store.pop(state, None) is not None
+        now = datetime.now(timezone.utc)
+        record = (
+            db.query(WeChatOAuthState)
+            .filter(
+                WeChatOAuthState.state == state,
+                WeChatOAuthState.expires_at > now,
+            )
+            .first()
+        )
+        if record is None:
+            return False
+        db.delete(record)
+        db.commit()
+        return True
 
-    _temp_code_store: ClassVar[dict[str, dict[str, object]]] = {}
-    _code_ttl: ClassVar[int] = 60
+    @staticmethod
+    def store_temp_token(db: Session, access_token: str, refresh_token: str) -> str:
+        """存储临时令牌并返回临时授权码，顺带清理过期记录."""
+        now = datetime.now(timezone.utc)
+        # 清理过期临时码
+        db.query(WeChatTempCode).filter(WeChatTempCode.expires_at < now).delete()
 
-    @classmethod
-    def _cleanup_expired_codes(cls) -> None:
-        now = time.time()
-        active_codes = {k: v for k, v in cls._temp_code_store.items() if v["expires_at"] > now}
-        cls._temp_code_store = active_codes
-
-    @classmethod
-    def store_temp_token(cls, access_token: str, refresh_token: str) -> str:
-        """存储临时令牌并返回临时授权码."""
-        cls._cleanup_expired_codes()
-
-        now = time.time()
         code = str(uuid.uuid4())
-        cls._temp_code_store[code] = {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "expires_at": now + cls._code_ttl,
-        }
+        db.add(
+            WeChatTempCode(
+                code=code,
+                access_token=access_token,
+                refresh_token=refresh_token,
+                expires_at=now + timedelta(seconds=_CODE_TTL_SECONDS),
+            )
+        )
+        db.commit()
         return code
 
-    @classmethod
-    def exchange_temp_code(cls, code: str) -> dict[str, object]:
+    @staticmethod
+    def exchange_temp_code(db: Session, code: str) -> dict[str, object]:
         """用临时授权码换取令牌."""
-        cls._cleanup_expired_codes()
-
-        entry = cls._temp_code_store.pop(code, None)
-        if entry is None:
+        now = datetime.now(timezone.utc)
+        record = (
+            db.query(WeChatTempCode)
+            .filter(
+                WeChatTempCode.code == code,
+                WeChatTempCode.expires_at > now,
+            )
+            .first()
+        )
+        if record is None:
             msg = "授权码无效"
             raise AuthenticationError(msg)
+        entry: dict[str, object] = {
+            "access_token": record.access_token,
+            "refresh_token": record.refresh_token,
+        }
+        db.delete(record)
+        db.commit()
         return entry
 
     @staticmethod

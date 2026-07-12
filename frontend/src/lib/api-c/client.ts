@@ -9,8 +9,11 @@ const requestBodyStore = new WeakMap<Request, string>();
 
 const credentialsMiddleware: Middleware = {
   async onRequest({ request }) {
+    const headers = new Headers(request.headers);
+    headers.set("X-Requested-With", "XMLHttpRequest");
     return new Request(request, {
       credentials: "include",
+      headers,
       signal: request.signal,
     });
   },

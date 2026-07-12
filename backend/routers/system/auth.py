@@ -131,10 +131,11 @@ def refresh_access_token(
 
 @router.get("/wechat/authorize")
 def wechat_authorize(
+    db: DbSessionDep,
     redirect_uri: Annotated[str | None, Query(description="重定向URL")] = None,
 ) -> WechatAuthUrlResponse:
     """生成微信登录授权URL（含随机 state，回调时校验防 CSRF）."""
-    auth_url, _state = WeChatAuthService.generate_wechat_auth_url(redirect_uri)
+    auth_url, _state = WeChatAuthService.generate_wechat_auth_url(db, redirect_uri)
     return WechatAuthUrlResponse(auth_url=auth_url)
 
 
@@ -148,7 +149,7 @@ async def wechat_callback(
 
     严格校验 state 与服务端签发的一致，防止 CSRF / 登录态劫持。
     """
-    if not WeChatAuthService.consume_wechat_state(state):
+    if not WeChatAuthService.consume_wechat_state(db, state):
         logger.warning("微信回调 state 校验失败，疑似 CSRF 攻击")
         msg = "state 校验失败，请重新发起微信登录"
         raise BusinessLogicError(msg)
@@ -172,6 +173,7 @@ async def wechat_callback(
     result = await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
 
     auth_code = WeChatAuthService.store_temp_token(
+        db,
         access_token=result["access_token"],
         refresh_token=result["refresh_token"],
     )
@@ -191,13 +193,13 @@ async def wechat_callback(
 def exchange_token(
     request: Request,
     exchange_data: Annotated[ExchangeTokenRequest, Body()],
-    _db: DbSessionDep,
+    db: DbSessionDep,
 ) -> TokenResponse:
     """用一次性授权码兑换 Token.
 
     速率限制：10次/分钟.
     """
-    entry = WeChatAuthService.exchange_temp_code(exchange_data.code)
+    entry = WeChatAuthService.exchange_temp_code(db, exchange_data.code)
     return TokenResponse(
         access_token=entry["access_token"],
         refresh_token=entry["refresh_token"],

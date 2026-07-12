@@ -73,7 +73,7 @@ from .property import (
 )
 
 # 系统模块
-from .system import FailedRecord, PropertyImportTask
+from .system import FailedRecord, PropertyImportTask, WeChatOAuthState, WeChatTempCode
 
 # 用户权限模块
 from .user import ApiKey, RefreshToken, Role, User
@@ -141,4 +141,7 @@ __all__ = [
     "Role",
     "SettlementStatus",
     "User",
+    # 微信 OAuth
+    "WeChatOAuthState",
+    "WeChatTempCode",
 ]

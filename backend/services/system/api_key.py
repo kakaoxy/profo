@@ -4,6 +4,7 @@
 """
 
 import hashlib
+import hmac
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -29,7 +30,16 @@ class ApiKeyService:
 
     @staticmethod
     def _hash_key(key: str) -> str:
-        """使用 SHA-256 哈希 Key."""
+        """使用 HMAC-SHA256（带 server pepper）哈希 Key."""
+        return hmac.new(
+            settings.jwt_secret_key.encode(),
+            key.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+
+    @staticmethod
+    def _hash_key_legacy(key: str) -> str:
+        """旧的无盐 SHA-256 哈希（仅用于存量 Key 兼容校验）."""
         return hashlib.sha256(key.encode()).hexdigest()
 
     @staticmethod
@@ -200,9 +210,31 @@ class ApiKeyService:
             .first()
         )
 
+        # 兼容旧的无盐 SHA-256 哈希：HMAC 未命中时尝试旧哈希，命中则升级
+        is_legacy = False
+        if not key_record:
+            legacy_hash = ApiKeyService._hash_key_legacy(api_key)
+            key_record = (
+                db.query(ApiKey)
+                .filter(
+                    ApiKey.key_prefix == prefix,
+                    ApiKey.key_hash == legacy_hash,
+                    ApiKey.status == "active",
+                    ApiKey.deleted_at.is_(None),
+                )
+                .first()
+            )
+            if key_record:
+                is_legacy = True
+
         if not key_record:
             msg = "API Key 无效"
             raise AuthenticationError(msg)
+
+        # 软迁移：将旧 SHA-256 哈希升级为 HMAC 哈希
+        if is_legacy:
+            key_record.key_hash = key_hash
+            db.flush()
 
         if key_record.expires_at and key_record.expires_at < datetime.now(timezone.utc):
             msg = "API Key 已过期"

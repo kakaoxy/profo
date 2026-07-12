@@ -31,6 +31,8 @@ export const uploadCSV = (
 
     // 允许发送 Cookie，让浏览器自动携带 httpOnly cookie 进行认证
     xhr.withCredentials = true;
+    // CSRF 防护头：后端中间件要求纯 Cookie 认证的 POST 请求携带此头
+    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -74,6 +76,7 @@ export const createImportTask = async (file: File): Promise<ImportTaskCreateResp
   const response = await fetch(getClientApiUrl("/api/v1/upload/csv"), {
     method: "POST",
     credentials: "include",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
     body: formData,
   });
 
@@ -126,6 +129,7 @@ export const cancelImportTask = async (taskId: string): Promise<void> => {
   const response = await fetch(getClientApiUrl(`/api/v1/upload/tasks/${taskId}/cancel`), {
     method: "POST",
     credentials: "include",
+    headers: { "X-Requested-With": "XMLHttpRequest" },
   });
 
   if (!response.ok) {

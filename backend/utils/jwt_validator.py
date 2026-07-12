@@ -29,6 +29,9 @@ def validate_jwt_secret_key() -> bool:
 
     # 检查是否为开发环境的默认值（仅用于开发环境）
     if secret_key == _DEFAULT_DEV_KEY:
+        if not settings.debug:
+            logger.error("生产环境禁止使用开发默认 JWT 密钥（JWT_SECRET_KEY 为占位值）")
+            return False
         logger.warning("警告：正在使用开发环境默认JWT密钥")
         logger.warning("   建议：生产环境请设置强随机密钥")
         return True  # 开发环境允许使用默认值
