@@ -39,13 +39,13 @@ def upload_renovation_photo(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     stage: Annotated[str, Query(max_length=100, description="改造阶段")],
-    url: Annotated[str, Query(max_length=100, description="图片URL", pattern=r"^https?://[^\s]+$")],
+    url: Annotated[str, Query(max_length=2000, description="图片URL", pattern=r"^(https?://|/)[^\s]+$")],
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
-    filename: Annotated[str | None, Query(max_length=100, description="文件名")] = None,
-    description: Annotated[str | None, Query(max_length=100, description="描述")] = None,
+    filename: Annotated[str | None, Query(max_length=255, description="文件名")] = None,
+    description: Annotated[str | None, Query(max_length=500, description="描述")] = None,
     thumbnail_url: Annotated[
-        str | None, Query(max_length=100, description="缩略图URL", pattern=r"^https?://[^\s]+$")
+        str | None, Query(max_length=2000, description="缩略图URL", pattern=r"^(https?://|/)[^\s]+$")
     ] = None,
 ) -> RenovationPhotoResponse:
     """上传改造阶段照片."""

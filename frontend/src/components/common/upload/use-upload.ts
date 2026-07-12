@@ -142,6 +142,8 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
 
         xhr.open("POST", url);
         xhr.withCredentials = true;
+        // CSRF 防护头：后端中间件要求纯 Cookie 认证的 POST 请求携带此头
+        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
         // 进度监听 - 节流：仅在百分比变化 ≥5% 时更新状态，避免高频重渲染
         let lastReportedPercent = 0;
