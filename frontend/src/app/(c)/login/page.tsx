@@ -57,17 +57,25 @@ function LoginForm() {
     // 回调得以执行 setSession 更新客户端 session 状态；再手动跳转目标页。
     // 若用 redirect:true，redirect() 抛出 NEXT_REDIRECT 会跳过 setSession，
     // 导致软导航后 TopAppBar 仍显示「登录」（需刷新才更新）。
-    const result = await login(
-      { username, password },
-      { callbackUrl: redirect, redirect: false },
-    );
+    try {
+      const result = await login(
+        { username, password },
+        { callbackUrl: redirect, redirect: false },
+      );
 
-    if (!result.success) {
-      setErrorMessage(result.error);
+      if (!result.success) {
+        setErrorMessage(result.error);
+        setIsPending(false);
+        return;
+      }
+      router.replace(redirect);
+    } catch (err) {
+      // Server Action 不可达（如 Turbopack 清单失步）或网络异常时，
+      // login() 会 reject 而非返回 {success:false}，需兜底重置按钮状态
+      console.error("登录失败:", err);
+      setErrorMessage("登录服务暂时不可用，请稍后重试");
       setIsPending(false);
-      return;
     }
-    router.replace(redirect);
   }
 
   return (

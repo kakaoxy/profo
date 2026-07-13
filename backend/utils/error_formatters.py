@@ -97,7 +97,11 @@ def format_request_validation_error(error: RequestValidationError) -> str:
         elif error_type == "string_too_short":
             error_messages.append(f"参数 {field} 长度太短")
         elif error_type == "value_error":
-            error_messages.append(f"参数 {field} 值无效")
+            # Pydantic v2 的 field_validator 抛 ValueError 时，
+            # msg 格式为 "Value error, <自定义消息>"，需剥离前缀还原原始消息
+            # （如密码复杂度校验返回的 "密码必须包含至少一个大写字母"）
+            detail = error_message.removeprefix("Value error, ").strip()
+            error_messages.append(detail or f"参数 {field} 值无效")
         else:
             error_messages.append(f"参数 {field}: {error_message}")
 
