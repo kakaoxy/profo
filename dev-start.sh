@@ -4,8 +4,8 @@
 # 架构：Docker 跑 PostgreSQL + 本地 uvicorn --reload + 本地 next dev
 # 前后端代码改动自动热重载，无需 docker rebuild。
 #
-# 与 ./start.sh 的区别：
-#   ./start.sh        生产部署，四服务全部容器化，改代码需 rebuild
+# 与生产部署的区别：
+#   生产部署          使用 docker-compose.yml（db / backend / frontend），由宿主 nginx 反代
 #   ./dev-start.sh    本地开发，仅 db 容器化，前后端本机直跑热重载
 #
 # 用法:

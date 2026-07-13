@@ -62,7 +62,7 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 - 🔒 **Fernet 对称加密** — 身份证 / 手机号 / 微信会话密钥等敏感字段加密存储
 - 📊 **四层领域架构** — 清晰的业务边界，层间写时复制（CoW）
 - 🐘 **PostgreSQL 16** — `TIMESTAMP WITH TIME ZONE` 解决时区问题，`psycopg` 高性能驱动
-- 🐳 **Docker Compose 一键部署** — db / backend / frontend / nginx 四服务编排，开发与生产同构
+- 🐳 **Docker Compose 一键部署** — db / backend / frontend 三服务编排，由宿主 nginx 反代，开发与生产同构
 - 🖱️ **dnd-kit 拖拽排序** — 营销照片虚拟列表 + 拖拽排序 + 性能监控
 - 🛡️ **slowapi 速率限制** — 接口级防滥用
 - ⚙️ **统一异常处理** — Service 层 `ServiceException`，全局 handler 统一捕获
@@ -331,11 +331,11 @@ cp .env.docker.example .env
 #    - WECHAT_APPID/SECRET  微信凭据（不使用可填占位符）
 
 # 3. 构建并启动全部服务
-./start.sh
-# 等价于: docker compose up -d --build
+docker compose up -d --build
 ```
 
 启动后访问 `http://localhost/` 即可看到前端页面，API 走 `http://localhost/api/...`。
+> 注：当前架构使用宿主 nginx 反代到 `127.0.0.1:8000/3000`，不再在 compose 内启动 nginx 容器。
 
 ### 首次部署：初始化管理员账号
 
@@ -360,22 +360,22 @@ curl http://localhost/health
 docker compose ps
 ```
 
-### 启停命令（./start.sh）
+### 启停命令
 
 | 命令 | 作用 |
 |------|------|
-| `./start.sh` 或 `./start.sh up` | 启动（后台，复用已有镜像） |
-| `./start.sh stop` | 停止（保留容器与数据卷） |
-| `./start.sh restart` | 重启 |
-| `./start.sh logs` | 跟踪全部服务日志（最近 100 行） |
-| `./start.sh status` | 查看服务状态 |
-| `./start.sh down` | 停止并删除容器（**保留** `pgdata` / `uploads` 数据卷） |
-| `./start.sh rebuild` | 重新构建镜像并启动（代码变更后使用） |
+| `docker compose up -d` | 启动（后台，复用已有镜像） |
+| `docker compose stop` | 停止（保留容器与数据卷） |
+| `docker compose restart` | 重启 |
+| `docker compose logs -f` | 跟踪全部服务日志 |
+| `docker compose ps` | 查看服务状态 |
+| `docker compose down` | 停止并删除容器（**保留** `pgdata` volume） |
+| `docker compose up -d --build` | 重新构建镜像并启动（代码变更后使用） |
 
 ### 持久化
 
 - **PostgreSQL 数据**：`pgdata` volume（数据库文件）
-- **上传文件**：`uploads` volume（同时挂载到 backend `/app/static/uploads` 与 nginx `/app/uploads`）
+- **上传文件**：`./uploads` 目录通过 bind mount 挂载到 backend `/app/static/uploads`
 
 ```bash
 docker compose down          # 停止服务，保留 volume 数据
@@ -776,12 +776,12 @@ graph TB
 
 | 文件 | 作用 |
 |------|------|
-| [`docker-compose.yml`](docker-compose.yml) | 编排 db / backend / frontend / nginx 四个服务，定义 `pgdata` / `uploads` 两个 volume |
-| [`docker/nginx.conf`](docker/nginx.conf) | 容器内 Nginx 反代配置（HTTP only，开发/单机部署用；生产 HTTPS 需在前置代理层终止） |
+| [`docker-compose.yml`](docker-compose.yml) | 编排 db / backend / frontend 三个服务，backend/frontend 仅暴露到 `127.0.0.1`，由宿主 nginx 反代 |
 | [`backend/Dockerfile`](backend/Dockerfile) | 后端多阶段构建：builder（uv sync）→ runner（uvicorn） |
 | [`frontend/Dockerfile`](frontend/Dockerfile) | 前端三阶段构建：deps（pnpm install）→ builder（next build standalone）→ runner |
 | [`.env.docker.example`](.env.docker.example) | 环境变量模板（复制为 `.env` 后编辑） |
-| [`start.sh`](start.sh) | Docker 一键启停脚本（up/stop/restart/logs/status/down/rebuild） |
+| [`deploy-server.sh`](deploy-server.sh) | 服务器端部署脚本：加载镜像、启动 compose、健康检查 |
+| [`deploy-local.sh`](deploy-local.sh) | 本地构建并推送镜像到服务器，触发服务器端部署 |
 | [`backend/scripts/migrate_sqlite_to_pg.py`](backend/scripts/migrate_sqlite_to_pg.py) | 一次性 SQLite → PostgreSQL 数据迁移脚本（仅首次迁移旧数据时使用） |
 
 ### 快速部署流程
@@ -799,7 +799,7 @@ cp .env.docker.example .env
 #   WECHAT_APPID/SECRET
 
 # 3. 构建并启动
-./start.sh           # 等价于 docker compose up -d --build
+docker compose up -d --build
 
 # 4. 初始化管理员（首次部署）
 docker compose exec backend .venv/bin/python init_admin.py
@@ -812,7 +812,7 @@ curl http://localhost/health
 
 ### 生产环境注意事项
 
-1. **HTTPS**：当前 `docker/nginx.conf` 仅监听 80 端口。生产环境建议在前置层（云负载均衡 / Caddy / Traefik）终止 HTTPS，再转发到 nginx 容器的 80 端口；或自定义 `docker/nginx.conf` 挂载证书。
+1. **HTTPS**：当前 compose 内不运行 nginx，生产环境需在宿主机器配置 nginx/Caddy/Traefik 等反代，并终止 HTTPS。宿主反代目标为 `127.0.0.1:3000`（前端）与 `127.0.0.1:8000`（后端 API/静态资源），示例配置可参考 `docs/server-conf/`。
 2. **密钥管理**：`.env` 中的 `JWT_SECRET_KEY` / `ENCRYPTION_KEY` / `POSTGRES_PASSWORD` 务必使用强随机值，**严禁提交到 Git**（`.env` 已在 `.gitignore` 中）。
 3. **数据库备份**：定期备份 `pgdata` volume，或使用 `pg_dump`：
    ```bash
@@ -829,7 +829,7 @@ curl http://localhost/health
 git pull
 
 # 重新构建并启动（保留数据）
-./start.sh rebuild
+docker compose up -d --build
 
 # 如有 schema 变更，应用会通过 migrations/ 自动执行幂等迁移
 ```
@@ -857,7 +857,7 @@ git pull
 
 2. **启动 Docker 服务**（确保 PostgreSQL 已就绪）：
    ```bash
-   ./start.sh
+   docker compose up -d
    ```
 
 3. **执行迁移脚本**：
@@ -1029,9 +1029,9 @@ pnpm install
 ### Q10: 如何重置整个环境（清空数据）
 
 ```bash
-./start.sh down                  # 停止并删除容器
-docker compose down -v           # 同时删除 pgdata / uploads volume（数据丢失！）
-./start.sh                       # 重新启动
+docker compose down              # 停止并删除容器
+docker compose down -v           # 同时删除 pgdata volume（数据丢失！）
+docker compose up -d --build     # 重新启动
 docker compose exec backend .venv/bin/python init_admin.py    # 重新初始化管理员
 ```
 
@@ -1046,11 +1046,11 @@ ProFo/
 ├── CLAUDE.md                      # Claude Code 指引
 ├── DESIGN.md                      # 设计风格参考
 │
-├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend / nginx）
-├── docker/
-│   └── nginx.conf                 # 容器内 Nginx 反代配置
+├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend）
+├── docker-compose.dev.yml         # 开发环境 override（映射 db 端口到本地）
 ├── .env.docker.example            # Docker 部署环境变量模板
-├── start.sh                       # Docker 一键启停脚本
+├── deploy-local.sh                # 本地构建镜像并推送到服务器
+├── deploy-server.sh               # 服务器端加载镜像并启动 compose
 │
 ├── frontend/                      # 前端（Next.js 16，standalone 输出）
 │   ├── src/
