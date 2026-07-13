@@ -62,7 +62,7 @@ function CPageContent() {
   );
   const [status, setStatus] = useQueryState(
     "status",
-    parseAsString.withDefault("在售").withOptions({ shallow: true })
+    parseAsString.withDefault("").withOptions({ shallow: true })
   );
   const [search, setSearch] = useQueryState(
     "search",
@@ -95,10 +95,12 @@ function CPageContent() {
   const pageSize = 9;
 
   const searchParams = new URLSearchParams({
-    project_status: status,
     page: page.toString(),
     page_size: pageSize.toString(),
   });
+  if (status) {
+    searchParams.set("project_status", status);
+  }
 
   if (search) {
     searchParams.set("community_name", search);
