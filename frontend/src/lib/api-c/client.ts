@@ -2,10 +2,9 @@ import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "../api-types";
 import { getClientApiUrl } from "../config";
 import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
+import { storeRequestBody, consumeRequestBody } from "@/lib/request-body-store";
 
 const C_REFRESH_ENDPOINT = "/api/auth/c/refresh";
-
-const requestBodyStore = new WeakMap<Request, string>();
 
 const credentialsMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -24,7 +23,7 @@ const authMiddleware: Middleware = {
     if (request.body) {
       const cloned = request.clone();
       const bodyText = await cloned.text();
-      requestBodyStore.set(request, bodyText);
+      storeRequestBody(request, bodyText);
     }
     return request;
   },
@@ -40,8 +39,7 @@ const authMiddleware: Middleware = {
       const { success: refreshed } = await refreshTokensDedup(C_REFRESH_ENDPOINT);
 
       if (refreshed) {
-        const storedBody = requestBodyStore.get(request);
-        requestBodyStore.delete(request);
+        const storedBody = consumeRequestBody(request);
 
         const init: RequestInit = {
           credentials: "include",
