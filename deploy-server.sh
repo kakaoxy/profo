@@ -59,7 +59,14 @@ else
     exit 1
 fi
 
-# 3. 启动 backend（容器内会自动运行迁移）
+# 3. 确保 uploads 目录可被容器内 app 用户(uid=1001)写入
+# 背景：#18 安全加固后 backend 容器以非 root 用户 app 运行，
+# 而 bind mount 的 ./uploads 若 owner 仍为 root，会导致 PermissionError 上传失败
+log_info "准备 uploads 目录..."
+mkdir -p "$PROJECT_DIR/uploads"
+chown -R 1001:1001 "$PROJECT_DIR/uploads"
+
+# 4. 启动 backend（容器内会自动运行迁移）
 log_info "重启 backend（迁移将自动运行）..."
 docker compose up -d --force-recreate --no-build backend
 
@@ -106,7 +113,7 @@ if [ $elapsed -ge $HEALTH_TIMEOUT ]; then
     exit 1
 fi
 
-# 4. 启动 frontend
+# 5. 启动 frontend
 log_info "重启 frontend..."
 docker compose up -d --force-recreate --no-build frontend
 
@@ -118,7 +125,7 @@ else
     log_warn "frontend 未运行，请检查日志: docker compose logs frontend"
 fi
 
-# 5. 清理压缩包
+# 6. 清理压缩包
 log_info "清理本地 tar 包..."
 rm -f "$BACKEND_TAR" "$FRONTEND_TAR"
 
