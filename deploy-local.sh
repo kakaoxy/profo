@@ -26,11 +26,15 @@ docker save profo-backend:prod | gzip > profo-backend.tar.gz
 docker save profo-frontend:prod | gzip > profo-frontend.tar.gz
 
 # ---- scp 传输 ----
+# 镜像 + docker-compose.yml + deploy-server.sh 一起传，让服务器完全脱离 Git 依赖
+# .env 不传：服务器有独立的生产配置（JWT/ENCRYPTION_KEY 与本地 dev 不同，覆盖会导致数据无法解密）
 echo ">> 传输到服务器 $SERVER_IP:$SERVER_PATH ..."
-scp -C profo-backend.tar.gz profo-frontend.tar.gz "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
+scp -C profo-backend.tar.gz profo-frontend.tar.gz \
+    docker-compose.yml deploy-server.sh \
+    "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
 
 # ---- 远程触发服务器端部署 ----
-# deploy-server.sh 通过 git pull 同步到服务器，运行中的 shell 已读入内存，git pull 更新脚本本身不影响当前执行
+# deploy-server.sh 通过上一步 scp 同步到服务器，不再依赖 git pull
 echo ">> SSH 远程触发 deploy-server.sh ..."
 # BatchMode=yes: 免密失效时直接失败，避免卡在密码交互
 ssh -o BatchMode=yes "$SERVER_USER@$SERVER_IP" "bash $SERVER_PATH/deploy-server.sh"
