@@ -37,12 +37,26 @@ def _get_client_ip(request: Request) -> str:
     防止攻击者伪造 XFF 头绕过速率限制。
     Docker bridge 网络下需通过 TRUSTED_PROXIES 环境变量配置代理网段，
     否则所有请求将共享代理 IP 对应的限流桶。
+
+    XFF 解析采用「从右向左跳过可信代理」策略：
+    - 最右侧 IP 由最近一跳可信代理写入（不可被客户端伪造）
+    - 持续向左跳过可信代理，第一个非可信 IP 即真实客户端
+    - 这避免了「取最左侧 IP」时被攻击者在 XFF 头塞入伪造 IP 绕过限流
+      （nginx 默认使用 $proxy_add_x_forwarded_for 会追加而非覆盖客户端 XFF）
     """
     client_host = request.client.host if request.client else "unknown"
     if _is_trusted_proxy(client_host):
         xff = request.headers.get("X-Forwarded-For")
         if xff:
-            return xff.split(",")[0].strip()
+            # 过滤空条目（如 ", 1.2.3.4" 这种异常输入）
+            ips = [ip.strip() for ip in xff.split(",") if ip.strip()]
+            if ips:
+                # 从右向左跳过可信代理，第一个非可信 IP 即真实客户端
+                for ip in reversed(ips):
+                    if not _is_trusted_proxy(ip):
+                        return ip
+                # 全部为可信代理（异常情况）— 回退到直连 host
+                return client_host
     return client_host
 
 
