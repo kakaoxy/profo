@@ -2,13 +2,12 @@ import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./api-types";
 import { getClientApiUrl } from "./config";
 import { refreshTokensDedup } from "@/lib/auth/client/refresh-dedup";
+import { storeRequestBody, consumeRequestBody } from "@/lib/request-body-store";
 
 function getRefreshEndpoint(): string {
   const isAdminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   return isAdminRoute ? "/api/auth/refresh" : "/api/auth/c/refresh";
 }
-
-const requestBodyStore = new WeakMap<Request, string>();
 
 const credentialsMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -27,7 +26,7 @@ const authMiddleware: Middleware = {
     if (request.body) {
       const cloned = request.clone();
       const bodyText = await cloned.text();
-      requestBodyStore.set(request, bodyText);
+      storeRequestBody(request, bodyText);
     }
     return request;
   },
@@ -43,8 +42,7 @@ const authMiddleware: Middleware = {
       const { success: refreshed } = await refreshTokensDedup(getRefreshEndpoint());
 
       if (refreshed) {
-        const storedBody = requestBodyStore.get(request);
-        requestBodyStore.delete(request);
+        const storedBody = consumeRequestBody(request);
 
         const init: RequestInit = {
           credentials: "include",
