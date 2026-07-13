@@ -10,7 +10,6 @@ import React, {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { getGlobalAuthConfig } from "../config";
 import type {
   ClientSession,
   ClientSessionData,
@@ -45,6 +44,8 @@ interface AuthContextValue {
   logout: AuthActions["logout"];
   fetchSession: AuthActions["fetchSession"];
   updateSessionToken: AuthActions["updateSessionToken"];
+  /** Whether OAuth providers are configured. Passed from the Server Component layout. */
+  hasOAuth: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -134,6 +135,14 @@ export interface AuthProviderProps {
    * user, `onSessionExpired` is called if provided.
    */
   refreshOnFocus?: boolean;
+  /**
+   * Whether OAuth providers are configured. Passed from the Server Component
+   * layout (which has access to `auth.config.providers`) so the client does
+   * not need to read the server-only global config.
+   *
+   * Defaults to `false`. Set to `true` when OAuth providers are registered.
+   */
+  hasOAuth?: boolean;
 }
 
 /**
@@ -179,6 +188,7 @@ export function AuthProvider({
   actions,
   onSessionExpired,
   refreshOnFocus = true,
+  hasOAuth = false,
 }: AuthProviderProps) {
   // Validate actions at startup so misconfigured setups fail fast with a clear
   // message instead of throwing an obscure error when an action is first called.
@@ -347,8 +357,8 @@ export function AuthProvider({
   );
 
   const contextValue = useMemo<AuthContextValue>(
-    () => ({ session, login, logout, fetchSession, updateSessionToken }),
-    [session, login, logout, fetchSession, updateSessionToken],
+    () => ({ session, login, logout, fetchSession, updateSessionToken, hasOAuth }),
+    [session, login, logout, fetchSession, updateSessionToken, hasOAuth],
   );
 
   return (
@@ -460,7 +470,7 @@ export function useAuth(): UseAuthReturn {
   // Only expose oauthLogin when OAuth providers are registered via Auth().
   // Without this guard, calling oauthLogin("google", ...) would redirect to
   // /api/auth/google/login — a stub endpoint that does not exist (404).
-  const hasOAuth = (getGlobalAuthConfig().providers ?? []).length > 0;
+  const hasOAuth = ctx.hasOAuth;
 
   const oauthLogin = (
     providerId: OAuthProviderId,
