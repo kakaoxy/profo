@@ -451,7 +451,7 @@ export default function AboutPage() {
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.calculation.eyebrow}
             </span>
-            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-tight">
               {cLocale.about.calculation.title}
             </h2>
             <p className="mt-3 text-sm md:text-base text-ash tracking-[-0.009em]">
@@ -500,7 +500,7 @@ export default function AboutPage() {
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.faqEyebrow}
             </span>
-            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-tight">
               {cLocale.about.faqTitle}
             </h2>
           </div>
@@ -535,7 +535,7 @@ export default function AboutPage() {
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.comparison.eyebrow}
             </span>
-            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-tight">
               {cLocale.about.comparison.title}
             </h2>
           </div>
@@ -577,7 +577,7 @@ export default function AboutPage() {
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.suitable.eyebrow}
             </span>
-            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-tight">
               {cLocale.about.suitable.title}
             </h2>
           </div>
@@ -604,7 +604,7 @@ export default function AboutPage() {
             <span className="text-[12px] font-medium uppercase tracking-[0.2em] text-rust">
               {cLocale.about.casesEyebrow}
             </span>
-            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-[-0.025em]">
+            <h2 className="text-2xl font-medium md:font-display md:text-[44px] md:leading-[1.1] text-ink tracking-[-0.009em] md:tracking-tight">
               {cLocale.about.casesTitle}
             </h2>
             <p className="mt-3 text-sm md:text-base text-ash tracking-[-0.009em]">
