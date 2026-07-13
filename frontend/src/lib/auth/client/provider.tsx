@@ -10,6 +10,12 @@ import React, {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import {
+  fetchSessionAction,
+  loginAction,
+  logoutAction,
+  updateSessionTokenAction,
+} from "../server/actions";
 import type {
   ClientSession,
   ClientSessionData,
@@ -114,8 +120,17 @@ export interface AuthProviderProps {
    * <AuthProvider actions={auth.actions}>
    */
   initialSession?: ClientSessionData | null;
-  /** The server actions object from `auth.actions`. */
-  actions: AuthActions;
+  /**
+   * The server actions object from `auth.actions`.
+   *
+   * Optional — when omitted, the provider uses the server actions imported
+   * directly from `../server/actions`. This is the recommended mode for
+   * Turbopack compatibility (ensures actions are registered in the
+   * server-reference-manifest).
+   *
+   * Pass explicitly only for testing (to inject mocks).
+   */
+  actions?: AuthActions;
   /**
    * Called when a session silently expires — i.e., a background refresh or
    * revalidation fails and the user was previously authenticated.
@@ -190,21 +205,20 @@ export function AuthProvider({
   refreshOnFocus = true,
   hasOAuth = false,
 }: AuthProviderProps) {
-  // Validate actions at startup so misconfigured setups fail fast with a clear
-  // message instead of throwing an obscure error when an action is first called.
-  if (
-    !actions ||
-    typeof actions.login !== "function" ||
-    typeof actions.logout !== "function" ||
-    typeof actions.fetchSession !== "function" ||
-    typeof actions.updateSessionToken !== "function"
-  ) {
-    throw new Error(
-      "[next-jwt-auth] <AuthProvider> requires an `actions` prop with login, logout, fetchSession, and updateSessionToken.\n" +
-        "Pass `actions={auth.actions}` from your auth.ts export.\n" +
-        "Example: <AuthProvider actions={auth.actions}>",
-    );
-  }
+  // Default to the directly-imported server actions. This ensures Turbopack
+  // registers them in the server-reference-manifest (actions passed via props
+  // from a Server Component through an intermediate object are not tracked by
+  // Turbopack's static analysis). The `actions` prop is kept for testing.
+  const resolvedActions = useMemo<AuthActions>(
+    () =>
+      actions ?? {
+        login: loginAction,
+        logout: logoutAction,
+        fetchSession: fetchSessionAction,
+        updateSessionToken: updateSessionTokenAction,
+      },
+    [actions],
+  );
 
   const [session, setSession] = useState<ClientSession>(() =>
     buildInitialState(initialSession),
@@ -220,10 +234,10 @@ export function AuthProvider({
     onSessionExpiredRef.current = onSessionExpired;
   }, [onSessionExpired]);
 
-  const actionsRef = useRef(actions);
+  const actionsRef = useRef(resolvedActions);
   useEffect(() => {
-    actionsRef.current = actions;
-  }, [actions]);
+    actionsRef.current = resolvedActions;
+  }, [resolvedActions]);
 
   const sessionRef = useRef(session);
   useEffect(() => {
@@ -310,26 +324,26 @@ export function AuthProvider({
 
   const login = useCallback<AuthActions["login"]>(
     async (credentials, options) => {
-      const result = await actions.login(credentials, options);
+      const result = await resolvedActions.login(credentials, options);
       if (result.success) {
         setSession(buildAuthenticatedState(result.data));
       }
       return result;
     },
-    [actions],
+    [resolvedActions],
   );
 
   const logout = useCallback<AuthActions["logout"]>(
     async (options) => {
       // Optimistically clear local state for instant UI response.
       setSession(UNAUTHENTICATED);
-      return actions.logout(options);
+      return resolvedActions.logout(options);
     },
-    [actions],
+    [resolvedActions],
   );
 
   const fetchSession = useCallback<AuthActions["fetchSession"]>(async () => {
-    const result = await actions.fetchSession();
+    const result = await resolvedActions.fetchSession();
     if (!result.success || !result.data) {
       const wasAuthenticated = sessionRef.current.status === "authenticated";
       setSession(UNAUTHENTICATED);
@@ -342,18 +356,18 @@ export function AuthProvider({
       setSession(buildAuthenticatedState(result.data));
     }
     return result;
-  }, [actions]);
+  }, [resolvedActions]);
 
   const updateSessionToken = useCallback<AuthActions["updateSessionToken"]>(
     async (newAccessToken) => {
-      const result = await actions.updateSessionToken(newAccessToken);
+      const result = await resolvedActions.updateSessionToken(newAccessToken);
       if (result.success) {
         setSession(buildAuthenticatedState(result.data));
         router.refresh(); // Refresh Server Components so they get the new token
       }
       return result;
     },
-    [actions, router],
+    [resolvedActions, router],
   );
 
   const contextValue = useMemo<AuthContextValue>(
