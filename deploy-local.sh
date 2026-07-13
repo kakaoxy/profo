@@ -29,5 +29,14 @@ docker save profo-frontend:prod | gzip > profo-frontend.tar.gz
 echo ">> 传输到服务器 $SERVER_IP:$SERVER_PATH ..."
 scp -C profo-backend.tar.gz profo-frontend.tar.gz "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
 
-echo "✅ 本地构建与传输完成！"
-echo "下一步：SSH 到服务器执行以下命令："
+# ---- 远程触发服务器端部署 ----
+# deploy-server.sh 通过 git pull 同步到服务器，运行中的 shell 已读入内存，git pull 更新脚本本身不影响当前执行
+echo ">> SSH 远程触发 deploy-server.sh ..."
+# BatchMode=yes: 免密失效时直接失败，避免卡在密码交互
+ssh -o BatchMode=yes "$SERVER_USER@$SERVER_IP" "bash $SERVER_PATH/deploy-server.sh"
+
+# ---- 清理本地 tar 包 ----
+echo ">> 清理本地 tar 包..."
+rm -f profo-backend.tar.gz profo-frontend.tar.gz
+
+echo "✅ 全流程部署完成！"

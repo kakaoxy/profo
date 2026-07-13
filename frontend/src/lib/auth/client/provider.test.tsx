@@ -5,19 +5,17 @@ import type {
   ClientSessionData,
   SessionActionData,
   ActionResult,
-  ResolvedAuthConfig,
 } from "../types";
 import type { AuthActions } from "./provider";
 import { AuthProvider, useSession, useAuth } from "./provider";
 
 // ─── Per-test configurable mocks (hoisted so vi.mock factories can read them) ─
-const { mockRefresh, mockPush, mockReplace, mockBack, mockGetGlobalAuthConfig } =
+const { mockRefresh, mockPush, mockReplace, mockBack } =
   vi.hoisted(() => ({
     mockRefresh: vi.fn(),
     mockPush: vi.fn(),
     mockReplace: vi.fn(),
     mockBack: vi.fn(),
-    mockGetGlobalAuthConfig: vi.fn(),
   }));
 
 vi.mock("next/navigation", () => ({
@@ -27,10 +25,6 @@ vi.mock("next/navigation", () => ({
     push: mockPush,
     back: mockBack,
   }),
-}));
-
-vi.mock("../config", () => ({
-  getGlobalAuthConfig: mockGetGlobalAuthConfig,
 }));
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -187,11 +181,11 @@ describe("AuthProvider visibilitychange focus revalidation", () => {
 
 // ─── useAuth oauthLogin conditional exposure (Task 10) ───────────────────────
 
-function makeWrapper(actions: AuthActions) {
+function makeWrapper(actions: AuthActions, hasOAuth = false) {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     // initialSession={null} skips the mount fetch — we only care about useAuth().
     return (
-      <AuthProvider actions={actions} initialSession={null}>
+      <AuthProvider actions={actions} initialSession={null} hasOAuth={hasOAuth}>
         {children}
       </AuthProvider>
     );
@@ -199,37 +193,25 @@ function makeWrapper(actions: AuthActions) {
 }
 
 describe("useAuth oauthLogin conditional exposure", () => {
-  beforeEach(() => {
-    mockGetGlobalAuthConfig.mockReset();
-  });
-
   it("does not expose oauthLogin when OAuth providers list is empty", () => {
-    mockGetGlobalAuthConfig.mockReturnValue({
-      providers: [],
-    } as unknown as ResolvedAuthConfig);
-
     const actions = buildMockActions(async () => ({
       success: true as const,
       data: null,
     }));
     const { result } = renderHook(() => useAuth(), {
-      wrapper: makeWrapper(actions),
+      wrapper: makeWrapper(actions, false),
     });
 
     expect(result.current.oauthLogin).toBeUndefined();
   });
 
   it("exposes oauthLogin when OAuth providers are configured", () => {
-    mockGetGlobalAuthConfig.mockReturnValue({
-      providers: [{ id: "google" }],
-    } as unknown as ResolvedAuthConfig);
-
     const actions = buildMockActions(async () => ({
       success: true as const,
       data: null,
     }));
     const { result } = renderHook(() => useAuth(), {
-      wrapper: makeWrapper(actions),
+      wrapper: makeWrapper(actions, true),
     });
 
     expect(result.current.oauthLogin).toBeDefined();
