@@ -23,7 +23,7 @@ log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # 检查必要命令
-for cmd in docker git gunzip; do
+for cmd in docker gunzip; do
     if ! command -v "$cmd" &>/dev/null; then
         log_error "命令 $cmd 未找到，请先安装。"
         exit 1
@@ -35,14 +35,7 @@ cd "$PROJECT_DIR" || { log_error "项目目录 $PROJECT_DIR 不存在"; exit 1; 
 
 log_info "开始服务器端部署..."
 
-# 1. 拉取最新代码（同步 docker-compose.yml 等）
-if git pull --ff-only; then
-    log_info "Git pull 成功"
-else
-    log_warn "Git pull 失败，继续使用当前代码（可能无远程更新）"
-fi
-
-# 2. 加载新镜像
+# 1. 加载新镜像
 log_info "加载后端镜像..."
 if [ -f "$BACKEND_TAR" ]; then
     gunzip -c "$BACKEND_TAR" | docker load || { log_error "后端镜像加载失败"; exit 1; }
@@ -59,14 +52,14 @@ else
     exit 1
 fi
 
-# 3. 确保 uploads 目录可被容器内 app 用户(uid=1001)写入
+# 2. 确保 uploads 目录可被容器内 app 用户(uid=1001)写入
 # 背景：#18 安全加固后 backend 容器以非 root 用户 app 运行，
 # 而 bind mount 的 ./uploads 若 owner 仍为 root，会导致 PermissionError 上传失败
 log_info "准备 uploads 目录..."
 mkdir -p "$PROJECT_DIR/uploads"
 chown -R 1001:1001 "$PROJECT_DIR/uploads"
 
-# 4. 启动 backend（容器内会自动运行迁移）
+# 3. 启动 backend（容器内会自动运行迁移）
 log_info "重启 backend（迁移将自动运行）..."
 docker compose up -d --force-recreate --no-build backend
 
@@ -113,7 +106,7 @@ if [ $elapsed -ge $HEALTH_TIMEOUT ]; then
     exit 1
 fi
 
-# 5. 启动 frontend
+# 4. 启动 frontend
 log_info "重启 frontend..."
 docker compose up -d --force-recreate --no-build frontend
 
@@ -125,7 +118,7 @@ else
     log_warn "frontend 未运行，请检查日志: docker compose logs frontend"
 fi
 
-# 6. 清理压缩包
+# 5. 清理压缩包
 log_info "清理本地 tar 包..."
 rm -f "$BACKEND_TAR" "$FRONTEND_TAR"
 
