@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { Inter, Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { SWRProvider } from "@/components/swr-provider";
 // 1. 引入组件 (现在文件应该存在了)
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({
-  subsets: ["latin"],
+// 改用 next/font/local：Docker 构建环境无法访问 Google Fonts CDN，build 时下载字体会失败
+const inter = localFont({
+  src: "./fonts/inter.woff2",
   variable: "--font-inter",
+  weight: "100 900",
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
+const sourceSerif = localFont({
+  src: "./fonts/source-serif-4.woff2",
   variable: "--font-source-serif",
-  weight: ["400"],
-  style: ["normal"],
+  weight: "200 900",
   display: "swap",
 });
 
