@@ -27,10 +27,10 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
   };
 
   // 合并「收房评估 + 跟进记录」按时间倒序，"线索初始录入"恒为最末（创建最早）
+  // 评估事件触发条件：存在任意评估信息（评估价/评估意见/审核时间）
+  // auditTime 是评估发生的最可靠信号（后端在评估流转时写入）；存量无 audit_time 时回退到 evalPrice/auditReason
   const hasAssessment =
-    lead.evalPrice != null ||
-    (lead.status === LeadStatus.REJECTED && !!lead.auditReason) ||
-    lead.status === LeadStatus.PENDING_VISIT;
+    lead.evalPrice != null || !!lead.auditReason || !!lead.auditTime;
   const trailEvents: TrailEvent[] = [];
   if (hasAssessment) {
     const raw = lead.auditTime ?? lead.updatedAt;
