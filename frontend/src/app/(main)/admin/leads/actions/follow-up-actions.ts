@@ -63,6 +63,7 @@ export async function getLeadFollowUpsAction(
     method: f.method,
     content: f.content,
     followUpTime: safeParseDate(f.followed_at)?.toLocaleString() ?? "-",
+    followedAt: f.followed_at,
     createdBy: f.created_by_name || "Unknown",
   }));
 }

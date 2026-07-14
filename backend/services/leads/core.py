@@ -10,6 +10,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from models import User
+from models.common import LeadStatus
 from models.lead import Lead
 from schemas.lead import LeadCreate, LeadUpdate
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
@@ -181,6 +182,11 @@ class LeadService:
 
         for field, value in update_dict.items():
             setattr(lead, field, value)
+
+        # 评估决策流转：状态变更为 PENDING_VISIT/REJECTED 时，记录审核时间与审核人
+        if update_data.status in (LeadStatus.PENDING_VISIT, LeadStatus.REJECTED):
+            lead.audit_time = datetime.now(timezone.utc)
+            lead.auditor_id = updater_id
 
         lead.updated_at = datetime.now(timezone.utc)
         self.db.add(lead)

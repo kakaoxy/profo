@@ -15,6 +15,7 @@ export interface FollowUp {
   method: FollowUpMethod;
   content: string;
   followUpTime: string;
+  followedAt?: string; // raw ISO，用于轨迹按时间排序
   createdBy: string;
 }
 
@@ -43,7 +44,8 @@ export interface Lead {
   auditReason?: string;
   auditorId?: string;
   auditTime?: string;
-  
+  updatedAt?: string; // raw ISO，audit_time 为空时回退用于排序与显示
+
   images: string[];
   district: string;
   businessArea: string;
