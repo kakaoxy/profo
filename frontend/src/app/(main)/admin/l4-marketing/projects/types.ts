@@ -139,7 +139,6 @@ export type RenovationStage =
   | "水电"
   | "木瓦"
   | "油漆"
-  | "安装"
   | "交付"
   | "已完成";
 
@@ -149,7 +148,6 @@ export const RENOVATION_STAGES: { value: RenovationStage; label: string }[] = [
   { value: "水电", label: "水电阶段" },
   { value: "木瓦", label: "木瓦阶段" },
   { value: "油漆", label: "油漆阶段" },
-  { value: "安装", label: "安装阶段" },
   { value: "交付", label: "交付阶段" },
   { value: "已完成", label: "已完成" },
 ];

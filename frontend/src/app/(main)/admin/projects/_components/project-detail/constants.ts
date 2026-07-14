@@ -102,13 +102,13 @@ export const FILE_ICON_COLORS: Record<string, string> = {
 };
 
 // [修复] 增加 value 字段，对应后端的中文 Enum
+// 已移除"安装"阶段，与后端 RenovationStage 枚举保持一致
 export const RENOVATION_STAGES = [
   { key: "demolition", value: "拆除", label: "拆除阶段" },
   { key: "design", value: "设计", label: "设计阶段" },
   { key: "hydro", value: "水电", label: "水电阶段" },
   { key: "wood", value: "木瓦", label: "木瓦阶段" },
   { key: "paint", value: "油漆", label: "油漆阶段" },
-  { key: "install", value: "安装", label: "安装阶段" },
   { key: "delivery", value: "交付", label: "交付阶段" },
 ] as const;
 
@@ -126,13 +126,11 @@ export const STAGE_CONFIG = [
       "hydro",
       "wood",
       "paint",
-      "install",
       "拆除",
       "设计",
       "水电",
       "木瓦",
       "油漆",
-      "安装",
       "交付",
     ],
   },

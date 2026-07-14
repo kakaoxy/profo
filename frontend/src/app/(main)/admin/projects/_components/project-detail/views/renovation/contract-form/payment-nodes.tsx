@@ -24,7 +24,6 @@ const PAYMENT_NODE_OPTIONS = [
   { value: "水电", label: "水电" },
   { value: "木瓦", label: "木瓦" },
   { value: "油漆", label: "油漆" },
-  { value: "安装", label: "安装" },
   { value: "交付7天", label: "交付7天" },
   { value: "交付1个月", label: "交付1个月" },
   { value: "交付2个月", label: "交付2个月" },
