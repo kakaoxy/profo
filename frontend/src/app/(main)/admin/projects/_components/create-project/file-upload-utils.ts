@@ -80,7 +80,7 @@ export function handleUploadError(
   try {
     const error = JSON.parse(xhr.responseText);
     toast.error(`${filename}: 上传失败`, {
-      description: error.detail || `状态码: ${xhr.status}`,
+      description: error.message || `状态码: ${xhr.status}`,
     });
   } catch {
     toast.error(`${filename}: 上传失败`);

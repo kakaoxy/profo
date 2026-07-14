@@ -1,6 +1,5 @@
 // 统一 Server Action 返回结果类型
 
-import { logger } from "@/lib/logger";
 export type ActionResult<T> =
   | { success: true; data: T; message?: string }
   | { success: false; error: string; code?: string };
@@ -20,40 +19,8 @@ export function createErrorResult(error: string, code?: string): ActionResult<ne
 }
 
 /**
- * 处理 Server Action 中的错误
- * 统一将异常转换为 ActionResult
- */
-export async function handleActionError<T>(
-  action: () => Promise<T>,
-  errorMessage = "操作失败"
-): Promise<ActionResult<T>> {
-  try {
-    const data = await action();
-    return createSuccessResult(data);
-  } catch (error) {
-    logger.error(`${errorMessage}:`, error);
-    
-    // 提取错误信息
-    let errorMsg = errorMessage;
-    if (error instanceof Error) {
-      errorMsg = error.message;
-    } else if (typeof error === "string") {
-      errorMsg = error;
-    } else if (
-      error &&
-      typeof error === "object" &&
-      "detail" in error &&
-      typeof error.detail === "string"
-    ) {
-      errorMsg = error.detail;
-    }
-    
-    return createErrorResult(errorMsg);
-  }
-}
-
-/**
  * 从 API 错误响应中提取错误信息
+ * 优先读取新格式 {"code":..., "message":"..."}，回退兼容旧格式 {"detail":"..."}
  */
 export function extractErrorMessage(
   error: unknown,
@@ -68,14 +35,14 @@ export function extractErrorMessage(
   }
 
   if (error && typeof error === "object") {
-    // FastAPI 标准错误格式
-    if ("detail" in error && typeof error.detail === "string") {
-      return error.detail;
-    }
-
-    // 其他常见错误格式
+    // 新统一错误格式 {"code":≠0, "message":"..."} (AGENTS.md §2)
     if ("message" in error && typeof error.message === "string") {
       return error.message;
+    }
+
+    // 回退兼容旧格式 {"detail": "..."} (FastAPI 默认)
+    if ("detail" in error && typeof error.detail === "string") {
+      return error.detail;
     }
 
     if ("error" in error && typeof error.error === "string") {

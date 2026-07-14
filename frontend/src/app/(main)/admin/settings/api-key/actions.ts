@@ -31,7 +31,7 @@ export async function generateApiKeyAction() {
     const { data, error } = await client.POST("/api/v1/auth/api-key");
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "生成 API Key 失败";
+      const errorMsg = (error as { message?: string }).message || "生成 API Key 失败";
       return { success: false, message: errorMsg };
     }
 
@@ -48,7 +48,7 @@ export async function deleteApiKeyAction() {
     const { error } = await client.DELETE("/api/v1/auth/api-key");
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "删除 API Key 失败";
+      const errorMsg = (error as { message?: string }).message || "删除 API Key 失败";
       return { success: false, message: errorMsg };
     }
 

@@ -14,7 +14,6 @@ type L4MarketingProjectsQuery =
 /** API 错误接口 */
 interface ApiError {
   status?: number;
-  detail?: string;
   message?: string;
 }
 
@@ -23,7 +22,7 @@ function isApiError(error: unknown): error is ApiError {
   return (
     typeof error === "object" &&
     error !== null &&
-    ("status" in error || "detail" in error || "message" in error)
+    ("status" in error || "message" in error)
   );
 }
 

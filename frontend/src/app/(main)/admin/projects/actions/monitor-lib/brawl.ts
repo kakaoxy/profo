@@ -105,11 +105,11 @@ async function fetchCounts(
     }),
   ]);
   if (onSaleRes.error) {
-    const detail = (onSaleRes.error as { detail?: string }).detail;
+    const detail = (onSaleRes.error as { message?: string }).message;
     throw new Error(`获取在售计数失败: ${detail || "未知错误"}`);
   }
   if (soldRes.error) {
-    const detail = (soldRes.error as { detail?: string }).detail;
+    const detail = (soldRes.error as { message?: string }).message;
     throw new Error(`获取成交计数失败: ${detail || "未知错误"}`);
   }
   const onSale = extractPaginatedData<PropertyItem>(onSaleRes.data);
@@ -210,7 +210,7 @@ export async function getCompetitorsBrawlPageAction(
       },
     });
     if (error) {
-      const detail = (error as { detail?: string }).detail;
+      const detail = (error as { message?: string }).message;
       return {
         success: false,
         message: `获取房源失败: ${detail || "未知错误"}`,

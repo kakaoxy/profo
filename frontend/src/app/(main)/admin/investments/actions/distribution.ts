@@ -29,7 +29,7 @@ export async function adjustDistribution(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "调整分配比例失败";
+      const msg = (error as { message?: string }).message || "调整分配比例失败";
       return { success: false, message: msg };
     }
 

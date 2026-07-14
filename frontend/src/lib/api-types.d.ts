@@ -2149,7 +2149,6 @@ export interface paths {
          *     **需要通过 X-API-Key Header 进行认证。**
          *
          *     Args:
-         *         request: FastAPI 请求对象（速率限制所需）
          *         properties: 房源数据列表（Pydantic 模型校验后的数据）
          *         db: 数据库会话
          *         current_user: 当前认证用户（通过 API Key）

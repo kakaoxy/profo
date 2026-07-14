@@ -75,7 +75,7 @@ export async function createCashFlowRecordAction(
   );
 
   if (error) {
-    const errorDetail = (error as { detail?: string }).detail;
+    const errorDetail = (error as { message?: string }).message;
     return { success: false, message: errorDetail || "创建失败" };
   }
 
@@ -102,7 +102,7 @@ export async function deleteCashFlowRecordAction(
   );
 
   if (error) {
-    const errorDetail = (error as { detail?: string }).detail;
+    const errorDetail = (error as { message?: string }).message;
     return { success: false, message: errorDetail || "删除失败" };
   }
 

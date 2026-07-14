@@ -217,7 +217,7 @@ export function useUpload(options: UploadOptions = {}): UseUploadReturn {
             } else {
               try {
                 const errorBody = JSON.parse(xhr.responseText);
-                errorMsg = errorBody.detail || `上传失败 (${xhr.status})`;
+                errorMsg = errorBody.message || errorBody.detail || `上传失败 (${xhr.status})`;
               } catch {
                 errorMsg = `上传失败 (${xhr.status})`;
               }

@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Depends, Path, Request
 from sqlalchemy.orm import Session
 
 from db import get_db
@@ -16,6 +16,7 @@ from schemas.project import (
     DocumentUpdate,
 )
 from services.projects.internal import documents as documents_service
+from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 from utils.common import RateLimits, limiter
 
 router = APIRouter()
@@ -27,7 +28,8 @@ def _get_project(db: Session, project_id: str) -> Project:
     """获取项目，不存在抛 404."""
     project = db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
     if project is None:
-        raise HTTPException(status_code=404, detail={"message": "项目不存在"})
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
     return project
 
 
@@ -72,7 +74,8 @@ def update_document(
     _get_project(db, project_id)
     doc = documents_service.update_document(db, project_id, document_id, payload)
     if doc is None:
-        raise HTTPException(status_code=404, detail={"message": "文书不存在"})
+        msg = "文书不存在"
+        raise ResourceNotFoundError(msg)
     return DocumentResponse.model_validate(doc)
 
 
@@ -87,7 +90,8 @@ def delete_document(
     _get_project(db, project_id)
     ok = documents_service.delete_document(db, project_id, document_id)
     if not ok:
-        raise HTTPException(status_code=404, detail={"message": "文书不存在"})
+        msg = "文书不存在"
+        raise ResourceNotFoundError(msg)
 
 
 @router.post("/{project_id}/documents/initialize")
@@ -102,10 +106,12 @@ def initialize_documents(
     project = _get_project(db, project_id)
     business_form = project.business_form
     if business_form is None:
-        raise HTTPException(status_code=400, detail={"message": "请先设置业务形式"})
+        msg = "请先设置业务形式"
+        raise BusinessLogicError(msg, status_code=400)
     try:
         business_form_enum = BusinessForm(business_form)
     except ValueError:
-        raise HTTPException(status_code=400, detail={"message": "请先设置业务形式"}) from None
+        msg = "请先设置业务形式"
+        raise BusinessLogicError(msg, status_code=400) from None
     count = documents_service.initialize_documents(db, project_id, business_form_enum)
     return DocumentInitializeResponse(initialized_count=count)

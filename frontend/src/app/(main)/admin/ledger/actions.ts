@@ -66,7 +66,7 @@ export async function fetchLedgerList(
     });
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取资金账本列表失败";
+      const msg = (error as { message?: string }).message || "获取资金账本列表失败";
       return { success: false, message: msg };
     }
 
@@ -89,7 +89,7 @@ export async function fetchLedgerStats(): Promise<ActionResult<LedgerStatsRespon
     const { data, error } = await client.GET("/api/v1/admin/ledger/stats", {});
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取汇总数据失败";
+      const msg = (error as { message?: string }).message || "获取汇总数据失败";
       return { success: false, message: msg };
     }
 
@@ -186,7 +186,7 @@ export async function createRecord(
     });
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "创建流水记录失败";
+      const msg = (error as { message?: string }).message || "创建流水记录失败";
       return { success: false, message: msg };
     }
 
@@ -222,7 +222,7 @@ export async function deleteRecord(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "删除流水记录失败";
+      const msg = (error as { message?: string }).message || "删除流水记录失败";
       return { success: false, message: msg };
     }
 
@@ -253,7 +253,7 @@ export async function fetchLogs(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取操作日志失败";
+      const msg = (error as { message?: string }).message || "获取操作日志失败";
       return { success: false, message: msg };
     }
 
@@ -283,7 +283,7 @@ export async function fetchProjectStatistics(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取统计数据失败";
+      const msg = (error as { message?: string }).message || "获取统计数据失败";
       return { success: false, message: msg };
     }
 
@@ -315,7 +315,7 @@ export async function settleProjectLedger(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "结算失败";
+      const msg = (error as { message?: string }).message || "结算失败";
       return { success: false, message: msg };
     }
 
@@ -349,7 +349,7 @@ export async function unsettleProjectLedger(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "反结算失败";
+      const msg = (error as { message?: string }).message || "反结算失败";
       return { success: false, message: msg };
     }
 

@@ -27,8 +27,8 @@ export async function fetcher<T>(url: string): Promise<T> {
       const retryRes = await fetch(url, { credentials: "include" });
       if (retryRes.status === 401 || retryRes.status === 403) throw new AuthError();
       if (!retryRes.ok) {
-        const error = await retryRes.json().catch(() => ({ detail: "请求失败" }));
-        throw new Error(error.detail || `HTTP ${retryRes.status}`);
+        const error = await retryRes.json().catch(() => ({ message: "请求失败" }));
+        throw new Error(error.message || `HTTP ${retryRes.status}`);
       }
       return retryRes.json();
     }
@@ -36,8 +36,8 @@ export async function fetcher<T>(url: string): Promise<T> {
   }
   if (res.status === 403) throw new ForbiddenError();
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "请求失败" }));
-    throw new Error(error.detail || `HTTP ${res.status}`);
+    const error = await res.json().catch(() => ({ message: "请求失败" }));
+    throw new Error(error.message || `HTTP ${res.status}`);
   }
   return res.json();
 }
@@ -45,8 +45,8 @@ export async function fetcher<T>(url: string): Promise<T> {
 export async function publicFetcher<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "请求失败" }));
-    throw new Error(error.detail || `HTTP ${res.status}`);
+    const error = await res.json().catch(() => ({ message: "请求失败" }));
+    throw new Error(error.message || `HTTP ${res.status}`);
   }
   return res.json();
 }

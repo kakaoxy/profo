@@ -41,7 +41,7 @@ export async function createRoleAction(data: RoleCreate) {
     const { error } = await client.POST("/api/v1/roles", { body: data });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "创建角色失败";
+      const errorMsg = (error as { message?: string }).message || "创建角色失败";
       return { success: false, message: errorMsg };
     }
 
@@ -62,7 +62,7 @@ export async function updateRoleAction(roleId: string, data: RoleUpdate) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "更新角色失败";
+      const errorMsg = (error as { message?: string }).message || "更新角色失败";
       return { success: false, message: errorMsg };
     }
 
@@ -82,7 +82,7 @@ export async function deleteRoleAction(roleId: string) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "删除角色失败";
+      const errorMsg = (error as { message?: string }).message || "删除角色失败";
       return { success: false, message: errorMsg };
     }
 

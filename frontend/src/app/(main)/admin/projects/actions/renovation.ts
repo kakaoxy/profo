@@ -27,7 +27,7 @@ export async function deleteRenovationPhotoAction(
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string })?.detail || "删除照片失败";
+      const errorMsg = (error as { message?: string })?.message || "删除照片失败";
       return { success: false, message: errorMsg };
     }
 
@@ -55,7 +55,7 @@ export async function getRenovationPhotosAction(projectId: string) {
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "获取照片失败";
+      const errorMsg = (error as { message?: string }).message || "获取照片失败";
       return { success: false, message: errorMsg };
     }
 
@@ -97,7 +97,7 @@ export async function addRenovationPhotoAction(payload: {
 
     if (error) {
       const errorMsg =
-        (error as { detail?: string }).detail || "上传照片记录失败";
+        (error as { message?: string }).message || "上传照片记录失败";
       return { success: false, message: errorMsg };
     }
 
@@ -132,7 +132,7 @@ export async function updateRenovationStageAction(payload: {
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "更新阶段失败";
+      const errorMsg = (error as { message?: string }).message || "更新阶段失败";
       return { success: false, message: errorMsg };
     }
 
@@ -158,7 +158,7 @@ export async function getRenovationContractAction(projectId: string) {
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "获取装修合同信息失败";
+      const errorMsg = (error as { message?: string }).message || "获取装修合同信息失败";
       return { success: false, message: errorMsg };
     }
 
@@ -188,7 +188,7 @@ export async function updateRenovationContractAction(
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "更新装修合同信息失败";
+      const errorMsg = (error as { message?: string }).message || "更新装修合同信息失败";
       return { success: false, message: errorMsg };
     }
 

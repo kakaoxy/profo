@@ -120,7 +120,7 @@ from .property import (
 )
 
 # 1. 分页响应模型
-from .response import PaginatedResponse
+from .response import ErrorResponse, PaginatedResponse
 
 # 5. Upload (上传导入)
 from .upload import (
@@ -166,6 +166,7 @@ __all__ = [
     "CommunitySearchResponse",
     "CompetitorResponse",
     # Common
+    "ErrorResponse",
     "FailedRecordResponse",
     "FloorInfo",
     # Monitor

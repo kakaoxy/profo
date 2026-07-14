@@ -44,7 +44,7 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
       // 开发环境记录脱敏后的错误数据
       logger.devDebug("Login Failed", { status: response.status, error: errorData });
 
-      // 后端返回: HTTP 422 + {"detail":"首次登录必须修改密码"} + Headers: X-Temp-Token, X-Must-Change-Password
+      // 后端返回: HTTP 422 + {"code":422,"message":"首次登录必须修改密码"} + Headers: X-Temp-Token, X-Must-Change-Password
       const isForceChange =
         response.status === 422 &&
         response.headers.get("X-Must-Change-Password") === "true";
@@ -66,9 +66,9 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
         };
       }
 
-      // 返回通用错误信息（后端统一格式: {"detail": "错误信息"}）
-      const errorMsg = typeof errorData.detail === "string"
-        ? errorData.detail
+      // 返回通用错误信息（后端统一格式: {"code":≠0, "message": "错误信息"}）
+      const errorMsg = typeof errorData.message === "string"
+        ? errorData.message
         : "登录失败";
 
       return { error: errorMsg };
@@ -151,7 +151,7 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
       const errorData = await response.json().catch(() => ({}));
       return {
         success: false,
-        error: errorData.detail || "修改密码失败",
+        error: errorData.message || "修改密码失败",
         mustChangePassword: true, // 保持在修改密码界面
         username
       };

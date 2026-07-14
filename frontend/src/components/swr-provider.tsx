@@ -10,8 +10,8 @@ async function clientFetcher<T>(url: string): Promise<T> {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: "请求失败" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    const error = await response.json().catch(() => ({ message: "请求失败" }));
+    throw new Error(error.message || `HTTP ${response.status}`);
   }
 
   return response.json();

@@ -87,7 +87,7 @@ export async function createUserAction(data: UserCreate) {
     const { error } = await client.POST("/api/v1/users", { body: data });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "创建用户失败";
+      const errorMsg = (error as { message?: string }).message || "创建用户失败";
       return { success: false, message: errorMsg };
     }
 
@@ -108,7 +108,7 @@ export async function updateUserAction(userId: string, data: UserUpdate) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "更新用户失败";
+      const errorMsg = (error as { message?: string }).message || "更新用户失败";
       return { success: false, message: errorMsg };
     }
 
@@ -128,7 +128,7 @@ export async function deleteUserAction(userId: string) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "删除用户失败";
+      const errorMsg = (error as { message?: string }).message || "删除用户失败";
       return { success: false, message: errorMsg };
     }
 
@@ -149,7 +149,7 @@ export async function resetUserPasswordAction(userId: string, data: PasswordRese
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "重置密码失败";
+      const errorMsg = (error as { message?: string }).message || "重置密码失败";
       return { success: false, message: errorMsg };
     }
 

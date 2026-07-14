@@ -31,7 +31,7 @@ export async function updateProfileAction(_: ActionResult<{ nickname: string }>,
     }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return createErrorResult(errorData.detail || cLocale.profileAction.updateFailed);
+      return createErrorResult(errorData.message || cLocale.profileAction.updateFailed);
     }
     // 重新渲染整个 (c) layout 树，触发服务端重新调用 /public/auth/me 刷新 Context
     revalidatePath("/", "layout");
@@ -56,7 +56,7 @@ export async function updatePhoneAction(_: ActionResult<{ phone: string }>, form
     }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return createErrorResult(errorData.detail || cLocale.profileAction.updateFailed);
+      return createErrorResult(errorData.message || cLocale.profileAction.updateFailed);
     }
     const data = await response.json();
     // 重新渲染整个 (c) layout 树，触发服务端重新调用 /public/auth/me 刷新 Context
