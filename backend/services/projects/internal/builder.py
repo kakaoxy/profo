@@ -292,6 +292,7 @@ class ProjectResponseBuilder:
                 "url": photo.url,
                 "filename": photo.filename,
                 "description": photo.description,
+                "media_type": photo.media_type,
                 "created_at": photo.created_at.isoformat() if photo.created_at else None,
             }
             for photo in active_photos

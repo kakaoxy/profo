@@ -245,37 +245,31 @@ export async function deleteRecord(
  */
 export async function updateRecordAction(
   recordId: string,
-  payload: { receipt_urls?: string[]; counterparty_type?: string },
+  payload: {
+    receipt_urls?: string[];
+    counterparty_type?: "company" | "individual";
+  },
 ): Promise<ActionResult<CashFlowRecordResponse>> {
   try {
-    const token = await getAccessTokenFromCookie();
-    if (!token) {
-      return { success: false, message: "未登录或会话已过期，请重新登录" };
-    }
-    const url = new URL(getApiUrl(`/api/v1/admin/ledger/${recordId}`));
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
+    const client = await fetchClient();
+    const { data: resData, error } = await client.PATCH(
+      "/api/v1/admin/ledger/{record_id}",
+      {
+        params: { path: { record_id: recordId } },
+        body: payload,
       },
-      body: JSON.stringify(payload),
-    });
+    );
 
-    if (!res.ok) {
-      let msg = `更新失败 (HTTP ${res.status})`;
-      try {
-        const errBody = (await res.json()) as { message?: string };
-        if (errBody?.message) msg = errBody.message;
-      } catch {
-        // 响应非 JSON，使用默认消息
-      }
+    if (error) {
+      const msg = (error as { message?: string }).message || "更新流水记录失败";
       return { success: false, message: msg };
     }
 
-    const data = (await res.json()) as CashFlowRecordResponse;
     revalidatePath("/admin/ledger");
-    return { success: true, data };
+    return {
+      success: true,
+      data: extractApiData<CashFlowRecordResponse>(resData),
+    };
   } catch (e) {
     logger.error("更新资金账本流水异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };

@@ -699,6 +699,7 @@ export interface paths {
          *
          *     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
          *     仅 admin 角色可调用（银行卡号为敏感财务数据）。
+         *     service 层会校验 owner 所属 project 未被软删除，并记录审计日志。
          */
         get: operations["get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get"];
         put?: never;
@@ -2179,6 +2180,7 @@ export interface paths {
          *     **需要通过 X-API-Key Header 进行认证。**
          *
          *     Args:
+         *         request: FastAPI 请求对象（速率限制所需）
          *         properties: 房源数据列表（Pydantic 模型校验后的数据）
          *         db: 数据库会话
          *         current_user: 当前认证用户（通过 API Key）
@@ -2925,11 +2927,8 @@ export interface components {
              * @description 交易方(必填)
              */
             counterparty: string;
-            /**
-             * Counterparty Type
-             * @description 支付方类型: company/individual
-             */
-            counterparty_type?: string | null;
+            /** @description 支付方类型: company/individual */
+            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
             /** Receipt Urls */
             receipt_urls?: string[] | null;
         };
@@ -2967,11 +2966,8 @@ export interface components {
              * @description 交易方
              */
             counterparty?: string | null;
-            /**
-             * Counterparty Type
-             * @description 支付方类型
-             */
-            counterparty_type?: string | null;
+            /** @description 支付方类型 */
+            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
             /**
              * Receipt Urls
              * @description 票据图片URL列表
@@ -3251,6 +3247,12 @@ export interface components {
              */
             target_project_id: string;
         };
+        /**
+         * CounterpartyType
+         * @description 支付方类型枚举.
+         * @enum {string}
+         */
+        CounterpartyType: "company" | "individual";
         /**
          * DictionaryResponse
          * @description 字典响应模型.
@@ -5071,11 +5073,8 @@ export interface components {
              * @description 交易方(必填)
              */
             counterparty: string;
-            /**
-             * Counterparty Type
-             * @description 支付方类型: company/individual
-             */
-            counterparty_type?: string | null;
+            /** @description 支付方类型: company/individual */
+            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
             /**
              * Receipt Urls
              * @description 票据图片URL列表
@@ -5092,11 +5091,8 @@ export interface components {
              * @description 票据图片URL列表（追加）
              */
             receipt_urls?: string[] | null;
-            /**
-             * Counterparty Type
-             * @description 支付方类型: company/individual
-             */
-            counterparty_type?: string | null;
+            /** @description 支付方类型: company/individual */
+            counterparty_type?: components["schemas"]["CounterpartyType"] | null;
         };
         /**
          * LedgerStatisticsCalcBreakdown
@@ -7915,6 +7911,8 @@ export interface components {
             description?: string | null;
             /** Thumbnail Url */
             thumbnail_url?: string | null;
+            /** Media Type */
+            media_type: string;
             /**
              * Created At
              * Format: date-time
@@ -7928,7 +7926,7 @@ export interface components {
          * @description 改造子阶段枚举.
          * @enum {string}
          */
-        RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "安装" | "交付" | "已完成";
+        RenovationStage: "拆除" | "设计" | "水电" | "木瓦" | "油漆" | "交付" | "已完成";
         /**
          * RenovationUpdate
          * @description 更新改造阶段请求模型.
@@ -9806,6 +9804,8 @@ export interface operations {
                 description?: string | null;
                 /** @description 缩略图URL */
                 thumbnail_url?: string | null;
+                /** @description 媒体种类: image/video */
+                media_type?: string;
             };
             header?: never;
             path: {

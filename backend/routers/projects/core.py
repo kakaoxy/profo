@@ -8,6 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
+from pydantic import UUID4
 
 from dependencies.auth import CurrentAdminUserDep, CurrentInternalUserDep
 from dependencies.common import PaginationDep
@@ -63,16 +64,20 @@ def get_next_contract_no(
 
 @router.get("/owners/{owner_id}/bank-card")
 def get_owner_bank_card(
-    owner_id: Annotated[str, Path(description="业主ID")],
+    owner_id: Annotated[UUID4, Path(description="业主ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentAdminUserDep,
+    current_user: CurrentAdminUserDep,
 ) -> dict[str, str | None]:
     """获取业主未脱敏银行卡号.
 
     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
     仅 admin 角色可调用（银行卡号为敏感财务数据）。
+    service 层会校验 owner 所属 project 未被软删除，并记录审计日志。
     """
-    bank_card_number = service.get_owner_bank_card_number(owner_id)
+    bank_card_number = service.get_owner_bank_card_number(
+        str(owner_id),
+        operator_id=str(current_user.id),
+    )
     if bank_card_number is None:
         msg = "业主不存在"
         raise ResourceNotFoundError(msg)

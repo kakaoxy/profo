@@ -118,7 +118,11 @@ class ProjectCreator:
         project_data: ProjectCreate,
         now: datetime,
     ) -> None:
-        """创建合同记录."""
+        """创建合同记录.
+
+        若 contract_no 已有 reserved 占位记录（由 ContractNumberGenerator 预占），
+        则更新该记录为正式合同；否则新建合同记录。
+        """
         signing_date = parse_date_string(project_data.signing_date)
         planned_handover_date = parse_date_string(project_data.planned_handover_date)
 
@@ -126,6 +130,35 @@ class ProjectCreator:
         signing_materials = None
         if project_data.signing_materials:
             signing_materials = [m.model_dump() for m in project_data.signing_materials]
+
+        contract_status = "生效" if signing_date else "未生效"
+
+        # 查找预占式生成器留下的 reserved 占位记录
+        existing = (
+            self.db.query(ProjectContract)
+            .filter(
+                ProjectContract.contract_no == project_data.contract_no,
+                ProjectContract.contract_status == "reserved",
+                ProjectContract.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if existing is not None:
+            # 复用占位记录：更新为正式合同
+            existing.project_id = project_id
+            existing.signing_price = project_data.signing_price
+            existing.signing_date = signing_date
+            existing.signing_period = project_data.signing_period
+            existing.extension_period = project_data.extension_period
+            existing.extension_rent = project_data.extension_rent
+            existing.cost_assumption_type = project_data.cost_assumption_type
+            existing.cost_assumption_other = project_data.cost_assumption_other
+            existing.planned_handover_date = planned_handover_date
+            existing.other_agreements = project_data.other_agreements
+            existing.signing_materials = signing_materials
+            existing.contract_status = contract_status
+            existing.updated_at = now
+            return
 
         contract = ProjectContract(
             id=str(uuid.uuid4()),
@@ -141,7 +174,7 @@ class ProjectCreator:
             planned_handover_date=planned_handover_date,
             other_agreements=project_data.other_agreements,
             signing_materials=signing_materials,
-            contract_status="生效" if signing_date else "未生效",
+            contract_status=contract_status,
             is_deleted=False,
             created_at=now,
             updated_at=now,

@@ -107,7 +107,7 @@ export async function exportInvestments(
     }
 
     const res = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok) {

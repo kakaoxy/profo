@@ -95,8 +95,7 @@ export function ProjectDetailSheet({
                 onRefresh={refreshProjectData}
               />
               <div
-                className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
-                style={{ scrollbarGutter: "stable" }}
+                className="flex-1 overflow-y-auto px-6 py-4 scrollbar-hide [scrollbar-gutter:stable]"
               >
                 {viewMode === "renovation" && (
                   <RenovationView

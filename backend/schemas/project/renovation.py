@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from models.common import RenovationStage
+from models.common import MediaKind, RenovationStage
 
 # ========== 装修阶段更新 (来自 project_renovation.py) ==========
 
@@ -32,6 +32,7 @@ class RenovationPhotoUpload(BaseModel):
     filename: str | None = None
     description: str | None = None
     thumbnail_url: str | None = Field(default=None, max_length=500, description="缩略图URL")
+    media_type: MediaKind = Field(default=MediaKind.IMAGE, description="媒体种类: image/video")
 
 
 class RenovationPhotoResponse(BaseModel):
@@ -45,6 +46,7 @@ class RenovationPhotoResponse(BaseModel):
     filename: str | None = None
     description: str | None = None
     thumbnail_url: str | None = None
+    media_type: str
     created_at: datetime
     updated_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)

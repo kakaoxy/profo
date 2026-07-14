@@ -49,6 +49,148 @@ interface LedgerDetailTableProps {
   settlementStatus?: SettlementStatus | null;
 }
 
+/**
+ * 资金账本表格筛选状态 hook
+ * 用 useReducer 集中管理 filter/search/分类筛选状态，避免组件内大量散落的 useState
+ * 后续可进一步拆分 delete/supplement 等状态为独立 hook
+ */
+type LedgerFilterState = {
+  filter: FilterTab;
+  searchInput: string;
+  debouncedSearch: string;
+  categoryFilter: string;
+  counterpartyTypeFilter: string;
+  voucherFilter: string;
+};
+
+type LedgerFilterAction =
+  | { type: "SET_FILTER"; payload: FilterTab }
+  | { type: "SET_SEARCH_INPUT"; payload: string }
+  | { type: "SET_DEBOUNCED_SEARCH"; payload: string }
+  | { type: "SET_CATEGORY_FILTER"; payload: string }
+  | { type: "SET_COUNTERPARTY_TYPE_FILTER"; payload: string }
+  | { type: "SET_VOUCHER_FILTER"; payload: string };
+
+const initialLedgerFilterState: LedgerFilterState = {
+  filter: "all",
+  searchInput: "",
+  debouncedSearch: "",
+  categoryFilter: "all",
+  counterpartyTypeFilter: "all",
+  voucherFilter: "all",
+};
+
+function ledgerFilterReducer(
+  state: LedgerFilterState,
+  action: LedgerFilterAction,
+): LedgerFilterState {
+  switch (action.type) {
+    case "SET_FILTER":
+      return { ...state, filter: action.payload };
+    case "SET_SEARCH_INPUT":
+      return { ...state, searchInput: action.payload };
+    case "SET_DEBOUNCED_SEARCH":
+      return { ...state, debouncedSearch: action.payload };
+    case "SET_CATEGORY_FILTER":
+      return { ...state, categoryFilter: action.payload };
+    case "SET_COUNTERPARTY_TYPE_FILTER":
+      return { ...state, counterpartyTypeFilter: action.payload };
+    case "SET_VOUCHER_FILTER":
+      return { ...state, voucherFilter: action.payload };
+    default:
+      return state;
+  }
+}
+
+function useLedgerFilters(data: CashFlowRecordResponse[]) {
+  const [state, dispatch] = React.useReducer(
+    ledgerFilterReducer,
+    initialLedgerFilterState,
+  );
+
+  // 交易方搜索 300ms 防抖
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      dispatch({ type: "SET_DEBOUNCED_SEARCH", payload: state.searchInput });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [state.searchInput]);
+
+  // 分类选项来自 data 去重
+  const categoryOptions = React.useMemo(() => {
+    const set = new Set<string>();
+    data.forEach((item) => {
+      if (item.category) set.add(item.category);
+    });
+    return Array.from(set);
+  }, [data]);
+
+  const filteredData = React.useMemo(() => {
+    const keyword = state.debouncedSearch.trim().toLowerCase();
+    return data.filter((item) => {
+      // 1. Tabs（all/income/expense）
+      if (state.filter !== "all" && item.type !== state.filter) return false;
+      // 2. 交易方模糊搜索（大小写不敏感）
+      if (keyword) {
+        const cp = (item.counterparty ?? "").toLowerCase();
+        if (!cp.includes(keyword)) return false;
+      }
+      // 3. 分类精确匹配
+      if (state.categoryFilter !== "all" && item.category !== state.categoryFilter)
+        return false;
+      // 4. 支付方类型筛选
+      if (
+        state.counterpartyTypeFilter !== "all" &&
+        (item as { counterparty_type?: string }).counterparty_type !==
+          state.counterpartyTypeFilter
+      )
+        return false;
+      // 5. 凭证状态筛选
+      const hasVoucher = !!(item.receipt_urls && item.receipt_urls.length > 0);
+      if (state.voucherFilter === "with" && !hasVoucher) return false;
+      if (state.voucherFilter === "without" && hasVoucher) return false;
+      return true;
+    });
+  }, [
+    data,
+    state.filter,
+    state.debouncedSearch,
+    state.categoryFilter,
+    state.counterpartyTypeFilter,
+    state.voucherFilter,
+  ]);
+
+  // 筛选汇总：笔数与代数和（收入为正、支出为负）
+  const summary = React.useMemo(() => {
+    const total = filteredData.reduce((sum, item) => {
+      const amt = Number(item.amount) || 0;
+      return sum + (item.type === "income" ? amt : -amt);
+    }, 0);
+    return { count: filteredData.length, total };
+  }, [filteredData]);
+
+  return {
+    filter: state.filter,
+    searchInput: state.searchInput,
+    categoryFilter: state.categoryFilter,
+    counterpartyTypeFilter: state.counterpartyTypeFilter,
+    voucherFilter: state.voucherFilter,
+    categoryOptions,
+    filteredData,
+    summary,
+    setFilter: (val: FilterTab) =>
+      dispatch({ type: "SET_FILTER", payload: val }),
+    setSearchInput: (val: string) =>
+      dispatch({ type: "SET_SEARCH_INPUT", payload: val }),
+    setCategoryFilter: (val: string) =>
+      dispatch({ type: "SET_CATEGORY_FILTER", payload: val }),
+    setCounterpartyTypeFilter: (val: string) =>
+      dispatch({ type: "SET_COUNTERPARTY_TYPE_FILTER", payload: val }),
+    setVoucherFilter: (val: string) =>
+      dispatch({ type: "SET_VOUCHER_FILTER", payload: val }),
+  };
+}
+
 export function LedgerDetailTable({
   projectId,
   data,
@@ -56,13 +198,21 @@ export function LedgerDetailTable({
   settlementStatus,
 }: LedgerDetailTableProps) {
   const router = useRouter();
-  const [filter, setFilter] = React.useState<FilterTab>("all");
-  const [searchInput, setSearchInput] = React.useState("");
-  const [debouncedSearch, setDebouncedSearch] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState<string>("all");
-  const [counterpartyTypeFilter, setCounterpartyTypeFilter] =
-    React.useState<string>("all");
-  const [voucherFilter, setVoucherFilter] = React.useState<string>("all");
+  const {
+    filter,
+    searchInput,
+    categoryFilter,
+    counterpartyTypeFilter,
+    voucherFilter,
+    categoryOptions,
+    filteredData,
+    summary,
+    setFilter,
+    setSearchInput,
+    setCategoryFilter,
+    setCounterpartyTypeFilter,
+    setVoucherFilter,
+  } = useLedgerFilters(data);
   const [deleteTarget, setDeleteTarget] =
     React.useState<CashFlowRecordResponse | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
@@ -77,59 +227,6 @@ export function LedgerDetailTable({
   const [supplementUploadKey, setSupplementUploadKey] = React.useState(0);
 
   const isSettled = settlementStatus === "settled";
-
-  // 交易方搜索 300ms 防抖
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchInput);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchInput]);
-
-  // 分类选项来自 data 去重
-  const categoryOptions = React.useMemo(() => {
-    const set = new Set<string>();
-    data.forEach((item) => {
-      if (item.category) set.add(item.category);
-    });
-    return Array.from(set);
-  }, [data]);
-
-  const filteredData = React.useMemo(() => {
-    const keyword = debouncedSearch.trim().toLowerCase();
-    return data.filter((item) => {
-      // 1. Tabs（all/income/expense）
-      if (filter !== "all" && item.type !== filter) return false;
-      // 2. 交易方模糊搜索（大小写不敏感）
-      if (keyword) {
-        const cp = (item.counterparty ?? "").toLowerCase();
-        if (!cp.includes(keyword)) return false;
-      }
-      // 3. 分类精确匹配
-      if (categoryFilter !== "all" && item.category !== categoryFilter)
-        return false;
-      // 4. 支付方类型筛选
-      if (
-        counterpartyTypeFilter !== "all" &&
-        (item as { counterparty_type?: string }).counterparty_type !== counterpartyTypeFilter
-      )
-        return false;
-      // 5. 凭证状态筛选
-      const hasVoucher = !!(item.receipt_urls && item.receipt_urls.length > 0);
-      if (voucherFilter === "with" && !hasVoucher) return false;
-      if (voucherFilter === "without" && hasVoucher) return false;
-      return true;
-    });
-  }, [data, filter, debouncedSearch, categoryFilter, counterpartyTypeFilter, voucherFilter]);
-
-  // 筛选汇总：笔数与代数和（收入为正、支出为负）
-  const summary = React.useMemo(() => {
-    const total = filteredData.reduce((sum, item) => {
-      const amt = Number(item.amount) || 0;
-      return sum + (item.type === "income" ? amt : -amt);
-    }, 0);
-    return { count: filteredData.length, total };
-  }, [filteredData]);
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;

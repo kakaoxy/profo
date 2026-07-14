@@ -10,8 +10,31 @@ from sqlalchemy.orm import Session
 
 from constants.documents import get_documents_for_business_form
 from models.common import BusinessForm, DocumentSignoffStatus
+from models.project._project_base import Project
 from models.project._project_document import ProjectDocument
 from schemas.project.document import DocumentCreate, DocumentUpdate
+from services.system.exceptions import ResourceNotFoundError
+
+
+def assert_project_exists(db: Session, project_id: str) -> Project:
+    """校验项目存在且未软删除，不存在抛 404.
+
+    Args:
+        db: SQLAlchemy 数据库会话
+        project_id: 项目ID
+
+    Returns:
+        项目模型实例
+
+    Raises:
+        ResourceNotFoundError: 项目不存在或已软删除
+
+    """
+    project = db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
+    if project is None:
+        msg = "项目不存在"
+        raise ResourceNotFoundError(msg)
+    return project
 
 
 def list_documents(db: Session, project_id: str) -> list[ProjectDocument]:

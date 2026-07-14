@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Project } from "../../../../types";
-import { getUsersSimpleAction, updateSalesRolesAction } from "../../../../actions/sales";
+import { getSalesUsersSimpleAction, updateSalesRolesAction } from "../../../../actions/sales";
 import {
   Select,
   SelectContent,
@@ -40,7 +40,7 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
   // 2. 加载用户列表
   useEffect(() => {
     let mounted = true;
-    getUsersSimpleAction().then((result) => {
+    getSalesUsersSimpleAction().then((result) => {
       if (mounted) {
         if (result.success && result.data) {
           setUsers(result.data);

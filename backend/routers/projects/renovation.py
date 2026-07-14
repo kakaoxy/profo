@@ -47,9 +47,10 @@ def upload_renovation_photo(
     thumbnail_url: Annotated[
         str | None, Query(max_length=2000, description="缩略图URL", pattern=r"^(https?://|/)[^\s]+$")
     ] = None,
+    media_type: Annotated[str, Query(max_length=10, description="媒体种类: image/video")] = "image",
 ) -> RenovationPhotoResponse:
     """上传改造阶段照片."""
-    return service.add_renovation_photo(project_id, stage, url, filename, description, thumbnail_url)
+    return service.add_renovation_photo(project_id, stage, url, filename, description, thumbnail_url, media_type)
 
 
 @router.get("/{project_id}/renovation/photos")

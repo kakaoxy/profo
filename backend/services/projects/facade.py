@@ -110,9 +110,9 @@ class ProjectService:
         """生成合同编号."""
         return self._core_service.generate_contract_no(business_form)
 
-    def get_owner_bank_card_number(self, owner_id: str) -> str | None:
+    def get_owner_bank_card_number(self, owner_id: str, operator_id: str | None = None) -> str | None:
         """获取业主未脱敏银行卡号."""
-        return self._core_service.get_owner_bank_card_number(owner_id)
+        return self._core_service.get_owner_bank_card_number(owner_id, operator_id=operator_id)
 
     # ========== RenovationService 方法委托 ==========
 
@@ -143,9 +143,12 @@ class ProjectService:
         filename: str | None = None,
         description: str | None = None,
         thumbnail_url: str | None = None,
+        media_type: str = "image",
     ) -> RenovationPhoto:
         """添加装修照片."""
-        return self._renovation_service.add_photo(project_id, stage, url, filename, description, thumbnail_url)
+        return self._renovation_service.add_photo(
+            project_id, stage, url, filename, description, thumbnail_url, media_type
+        )
 
     def get_renovation_photos(self, project_id: str, stage: str | None = None) -> list[RenovationPhoto]:
         """获取装修照片."""

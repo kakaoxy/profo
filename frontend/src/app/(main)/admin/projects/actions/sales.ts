@@ -61,7 +61,7 @@ export async function updateSalesRolesAction(
 /**
  * 获取简化用户列表（用于下拉选择）
  */
-export async function getUsersSimpleAction(): Promise<{
+export async function getSalesUsersSimpleAction(): Promise<{
   success: boolean;
   data?: UserSimple[];
   message?: string;

@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from db import get_db
 from dependencies.auth import CurrentInternalUserDep
 from models.common import BusinessForm
-from models.project import Project
 from schemas.project import (
     DocumentCreate,
     DocumentInitializeResponse,
@@ -16,21 +15,12 @@ from schemas.project import (
     DocumentUpdate,
 )
 from services.projects.internal import documents as documents_service
-from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
+from services.system.exceptions import ResourceNotFoundError, ValidationError
 from utils.common import RateLimits, limiter
 
 router = APIRouter()
 
 _get_db_dep = Depends(get_db)
-
-
-def _get_project(db: Session, project_id: str) -> Project:
-    """获取项目，不存在抛 404."""
-    project = db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
-    if project is None:
-        msg = "项目不存在"
-        raise ResourceNotFoundError(msg)
-    return project
 
 
 @router.get("/{project_id}/documents")
@@ -40,7 +30,7 @@ def list_documents(
     project_id: Annotated[str, Path(description="项目ID")],
 ) -> list[DocumentResponse]:
     """获取项目文书签收列表."""
-    _get_project(db, project_id)
+    documents_service.assert_project_exists(db, project_id)
     docs = documents_service.list_documents(db, project_id)
     return [DocumentResponse.model_validate(d) for d in docs]
 
@@ -55,7 +45,7 @@ def create_document(
     project_id: Annotated[str, Path(description="项目ID")],
 ) -> DocumentResponse:
     """新增文书."""
-    _get_project(db, project_id)
+    documents_service.assert_project_exists(db, project_id)
     doc = documents_service.create_document(db, project_id, payload)
     return DocumentResponse.model_validate(doc)
 
@@ -71,7 +61,7 @@ def update_document(
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> DocumentResponse:
     """更新文书签收状态/归档日期/名称."""
-    _get_project(db, project_id)
+    documents_service.assert_project_exists(db, project_id)
     doc = documents_service.update_document(db, project_id, document_id, payload)
     if doc is None:
         msg = "文书不存在"
@@ -87,7 +77,7 @@ def delete_document(
     document_id: Annotated[str, Path(description="文书ID")],
 ) -> None:
     """删除文书（逻辑删除）."""
-    _get_project(db, project_id)
+    documents_service.assert_project_exists(db, project_id)
     ok = documents_service.delete_document(db, project_id, document_id)
     if not ok:
         msg = "文书不存在"
@@ -103,15 +93,15 @@ def initialize_documents(
     project_id: Annotated[str, Path(description="项目ID")],
 ) -> DocumentInitializeResponse:
     """初始化默认文书清单（幂等）。business_form=None 抛 400."""
-    project = _get_project(db, project_id)
+    project = documents_service.assert_project_exists(db, project_id)
     business_form = project.business_form
     if business_form is None:
         msg = "请先设置业务形式"
-        raise BusinessLogicError(msg, status_code=400)
+        raise ValidationError(msg)
     try:
         business_form_enum = BusinessForm(business_form)
     except ValueError:
         msg = "请先设置业务形式"
-        raise BusinessLogicError(msg, status_code=400) from None
+        raise ValidationError(msg) from None
     count = documents_service.initialize_documents(db, project_id, business_form_enum)
     return DocumentInitializeResponse(initialized_count=count)

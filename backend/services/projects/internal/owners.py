@@ -4,13 +4,17 @@
 updater/creator 通过调用本模块完成业主列表同步，不内联 diff 逻辑。
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from models.project._project_base import Project
 from models.project._project_owner import ProjectOwner
 from schemas.project.owner import OwnerInlineCreate, OwnerInlineUpdate
+
+logger = logging.getLogger(__name__)
 
 _OWNER_FIELDS: tuple[str, ...] = (
     "owner_name",
@@ -115,23 +119,45 @@ def list_owners(db: Session, project_id: str) -> list[ProjectOwner]:
     )
 
 
-def get_bank_card_number(db: Session, owner_id: str) -> str | None:
+def get_bank_card_number(
+    db: Session,
+    owner_id: str,
+    operator_id: str | None = None,
+) -> str | None:
     """获取业主未脱敏银行卡号.
+
+    安全检查：
+    - 校验 owner 所属 project 未被软删除，避免越权访问已归档数据
+    - 记录敏感数据访问审计日志（操作人/业主ID/时间戳）
 
     Args:
         db: SQLAlchemy 数据库会话
         owner_id: 业主ID
+        operator_id: 调用方用户ID，用于审计日志
 
     Returns:
-        未脱敏银行卡号；业主不存在或已删除时返回 None
+        未脱敏银行卡号；业主不存在、已删除或所属项目已软删时返回 None
 
     """
-    owner = (
-        db.query(ProjectOwner)
+    # join Project 校验项目未软删，防止越权访问已归档项目的业主敏感数据
+    row = (
+        db.query(ProjectOwner.bank_card_number)
+        .join(Project, ProjectOwner.project_id == Project.id)
         .filter(
             ProjectOwner.id == owner_id,
             ProjectOwner.is_deleted.is_(False),
+            Project.is_deleted.is_(False),
         )
         .first()
     )
-    return owner.bank_card_number if owner else None
+    if row is None:
+        return None
+
+    bank_card_number = row[0]
+    # 敏感数据访问审计日志
+    logger.info(
+        "敏感数据访问: 业主银行卡号查看 owner_id=%s operator_id=%s",
+        owner_id,
+        operator_id or "unknown",
+    )
+    return bank_card_number
