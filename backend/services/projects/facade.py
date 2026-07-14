@@ -106,9 +106,9 @@ class ProjectService:
         """获取项目统计."""
         return self._core_service.get_project_stats()
 
-    def generate_contract_no(self) -> str:
+    def generate_contract_no(self, business_form: str) -> str:
         """生成合同编号."""
-        return self._core_service.generate_contract_no()
+        return self._core_service.generate_contract_no(business_form)
 
     # ========== RenovationService 方法委托 ==========
 

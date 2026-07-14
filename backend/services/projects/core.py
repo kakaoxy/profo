@@ -59,12 +59,15 @@ class ProjectCoreService:
         self.updater = ProjectUpdater(db)
         self.contract_generator = ContractNumberGenerator(db)
 
-    def generate_contract_no(self, max_retries: int = 3) -> str:
+    def generate_contract_no(self, business_form: str, max_retries: int = 3) -> str:
         """生成下一个合同编号（线程安全）.
 
-        格式: MFB-年月-4位自增序号，如 MFB-202604-0001
+        格式: SH + 4位自增序号 + - + 后缀
+        - agent(代理美化) -> SG，如 SH0028-SG
+        - wholesale(收购美化) -> DL，如 SH0028-DL
 
         Args:
+            business_form: 业务形式，agent 或 wholesale
             max_retries: 最大重试次数，防止无限循环
 
         Returns:
@@ -75,7 +78,7 @@ class ProjectCoreService:
         original_retries = self.contract_generator.max_retries
         self.contract_generator.max_retries = max_retries
         try:
-            return self.contract_generator.generate()
+            return self.contract_generator.generate(business_form)
         finally:
             self.contract_generator.max_retries = original_retries
 

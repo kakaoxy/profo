@@ -26,6 +26,7 @@ class CashFlowRecordCreate(BaseModel):
     description: str | None = None
     related_stage: str | None = None
     counterparty: str = Field(..., description="交易方(必填)")
+    counterparty_type: str | None = Field(None, description="支付方类型: company/individual")
     receipt_urls: list[str] | None = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -43,6 +44,7 @@ class CashFlowRecordResponse(BaseModel):
     remark: str | None = Field(None, description="备注")  # 新字段名
     operator_id: str | None = Field(None, description="经办人ID")  # 新字段
     counterparty: str | None = Field(None, description="交易方")
+    counterparty_type: str | None = Field(None, description="支付方类型")
     receipt_urls: list[str] = Field(default_factory=list, description="票据图片URL列表")
     created_at: datetime
     updated_at: datetime
@@ -216,8 +218,17 @@ class LedgerRecordCreate(BaseModel):
     description: str | None = Field(None, description="备注")
     related_stage: str | None = Field(None, description="关联阶段(兼容字段)")
     counterparty: str = Field(..., description="交易方(必填)")
+    counterparty_type: str | None = Field(None, description="支付方类型: company/individual")
     receipt_urls: list[str] | None = Field(None, description="票据图片URL列表")
 
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LedgerRecordUpdate(BaseModel):
+    """资金账本流水更新请求（仅允许补充凭证和支付方类型）."""
+
+    receipt_urls: list[str] | None = Field(None, description="票据图片URL列表（追加）")
+    counterparty_type: str | None = Field(None, description="支付方类型: company/individual")
     model_config = ConfigDict(from_attributes=True)
 
 

@@ -1,12 +1,26 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, FileText, RotateCcw, Save } from "lucide-react";
+import { Plus, Trash2, FileText, RotateCcw, Save, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import type { Project } from "../../../../../types";
+import { FileUploader as CommonFileUploader } from "@/components/common/upload";
+import type { UploadResponse } from "@/components/common/upload";
+import type { Project, AttachmentInfo } from "../../../../../types";
+import {
+  ALLOWED_EXTENSIONS,
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_SIZE,
+  getFileType,
+} from "../../../../create-project/attachment-types";
 import {
   getProjectDocumentsAction,
   createProjectDocumentAction,
@@ -18,6 +32,7 @@ import {
 
 interface DocumentsTabProps {
   project: Project;
+  onUploadAttachment?: (attachment: AttachmentInfo) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -33,13 +48,14 @@ type DraftMap = Record<string, { signoff_status: string; archive_date: string }>
  * 文书签收 Tab - 管理项目文书签收清单
  * 行内编辑：三个状态 pill 按钮 + 日期 input，右上角统一保存
  */
-export function DocumentsTab({ project }: DocumentsTabProps) {
+export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps) {
   const [docs, setDocs] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [drafts, setDrafts] = useState<DraftMap>({});
   const [saving, setSaving] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const loadDocs = useCallback(async () => {
     try {
@@ -174,6 +190,20 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
     }
   };
 
+  const handleUploadComplete = (response: UploadResponse) => {
+    const fileType = getFileType(response.filename || "");
+    if (!response.url) return;
+    const attachment: AttachmentInfo = {
+      filename: response.filename || "unknown",
+      url: response.url,
+      category: "other",
+      fileType: fileType || "other",
+      size: response.size || 0,
+    };
+    onUploadAttachment?.(attachment);
+    loadDocs();
+  };
+
   if (loading) {
     return (
       <div className="text-center py-16 text-muted-foreground">加载中...</div>
@@ -285,6 +315,7 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
             draft.signoff_status !== doc.signoff_status ||
             draft.archive_date !== (doc.archive_date || "");
           const isArchived = draft.signoff_status === "archived";
+          const showUpload = isArchived && Boolean(onUploadAttachment);
           return (
             <div
               key={doc.id}
@@ -292,7 +323,9 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
                 isDirty ? "border-ink/40 bg-fog/30" : "hover:bg-accent/50"
               }`}
               style={{
-                gridTemplateColumns: `24px minmax(120px, 1fr) auto ${isArchived ? "160px" : "120px"} 32px`,
+                gridTemplateColumns: showUpload
+                  ? `24px minmax(120px, 1fr) auto 160px auto 32px`
+                  : `24px minmax(120px, 1fr) auto ${isArchived ? "160px" : "120px"} 32px`,
               }}
             >
               {/* 序号 */}
@@ -342,6 +375,19 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
                 </span>
               )}
 
+              {/* 上传文件（仅归档文书） */}
+              {showUpload && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => setIsUploadOpen(true)}
+                >
+                  <Upload className="mr-1 h-3.5 w-3.5" />
+                  上传文件
+                </Button>
+              )}
+
               {/* 删除 */}
               <Button
                 variant="ghost"
@@ -355,6 +401,35 @@ export function DocumentsTab({ project }: DocumentsTabProps) {
           );
         })}
       </div>
+
+      {/* 文件上传弹窗（归档文书） */}
+      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>上传文件</DialogTitle>
+          </DialogHeader>
+          <CommonFileUploader
+            options={{
+              maxSize: MAX_FILE_SIZE,
+              allowedTypes: ALLOWED_MIME_TYPES,
+              multiple: true,
+              validateFile: (file) => {
+                const ext = file.name
+                  .toLowerCase()
+                  .slice(file.name.lastIndexOf("."));
+                const allowedExts = ALLOWED_EXTENSIONS.split(",");
+                if (!allowedExts.includes(ext)) {
+                  return "不支持的文件格式";
+                }
+                return null;
+              },
+            }}
+            onUploadComplete={handleUploadComplete}
+            title="点击或拖拽文件到此处上传"
+            description="支持多文件上传，Excel、图片、PDF、Word 格式，单文件最大 10MB"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

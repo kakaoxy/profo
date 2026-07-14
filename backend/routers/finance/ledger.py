@@ -23,6 +23,7 @@ from schemas.project import (
     LedgerListResponse,
     LedgerProjectListItem,
     LedgerRecordCreate,
+    LedgerRecordUpdate,
     LedgerStatsResponse,
     ProjectLedgerStatisticsResponse,
 )
@@ -272,3 +273,20 @@ def delete_ledger_record(
     速率限制：20次/小时.
     """
     service.delete_record_by_id(record_id, _current_user.id)
+
+
+@router.patch(
+    "/{record_id}",
+    summary="更新资金账本流水（补充凭证/支付方类型）",
+)
+@limiter.limit(RateLimits.PROJECT_CREATE)
+def update_ledger_record(
+    request: Request,
+    record_id: Annotated[str, Path(description="流水记录ID")],
+    data: LedgerRecordUpdate,
+    service: _FinanceServiceDep,
+    _current_user: CurrentInternalUserDep,
+) -> CashFlowRecordResponse:
+    """补充上传记账凭证或更新支付方类型."""
+    record = service.update_record(record_id, data, _current_user.id)
+    return CashFlowRecordResponse.model_validate(record)

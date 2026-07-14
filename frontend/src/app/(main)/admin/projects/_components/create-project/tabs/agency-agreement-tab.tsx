@@ -1,17 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { UseFormReturn, useWatch } from "react-hook-form";
-import { FormValues } from "../schema";
-import { SimpleInputField, SimpleTextareaField } from "../form-components";
-import { DatePickerField } from "../date-picker-field";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { logger } from "@/lib/logger";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import { RadioGroup } from "@/components/ui/radio-group";
+
+import { getNextContractNoAction } from "../../../actions/core";
+import { FormValues } from "../schema";
+import { SimpleInputField, SimpleTextareaField } from "../form-components";
+import { DatePickerField } from "../date-picker-field";
 
 const COST_ASSUMPTION_OPTIONS = [
   { value: "meifangbao", label: "美房宝承担" },
@@ -27,16 +37,104 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
     control,
     name: "cost_assumption_type",
   });
+  const commissionStartDate = useWatch({
+    control,
+    name: "commission_start_date",
+  });
+  const commissionEndDate = useWatch({
+    control,
+    name: "commission_end_date",
+  });
+  const businessForm = useWatch({
+    control,
+    name: "business_form",
+  });
+
+  const [manualPeriod, setManualPeriod] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [contractNoLoading, setContractNoLoading] = useState(false);
+
+  // 自动计算合同周期天数 (end - start + 1，含首尾)
+  useEffect(() => {
+    if (manualPeriod) return;
+    if (!commissionStartDate || !commissionEndDate) {
+      setDateError(null);
+      return;
+    }
+    const diffTime = commissionEndDate.getTime() - commissionStartDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    if (diffDays < 1) {
+      setDateError("委托结束日期不能早于开始日期");
+      return;
+    }
+    setDateError(null);
+    form.setValue("signing_period", diffDays, { shouldDirty: true });
+  }, [commissionStartDate, commissionEndDate, manualPeriod, form]);
+
+  const handleGenerateContractNo = async () => {
+    if (businessForm !== "agent" && businessForm !== "wholesale") return;
+    setContractNoLoading(true);
+    try {
+      const result = await getNextContractNoAction(businessForm);
+      if (result.success && result.data) {
+        form.setValue("contract_no", result.data, { shouldDirty: true });
+      } else {
+        toast.error(result.message || "生成合同编号失败");
+      }
+    } catch (e) {
+      logger.error("生成合同编号异常:", e);
+      toast.error("网络错误，请稍后重试");
+    } finally {
+      setContractNoLoading(false);
+    }
+  };
+
+  const canGenerateContractNo = businessForm === "agent" || businessForm === "wholesale";
 
   return (
     <div className="space-y-5">
       {/* 合同编号 */}
-      <SimpleInputField
+      <FormField
         control={control}
         name="contract_no"
-        label="合同编号"
-        placeholder="请输入合同编号"
-        required
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-[14px] font-medium text-foreground tracking-tight mb-2">
+              合同编号<span className="text-error ml-0.5">*</span>
+            </FormLabel>
+            <div className="flex gap-2">
+              <FormControl>
+                <Input
+                  placeholder="请输入或生成合同编号"
+                  className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 text-[14px]"
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <Button
+                type="button"
+                variant="outline"
+                size="default"
+                className="h-10 shrink-0 rounded-inputs border-dove/50 hover:bg-fog/50"
+                disabled={!canGenerateContractNo || contractNoLoading}
+                onClick={handleGenerateContractNo}
+              >
+                {contractNoLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    生成中
+                  </>
+                ) : (
+                  "生成编号"
+                )}
+              </Button>
+            </div>
+            {!canGenerateContractNo && (
+              <p className="text-[12px] text-dove mt-1">请先选择业务形式后再生成编号</p>
+            )}
+            <FormMessage />
+          </FormItem>
+        )}
       />
 
       {/* 签约日期 & 业主交房时间 */}
@@ -66,6 +164,9 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
           label="委托结束日期"
         />
       </div>
+      {dateError && (
+        <p className="text-[13px] text-error -mt-2">{dateError}</p>
+      )}
 
       {/* 签约价格 & 合同周期 */}
       <div className="grid grid-cols-2 gap-4">
@@ -76,11 +177,36 @@ export function AgencyAgreementTab({ form }: { form: UseFormReturn<FormValues> }
           type="number"
           step="0.01"
         />
-        <SimpleInputField
+        <FormField
           control={control}
           name="signing_period"
-          label="合同周期 (天)"
-          type="number"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-[14px] font-medium text-foreground tracking-tight">
+                  合同周期 (天)
+                </FormLabel>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    checked={manualPeriod}
+                    onCheckedChange={(checked) => setManualPeriod(checked === true)}
+                  />
+                  <span className="text-[12px] text-graphite">手动输入</span>
+                </label>
+              </div>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="自动计算"
+                  className="rounded-inputs h-10 border-dove/50 bg-pure-white placeholder:text-dove focus-visible:border-ink/30 focus-visible:ring-ink/10 text-[14px]"
+                  {...field}
+                  value={field.value ?? ""}
+                  readOnly={!manualPeriod}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
       </div>
 

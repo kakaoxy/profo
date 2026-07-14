@@ -2,10 +2,16 @@
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from models import FinanceRecord, FinanceRecordLog, Project
-from models.common import BusinessForm, CashFlowCategory, FinanceActionType
-from schemas.project.finance import CashFlowRecordCreate, CashFlowSummary, LedgerRecordCreate
+from models.common import BusinessForm, CashFlowCategory, FinanceActionType, SettlementStatus
+from schemas.project.finance import (
+    CashFlowRecordCreate,
+    CashFlowSummary,
+    LedgerRecordCreate,
+    LedgerRecordUpdate,
+)
 from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -63,6 +69,7 @@ class _RecordMixin:
             record_date=record_data.date,
             remark=record_data.description,
             counterparty=record_data.counterparty,
+            counterparty_type=record_data.counterparty_type,
             receipt_urls=record_data.receipt_urls,
             created_at=now,
             updated_at=now,
@@ -219,6 +226,77 @@ class _RecordMixin:
         self.db.commit()
 
         logger.info("Finance record deleted successfully: %s", record_id)
+
+    def update_record(
+        self,
+        record_id: str,
+        payload: LedgerRecordUpdate,
+        operator_id: str,
+    ) -> FinanceRecord:
+        """资金账本：按记录ID更新流水（补充凭证/支付方类型）.
+
+        - 补充凭证：追加到现有 receipt_urls，去重保序
+        - 更新支付方类型：直接覆盖 counterparty_type
+        - 已结算项目不可修改（与 create/delete 一致的编辑锁）
+        """
+        logger.info("Updating finance record %s", record_id)
+
+        record = (
+            self.db.query(FinanceRecord)
+            .filter(
+                FinanceRecord.id == record_id,
+                FinanceRecord.is_deleted.is_(False),
+            )
+            .first()
+        )
+
+        if not record:
+            logger.error("Finance record not found: %s", record_id)
+            msg = "现金流记录不存在"
+            raise ResourceNotFoundError(msg)
+
+        project_id = record.project_id
+
+        # 编辑锁：已结算项目不可修改记录
+        project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
+        if not project:
+            logger.error("Project not found or soft-deleted: %s", project_id)
+            msg = "项目不存在"
+            raise ResourceNotFoundError(msg)
+        if project.finance_settlement_status == SettlementStatus.SETTLED:
+            msg = "已结算，不可修改"
+            raise ServiceException(msg, status_code=400)
+
+        detail: dict[str, Any] = {}
+
+        # 补充凭证：追加到现有 receipt_urls，去重保序
+        if payload.receipt_urls is not None:
+            existing = record.receipt_urls or []
+            merged = list(dict.fromkeys(existing + payload.receipt_urls))
+            record.receipt_urls = merged
+            detail["receipt_urls"] = merged
+
+        # 更新支付方类型
+        if payload.counterparty_type is not None:
+            record.counterparty_type = payload.counterparty_type
+            detail["counterparty_type"] = payload.counterparty_type
+
+        record.updated_at = datetime.now(timezone.utc)
+
+        # 写入操作日志（与更新同一事务）
+        log = FinanceRecordLog(
+            project_id=project_id,
+            action_type=FinanceActionType.UPDATE,
+            detail=detail,
+            operator=operator_id,
+        )
+        self.db.add(log)
+
+        self.db.commit()
+        self.db.refresh(record)
+
+        logger.info("Finance record updated successfully: %s", record_id)
+        return record
 
     # 别名方法 - 与路由兼容
     def get_cashflow_records(self, project_id: str) -> list[FinanceRecord]:

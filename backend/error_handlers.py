@@ -166,13 +166,16 @@ async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONR
     """处理 HTTP 异常.
 
     遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
-    str() 防御 detail 为 dict 等非字符串类型的情况.
+    dict 类型 detail 提取 message 字段；其他类型用 str() 转换.
     """
     logger.warning("HTTP 异常: %s - %s", exc.status_code, _sanitize_log_text(exc.detail))
 
+    detail = exc.detail
+    message = str(detail.get("message") or detail) if isinstance(detail, dict) else str(detail)
+
     return create_error_response(
         status_code=exc.status_code,
-        message=str(exc.detail),
+        message=message,
     )
 
 

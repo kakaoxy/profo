@@ -19,6 +19,8 @@ import { CreateProjectDialog } from "./create-project/index";
 import { ProjectDetailSheet } from "./project-detail-sheet";
 import { columns } from "./columns";
 import { Project } from "../types";
+import { updateProjectAction } from "../actions/core";
+import type { SigningMaterial } from "./project-detail/types";
 
 interface ProjectViewProps {
   data: Project[];
@@ -57,6 +59,19 @@ export function ProjectView({ data, total }: ProjectViewProps) {
   const handleRowClick = (row: Project) => {
     setSelectedProject(row);
     setIsSheetOpen(true);
+  };
+
+  // 文书归档上传/删除附件 → 持久化到 signing_materials
+  const handleUpdateAttachments = async (attachments: SigningMaterial[]) => {
+    if (!selectedProject) return;
+    const result = await updateProjectAction(selectedProject.id, {
+      signing_materials: attachments.length
+        ? attachments.map((a) => ({ ...a, size: a.size ?? 0 }))
+        : null,
+    });
+    if (!result.success) {
+      toast.error(result.message || "附件保存失败");
+    }
   };
 
   return (
@@ -161,6 +176,7 @@ export function ProjectView({ data, total }: ProjectViewProps) {
         project={selectedProject}
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
+        onUpdateAttachments={handleUpdateAttachments}
       />
     </>
   );

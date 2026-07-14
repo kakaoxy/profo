@@ -238,6 +238,51 @@ export async function deleteRecord(
 }
 
 /**
+ * 更新资金账本流水（补充凭证/支付方类型）
+ *
+ * @param recordId 流水记录ID
+ * @param payload  更新载荷（receipt_urls 追加，counterparty_type 覆盖）
+ */
+export async function updateRecordAction(
+  recordId: string,
+  payload: { receipt_urls?: string[]; counterparty_type?: string },
+): Promise<ActionResult<CashFlowRecordResponse>> {
+  try {
+    const token = await getAccessTokenFromCookie();
+    if (!token) {
+      return { success: false, message: "未登录或会话已过期，请重新登录" };
+    }
+    const url = new URL(getApiUrl(`/api/v1/admin/ledger/${recordId}`));
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      let msg = `更新失败 (HTTP ${res.status})`;
+      try {
+        const errBody = (await res.json()) as { message?: string };
+        if (errBody?.message) msg = errBody.message;
+      } catch {
+        // 响应非 JSON，使用默认消息
+      }
+      return { success: false, message: msg };
+    }
+
+    const data = (await res.json()) as CashFlowRecordResponse;
+    revalidatePath("/admin/ledger");
+    return { success: true, data };
+  } catch (e) {
+    logger.error("更新资金账本流水异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
  * 获取项目资金账本操作日志（Server Action）
  *
  * @param projectId 项目ID

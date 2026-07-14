@@ -671,8 +671,11 @@ export interface paths {
          * Get Next Contract No
          * @description 获取下一个合同编号.
          *
-         *     格式: MFB-年月-4位自增序号，如 MFB-202604-0001
-         *     后端生成保证唯一性，避免前端竞态条件
+         *     格式: SH + 4位自增序号 + - + 后缀
+         *     - agent(代理美化) -> SG，如 SH0028-SG
+         *     - wholesale(收购美化) -> DL，如 SH0028-DL
+         *     后端生成保证唯一性，避免前端竞态条件。
+         *     business_form 非 agent/wholesale 时返回 400。
          */
         get: operations["get_next_contract_no_api_v1_projects_contract_no_next_get"];
         put?: never;
@@ -1571,7 +1574,11 @@ export interface paths {
         delete: operations["delete_ledger_record_api_v1_admin_ledger__record_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * 更新资金账本流水（补充凭证/支付方类型）
+         * @description 补充上传记账凭证或更新支付方类型.
+         */
+        patch: operations["update_ledger_record_api_v1_admin_ledger__record_id__patch"];
         trace?: never;
     };
     "/api/v1/auth/token": {
@@ -2933,6 +2940,11 @@ export interface components {
              */
             counterparty?: string | null;
             /**
+             * Counterparty Type
+             * @description 支付方类型
+             */
+            counterparty_type?: string | null;
+            /**
              * Receipt Urls
              * @description 票据图片URL列表
              */
@@ -3343,7 +3355,7 @@ export interface components {
          * @description 资金账本操作日志类型枚举.
          * @enum {string}
          */
-        FinanceActionType: "create" | "delete" | "settle" | "unsettle";
+        FinanceActionType: "create" | "delete" | "settle" | "unsettle" | "update";
         /**
          * FinanceLogResponse
          * @description 资金账本操作日志响应.
@@ -5032,10 +5044,31 @@ export interface components {
              */
             counterparty: string;
             /**
+             * Counterparty Type
+             * @description 支付方类型: company/individual
+             */
+            counterparty_type?: string | null;
+            /**
              * Receipt Urls
              * @description 票据图片URL列表
              */
             receipt_urls?: string[] | null;
+        };
+        /**
+         * LedgerRecordUpdate
+         * @description 资金账本流水更新请求（仅允许补充凭证和支付方类型）.
+         */
+        LedgerRecordUpdate: {
+            /**
+             * Receipt Urls
+             * @description 票据图片URL列表（追加）
+             */
+            receipt_urls?: string[] | null;
+            /**
+             * Counterparty Type
+             * @description 支付方类型: company/individual
+             */
+            counterparty_type?: string | null;
         };
         /**
          * LedgerStatisticsCalcBreakdown
@@ -10088,7 +10121,10 @@ export interface operations {
     };
     get_next_contract_no_api_v1_projects_contract_no_next_get: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description 业务形式: agent(代理美化) / wholesale(收购美化) */
+                business_form: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -10102,6 +10138,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -11871,6 +11916,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_ledger_record_api_v1_admin_ledger__record_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 流水记录ID */
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LedgerRecordUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowRecordResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

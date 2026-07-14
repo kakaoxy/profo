@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Paperclip, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeFormatDate } from "@/lib/formatters";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +22,16 @@ interface LedgerDetailTableRowProps {
   record: CashFlowRecordResponse;
   isSettled: boolean;
   onDelete: (record: CashFlowRecordResponse) => void;
+  onSupplementVoucher: (record: CashFlowRecordResponse) => void;
 }
 
 export function LedgerDetailTableRow({
   record,
   isSettled,
   onDelete,
+  onSupplementVoucher,
 }: LedgerDetailTableRowProps) {
+  const hasVoucher = !!(record.receipt_urls && record.receipt_urls.length > 0);
   return (
     <TableRow key={record.id} className="group text-xs hover:bg-muted">
       <TableCell className="px-4 py-3">
@@ -83,9 +86,9 @@ export function LedgerDetailTableRow({
         </span>
       </TableCell>
       <TableCell className="px-4 py-3 text-center">
-        {record.receipt_urls && record.receipt_urls.length > 0 ? (
+        {hasVoucher ? (
           <div className="flex items-center justify-center gap-1 flex-wrap">
-            {record.receipt_urls.map((url, idx) => (
+            {record.receipt_urls!.map((url, idx) => (
               <HoverCard key={url + idx}>
                 <HoverCardTrigger asChild>
                   <a
@@ -118,7 +121,12 @@ export function LedgerDetailTableRow({
             ))}
           </div>
         ) : (
-          <span className="text-muted-foreground">-</span>
+          <Badge
+            variant="outline"
+            className="font-normal border-amber-300 text-amber-700 bg-amber-50"
+          >
+            缺凭证
+          </Badge>
         )}
       </TableCell>
       <TableCell className="px-4 py-3">
@@ -130,21 +138,39 @@ export function LedgerDetailTableRow({
         </div>
       </TableCell>
       <TableCell className="px-4 py-3 text-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-opacity",
-            isSettled
-              ? "opacity-0 pointer-events-none"
-              : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-          )}
-          onClick={() => onDelete(record)}
-          disabled={isSettled}
-          aria-label={`删除 ${record.category} 记录`}
-        >
-          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-        </Button>
+        <div className="flex items-center justify-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-opacity",
+              isSettled
+                ? "opacity-0 pointer-events-none"
+                : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+            )}
+            onClick={() => onSupplementVoucher(record)}
+            disabled={isSettled}
+            aria-label={`补充凭证 ${record.category} 记录`}
+            title="补充凭证"
+          >
+            <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-opacity",
+              isSettled
+                ? "opacity-0 pointer-events-none"
+                : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+            )}
+            onClick={() => onDelete(record)}
+            disabled={isSettled}
+            aria-label={`删除 ${record.category} 记录`}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   );

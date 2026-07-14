@@ -27,6 +27,10 @@ interface LedgerDetailTableFilterProps {
   categoryFilter: string;
   onCategoryFilterChange: (value: string) => void;
   categoryOptions: string[];
+  counterpartyTypeFilter: string;
+  onCounterpartyTypeFilterChange: (value: string) => void;
+  voucherFilter: string;
+  onVoucherFilterChange: (value: string) => void;
   isExporting: boolean;
   onExport: () => void;
   isSettled: boolean;
@@ -43,6 +47,10 @@ export function LedgerDetailTableFilter({
   categoryFilter,
   onCategoryFilterChange,
   categoryOptions,
+  counterpartyTypeFilter,
+  onCounterpartyTypeFilterChange,
+  voucherFilter,
+  onVoucherFilterChange,
   isExporting,
   onExport,
   isSettled,
@@ -102,6 +110,38 @@ export function LedgerDetailTableFilter({
                 {cat}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={counterpartyTypeFilter}
+          onValueChange={onCounterpartyTypeFilterChange}
+        >
+          <SelectTrigger
+            className="h-9 w-[120px] bg-card border-border"
+            aria-label="筛选支付方类型"
+          >
+            <SelectValue placeholder="支付方类型" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">支付方类型</SelectItem>
+            <SelectItem value="company">公司</SelectItem>
+            <SelectItem value="individual">个人</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={voucherFilter}
+          onValueChange={onVoucherFilterChange}
+        >
+          <SelectTrigger
+            className="h-9 w-[120px] bg-card border-border"
+            aria-label="筛选凭证状态"
+          >
+            <SelectValue placeholder="凭证状态" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">凭证状态</SelectItem>
+            <SelectItem value="with">有凭证</SelectItem>
+            <SelectItem value="without">缺凭证</SelectItem>
           </SelectContent>
         </Select>
         <Button

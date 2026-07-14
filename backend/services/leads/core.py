@@ -180,11 +180,13 @@ class LeadService:
                 created_by_id=updater_id,
             )
 
+        old_status = lead.status
         for field, value in update_dict.items():
             setattr(lead, field, value)
 
         # 评估决策流转：状态变更为 PENDING_VISIT/REJECTED 时，记录审核时间与审核人
-        if update_data.status in (LeadStatus.PENDING_VISIT, LeadStatus.REJECTED):
+        # 仅在状态实际变化时写入，避免重复更新字段时覆盖审计记录
+        if update_data.status in (LeadStatus.PENDING_VISIT, LeadStatus.REJECTED) and old_status != update_data.status:
             lead.audit_time = datetime.now(timezone.utc)
             lead.auditor_id = updater_id
 
