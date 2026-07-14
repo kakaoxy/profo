@@ -28,19 +28,27 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
 
   // 合并「收房评估 + 跟进记录」按时间倒序，"线索初始录入"恒为最末（创建最早）
   const hasAssessment =
-    lead.evalPrice != null || (lead.status === LeadStatus.REJECTED && !!lead.auditReason);
+    lead.evalPrice != null ||
+    (lead.status === LeadStatus.REJECTED && !!lead.auditReason) ||
+    lead.status === LeadStatus.PENDING_VISIT;
   const trailEvents: TrailEvent[] = [];
   if (hasAssessment) {
     const raw = lead.auditTime ?? lead.updatedAt;
     const d = safeParseDate(raw);
     const isFallback = !lead.auditTime;
+    const isRejected = lead.status === LeadStatus.REJECTED;
+    const approvalDesc =
+      lead.evalPrice != null
+        ? `拟收房评估价 ¥${lead.evalPrice} 万${lead.auditReason ? ' · ' + lead.auditReason : ''}`
+        : lead.auditReason
+          ? `评估意见：${lead.auditReason}`
+          : '评估通过，未填写评估价';
     trailEvents.push({
       key: 'audit',
-      title: lead.status === LeadStatus.REJECTED ? '评估驳回' : '收房评估通过',
-      desc:
-        lead.status === LeadStatus.REJECTED
-          ? `评估意见：${lead.auditReason || '未填写具体原因'}`
-          : `拟收房评估价 ¥${lead.evalPrice} 万${lead.auditReason ? ' · ' + lead.auditReason : ''}`,
+      title: isRejected ? '评估驳回' : '收房评估通过',
+      desc: isRejected
+        ? `评估意见：${lead.auditReason || '未填写具体原因'}`
+        : approvalDesc,
       time: d ? `${isFallback ? '约 ' : ''}${d.toLocaleString()}` : '-',
       sortTime: d?.getTime() ?? 0,
       icon: Gavel,
