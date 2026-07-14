@@ -55,7 +55,7 @@ _MIGRATION_BATCH_SIZE = 500
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
-    """检查某列是否已存在（跨方言）."""
+    """检查某列是否已存在."""
     inspector = inspect(engine)
     if table not in inspector.get_table_names():
         return False
@@ -64,26 +64,17 @@ def _column_exists(engine: Engine, table: str, column: str) -> bool:
 
 def _index_exists(engine: Engine, index_name: str) -> bool:
     """检查某索引是否已存在."""
-    if engine.dialect.name == "postgresql":
-        with engine.connect() as conn:
-            return bool(
-                conn.execute(
-                    text("SELECT 1 FROM pg_indexes WHERE indexname = :index LIMIT 1"),
-                    {"index": index_name},
-                ).first(),
-            )
-    inspector = inspect(engine)
-    for table in inspector.get_table_names():
-        if any(idx["name"] == index_name for idx in inspector.get_indexes(table)):
-            return True
-    return False
+    with engine.connect() as conn:
+        return bool(
+            conn.execute(
+                text("SELECT 1 FROM pg_indexes WHERE indexname = :index LIMIT 1"),
+                {"index": index_name},
+            ).first(),
+        )
 
 
 def add_token_version_column(engine: Engine) -> None:
-    """为 users 表添加 token_version INTEGER NOT NULL DEFAULT 1.
-
-    SQLite 支持 ALTER TABLE ADD COLUMN，幂等。
-    """
+    """为 users 表添加 token_version INTEGER NOT NULL DEFAULT 1（幂等）."""
     if _column_exists(engine, "users", "token_version"):
         return
     logger.info("迁移：为 users 表添加 token_version 列")
@@ -201,10 +192,9 @@ def populate_phone_hash(engine: Engine) -> None:
 
 
 def add_stage_completed_dates_column(engine: Engine) -> None:
-    """为 l4_marketing_projects 表添加 stage_completed_dates 列。.
+    """为 l4_marketing_projects 表添加 stage_completed_dates 列（幂等）.
 
     存储各改造阶段完成日期，JSON 格式 {stage: "YYYY-MM-DD"}。
-    SQLite 支持 ALTER TABLE ADD COLUMN，幂等。
     """
     if _column_exists(engine, "l4_marketing_projects", "stage_completed_dates"):
         return
@@ -214,10 +204,9 @@ def add_stage_completed_dates_column(engine: Engine) -> None:
 
 
 def add_thumbnail_url_to_photos(engine: Engine) -> None:
-    """为 renovation_photos 与 property_media 表添加 thumbnail_url 列。.
+    """为 renovation_photos 与 property_media 表添加 thumbnail_url 列（幂等）.
 
     存储压缩后缩略图 URL，供列表展示加速使用。
-    SQLite 支持 ALTER TABLE ADD COLUMN，幂等：通过 _column_exists 检查跳过已存在列。
     使用硬编码 DDL 字符串避免 f-string 拼接表名（AGENTS.md §11）。
     """
     from sqlalchemy import text  # noqa: PLC0415
@@ -233,12 +222,11 @@ def add_thumbnail_url_to_photos(engine: Engine) -> None:
 
 
 def add_renovation_extra_amount_columns(engine: Engine) -> None:
-    """为 project_renovations 表添加定制柜/窗户/墙面处理金额列。.
+    """为 project_renovations 表添加定制柜/窗户/墙面处理金额列（幂等）.
 
     - custom_cabinet_amount / window_amount: 直接 ADD COLUMN（幂等）
     - wall_treatment_amount: 优先 RENAME COLUMN appliance_amount TO wall_treatment_amount
       （兼容已部署旧字段的存量数据）；若 appliance_amount 不存在则 ADD COLUMN。
-    - SQLite 3.25+ 与 PostgreSQL 均支持 ALTER TABLE RENAME COLUMN。
     - 幂等：通过 _column_exists 检查跳过已存在列。
     - 使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
     """
@@ -287,7 +275,7 @@ def drop_soft_actual_cost_column(engine: Engine) -> None:
     """移除 project_renovations 表的 soft_actual_cost 列（幂等）.
 
     前端已移除"软装实际"录入项，后端模型/Schema/Service 白名单同步移除，
-    DB 列也需移除以避免脏数据风险。SQLite 3.35+ 与 PostgreSQL 均支持 DROP COLUMN。
+    DB 列也需移除以避免脏数据风险。
     """
     from sqlalchemy import text  # noqa: PLC0415
 
@@ -356,11 +344,10 @@ def rename_return_adjustment_columns(engine: Engine) -> None:
 
 
 def add_finance_record_counterparty_columns(engine: Engine) -> None:
-    """为 finance_records 表添加 counterparty/receipt_url 列（资金账本）.
+    """为 finance_records 表添加 counterparty/receipt_url 列（资金账本，幂等）.
 
     - counterparty: 交易方（VARCHAR(100)）
     - receipt_url: 票据图片URL（VARCHAR(500)）
-    - SQLite 3.25+ 与 PostgreSQL 均支持 ALTER TABLE ADD COLUMN。
     - 幂等：通过 _column_exists 检查跳过已存在列。
     - 使用硬编码 DDL 字符串避免 f-string 拼接列名（AGENTS.md §11）。
     """
@@ -404,7 +391,7 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
     - 旧 receipt_url（VARCHAR）单值回填为单元素数组 [url]
     - 旧列保留但模型层不再映射（向后兼容）
     - 幂等：通过 _column_exists 检查跳过 ALTER；回填仅处理 receipt_urls IS NULL 的行
-    - 使用 SQLAlchemy Core update() 确保 PostgreSQL/SQLite 均正确序列化 JSON
+    - 使用 SQLAlchemy Core update() 确保 PostgreSQL 正确序列化 JSON
     """
     from sqlalchemy import JSON, Column, MetaData, String, Table, select, update  # noqa: PLC0415
 
@@ -462,14 +449,13 @@ def add_finance_record_receipt_urls_column(engine: Engine) -> None:
 def add_cashflow_category_enum_values(engine: Engine) -> None:
     """同步 PostgreSQL cashflowcategory enum 类型与 Python CashFlowCategory 枚举.
 
-    生产环境使用 PostgreSQL，SQLEnum 创建原生 enum 类型 `cashflowcategory`。
+    SQLEnum 创建原生 enum 类型 `cashflowcategory`。
     Python 枚举新增值后，PostgreSQL enum 类型不会自动同步，需 ALTER TYPE ... ADD VALUE
     （PG 9.3+ 支持 IF NOT EXISTS）。
 
     本迁移直接遍历 Python CashFlowCategory 枚举的所有值并同步到 PostgreSQL，
     避免硬编码列表遗漏（曾遗漏 "保证金回收" 等值导致记账 500 错误）。
 
-    - SQLite 跳过（测试库随枚举类更新自动重建 CHECK 约束）
     - 幂等：IF NOT EXISTS 保证重复执行不报错
     """
     if engine.dialect.name != "postgresql":
@@ -521,21 +507,13 @@ def add_project_finance_settlement_columns(engine: Engine) -> None:
     # 1. 添加 projects 表的 3 个新列
     if not _column_exists(engine, "projects", "finance_settlement_status"):
         with engine.begin() as conn:
-            if engine.dialect.name == "postgresql":
-                conn.execute(
-                    text(
-                        "ALTER TABLE projects "
-                        "ADD COLUMN finance_settlement_status settlementstatus "
-                        "NOT NULL DEFAULT 'unsettled'",
-                    ),
-                )
-            else:
-                conn.execute(
-                    text(
-                        "ALTER TABLE projects ADD COLUMN finance_settlement_status "
-                        "VARCHAR NOT NULL DEFAULT 'unsettled'",
-                    ),
-                )
+            conn.execute(
+                text(
+                    "ALTER TABLE projects "
+                    "ADD COLUMN finance_settlement_status settlementstatus "
+                    "NOT NULL DEFAULT 'unsettled'",
+                ),
+            )
         logger.info("迁移：projects 表新增 finance_settlement_status 列")
 
     if not _column_exists(engine, "projects", "finance_settled_date"):
@@ -587,7 +565,6 @@ def migrate_record_date_to_timestamptz(engine: Engine) -> None:
     不一致，会触发时区 stripping（违反 AGENTS.md §3 时间列统一 timezone=True）。
 
     - PostgreSQL: ALTER COLUMN ... TYPE timestamptz USING record_date AT TIME ZONE 'UTC'
-    - SQLite: 跳过（SQLite 不区分 timestamp/timestamptz，存储为 TEXT，模型层已声明 timezone=True）
     - 幂等：通过 information_schema.columns 判断 data_type，已是
       'timestamp with time zone' 则跳过
     - 表名/列名为硬编码字符串，未用 f-string 拼接变量（规范11）
@@ -629,7 +606,6 @@ def migrate_project_date_columns_to_date(engine: Engine) -> None:
     原为 String(10) 存日期字符串，违反 AGENTS.md（日期列用 Date）。
 
     - PostgreSQL: ALTER COLUMN ... TYPE date USING to_date(..., 'YYYY-MM-DD')
-    - SQLite: 跳过（SQLite 不强制类型，模型层已声明 Date）
     - 幂等：通过 information_schema.columns 判断 data_type，已是 date 则跳过
     - 表名/列名为硬编码字符串，未用 f-string 拼接变量
     """
@@ -688,7 +664,6 @@ def migrate_user_datetime_columns_to_timestamptz(engine: Engine) -> None:
     - api_keys.last_used_at / expires_at / deleted_at
 
     - PostgreSQL: ALTER COLUMN ... TYPE timestamptz USING ... AT TIME ZONE 'UTC'
-    - SQLite: 跳过（SQLite 不区分 timestamp/timestamptz，存储为 TEXT）
     - 幂等：通过 information_schema.columns 判断 data_type，已是
       'timestamp with time zone' 则跳过
     - 表名/列名为硬编码字符串，未用 f-string 拼接变量（规范11）
@@ -750,7 +725,6 @@ def migrate_encrypted_columns_to_text(engine: Engine) -> None:
     - project_owners.owner_phone / owner_id_card / bank_card_number
 
     - PostgreSQL: ALTER COLUMN ... TYPE text（VARCHAR → text 隐式可转换，无需 USING）
-    - SQLite: 跳过（SQLite 不强制 VARCHAR 长度，TEXT 亲和性）
     - 幂等：通过 information_schema.columns 判断 data_type，已是 text 则跳过
     - 表名/列名为硬编码字符串，未用 f-string 拼接变量（规范11）
     """
@@ -797,7 +771,6 @@ def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
     的功能（二者保留，幂等不冲突：先跑的旧函数发现已是目标类型则跳过）。
 
     - PostgreSQL: ALTER COLUMN ... TYPE timestamptz USING <col> AT TIME ZONE 'UTC'
-    - SQLite: 跳过（不区分 timestamp/timestamptz，存储为 TEXT）
     - 幂等：通过 information_schema.columns 判断 data_type，已是
       'timestamp with time zone' 则跳过
     - 非 timestamp 类型（如 date）由 information_schema.data_type 判断后跳过
@@ -869,19 +842,13 @@ def create_wechat_oauth_tables(engine: Engine) -> None:
         Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
 
     # 清理上次运行残留的过期记录
-    now_sql = "DELETE FROM wechat_oauth_states WHERE expires_at < NOW()"
-    if engine.dialect.name == "sqlite":
-        now_sql = "DELETE FROM wechat_oauth_states WHERE expires_at < datetime('now')"
     with engine.begin() as conn:
-        deleted = conn.execute(text(now_sql)).rowcount
+        deleted = conn.execute(text("DELETE FROM wechat_oauth_states WHERE expires_at < NOW()")).rowcount
     if deleted:
         logger.info("迁移：清理 %d 条过期微信 OAuth state 记录", deleted)
 
-    now_sql = "DELETE FROM wechat_temp_codes WHERE expires_at < NOW()"
-    if engine.dialect.name == "sqlite":
-        now_sql = "DELETE FROM wechat_temp_codes WHERE expires_at < datetime('now')"
     with engine.begin() as conn:
-        deleted = conn.execute(text(now_sql)).rowcount
+        deleted = conn.execute(text("DELETE FROM wechat_temp_codes WHERE expires_at < NOW()")).rowcount
     if deleted:
         logger.info("迁移：清理 %d 条过期微信临时码记录", deleted)
 

@@ -134,13 +134,13 @@ class MonitorService:
     def get_trends(self, community_id: str, months: int) -> list[TrendData]:
         """获取价格趋势数据.
 
-        按月分组统计在 Python 层完成，避免使用 SQLite 专有的 strftime，
-        保证跨数据库兼容（生产环境使用 PostgreSQL）。
+        按月分组统计在 Python 层完成，避免数据库端 strftime 函数的方言差异，
+        保证聚合逻辑可移植。
         """
         db = self.db
         start_date = datetime.now(timezone.utc) - timedelta(days=30 * months)
 
-        # 查询原始数据，在 Python 层按月分组（避免 SQLite 专有的 strftime）
+        # 查询原始数据，在 Python 层按月分组
         deals = (
             db.query(
                 PropertyCurrent.sold_date,

@@ -276,7 +276,7 @@ backend/
 ├── dependencies/               # FastAPI 依赖注入（auth / common / projects）
 ├── utils/                      # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
 ├── migrations/                 # 启动时数据迁移（幂等，列变更/明文加密等）
-├── scripts/                    # 一次性脚本（如 SQLite → PostgreSQL 迁移）
+├── scripts/                    # 一次性脚本
 ├── main.py                     # 应用入口
 ├── db.py                       # SQLAlchemy 引擎 + 会话工厂 + init_db()
 ├── settings.py                 # Pydantic Settings
@@ -292,7 +292,7 @@ backend/
 - **响应格式**：直接返回 Pydantic 模型；分页用 `PaginatedResponse[T]`；列表查询带过滤+排序
 - **逻辑外键**：关联用 `user_id: int` 等软外键，级联由 Service 控制
 - **加密字段**：通过 `models/common/encrypted.py` 的 `EncryptedString` 类型自动加密身份证 / 手机号 / 微信会话密钥
-- **时区处理**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PostgreSQL 存储 `TIMESTAMP WITH TIME ZONE`，避免 SQLite naive datetime 导致的时区 stripping 问题
+- **时区处理**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PostgreSQL 存储 `TIMESTAMP WITH TIME ZONE`
 
 #### 统一入口导入
 
@@ -606,12 +606,10 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 - **引擎**：PostgreSQL 16（Docker 镜像 `postgres:16-alpine`）
 - **驱动**：`psycopg[binary]`（SQLAlchemy 方言 `postgresql+psycopg://`）
 - **连接池**：`QueuePool`（`pool_size=10`，`max_overflow=20`，`pool_pre_ping=True`，`pool_recycle=3600`）
-- **时区**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PG 存储为 `TIMESTAMP WITH TIME ZONE`，避免 SQLite naive datetime 导致的时区 stripping 问题
+- **时区**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PG 存储为 `TIMESTAMP WITH TIME ZONE`
 - **编译缓存**：`execution_options={"compiled_cache": {}}`
 - **建表**：通过 `Base.metadata.create_all` 自动建表（应用启动时执行 `init_db()`）
 - **数据迁移**：`backend/migrations/` 目录下的幂等启动迁移（列变更、明文加密等），应用启动时自动执行；schema 变更通过 Alembic 管理（如需）
-
-> SQLite 仍保留为开发/测试环境的兼容回退（`db.py` 通过 `_is_sqlite` 分支处理 `check_same_thread` 与 `PRAGMA foreign_keys=ON`），但生产环境只使用 PostgreSQL。`pytest` 通过 `conftest.py` 使用 SQLite in-memory 数据库以加速测试。
 
 ### ER 概览
 
@@ -782,7 +780,6 @@ graph TB
 | [`.env.docker.example`](.env.docker.example) | 环境变量模板（复制为 `.env` 后编辑） |
 | [`deploy-server.sh`](deploy-server.sh) | 服务器端部署脚本：加载镜像、启动 compose、健康检查 |
 | [`deploy-local.sh`](deploy-local.sh) | 本地构建并推送镜像到服务器，触发服务器端部署 |
-| [`backend/scripts/migrate_sqlite_to_pg.py`](backend/scripts/migrate_sqlite_to_pg.py) | 一次性 SQLite → PostgreSQL 数据迁移脚本（仅首次迁移旧数据时使用） |
 
 ### 快速部署流程
 
@@ -837,49 +834,6 @@ docker compose up -d --build
 ---
 
 ## 🔄 数据迁移
-
-### 从旧 SQLite 迁移到 PostgreSQL（一次性）
-
-仅当你之前用 SQLite 跑过生产数据，需要把旧数据搬到 Docker 部署的 PostgreSQL 时执行。新部署可跳过此节。
-
-#### 迁移范围
-
-仅迁移项目管理相关 12 张表（`projects` 及其子表）：
-`project_documents`, `renovation_photos`, `project_renovations`, `project_status_logs`,
-`finance_records`, `project_interactions`, `project_evaluations`, `project_follow_ups`,
-`project_sales`, `project_owners`, `project_contracts`, `projects`。
-
-其他业务数据（线索、房源、营销项目、用户等）不迁移。
-
-#### 迁移步骤
-
-1. **准备旧 SQLite 文件**：将旧 `data.db` 挂载到 backend 容器内（或在 `.env` 中设置 `SQLITE_SOURCE_URL` 指向它）。
-
-2. **启动 Docker 服务**（确保 PostgreSQL 已就绪）：
-   ```bash
-   docker compose up -d
-   ```
-
-3. **执行迁移脚本**：
-   ```bash
-   docker compose exec backend .venv/bin/python scripts/migrate_sqlite_to_pg.py
-   ```
-
-4. **验证**：
-   ```bash
-   curl -H "Authorization: Bearer <admin-token>" \
-     "http://localhost/api/v1/projects?page=1&page_size=10"
-   # 应返回迁移后的项目列表
-   ```
-
-#### 迁移脚本关键设计
-
-- **幂等**：在单事务内按子表优先 DELETE → 父表优先 INSERT，失败整体回滚，可重跑。
-- **时区处理**：SQLite 返回 naive datetime，脚本对所有 `tzinfo=None` 的 datetime 附加 UTC 时区，匹配 PG 的 `TIMESTAMP WITH TIME ZONE`。
-- **加密字段反序列化**：`EncryptedString` 列在源库用原生 SQL 读出的是密文，脚本通过 `decrypt()` 还原成明文，让后续 Core insert 的 `process_bind_param` 正常单层加密（避免双重加密）。
-- **JSON 字段反序列化**：JSON 列同理，先 `json.loads()` 还原成 Python 对象，避免双重序列化。
-
-详见 [`backend/scripts/migrate_sqlite_to_pg.py`](backend/scripts/migrate_sqlite_to_pg.py)。
 
 ### 启动时数据迁移（自动）
 
@@ -959,23 +913,13 @@ docker compose exec frontend wget -qO- http://backend:8000/health
 # 应返回 {"status":"healthy","database":"connected"}
 ```
 
-### Q3: 项目管理统计显示有项目，但列表为空（HTTP 500）
-
-**根因**：从 SQLite 迁移到 PostgreSQL 时，迁移脚本对 `EncryptedString` 列双重加密、`JSON` 列双重序列化，导致响应 schema 校验失败。
-
-**修复**：使用修正后的 `backend/scripts/migrate_sqlite_to_pg.py` 重跑迁移（脚本会先 DELETE 再 INSERT，幂等）：
-
-```bash
-docker compose exec backend .venv/bin/python scripts/migrate_sqlite_to_pg.py
-```
-
-### Q4: 启动报 `POSTGRES_PASSWORD` URL 解析失败
+### Q3: 启动报 `POSTGRES_PASSWORD` URL 解析失败
 
 **根因**：`.env` 中 `POSTGRES_PASSWORD` 包含 `#`、`@`、`:`、`/` 等 URL 保留字符，被 `DATABASE_URL` 解析器误判。
 
 **修复**：改用纯字母数字密码，或对密码做 URL 编码（`python -c "import urllib.parse; print(urllib.parse.quote('你的密码'))"`）。
 
-### Q5: 忘记管理员密码
+### Q4: 忘记管理员密码
 
 进入容器重置：
 
@@ -991,7 +935,7 @@ docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB \
 docker compose exec backend .venv/bin/python init_admin.py
 ```
 
-### Q6: 前端类型错误 `Property 'xxx' does not exist`
+### Q5: 前端类型错误 `Property 'xxx' does not exist`
 
 后端接口变更后未同步类型：
 
@@ -1003,7 +947,7 @@ docker compose up -d backend
 cd frontend && pnpm gen-api
 ```
 
-### Q7: API 返回 401
+### Q6: API 返回 401
 
 检查清单：
 1. 请求头包含 `Authorization: Bearer <token>` 或通过 httpOnly Cookie
@@ -1011,14 +955,14 @@ cd frontend && pnpm gen-api
 3. 用户状态为 `active`
 4. 用户具有相应权限（admin / operator / user / customer）
 
-### Q8: 文件上传失败
+### Q7: 文件上传失败
 
 - 大小不超过 100 MB
 - 类型在允许列表：`.jpg .jpeg .png .pdf .xlsx .xls .csv .doc .docx .md`
 - `uploads` volume 挂载正常：`docker compose exec backend ls /app/static/uploads`
 - `Content-Type: multipart/form-data`
 
-### Q9: 前端启动报 `Module not found`
+### Q8: 前端启动报 `Module not found`
 
 ```bash
 cd frontend
@@ -1026,7 +970,7 @@ rm -rf node_modules pnpm-lock.yaml .next
 pnpm install
 ```
 
-### Q10: 如何重置整个环境（清空数据）
+### Q9: 如何重置整个环境（清空数据）
 
 ```bash
 docker compose down              # 停止并删除容器
@@ -1088,15 +1032,15 @@ ProFo/
 │   ├── dependencies/              # auth / common / projects
 │   ├── utils/                     # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
 │   ├── migrations/                # 启动时幂等迁移（列变更 / 明文加密 / URL 修正）
-│   ├── scripts/                   # 一次性脚本（SQLite → PostgreSQL 迁移）
+│   ├── scripts/                   # 一次性脚本
 │   ├── main.py                    # 应用入口
-│   ├── db.py                      # SQLAlchemy 引擎 + 会话（SQLite/PG 双方言分支）
+│   ├── db.py                      # SQLAlchemy 引擎 + 会话（PostgreSQL）
 │   ├── settings.py                # Pydantic Settings
 │   ├── error_handlers.py          # 全局异常 handler
 │   ├── exceptions.py              # 通用异常
 │   ├── init_db.py                 # 建表脚本
 │   ├── init_admin.py              # 初始化角色和管理员
-│   ├── conftest.py                # pytest 配置（SQLite in-memory）
+│   ├── conftest.py                # pytest 配置（PostgreSQL + SAVEPOINT 隔离）
 │   ├── Dockerfile                 # 多阶段构建（builder → runner）
 │   ├── pyproject.toml             # 依赖与工具配置
 │   └── uv.lock

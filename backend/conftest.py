@@ -1,73 +1,117 @@
-"""测试配置模块."""
+"""测试配置模块.
 
+测试基础设施使用 PostgreSQL（与生产环境一致），隔离方案：
+- 会话级共享 PG 引擎与表结构
+- 每个测试用例使用连接级事务 + SAVEPOINT 隔离，测试结束 rollback
+- 直连 engine 的迁移测试通过 TRUNCATE 清理（见 test_phone_encryption.py）
+
+注意：DATABASE_URL 必须指向专用测试库，测试启动时会 TRUNCATE 所有表。
+"""
+
+import contextlib
 import os
 from collections.abc import Generator
-from pathlib import Path
 from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 import db
 from models import Base, Role, User
+from settings import settings
 from utils.auth import create_access_token, get_password_hash
 
 
-# 备注: 测试基础设施暂用 SQLite 内存数据库（生产代码已弃用 SQLite，见 settings.py / db.py）。
-# 未来可改用 PostgreSQL testcontainers 做集成测试。
-def _enable_sqlite_fk(dbapi_conn: Any, connection_record: Any) -> None:  # noqa: ANN401, ARG001
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+def _get_test_database_url() -> str:
+    """获取测试用 PostgreSQL 连接串.
+
+    优先级：
+    1. 环境变量 DATABASE_URL（允许 CI/测试时显式覆盖，指向独立测试库）
+    2. settings.database_url（pydantic-settings 从 .env 加载）
+
+    ⚠️ 测试启动时会 TRUNCATE 该库所有表，请确保指向专用测试库。
+    """
+    return os.environ.get("DATABASE_URL") or settings.database_url
+
+
+def _truncate_all_tables(engine: Engine) -> None:
+    """TRUNCATE 所有表（仅在测试会话启动时调用一次，确保干净起点）.
+
+    使用 CASCADE 处理外键依赖，按 schema 内所有表一次性 TRUNCATE。
+    """
+    inspector = inspect(engine)
+    table_names = inspector.get_table_names()
+    if not table_names:
+        return
+    # 一次性 TRUNCATE 所有表，CASCADE 处理外键；PG 支持
+    # 表名来自 inspector（可信元数据），非用户输入
+    quoted = ", ".join(f'"{t}"' for t in table_names)
+    with engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE TABLE {quoted} RESTART IDENTITY CASCADE"))
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _profo_test_env() -> None:
+def _profo_test_env() -> Generator[None, None, None]:
+    """测试环境变量配置.
+
+    通过 setdefault 注入测试所需的密钥（仅当对应环境变量未设置时）。
+    DATABASE_URL 由 _get_test_database_url() 解析，不在此处强制。
+    """
     os.environ.setdefault("JWT_SECRET_KEY", "0123456789abcdef0123456789abcdef")
     os.environ.setdefault("WECHAT_APPID", "test")
     os.environ.setdefault("WECHAT_SECRET", "test")
     os.environ.setdefault("ENCRYPTION_KEY", "2jMwZQncfSnqaQxT3E-hhDMx7npoFQDxyNjyS8SvRCc=")
 
-    db_path = (Path(__file__).parent / "test.db").resolve()
-    if db_path.exists():
-        db_path.unlink()
-
-    os.environ["DATABASE_URL"] = f"sqlite:///{db_path.as_posix()}"
     yield
 
-    try:
+    with contextlib.suppress(Exception):
         db.engine.dispose()
-    except Exception:  # noqa: BLE001
-        return
 
-    if db_path.exists():
-        try:
-            db_path.unlink()
-        except PermissionError:
-            return
+
+@pytest.fixture(scope="session")
+def test_engine() -> Generator[Engine, None, None]:
+    """会话级 PG 引擎：建表 + 初始 TRUNCATE.
+
+    一次性创建所有表结构并清空数据，整个测试会话共享该引擎。
+    ⚠️ 会 TRUNCATE 目标库所有表，DATABASE_URL 必须指向专用测试库。
+    """
+    database_url = _get_test_database_url()
+    engine = create_engine(
+        database_url,
+        pool_pre_ping=True,
+    )
+    Base.metadata.create_all(bind=engine)
+    _truncate_all_tables(engine)
+
+    yield engine
+
+    engine.dispose()
 
 
 @pytest.fixture
-def db_session() -> Generator[Session, None, None]:
-    """提供隔离的数据库会话，每个测试用例使用独立内存数据库."""
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    event.listen(engine, "connect", _enable_sqlite_fk)
+def db_session(test_engine: Engine) -> Generator[Session, None, None]:
+    """提供隔离的数据库会话.
 
-    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base.metadata.create_all(bind=engine)
-    session = session_local()
+    使用连接级事务 + SAVEPOINT 实现测试隔离：
+    1. 从引擎获取连接，开启外层事务
+    2. 创建 Session 绑定到该连接，join_transaction_mode="create_savepoint"
+       - 测试代码调用 commit() 时仅释放 SAVEPOINT，不影响外层事务
+       - 测试代码调用 rollback() 时仅回滚到 SAVEPOINT
+    3. 测试结束后回滚外层事务，撤销所有变更
+    """
+    connection = test_engine.connect()
+    trans = connection.begin()
+
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
 
     yield session
 
     session.close()
-    engine.dispose()
+    trans.rollback()
+    connection.close()
 
 
 def _seed_roles_and_users(session: Session) -> dict[str, User]:
