@@ -192,6 +192,7 @@ async def root() -> dict[str, str]:
 
 
 @app.get("/health")
+@limiter.exempt
 async def health_check() -> dict[str, str]:
     """健康检查端点."""
     return {
