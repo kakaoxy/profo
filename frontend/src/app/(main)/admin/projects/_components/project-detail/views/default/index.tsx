@@ -32,7 +32,7 @@ export function DefaultView({
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="info">项目信息</TabsTrigger>
           <TabsTrigger value="documents">
-            文书与附件 {attachments.length > 0 && `(${attachments.length})`}
+            文书与附件 {attachments.length > 0 ? `(${attachments.length})` : ""}
           </TabsTrigger>
         </TabsList>
 

@@ -7,7 +7,7 @@ from sqlalchemy import JSON, Boolean, DateTime, Index, Numeric, String, Text
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel, CashFlowCategory, CashFlowType, FinanceActionType
+from models.common.base import BaseModel, CashFlowCategory, CashFlowType, CounterpartyType, FinanceActionType
 
 
 class FinanceRecord(BaseModel):
@@ -32,8 +32,10 @@ class FinanceRecord(BaseModel):
     operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="经办人ID")
     remark: Mapped[str | None] = mapped_column(Text, nullable=True, comment="备注")
     counterparty: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="交易方")
-    counterparty_type: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, comment="支付方类型: company/individual"
+    counterparty_type: Mapped[CounterpartyType | None] = mapped_column(
+        SQLEnum(CounterpartyType, values_callable=lambda x: [e.value for e in x]),
+        nullable=True,
+        comment="支付方类型: company/individual",
     )
     receipt_urls: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, comment="票据图片URL列表")
 

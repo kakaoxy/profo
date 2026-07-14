@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from models import FinanceRecord, FinanceRecordLog, Project
-from models.common import BusinessForm, CashFlowCategory, FinanceActionType, SettlementStatus
+from models.common import BusinessForm, CashFlowCategory, FinanceActionType
 from schemas.project.finance import (
     CashFlowRecordCreate,
     CashFlowSummary,
@@ -257,15 +257,13 @@ class _RecordMixin:
 
         project_id = record.project_id
 
-        # 编辑锁：已结算项目不可修改记录
+        # 编辑锁：已结算项目不可修改记录（与 create/delete 一致）
         project = self.db.query(Project).filter(Project.id == project_id, Project.is_deleted.is_(False)).first()
         if not project:
             logger.error("Project not found or soft-deleted: %s", project_id)
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
-        if project.finance_settlement_status == SettlementStatus.SETTLED:
-            msg = "已结算，不可修改"
-            raise ServiceException(msg, status_code=400)
+        self._assert_finance_editable(project)
 
         detail: dict[str, Any] = {}
 

@@ -36,6 +36,13 @@ class MediaType(str, enum.Enum):
     OTHER = "other"
 
 
+class MediaKind(str, enum.Enum):
+    """媒体种类枚举（区分图片/视频）."""
+
+    IMAGE = "image"  # 图片
+    VIDEO = "video"  # 视频
+
+
 class ProjectStatus(str, enum.Enum):
     """项目主状态枚举."""
 
@@ -54,7 +61,6 @@ class RenovationStage(str, enum.Enum):
     PLUMBING = "水电"  # 水电
     CARPENTRY = "木瓦"  # 木瓦
     PAINTING = "油漆"  # 油漆
-    INSTALLATION = "安装"  # 安装
     DELIVERY = "交付"  # 交付
     COMPLETED = "已完成"  # 已完成
 
@@ -64,6 +70,13 @@ class CashFlowType(str, enum.Enum):
 
     INCOME = "income"  # 收入
     EXPENSE = "expense"  # 支出
+
+
+class CounterpartyType(str, enum.Enum):
+    """支付方类型枚举."""
+
+    COMPANY = "company"  # 公司
+    INDIVIDUAL = "individual"  # 个人
 
 
 class BusinessForm(str, enum.Enum):

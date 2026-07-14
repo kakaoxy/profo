@@ -1,10 +1,20 @@
 "use server";
 
+import { z } from "zod";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { auth } from "@/auth";
 import { ActionResult, createErrorResult } from "@/lib/action-result";
+
+const registerInputSchema = z.object({
+  username: z.string().min(1, "请输入账号"),
+  password: z
+    .string()
+    .min(8, "密码至少 8 位")
+    .regex(/[a-zA-Z]/, "密码需包含字母")
+    .regex(/[0-9]/, "密码需包含数字"),
+});
 
 interface RegisterTokenResponse {
   access_token: string;
@@ -32,11 +42,12 @@ export async function registerAction(
   const nickname = formData.get("nickname") as string;
   const phone = formData.get("phone") as string;
 
-  if (!username || !password) {
-    return createErrorResult("请输入账号和密码");
+  const parsed = registerInputSchema.safeParse({ username, password });
+  if (!parsed.success) {
+    return createErrorResult(parsed.error.issues[0].message);
   }
 
-  const payload: RegisterPayload = { username, password };
+  const payload: RegisterPayload = { username: parsed.data.username, password: parsed.data.password };
   if (nickname) payload.nickname = nickname;
   if (phone) payload.phone = phone;
 

@@ -141,7 +141,10 @@ export const auth = Auth({
       try {
         await fetch(getApiUrl(apiPaths.cAuth.logout), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tokens.accessToken}`,
+          },
           body: JSON.stringify({ refresh_token: tokens.refreshToken }),
         });
       } catch {

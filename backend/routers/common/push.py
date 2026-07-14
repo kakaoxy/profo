@@ -6,7 +6,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 
 from dependencies.auth import DbSessionDep, require_api_key
@@ -14,6 +14,7 @@ from models import User
 from schemas import PropertyIngestionModel, PushResult
 from services.market.json_batch_importer import JSONBatchImporter
 from services.system.exceptions import BusinessLogicError, ValidationError
+from utils.common import RateLimits, limiter
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ _MAX_PUSH_RECORDS = 10000
 
 
 @router.post("")
+@limiter.limit(RateLimits.PUSH_API)
 async def push_properties(
+    request: Request,
     properties: Annotated[list[PropertyIngestionModel], Body()],
     db: DbSessionDep,
     current_user: Annotated[User, Depends(require_api_key)],
@@ -34,6 +37,7 @@ async def push_properties(
     **需要通过 X-API-Key Header 进行认证。**
 
     Args:
+        request: FastAPI 请求对象（速率限制所需）
         properties: 房源数据列表（Pydantic 模型校验后的数据）
         db: 数据库会话
         current_user: 当前认证用户（通过 API Key）

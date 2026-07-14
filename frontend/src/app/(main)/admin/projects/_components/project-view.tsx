@@ -145,7 +145,8 @@ export function ProjectView({ data, total }: ProjectViewProps) {
             <Button
               variant="outline"
               className="flex-1 lg:flex-none bg-card border-border text-foreground hover:bg-muted"
-              onClick={() => toast.success("正在生成报表...")}
+              // ⚠️ 未覆盖：导出功能待实现
+              onClick={() => toast.info("功能开发中")}
             >
               <Download className="mr-2 h-4 w-4" />
               导出

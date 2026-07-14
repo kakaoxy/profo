@@ -182,6 +182,7 @@ class RenovationService:
         filename: str | None = None,
         description: str | None = None,
         thumbnail_url: str | None = None,
+        media_type: str = "image",
     ) -> RenovationPhoto:
         """添加改造阶段照片."""
         project = self._get_project(project_id)
@@ -213,6 +214,7 @@ class RenovationService:
             filename=filename,
             description=description,
             thumbnail_url=thumbnail_url,
+            media_type=media_type,
         )
         self.db.add(photo)
         self.db.commit()

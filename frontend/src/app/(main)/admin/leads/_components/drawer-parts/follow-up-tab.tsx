@@ -14,6 +14,16 @@ interface Props {
   onRefreshFollowUps: (updated: FollowUp[]) => void;
 }
 
+type TrailEvent = {
+  key: string;
+  title: string;
+  desc: string;
+  time: string;
+  sortTime: number;
+  icon: React.ElementType;
+  user?: string;
+};
+
 export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, onRefreshFollowUps }) => {
   const [followUpMethod, setFollowUpMethod] = useState<FollowUpMethod>('phone');
   const [followUpContent, setFollowUpContent] = useState('');
@@ -126,16 +136,6 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
       </div>
     </div>
   );
-};
-
-type TrailEvent = {
-  key: string;
-  title: string;
-  desc: string;
-  time: string;
-  sortTime: number;
-  icon: React.ElementType;
-  user?: string;
 };
 
 const TimelineItem = ({ title, desc, time, icon: Icon, isNewest, user }: { title: string, desc: string, time: string, icon: React.ElementType, isNewest?: boolean, user?: string }) => (

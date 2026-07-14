@@ -146,16 +146,6 @@ export function RecordDialog({
     }
   }, [isOpen, businessForm]);
 
-  // 切换收支类型时，重置分类选择
-  useEffect(() => {
-    setCategory("");
-  }, [type]);
-
-  // businessForm 变化时更新默认业务类型（弹窗关闭时也要同步）
-  useEffect(() => {
-    setBusinessType(getDefaultBusinessType(businessForm));
-  }, [businessForm]);
-
   const handleReceiptChange = useCallback((items: ImageItem[]) => {
     const urls = items
       .filter((i) => i.status === "success" && i.url)
@@ -219,7 +209,10 @@ export function RecordDialog({
           {/* 1. 收支切换 Tabs */}
           <Tabs
             value={type}
-            onValueChange={(v) => setType(v as TransactionType)}
+            onValueChange={(v) => {
+              setType(v as TransactionType);
+              setCategory("");
+            }}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">

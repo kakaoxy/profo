@@ -70,6 +70,7 @@ def _get_client_ip(request: Request) -> str:
                     if not _is_trusted_proxy(ip):
                         return ip
                 # 全部为可信代理（异常情况）— 回退到直连 host
+                logger.warning("XFF all trusted proxies, fallback to client_host: %s", client_host)
                 return client_host
     return client_host
 
@@ -154,6 +155,9 @@ class RateLimits:
     # ==================== 文件上传模块 ====================
     FILE_UPLOAD = "500/hour"
     CSV_IMPORT = "300/hour"
+
+    # ==================== 推送接口模块 ====================
+    PUSH_API = "10/hour"
 
     # ==================== C端公开接口 ====================
     PUBLIC_PROFILE_UPDATE = "20/minute"

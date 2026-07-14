@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Project } from "../../../../../types";
 import { InfoCard as InfoSection, InfoItem } from "@/components/common";
 import { formatDate, formatPrice } from "../../../utils";
-import { searchCommunitiesAction } from "@/app/(main)/admin/leads/actions";
+import { searchCommunitiesAction } from "@/app/(main)/admin/leads/actions/search-communities";
 import { getOwnerBankCardAction } from "@/app/(main)/admin/projects/actions/core";
 
 interface InfoTabProps {
@@ -19,6 +19,52 @@ const BUSINESS_FORM_LABEL: Record<string, string> = {
   agent: "代理美化",
   wholesale: "收购美化",
 };
+
+/** 脱敏函数：前3后4，中间用*代替 */
+function maskString(str?: string | null, keepStart = 3, keepEnd = 4): string | undefined {
+  if (!str) return undefined;
+  if (str.length <= keepStart + keepEnd) return str;
+  const start = str.slice(0, keepStart);
+  const end = str.slice(-keepEnd);
+  const middle = "*".repeat(str.length - keepStart - keepEnd);
+  return `${start}${middle}${end}`;
+}
+
+/** 格式化户型显示 */
+function formatLayout(layout?: string | null): string | undefined {
+  if (!layout) return undefined;
+  // 将 "3室2厅2卫" 格式化为更友好的显示
+  const match = layout.match(/(\d+)室(\d+)厅(\d+)卫/);
+  if (match) {
+    return `${match[1]}室${match[2]}厅${match[3]}卫`;
+  }
+  return layout;
+}
+
+/** 格式化税费承担方显示 */
+function formatCostAssumption(project: Project): string | undefined {
+  const typeMap: Record<string, string> = {
+    meifangbao: "美房宝承担",
+    owner: "业主承担",
+    respective: "各自承担",
+    other: "其他",
+  };
+  if (!project.cost_assumption_type) return undefined;
+  const typeLabel = typeMap[project.cost_assumption_type] || project.cost_assumption_type;
+  if (project.cost_assumption_type === "other" && project.cost_assumption_other) {
+    return `${typeLabel} (${project.cost_assumption_other})`;
+  }
+  return typeLabel;
+}
+
+/** 委托期限范围展示 */
+function formatCommissionRange(project: Project): string | undefined {
+  const start = project.commission_start_date;
+  const end = project.commission_end_date;
+  if (!start && !end) return undefined;
+  if (start && end) return `${start} 至 ${end}`;
+  return start || end || undefined;
+}
 
 /**
  * 银行卡号展示项 - 默认脱敏，点击眼睛切换显隐，支持复制完整卡号.
@@ -156,52 +202,6 @@ export function InfoTab({ project }: InfoTabProps) {
     (fetched && fetched.name === project.community_name
       ? fetched.district
       : undefined);
-
-  // 脱敏函数：前3后4，中间用*代替
-  const maskString = (str?: string | null, keepStart = 3, keepEnd = 4): string | undefined => {
-    if (!str) return undefined;
-    if (str.length <= keepStart + keepEnd) return str;
-    const start = str.slice(0, keepStart);
-    const end = str.slice(-keepEnd);
-    const middle = "*".repeat(str.length - keepStart - keepEnd);
-    return `${start}${middle}${end}`;
-  };
-
-  // 格式化户型显示
-  const formatLayout = (layout?: string | null): string | undefined => {
-    if (!layout) return undefined;
-    // 将 "3室2厅2卫" 格式化为更友好的显示
-    const match = layout.match(/(\d+)室(\d+)厅(\d+)卫/);
-    if (match) {
-      return `${match[1]}室${match[2]}厅${match[3]}卫`;
-    }
-    return layout;
-  };
-
-  // 格式化税费承担方显示
-  const formatCostAssumption = (project: Project): string | undefined => {
-    const typeMap: Record<string, string> = {
-      meifangbao: "美房宝承担",
-      owner: "业主承担",
-      respective: "各自承担",
-      other: "其他",
-    };
-    if (!project.cost_assumption_type) return undefined;
-    const typeLabel = typeMap[project.cost_assumption_type] || project.cost_assumption_type;
-    if (project.cost_assumption_type === "other" && project.cost_assumption_other) {
-      return `${typeLabel} (${project.cost_assumption_other})`;
-    }
-    return typeLabel;
-  };
-
-  // 委托期限范围展示
-  const formatCommissionRange = (project: Project): string | undefined => {
-    const start = project.commission_start_date;
-    const end = project.commission_end_date;
-    if (!start && !end) return undefined;
-    if (start && end) return `${start} 至 ${end}`;
-    return start || end || undefined;
-  };
 
   // 已售项目展示用时天数
   const isSold =

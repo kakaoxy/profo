@@ -17,7 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.common.base import BaseModel, RenovationStage
+from models.common.base import BaseModel, MediaKind, RenovationStage
 
 
 class ProjectRenovation(BaseModel):
@@ -123,7 +123,13 @@ class RenovationPhoto(BaseModel):
         nullable=False,
         comment="改造阶段",
     )
-    url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片URL")
+    url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片/视频URL")
+    media_type: Mapped[str] = mapped_column(
+        SQLEnum(MediaKind, values_callable=lambda x: [e.value for e in x], create_constraint=True),
+        nullable=False,
+        default=MediaKind.IMAGE.value,
+        comment="媒体种类: image/video",
+    )
     thumbnail_url: Mapped[str | None] = mapped_column(Text, nullable=True, comment="缩略图URL")
     filename: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="文件名")
     description: Mapped[str | None] = mapped_column(Text, nullable=True, comment="描述")

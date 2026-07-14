@@ -56,7 +56,7 @@ async function getUser() {
     // 其他错误（如网络错误）才返回 null
     if (error) {
       const status = (response as Response | undefined)?.status;
-      logger.error("获取用户信息失败:", error, "状态码:", status);
+      logger.error("获取用户信息失败", { status, message: `HTTP ${status ?? "unknown"}` });
       // 如果是 401，说明 token 刷新也失败了，返回 null 让页面重定向
       if (status === 401) {
         return null;

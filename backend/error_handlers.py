@@ -84,6 +84,8 @@ async def service_exception_handler(_request: Request, exc: ServiceException) ->
     """
     logger.warning("服务层业务异常: %s - %s", exc.status_code, _sanitize_log_text(exc.message))
 
+    # 允许透传的响应头白名单：WWW-Authenticate（401）、X-Temp-Token（首次登录改密）等
+    # 新增透传头需评估敏感信息泄露风险
     return create_error_response(
         status_code=exc.status_code,
         message=exc.message,

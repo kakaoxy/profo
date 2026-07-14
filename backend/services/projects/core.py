@@ -83,17 +83,18 @@ class ProjectCoreService:
         finally:
             self.contract_generator.max_retries = original_retries
 
-    def get_owner_bank_card_number(self, owner_id: str) -> str | None:
+    def get_owner_bank_card_number(self, owner_id: str, operator_id: str | None = None) -> str | None:
         """获取业主未脱敏银行卡号.
 
         Args:
             owner_id: 业主ID
+            operator_id: 调用方用户ID，用于审计日志
 
         Returns:
-            未脱敏银行卡号；业主不存在或已删除时返回 None
+            未脱敏银行卡号；业主不存在、已删除或所属项目已软删时返回 None
 
         """
-        return get_bank_card_number(self.db, owner_id)
+        return get_bank_card_number(self.db, owner_id, operator_id=operator_id)
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """创建项目.

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { UseFormReturn, Controller } from "react-hook-form";
 import { FormValues, ORIENTATION_OPTIONS, BUSINESS_FORM_OPTIONS } from "../schema";
 import { CommunitySelect } from "@/components/common/community-select";
-import { getUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
+import { getSalesUsersSimpleAction, getCurrentUserAction } from "../../../actions/sales";
 import { FloorInput } from "@/components/common";
 import { toast } from "sonner";
 import {
@@ -85,7 +85,7 @@ export function BasicInfoTab({ form }: TabProps) {
   // 加载用户列表 + 当前登录用户（并行）
   useEffect(() => {
     let mounted = true;
-    Promise.all([getUsersSimpleAction(), getCurrentUserAction()])
+    Promise.all([getSalesUsersSimpleAction(), getCurrentUserAction()])
       .then(([usersResult, currentUserResult]) => {
         if (!mounted) return;
         if (usersResult.success && usersResult.data) {

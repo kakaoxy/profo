@@ -106,21 +106,19 @@ class FileProcessingError(ServiceException):
 
 
 class BusinessLogicError(ServiceException):
-    """业务逻辑错误（默认 422）."""
+    """业务逻辑错误（422）.
 
-    def __init__(
-        self,
-        message: str,
-        *,
-        status_code: int = 422,
-        headers: dict[str, str] | None = None,
-    ) -> None:
+    用于表示请求语义正确但违反业务规则的场景（如状态流转不合法）。
+    400 类错误应使用 ValidationError，404 用 ResourceNotFoundError，
+    不要通过本异常传 status_code 绕过分类。
+    """
+
+    def __init__(self, message: str, *, headers: dict[str, str] | None = None) -> None:
         """初始化业务逻辑错误.
 
         Args:
             message: 错误消息
-            status_code: HTTP状态码，默认 422
             headers: 额外的HTTP响应头
 
         """
-        super().__init__(message, status_code=status_code, headers=headers)
+        super().__init__(message, status_code=422, headers=headers)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, FileText, RotateCcw, Save, Upload } from "lucide-react";
+import { Plus, Trash2, FileText, RotateCcw, Save, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { FileUploader as CommonFileUploader } from "@/components/common/upload";
 import type { UploadResponse } from "@/components/common/upload";
 import type { Project, AttachmentInfo } from "../../../../../types";
@@ -56,6 +67,8 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DocumentResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadDocs = useCallback(async () => {
     try {
@@ -169,14 +182,22 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
     }
   };
 
-  const handleDelete = async (doc: DocumentResponse) => {
-    if (!confirm(`确认删除「${doc.document_name}」？`)) return;
+  const handleDelete = (doc: DocumentResponse) => {
+    setDeleteTarget(doc);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await deleteProjectDocumentAction(project.id, doc.id);
+      await deleteProjectDocumentAction(project.id, deleteTarget.id);
       toast.success("删除成功");
+      setDeleteTarget(null);
       loadDocs();
     } catch {
       toast.error("删除失败");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -319,14 +340,15 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
           return (
             <div
               key={doc.id}
-              className={`grid items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
-                isDirty ? "border-ink/40 bg-fog/30" : "hover:bg-accent/50"
-              }`}
-              style={{
-                gridTemplateColumns: showUpload
-                  ? `24px minmax(120px, 1fr) auto 160px auto 32px`
-                  : `24px minmax(120px, 1fr) auto ${isArchived ? "160px" : "120px"} 32px`,
-              }}
+              className={cn(
+                "grid items-center gap-3 rounded-md border px-4 py-3 transition-colors",
+                isDirty ? "border-ink/40 bg-fog/30" : "hover:bg-accent/50",
+                showUpload
+                  ? "[grid-template-columns:24px_minmax(120px,1fr)_auto_160px_auto_32px]"
+                  : isArchived
+                    ? "[grid-template-columns:24px_minmax(120px,1fr)_auto_160px_32px]"
+                    : "[grid-template-columns:24px_minmax(120px,1fr)_auto_120px_32px]",
+              )}
             >
               {/* 序号 */}
               <span className="text-muted-foreground text-sm">
@@ -430,6 +452,40 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
           />
         </DialogContent>
       </Dialog>
+
+      {/* 删除确认弹窗 */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除「{deleteTarget?.document_name}」？</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作将删除该文书，删除后不可恢复。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  删除中…
+                </>
+              ) : (
+                "确认删除"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

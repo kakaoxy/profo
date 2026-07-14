@@ -180,11 +180,16 @@ export async function getNextContractNoAction(
 
 /**
  * 获取业主未脱敏银行卡号 (Server Action)
- * @param ownerId 业主ID
+ * @param ownerId 业主ID（UUID 格式）
  */
 export async function getOwnerBankCardAction(
   ownerId: string,
 ): Promise<{ success: boolean; data?: string; message?: string }> {
+  // 入参格式校验：ownerId 必须为 UUID 格式，提前拒绝非法请求
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(ownerId)) {
+    return { success: false, message: "无效的业主ID" };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.GET(

@@ -43,6 +43,7 @@ from sqlalchemy.engine import Engine
 
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
+from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
 from migrations.migrate_installation_stage import migrate_installation_stage_to_delivery
 from utils.crypto import decrypt, encrypt, hash_phone
@@ -914,6 +915,7 @@ def run_startup_migrations(engine: Engine) -> None:
         migrate_installation_stage_to_delivery(engine)
         add_media_type_to_renovation_photos(engine)
         add_counterparty_type_to_finance_records(engine)
+        cleanup_reserved_contracts(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
