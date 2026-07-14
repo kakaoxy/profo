@@ -11,6 +11,7 @@ import traceback
 from fastapi import Request, status
 from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import (
     IntegrityError,
     SQLAlchemyError,
@@ -195,4 +196,21 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "服务器内部错误，请稍后重试"},
+    )
+
+
+async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    """处理速率限制异常.
+
+    符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
+    兼容不同 slowapi 版本：retry_after 属性在部分版本不存在，使用 getattr 安全访问。
+    """
+    headers: dict[str, str] = {}
+    retry_after = getattr(exc, "retry_after", None)
+    if retry_after is not None:
+        headers["Retry-After"] = str(retry_after)
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={"detail": "请求过于频繁，请稍后重试"},
+        headers=headers,
     )
