@@ -23,7 +23,7 @@ from schemas.project import (
     ProjectUpdate,
 )
 from schemas.response import PaginatedResponse
-from services.system.exceptions import ResourceNotFoundError
+from services.system.exceptions import ResourceNotFoundError, ValidationError
 from utils.common import RateLimits, limiter
 from utils.csv_exporter import generate_csv_response
 
@@ -42,13 +42,23 @@ router.include_router(sales_router, tags=["sales"])
 def get_next_contract_no(
     service: ProjectServiceDep,
     _current_user: CurrentInternalUserDep,
+    business_form: Annotated[
+        str,
+        Query(description="业务形式: agent(代理美化) / wholesale(收购美化)"),
+    ],
 ) -> str:
     """获取下一个合同编号.
 
-    格式: MFB-年月-4位自增序号，如 MFB-202604-0001
-    后端生成保证唯一性，避免前端竞态条件
+    格式: SH + 4位自增序号 + - + 后缀
+    - agent(代理美化) -> SG，如 SH0028-SG
+    - wholesale(收购美化) -> DL，如 SH0028-DL
+    后端生成保证唯一性，避免前端竞态条件。
+    business_form 非 agent/wholesale 时返回 400。
     """
-    return service.generate_contract_no()
+    if business_form not in ("agent", "wholesale"):
+        msg = "business_form 必须为 agent 或 wholesale"
+        raise ValidationError(msg)
+    return service.generate_contract_no(business_form)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

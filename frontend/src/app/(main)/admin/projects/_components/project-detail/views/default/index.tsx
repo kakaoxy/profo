@@ -3,8 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectSummary } from "./summary";
 import { InfoTab } from "./tabs/info-tab";
-import { DocumentsTab } from "./tabs/documents-tab";
-import { AttachmentsTab } from "./tabs/attachments-tab";
+import { DocumentsAttachmentsTab } from "./tabs/documents-attachments-tab";
 import { HandoverDialog } from "./handover-dialog";
 import { Project, AttachmentHandlers, AttachmentInfo } from "../../../../types";
 
@@ -12,6 +11,7 @@ interface DefaultViewProps {
   project: Project;
   attachments: AttachmentInfo[];
   handlers: AttachmentHandlers;
+  onUpdateAttachments?: (attachments: AttachmentInfo[]) => void;
   onHandoverSuccess: () => void;
 }
 
@@ -19,6 +19,7 @@ export function DefaultView({
   project,
   attachments,
   handlers,
+  onUpdateAttachments,
   onHandoverSuccess,
 }: DefaultViewProps) {
   const showHandoverButton =
@@ -28,11 +29,10 @@ export function DefaultView({
       <ProjectSummary project={project} />
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="info">项目信息</TabsTrigger>
-          <TabsTrigger value="documents">文书签收</TabsTrigger>
-          <TabsTrigger value="attachments">
-            附件 {attachments.length > 0 && `(${attachments.length})`}
+          <TabsTrigger value="documents">
+            文书与附件 {attachments.length > 0 && `(${attachments.length})`}
           </TabsTrigger>
         </TabsList>
 
@@ -41,14 +41,12 @@ export function DefaultView({
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4 focus-visible:outline-none">
-          <DocumentsTab project={project} />
-        </TabsContent>
-
-        <TabsContent
-          value="attachments"
-          className="mt-4 focus-visible:outline-none"
-        >
-          <AttachmentsTab attachments={attachments} handlers={handlers} />
+          <DocumentsAttachmentsTab
+            project={project}
+            attachments={attachments}
+            handlers={handlers}
+            onUpdateAttachments={onUpdateAttachments}
+          />
         </TabsContent>
       </Tabs>
       {/* [新增] 底部操作区 */}

@@ -121,6 +121,7 @@ export function ProjectDetailSheet({
                     project={project}
                     attachments={attachments}
                     handlers={handlers}
+                    onUpdateAttachments={onUpdateAttachments}
                     onHandoverSuccess={handleHandoverSuccess}
                   />
                 )}

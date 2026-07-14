@@ -62,9 +62,9 @@ async function getUser() {
         return null;
       }
       // 429 速率限制：用户仍处于认证状态，不应登出
-      // 抛出错误让 ErrorBoundary 处理，而非静默重定向到登录页
+      // 返回特殊标记，由 layout 渲染限流提示，而非重定向到登录页
       if (status === 429) {
-        throw new Error("请求过于频繁，请稍后刷新页面重试");
+        return { rateLimited: true } as const;
       }
       // 其他错误（如 403, 500 等），尝试返回 data（可能部分数据可用）
       return data;
@@ -83,6 +83,18 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getUser();
+
+  // 429 限流：渲染限流提示，不重定向到登录页（用户仍处于认证状态）
+  if (user && "rateLimited" in user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background p-8">
+        <div className="text-center space-y-4 max-w-md">
+          <h2 className="text-xl font-semibold text-foreground">请求过于频繁</h2>
+          <p className="text-muted-foreground">请稍后刷新页面重试</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     redirect("/admin/login");

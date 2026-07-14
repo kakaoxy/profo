@@ -123,6 +123,7 @@ export function RecordDialog({
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [counterparty, setCounterparty] = useState("");
+  const [counterpartyType, setCounterpartyType] = useState<string>("company");
   const [receiptUrls, setReceiptUrls] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
@@ -138,6 +139,7 @@ export function RecordDialog({
       setAmount("");
       setCategory("");
       setCounterparty("");
+      setCounterpartyType("company");
       setReceiptUrls([]);
       setNotes("");
       setUploadKey((k) => k + 1);
@@ -162,8 +164,8 @@ export function RecordDialog({
   }, []);
 
   const handleSubmit = async () => {
-    if (!date || !amount || !category || !counterparty.trim()) {
-      toast.error("请完善必填信息 (金额、日期、分类、交易方)");
+    if (!date || !amount || !category || !counterparty.trim() || !counterpartyType) {
+      toast.error("请完善必填信息 (金额、日期、分类、交易方、支付方类型)");
       return;
     }
 
@@ -171,16 +173,17 @@ export function RecordDialog({
     try {
       // 提交时将前端显示名映射为后端枚举值
       const enumCategory = CATEGORY_DISPLAY_TO_ENUM[category] ?? category;
-      const payload: LedgerRecordCreate = {
+      const payload = {
         project_id: projectId,
         type,
         category: enumCategory as LedgerRecordCreate["category"],
         amount: Number(amount),
         date: format(date, "yyyy-MM-dd"),
         counterparty: counterparty.trim(),
+        counterparty_type: counterpartyType,
         receipt_urls: receiptUrls.length > 0 ? receiptUrls : null,
         description: notes.trim() || null,
-      };
+      } as LedgerRecordCreate;
 
       const res = await createRecord(payload);
 
@@ -248,6 +251,41 @@ export function RecordDialog({
               autoComplete="off"
               required
             />
+          </div>
+
+          {/* 2.1 支付方类型（公司/个人） */}
+          <div className="grid gap-2">
+            <Label className="text-xs text-muted-foreground">
+              支付方类型 <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex gap-2">
+              {([
+                { value: "company", label: "公司" },
+                { value: "individual", label: "个人" },
+              ] as const).map((opt) => {
+                const isSelected = counterpartyType === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setCounterpartyType(opt.value)}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
+                      !isSelected &&
+                        "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
+                      isSelected &&
+                        type === "expense" &&
+                        "bg-success border-emerald-600 text-white shadow-sm",
+                      isSelected &&
+                        type === "income" &&
+                        "bg-error border-red-600 text-white shadow-sm",
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* 3. 金额 + 发生日期 */}

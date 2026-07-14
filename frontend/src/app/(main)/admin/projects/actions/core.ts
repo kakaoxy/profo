@@ -156,11 +156,16 @@ export async function getProjectDetailAction(
 
 /**
  * 获取下一个合同编号 (Server Action)
+ * @param businessForm 业务形式: agent(代理美化) / wholesale(收购美化)
  */
-export async function getNextContractNoAction(): Promise<{ success: boolean; data?: string; message?: string }> {
+export async function getNextContractNoAction(
+  businessForm: "agent" | "wholesale",
+): Promise<{ success: boolean; data?: string; message?: string }> {
   try {
     const client = await fetchClient();
-    const { data, error } = await client.GET("/api/v1/projects/contract-no/next");
+    const { data, error } = await client.GET("/api/v1/projects/contract-no/next", {
+      params: { query: { business_form: businessForm } },
+    });
 
     if (error) {
       return { success: false, message: "获取合同编号失败" };

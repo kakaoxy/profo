@@ -77,8 +77,9 @@ def create_error_response(
         headers: 额外的 HTTP 响应头.
 
     """
+    body = ErrorResponse(code=status_code, message=message).model_dump()
     return JSONResponse(
         status_code=status_code,
-        content={"code": status_code, "message": message},
+        content=body,
         headers=headers,
     )
