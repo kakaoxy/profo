@@ -19,6 +19,7 @@ from db import engine, init_db
 from error_handlers import (
     general_exception_handler,
     http_exception_handler,
+    rate_limit_handler,
     service_exception_handler,
     sqlalchemy_exception_handler,
     validation_exception_handler,
@@ -227,26 +228,8 @@ app.add_exception_handler(ServiceException, service_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 app.add_exception_handler(Exception, general_exception_handler)
-
-
-@app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
-    """处理速率限制异常.
-
-    兼容不同 slowapi 版本：retry_after 属性在部分版本不存在，使用 getattr 安全访问。
-    """
-    headers: dict[str, str] = {}
-    retry_after = getattr(exc, "retry_after", None)
-    if retry_after is not None:
-        headers["Retry-After"] = str(retry_after)
-    return JSONResponse(
-        status_code=429,
-        content={
-            "detail": "请求过于频繁，请稍后重试",
-        },
-        headers=headers,
-    )
 
 
 if __name__ == "__main__":

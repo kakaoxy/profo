@@ -4,17 +4,31 @@
 """
 
 import ipaddress
+import logging
+from pathlib import Path
 
 from fastapi import Request
 from slowapi import Limiter
 
 from settings import settings
 
+logger = logging.getLogger(__name__)
+
 # 预编译可信代理网段，避免每请求 try/except（PERF203）
 # 启动期即校验配置，TRUSTED_PROXIES 拼写错误时 fail loud
 _TRUSTED_PROXY_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = [
     ipaddress.ip_network(entry, strict=False) for entry in settings.trusted_proxies
 ]
+
+# 启动期校验：Docker 环境下 TRUSTED_PROXIES 应包含 CIDR 网段（如 172.16.0.0/12）
+# 否则所有请求共享 Docker 网关 IP 对应的限流桶，导致全站限流或限流失效
+if Path("/.dockerenv").exists():
+    _has_cidr = any("/" in entry for entry in settings.trusted_proxies)
+    if not _has_cidr:
+        logger.warning(
+            "检测到 Docker 环境但 TRUSTED_PROXIES 未配置网段（如 172.16.0.0/12），"
+            "所有限流将共享 Docker 网关 IP，可能导致全站限流或限流失效",
+        )
 
 
 def _is_trusted_proxy(host: str) -> bool:
@@ -63,6 +77,7 @@ def _get_client_ip(request: Request) -> str:
 limiter = Limiter(
     key_func=_get_client_ip,
     default_limits=["200/day", "50/hour"],
+    strategy="moving-window",
     config_filename=".slowapi.env",
 )
 
