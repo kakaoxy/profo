@@ -110,6 +110,10 @@ class ProjectService:
         """生成合同编号."""
         return self._core_service.generate_contract_no(business_form)
 
+    def get_owner_bank_card_number(self, owner_id: str) -> str | None:
+        """获取业主未脱敏银行卡号."""
+        return self._core_service.get_owner_bank_card_number(owner_id)
+
     # ========== RenovationService 方法委托 ==========
 
     def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> ProjectResponse:

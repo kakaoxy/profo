@@ -177,3 +177,28 @@ export async function getNextContractNoAction(
     return { success: false, message: "网络错误" };
   }
 }
+
+/**
+ * 获取业主未脱敏银行卡号 (Server Action)
+ * @param ownerId 业主ID
+ */
+export async function getOwnerBankCardAction(
+  ownerId: string,
+): Promise<{ success: boolean; data?: string; message?: string }> {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/projects/owners/{owner_id}/bank-card",
+      { params: { path: { owner_id: ownerId } } },
+    );
+
+    if (error) {
+      return { success: false, message: "获取银行卡号失败" };
+    }
+
+    return { success: true, data: data.bank_card_number ?? undefined };
+  } catch (e) {
+    logger.error("获取银行卡号异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}

@@ -25,6 +25,7 @@ from .internal import (
     ProjectStateManager,
     ProjectUpdater,
 )
+from .internal.owners import get_bank_card_number
 
 
 class ProjectCoreService:
@@ -81,6 +82,18 @@ class ProjectCoreService:
             return self.contract_generator.generate(business_form)
         finally:
             self.contract_generator.max_retries = original_retries
+
+    def get_owner_bank_card_number(self, owner_id: str) -> str | None:
+        """获取业主未脱敏银行卡号.
+
+        Args:
+            owner_id: 业主ID
+
+        Returns:
+            未脱敏银行卡号；业主不存在或已删除时返回 None
+
+        """
+        return get_bank_card_number(self.db, owner_id)
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """创建项目.

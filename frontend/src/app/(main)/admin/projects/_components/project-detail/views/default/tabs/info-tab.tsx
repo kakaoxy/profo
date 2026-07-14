@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { FileText, TrendingUp, User, MapPin, FileCheck, Zap } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { FileText, TrendingUp, User, MapPin, FileCheck, Zap, Eye, EyeOff, Copy, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Project } from "../../../../../types";
 import { InfoCard as InfoSection, InfoItem } from "@/components/common";
 import { formatDate, formatPrice } from "../../../utils";
 import { searchCommunitiesAction } from "@/app/(main)/admin/leads/actions";
+import { getOwnerBankCardAction } from "@/app/(main)/admin/projects/actions/core";
 
 interface InfoTabProps {
   project: Project;
@@ -16,6 +19,104 @@ const BUSINESS_FORM_LABEL: Record<string, string> = {
   agent: "代理美化",
   wholesale: "收购美化",
 };
+
+/**
+ * 银行卡号展示项 - 默认脱敏，点击眼睛切换显隐，支持复制完整卡号.
+ * 完整卡号通过按需接口获取，不随项目详情下发。
+ */
+function BankCardItem({
+  maskedValue,
+  ownerId,
+}: {
+  maskedValue?: string | null;
+  ownerId?: string;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  const [fullValue, setFullValue] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const fetchFull = useCallback(async (): Promise<string | null> => {
+    if (fullValue !== null) return fullValue;
+    if (!ownerId) return null;
+    setLoading(true);
+    try {
+      const result = await getOwnerBankCardAction(ownerId);
+      if (result.success && result.data) {
+        setFullValue(result.data);
+        return result.data;
+      }
+      toast.error(result.message || "获取卡号失败");
+      return null;
+    } catch {
+      toast.error("网络错误");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [fullValue, ownerId]);
+
+  const handleReveal = async () => {
+    if (revealed) {
+      setRevealed(false);
+      return;
+    }
+    const val = await fetchFull();
+    if (val) setRevealed(true);
+  };
+
+  const handleCopy = async () => {
+    const val = fullValue ?? (await fetchFull());
+    if (!val) return;
+    try {
+      await navigator.clipboard.writeText(val);
+      setCopied(true);
+      toast.success("已复制到剪贴板");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("复制失败");
+    }
+  };
+
+  if (!maskedValue) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-2 py-0.5 min-h-[24px]">
+      <span className="text-xs text-muted-foreground font-medium shrink-0 mr-4">银行卡号</span>
+      <div className="flex items-center gap-1">
+        <span className="text-sm font-medium text-foreground font-mono">
+          {revealed && fullValue !== null ? fullValue : maskedValue}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-4 w-4 text-muted-foreground hover:text-foreground p-0 shrink-0"
+          onClick={handleReveal}
+          disabled={loading || !ownerId}
+          title={revealed ? "隐藏" : "显示完整卡号"}
+        >
+          {loading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : revealed ? (
+            <EyeOff className="h-3 w-3" />
+          ) : (
+            <Eye className="h-3 w-3" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-4 w-4 text-muted-foreground hover:text-foreground p-0 shrink-0"
+          onClick={handleCopy}
+          disabled={loading || !ownerId}
+          title="复制完整卡号"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * 信息 Tab - 展示项目详细信息
@@ -274,8 +375,8 @@ export function InfoTab({ project }: InfoTabProps) {
               {/* 开户行 - 仅有值时显示 */}
               <InfoItem label="开户行" value={owner.bank_name} />
 
-              {/* 银行卡号 - 后端已脱敏，原样展示 */}
-              <InfoItem label="银行卡号" value={owner.bank_card_number} />
+              {/* 银行卡号 - 默认脱敏，点击眼睛显示完整，支持复制 */}
+              <BankCardItem maskedValue={owner.bank_card_number} ownerId={owner.id} />
 
               {/* 备注 - 仅有值时显示 */}
               <InfoItem label="备注" value={owner.owner_info} />
@@ -366,14 +467,16 @@ export function InfoTab({ project }: InfoTabProps) {
         )}
       </InfoSection>
 
-      {/* --- 备注 --- */}
-      <InfoSection title="备注" icon={<FileText className="h-4 w-4" />}>
-        <InfoItem
-          label="备注"
-          value={project.notes}
-          className="sm:col-span-2"
-        />
-      </InfoSection>
+      {/* --- 备注 --- 仅有值时显示 */}
+      {project.notes && (
+        <InfoSection title="备注" icon={<FileText className="h-4 w-4" />}>
+          <InfoItem
+            label="备注"
+            value={project.notes}
+            className="sm:col-span-2"
+          />
+        </InfoSection>
+      )}
     </div>
   );
 }
