@@ -113,3 +113,25 @@ def list_owners(db: Session, project_id: str) -> list[ProjectOwner]:
         .order_by(ProjectOwner.created_at.asc())
         .all()
     )
+
+
+def get_bank_card_number(db: Session, owner_id: str) -> str | None:
+    """获取业主未脱敏银行卡号.
+
+    Args:
+        db: SQLAlchemy 数据库会话
+        owner_id: 业主ID
+
+    Returns:
+        未脱敏银行卡号；业主不存在或已删除时返回 None
+
+    """
+    owner = (
+        db.query(ProjectOwner)
+        .filter(
+            ProjectOwner.id == owner_id,
+            ProjectOwner.is_deleted.is_(False),
+        )
+        .first()
+    )
+    return owner.bank_card_number if owner else None

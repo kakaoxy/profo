@@ -686,6 +686,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/owners/{owner_id}/bank-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Owner Bank Card
+         * @description 获取业主未脱敏银行卡号.
+         *
+         *     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
+         *     仅 admin 角色可调用（银行卡号为敏感财务数据）。
+         */
+        get: operations["get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects": {
         parameters: {
             query?: never;
@@ -2902,6 +2925,11 @@ export interface components {
              * @description 交易方(必填)
              */
             counterparty: string;
+            /**
+             * Counterparty Type
+             * @description 支付方类型: company/individual
+             */
+            counterparty_type?: string | null;
             /** Receipt Urls */
             receipt_urls?: string[] | null;
         };
@@ -10138,6 +10166,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 业主ID */
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string | null;
+                    };
                 };
             };
             /** @description Validation Error */

@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from dependencies.auth import CurrentInternalUserDep
+from dependencies.auth import CurrentAdminUserDep, CurrentInternalUserDep
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
 from schemas.project import (
@@ -59,6 +59,24 @@ def get_next_contract_no(
         msg = "business_form 必须为 agent 或 wholesale"
         raise ValidationError(msg)
     return service.generate_contract_no(business_form)
+
+
+@router.get("/owners/{owner_id}/bank-card")
+def get_owner_bank_card(
+    owner_id: Annotated[str, Path(description="业主ID")],
+    service: ProjectServiceDep,
+    _current_user: CurrentAdminUserDep,
+) -> dict[str, str | None]:
+    """获取业主未脱敏银行卡号.
+
+    完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
+    仅 admin 角色可调用（银行卡号为敏感财务数据）。
+    """
+    bank_card_number = service.get_owner_bank_card_number(owner_id)
+    if bank_card_number is None:
+        msg = "业主不存在"
+        raise ResourceNotFoundError(msg)
+    return {"bank_card_number": bank_card_number}
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

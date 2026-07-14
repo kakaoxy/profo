@@ -104,6 +104,8 @@ export function useDraft({ form, open, isEditMode }: UseDraftProps) {
           delete parsed.owner_name;
           delete parsed.owner_phone;
           delete parsed.owner_id_card;
+          // 合同编号不随草稿恢复，每次新建必须重新生成
+          delete parsed.contract_no;
           form.reset(parsed);
           toast.info("已恢复上次未保存的草稿");
         } catch (e) {
