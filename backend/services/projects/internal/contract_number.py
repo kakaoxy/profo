@@ -17,7 +17,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import insert
+from sqlalchemy import Integer, cast, func, insert
 from sqlalchemy.exc import IntegrityError
 
 if TYPE_CHECKING:
@@ -92,19 +92,15 @@ class ContractNumberGenerator:
         # 单进程内串行化，减少 IntegrityError 重试
         with _generate_lock:
             for attempt in range(self.max_retries):
-                # 查询所有 SH 开头的合同编号，在 Python 侧计算最大序号
-                # 不能用 func.max(contract_no)：String 列做字典序比较，
-                # "SH0099-SG" > "SH0100-SG" 会导致序号跨 99→100 时取到错误最大值
-                rows = (
-                    self.db.query(ProjectContract.contract_no).filter(ProjectContract.contract_no.like("SH%-%")).all()
+                # 在数据库侧计算最大序号，避免全表扫描后 Python 逐行解析
+                # 格式 SH####-XX：SUBSTR(contract_no, 3, 4) 提取 4 位序号，
+                # CAST 为 INTEGER 后用 MAX 聚合，避免字符串字典序比较的跨位数问题
+                max_num = (
+                    self.db.query(func.max(cast(func.substr(ProjectContract.contract_no, 3, 4), Integer)))
+                    .filter(ProjectContract.contract_no.like("SH%-%"))
+                    .scalar()
                 )
-                max_num = 0
-                for (existing_no,) in rows:
-                    try:
-                        max_num = max(max_num, int(existing_no.split("-")[0][2:]))
-                    except (ValueError, IndexError):  # noqa: PERF203
-                        continue
-                next_num = max_num + 1 if max_num else _INITIAL_SEQUENCE
+                next_num = (max_num + 1) if max_num else _INITIAL_SEQUENCE
 
                 new_contract_no = f"SH{next_num:04d}-{suffix}"
 
