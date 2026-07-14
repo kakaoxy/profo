@@ -152,8 +152,8 @@ class RateLimits:
     MONITOR_DELETE = "20/hour"
 
     # ==================== 文件上传模块 ====================
-    FILE_UPLOAD = "50/hour"
-    CSV_IMPORT = "30/hour"
+    FILE_UPLOAD = "500/hour"
+    CSV_IMPORT = "300/hour"
 
     # ==================== C端公开接口 ====================
     PUBLIC_PROFILE_UPDATE = "20/minute"
@@ -163,7 +163,7 @@ class RateLimits:
     PUBLIC_PROJECT_LIST = "60/minute"
     PUBLIC_LEAD_CREATE = "10/hour"
     PUBLIC_LEAD_LIST = "60/minute"
-    PUBLIC_FILE_UPLOAD = "30/hour"
+    PUBLIC_FILE_UPLOAD = "300/hour"
     PUBLIC_COMMUNITY_SEARCH = "60/minute"
     PUBLIC_REGISTER = "10/hour"
     PUBLIC_LOGOUT = "60/minute"
