@@ -12,7 +12,6 @@ export interface MergeResult {
 }
 
 interface ApiError {
-  detail?: string;
   message?: string;
 }
 
@@ -39,7 +38,7 @@ export async function mergeCommunitiesAction(
     if (error) {
       // 修复：使用类型断言代替 any
       const err = error as ApiError;
-      const errorMsg = err.detail || err.message || "合并请求失败";
+      const errorMsg = err.message || "合并请求失败";
       return { success: false, message: errorMsg };
     }
 

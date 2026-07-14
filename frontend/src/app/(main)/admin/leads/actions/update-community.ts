@@ -36,7 +36,7 @@ export async function updateCommunityAction(
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "更新小区失败";
+      const errorMsg = (error as { message?: string }).message || "更新小区失败";
       logger.error("Update community error:", error);
       return { success: false, message: errorMsg };
     }

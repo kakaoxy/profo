@@ -30,7 +30,7 @@ export async function createProjectAction(data: ProjectCreate) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "创建项目失败";
+      const errorMsg = (error as { message?: string }).message || "创建项目失败";
       return { success: false, message: errorMsg };
     }
 
@@ -54,7 +54,7 @@ export async function updateProjectAction(id: string, data: ProjectUpdate) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "更新项目失败";
+      const errorMsg = (error as { message?: string }).message || "更新项目失败";
       return { success: false, message: errorMsg };
     }
 
@@ -77,7 +77,7 @@ export async function deleteProjectAction(id: string) {
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "删除项目失败";
+      const errorMsg = (error as { message?: string }).message || "删除项目失败";
       return { success: false, message: errorMsg };
     }
 
@@ -111,7 +111,7 @@ export async function updateProjectStatusAction(
     });
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "状态更新失败";
+      const errorMsg = (error as { message?: string }).message || "状态更新失败";
       return { success: false, message: errorMsg };
     }
 

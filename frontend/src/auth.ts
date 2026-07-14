@@ -45,10 +45,12 @@ async function extractApiError(response: Response, fallback: string): Promise<st
     const data: unknown = await response.json();
     if (typeof data !== "object" || data === null) return fallback;
     const obj = data as Record<string, unknown>;
+    // 优先读新格式 {"code":≠0, "message":"..."} (AGENTS.md §2)
+    if (typeof obj.message === "string") return obj.message;
+    // 回退旧格式 {"detail": "..."} (FastAPI 默认)
     if (typeof obj.detail === "string") return obj.detail;
     const err = obj.error as Record<string, unknown> | undefined;
     if (err && typeof err.message === "string") return err.message;
-    if (typeof obj.message === "string") return obj.message;
     return fallback;
   } catch {
     return fallback;

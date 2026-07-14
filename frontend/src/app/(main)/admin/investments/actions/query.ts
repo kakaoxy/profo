@@ -47,7 +47,7 @@ export async function fetchInvestmentList(
     });
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取跟投列表失败";
+      const msg = (error as { message?: string }).message || "获取跟投列表失败";
       return { success: false, message: msg };
     }
 
@@ -70,7 +70,7 @@ export async function fetchInvestmentStats(): Promise<ActionResult<InvestmentSta
     const { data, error } = await client.GET("/api/v1/admin/investments/stats", {});
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取汇总数据失败";
+      const msg = (error as { message?: string }).message || "获取汇总数据失败";
       return { success: false, message: msg };
     }
 
@@ -143,7 +143,7 @@ export async function searchProjects(
     });
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "搜索项目失败";
+      const msg = (error as { message?: string }).message || "搜索项目失败";
       return { success: false, message: msg };
     }
 
@@ -179,7 +179,7 @@ export async function fetchInvestmentDetail(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取跟投详情失败";
+      const msg = (error as { message?: string }).message || "获取跟投详情失败";
       return { success: false, message: msg };
     }
 
@@ -207,7 +207,7 @@ export async function getProjectBriefById(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "获取项目信息失败";
+      const msg = (error as { message?: string }).message || "获取项目信息失败";
       return { success: false, message: msg };
     }
 

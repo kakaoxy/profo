@@ -76,7 +76,7 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
     }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return createErrorResult(errorData.detail || cLocale.valuationAction.submitFailed);
+      return createErrorResult(errorData.message || cLocale.valuationAction.submitFailed);
     }
     const data = await response.json();
     // 校验 id 格式，防止路径穿越或非预期重定向
@@ -105,7 +105,7 @@ export async function completePhoneAction(_: ActionResult<{ phone: string }>, fo
     }
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      return createErrorResult(errorData.detail || cLocale.valuationAction.phoneSubmitFailed);
+      return createErrorResult(errorData.message || cLocale.valuationAction.phoneSubmitFailed);
     }
     const data = await response.json();
     // 重新渲染整个 (c) layout 树，触发服务端重新调用 /public/auth/me 刷新 Context

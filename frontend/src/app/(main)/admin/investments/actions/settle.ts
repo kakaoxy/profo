@@ -27,7 +27,7 @@ export async function settleInvestment(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "结算失败";
+      const msg = (error as { message?: string }).message || "结算失败";
       return { success: false, message: msg };
     }
 
@@ -59,7 +59,7 @@ export async function unsettleInvestment(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "反结算失败";
+      const msg = (error as { message?: string }).message || "反结算失败";
       return { success: false, message: msg };
     }
 

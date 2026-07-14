@@ -27,7 +27,7 @@ export async function createInvestment(
     });
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "创建跟投记录失败";
+      const msg = (error as { message?: string }).message || "创建跟投记录失败";
       return { success: false, message: msg };
     }
 
@@ -58,7 +58,7 @@ export async function updateInvestment(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "更新跟投记录失败";
+      const msg = (error as { message?: string }).message || "更新跟投记录失败";
       return { success: false, message: msg };
     }
 
@@ -89,7 +89,7 @@ export async function deleteInvestment(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "删除跟投记录失败";
+      const msg = (error as { message?: string }).message || "删除跟投记录失败";
       return { success: false, message: msg };
     }
 
@@ -117,7 +117,7 @@ export async function addInvestor(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "添加投资方失败";
+      const msg = (error as { message?: string }).message || "添加投资方失败";
       return { success: false, message: msg };
     }
 
@@ -154,7 +154,7 @@ export async function updateInvestor(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "更新投资方失败";
+      const msg = (error as { message?: string }).message || "更新投资方失败";
       return { success: false, message: msg };
     }
 
@@ -189,7 +189,7 @@ export async function deleteInvestor(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "删除投资方失败";
+      const msg = (error as { message?: string }).message || "删除投资方失败";
       return { success: false, message: msg };
     }
 

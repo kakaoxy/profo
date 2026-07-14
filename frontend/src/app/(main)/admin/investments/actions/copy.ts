@@ -26,7 +26,7 @@ export async function copyInvestment(
     );
 
     if (error) {
-      const msg = (error as { detail?: string }).detail || "复制跟投配置失败";
+      const msg = (error as { message?: string }).message || "复制跟投配置失败";
       return { success: false, message: msg };
     }
 

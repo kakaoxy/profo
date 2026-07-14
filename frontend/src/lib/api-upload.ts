@@ -53,7 +53,7 @@ export const uploadCSV = (
       } else {
         try {
           const error = JSON.parse(xhr.responseText);
-          reject(new Error(error.detail || `上传失败 (状态码: ${xhr.status})`));
+          reject(new Error(error.message || `上传失败 (状态码: ${xhr.status})`));
         } catch {
           reject(new Error(`上传失败: ${xhr.statusText}`));
         }
@@ -82,7 +82,7 @@ export const createImportTask = async (file: File): Promise<ImportTaskCreateResp
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || `创建导入任务失败 (状态码: ${response.status})`);
+    throw new Error(error.message || `创建导入任务失败 (状态码: ${response.status})`);
   }
 
   return response.json();
@@ -99,7 +99,7 @@ export const getImportTaskStatus = async (taskId: string): Promise<ImportTaskSta
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || `查询任务状态失败 (状态码: ${response.status})`);
+    throw new Error(error.message || `查询任务状态失败 (状态码: ${response.status})`);
   }
 
   return response.json();
@@ -116,7 +116,7 @@ export const listImportTasks = async (limit: number = 10): Promise<ImportTaskSta
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || `获取任务列表失败 (状态码: ${response.status})`);
+    throw new Error(error.message || `获取任务列表失败 (状态码: ${response.status})`);
   }
 
   return response.json();
@@ -134,7 +134,7 @@ export const cancelImportTask = async (taskId: string): Promise<void> => {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || `取消任务失败 (状态码: ${response.status})`);
+    throw new Error(error.message || `取消任务失败 (状态码: ${response.status})`);
   }
 };
 

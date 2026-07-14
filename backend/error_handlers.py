@@ -1,7 +1,7 @@
 """统一错误处理中间件和处理器.
 
 提供友好的中文错误信息和失败记录保存
-符合 AGENTS.md 规范：错误统一 {"detail":"..."} via HTTPException.
+遵循 AGENTS.md §2：错误响应统一 {"code":≠0, "message":"..."} 格式（code 取 HTTP 状态码）.
 """
 
 import json
@@ -9,7 +9,7 @@ import logging
 import traceback
 
 from fastapi import Request, status
-from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.exc import (
@@ -17,7 +17,9 @@ from sqlalchemy.exc import (
     SQLAlchemyError,
 )
 from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException
 
+from schemas.response import create_error_response
 from services.system import save_failed_record
 from services.system.exceptions import ServiceException
 from utils.error_formatters import (
@@ -78,13 +80,13 @@ async def save_failed_record_safely(
 async def service_exception_handler(_request: Request, exc: ServiceException) -> JSONResponse:
     """处理服务层业务异常.
 
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
+    遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
     """
     logger.warning("服务层业务异常: %s - %s", exc.status_code, _sanitize_log_text(exc.message))
 
-    return JSONResponse(
+    return create_error_response(
         status_code=exc.status_code,
-        content={"detail": exc.message},
+        message=exc.message,
         headers=exc.headers,
     )
 
@@ -95,7 +97,7 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """处理请求验证错误.
 
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
     已修复：使用安全日志记录，脱敏敏感信息.
     """
     error_message = format_request_validation_error(exc)
@@ -130,10 +132,9 @@ async def validation_exception_handler(
         failure_type="request_validation_error",
     )
 
-    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    return JSONResponse(
+    return create_error_response(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": f"请求参数验证失败: {error_message}"},
+        message=f"请求参数验证失败: {error_message}",
     )
 
 
@@ -143,7 +144,7 @@ async def sqlalchemy_exception_handler(
 ) -> JSONResponse:
     """处理数据库错误.
 
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
+    遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
     """
     error_message = format_database_error(exc)
 
@@ -155,32 +156,30 @@ async def sqlalchemy_exception_handler(
     else:
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    # 符合 AGENTS.md 规范：错误统一 {"detail":"..."}
-    return JSONResponse(
+    return create_error_response(
         status_code=status_code,
-        content={"detail": error_message},
+        message=error_message,
     )
 
 
 async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:
     """处理 HTTP 异常.
 
-    FastAPI 的 HTTPException 默认格式已经是 {"detail": "..."}
-    直接透传，保持格式一致.
+    遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
+    str() 防御 detail 为 dict 等非字符串类型的情况.
     """
     logger.warning("HTTP 异常: %s - %s", exc.status_code, _sanitize_log_text(exc.detail))
 
-    # HTTPException 默认就是 {"detail": "..."} 格式，直接透传
-    return JSONResponse(
+    return create_error_response(
         status_code=exc.status_code,
-        content={"detail": exc.detail},
+        message=str(exc.detail),
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """处理通用异常（兜底处理）.
 
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}
+    遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
     已修复：使用安全日志记录请求体，脱敏敏感信息.
     """
     error_traceback = traceback.format_exc()
@@ -193,24 +192,24 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         failure_type="system_error",
     )
 
-    return JSONResponse(
+    return create_error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "服务器内部错误，请稍后重试"},
+        message="服务器内部错误，请稍后重试",
     )
 
 
 async def rate_limit_handler(_request: Request, exc: RateLimitExceeded) -> JSONResponse:
     """处理速率限制异常.
 
-    符合 AGENTS.md 规范：错误统一 {"detail":"..."}.
+    遵循 AGENTS.md §2：错误响应统一 {"code": <status>, "message": "..."}.
     兼容不同 slowapi 版本：retry_after 属性在部分版本不存在，使用 getattr 安全访问。
     """
     headers: dict[str, str] = {}
     retry_after = getattr(exc, "retry_after", None)
     if retry_after is not None:
         headers["Retry-After"] = str(retry_after)
-    return JSONResponse(
+    return create_error_response(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        content={"detail": "请求过于频繁，请稍后重试"},
+        message="请求过于频繁，请稍后重试",
         headers=headers,
     )

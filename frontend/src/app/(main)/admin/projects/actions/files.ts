@@ -60,7 +60,7 @@ export async function uploadFileAction(formData: FormData) {
         const errorJson = JSON.parse(errorText);
         return {
           success: false,
-          message: errorJson.detail || `上传失败 (${res.status})`,
+          message: errorJson.message || errorJson.detail || `上传失败 (${res.status})`,
         };
       } catch {
         return { success: false, message: `上传失败 (${res.status})` };

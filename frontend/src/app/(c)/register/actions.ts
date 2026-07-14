@@ -49,11 +49,7 @@ export async function registerAction(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMsg =
-        errorData.detail ||
-        errorData.error?.message ||
-        errorData.message ||
-        "注册失败";
+      const errorMsg = errorData.message || "注册失败";
       return createErrorResult(errorMsg);
     }
 

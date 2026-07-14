@@ -46,7 +46,7 @@ export async function updateSalesRolesAction(
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || `更新销售角色失败 (${response.status})`;
+      const errorMsg = (error as { message?: string }).message || `更新销售角色失败 (${response.status})`;
       return { success: false, message: errorMsg };
     }
 
@@ -72,7 +72,7 @@ export async function getUsersSimpleAction(): Promise<{
     const { data, error, response } = await client.GET("/api/v1/users/simple");
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || `获取用户列表失败 (${response.status})`;
+      const errorMsg = (error as { message?: string }).message || `获取用户列表失败 (${response.status})`;
       return { success: false, message: errorMsg };
     }
 
@@ -101,7 +101,7 @@ export async function getCurrentUserAction(): Promise<{
 
     if (error) {
       const status = (response as Response | undefined)?.status;
-      const errorMsg = (error as { detail?: string }).detail || `获取当前用户失败${status ? ` (${status})` : ""}`;
+      const errorMsg = (error as { message?: string }).message || `获取当前用户失败${status ? ` (${status})` : ""}`;
       return { success: false, message: errorMsg };
     }
 
@@ -187,7 +187,7 @@ export async function createSalesRecordAction(payload: {
     const { error } = result;
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "添加记录失败";
+      const errorMsg = (error as { message?: string }).message || "添加记录失败";
       return { success: false, message: errorMsg };
     }
 
@@ -221,7 +221,7 @@ export async function deleteSalesRecordAction(
     );
 
     if (error) {
-      const errorMsg = (error as { detail?: string }).detail || "删除记录失败";
+      const errorMsg = (error as { message?: string }).message || "删除记录失败";
       return { success: false, message: errorMsg };
     }
 
