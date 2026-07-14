@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Integer, cast, func, insert
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 
 if TYPE_CHECKING:
@@ -107,20 +108,27 @@ class ContractNumberGenerator:
                 # 预占式：通过独立连接 INSERT 占位记录并提交，利用 DB 唯一约束防重。
                 # 使用 engine.begin() 而非 self.db.commit()，避免提交调用方会话中
                 # 未提交的变更，破坏外层事务语义。
+                # 测试环境（Session 绑定到 Connection）下用 session 执行，受外层事务/SAVEPOINT 控制。
                 now = datetime.now(timezone.utc)
+                insert_stmt = insert(ProjectContract.__table__).values(
+                    id=str(uuid.uuid4()),
+                    project_id=str(uuid.uuid4()),  # 临时 project_id，creator 时更新
+                    contract_no=new_contract_no,
+                    contract_status="reserved",  # 占位状态，creator 时改为正式状态
+                    is_deleted=False,
+                    created_at=now,
+                    updated_at=now,
+                )
                 try:
-                    with self.db.bind.begin() as conn:
-                        conn.execute(
-                            insert(ProjectContract.__table__).values(
-                                id=str(uuid.uuid4()),
-                                project_id=str(uuid.uuid4()),  # 临时 project_id，creator 时更新
-                                contract_no=new_contract_no,
-                                contract_status="reserved",  # 占位状态，creator 时改为正式状态
-                                is_deleted=False,
-                                created_at=now,
-                                updated_at=now,
-                            )
-                        )
+                    bind = self.db.get_bind()
+                    if isinstance(bind, Engine):
+                        # 生产环境：独立连接提交，编号预占不受调用方事务回滚影响
+                        with bind.begin() as conn:
+                            conn.execute(insert_stmt)
+                    else:
+                        # 测试环境（bind 为 Connection）：用 session 执行，受 SAVEPOINT 控制
+                        self.db.execute(insert_stmt)
+                        self.db.flush()
                 except IntegrityError:
                     # 并发冲突：编号已被其他事务预占，重试
                     if attempt < self.max_retries - 1:

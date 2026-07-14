@@ -111,8 +111,7 @@ def format_request_validation_error(error: RequestValidationError) -> str:
 def _get_pgcode(exc: SQLAlchemyError) -> str | None:
     """从 SQLAlchemy 异常中提取 PostgreSQL sqlstate 代码.
 
-    优先读取 ``exc.orig.pgcode``（psycopg2/psycopg3 提供），
-    不可用时返回 None（如 SQLite 环境）。
+    读取 ``exc.orig.pgcode``（psycopg3 提供），不可用时返回 None。
 
     Args:
         exc: SQLAlchemy 异常
@@ -151,10 +150,9 @@ def _get_pg_column_name(exc: SQLAlchemyError) -> str | None:
 
 
 def _is_unique_violation(exc: SQLAlchemyError) -> bool:
-    """判断是否为唯一约束冲突（兼容 PostgreSQL 与 SQLite）.
+    """判断是否为唯一约束冲突.
 
-    PostgreSQL 下通过 sqlstate ``23505`` 判断；
-    回退到 SQLite 文本 ``UNIQUE constraint failed`` 匹配（测试环境兼容）。
+    通过 PostgreSQL sqlstate ``23505`` 判断。
 
     Args:
         exc: SQLAlchemy 异常
@@ -163,15 +161,11 @@ def _is_unique_violation(exc: SQLAlchemyError) -> bool:
         bool: 是否为唯一约束冲突
 
     """
-    if _get_pgcode(exc) == "23505":
-        return True
-    return "UNIQUE constraint failed" in str(exc)
+    return _get_pgcode(exc) == "23505"
 
 
 def _format_unique_violation_message(error_str: str) -> str:  # noqa: PLR0911
     """根据约束/表名生成唯一约束冲突的中文信息.
-
-    PG 与 SQLite 共用：约束名在两种数据库的错误消息中均会出现。
 
     Args:
         error_str: 异常的字符串表示
@@ -214,8 +208,7 @@ def _format_unique_violation_message(error_str: str) -> str:  # noqa: PLR0911
 def format_database_error(error: SQLAlchemyError) -> str:  # noqa: PLR0911
     """格式化数据库错误为中文友好信息.
 
-    优先使用 PostgreSQL sqlstate（``pgcode``）判断错误类型，
-    回退到 SQLite 文本匹配以保持测试环境兼容。
+    通过 PostgreSQL sqlstate（``pgcode``）判断错误类型。
 
     Args:
         error: SQLAlchemy 错误
@@ -228,7 +221,6 @@ def format_database_error(error: SQLAlchemyError) -> str:  # noqa: PLR0911
     pgcode = _get_pgcode(error)
 
     if isinstance(error, IntegrityError):
-        # PostgreSQL sqlstate 优先
         if pgcode == "23505":
             return _format_unique_violation_message(error_str)
         if pgcode == "23503":
@@ -238,31 +230,12 @@ def format_database_error(error: SQLAlchemyError) -> str:  # noqa: PLR0911
             if column:
                 return f"必填字段 {column} 不能为空"
             return "必填字段不能为空"
-        # SQLite 文本回退（测试环境兼容）
-        if "UNIQUE constraint failed" in error_str:
-            return _format_unique_violation_message(error_str)
-        if "FOREIGN KEY constraint failed" in error_str:
-            return "关联数据不存在，请检查小区ID等外键字段"
-        if "NOT NULL constraint failed" in error_str:
-            # 提取字段名
-            if "." in error_str:
-                field = error_str.rsplit(".", maxsplit=1)[-1].strip()
-                return f"必填字段 {field} 不能为空"
-            return "必填字段不能为空"
         return "数据完整性错误"
 
     if isinstance(error, OperationalError):
-        # PostgreSQL sqlstate 优先
         if pgcode == "42P01":
             return "数据库表不存在，请先初始化数据库"
         if pgcode == "42703":
-            return "数据库字段不存在，请检查数据库结构"
-        # SQLite 文本回退（测试环境兼容）
-        if "database is locked" in error_str:
-            return "数据库被锁定，请稍后重试"
-        if "no such table" in error_str:
-            return "数据库表不存在，请先初始化数据库"
-        if "no such column" in error_str:
             return "数据库字段不存在，请检查数据库结构"
         return "数据库操作失败"
 

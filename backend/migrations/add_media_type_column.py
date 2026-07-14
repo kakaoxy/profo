@@ -9,31 +9,19 @@ def _backfill_media_type(engine: Engine) -> None:
 
     幂等：仅更新 media_type='image' 且 URL 后缀为视频的行，已正确的行不受影响。
     """
-    # 回填：根据 URL 后缀识别视频，纠正被误标为 image 的存量视频
     # patterns 由硬编码后缀生成，无注入风险；::text[] 显式指定类型避免 record 数组推断
     video_extensions = (".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v")
     patterns = [f"%{ext}" for ext in video_extensions]
     with engine.begin() as conn:
-        if engine.dialect.name == "postgresql":
-            # PG: ILIKE ANY 一次匹配多后缀（不区分大小写），直接传 list 作为 text[]
-            # 用 CAST 而非 :: 避免 SQLAlchemy text() 对 :param::type 的误解析
-            conn.execute(
-                text(
-                    "UPDATE renovation_photos SET media_type = 'video' "
-                    "WHERE media_type = 'image' AND url ILIKE ANY(CAST(:patterns AS text[]))"
-                ),
-                {"patterns": patterns},
-            )
-        else:
-            # SQLite: 逐个后缀 UPDATE（LOWER 实现大小写不敏感）
-            for ext in video_extensions:
-                conn.execute(
-                    text(
-                        "UPDATE renovation_photos SET media_type = 'video' "
-                        "WHERE media_type = 'image' AND LOWER(url) LIKE :pattern"
-                    ),
-                    {"pattern": f"%{ext}"},
-                )
+        # PG: ILIKE ANY 一次匹配多后缀（不区分大小写），直接传 list 作为 text[]
+        # 用 CAST 而非 :: 避免 SQLAlchemy text() 对 :param::type 的误解析
+        conn.execute(
+            text(
+                "UPDATE renovation_photos SET media_type = 'video' "
+                "WHERE media_type = 'image' AND url ILIKE ANY(CAST(:patterns AS text[]))"
+            ),
+            {"patterns": patterns},
+        )
 
 
 def add_media_type_to_renovation_photos(engine: Engine) -> None:
@@ -41,7 +29,6 @@ def add_media_type_to_renovation_photos(engine: Engine) -> None:
 
     - PostgreSQL: 使用 enum 类型 `mediakind`（与 SQLEnum(MediaKind) 默认名一致）。
       若列已存在且为 VARCHAR(10)（旧迁移创建），自动转为 mediakind enum。
-    - SQLite: 添加 VARCHAR(10) 列（SQLite 不区分 VARCHAR/enum，CHECK 约束由 SQLAlchemy 生成）。
     - 幂等：列已存在且为所需类型则跳过列添加；回填始终执行（仅纠正误标行）。
     """
     # 延迟导入避免循环依赖：migrations/__init__.py 在 _column_exists 定义前导入本模块
@@ -53,27 +40,20 @@ def add_media_type_to_renovation_photos(engine: Engine) -> None:
 
     if not _column_exists(engine, "renovation_photos", "media_type"):
         # 列不存在，添加
-        if engine.dialect.name == "postgresql":
-            # PG: 先创建 enum 类型再添加列
-            # 注意：PostgreSQL 不支持 CREATE TYPE IF NOT EXISTS，用 DO 块 + EXCEPTION 实现幂等
-            with engine.begin() as conn:
-                conn.execute(
-                    text(
-                        "DO $$ BEGIN "
-                        "CREATE TYPE mediakind AS ENUM ('image', 'video'); "
-                        "EXCEPTION WHEN duplicate_object THEN null; END $$;"
-                    ),
-                )
-                conn.execute(
-                    text("ALTER TABLE renovation_photos ADD COLUMN media_type mediakind NOT NULL DEFAULT 'image'"),
-                )
-        else:
-            # SQLite
-            with engine.begin() as conn:
-                conn.execute(
-                    text("ALTER TABLE renovation_photos ADD COLUMN media_type VARCHAR(10) NOT NULL DEFAULT 'image'"),
-                )
-    elif engine.dialect.name == "postgresql":
+        # PG: 先创建 enum 类型再添加列
+        # 注意：PostgreSQL 不支持 CREATE TYPE IF NOT EXISTS，用 DO 块 + EXCEPTION 实现幂等
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "DO $$ BEGIN "
+                    "CREATE TYPE mediakind AS ENUM ('image', 'video'); "
+                    "EXCEPTION WHEN duplicate_object THEN null; END $$;"
+                ),
+            )
+            conn.execute(
+                text("ALTER TABLE renovation_photos ADD COLUMN media_type mediakind NOT NULL DEFAULT 'image'"),
+            )
+    else:
         # 列已存在，检查 PG 类型是否需要转为 enum
         with engine.connect() as conn:
             row = conn.execute(

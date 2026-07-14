@@ -9,7 +9,6 @@ def add_counterparty_type_to_finance_records(engine: Engine) -> None:
 
     - PostgreSQL: 使用 enum 类型 `counterpartytype`（与 SQLEnum(CounterpartyType) 默认名一致）。
       若列已存在且为 VARCHAR(20)（旧迁移创建），自动转为 counterpartytype enum。
-    - SQLite: 添加 VARCHAR(20) 列（SQLite 不区分 VARCHAR/enum，CHECK 约束由 SQLAlchemy 生成）。
     - 幂等：列已存在且为所需类型则跳过。
     """
     # 延迟导入避免循环依赖：migrations/__init__.py 在 _column_exists 定义前导入本模块
@@ -21,30 +20,20 @@ def add_counterparty_type_to_finance_records(engine: Engine) -> None:
 
     if not _column_exists(engine, "finance_records", "counterparty_type"):
         # 列不存在，添加
-        if engine.dialect.name == "postgresql":
-            # PG: 先创建 enum 类型再添加列
-            # 注意：PostgreSQL 不支持 CREATE TYPE IF NOT EXISTS，用 DO 块 + EXCEPTION 实现幂等
-            with engine.begin() as conn:
-                conn.execute(
-                    text(
-                        "DO $$ BEGIN "
-                        "CREATE TYPE counterpartytype AS ENUM ('company', 'individual'); "
-                        "EXCEPTION WHEN duplicate_object THEN null; END $$;"
-                    ),
-                )
-                conn.execute(text("ALTER TABLE finance_records ADD COLUMN counterparty_type counterpartytype"))
-        else:
-            # SQLite
-            with engine.begin() as conn:
-                conn.execute(
-                    text("ALTER TABLE finance_records ADD COLUMN counterparty_type VARCHAR(20)"),
-                )
+        # PG: 先创建 enum 类型再添加列
+        # 注意：PostgreSQL 不支持 CREATE TYPE IF NOT EXISTS，用 DO 块 + EXCEPTION 实现幂等
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "DO $$ BEGIN "
+                    "CREATE TYPE counterpartytype AS ENUM ('company', 'individual'); "
+                    "EXCEPTION WHEN duplicate_object THEN null; END $$;"
+                ),
+            )
+            conn.execute(text("ALTER TABLE finance_records ADD COLUMN counterparty_type counterpartytype"))
         return
 
     # 列已存在，检查 PG 类型是否需要转为 enum
-    if engine.dialect.name != "postgresql":
-        return
-
     with engine.connect() as conn:
         row = conn.execute(
             text(

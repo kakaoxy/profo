@@ -25,18 +25,9 @@ def cleanup_reserved_contracts(engine: Engine) -> None:
     if "project_contracts" not in inspector.get_table_names():
         return
 
-    # PostgreSQL 与 SQLite 的 24 小时前时间表达式不同
-    if engine.dialect.name == "postgresql":
-        threshold_expr = "NOW() - INTERVAL '24 hours'"
-    else:
-        # SQLite
-        threshold_expr = "datetime('now', '-24 hours')"
-
-    # threshold_expr 来自硬编码条件分支，无注入风险；DDL 不支持绑定参数
+    # threshold_expr 为硬编码字符串，无注入风险；DDL 不支持绑定参数
     sql = (
-        "DELETE FROM project_contracts "  # noqa: S608
-        "WHERE contract_status = 'reserved' "
-        "AND created_at < " + threshold_expr
+        "DELETE FROM project_contracts WHERE contract_status = 'reserved' AND created_at < NOW() - INTERVAL '24 hours'"
     )
     with engine.begin() as conn:
         deleted = conn.execute(text(sql)).rowcount
