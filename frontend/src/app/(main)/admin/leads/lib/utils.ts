@@ -20,6 +20,7 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     auditReason: backendLead.audit_reason ?? undefined,
     auditorId: backendLead.auditor_id?.toString() ?? undefined,
     auditTime: backendLead.audit_time ?? undefined,
+    updatedAt: backendLead.updated_at ?? undefined,
     images: backendLead.images || [],
     district: backendLead.district ?? "",
     businessArea: backendLead.business_area ?? "",

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Lead, FollowUpMethod, FollowUp } from '../../types';
+import { Lead, FollowUpMethod, FollowUp, LeadStatus } from '../../types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { History, Eye, Plus } from 'lucide-react';
+import { History, Eye, Plus, Gavel } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { safeParseDate } from '@/lib/validators';
 import { getLeadFollowUpsAction } from '../../actions';
 
 interface Props {
@@ -24,6 +25,40 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
     onRefreshFollowUps(updated);
     setFollowUpContent('');
   };
+
+  // 合并「收房评估 + 跟进记录」按时间倒序，"线索初始录入"恒为最末（创建最早）
+  const hasAssessment =
+    lead.evalPrice != null || (lead.status === LeadStatus.REJECTED && !!lead.auditReason);
+  const trailEvents: TrailEvent[] = [];
+  if (hasAssessment) {
+    const raw = lead.auditTime ?? lead.updatedAt;
+    const d = safeParseDate(raw);
+    const isFallback = !lead.auditTime;
+    trailEvents.push({
+      key: 'audit',
+      title: lead.status === LeadStatus.REJECTED ? '评估驳回' : '收房评估通过',
+      desc:
+        lead.status === LeadStatus.REJECTED
+          ? `评估意见：${lead.auditReason || '未填写具体原因'}`
+          : `拟收房评估价 ¥${lead.evalPrice} 万${lead.auditReason ? ' · ' + lead.auditReason : ''}`,
+      time: d ? `${isFallback ? '约 ' : ''}${d.toLocaleString()}` : '-',
+      sortTime: d?.getTime() ?? 0,
+      icon: Gavel,
+    });
+  }
+  followUps.forEach((f) => {
+    const d = safeParseDate(f.followedAt);
+    trailEvents.push({
+      key: f.id,
+      title: f.method === 'visit' ? '阶段：带看实勘' : f.method === 'phone' ? '沟通：电话访谈' : '流转更新',
+      desc: f.content,
+      time: f.followUpTime,
+      sortTime: d?.getTime() ?? 0,
+      icon: f.method === 'visit' ? Eye : History,
+      user: f.createdBy,
+    });
+  });
+  trailEvents.sort((a, b) => b.sortTime - a.sortTime);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -63,26 +98,36 @@ export const FollowUpTab: React.FC<Props> = ({ lead, followUps, onAddFollowUp, o
 
       {/* Timeline */}
       <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border">
-        {followUps.slice().reverse().map((f, i) => (
-          <TimelineItem 
-            key={f.id} 
-            title={f.method === 'visit' ? '阶段：带看实勘' : f.method === 'phone' ? '沟通：电话访谈' : '流转更新'} 
-            desc={f.content} 
-            time={f.followUpTime} 
-            icon={f.method === 'visit' ? Eye : History} 
+        {trailEvents.map((e, i) => (
+          <TimelineItem
+            key={e.key}
+            title={e.title}
+            desc={e.desc}
+            time={e.time}
+            icon={e.icon}
             isNewest={i === 0}
-            user={f.createdBy}
+            user={e.user}
           />
         ))}
-        <TimelineItem 
-          title="线索初始录入" 
-          desc={`由 ${lead.creatorName} 首次采集并建档`} 
-          time={lead.createdAt} 
-          icon={Plus} 
+        <TimelineItem
+          title="线索初始录入"
+          desc={`由 ${lead.creatorName} 首次采集并建档`}
+          time={lead.createdAt}
+          icon={Plus}
         />
       </div>
     </div>
   );
+};
+
+type TrailEvent = {
+  key: string;
+  title: string;
+  desc: string;
+  time: string;
+  sortTime: number;
+  icon: React.ElementType;
+  user?: string;
 };
 
 const TimelineItem = ({ title, desc, time, icon: Icon, isNewest, user }: { title: string, desc: string, time: string, icon: React.ElementType, isNewest?: boolean, user?: string }) => (
