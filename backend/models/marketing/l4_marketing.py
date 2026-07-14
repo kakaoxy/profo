@@ -243,7 +243,7 @@ class L4MarketingMedia(BaseModel):
     renovation_stage: Mapped[RenovationStage | None] = mapped_column(
         SQLEnum(RenovationStage, values_callable=lambda x: [e.value for e in x], create_constraint=True),
         nullable=True,
-        comment="装修阶段: 拆除/设计/水电/木瓦/油漆/安装/交付/已完成",
+        comment="装修阶段: 拆除/设计/水电/木瓦/油漆/交付/已完成",
     )
 
     # 来源 A: 关联 L3 项目照片 (标记机制，URL 实时查询)

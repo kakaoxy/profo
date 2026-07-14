@@ -30,7 +30,8 @@
 - migrate_encrypted_columns_to_text: 将 EncryptedString 列从 character varying 迁移为 text
   （Fernet 密文远超声明长度，PG 严格强制 VARCHAR 长度会报错，幂等）
 - create_wechat_oauth_tables: 幂等创建微信 OAuth state/temp_code 表并清理过期记录
-- migrate_installation_stage_to_delivery: 将 projects/renovation_photos 中"安装"阶段数据迁移为"交付"（移除安装阶段）
+- migrate_installation_stage_to_delivery: 将 projects/renovation_photos/l4_marketing_media 中"安装"阶段
+  数据迁移为"交付"（移除安装阶段）
 - add_media_type_to_renovation_photos: 为 renovation_photos 表添加 media_type 列（图片/视频区分）
 - add_counterparty_type_to_finance_records: 为 finance_records 表添加 counterparty_type 列（公司/个人支付方）
 
