@@ -61,6 +61,11 @@ async function getUser() {
       if (status === 401) {
         return null;
       }
+      // 429 速率限制：用户仍处于认证状态，不应登出
+      // 抛出错误让 ErrorBoundary 处理，而非静默重定向到登录页
+      if (status === 429) {
+        throw new Error("请求过于频繁，请稍后刷新页面重试");
+      }
       // 其他错误（如 403, 500 等），尝试返回 data（可能部分数据可用）
       return data;
     }

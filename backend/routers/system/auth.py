@@ -258,6 +258,7 @@ async def wechat_app_login(
         403: {"description": "账号已禁用"},
     },
 )
+@limiter.exempt
 def get_current_user_info(
     current_user: CurrentActiveUserDep,
 ) -> UserResponse:
