@@ -77,7 +77,10 @@ def _get_client_ip(request: Request) -> str:
 
 limiter = Limiter(
     key_func=_get_client_ip,
-    default_limits=["200/day", "50/hour"],
+    # 默认限流：仅作用于未显式配置 limit 的端点（主要为 GET 查询/列表/详情）。
+    # 调高至不影响人工批量录入历史数据：600/minute 足够多人共享出口 IP 协同操作，
+    # 6000/hour 保证一天业务不受影响。安全敏感端点已在 RateLimits 中显式覆盖。
+    default_limits=["6000/hour", "600/minute"],
     strategy="moving-window",
     config_filename=".slowapi.env",
 )
@@ -97,64 +100,66 @@ class RateLimits:
     AUTH_API_KEY_CREATE = "20/hour"
 
     # ==================== 用户管理模块 ====================
-    USER_LIST = "60/minute"
+    # USER_CREATE/RESET/CHANGE_PASSWORD/INIT_DATA 为安全敏感操作，保持严格
+    USER_LIST = "120/minute"
     USER_CREATE = "10/hour"
-    USER_UPDATE = "100/hour"
-    USER_DELETE = "20/hour"
+    USER_UPDATE = "500/hour"
+    USER_DELETE = "100/hour"
     USER_RESET_PASSWORD = "5/hour"  # noqa: S105
     USER_CHANGE_PASSWORD = "3/minute"  # noqa: S105
     USER_INIT_DATA = "3/hour"
 
     # ==================== 角色管理模块 ====================
-    ROLE_UPDATE = "100/hour"
-    ROLE_DELETE = "20/hour"
+    ROLE_UPDATE = "500/hour"
+    ROLE_DELETE = "100/hour"
 
     # ==================== 项目管理模块 ====================
-    PROJECT_CREATE = "100/hour"
-    PROJECT_EXPORT = "10/hour"
-    PROJECT_UPDATE = "100/hour"
-    PROJECT_DELETE = "20/hour"
-    PROJECT_STATUS_UPDATE = "100/hour"
+    PROJECT_CREATE = "1000/hour"
+    PROJECT_EXPORT = "60/hour"
+    PROJECT_UPDATE = "1000/hour"
+    PROJECT_DELETE = "200/hour"
+    PROJECT_STATUS_UPDATE = "1000/hour"
 
     # ==================== 装修管理模块 ====================
-    RENOVATION_UPDATE = "100/hour"
-    RENOVATION_DELETE = "20/hour"
+    RENOVATION_UPDATE = "1000/hour"
+    RENOVATION_DELETE = "200/hour"
 
     # ==================== 销售管理模块 ====================
-    SALES_UPDATE = "100/hour"
-    SALES_DELETE = "20/hour"
+    SALES_UPDATE = "1000/hour"
+    SALES_DELETE = "200/hour"
 
     # ==================== 现金流模块 ====================
-    CASHFLOW_DELETE = "20/hour"
+    CASHFLOW_DELETE = "200/hour"
 
     # ==================== 营销管理模块 ====================
-    MARKETING_CREATE = "100/hour"
-    MARKETING_UPDATE = "100/hour"
-    MARKETING_DELETE = "20/hour"
+    MARKETING_CREATE = "1000/hour"
+    MARKETING_UPDATE = "1000/hour"
+    MARKETING_DELETE = "200/hour"
 
     # ==================== 投资管理（跟投管理）模块 ====================
-    INVESTMENT_CREATE = "100/hour"
-    INVESTMENT_UPDATE = "100/hour"
-    INVESTMENT_DELETE = "20/hour"
-    INVESTMENT_EXPORT = "10/hour"
-    INVESTMENT_INVESTOR_WRITE = "200/hour"
-    INVESTMENT_SETTLE = "50/hour"
+    INVESTMENT_CREATE = "1000/hour"
+    INVESTMENT_UPDATE = "1000/hour"
+    INVESTMENT_DELETE = "200/hour"
+    INVESTMENT_EXPORT = "60/hour"
+    INVESTMENT_INVESTOR_WRITE = "1000/hour"
+    INVESTMENT_SETTLE = "500/hour"
 
     # ==================== 线索管理模块 ====================
-    LEAD_UPDATE = "100/hour"
-    LEAD_DELETE = "20/hour"
+    LEAD_UPDATE = "1000/hour"
+    LEAD_DELETE = "200/hour"
 
     # ==================== 市场情报模块 ====================
+    # COMMUNITY_MERGE 为高危操作，保持严格
     COMMUNITY_MERGE = "20/hour"
-    COMMUNITY_CREATE = "100/hour"
-    COMMUNITY_UPDATE = "100/hour"
+    COMMUNITY_CREATE = "1000/hour"
+    COMMUNITY_UPDATE = "1000/hour"
 
     # ==================== 监控模块 ====================
-    MONITOR_DELETE = "20/hour"
+    MONITOR_DELETE = "200/hour"
 
     # ==================== 文件上传模块 ====================
-    FILE_UPLOAD = "500/hour"
-    CSV_IMPORT = "300/hour"
+    FILE_UPLOAD = "2000/hour"
+    CSV_IMPORT = "1000/hour"
     # 任务状态查询：前端每 2 秒轮询，120/minute 提供 4 倍余量
     TASK_STATUS_QUERY = "120/minute"
 
