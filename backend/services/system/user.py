@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models import User
+from models import Role, User
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
@@ -299,10 +299,18 @@ class UserService:
         nickname: str | None = None,
         status: str | None = None,
     ) -> list[dict]:
-        """获取简化用户列表（仅id/nickname/username），用于下拉选择."""
+        """获取简化用户列表（仅id/nickname/username），用于下拉选择.
+
+        仅返回后台角色用户（admin/operator/user），排除 C 端 customer 角色，
+        角色集合与 AuthService.BACKEND_ROLE_CODES 对齐。
+        """
         from sqlalchemy import or_  # noqa: PLC0415
 
-        query = db.query(User.id, User.nickname, User.username)
+        query = (
+            db.query(User.id, User.nickname, User.username)
+            .join(Role, Role.id == User.role_id)
+            .filter(Role.code.in_(AuthService.BACKEND_ROLE_CODES))
+        )
 
         if status:
             query = query.filter(User.status == status)
