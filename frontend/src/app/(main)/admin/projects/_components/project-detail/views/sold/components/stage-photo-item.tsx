@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ImageIcon } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
-import { getFileUrl } from "../../../utils";
+import { getThumbnailUrl } from "../../../utils";
 import { isValidUrl } from "@/lib/validators";
 import { cn } from "@/lib/utils";
 import { LazyPhoto } from "./lazy-photo";
@@ -35,6 +35,8 @@ export const StagePhotoItem = memo(function StagePhotoItem({
 }: StagePhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // 使用缩略图避免加载原图导致卡顿
+  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
 
   return (
     <div className="flex-none w-[200px] group">
@@ -42,9 +44,9 @@ export const StagePhotoItem = memo(function StagePhotoItem({
         <DialogTrigger asChild>
           <div className="relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md cursor-zoom-in ring-1 ring-border">
             <AspectRatio ratio={4 / 3} className="relative">
-              {isValidUrl(getFileUrl(photo.url)) ? (
+              {isValidUrl(displayUrl) ? (
                 <Image
-                  src={getFileUrl(photo.url)}
+                  src={displayUrl}
                   alt={stageLabel}
                   fill
                   sizes="200px"
@@ -61,7 +63,7 @@ export const StagePhotoItem = memo(function StagePhotoItem({
                   <ImageIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
-              {!imageLoaded && isValidUrl(getFileUrl(photo.url)) && (
+              {!imageLoaded && isValidUrl(displayUrl) && (
                 <div className="absolute inset-0 bg-muted animate-pulse" />
               )}
             </AspectRatio>

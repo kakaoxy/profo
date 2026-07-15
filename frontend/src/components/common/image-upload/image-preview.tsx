@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import { getThumbnailUrl } from "@/lib/config";
 import type { ImageItem } from "./types";
 
 interface ImagePreviewProps {
@@ -18,7 +19,9 @@ interface ImagePreviewProps {
 }
 
 export function ImagePreview({ item, imageUrl, open, onOpenChange }: ImagePreviewProps) {
-  const displayUrl = imageUrl || item?.response?.url || item?.url;
+  // 优先使用缩略图，避免加载原图导致卡顿
+  const displayUrl = imageUrl ||
+    getThumbnailUrl(item?.response?.thumbnail_url, item?.response?.url || item?.url);
 
   if (!displayUrl) return null;
 

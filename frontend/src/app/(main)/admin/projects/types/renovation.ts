@@ -7,6 +7,7 @@ export interface RenovationPhoto {
   renovation_id?: string;
   stage: string;
   url: string;
+  thumbnail_url?: string | null;
   filename?: string;
   description?: string;
   created_at: string;

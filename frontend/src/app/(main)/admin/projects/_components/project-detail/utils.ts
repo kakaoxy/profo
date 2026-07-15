@@ -2,7 +2,7 @@
  * 项目详情相关工具函数
  */
 
-import { getFileUrl as getConfigFileUrl } from "@/lib/config";
+import { getFileUrl as getConfigFileUrl, getThumbnailUrl as getConfigThumbnailUrl } from "@/lib/config";
 import { formatPrice } from "@/lib/formatters";
 
 export function formatDate(dateStr?: string | null): string {
@@ -25,4 +25,12 @@ export { formatPrice };
 // 复用 config.ts 中的实现，保持行为一致
 export function getFileUrl(url: string | undefined | null): string {
   return getConfigFileUrl(url);
+}
+
+// 获取缩略图URL，无缩略图时回退原图
+export function getThumbnailUrl(
+  thumbnailUrl: string | null | undefined,
+  originalUrl: string | null | undefined,
+): string {
+  return getConfigThumbnailUrl(thumbnailUrl, originalUrl);
 }

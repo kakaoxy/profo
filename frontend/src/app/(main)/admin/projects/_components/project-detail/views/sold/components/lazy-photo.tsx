@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ImageIcon } from "lucide-react";
 import { isValidUrl } from "@/lib/validators";
 import { RenovationPhoto } from "../../../../../types";
-import { getFileUrl } from "../../../utils";
+import { getThumbnailUrl } from "../../../utils";
 
 interface LazyPhotoProps {
   photo: RenovationPhoto;
@@ -46,13 +46,15 @@ const LazyPhotoPlaceholder = memo(function LazyPhotoPlaceholder({ onVisible }: L
 export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  // 使用缩略图避免加载原图导致卡顿
+  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
 
   return (
     <div className="relative aspect-video rounded-lg overflow-hidden bg-card">
       {isVisible ? (
-        isValidUrl(getFileUrl(photo.url)) ? (
+        isValidUrl(displayUrl) ? (
           <Image
-            src={getFileUrl(photo.url)}
+            src={displayUrl}
             alt={photo.description || photo.filename || "装修照片"}
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
@@ -72,7 +74,7 @@ export const LazyPhoto = memo(function LazyPhoto({ photo }: LazyPhotoProps) {
       ) : (
         <LazyPhotoPlaceholder onVisible={() => setIsVisible(true)} />
       )}
-      {!isLoaded && isVisible && isValidUrl(getFileUrl(photo.url)) && (
+      {!isLoaded && isVisible && isValidUrl(displayUrl) && (
         <div className="absolute inset-0 bg-muted animate-pulse" />
       )}
     </div>

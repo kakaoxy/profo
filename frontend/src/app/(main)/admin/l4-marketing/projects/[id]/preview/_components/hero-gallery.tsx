@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { getStatusLabel, getProjectStatusClassName } from "@/lib/status-colors";
@@ -9,9 +9,14 @@ import { getStatusLabel, getProjectStatusClassName } from "@/lib/status-colors";
 // 判断是否为开发环境
 const isDev = process.env.NODE_ENV === "development";
 
+interface GalleryImage {
+  url: string;
+  thumbnailUrl?: string | null;
+}
+
 interface HeroGalleryProps {
-  mainImage?: string;
-  secondaryImages: string[];
+  mainImage?: GalleryImage;
+  secondaryImages: GalleryImage[];
   totalCount: number;
   projectStatus: string;
 }
@@ -94,9 +99,18 @@ export function HeroGallery({
   }, []);
 
   // 检查是否应该显示占位符
-  const shouldShowMainPlaceholder = !mainImage || mainImageError;
-  const shouldShowSecondaryPlaceholder0 = !secondaryImages[0] || secondaryImageErrors[0];
-  const shouldShowSecondaryPlaceholder1 = !secondaryImages[1] || secondaryImageErrors[1];
+  const shouldShowMainPlaceholder = !mainImage?.url || mainImageError;
+  const shouldShowSecondaryPlaceholder0 = !secondaryImages[0]?.url || secondaryImageErrors[0];
+  const shouldShowSecondaryPlaceholder1 = !secondaryImages[1]?.url || secondaryImageErrors[1];
+
+  // 使用缩略图避免加载原图导致卡顿
+  const mainDisplayUrl = mainImage ? getThumbnailUrl(mainImage.thumbnailUrl, mainImage.url) : "";
+  const secondary0DisplayUrl = secondaryImages[0]
+    ? getThumbnailUrl(secondaryImages[0].thumbnailUrl, secondaryImages[0].url)
+    : "";
+  const secondary1DisplayUrl = secondaryImages[1]
+    ? getThumbnailUrl(secondaryImages[1].thumbnailUrl, secondaryImages[1].url)
+    : "";
 
   return (
     <section className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -106,14 +120,14 @@ export function HeroGallery({
           isDev ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={getFileUrl(mainImage!)}
+              src={mainDisplayUrl}
               alt="Primary view"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               onError={handleMainImageError}
             />
           ) : (
             <Image
-              src={getFileUrl(mainImage!)}
+              src={mainDisplayUrl}
               alt="Primary view"
               fill
               sizes="(max-width: 1024px) 100vw, 66vw"
@@ -140,14 +154,14 @@ export function HeroGallery({
             isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={getFileUrl(secondaryImages[0]!)}
+                src={secondary0DisplayUrl}
                 alt="Interior"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 onError={() => handleSecondaryImageError(0)}
               />
             ) : (
               <Image
-                src={getFileUrl(secondaryImages[0]!)}
+                src={secondary0DisplayUrl}
                 alt="Interior"
                 fill
                 sizes="(max-width: 1024px) 100vw, 33vw"
@@ -166,14 +180,14 @@ export function HeroGallery({
             isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={getFileUrl(secondaryImages[1]!)}
+                src={secondary1DisplayUrl}
                 alt="Kitchen"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 onError={() => handleSecondaryImageError(1)}
               />
             ) : (
               <Image
-                src={getFileUrl(secondaryImages[1]!)}
+                src={secondary1DisplayUrl}
                 alt="Kitchen"
                 fill
                 sizes="(max-width: 1024px) 100vw, 33vw"

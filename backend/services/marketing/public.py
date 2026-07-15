@@ -10,6 +10,7 @@ from models import L4MarketingMedia, L4MarketingProject, User
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from settings import settings
 from utils.formatters import escape_like
+from utils.image_processing import derive_thumbnail_url
 from utils.query_params import validate_sort_field
 
 
@@ -19,24 +20,32 @@ class PublicProjectService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def resolve_cover_image(self, item: L4MarketingProject) -> str | None:
-        """解析项目封面图片."""
+    def resolve_cover_images(self, item: L4MarketingProject) -> tuple[str | None, str | None]:
+        """解析项目封面图片和缩略图 URL.
+
+        Returns:
+            (cover_image, cover_thumbnail_url)
+
+        """
         images = item.images or []
         cover_image = images[0] if images else None
-        if not cover_image:
-            first_media = (
-                self.db.query(L4MarketingMedia)
-                .filter(
-                    L4MarketingMedia.marketing_project_id == item.id,
-                    L4MarketingMedia.is_deleted.is_(False),
-                    L4MarketingMedia.media_type == "image",
-                )
-                .order_by(L4MarketingMedia.sort_order)
-                .first()
+        if cover_image:
+            # JSON 数组中的 URL 无存储缩略图，按命名规则推导
+            return cover_image, derive_thumbnail_url(cover_image)
+        # 回退到媒体表，使用已存储的 thumbnail_url
+        first_media = (
+            self.db.query(L4MarketingMedia)
+            .filter(
+                L4MarketingMedia.marketing_project_id == item.id,
+                L4MarketingMedia.is_deleted.is_(False),
+                L4MarketingMedia.media_type == "image",
             )
-            if first_media:
-                cover_image = first_media.file_url
-        return cover_image
+            .order_by(L4MarketingMedia.sort_order)
+            .first()
+        )
+        if first_media:
+            return first_media.file_url, first_media.thumbnail_url
+        return None, None
 
     def get_published_projects(
         self,

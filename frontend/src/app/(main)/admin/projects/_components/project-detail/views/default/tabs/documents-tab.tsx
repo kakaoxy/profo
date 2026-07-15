@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { FileUploader as CommonFileUploader } from "@/components/common/upload";
+import { FileUploader as CommonFileUploader, compressImage } from "@/components/common/upload";
 import type { UploadResponse } from "@/components/common/upload";
 import type { Project, AttachmentInfo } from "../../../../../types";
 import {
@@ -445,6 +445,8 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
                 }
                 return null;
               },
+              beforeUpload: (file) =>
+                file.type.startsWith("image/") ? compressImage(file) : file,
             }}
             onUploadComplete={handleUploadComplete}
             title="点击或拖拽文件到此处上传"

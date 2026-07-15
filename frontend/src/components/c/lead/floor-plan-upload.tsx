@@ -4,7 +4,7 @@ import { useRef, useCallback } from "react";
 import Image from "next/image";
 import { X, Plus, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useUpload } from "@/components/common/upload";
+import { useUpload, compressImage } from "@/components/common/upload";
 import { getClientApiUrl, apiPaths } from "@/lib/config";
 import { cLocale } from "@/lib/i18n/c-locale";
 
@@ -37,6 +37,7 @@ export function FloorPlanUpload({
     allowedTypes: FLOOR_PLAN_ALLOWED_TYPES,
     multiple: true,
     maxCount: maxImages,
+    beforeUpload: (file) => compressImage(file),
     onSuccess: (response) => {
       if (response.url) {
         onChange((prev) => [...prev, response.url]);

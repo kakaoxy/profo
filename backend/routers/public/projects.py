@@ -61,7 +61,7 @@ def get_projects(
 
     result_items = []
     for item in items:
-        cover_image = svc.resolve_cover_image(item)
+        cover_image, cover_thumbnail_url = svc.resolve_cover_images(item)
         result_items.append(
             PublicProjectListItem(
                 id=item.id,
@@ -74,6 +74,7 @@ def get_projects(
                 unit_price=float(item.unit_price),
                 title=item.title,
                 cover_image=cover_image,
+                cover_thumbnail_url=cover_thumbnail_url,
                 tags=item.tags or [],
                 project_status=item.project_status,
                 decoration_style=item.decoration_style,
@@ -110,7 +111,7 @@ def get_sold_projects(
 
     result_items = []
     for item in items:
-        cover_image = svc.resolve_cover_image(item)
+        cover_image, cover_thumbnail_url = svc.resolve_cover_images(item)
 
         sold_days = None
         if item.updated_at and item.created_at:
@@ -127,6 +128,7 @@ def get_sold_projects(
                 unit_price=float(item.unit_price),
                 title=item.title,
                 cover_image=cover_image,
+                cover_thumbnail_url=cover_thumbnail_url,
                 sold_days=sold_days,
                 decoration_style=item.decoration_style,
             ),

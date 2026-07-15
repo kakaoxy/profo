@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { useUpload } from "@/components/common/upload";
+import { useUpload, compressImage } from "@/components/common/upload";
 import { addRenovationPhotoAction } from "../../../../../actions/renovation";
 import { UploadingPhoto } from "./photo-grid";
 
@@ -28,6 +28,7 @@ export function useRenovationUpload({
 
   const { upload: baseUpload } = useUpload({
     maxSize: MAX_FILE_SIZE,
+    beforeUpload: (file) => compressImage(file),
     onSuccess: async (response, file) => {
       const dbRes = await addRenovationPhotoAction({
         projectId,

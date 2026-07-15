@@ -6850,6 +6850,11 @@ export interface components {
              */
             images?: string[];
             /**
+             * Image Thumbnails
+             * @description 户型图缩略图URL列表
+             */
+            image_thumbnails?: string[] | null;
+            /**
              * Follow Ups
              * @description 跟进记录
              */
@@ -7334,6 +7339,11 @@ export interface components {
              */
             cover_image?: string | null;
             /**
+             * Cover Thumbnail Url
+             * @description 封面缩略图URL
+             */
+            cover_thumbnail_url?: string | null;
+            /**
              * Tags
              * @description 标签列表
              */
@@ -7501,6 +7511,11 @@ export interface components {
              * @description 封面图URL
              */
             cover_image?: string | null;
+            /**
+             * Cover Thumbnail Url
+             * @description 封面缩略图URL
+             */
+            cover_thumbnail_url?: string | null;
             /**
              * Sold Days
              * @description 成交天数

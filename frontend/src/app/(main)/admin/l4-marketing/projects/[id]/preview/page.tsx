@@ -58,13 +58,16 @@ export default async function ProjectPreviewPage({
   // Get images from project.images or photos
   // 后端直接返回数组，无需 split
   const projectImages = Array.isArray(project.images) ? project.images : [];
-  const photoUrls =
+  // 保留 thumbnail_url 以便 HeroGallery 使用缩略图，避免加载原图
+  const galleryImages: { url: string; thumbnailUrl?: string | null }[] =
     photos.length > 0
-      ? photos.map((p) => p.file_url).filter((url): url is string => !!url)
-      : projectImages;
+      ? photos
+          .filter((p): p is typeof p & { file_url: string } => !!p.file_url)
+          .map((p) => ({ url: p.file_url, thumbnailUrl: p.thumbnail_url }))
+      : projectImages.map((url) => ({ url }));
 
-  const mainImage = photoUrls[0] || "";
-  const secondaryImages = photoUrls.slice(1, 3).filter((path): path is string => !!path);
+  const mainImage = galleryImages[0];
+  const secondaryImages = galleryImages.slice(1, 3);
 
   // Parse tags - 后端直接返回数组，直接使用
   const tags = Array.isArray(project.tags) ? project.tags : [];
@@ -103,7 +106,7 @@ export default async function ProjectPreviewPage({
         <HeroGallery
           mainImage={mainImage}
           secondaryImages={secondaryImages}
-          totalCount={photoUrls.length}
+          totalCount={galleryImages.length}
           projectStatus={project.project_status || "在途"}
         />
 

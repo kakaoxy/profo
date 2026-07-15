@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { Badge } from "@/components/ui/badge";
 
 // 从本地类型定义RenovationPhoto
@@ -15,6 +15,7 @@ interface RenovationPhoto {
   project_id: number;
   stage: string;
   url: string;
+  thumbnail_url?: string | null;
   filename?: string | null;
   description?: string | null;
   created_at: string;
@@ -87,7 +88,7 @@ export function PhotoPicker({
                   onClick={() => handleSelect(photo)}
                 >
                   <Image
-                    src={getFileUrl(photo.url)}
+                    src={getThumbnailUrl(photo.thumbnail_url, photo.url)}
                     alt="source"
                     fill
                     className="object-cover"

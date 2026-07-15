@@ -155,6 +155,8 @@ class RateLimits:
     # ==================== 文件上传模块 ====================
     FILE_UPLOAD = "500/hour"
     CSV_IMPORT = "300/hour"
+    # 任务状态查询：前端每 2 秒轮询，120/minute 提供 4 倍余量
+    TASK_STATUS_QUERY = "120/minute"
 
     # ==================== 推送接口模块 ====================
     PUSH_API = "10/hour"

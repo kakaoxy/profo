@@ -5,6 +5,8 @@ from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 
+from settings import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,3 +49,29 @@ def generate_thumbnail(
         return False
     else:
         return True
+
+
+def derive_thumbnail_url(url: str | None) -> str | None:
+    """从原图 URL 推导缩略图 URL.
+
+    缩略图命名规则: /static/uploads/xxx.jpg → /static/uploads/thumbs/xxx.webp
+    若 URL 不指向 uploads 目录或缩略图文件不存在，返回 None.
+
+    Args:
+        url: 原图 URL（相对路径或绝对路径）
+
+    Returns:
+        缩略图 URL，或 None
+
+    """
+    if not url or "/static/uploads/" not in url:
+        return None
+    filename = url.rsplit("/", 1)[-1]
+    if not filename or "." not in filename:
+        return None
+    stem = Path(filename).stem
+    thumb_rel = f"/static/uploads/thumbs/{stem}.webp"
+    thumb_path = Path(settings.upload_dir) / "thumbs" / f"{stem}.webp"
+    if thumb_path.exists():
+        return thumb_rel
+    return None
