@@ -10,6 +10,8 @@ FRONTEND_TAR="profo-frontend.tar.gz"
 HEALTH_TIMEOUT=120          # 等待 backend 健康的最大秒数
 HEALTH_INTERVAL=3           # 每次检查间隔（秒）
 FRONTEND_WAIT=10            # 前端启动后简单等待（无健康检查时）
+BACKUP_DIR="$PROJECT_DIR/backups"  # 数据库备份目录
+BACKUP_RETENTION=7          # 保留最近 N 份备份
 # ===============================================
 
 # 颜色输出
@@ -34,6 +36,40 @@ done
 cd "$PROJECT_DIR" || { log_error "项目目录 $PROJECT_DIR 不存在"; exit 1; }
 
 log_info "开始服务器端部署..."
+
+# 0. 数据库备份（在重建容器前执行，防止迁移失败或意外导致数据丢失）
+# 首次部署时 db 容器未运行，跳过备份；后续部署强制备份，失败则中止
+log_info "检查数据库容器状态..."
+if docker compose ps --format "{{.Name}}\t{{.Status}}" 2>/dev/null | grep -qE "db.*Up"; then
+    log_info "开始数据库备份..."
+    mkdir -p "$BACKUP_DIR"
+
+    BACKUP_FILE="$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).sql.gz"
+
+    # 通过容器内环境变量执行 pg_dump，避免在宿主解析 .env
+    # pipefail 确保 pg_dump 失败时整个管道失败
+    if ! docker compose exec -T db bash -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$BACKUP_FILE"; then
+        log_error "数据库备份失败，已中止部署以保护数据"
+        rm -f "$BACKUP_FILE"
+        exit 1
+    fi
+
+    BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+    log_info "✅ 备份完成: $BACKUP_FILE ($BACKUP_SIZE)"
+
+    # 清理旧备份（按修改时间倒序，保留最近 N 份）
+    BACKUP_COUNT=$(find "$BACKUP_DIR" -name "backup_*.sql.gz" -type f | wc -l | tr -d ' ')
+    if [ "$BACKUP_COUNT" -gt "$BACKUP_RETENTION" ]; then
+        find "$BACKUP_DIR" -name "backup_*.sql.gz" -type f -printf '%T@ %p\n' \
+            | sort -rn \
+            | tail -n +"$((BACKUP_RETENTION + 1))" \
+            | awk '{print $2}' \
+            | xargs -r rm -f
+        log_info "清理了 $((BACKUP_COUNT - BACKUP_RETENTION)) 份旧备份"
+    fi
+else
+    log_warn "数据库容器未运行（可能是首次部署），跳过备份"
+fi
 
 # 1. 加载新镜像
 log_info "加载后端镜像..."
