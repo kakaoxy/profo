@@ -12,7 +12,7 @@ from typing import Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import Project
+from models import Project, ProjectContract
 from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from settings import settings
@@ -212,6 +212,8 @@ class ProjectCoreService:
     def delete_project(self, project_id: str) -> None:
         """删除项目 (软删除).
 
+        同时软删除关联的合同记录，释放合同编号供复用。
+
         Args:
             project_id: 项目ID
 
@@ -224,6 +226,20 @@ class ProjectCoreService:
         project.is_deleted = True
         project.status = ProjectStatus.DELETED.value
         project.updated_at = datetime.now(timezone.utc)
+
+        # 同步软删除合同记录，释放合同编号（idx_contract_no 为部分唯一索引，仅约束 is_deleted=false 的记录）
+        now = datetime.now(timezone.utc)
+        self.db.query(ProjectContract).filter(
+            ProjectContract.project_id == project_id,
+            ProjectContract.is_deleted.is_(False),
+        ).update(
+            {
+                "is_deleted": True,
+                "updated_at": now,
+            },
+            synchronize_session=False,
+        )
+
         self.db.commit()
 
     def update_status(self, project_id: str, status_update: ProjectStatusUpdate) -> ProjectResponse:

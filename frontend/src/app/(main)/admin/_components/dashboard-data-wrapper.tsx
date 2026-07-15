@@ -12,6 +12,7 @@ import {
   LeadsFunnelCard,
   AlertCard,
   DashboardLeadsTable,
+  QuickEntrySection,
 } from "./";
 
 export async function DashboardErrorWrapper() {
@@ -64,4 +65,14 @@ export async function DashboardLeadsWrapper() {
   const { leads } = await getDashboardData();
 
   return <DashboardLeadsTable leads={leads} />;
+}
+
+export async function DashboardQuickEntryWrapper() {
+  const { renovationProjects, sellingProjects } = await getDashboardData();
+  return (
+    <QuickEntrySection
+      renovationProjects={renovationProjects}
+      sellingProjects={sellingProjects}
+    />
+  );
 }

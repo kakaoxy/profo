@@ -184,7 +184,7 @@ def _format_unique_violation_message(error_str: str) -> str:  # noqa: PLR0911
         return "竞品关联已存在"
     if "uq_property_media_url" in error_str:
         return "媒体资源已存在"
-    if "project_contracts.contract_no" in error_str:
+    if "idx_contract_no" in error_str or "project_contracts.contract_no" in error_str:
         return "合同编号已存在"
     if "project_contracts.project_id" in error_str:
         return "该项目已存在合同记录"

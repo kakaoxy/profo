@@ -6,12 +6,14 @@ import {
   AlertCardSkeleton,
   ProjectCardListSkeleton,
   DashboardLeadsTableSkeleton,
+  QuickEntrySkeleton,
   DashboardErrorWrapper,
   DashboardOverviewWrapper,
   DashboardFunnelWrapper,
   DashboardAlertWrapper,
   DashboardProjectsWrapper,
   DashboardLeadsWrapper,
+  DashboardQuickEntryWrapper,
 } from "./_components";
 import { CreateProjectDialog } from "./projects/_components/create-project";
 
@@ -152,6 +154,11 @@ export default function DashboardPage() {
           <DashboardAlertWrapper />
         </Suspense>
       </div>
+
+      {/* Quick Entry Section */}
+      <Suspense fallback={<QuickEntrySkeleton />}>
+        <DashboardQuickEntryWrapper />
+      </Suspense>
 
       {/* Monitor Projects Section */}
       <Suspense fallback={<MonitorSectionSkeleton />}>

@@ -1,0 +1,31 @@
+import { notFound } from "next/navigation";
+import { fetchClient } from "@/lib/api-server";
+import { extractApiData } from "@/lib/api-helpers";
+import type { components } from "@/lib/api-types";
+import { MobileRenovationView } from "../_components/mobile-renovation-view";
+
+type ProjectResponse = components["schemas"]["ProjectResponse"];
+
+interface PageProps {
+  params: Promise<{ projectId: string }>;
+}
+
+export default async function RenovationPage({ params }: PageProps) {
+  const { projectId } = await params;
+
+  const client = await fetchClient();
+  const { data, error } = await client.GET("/api/v1/projects/{project_id}", {
+    params: { path: { project_id: projectId } },
+  });
+
+  if (error || !data) {
+    notFound();
+  }
+
+  const project = extractApiData<ProjectResponse>(data);
+  if (!project) {
+    notFound();
+  }
+
+  return <MobileRenovationView projectId={projectId} project={project} />;
+}

@@ -47,5 +47,13 @@ export function getOfferStats(offerRecords: ApiSalesRecord[]) {
   return { offerCount, maxOffer, lastOffer };
 }
 
+export function getListingDaysText(listingDate: string | null | undefined): string {
+  if (!listingDate) return "未挂牌";
+  const parsed = safeParseDate(listingDate);
+  if (!parsed) return "未挂牌";
+  const days = Math.floor((Date.now() - parsed.getTime()) / 86400000);
+  return `挂牌${days}天`;
+}
+
 export { mapProjectResponseToProject } from "./project-card-mapper";
 export { toNumber } from "@/lib/number-utils";
