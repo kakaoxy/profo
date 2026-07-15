@@ -44,7 +44,7 @@ def generate_thumbnail(
             if img.mode == "P":
                 img = img.convert("RGBA")
             img.save(target_path, format="WEBP", quality=80)
-    except (UnidentifiedImageError, OSError, ValueError) as e:
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as e:
         logger.warning("缩略图生成失败: %s -> %s, 错误: %s", source_path, target_path, e)
         return False
     else:

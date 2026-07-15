@@ -119,6 +119,7 @@ class RateLimits:
     PROJECT_UPDATE = "1000/hour"
     PROJECT_DELETE = "200/hour"
     PROJECT_STATUS_UPDATE = "1000/hour"
+    PROJECT_BANK_CARD = "60/hour"  # 银行卡号为敏感金融数据，独立限流
 
     # ==================== 装修管理模块 ====================
     RENOVATION_UPDATE = "1000/hour"
