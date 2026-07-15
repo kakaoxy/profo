@@ -178,7 +178,7 @@ export function CreateProjectDialog({
                     </TabsContent>
 
                     <TabsContent value="attachments" className="m-0">
-                      <AttachmentsTab form={form} />
+                      <AttachmentsTab form={form} project={project} isEditMode={isEditMode} />
                     </TabsContent>
                   </div>
                 </ScrollArea>

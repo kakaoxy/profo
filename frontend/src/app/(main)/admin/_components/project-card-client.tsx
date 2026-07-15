@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { MoreHorizontal, MapPin, Home } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import type { components } from "@/lib/api-types";
 import { MarketDataSection } from "./market-data-section";
 import { ProjectDetailSheet } from "../projects/_components/project-detail-sheet";
+import { updateProjectAction } from "../projects/actions/core";
+import type { SigningMaterial } from "../projects/_components/project-detail/types";
 import { ProjectStatsSection } from "./project-stats-section";
 import { mapProjectResponseToProject } from "./project-card-utils";
 import { validateSalesRecords } from "./project-card-types";
@@ -26,6 +29,17 @@ export function ProjectCardClient({
   marketData,
 }: ProjectCardClientProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const handleUpdateAttachments = async (attachments: SigningMaterial[]) => {
+    const result = await updateProjectAction(project.id, {
+      signing_materials: attachments.length
+        ? attachments.map((a) => ({ ...a, size: a.size ?? 0 }))
+        : null,
+    });
+    if (!result.success) {
+      toast.error(result.message || "附件保存失败");
+    }
+  };
 
   const contractNo = project.contract_no || "N/A";
   const communityName = project.community_name || "未命名项目";
@@ -106,6 +120,7 @@ export function ProjectCardClient({
         project={projectData}
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
+        onUpdateAttachments={handleUpdateAttachments}
       />
     </>
   );
