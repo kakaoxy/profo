@@ -16,11 +16,13 @@ import {
   getRenovationContractAction,
   updateRenovationContractAction,
 } from "../../../../../actions/renovation";
+import { getSalesUsersSimpleAction } from "../../../../../actions/sales";
 import {
   CompanySection,
   TimeSection,
   DecorationCostSection,
   OtherFeesSection,
+  type UserOption,
 } from "./contract-sections";
 import { PaymentNodesSection } from "./payment-nodes";
 import { CostSummarySection } from "./cost-summary";
@@ -44,11 +46,14 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
   const form = useForm<RenovationContractFormValues>({
     resolver: zodResolver(renovationContractSchema),
     defaultValues: {
       renovation_company: "",
+      contact_person_id: "",
       contract_start_date: undefined,
       contract_end_date: undefined,
       actual_start_date: undefined,
@@ -80,6 +85,17 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
     setIsMounted(true);
   }, []);
 
+  // 加载内部用户列表（用于对接负责人下拉）
+  useEffect(() => {
+    getSalesUsersSimpleAction()
+      .then((result) => {
+        if (result.success && result.data) {
+          setUsers(result.data);
+        }
+      })
+      .finally(() => setIsLoadingUsers(false));
+  }, []);
+
   useEffect(() => {
     async function loadContractData() {
       try {
@@ -91,6 +107,7 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
           const data = result.data as Record<string, unknown>;
           form.reset({
             renovation_company: (data.renovation_company as string) || "",
+            contact_person_id: (data.contact_person_id as string) || "",
             contract_start_date: data.contract_start_date
               ? new Date(data.contract_start_date as string)
               : undefined,
@@ -258,7 +275,13 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
       </CardHeader>
 
       <CardContent className="space-y-4 py-3">
-        <CompanySection values={values} setValue={setValue} isEditing={isEditing} />
+        <CompanySection
+          values={values}
+          setValue={setValue}
+          isEditing={isEditing}
+          users={users}
+          isLoadingUsers={isLoadingUsers}
+        />
         <TimeSection values={values} setValue={setValue} isEditing={isEditing} />
         <DecorationCostSection values={values} setValue={setValue} isEditing={isEditing} />
         <PaymentNodesSection values={values} setValue={setValue} isEditing={isEditing} />

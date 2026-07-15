@@ -20,6 +20,7 @@ from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 # 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
 _RENOVATION_ALLOWED_FIELDS = {
     "renovation_company",
+    "contact_person_id",
     "contract_start_date",
     "contract_end_date",
     "actual_start_date",

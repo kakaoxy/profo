@@ -65,7 +65,7 @@ export function RenovationView({ project, onRefresh, onListingSuccess }: Renovat
       <RenovationKPIs project={project} />
       
       {/* 标签页容器 */}
-      <RenovationTabs defaultTab="progress">
+      <RenovationTabs defaultTab="contract">
         {({ activeTab, progressRef, contractRef }) => (
           <>
             {/* 装修进度标签内容 */}

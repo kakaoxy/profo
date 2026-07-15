@@ -11,6 +11,7 @@
 - add_stage_completed_dates_column: 为 l4_marketing_projects 表添加 stage_completed_dates 列
 - add_thumbnail_url_to_photos: 为 renovation_photos 与 property_media 表添加 thumbnail_url 列
 - add_renovation_extra_amount_columns: 为 project_renovations 表添加定制柜/窗户/电器金额列
+- add_contact_person_id_column: 为 project_renovations 表添加 contact_person_id 列（对接负责人）
 - run_fix_image_urls: 将数据库中的绝对图片 URL 转为相对路径（图片处理链路加固）
 - create_investment_tables: 幂等创建跟投管理 4 张表（investments/investors/return_adjustments/investment_logs）
 - rename_return_adjustment_columns: 将 return_adjustments 表回报率字段重命名为分配比例字段（清空旧数据）
@@ -288,6 +289,17 @@ def drop_soft_actual_cost_column(engine: Engine) -> None:
     logger.info("迁移：移除 project_renovations.soft_actual_cost 列")
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE project_renovations DROP COLUMN soft_actual_cost"))
+
+
+def add_contact_person_id_column(engine: Engine) -> None:
+    """为 project_renovations 表添加 contact_person_id 列（幂等）."""
+    from sqlalchemy import text  # noqa: PLC0415
+
+    if _column_exists(engine, "project_renovations", "contact_person_id"):
+        return
+    logger.info("迁移：为 project_renovations 表添加 contact_person_id 列")
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE project_renovations ADD COLUMN contact_person_id VARCHAR(36)"))
 
 
 def create_investment_tables(engine: Engine) -> None:
@@ -869,6 +881,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_renovation_extra_amount_columns(engine)
         add_other_decoration_amount_column(engine)
         drop_soft_actual_cost_column(engine)
+        add_contact_person_id_column(engine)
         run_fix_image_urls(engine)
         create_investment_tables(engine)
         rename_return_adjustment_columns(engine)

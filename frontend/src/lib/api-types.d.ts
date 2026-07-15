@@ -2085,7 +2085,8 @@ export interface paths {
          * Get Task Status
          * @description 查询导入任务状态和进度.
          *
-         *     前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次
+         *     前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次.
+         *     速率限制：120/分钟（适配 2 秒轮询场景，默认 50/hour 会在 100 秒内耗尽）
          */
         get: operations["get_task_status_api_v1_upload_tasks__task_id__get"];
         put?: never;
@@ -7705,6 +7706,8 @@ export interface components {
             project_id: string;
             /** Renovation Company */
             renovation_company?: string | null;
+            /** Contact Person Id */
+            contact_person_id?: string | null;
             /** Contract Start Date */
             contract_start_date?: string | null;
             /** Contract End Date */
@@ -7774,6 +7777,11 @@ export interface components {
              * @description 合作装修公司
              */
             renovation_company?: string | null;
+            /**
+             * Contact Person Id
+             * @description 对接负责人(内部用户ID)
+             */
+            contact_person_id?: string | null;
             /**
              * Contract Start Date
              * @description 合同约定进场时间

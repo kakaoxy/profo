@@ -4,6 +4,9 @@ export const renovationContractSchema = z.object({
   // 装修公司
   renovation_company: z.string().max(200).optional(),
 
+  // 对接负责人
+  contact_person_id: z.string().max(36).optional(),
+
   // 合同时间
   contract_start_date: z.date().optional(),
   contract_end_date: z.date().optional(),

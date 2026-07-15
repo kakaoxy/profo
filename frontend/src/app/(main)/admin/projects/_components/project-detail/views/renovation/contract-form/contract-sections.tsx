@@ -7,10 +7,23 @@ import {
   Receipt,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePickerField, NumberInputField, TextInputField } from "./form-fields";
 import { RenovationContractFormValues } from "./schema";
 import { UseFormSetValue } from "react-hook-form";
+
+export interface UserOption {
+  id: string;
+  nickname: string | null;
+  username: string;
+}
 
 interface ContractSectionsProps {
   values: RenovationContractFormValues;
@@ -19,20 +32,64 @@ interface ContractSectionsProps {
 }
 
 // 装修公司信息
-export function CompanySection({ values, setValue, isEditing }: ContractSectionsProps) {
+export function CompanySection({
+  values,
+  setValue,
+  isEditing,
+  users,
+  isLoadingUsers,
+}: ContractSectionsProps & {
+  users: UserOption[];
+  isLoadingUsers: boolean;
+}) {
+  const selectedUser = users.find((u) => u.id === values.contact_person_id);
+  const contactPersonName = selectedUser
+    ? selectedUser.nickname || selectedUser.username
+    : "-";
+
   return (
     <div className="space-y-2">
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Building2 className="h-3 w-3" />
-        装修公司
+        公司信息
       </h4>
-      <TextInputField
-        label=""
-        value={values.renovation_company}
-        onChange={(v) => setValue("renovation_company", v)}
-        placeholder="请输入装修公司名称"
-        disabled={!isEditing}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <TextInputField
+          label="装修公司"
+          value={values.renovation_company}
+          onChange={(v) => setValue("renovation_company", v)}
+          placeholder="请输入装修公司名称"
+          disabled={!isEditing}
+        />
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground">对接负责人</Label>
+          {isEditing ? (
+            <Select
+              value={values.contact_person_id || "__empty__"}
+              onValueChange={(value) => {
+                const newValue = value === "__empty__" ? "" : value;
+                setValue("contact_person_id", newValue);
+              }}
+            >
+              <SelectTrigger className="h-9 text-sm" disabled={isLoadingUsers}>
+                <SelectValue placeholder={isLoadingUsers ? "加载中..." : "未选择"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__empty__">未选择</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="h-9 flex items-center text-sm text-foreground">
+              {contactPersonName}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

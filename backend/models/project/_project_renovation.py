@@ -29,6 +29,10 @@ class ProjectRenovation(BaseModel):
 
     renovation_company: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="合作装修公司")
 
+    contact_person_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, comment="对接负责人(内部用户ID,逻辑外键)"
+    )
+
     contract_start_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
