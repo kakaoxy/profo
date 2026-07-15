@@ -87,14 +87,17 @@ async def create_import_task(
 
 
 @router.get("/tasks/{task_id}")
+@limiter.limit(RateLimits.TASK_STATUS_QUERY)
 def get_task_status(
+    request: Request,
     task_id: str,
     db: DbSessionDep,
     current_user: CurrentInternalUserDep,
 ) -> ImportTaskStatusResponse:
     """查询导入任务状态和进度.
 
-    前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次
+    前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次.
+    速率限制：120/分钟（适配 2 秒轮询场景，默认 50/hour 会在 100 秒内耗尽）
     """
     task_service = get_import_task_service()
     task = task_service.get_task(task_id, db)

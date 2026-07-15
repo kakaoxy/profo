@@ -305,6 +305,7 @@ function CPageContent() {
                     unitPrice={project.unit_price}
                     title={project.title}
                     coverImage={project.cover_image ?? null}
+                    coverThumbnailUrl={project.cover_thumbnail_url ?? null}
                     tags={project.tags ?? EMPTY_TAGS}
                     projectStatus={project.project_status}
                     decorationStyle={project.decoration_style ?? null}

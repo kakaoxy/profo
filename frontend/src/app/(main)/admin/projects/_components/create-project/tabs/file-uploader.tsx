@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileUploader as CommonFileUploader } from "@/components/common/upload";
+import { FileUploader as CommonFileUploader, compressImage } from "@/components/common/upload";
 import {
   ATTACHMENT_CATEGORIES,
   ALLOWED_EXTENSIONS,
@@ -73,6 +73,8 @@ export function FileUploader({ onUploadComplete, disabled }: FileUploaderProps) 
             }
             return null;
           },
+          beforeUpload: (file) =>
+            file.type.startsWith("image/") ? compressImage(file) : file,
         }}
         disabled={disabled}
         onUploadComplete={(response) => {

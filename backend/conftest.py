@@ -24,17 +24,48 @@ from models import Base, Role, User
 from settings import settings
 from utils.auth import create_access_token, get_password_hash
 
+_TEST_DB_NAME = "profo_test"
+
 
 def _get_test_database_url() -> str:
     """获取测试用 PostgreSQL 连接串.
 
-    优先级：
-    1. 环境变量 DATABASE_URL（允许 CI/测试时显式覆盖，指向独立测试库）
+    解析规则：
+    1. 环境变量 DATABASE_URL（允许 CI/测试时显式覆盖）
     2. settings.database_url（pydantic-settings 从 .env 加载）
+
+    任一来源的连接串，其数据库名必须为 `profo_test`（专用测试库）。
+    若为主库 `profo` 或其他名称，将强制改写为 `profo_test`，避免测试
+    TRUNCATE 清空主库数据。
 
     ⚠️ 测试启动时会 TRUNCATE 该库所有表，请确保指向专用测试库。
     """
-    return os.environ.get("DATABASE_URL") or settings.database_url
+    raw = os.environ.get("DATABASE_URL") or settings.database_url
+    # 兜底保护：将路径末尾的数据库名强制改为 profo_test，绝不回退到主库 profo
+    # 兼容 `postgresql+psycopg://user:pass@host:port/dbname` 与 `postgresql://...` 两种形式
+    if f"/{_TEST_DB_NAME}" not in raw:
+        # 匹配 URL 中最后一个 `/` 之后的数据库名（不含 query string）
+        idx = raw.rfind("/")
+        if idx == -1:
+            msg = f"无法解析 DATABASE_URL 中的数据库名: {raw}"
+            raise RuntimeError(msg)
+        prefix, suffix = raw[: idx + 1], raw[idx + 1 :]
+        # 去除可能的 query string（?xxx）
+        qidx = suffix.find("?")
+        db_name = suffix[:qidx] if qidx != -1 else suffix
+        if db_name == _TEST_DB_NAME:
+            return raw
+        rest = suffix[qidx:] if qidx != -1 else ""
+        # 不抛异常直接改写，避免 CI 中误配置导致测试无法运行；但记录警告
+        import logging  # noqa: PLC0415
+
+        logging.getLogger(__name__).warning(
+            "测试 DATABASE_URL 指向非测试库 %r，已强制改写为 %r",
+            db_name,
+            _TEST_DB_NAME,
+        )
+        return f"{prefix}{_TEST_DB_NAME}{rest}"
+    return raw
 
 
 def _truncate_all_tables(engine: Engine) -> None:

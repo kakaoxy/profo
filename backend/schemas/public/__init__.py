@@ -145,6 +145,7 @@ class PublicProjectListItem(BaseModel):
     unit_price: float = Field(description="单价(万元/m²)")
     title: str = Field(description="标题")
     cover_image: str | None = Field(None, description="封面图URL")
+    cover_thumbnail_url: str | None = Field(None, description="封面缩略图URL")
     tags: list[str] = Field(default_factory=list, description="标签列表")
     project_status: MarketingProjectStatus = Field(description="项目状态")
     decoration_style: str | None = Field(None, description="装修风格")
@@ -236,6 +237,7 @@ class PublicSoldProjectItem(BaseModel):
     unit_price: float = Field(description="单价(万元/m²)")
     title: str = Field(description="标题")
     cover_image: str | None = Field(None, description="封面图URL")
+    cover_thumbnail_url: str | None = Field(None, description="封面缩略图URL")
     sold_days: int | None = Field(None, description="成交天数")
     decoration_style: str | None = Field(None, description="装修风格")
 
@@ -383,6 +385,7 @@ class PublicLeadDetail(BaseModel):
     status_color: str = Field(description="状态颜色")
     remarks: str | None = Field(None, description="备注")
     images: list[str] = Field(default_factory=list, description="户型图URL列表")
+    image_thumbnails: list[str] | None = Field(None, description="户型图缩略图URL列表")
     follow_ups: list[PublicFollowupItem] = Field(default_factory=list, description="跟进记录")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")

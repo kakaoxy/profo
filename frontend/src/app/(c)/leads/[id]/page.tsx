@@ -12,7 +12,7 @@ import { ErrorState } from "@/components/c/shared/ErrorState";
 import { ShieldAlert } from "lucide-react";
 import { fetcher, ForbiddenError } from "@/lib/swr";
 import { safeParseDate } from "@/lib/validators";
-import { getFileUrl } from "@/lib/config";
+import { getFileUrl, getThumbnailUrl } from "@/lib/config";
 import { cLocale } from "@/lib/i18n/c-locale";
 import type { components } from "@/lib/api-types";
 
@@ -97,24 +97,28 @@ export default function LeadDetailPage() {
               {cLocale.leads.floorPlanTitle}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {data.images.map((img, idx) => (
-                <a
-                  key={`${img}-${idx}`}
-                  href={getFileUrl(img)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="aspect-square relative rounded-inputs overflow-hidden border border-dove/30 bg-fog group"
-                >
-                  <Image
-                    src={getFileUrl(img)}
-                    alt={`${cLocale.leads.floorPlanTitle} ${idx + 1}`}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    sizes="(max-width: 640px) 50vw, 33vw"
-                    unoptimized
-                  />
-                </a>
-              ))}
+              {data.images.map((img, idx) => {
+                const thumb = data.image_thumbnails?.[idx];
+                const displayUrl = getThumbnailUrl(thumb, img);
+                return (
+                  <a
+                    key={`${img}-${idx}`}
+                    href={getFileUrl(img)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="aspect-square relative rounded-inputs overflow-hidden border border-dove/30 bg-fog group"
+                  >
+                    <Image
+                      src={displayUrl}
+                      alt={`${cLocale.leads.floorPlanTitle} ${idx + 1}`}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 640px) 50vw, 33vw"
+                      unoptimized
+                    />
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}

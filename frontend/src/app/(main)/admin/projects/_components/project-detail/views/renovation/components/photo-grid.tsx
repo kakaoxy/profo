@@ -4,7 +4,7 @@ import { useState, memo } from "react";
 import Image from "next/image";
 import { UploadCloud, Plus, Loader2, Trash2, Eye, ImageIcon } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
-import { getFileUrl } from "../../../utils";
+import { getThumbnailUrl } from "../../../utils";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -55,13 +55,15 @@ interface PhotoItemProps {
 
 const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  // 网格缩略图和大图预览统一使用缩略图（800px WebP），避免加载原图导致卡顿
+  const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
 
   return (
     <Dialog>
       <div className="aspect-square relative group rounded-md overflow-hidden bg-muted border border-border">
-          {isValidUrl(getFileUrl(photo.url)) ? (
+          {isValidUrl(displayUrl) ? (
             <Image
-              src={getFileUrl(photo.url)}
+              src={displayUrl}
               alt={photo.filename || "Renovation Photo"}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 25vw, 20vw"
@@ -78,7 +80,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
               <ImageIcon className="h-5 w-5 text-muted-foreground" />
             </div>
           )}
-        {!imageLoaded && isValidUrl(getFileUrl(photo.url)) && (
+        {!imageLoaded && isValidUrl(displayUrl) && (
           <div className="absolute inset-0 bg-muted animate-pulse" />
         )}
 
@@ -135,9 +137,9 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
           Photo Preview - {photo.filename || "Untitled"}
         </DialogTitle>
         <div className="relative w-full aspect-video">
-          {isValidUrl(getFileUrl(photo.url)) ? (
+          {isValidUrl(displayUrl) ? (
             <Image
-              src={getFileUrl(photo.url)}
+              src={displayUrl}
               alt="Large Preview"
               fill
               sizes="(max-width: 768px) 100vw, 768px"

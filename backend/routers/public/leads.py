@@ -20,6 +20,7 @@ from schemas.public import (
 )
 from services.leads.core import LeadService
 from utils.common import RateLimits, limiter
+from utils.image_processing import derive_thumbnail_url
 
 router = APIRouter(prefix="/public/leads", tags=["public-leads"])
 
@@ -177,6 +178,7 @@ def get_lead_detail(
         status_color=status_color,
         remarks=lead.remarks,
         images=lead.images or [],
+        image_thumbnails=[t for t in (derive_thumbnail_url(u) for u in (lead.images or [])) if t] or None,
         follow_ups=followup_items,
         created_at=lead.created_at,
         updated_at=lead.updated_at,

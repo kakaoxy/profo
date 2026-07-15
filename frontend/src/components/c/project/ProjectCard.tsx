@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { getFileUrl } from "@/lib/config";
+import { getThumbnailUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -17,6 +17,7 @@ interface ProjectCardProps {
   unitPrice: number;
   title: string;
   coverImage: string | null;
+  coverThumbnailUrl: string | null;
   tags: string[];
   projectStatus: string;
   decorationStyle: string | null;
@@ -46,10 +47,12 @@ export function ProjectCard({
   totalPrice,
   unitPrice,
   coverImage,
+  coverThumbnailUrl,
   tags,
   projectStatus,
 }: ProjectCardProps) {
   const status = STATUS_MAP[projectStatus] ?? STATUS_MAP["已售"];
+  const displayUrl = getThumbnailUrl(coverThumbnailUrl, coverImage);
 
   return (
     <Link
@@ -58,17 +61,17 @@ export function ProjectCard({
     >
       <div className="flex h-full flex-col overflow-hidden rounded-cards bg-white shadow-steep-sm transition-shadow duration-300 group-hover:shadow-steep">
         <div className="relative aspect-video overflow-hidden bg-fog">
-          {coverImage && isValidUrl(getFileUrl(coverImage)) ? (
+          {coverImage && isValidUrl(displayUrl) ? (
             isDev ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={getFileUrl(coverImage)}
+                src={displayUrl}
                 alt={communityName ?? layout}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
               <Image
-                src={getFileUrl(coverImage)}
+                src={displayUrl}
                 alt={communityName ?? layout}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
