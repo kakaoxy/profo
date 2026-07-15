@@ -17,13 +17,13 @@ interface RenovationTabsProps {
 }
 
 const tabsConfig = [
-  { value: "progress" as TabValue, label: "装修进度", icon: Camera },
   { value: "contract" as TabValue, label: "合同信息", icon: FileText },
+  { value: "progress" as TabValue, label: "装修进度", icon: Camera },
 ] as const;
 
 export function RenovationTabs({
   children,
-  defaultTab = "progress",
+  defaultTab = "contract",
 }: RenovationTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>(defaultTab);
   const [isTransitioning, setIsTransitioning] = useState(false);

@@ -68,6 +68,9 @@ class RenovationContractUpdate(BaseModel):
     # 装修公司
     renovation_company: str | None = Field(None, max_length=200, description="合作装修公司")
 
+    # 对接负责人
+    contact_person_id: str | None = Field(None, max_length=36, description="对接负责人(内部用户ID)")
+
     # 合同时间
     contract_start_date: datetime | None = Field(None, description="合同约定进场时间")
     contract_end_date: datetime | None = Field(None, description="合同约定竣工交房时间")
@@ -115,6 +118,7 @@ class RenovationContractResponse(BaseModel):
     id: str
     project_id: str
     renovation_company: str | None = None
+    contact_person_id: str | None = None
     contract_start_date: datetime | None = None
     contract_end_date: datetime | None = None
     actual_start_date: datetime | None = None

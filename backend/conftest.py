@@ -115,6 +115,12 @@ def test_engine() -> Generator[Engine, None, None]:
         pool_pre_ping=True,
     )
     Base.metadata.create_all(bind=engine)
+
+    # 运行启动迁移，补齐 create_all 无法为已存在表添加的新列（幂等）
+    from migrations import run_startup_migrations  # noqa: PLC0415
+
+    run_startup_migrations(engine)
+
     _truncate_all_tables(engine)
 
     yield engine
