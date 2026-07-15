@@ -63,7 +63,7 @@ if docker compose ps --format "{{.Name}}\t{{.Status}}" 2>/dev/null | grep -qE "d
         find "$BACKUP_DIR" -name "backup_*.sql.gz" -type f -printf '%T@ %p\n' \
             | sort -rn \
             | tail -n +"$((BACKUP_RETENTION + 1))" \
-            | awk '{print $2}' \
+            | cut -d' ' -f2- \
             | xargs -r rm -f
         log_info "清理了 $((BACKUP_COUNT - BACKUP_RETENTION)) 份旧备份"
     fi
