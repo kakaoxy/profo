@@ -33,6 +33,9 @@ _BUSINESS_FORM_SUFFIX: dict[str, str] = {
 # 序号起始值（无历史合同时从此值开始）
 _INITIAL_SEQUENCE = 28
 
+# 序号上限（4位数字，超过后需扩展格式位数）
+_MAX_SEQUENCE = 9999
+
 # 单进程内合同编号生成锁（多进程靠 DB 唯一约束兜底）
 _generate_lock = threading.Lock()
 
@@ -96,12 +99,18 @@ class ContractNumberGenerator:
                 # 在数据库侧计算最大序号，避免全表扫描后 Python 逐行解析
                 # 格式 SH####-XX：SUBSTR(contract_no, 3, 4) 提取 4 位序号，
                 # CAST 为 INTEGER 后用 MAX 聚合，避免字符串字典序比较的跨位数问题
+                # 正则过滤：仅匹配 SH + 4位数字 + - + 任意后缀的标准格式，
+                # 避免非标准 contract_no（如 SH99-SG）导致 CAST(SUBSTR) 在 PG 侧报错
                 max_num = (
                     self.db.query(func.max(cast(func.substr(ProjectContract.contract_no, 3, 4), Integer)))
-                    .filter(ProjectContract.contract_no.like("SH%-%"))
+                    .filter(ProjectContract.contract_no.op("~")(r"^SH\d{4}-.+$"))
                     .scalar()
                 )
                 next_num = (max_num + 1) if max_num else _INITIAL_SEQUENCE
+
+                if next_num > _MAX_SEQUENCE:
+                    msg = "合同编号序号已溢出（>9999），需要扩展序号位数"
+                    raise RuntimeError(msg)
 
                 new_contract_no = f"SH{next_num:04d}-{suffix}"
 

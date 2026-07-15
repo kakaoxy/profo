@@ -63,7 +63,9 @@ def get_next_contract_no(
 
 
 @router.get("/owners/{owner_id}/bank-card")
+@limiter.limit(RateLimits.PROJECT_BANK_CARD)
 def get_owner_bank_card(
+    request: Request,
     owner_id: Annotated[UUID4, Path(description="业主ID")],
     service: ProjectServiceDep,
     current_user: CurrentAdminUserDep,

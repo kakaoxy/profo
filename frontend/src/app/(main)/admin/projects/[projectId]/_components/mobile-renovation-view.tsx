@@ -450,7 +450,7 @@ export function MobileRenovationView({
         setPhotos(res.data as RenovationPhoto[]);
       }
     } catch {
-      // 忽略
+      toast.error("加载装修照片失败");
     } finally {
       setIsLoading(false);
     }

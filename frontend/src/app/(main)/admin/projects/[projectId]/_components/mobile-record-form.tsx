@@ -70,14 +70,17 @@ export function MobileRecordForm({
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!date || !person) {
+    if (!date || !person.trim()) {
       toast.error("请填写完整信息");
       return;
     }
 
-    if (recordType === "offer" && !price) {
-      toast.error("请输入出价金额");
-      return;
+    if (recordType === "offer") {
+      const priceNum = Number(price);
+      if (!price || !priceNum || priceNum <= 0) {
+        toast.error("请输入有效的出价金额");
+        return;
+      }
     }
 
     setIsSubmitting(true);
