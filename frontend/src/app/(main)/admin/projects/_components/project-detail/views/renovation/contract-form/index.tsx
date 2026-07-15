@@ -86,13 +86,17 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
   }, []);
 
   // 加载内部用户列表（用于对接负责人下拉）
+  // 失败时用 toast 提示而非 setError，避免整个表单被错误卡片替换阻塞编辑
   useEffect(() => {
     getSalesUsersSimpleAction()
       .then((result) => {
         if (result.success && result.data) {
           setUsers(result.data);
+        } else {
+          toast.error(result.message || "获取用户列表失败");
         }
       })
+      .catch(() => toast.error("加载用户列表失败"))
       .finally(() => setIsLoadingUsers(false));
   }, []);
 
