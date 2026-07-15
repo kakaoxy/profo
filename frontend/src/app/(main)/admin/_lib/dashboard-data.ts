@@ -1,7 +1,7 @@
 import { logger } from "@/lib/logger";
 import { cache } from "react";
 import { fetchClient } from "@/lib/api-server";
-import type { components } from "@/lib/api-types";
+import type { components, paths } from "@/lib/api-types";
 import type { FunnelData, RawDashboardLead } from "../types";
 import { getStatusLabel } from "@/lib/status-colors";
 import { batchGetMarketData } from "./market-data";
@@ -11,6 +11,9 @@ type ProjectResponse = components["schemas"]["ProjectResponse"];
 type LeadListItem = components["schemas"]["LeadListItem"];
 type LeadStatus = components["schemas"]["LeadStatus"];
 type CommunityMarketStatsResponse = components["schemas"]["CommunityMarketStatsResponse"];
+type ProjectQueryParams = NonNullable<
+  paths["/api/v1/projects"]["get"]["parameters"]["query"]
+>;
 
 export interface MarketDataMap {
   [communityId: string]: CommunityMarketStatsResponse | null;
@@ -21,6 +24,8 @@ export interface DashboardDataResult {
   pendingLeadsTotal: number;
   funnelData: FunnelData;
   projects: ProjectResponse[];
+  renovationProjects: ProjectResponse[];
+  sellingProjects: ProjectResponse[];
   leads: RawDashboardLead[];
   marketDataMap: MarketDataMap;
   errors: {
@@ -28,6 +33,8 @@ export interface DashboardDataResult {
     pendingLeads?: string;
     funnel?: string;
     projects?: string;
+    renovationProjects?: string;
+    sellingProjects?: string;
     leads?: string;
     marketData?: string;
   };
@@ -149,11 +156,39 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
         query: { page: 1, page_size: 10 },
       },
     }),
+    client.GET("/api/v1/projects", {
+      params: {
+        query: {
+          page: 1,
+          page_size: 5,
+          status: "renovating" as NonNullable<ProjectQueryParams>["status"],
+          include_interactions: true,
+        },
+      },
+    }),
+    client.GET("/api/v1/projects", {
+      params: {
+        query: {
+          page: 1,
+          page_size: 5,
+          status: "selling" as NonNullable<ProjectQueryParams>["status"],
+          include_interactions: true,
+        },
+      },
+    }),
   ]);
 
   const errors: DashboardDataResult["errors"] = {};
 
-  const [projectStatsRes, pendingLeadsRes, funnelRes, projectsRes, leadsRes] = results;
+  const [
+    projectStatsRes,
+    pendingLeadsRes,
+    funnelRes,
+    projectsRes,
+    leadsRes,
+    renovationProjectsRes,
+    sellingProjectsRes,
+  ] = results;
 
   const projectStats =
     projectStatsRes.status === "fulfilled" && projectStatsRes.value.data
@@ -191,6 +226,24 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     logger.error("[Dashboard] 项目列表获取失败:", projectsRes.reason);
   }
 
+  const renovationProjects =
+    renovationProjectsRes.status === "fulfilled" && renovationProjectsRes.value.data
+      ? validateProjectResponseList(renovationProjectsRes.value.data.items)
+      : [];
+  if (renovationProjectsRes.status === "rejected") {
+    errors.renovationProjects = "获取装修中项目失败";
+    logger.error("[Dashboard] 装修中项目获取失败:", renovationProjectsRes.reason);
+  }
+
+  const sellingProjects =
+    sellingProjectsRes.status === "fulfilled" && sellingProjectsRes.value.data
+      ? validateProjectResponseList(sellingProjectsRes.value.data.items)
+      : [];
+  if (sellingProjectsRes.status === "rejected") {
+    errors.sellingProjects = "获取在售项目失败";
+    logger.error("[Dashboard] 在售项目获取失败:", sellingProjectsRes.reason);
+  }
+
   const leadItems =
     leadsRes.status === "fulfilled" && leadsRes.value.data
       ? validateLeadListItems(leadsRes.value.data.items)
@@ -217,6 +270,8 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     pendingLeadsTotal,
     funnelData,
     projects,
+    renovationProjects,
+    sellingProjects,
     leads: rawLeads,
     marketDataMap,
     errors,

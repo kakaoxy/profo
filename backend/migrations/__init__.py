@@ -34,6 +34,8 @@
   数据迁移为"交付"（移除安装阶段）
 - add_media_type_to_renovation_photos: 为 renovation_photos 表添加 media_type 列（图片/视频区分）
 - add_counterparty_type_to_finance_records: 为 finance_records 表添加 counterparty_type 列（公司/个人支付方）
+- rebuild_contract_no_index: 重建 idx_contract_no 为部分唯一索引（WHERE is_deleted=false），
+  清理已删除项目的合同记录，允许合同编号在项目软删除后被复用
 
 """
 
@@ -47,6 +49,7 @@ from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
 from migrations.migrate_installation_stage import migrate_installation_stage_to_delivery
+from migrations.rebuild_contract_no_index import rebuild_contract_no_index
 from utils.crypto import decrypt, encrypt, hash_phone
 
 logger = logging.getLogger(__name__)
@@ -884,6 +887,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_media_type_to_renovation_photos(engine)
         add_counterparty_type_to_finance_records(engine)
         cleanup_reserved_contracts(engine)
+        rebuild_contract_no_index(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

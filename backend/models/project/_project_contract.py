@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -56,5 +57,11 @@ class ProjectContract(BaseModel):
     __table_args__ = (
         Index("idx_contract_project", "project_id"),
         Index("idx_contract_status", "contract_status"),
-        Index("idx_contract_no", "contract_no", unique=True),
+        # 部分唯一索引：仅对未软删除记录强制唯一，允许已删除项目的合同编号被复用
+        Index(
+            "idx_contract_no",
+            "contract_no",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
+        ),
     )

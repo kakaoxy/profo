@@ -119,3 +119,29 @@ export function DashboardLeadsTableSkeleton() {
     </div>
   );
 }
+
+export function QuickEntrySkeleton() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {[0, 1].map((i) => (
+        <div key={i} className="bg-card rounded-xl border border-border shadow-card p-3 animate-pulse">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-8 w-8 rounded-lg bg-muted" />
+            <div className="h-4 w-24 bg-muted rounded" />
+          </div>
+          <div className="space-y-2">
+            {[0, 1, 2].map((j) => (
+              <div key={j} className="flex items-center justify-between min-h-[56px] p-3 border-b border-border last:border-b-0">
+                <div className="space-y-1">
+                  <div className="h-3 w-32 bg-muted rounded" />
+                  <div className="h-2 w-20 bg-muted rounded" />
+                </div>
+                <div className="h-5 w-12 bg-muted rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
