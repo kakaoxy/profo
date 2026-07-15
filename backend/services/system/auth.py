@@ -188,10 +188,10 @@ class AuthService:
 
     # 后台允许的角色（C 端 customer 明确禁止登录后台）
     # 注意：与 dependencies/auth.py 的 _INTERNAL_ROLE_CODES 不同。
-    #   _BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
+    #   BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
     #   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
     # user 角色可登录后台但不应生成/使用 API Key。
-    _BACKEND_ROLE_CODES: ClassVar[set[str]] = {"admin", "operator", "user"}
+    BACKEND_ROLE_CODES: ClassVar[set[str]] = {"admin", "operator", "user"}
 
     @staticmethod
     def authenticate_backend_user(db: Session, username: str, password: str) -> User:
@@ -213,7 +213,7 @@ class AuthService:
 
         """
         user = AuthService.authenticate_user(db, username, password)
-        if user.role is None or user.role.code not in AuthService._BACKEND_ROLE_CODES:
+        if user.role is None or user.role.code not in AuthService.BACKEND_ROLE_CODES:
             msg = "该账号无权登录后台"
             raise PermissionDeniedError(msg)
         return user

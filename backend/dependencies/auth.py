@@ -26,8 +26,8 @@ oauth2_scheme = OAuth2PasswordBearer(
 DbSessionDep = Annotated[Session, Depends(get_db)]
 
 # 后台内部角色：API Key 生成与使用仅限这些角色
-# 注意：与 services/system/auth.py 的 _BACKEND_ROLE_CODES 不同。
-#   _BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
+# 注意：与 services/system/auth.py 的 BACKEND_ROLE_CODES 不同。
+#   BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
 #   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
 # C 端 user 角色可登录后台但不允许生成/使用 API Key 调用机器接口。
 _INTERNAL_ROLE_CODES = {"admin", "operator"}
