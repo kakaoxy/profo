@@ -194,20 +194,56 @@ process_key "POSTGRES_PASSWORD" gen_postgres_pass "POSTGRES_PASSWORD"
 process_key "JWT_SECRET_KEY"    gen_jwt_secret    "JWT_SECRET_KEY"
 process_key "ENCRYPTION_KEY"    gen_fernet_key    "ENCRYPTION_KEY"
 
-# ---------- 7. 同步 DATABASE_URL 中的占位密码 ----------
+# ---------- 7. 同步 DATABASE_URL（占位符或密码不一致时） ----------
 DB_URL="$(read_env_var DATABASE_URL)"
-if [[ "$DB_URL" == *"CHANGE_ME"* ]]; then
-  PG_PASS="$(read_env_var POSTGRES_PASSWORD)"
-  PG_USER="$(read_env_var POSTGRES_USER)"
-  PG_DB="$(read_env_var POSTGRES_DB)"
-  if [ -n "$PG_PASS" ] && [ -n "$PG_USER" ] && [ -n "$PG_DB" ]; then
-    NEW_URL="postgresql+psycopg://${PG_USER}:${PG_PASS}@db:5432/${PG_DB}"
-    upsert_env "DATABASE_URL" "$NEW_URL"
-    info "DATABASE_URL 仍含 CHANGE_ME，已用新密码同步"
+PG_PASS="$(read_env_var POSTGRES_PASSWORD)"
+PG_USER="$(read_env_var POSTGRES_USER)"
+PG_DB="$(read_env_var POSTGRES_DB)"
+
+# 从 DATABASE_URL 中提取密码部分：postgresql+psycopg://USER:PASS@HOST:PORT/DB
+extract_url_password() {
+  echo "$1" | sed -E 's|^postgresql\+psycopg://[^:]+:([^@]+)@.*$|\1|'
+}
+
+NEED_URL_SYNC=false
+if [[ "$DB_URL" == *"CHANGE_ME"* ]] || [[ "$DB_URL" == *"请替换"* ]]; then
+  NEED_URL_SYNC=true
+elif [ -n "$PG_PASS" ] && [ -n "$DB_URL" ]; then
+  # 密码已设置但 URL 中密码与 POSTGRES_PASSWORD 不一致（--force 改密码后）
+  URL_PASS="$(extract_url_password "$DB_URL")"
+  if [ -n "$URL_PASS" ] && [ "$URL_PASS" != "$PG_PASS" ]; then
+    NEED_URL_SYNC=true
   fi
 fi
 
-# ---------- 8. 摘要 ----------
+if [ "$NEED_URL_SYNC" = true ] && [ -n "$PG_PASS" ] && [ -n "$PG_USER" ] && [ -n "$PG_DB" ]; then
+  NEW_URL="postgresql+psycopg://${PG_USER}:${PG_PASS}@db:5432/${PG_DB}"
+  upsert_env "DATABASE_URL" "$NEW_URL"
+  info "DATABASE_URL 已同步当前 POSTGRES_PASSWORD"
+fi
+
+# ---------- 8. 完整性校验 ----------
+# 检查 .env 是否包含后端 Settings 所有必填字段（无默认值的字段）
+# 缺失会导致后端启动时 Settings() 失败 → sys.exit(1)
+echo ""
+MISSING_FIELDS=()
+for field in DATABASE_URL JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET \
+             POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB; do
+  val="$(read_env_var "$field")"
+  if [ -z "$val" ]; then
+    MISSING_FIELDS+=("$field")
+  fi
+done
+
+if [ ${#MISSING_FIELDS[@]} -gt 0 ]; then
+  warn "以下必填字段缺失（后端将无法启动）："
+  for f in "${MISSING_FIELDS[@]}"; do
+    printf "  %s• %s%s\n" "$C_RED" "$f" "$C_RESET"
+  done
+  warn "请手动编辑 .env 补充，或检查 .env.docker.example 模板"
+fi
+
+# ---------- 9. 摘要 ----------
 echo ""
 if [ "$SHOW_SECRETS" = false ]; then
   info "默认打码显示，查看完整密钥: ./init-env.sh --show"
