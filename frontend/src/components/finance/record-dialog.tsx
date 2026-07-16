@@ -478,12 +478,7 @@ export function RecordDialog({
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className={cn(
-                    "w-full text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] rounded-full",
-                    type === "income"
-                      ? "bg-rust hover:bg-rust/90"
-                      : "bg-ink hover:bg-ink/90",
-                  )}
+                  className="w-full bg-ink text-white shadow-sm transition-[background-color,transform] hover:bg-ink/90 active:scale-[0.98] rounded-full"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -501,12 +496,7 @@ export function RecordDialog({
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={cn(
-                  "w-full text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] rounded-full",
-                  type === "income"
-                    ? "bg-rust hover:bg-rust/90"
-                    : "bg-ink hover:bg-ink/90",
-                )}
+                className="w-full bg-ink text-white shadow-sm transition-[background-color,transform] hover:bg-ink/90 active:scale-[0.98] rounded-full"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
