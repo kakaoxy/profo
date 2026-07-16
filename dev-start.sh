@@ -71,10 +71,10 @@ fi
 UPLOADS_SYMLINK="backend/static/uploads"
 UPLOADS_TARGET="../../uploads"
 mkdir -p backend/static
-if [ ! -e "$UPLOADS_SYMLINK" ]; then
-  ln -s "$UPLOADS_TARGET" "$UPLOADS_SYMLINK"
-  echo "✅ 已创建软链 $UPLOADS_SYMLINK → $UPLOADS_TARGET（共享 uploads 目录）"
-elif [ -L "$UPLOADS_SYMLINK" ]; then
+mkdir -p uploads  # 确保软链目标存在，避免 broken symlink
+# 注意：-e 会跟随软链判断目标是否存在，broken symlink 会通过 ! -e 但仍是有效软链
+# 因此先判断 -L（是否为软链），再判断 -d（是否为真实目录），最后才创建
+if [ -L "$UPLOADS_SYMLINK" ]; then
   # 已是软链，确认指向正确
   current_target="$(readlink "$UPLOADS_SYMLINK")"
   if [ "$current_target" != "$UPLOADS_TARGET" ]; then
@@ -86,6 +86,9 @@ elif [ -d "$UPLOADS_SYMLINK" ]; then
   echo "⚠️  $UPLOADS_SYMLINK 是真实目录而非软链"
   echo "   如需共享 Docker uploads，请先删除该目录: rm -rf $UPLOADS_SYMLINK"
   echo "   当前 dev 模式将使用独立的本地 uploads，与 Docker 不互通"
+elif [ ! -e "$UPLOADS_SYMLINK" ]; then
+  ln -s "$UPLOADS_TARGET" "$UPLOADS_SYMLINK"
+  echo "✅ 已创建软链 $UPLOADS_SYMLINK → $UPLOADS_TARGET（共享 uploads 目录）"
 fi
 
 CMD="${1:-up}"
