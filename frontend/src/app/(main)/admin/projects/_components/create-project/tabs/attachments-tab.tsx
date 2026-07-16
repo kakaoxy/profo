@@ -37,11 +37,16 @@ interface TabProps {
 export function AttachmentsTab({ form, project, isEditMode }: TabProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const attachments = useWatch({
+  const watchedAttachments = useWatch({
     control: form.control,
     name: "attachments",
     defaultValue: [],
-  }) || [];
+  });
+  // 稳定 attachments 引用，避免 || [] 在每次渲染产生新数组导致下游 useMemo 失效
+  const attachments = useMemo(
+    () => watchedAttachments ?? [],
+    [watchedAttachments],
+  );
 
   // ============ 新建模式：表单管理附件 ============
   const attachmentInfos = useMemo<AttachmentInfo[]>(

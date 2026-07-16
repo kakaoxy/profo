@@ -18,6 +18,7 @@ import { HeaderStats } from "./header-stats";
 import { TrendChart } from "./trend-chart";
 import { LedgerTable } from "./ledger-table";
 import { getProjectCashFlowAction } from "../actions";
+import { getProjectDetailAction } from "../../../actions/core";
 import {
   CashFlowRecord,
   CashFlowStats,
@@ -47,17 +48,30 @@ export function CashFlowSheet() {
     stats: CashFlowStats;
     records: CashFlowRecord[];
   } | null>(null);
+  const [businessForm, setBusinessForm] = useState<
+    "agent" | "wholesale" | null
+  >(null);
 
   const fetchData = useCallback(async () => {
     if (!projectId) return;
 
     setIsLoading(true);
     try {
-      const apiData = await getProjectCashFlowAction(projectId);
+      const [apiData, projectResult] = await Promise.all([
+        getProjectCashFlowAction(projectId),
+        getProjectDetailAction(projectId, false),
+      ]);
       if (!apiData) {
         toast.error("获取数据失败");
         return;
       }
+
+      // 提取项目业务形式，用于应收应付表筛选
+      const bf =
+        projectResult.success && projectResult.data
+          ? (projectResult.data.business_form ?? null)
+          : null;
+      setBusinessForm(bf);
 
       const records = apiData.records.map((r) =>
         mapToCashFlowRecord(r, projectId)
@@ -78,6 +92,7 @@ export function CashFlowSheet() {
       fetchData();
     } else {
       setData(null);
+      setBusinessForm(null);
     }
   }, [isOpen, fetchData]);
 
@@ -139,6 +154,7 @@ export function CashFlowSheet() {
                     projectId={projectId}
                     data={data.records}
                     onRefresh={fetchData}
+                    businessForm={businessForm}
                   />
                 )}
               </section>
