@@ -102,6 +102,18 @@ function isCalculationLogicFaded(logic: string): boolean {
   return logic === "无" || logic === "—";
 }
 
+/**
+ * 格式化计算逻辑文本：将小数比例转为百分数，更符合业务直觉。
+ * 例如 "签约价格*0.01（最高40000）" → "签约价格*1%（最高40000）"
+ *      "成交总价*0.005"          → "成交总价*0.5%"
+ * 注意：先替换 0.005 再替换 0.01，避免短串误匹配。
+ */
+function formatCalculationLogic(logic: string): string {
+  return logic
+    .replaceAll("0.005", "0.5%")
+    .replaceAll("0.01", "1%");
+}
+
 /** 格式化金额，null 返回 "—" */
 function formatAmount(
   value: number | null | undefined,
@@ -224,6 +236,9 @@ export function ReceivablePayableTable({
                       const badge = getDifferenceBadge(item.difference);
                       const expected = item.expected_amount;
                       const actual = item.actual_amount;
+                      const logicText = formatCalculationLogic(
+                        item.calculation_logic,
+                      );
                       return (
                         <div
                           key={`${section.type}-${group.stage}-${item.category}`}
@@ -240,7 +255,7 @@ export function ReceivablePayableTable({
                                 logicFaded ? "text-dove" : "text-graphite",
                               )}
                             >
-                              {item.calculation_logic || "—"}
+                              {logicText || "—"}
                             </span>
                           </div>
 
