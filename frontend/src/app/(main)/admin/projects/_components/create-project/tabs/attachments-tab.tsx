@@ -113,7 +113,11 @@ export function AttachmentsTab({ form, project, isEditMode }: TabProps) {
     [project],
   );
 
-  const { attachments: editAttachments, createHandlers } = useProjectAttachments({
+  const {
+    attachments: editAttachments,
+    createHandlers,
+    onUpload,
+  } = useProjectAttachments({
     signingMaterials: project?.signing_materials,
     onUpdateAttachments: handleUpdateAttachments,
   });
@@ -129,6 +133,7 @@ export function AttachmentsTab({ form, project, isEditMode }: TabProps) {
           attachments={editAttachments}
           handlers={editHandlers}
           onUpdateAttachments={handleUpdateAttachments}
+          onUploadAttachment={onUpload}
         />
         <ImagePreviewDialog url={previewImage} onClose={() => setPreviewImage(null)} />
       </>

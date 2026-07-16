@@ -49,7 +49,7 @@ export function ProjectDetailSheet({
     handleDealSuccess,
   } = useProjectDetail({ initialProject, isOpen });
 
-  const { attachments, createHandlers } = useProjectAttachments({
+  const { attachments, createHandlers, onUpload } = useProjectAttachments({
     signingMaterials: project?.signing_materials,
     onUpdateAttachments,
   });
@@ -121,6 +121,9 @@ export function ProjectDetailSheet({
                     attachments={attachments}
                     handlers={handlers}
                     onUpdateAttachments={onUpdateAttachments}
+                    onUploadAttachment={
+                      onUpdateAttachments ? onUpload : undefined
+                    }
                     onHandoverSuccess={handleHandoverSuccess}
                   />
                 )}

@@ -12,6 +12,7 @@ interface DefaultViewProps {
   attachments: AttachmentInfo[];
   handlers: AttachmentHandlers;
   onUpdateAttachments?: (attachments: AttachmentInfo[]) => void;
+  onUploadAttachment?: (attachment: AttachmentInfo) => void;
   onHandoverSuccess: () => void;
 }
 
@@ -20,6 +21,7 @@ export function DefaultView({
   attachments,
   handlers,
   onUpdateAttachments,
+  onUploadAttachment,
   onHandoverSuccess,
 }: DefaultViewProps) {
   const showHandoverButton =
@@ -46,6 +48,7 @@ export function DefaultView({
             attachments={attachments}
             handlers={handlers}
             onUpdateAttachments={onUpdateAttachments}
+            onUploadAttachment={onUploadAttachment}
           />
         </TabsContent>
       </Tabs>
