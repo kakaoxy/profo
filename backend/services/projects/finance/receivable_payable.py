@@ -36,9 +36,10 @@ RECEIVABLE_PAYABLE_METADATA: list[dict[str, object]] = [
         "stage": "签约",
         "category": CashFlowCategory.CHANNEL_COMMISSION,
         "category_label": "渠道佣金",
-        "calculation_logic": "签约价格*0.01",
+        "calculation_logic": "签约价格*0.01（最高40000）",
         "calc_type": "signing_price_pct",
         "calc_param": Decimal("0.01"),
+        "calc_cap": Decimal(40000),
     },
     {
         "type": CashFlowType.EXPENSE,
@@ -146,9 +147,10 @@ RECEIVABLE_PAYABLE_METADATA: list[dict[str, object]] = [
         "stage": "已售",
         "category": CashFlowCategory.OPERATION_FEE,
         "category_label": "运营费",
-        "calculation_logic": "成交总价*0.01",
+        "calculation_logic": "成交总价*0.01（最高40000）",
         "calc_type": "sold_price_pct",
         "calc_param": Decimal("0.01"),
+        "calc_cap": Decimal(40000),
     },
     {
         "type": CashFlowType.EXPENSE,
@@ -199,7 +201,7 @@ RECEIVABLE_PAYABLE_METADATA: list[dict[str, object]] = [
         "category_label": "履约保证金",
         "calculation_logic": "20000",
         "calc_type": "fixed",
-        "calc_param": Decimal("20000"),
+        "calc_param": Decimal(20000),
     },
     {
         "type": CashFlowType.EXPENSE,
@@ -260,7 +262,7 @@ RECEIVABLE_PAYABLE_METADATA: list[dict[str, object]] = [
         "category_label": "名额费",
         "calculation_logic": "10000",
         "calc_type": "fixed",
-        "calc_param": Decimal("10000"),
+        "calc_param": Decimal(10000),
     },
     {
         "type": CashFlowType.EXPENSE,
@@ -444,6 +446,7 @@ class _ReceivablePayableMixin:
                 renovation,
                 investment,
             )
+            expected = self._apply_cap(expected, meta.get("calc_cap"))
             actual = agg.get(
                 (meta["type"].value, meta["category"].value),
                 Decimal(0),
@@ -512,5 +515,12 @@ class _ReceivablePayableMixin:
                 return None
             return investment.total_investment
         if calc_type == "bond":
-            return Decimal("20000")
+            return Decimal(20000)
         return None
+
+    @staticmethod
+    def _apply_cap(value: Decimal | None, cap: Decimal | None) -> Decimal | None:
+        """对计算结果应用上限：value 或 cap 为 None 时原样返回."""
+        if value is None or cap is None:
+            return value
+        return min(value, cap)
