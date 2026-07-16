@@ -53,6 +53,27 @@ export POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
 export DATABASE_URL="postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
 export DEBUG=true
 
+# 从 .env 提取 Settings 必填字段（无默认值，缺失会导致 sys.exit(1)）
+# backend 从 backend/ 目录运行，env_file=".env" 找不到根目录 .env，需通过 env vars 注入
+JWT_SECRET_KEY="$(read_env_var JWT_SECRET_KEY)"
+ENCRYPTION_KEY="$(read_env_var ENCRYPTION_KEY)"
+WECHAT_APPID="$(read_env_var WECHAT_APPID)"
+WECHAT_SECRET="$(read_env_var WECHAT_SECRET)"
+
+for _field in JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET; do
+  if [ -z "${!_field}" ]; then
+    echo "❌ .env 中未找到 ${_field}"
+    echo "   请运行: ./init-env.sh"
+    exit 1
+  fi
+done
+export JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET
+
+# 绕过 HTTP 代理（Clash/V2Ray 等）对本地请求的拦截
+# 代理软件会设置 HTTP_PROXY，导致 fetch 127.0.0.1:8000 走代理 → 502
+export NO_PROXY="127.0.0.1,localhost,0.0.0.0"
+export no_proxy="127.0.0.1,localhost,0.0.0.0"
+
 # 检查 backend/.venv
 if [ ! -x backend/.venv/bin/uvicorn ]; then
   echo "❌ backend/.venv 不存在或缺少 uvicorn"
