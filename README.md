@@ -321,34 +321,33 @@ from services.projects import ProjectService
 ### 一键启动
 
 ```bash
-# 1. 复制环境变量模板
-cp .env.docker.example .env
-
-# 2. 编辑 .env 填入真实凭据（必填项见下方"配置说明"）
-#    - POSTGRES_PASSWORD  数据库强密码
-#    - JWT_SECRET_KEY     JWT 签名密钥 (openssl rand -hex 32)
+# 1. 生成密钥并初始化 .env（自动从 .env.docker.example 创建并填入随机密钥）
+./init-env.sh
+#    会自动生成并写入：
+#    - POSTGRES_PASSWORD  数据库强密码（24 位字母数字）
+#    - JWT_SECRET_KEY     JWT 签名密钥（64 位 hex）
 #    - ENCRYPTION_KEY     Fernet 加密密钥
-#    - WECHAT_APPID/SECRET  微信凭据（不使用可填占位符）
+#    - DATABASE_URL       自动同步新密码
+# 查看完整密钥: ./init-env.sh --show
+# 强制重新生成所有密钥: ./init-env.sh --force
 
-# 3. 构建并启动全部服务
+# 2. 构建并启动全部服务
 docker compose up -d --build
 ```
 
 启动后访问 `http://localhost/` 即可看到前端页面，API 走 `http://localhost/api/...`。
 > 注：当前架构使用宿主 nginx 反代到 `127.0.0.1:8000/3000`，不再在 compose 内启动 nginx 容器。
 
-### 首次部署：初始化管理员账号
+### 首次部署：初始化数据库与管理员账号
 
 ```bash
-# 创建数据库表（应用启动时已自动执行 init_db()，此处可省略）
-# docker compose exec backend .venv/bin/python init_db.py
-
-# 创建角色 + 默认 admin 用户（首次会打印临时密码，仅显示一次）
-docker compose exec backend .venv/bin/python init_admin.py
+# 一键初始化：建表 + 创建角色 + 创建管理员（自动生成临时密码）
+./setup.sh --docker
 ```
 
-> 默认管理员用户名：`admin`，临时密码格式 `Temp<12位随机字符>9!`，首次登录强制修改。
-> 当前项目预设管理员密码：`Fdd123..`（详见 [AGENTS.md](AGENTS.md)）。
+`setup.sh --docker` 会在 backend 容器内执行 `init_db.py` 与 `init_admin.py`，并打印管理员账号与临时密码。首次登录强制修改密码。
+
+> 默认管理员用户名：`admin`，临时密码由脚本随机生成并打印，首次登录强制修改。
 
 ### 验证部署
 
@@ -447,20 +446,35 @@ curl -LsSf https://astral.sh/uv/install.sh | sh        # macOS/Linux
 # 创建虚拟环境并安装依赖
 uv venv
 uv sync
+```
 
-# 配置环境变量（见"配置说明"）
-cp .env.example .env
-# 修改 DATABASE_URL 指向本地 PostgreSQL
+### 一键初始化（推荐）
 
-# 初始化数据库
-uv run python init_db.py
-uv run python init_admin.py    # 首次会打印临时密码
+回到项目根目录，使用脚本完成密钥生成、数据库建表、管理员创建：
 
-# 启动开发服务器
+```bash
+cd ..
+
+# 1. 生成 .env 密钥（首次运行自动从模板创建 .env）
+./init-env.sh
+
+# 2. 初始化数据库 + 管理员（自动启动 PostgreSQL、建表、创建 admin 用户）
+./setup.sh
+#    - 首次运行会自动生成管理员临时密码并打印
+#    - 支持参数：
+#      ./setup.sh --admin-password 'P@ssw0rd'   # 使用指定密码
+#      ./setup.sh --reset-admin                 # 重置管理员密码
+#      ./setup.sh --skip-db                     # 跳过 DB 启动（已在别处启动时使用）
+#      ./setup.sh --help                        # 查看帮助
+
+# 3. 启动开发服务器
+cd backend
 uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # API:   http://127.0.0.1:8000
 # 文档:  http://127.0.0.1:8000/docs
 ```
+
+> 也可使用项目根目录的 `./dev-start.sh` 一键启动数据库 + 后端 + 前端开发环境。
 
 ### 开发命令
 
@@ -787,19 +801,14 @@ graph TB
 # 1. 克隆代码
 git clone <repo-url> profo && cd profo
 
-# 2. 准备环境变量
-cp .env.docker.example .env
-# 编辑 .env：
-#   POSTGRES_PASSWORD  数据库强密码（避免含 # 等特殊字符，防止 URL 解析失败）
-#   JWT_SECRET_KEY     openssl rand -hex 32
-#   ENCRYPTION_KEY     python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-#   WECHAT_APPID/SECRET
+# 2. 生成密钥并初始化 .env（自动从模板创建并填入随机密钥）
+./init-env.sh
 
 # 3. 构建并启动
 docker compose up -d --build
 
-# 4. 初始化管理员（首次部署）
-docker compose exec backend .venv/bin/python init_admin.py
+# 4. 初始化数据库 + 管理员（首次部署）
+./setup.sh --docker
 # 会打印临时密码，首次登录强制修改
 
 # 5. 验证
@@ -893,7 +902,14 @@ docker compose up -d --build
 
 ### Q1: 后端启动报 `JWT_SECRET_KEY not set` / `ENCRYPTION_KEY not set`
 
-`.env` 缺少必填环境变量。生成密钥：
+`.env` 缺少必填环境变量。最简单的方式是运行 `./init-env.sh` 自动生成所有密钥：
+
+```bash
+./init-env.sh        # 生成并写入 POSTGRES_PASSWORD / JWT_SECRET_KEY / ENCRYPTION_KEY
+./init-env.sh --show # 查看完整密钥（默认打码）
+```
+
+或手动生成单个密钥：
 
 ```bash
 openssl rand -hex 32          # JWT_SECRET_KEY
@@ -921,19 +937,23 @@ docker compose exec frontend wget -qO- http://backend:8000/health
 
 ### Q4: 忘记管理员密码
 
-进入容器重置：
+使用 `setup.sh --reset-admin` 重置（自动生成新临时密码）：
 
 ```bash
-docker compose exec backend .venv/bin/python init_admin.py
+# Docker 部署环境
+./setup.sh --docker --reset-admin
+
+# 本地开发环境
+./setup.sh --reset-admin
 ```
 
-> ⚠️ 该脚本会检测已有 admin 用户并跳过。如需强制重置，需手动删除 `users` 表中 `username='admin'` 记录后重跑：
+或指定新密码：
 
 ```bash
-docker compose exec db psql -U $POSTGRES_USER -d $POSTGRES_DB \
-  -c "DELETE FROM users WHERE username='admin';"
-docker compose exec backend .venv/bin/python init_admin.py
+./setup.sh --docker --admin-password 'YourNew!Pass1'
 ```
+
+> 密码需满足强度策略：≥8 位，含大小写字母、数字、特殊字符。
 
 ### Q5: 前端类型错误 `Property 'xxx' does not exist`
 
@@ -976,7 +996,7 @@ pnpm install
 docker compose down              # 停止并删除容器
 docker compose down -v           # 同时删除 pgdata volume（数据丢失！）
 docker compose up -d --build     # 重新启动
-docker compose exec backend .venv/bin/python init_admin.py    # 重新初始化管理员
+./setup.sh --docker              # 重新初始化数据库 + 管理员
 ```
 
 ---
@@ -993,6 +1013,9 @@ ProFo/
 ├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend）
 ├── docker-compose.dev.yml         # 开发环境 override（映射 db 端口到本地）
 ├── .env.docker.example            # Docker 部署环境变量模板
+├── init-env.sh                    # 一键生成密钥并初始化 .env
+├── setup.sh                       # 一键初始化数据库与管理员账号
+├── dev-start.sh                   # 本地开发一键启停（db + backend + frontend）
 ├── deploy-local.sh                # 本地构建镜像并推送到服务器
 ├── deploy-server.sh               # 服务器端加载镜像并启动 compose
 │
