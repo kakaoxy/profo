@@ -45,12 +45,13 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
     <table className="w-full border-collapse">
       <thead className="bg-muted border-b border-border">
         <tr className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <th className="p-4 pl-6 font-medium">小区 / 房源信息</th>
+          <th className="p-4 pl-6 hidden lg:table-cell font-medium">区域</th>
+          <th className="p-4 pl-6 lg:pl-4 font-medium">小区 / 房源信息</th>
           <th className="p-4 hidden md:table-cell font-medium">户型 / 面积</th>
           <th className="p-4 hidden sm:table-cell font-medium text-right">总价 / 单价</th>
           <th className="p-4 text-center font-medium">状态</th>
-          <th className="p-4 hidden lg:table-cell font-medium">区域</th>
           <th className="p-4 hidden xl:table-cell font-medium">录入人</th>
+          <th className="p-4 hidden xl:table-cell font-medium text-right whitespace-nowrap">评估价</th>
           <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">创建时间</th>
           <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">更新时间</th>
           <th className="p-4 pr-6 text-right font-medium">操作</th>
@@ -66,8 +67,16 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               className="hover:bg-muted transition-colors group cursor-pointer"
               onClick={() => onOpenDetail(lead.id)}
             >
+              {/* 区域 */}
+              <td className="p-4 pl-6 hidden lg:table-cell">
+                <span className="text-sm text-muted-foreground">
+                  {lead.district || "-"}
+                  {lead.businessArea ? ` · ${lead.businessArea}` : ""}
+                </span>
+              </td>
+
               {/* 小区 / 房源信息 */}
-              <td className="p-4 pl-6">
+              <td className="p-4 pl-6 lg:pl-4">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-16 overflow-hidden rounded-md bg-muted border border-border relative flex items-center justify-center shrink-0">
                     {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
@@ -134,18 +143,17 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                 </Badge>
               </td>
 
-              {/* 区域 */}
-              <td className="p-4 hidden lg:table-cell">
-                <span className="text-sm text-muted-foreground">
-                  {lead.district || "-"}
-                  {lead.businessArea ? ` · ${lead.businessArea}` : ""}
-                </span>
-              </td>
-
               {/* 录入人 */}
               <td className="p-4 hidden xl:table-cell">
                 <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
                   {lead.creatorName || "-"}
+                </span>
+              </td>
+
+              {/* 评估价 */}
+              <td className="p-4 hidden xl:table-cell text-right">
+                <span className="text-sm font-medium text-foreground tabular-nums">
+                  {lead.evalPrice ? `¥${lead.evalPrice}万` : "-"}
                 </span>
               </td>
 
