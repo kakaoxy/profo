@@ -6,12 +6,22 @@ interface AlertCardProps {
 
 export function AlertCard({ count }: AlertCardProps) {
   return (
-    <div className="col-span-12 lg:col-span-2 bg-card rounded-xl border border-border shadow-card p-3 lg:p-4 flex items-center gap-2 lg:gap-3 h-40 min-w-0">
+    <div
+      className="col-span-12 lg:col-span-2 bg-card rounded-xl border border-border shadow-card p-3 lg:p-4 flex items-center gap-2 lg:gap-3 h-40 min-w-0"
+      role="region"
+      aria-label="待评估事项预警"
+    >
       <div className="w-12 h-12 bg-error-container rounded-xl flex items-center justify-center shrink-0">
-        <AlertCircle className="w-6 h-6 text-error" />
+        <AlertCircle className="w-6 h-6 text-error" aria-hidden="true" />
       </div>
       <div className="min-w-0">
-        <p className="text-3xl font-black text-error leading-none">{count}</p>
+        <p
+          className="text-3xl font-black text-error leading-none tabular-nums"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {count}
+        </p>
         <p className="text-xs font-medium text-muted-foreground mt-1 truncate">
           待评估事项
         </p>

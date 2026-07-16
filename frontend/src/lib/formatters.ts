@@ -139,3 +139,65 @@ export function formatPercent(value: number | null | undefined, digits = 1): str
   if (value === null || value === undefined || isNaN(value)) return "0.0%";
   return `${value.toFixed(digits)}%`;
 }
+
+// ============================================================================
+// 工作台专用 Intl 格式化（模块级实例，避免每次渲染重建）
+// ============================================================================
+
+const dashboardNumberFormatter = new Intl.NumberFormat("zh-CN");
+const dashboardDecimalFormatter = new Intl.NumberFormat("zh-CN", {
+  maximumFractionDigits: 1,
+});
+const dashboardDateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** 工作台：面积 "100㎡" */
+export function formatAreaSqm(value: number | null): string {
+  return value !== null ? `${dashboardNumberFormatter.format(value)}㎡` : "-";
+}
+
+/** 工作台：整数计数（带千分位）"1,234" */
+export function formatCount(value: number): string {
+  return dashboardNumberFormatter.format(value);
+}
+
+/** 工作台：总价 "350万" */
+export function formatPriceWan(value: number | null): string {
+  return value !== null ? `${dashboardNumberFormatter.format(value)}万` : "-";
+}
+
+/** 工作台：单价 "3.8万/㎡" */
+export function formatUnitPriceWan(value: number | null): string {
+  return value !== null
+    ? `${dashboardDecimalFormatter.format(value)}万/㎡`
+    : "-";
+}
+
+/** 工作台：日期时间 "1月5日 14:30" */
+export function formatDashboardDateTime(dateStr: string | null): string {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "-";
+  return dashboardDateTimeFormatter.format(d);
+}
+
+/** 工作台：趋势百分比 "+1.5%" / "-2.3%" */
+export function formatTrendPercent(value: number): string {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${dashboardDecimalFormatter.format(value)}%`;
+}
+
+/** 工作台：货币（万元）"¥ 350万" */
+export function formatCnyWan(value: number): string {
+  return `¥ ${dashboardDecimalFormatter.format(value)}万`;
+}
+
+/** 工作台：转化率 "12.5%" / "暂无" */
+export function formatConversionRate(total: number, signed: number): string {
+  if (total <= 0 || signed <= 0) return "暂无";
+  return `${dashboardDecimalFormatter.format((signed / total) * 100)}%`;
+}

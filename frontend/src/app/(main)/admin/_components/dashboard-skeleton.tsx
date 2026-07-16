@@ -5,7 +5,7 @@
 
 export function DashboardHeaderSkeleton() {
   return (
-    <div className="mb-8 flex items-center gap-3 animate-pulse">
+    <div className="mb-8 flex items-center gap-3 motion-safe:animate-pulse">
       <div className="p-2 bg-card rounded-lg shadow-sm">
         <div className="w-6 h-6 bg-muted rounded" />
       </div>
@@ -19,7 +19,7 @@ export function DashboardHeaderSkeleton() {
 
 export function ProjectOverviewCardSkeleton() {
   return (
-    <div className="col-span-12 lg:col-span-5 animate-pulse">
+    <div className="col-span-12 lg:col-span-5 motion-safe:animate-pulse">
       <div className="h-[180px] bg-card rounded-xl border border-border p-5">
         <div className="h-5 w-24 bg-muted rounded mb-4" />
         <div className="grid grid-cols-2 gap-4">
@@ -35,7 +35,7 @@ export function ProjectOverviewCardSkeleton() {
 
 export function LeadsFunnelCardSkeleton() {
   return (
-    <div className="col-span-12 md:col-span-4 lg:col-span-4 animate-pulse">
+    <div className="col-span-12 md:col-span-4 lg:col-span-4 motion-safe:animate-pulse">
       <div className="h-[180px] bg-card rounded-xl border border-border p-5">
         <div className="h-5 w-20 bg-muted rounded mb-4" />
         <div className="flex items-end justify-around h-[100px]">
@@ -51,7 +51,7 @@ export function LeadsFunnelCardSkeleton() {
 
 export function AlertCardSkeleton() {
   return (
-    <div className="col-span-12 md:col-span-4 lg:col-span-3 animate-pulse">
+    <div className="col-span-12 md:col-span-4 lg:col-span-3 motion-safe:animate-pulse">
       <div className="h-[180px] bg-card rounded-xl border border-border p-5">
         <div className="h-5 w-20 bg-muted rounded mb-4" />
         <div className="flex items-center justify-center h-[100px]">
@@ -64,7 +64,7 @@ export function AlertCardSkeleton() {
 
 export function ProjectCardSkeleton() {
   return (
-    <div className="w-full sm:w-[280px] sm:shrink-0 bg-card rounded-xl border border-border overflow-hidden animate-pulse">
+    <div className="w-full sm:w-[280px] sm:shrink-0 bg-card rounded-xl border border-border overflow-hidden motion-safe:animate-pulse">
       <div className="p-4 border-b border-border bg-muted">
         <div className="flex justify-between items-start mb-1">
           <div className="h-4 w-16 bg-muted rounded" />
@@ -97,7 +97,7 @@ export function ProjectCardListSkeleton() {
 
 export function DashboardLeadsTableSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div className="motion-safe:animate-pulse">
       <div className="h-6 w-32 bg-muted rounded mb-4" />
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="h-12 bg-muted border-b border-border" />
@@ -124,7 +124,7 @@ export function QuickEntrySkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {[0, 1].map((i) => (
-        <div key={i} className="bg-card rounded-xl border border-border shadow-card p-3 animate-pulse">
+        <div key={i} className="bg-card rounded-xl border border-border shadow-card p-3 motion-safe:animate-pulse">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-8 w-8 rounded-lg bg-muted" />
             <div className="h-4 w-24 bg-muted rounded" />
