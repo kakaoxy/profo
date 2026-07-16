@@ -45,8 +45,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
     <table className="w-full border-collapse">
       <thead className="bg-muted border-b border-border">
         <tr className="text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          <th className="p-4 pl-6 hidden lg:table-cell font-medium">区域</th>
           <th className="p-4 pl-6 lg:pl-4 font-medium">小区 / 房源信息</th>
+          <th className="p-4 pl-6 hidden lg:table-cell font-medium">区域</th>
           <th className="p-4 hidden md:table-cell font-medium">户型 / 面积</th>
           <th className="p-4 hidden sm:table-cell font-medium text-right">总价 / 单价</th>
           <th className="p-4 text-center font-medium">状态</th>
@@ -67,13 +67,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               className="hover:bg-muted transition-colors group cursor-pointer"
               onClick={() => onOpenDetail(lead.id)}
             >
-              {/* 区域 */}
-              <td className="p-4 pl-6 hidden lg:table-cell">
-                <span className="text-sm text-muted-foreground">
-                  {lead.district || "-"}
-                  {lead.businessArea ? ` · ${lead.businessArea}` : ""}
-                </span>
-              </td>
+
 
               {/* 小区 / 房源信息 */}
               <td className="p-4 pl-6 lg:pl-4">
@@ -104,6 +98,14 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     </span>
                   </div>
                 </div>
+              </td>
+
+              {/* 区域 */}
+              <td className="p-4 pl-6 hidden lg:table-cell">
+                <span className="text-sm text-muted-foreground">
+                  {lead.district || "-"}
+                  {lead.businessArea ? ` · ${lead.businessArea}` : ""}
+                </span>
               </td>
 
               {/* 户型 / 面积 */}

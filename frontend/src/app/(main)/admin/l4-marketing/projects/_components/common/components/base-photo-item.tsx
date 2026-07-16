@@ -134,7 +134,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       {showDragHandle && (
         <button
           type="button"
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded flex-shrink-0"
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded shrink-0"
           {...dragAttributes}
           {...dragListeners}
         >
@@ -216,7 +216,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
       {showIndexBadge && (
         <Badge
           variant="outline"
-          className="rounded-md border-border text-muted-foreground flex-shrink-0"
+          className="rounded-md border-border text-muted-foreground shrink-0"
         >
           #{index + 1}
         </Badge>
@@ -228,7 +228,7 @@ export const BasePhotoItem = memo(function BasePhotoItem({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-error hover:text-error hover:bg-error-container flex-shrink-0"
+          className="h-8 w-8 text-error hover:text-error hover:bg-error-container shrink-0"
           onClick={handleDelete}
         >
           <Trash2 className="h-4 w-4" />

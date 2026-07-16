@@ -115,7 +115,7 @@ function AttachmentItem({ attachment, handlers }: AttachmentItemProps) {
   return (
     <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
       {/* 缩略图 */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         {attachment.fileType === "image" ? (
           <div
             className="h-10 w-10 rounded overflow-hidden border cursor-pointer relative"

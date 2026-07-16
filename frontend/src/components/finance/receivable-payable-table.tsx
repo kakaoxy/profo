@@ -242,7 +242,7 @@ export function ReceivablePayableTable({
                       return (
                         <div
                           key={`${section.type}-${group.stage}-${item.category}`}
-                          className="rounded-[12px] bg-fog/60 px-3 py-2 transition-colors hover:bg-fog"
+                          className="rounded-images bg-fog/60 px-3 py-2 transition-colors hover:bg-fog"
                         >
                           {/* 第一行：项目名 + 计算逻辑 */}
                           <div className="flex items-baseline justify-between gap-2">

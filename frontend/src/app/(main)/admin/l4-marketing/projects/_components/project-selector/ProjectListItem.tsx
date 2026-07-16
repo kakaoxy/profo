@@ -49,11 +49,11 @@ export function ProjectListItem({
       {/* 小区和地址 */}
       <div className="space-y-1.5 mb-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
           <span className="line-clamp-1">{project.community_name}</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
           <span className="line-clamp-1">{project.address}</span>
         </div>
       </div>
