@@ -5,7 +5,6 @@
  */
 
 import { getDashboardData } from "../_lib/dashboard-data";
-import { sortProjects } from "@/lib/project-sort";
 import {
   ProjectCardList,
   ProjectOverviewCard,
@@ -56,9 +55,8 @@ export async function DashboardAlertWrapper() {
 
 export async function DashboardProjectsWrapper() {
   const { projects, marketDataMap } = await getDashboardData();
-  const sortedProjects = sortProjects(projects);
 
-  return <ProjectCardList projects={sortedProjects} marketDataMap={marketDataMap} />;
+  return <ProjectCardList projects={projects} marketDataMap={marketDataMap} />;
 }
 
 export async function DashboardLeadsWrapper() {

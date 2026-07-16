@@ -111,6 +111,10 @@ def get_projects(
         bool,
         Query(description="是否包含互动记录(sales_records)，工作台重点监控卡片需传 true"),
     ] = False,
+    monitor_sort: Annotated[
+        bool,
+        Query(description="工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序）"),
+    ] = False,
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表."""
     result = service.get_projects(
@@ -120,6 +124,7 @@ def get_projects(
         page=pagination.page,
         page_size=pagination.page_size,
         include_interactions=include_interactions,
+        monitor_sort=monitor_sort,
     )
     return PaginatedResponse(
         items=result["items"],

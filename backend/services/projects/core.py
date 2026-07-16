@@ -146,6 +146,7 @@ class ProjectCoreService:
         page_size: int | None = None,
         *,
         include_interactions: bool = False,
+        monitor_sort: bool = False,
     ) -> dict[str, Any]:
         """获取项目列表.
 
@@ -157,6 +158,8 @@ class ProjectCoreService:
             page_size: 每页数量
             include_interactions: 是否在 slim 列表响应中包含互动记录(sales_records)，
                 供工作台重点监控卡片展示项目动态(带看/出价)
+            monitor_sort: 工作台重点监控排序（状态优先级 + 创建时间升序），
+                需在分页前应用
 
         Returns:
             包含项目列表和分页信息的字典
@@ -170,6 +173,7 @@ class ProjectCoreService:
             page=page,
             page_size=effective_page_size,
             include_interactions=include_interactions,
+            monitor_sort=monitor_sort,
         )
 
         items = [

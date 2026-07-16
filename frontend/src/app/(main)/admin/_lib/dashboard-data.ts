@@ -148,7 +148,12 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     client.GET("/api/v1/leads/stats/funnel", {}),
     client.GET("/api/v1/projects", {
       params: {
-        query: { page: 1, page_size: 10, include_interactions: true },
+        query: {
+          page: 1,
+          page_size: 10,
+          include_interactions: true,
+          monitor_sort: true,
+        },
       },
     }),
     client.GET("/api/v1/leads", {

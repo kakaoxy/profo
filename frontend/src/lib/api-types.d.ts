@@ -10241,6 +10241,8 @@ export interface operations {
             query?: {
                 /** @description 是否包含互动记录(sales_records)，工作台重点监控卡片需传 true */
                 include_interactions?: boolean;
+                /** @description 工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序） */
+                monitor_sort?: boolean;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
