@@ -10,7 +10,7 @@ interface RenovationCardProps {
 /**
  * 装修预算卡片
  * - 装修公司 (col-span-full) + 装修费用高亮行 (Rust 左边框/底色)
- * - 硬装 / 硬装单价 / 定制柜 / 窗户 / 墙面 / 其他装修 / 其他费用 / 装修天数
+ * - 硬装 / 硬装单价 / 定制柜 / 窗户 / 墙面 / 其他装修 / 装修天数
  */
 export function RenovationCard({ data }: RenovationCardProps) {
   return (
@@ -57,7 +57,6 @@ export function RenovationCard({ data }: RenovationCardProps) {
           value={formatCurrency(data.wall_treatment)}
         />
         <DataRow label="其他装修" value={formatCurrency(data.other_decoration)} />
-        <DataRow label="其他费用" value={formatCurrency(data.other_fee)} />
         <DataRow label="装修天数" value={`${formatNumber(data.days)}\u00A0天`} />
       </div>
     </div>

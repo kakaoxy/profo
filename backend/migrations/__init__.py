@@ -265,15 +265,20 @@ def add_renovation_extra_amount_columns(engine: Engine) -> None:
         conn.execute(text("ALTER TABLE project_renovations ADD COLUMN wall_treatment_amount NUMERIC(15, 2)"))
 
 
-def add_other_decoration_amount_column(engine: Engine) -> None:
-    """为 project_renovations 表添加 other_decoration_amount 列（幂等）."""
+def drop_other_decoration_amount_column(engine: Engine) -> None:
+    """移除 project_renovations 表的 other_decoration_amount 列（幂等）.
+
+    前端已移除"其他装修"录入项，"其他费用"分组更名为"其他装修"，
+    原 other_decoration_amount 列冗余，需移除避免脏数据。
+    数据按用户决策丢弃。
+    """
     from sqlalchemy import text  # noqa: PLC0415
 
-    if _column_exists(engine, "project_renovations", "other_decoration_amount"):
+    if not _column_exists(engine, "project_renovations", "other_decoration_amount"):
         return
-    logger.info("迁移：为 project_renovations 表添加 other_decoration_amount 列")
+    logger.info("迁移：移除 project_renovations.other_decoration_amount 列")
     with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE project_renovations ADD COLUMN other_decoration_amount NUMERIC(15, 2)"))
+        conn.execute(text("ALTER TABLE project_renovations DROP COLUMN other_decoration_amount"))
 
 
 def drop_soft_actual_cost_column(engine: Engine) -> None:
@@ -879,7 +884,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_stage_completed_dates_column(engine)
         add_thumbnail_url_to_photos(engine)
         add_renovation_extra_amount_columns(engine)
-        add_other_decoration_amount_column(engine)
+        drop_other_decoration_amount_column(engine)
         drop_soft_actual_cost_column(engine)
         add_contact_person_id_column(engine)
         run_fix_image_urls(engine)

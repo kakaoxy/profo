@@ -89,13 +89,10 @@ class ProjectRenovation(BaseModel):
     soft_budget: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="软装预算金额")
     soft_detail_attachment: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="软装明细附件")
 
-    # 定制柜/窗户/墙面/其他装修扩展金额
+    # 定制柜/窗户/墙面扩展金额
     custom_cabinet_amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="定制柜定额")
     window_amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="窗户金额")
     wall_treatment_amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="墙面处理金额")
-    other_decoration_amount: Mapped[Decimal | None] = mapped_column(
-        Numeric(15, 2), nullable=True, comment="其他装修金额"
-    )
 
     design_fee: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="设计费用")
     demolition_fee: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="拆旧费用")

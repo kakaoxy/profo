@@ -98,7 +98,7 @@ RECEIVABLE_PAYABLE_METADATA: list[dict[str, object]] = [
         "category_label": "其他装修",
         "calculation_logic": "装修合同中",
         "calc_type": "renovation",
-        "calc_param": "other_decoration_amount",
+        "calc_param": ["design_fee", "demolition_fee", "garbage_fee", "other_extra_fee"],
     },
     {
         "type": CashFlowType.EXPENSE,
@@ -503,6 +503,8 @@ class _ReceivablePayableMixin:
         if calc_type == "renovation":
             if renovation is None:
                 return None
+            if isinstance(calc_param, list):
+                return sum((getattr(renovation, p, None) or Decimal(0)) for p in calc_param)
             value = getattr(renovation, str(calc_param), None)
             return value if isinstance(value, Decimal) else None
         if calc_type == "investment":
