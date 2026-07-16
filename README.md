@@ -75,10 +75,10 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 
 ```mermaid
 graph TB
+    subgraph "宿主机"
+        NX[宿主 Nginx :80/443]
+    end
     subgraph "Docker Compose 编排"
-        subgraph "外部入口"
-            NX[Nginx :80]
-        end
         subgraph "前端层 Frontend"
             A[Next.js 16 App Router]
             B[React 19 + React Compiler]
@@ -120,9 +120,9 @@ graph TB
 
 ```mermaid
 graph LR
-    Browser[浏览器 :80] --> NX[Nginx 容器]
-    NX -->|http://backend:8000/api/*| BE[Backend 容器]
-    NX -->|http://frontend:3000/| FE[Frontend 容器]
+    Browser[浏览器 :80/443] --> NX[宿主 Nginx]
+    NX -->|http://127.0.0.1:8000/api/*| BE[Backend 容器]
+    NX -->|http://127.0.0.1:3000/| FE[Frontend 容器]
     NX -->|/static/uploads/*| UP[(uploads volume)]
     BE -->|postgres:5432| DB[(PostgreSQL 容器)]
     BE -.->|挂载| UP
@@ -353,7 +353,9 @@ docker compose up -d --build
 
 ```bash
 # 健康检查（应返回 {"status":"healthy","database":"connected"}）
-curl http://localhost/health
+# 注意：compose 不含 nginx 容器，backend 直接暴露在 127.0.0.1:8000
+# 如已配置宿主 nginx 反代到 80 端口，也可用 curl http://localhost/health
+curl http://127.0.0.1:8000/health
 
 # 查看服务状态
 docker compose ps
@@ -386,8 +388,8 @@ docker compose down -v       # 同时删除 volume（谨慎！数据会丢失）
 ```bash
 docker compose logs -f backend    # 后端日志
 docker compose logs -f frontend   # 前端日志
-docker compose logs -f nginx      # Nginx 日志
 docker compose logs -f db         # 数据库日志
+# Nginx 日志在宿主机查看（不在 compose 内）：tail -f /var/log/nginx/access.log
 ```
 
 ### 重建单个服务
@@ -417,12 +419,15 @@ docker compose up -d --build frontend  # 仅重建前端
 
 ### 仅启动数据库容器（推荐）
 
-开发时前端/后端跑在本机，仅用 Docker 提供 PostgreSQL：
+开发时前端/后端跑在本机，仅用 Docker 提供 PostgreSQL。`docker-compose.dev.yml` 已将 db 端口映射到宿主 5432：
 
 ```bash
-docker compose up -d db
-# DATABASE_URL 指向 postgresql+psycopg://profo:ProfoPgDev2026pass@127.0.0.1:5432/profo
-# 注意：需在 docker-compose.yml 中将 db 服务的 expose 改为 ports，或在 .env 中改用 127.0.0.1:5432
+# 方式一：用 dev-start.sh（推荐，自动处理 .env 变量与软链）
+./dev-start.sh db
+
+# 方式二：手动启动
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+# DATABASE_URL 由 dev-start.sh 或 setup.sh 自动覆盖为 127.0.0.1:5432
 ```
 
 ### 前端
@@ -430,7 +435,7 @@ docker compose up -d db
 ```bash
 cd frontend
 pnpm install
-cp .env.example .env.local    # 编辑 API 地址
+cp .env.example .env.local    # 默认值可直接用（NEXT_PUBLIC_API_URL=http://127.0.0.1:8000）
 pnpm dev                      # http://localhost:3000
 ```
 
@@ -446,6 +451,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh        # macOS/Linux
 # 创建虚拟环境并安装依赖
 uv venv
 uv sync
+cd ..
 ```
 
 ### 一键初始化（推荐）
@@ -453,8 +459,6 @@ uv sync
 回到项目根目录，使用脚本完成密钥生成、数据库建表、管理员创建：
 
 ```bash
-cd ..
-
 # 1. 生成 .env 密钥（首次运行自动从模板创建 .env）
 ./init-env.sh
 
@@ -466,15 +470,22 @@ cd ..
 #      ./setup.sh --reset-admin                 # 重置管理员密码
 #      ./setup.sh --skip-db                     # 跳过 DB 启动（已在别处启动时使用）
 #      ./setup.sh --help                        # 查看帮助
-
-# 3. 启动开发服务器
-cd backend
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
-# API:   http://127.0.0.1:8000
-# 文档:  http://127.0.0.1:8000/docs
 ```
 
-> 也可使用项目根目录的 `./dev-start.sh` 一键启动数据库 + 后端 + 前端开发环境。
+### 启动开发环境
+
+```bash
+# 方式一：一键启动（推荐）
+# 自动启动 DB + 后端(uvicorn --reload) + 前端(next dev)
+./dev-start.sh
+
+# 方式二：手动分别启动
+cd backend && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+cd frontend && pnpm dev
+# API:   http://127.0.0.1:8000
+# 文档:  http://127.0.0.1:8000/docs
+# 前端:  http://localhost:3000
+```
 
 ### 开发命令
 
@@ -778,10 +789,10 @@ graph TB
 ### 部署架构
 
 ```
-浏览器 → Nginx 容器 (:80) ─┬─→ frontend 容器 (:3000, Next.js standalone)
-                           ├─→ backend 容器 (:8000, FastAPI + uvicorn)
-                           │     └─→ db 容器 (:5432, PostgreSQL 16)
-                           └─→ uploads volume (/static/uploads/)
+浏览器 → 宿主 Nginx (:80/443) ─┬─→ frontend 容器 (127.0.0.1:3000, Next.js standalone)
+                                ├─→ backend 容器 (127.0.0.1:8000, FastAPI + uvicorn)
+                                │     └─→ db 容器 (5432, PostgreSQL 16)
+                                └─→ uploads volume (/static/uploads/)
 ```
 
 ### 涉及文件
@@ -791,7 +802,9 @@ graph TB
 | [`docker-compose.yml`](docker-compose.yml) | 编排 db / backend / frontend 三个服务，backend/frontend 仅暴露到 `127.0.0.1`，由宿主 nginx 反代 |
 | [`backend/Dockerfile`](backend/Dockerfile) | 后端多阶段构建：builder（uv sync）→ runner（uvicorn） |
 | [`frontend/Dockerfile`](frontend/Dockerfile) | 前端三阶段构建：deps（pnpm install）→ builder（next build standalone）→ runner |
-| [`.env.docker.example`](.env.docker.example) | 环境变量模板（复制为 `.env` 后编辑） |
+| [`.env.docker.example`](.env.docker.example) | 环境变量模板（由 `init-env.sh` 自动复制并填充密钥） |
+| [`init-env.sh`](init-env.sh) | 一键生成 PostgreSQL/JWT/Fernet 密钥并初始化 `.env` |
+| [`setup.sh`](setup.sh) | 一键初始化数据库表与管理员账号（支持 `--docker` 生产模式） |
 | [`deploy-server.sh`](deploy-server.sh) | 服务器端部署脚本：加载镜像、启动 compose、健康检查 |
 | [`deploy-local.sh`](deploy-local.sh) | 本地构建并推送镜像到服务器，触发服务器端部署 |
 
@@ -812,7 +825,7 @@ docker compose up -d --build
 # 会打印临时密码，首次登录强制修改
 
 # 5. 验证
-curl http://localhost/health
+curl http://127.0.0.1:8000/health
 # {"status":"healthy","database":"connected"}
 ```
 
