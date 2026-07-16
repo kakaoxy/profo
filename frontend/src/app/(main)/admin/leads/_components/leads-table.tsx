@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isValidUrl, safeParseDate } from "@/lib/validators";
+import { isValidUrl } from "@/lib/validators";
+import { safeFormatDate } from "@/lib/formatters";
 import { Lead } from "../types";
 import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
@@ -28,9 +29,9 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
-/** 格式化日期时间，createdAt / updatedAt 共用同一格式 */
-function formatDateTime(value?: string): string {
-  return value ? safeParseDate(value)?.toLocaleString() ?? "-" : "-";
+/** 格式化日期为 "yyyy-MM-dd"（仅年月日，zh-CN，SSR/CSR 一致，避免 hydration mismatch） */
+function formatDateOnly(value?: string): string {
+  return safeFormatDate(value, "yyyy-MM-dd");
 }
 
 
@@ -151,14 +152,14 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               {/* 创建时间 */}
               <td className="p-4 hidden xl:table-cell">
                 <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
-                  {formatDateTime(lead.createdAt)}
+                  {formatDateOnly(lead.createdAt)}
                 </span>
               </td>
 
               {/* 更新时间 */}
               <td className="p-4 hidden xl:table-cell">
                 <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
-                  {formatDateTime(lead.updatedAt)}
+                  {formatDateOnly(lead.updatedAt)}
                 </span>
               </td>
 
