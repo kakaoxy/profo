@@ -70,7 +70,6 @@ class LedgerStatisticsRenovation(BaseModel):
     window: Decimal | None = Decimal(0)
     wall_treatment: Decimal | None = Decimal(0)
     other_decoration: Decimal | None = Decimal(0)
-    other_fee: Decimal | None = Decimal(0)
     days: int = 0
 
     @field_serializer(
@@ -81,7 +80,6 @@ class LedgerStatisticsRenovation(BaseModel):
         "window",
         "wall_treatment",
         "other_decoration",
-        "other_fee",
     )
     def _serialize_decimal(self, v: Decimal | None) -> float | None:
         return float(v) if v is not None else None

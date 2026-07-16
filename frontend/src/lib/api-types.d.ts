@@ -5297,8 +5297,6 @@ export interface components {
             wall_treatment?: number | null;
             /** Other Decoration */
             other_decoration?: number | null;
-            /** Other Fee */
-            other_fee?: number | null;
             /**
              * Days
              * @default 0
@@ -7794,8 +7792,6 @@ export interface components {
             window_amount?: string | null;
             /** Wall Treatment Amount */
             wall_treatment_amount?: string | null;
-            /** Other Decoration Amount */
-            other_decoration_amount?: string | null;
             /** Design Fee */
             design_fee?: string | null;
             /** Demolition Fee */
@@ -7923,11 +7919,6 @@ export interface components {
              */
             wall_treatment_amount?: number | string | null;
             /**
-             * Other Decoration Amount
-             * @description 其他装修金额
-             */
-            other_decoration_amount?: number | string | null;
-            /**
              * Design Fee
              * @description 设计费用
              */
@@ -7949,7 +7940,7 @@ export interface components {
             other_extra_fee?: number | string | null;
             /**
              * Other Fee Reason
-             * @description 其他费用原因
+             * @description 其他装修原因
              */
             other_fee_reason?: string | null;
         };

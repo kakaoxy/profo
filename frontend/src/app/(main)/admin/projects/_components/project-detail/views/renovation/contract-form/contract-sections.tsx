@@ -132,7 +132,7 @@ export function TimeSection({ values, setValue, isEditing }: ContractSectionsPro
   );
 }
 
-// 装修费用（硬装+软装+定制柜+窗户+墙面+其他装修）
+// 装修费用（硬装+软装+定制柜+窗户+墙面）
 export function DecorationCostSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
@@ -181,26 +181,18 @@ export function DecorationCostSection({ values, setValue, isEditing }: ContractS
           disabled={!isEditing}
           suffix="元"
         />
-        <NumberInputField
-          label="其他装修"
-          value={values.other_decoration_amount}
-          onChange={(v) => setValue("other_decoration_amount", v)}
-          placeholder="其他装修金额"
-          disabled={!isEditing}
-          suffix="元"
-        />
       </div>
     </div>
   );
 }
 
-// 其他费用（4列紧凑布局）
+// 其他装修（4列紧凑布局）
 export function OtherFeesSection({ values, setValue, isEditing }: ContractSectionsProps) {
   return (
     <div className="space-y-2">
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Receipt className="h-3 w-3" />
-        其他费用
+        其他装修
       </h4>
       <div className="grid grid-cols-4 gap-2">
         <NumberInputField
@@ -231,15 +223,15 @@ export function OtherFeesSection({ values, setValue, isEditing }: ContractSectio
           label="其他"
           value={values.other_extra_fee}
           onChange={(v) => setValue("other_extra_fee", v)}
-          placeholder="其他费用"
+          placeholder="其他装修"
           disabled={!isEditing}
           suffix="元"
         />
       </div>
       <div className="space-y-1">
-        <Label className="text-[10px] font-medium text-muted-foreground">其他费用原因</Label>
+        <Label className="text-[10px] font-medium text-muted-foreground">其他装修原因</Label>
         <Textarea
-          placeholder="请说明其他费用的产生原因..."
+          placeholder="请说明其他装修的产生原因..."
           value={values.other_fee_reason || ""}
           onChange={(e) => setValue("other_fee_reason", e.target.value)}
           disabled={!isEditing}

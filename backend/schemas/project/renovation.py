@@ -96,18 +96,17 @@ class RenovationContractUpdate(BaseModel):
     soft_budget: Decimal | None = Field(None, description="软装预算金额")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
-    # 定制柜/窗户/墙面/其他装修扩展金额
+    # 定制柜/窗户/墙面扩展金额
     custom_cabinet_amount: Decimal | None = Field(None, description="定制柜定额")
     window_amount: Decimal | None = Field(None, description="窗户金额")
     wall_treatment_amount: Decimal | None = Field(None, description="墙面处理金额")
-    other_decoration_amount: Decimal | None = Field(None, description="其他装修金额")
 
-    # 其他费用
+    # 其他装修（设计费/拆旧费/清运费/其他）
     design_fee: Decimal | None = Field(None, description="设计费用")
     demolition_fee: Decimal | None = Field(None, description="拆旧费用")
     garbage_fee: Decimal | None = Field(None, description="垃圾清运费用")
     other_extra_fee: Decimal | None = Field(None, description="其他额外费用")
-    other_fee_reason: str | None = Field(None, description="其他费用原因")
+    other_fee_reason: str | None = Field(None, description="其他装修原因")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -137,7 +136,6 @@ class RenovationContractResponse(BaseModel):
     custom_cabinet_amount: Decimal | None = None
     window_amount: Decimal | None = None
     wall_treatment_amount: Decimal | None = None
-    other_decoration_amount: Decimal | None = None
     design_fee: Decimal | None = None
     demolition_fee: Decimal | None = None
     garbage_fee: Decimal | None = None
@@ -175,18 +173,17 @@ class RenovationBase(BaseModel):
     soft_budget: Decimal | None = Field(None, description="软装预算金额")
     soft_detail_attachment: str | None = Field(None, max_length=500, description="软装明细附件")
 
-    # 定制柜/窗户/墙面/其他装修扩展金额
+    # 定制柜/窗户/墙面扩展金额
     custom_cabinet_amount: Decimal | None = Field(None, description="定制柜定额")
     window_amount: Decimal | None = Field(None, description="窗户金额")
     wall_treatment_amount: Decimal | None = Field(None, description="墙面处理金额")
-    other_decoration_amount: Decimal | None = Field(None, description="其他装修金额")
 
-    # 其他费用
+    # 其他装修（设计费/拆旧费/清运费/其他）
     design_fee: Decimal | None = Field(None, description="设计费用")
     demolition_fee: Decimal | None = Field(None, description="拆旧费用")
     garbage_fee: Decimal | None = Field(None, description="垃圾清运费用")
     other_extra_fee: Decimal | None = Field(None, description="其他额外费用")
-    other_fee_reason: str | None = Field(None, description="其他费用原因")
+    other_fee_reason: str | None = Field(None, description="其他装修原因")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -219,7 +216,6 @@ class RenovationInfoUpdate(BaseModel):
     custom_cabinet_amount: Decimal | None = None
     window_amount: Decimal | None = None
     wall_treatment_amount: Decimal | None = None
-    other_decoration_amount: Decimal | None = None
     design_fee: Decimal | None = None
     demolition_fee: Decimal | None = None
     garbage_fee: Decimal | None = None

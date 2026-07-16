@@ -201,23 +201,14 @@ class _StatisticsMixin:
             custom_cabinet = renovation.custom_cabinet_amount or Decimal(0)
             window_amount = renovation.window_amount or Decimal(0)
             wall_treatment = renovation.wall_treatment_amount or Decimal(0)
-            other_decoration = renovation.other_decoration_amount or Decimal(0)
             design_fee = renovation.design_fee or Decimal(0)
             demolition_fee = renovation.demolition_fee or Decimal(0)
             garbage_fee = renovation.garbage_fee or Decimal(0)
-            other_fee = renovation.other_extra_fee or Decimal(0)
+            other_extra_fee = renovation.other_extra_fee or Decimal(0)
 
-            total_fee = (
-                hard_amount
-                + custom_cabinet
-                + window_amount
-                + wall_treatment
-                + other_decoration
-                + design_fee
-                + demolition_fee
-                + garbage_fee
-                + other_fee
-            )
+            other_decoration = design_fee + demolition_fee + garbage_fee + other_extra_fee
+
+            total_fee = hard_amount + custom_cabinet + window_amount + wall_treatment + other_decoration
 
             area = project.area or Decimal(0)
             hard_unit_price = hard_amount / area if area > 0 else Decimal(0)
@@ -235,7 +226,6 @@ class _StatisticsMixin:
                 window=window_amount,
                 wall_treatment=wall_treatment,
                 other_decoration=other_decoration,
-                other_fee=other_fee,
                 days=reno_days,
             )
         else:
