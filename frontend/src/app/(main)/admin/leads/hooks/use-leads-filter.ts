@@ -79,8 +79,26 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     updateUrlParams({ search: search || undefined });
   }, 300);
 
+  // 本地输入状态与 URL 解耦：输入框绑定本地状态，保证中文输入法（IME）
+  // 的复合过程不会被 URL 驱动的重新渲染打断；URL 仅在停止输入后防抖更新，
+  // 用于服务端筛选与分页。
+  const [searchInput, setSearchInput] = useState(searchQuery);
+  const [prevUrlSearch, setPrevUrlSearch] = useState(searchQuery);
+
+  // 当 URL（外部变化：重置筛选、浏览器导航、深链替换等）与本地上一次记录的
+  // URL 值不一致时，把本地输入同步回 URL 值。采用渲染期状态调整（React
+  // 推荐写法）而非 effect，避免级联渲染。当存在未提交的防抖更新时跳过，
+  // 以免覆盖正在输入的内容。
+  if (searchQuery !== prevUrlSearch) {
+    setPrevUrlSearch(searchQuery);
+    if (!debouncedSearchUpdate.isPending()) {
+      setSearchInput(searchQuery);
+    }
+  }
+
   const setSearchQuery = useCallback(
     (query: string) => {
+      setSearchInput(query);
       debouncedSearchUpdate(query);
     },
     [debouncedSearchUpdate],
@@ -118,13 +136,15 @@ export function useLeadsFilter(initialLeads: Lead[]) {
       layouts: [],
       floors: [],
     });
+    debouncedSearchUpdate.cancel();
+    setSearchInput("");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("search");
     params.delete("statuses");
     params.delete("district");
     params.set("page", "1");
     router.push(`/admin/leads?${params.toString()}`);
-  }, [searchParams, router]);
+  }, [searchParams, router, debouncedSearchUpdate]);
 
   /** 变更后刷新（add/edit/delete/audit 等） */
   const refreshLeads = useCallback(() => {
@@ -140,7 +160,7 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     refreshLeads,
     activeTab,
     setActiveTab,
-    searchQuery,
+    searchQuery: searchInput,
     setSearchQuery,
   };
 }

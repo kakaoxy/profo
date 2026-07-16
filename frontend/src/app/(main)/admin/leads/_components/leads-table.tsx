@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Home, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isValidUrl } from "@/lib/validators";
+import { isValidUrl, safeParseDate } from "@/lib/validators";
 import { Lead } from "../types";
 import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
@@ -28,6 +28,10 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
+/** 格式化日期时间，createdAt / updatedAt 共用同一格式 */
+function formatDateTime(value?: string): string {
+  return value ? safeParseDate(value)?.toLocaleString() ?? "-" : "-";
+}
 
 
 export const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -46,6 +50,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
           <th className="p-4 text-center font-medium">状态</th>
           <th className="p-4 hidden lg:table-cell font-medium">区域</th>
           <th className="p-4 hidden xl:table-cell font-medium">录入人</th>
+          <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">创建时间</th>
+          <th className="p-4 hidden xl:table-cell font-medium whitespace-nowrap">更新时间</th>
           <th className="p-4 pr-6 text-right font-medium">操作</th>
         </tr>
       </thead>
@@ -139,6 +145,20 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               <td className="p-4 hidden xl:table-cell">
                 <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
                   {lead.creatorName || "-"}
+                </span>
+              </td>
+
+              {/* 创建时间 */}
+              <td className="p-4 hidden xl:table-cell">
+                <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+                  {formatDateTime(lead.createdAt)}
+                </span>
+              </td>
+
+              {/* 更新时间 */}
+              <td className="p-4 hidden xl:table-cell">
+                <span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+                  {formatDateTime(lead.updatedAt)}
                 </span>
               </td>
 
