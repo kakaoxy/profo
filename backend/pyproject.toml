@@ -10,13 +10,11 @@ dependencies = [
     "pydantic>=2.5.0",
     "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.6",
-    "pandas>=2.1.0",
     "python-dateutil>=2.8.2",
     "python-jose[cryptography]>=3.3.0",
     "bcrypt>=4.0.0",
     "filetype>=1.2.0",
     "Pillow>=10.0.0",
-    "alembic>=1.17.2",
     "slowapi>=0.1.9",
     "psycopg[binary]>=3.1",
     "httpx>=0.25.0",
@@ -97,7 +95,6 @@ addopts = "--cov=. --cov-report=term-missing --cov-branch"
 [tool.coverage.run]
 omit = [
     "tests/*",
-    "alembic/*",
     "*/migrations/*",
     "init_admin.py",
     "init_db.py",
