@@ -4,10 +4,11 @@
   <img src="https://img.shields.io/badge/Next.js-16.1.7-black?style=flat-square&logo=next.js" />
   <img src="https://img.shields.io/badge/React-19.2.1-61DAFB?style=flat-square&logo=react" />
   <img src="https://img.shields.io/badge/FastAPI-0.104+-009688?style=flat-square&logo=fastapi" />
-  <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python" />
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python" />
   <img src="https://img.shields.io/badge/TailwindCSS-4.3+-38B2AC?style=flat-square&logo=tailwind-css" />
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql" />
   <img src="https://img.shields.io/badge/Docker_Compose-2-2496ED?style=flat-square&logo=docker" />
+  <img src="https://img.shields.io/badge/app-0.9.0-blue?style=flat-square" />
 </p>
 
 <p align="center">
@@ -45,27 +46,33 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 
 | 模块 | 功能描述 | 业务层级 |
 |------|---------|---------|
-| **L1 市场情报层** | 小区信息管理、房源市场数据、价格变动记录、CSV/JSON 批量导入 | 数据基准 |
-| **L2 线索管理层** | 卖房估价线索创建、跟进、评估、价格历史 | 漏斗瓶颈 |
-| **L3 项目管理层** | 合同管理、装修管控、销售跟进、财务现金流、状态机 | 核心 ERP |
-| **L4 营销层** | 营销房源 CMS、照片拖拽排序、媒体库、预览发布 | 门面展示 |
+| **L1 市场情报层** | 小区信息管理、房源市场数据、价格变动记录、CSV/JSON 批量导入、小区字典 | 数据基准 |
+| **L2 线索管理层** | 卖房估价线索创建、跟进、评估、价格历史、线索漏斗统计 | 漏斗瓶颈 |
+| **L3 项目管理层** | 合同管理、文书签收、装修管控、销售跟进、状态机 | 核心 ERP |
+| **L3 财务账本** | 资金流水账本、收支结算、应收应付、操作日志、Excel 导出 | 核心 ERP |
+| **L3 跟投管理** | 跟投记录、投资方管理、分配比例调整、结算流转、操作日志 | 核心 ERP |
+| **L4 营销层** | 营销房源 CMS、照片拖拽排序、媒体库（图/视频）、预览发布 | 门面展示 |
 | **市场监控** | 竞品对比、小区雷达、趋势定位、市场情绪、AI 策略 | 决策辅助 |
-| **C 端公开站点** | 房源浏览、估价提交、用户注册/登录、个人中心 | 客户触达 |
-| **系统管理** | 用户、角色、API Key、文件上传、数据导入任务 | 基础设施 |
+| **C 端公开站点** | 房源浏览、估价提交、用户注册/登录、微信 OAuth、个人中心 | 客户触达 |
+| **系统管理** | 用户、角色、API Key、刷新令牌、文件上传、数据导入任务 | 基础设施 |
 
 ### 技术亮点
 
-- 🚀 **Next.js 16 + React 19** — App Router、React Compiler、Server Actions
+- 🚀 **Next.js 16 + React 19** — App Router、React Compiler、Server Actions（10mb bodySizeLimit）
 - ⚡ **FastAPI + SQLAlchemy 2.0** — 异步 Python 后端，分层架构（Router → Service → Model）
 - 🎨 **TailwindCSS v4 + Radix UI / shadcn** — 现代化 UI 组件库
 - 🔐 **JWT + API Key 双认证** — httpOnly Cookie 存 Token，`X-API-Key` 头用于服务间调用
-- 🔒 **Fernet 对称加密** — 身份证 / 手机号 / 微信会话密钥等敏感字段加密存储
+- 🛡️ **CSRF 防护中间件** — 纯 Cookie 认证的非安全方法必须携带 `X-Requested-With` 头，Server Action / API Key 不受影响
+- 🔒 **Fernet 对称加密** — 身份证 / 手机号 / 微信会话密钥等敏感字段加密存储；`phone_hash` 列承载唯一约束
 - 📊 **四层领域架构** — 清晰的业务边界，层间写时复制（CoW）
-- 🐘 **PostgreSQL 16** — `TIMESTAMP WITH TIME ZONE` 解决时区问题，`psycopg` 高性能驱动
-- 🐳 **Docker Compose 一键部署** — db / backend / frontend 三服务编排，由宿主 nginx 反代，开发与生产同构
+- 🐘 **PostgreSQL 16** — `TIMESTAMP WITH TIME ZONE` 全量统一（启动迁移自动修复旧列），`psycopg` 高性能驱动
+- 🐳 **Docker Compose 一键部署** — db / backend / frontend 三服务编排（`linux/amd64` 跨平台构建），由宿主 nginx 反代，开发与生产同构
 - 🖱️ **dnd-kit 拖拽排序** — 营销照片虚拟列表 + 拖拽排序 + 性能监控
-- 🛡️ **slowapi 速率限制** — 接口级防滥用
-- ⚙️ **统一异常处理** — Service 层 `ServiceException`，全局 handler 统一捕获
+- 🛡️ **slowapi 速率限制** — 接口级防滥用；可信代理网段（`TRUSTED_PROXIES`）支持 CIDR，防 XFF 伪造
+- 📒 **资金账本 / 跟投管理** — 完整的财务流水账本与跟投结算体系，支持多票据、应收应付、分配比例调整、Excel 导出
+- ⚙️ **统一异常处理** — Service 层 `ServiceException`，全局 handler 统一捕获；**禁止在 Service 层抛 `HTTPException`**
+- 🔁 **Refresh Token 持久化** — `refresh_tokens` 表存储刷新令牌，支持登出吊销
+- 📚 **幂等启动迁移** — `migrations/` 目录下 25+ 个幂等迁移函数，应用启动时自动执行（建表、加列、加密、列类型修复、枚举同步等）
 
 ---
 
@@ -230,69 +237,83 @@ graph LR
 | 技术 | 版本 | 用途 |
 |------|------|------|
 | FastAPI | ≥ 0.104 | 高性能 Web 框架 |
-| SQLAlchemy | ≥ 2.0 | ORM |
+| SQLAlchemy | ≥ 2.0 | ORM（`Mapped[]` + `mapped_column()` 2.0 语法） |
 | Pydantic | v2 | 数据模型与校验 |
 | pydantic-settings | ≥ 2.0 | 环境变量配置 |
 | slowapi | ≥ 0.1.9 | 速率限制 |
 | python-jose | ≥ 3.3 | JWT |
-| passlib + bcrypt | ≥ 1.7 / <4.0 | 密码哈希 |
+| bcrypt | ≥ 4.0 | 密码哈希（直连 bcrypt，不依赖 passlib） |
 | cryptography (Fernet) | - | 敏感字段加密 |
-| pandas | ≥ 2.1 | 数据处理 |
-| alembic | ≥ 1.17 | 数据库迁移（可选） |
 | psycopg[binary] | ≥ 3.1 | PostgreSQL 高性能驱动 |
-| httpx | ≥ 0.25 | HTTP 客户端 |
+| httpx | ≥ 0.25 | HTTP 客户端（微信 OAuth / API 调用） |
+| openpyxl | ≥ 3.1 | Excel 导出（账本/跟投/项目） |
+| filetype | ≥ 1.2 | 文件类型嗅探（上传安全） |
+| Pillow | ≥ 10.0 | 图片处理（缩略图生成） |
 | uv | - | 包管理器（替代 pip/venv） |
+
+> 未使用 Alembic：schema 变更通过 `backend/migrations/` 目录下的幂等启动迁移管理（应用启动时 `lifespan` 自动执行）。
 
 #### 服务分层（Router → Service → Model）
 
 ```
 backend/
+├── constants/                  # 业务常量（documents 文书模板等）
 ├── routers/                    # API 路由层（薄，仅参数校验/依赖注入）
 │   ├── common/                 # 通用路由（files / push / upload）
-│   ├── market/                 # 市场情报（properties / communities）
+│   ├── market/                 # 市场情报（properties / communities + 字典）
 │   ├── leads/                  # 线索（core / followups / prices）
-│   ├── projects/               # 项目（core / renovation / sales / cashflow）
+│   ├── projects/               # 项目（core / documents / renovation / sales / cashflow）
+│   ├── finance/                # 资金账本（ledger，含统计 / 结算 / 日志 / 导出）
+│   ├── investment/             # 跟投管理（列表 / 详情 / 投资方 / 分配比例 / 结算 / 复制）
 │   ├── marketing/              # 营销（projects / import_）
 │   ├── monitor/                # 市场监控
-│   ├── public/                 # C 端公开接口（auth / users / projects / leads / communities）
+│   ├── public/                 # C 端公开接口（auth / users / projects / leads / communities / files）
 │   └── system/                 # 系统（auth / users / roles）
 ├── services/                   # 业务逻辑层（按领域模块化）
-│   ├── market/                 # 房源查询 / 导入 / 小区合并 / CSV 解析 / 导入任务
+│   ├── market/                 # 房源查询 / 导入 / 小区合并 / CSV 解析 / 导入任务 / 失败处理
 │   ├── leads/                  # 线索核心 / 跟进 / 价格（internal/）
-│   ├── projects/               # Facade + core / renovation / sales / finance（internal/）
+│   ├── projects/               # Facade + core / renovation / sales
+│   │   ├── finance/            # 资金账本（base / ledger / records / receivable_payable / settlement / statistics / statistics_builder / summary）
+│   │   └── internal/           # builder / contract_number / creator / documents / owners / query / state / updater
+│   ├── investment/             # 跟投管理（base / records / investors / settlement / exporter / service）
 │   ├── marketing/              # 营销项目 / 媒体 / 导入 / 公开
-│   ├── monitor/                # 监控服务
-│   ├── system/                 # auth / user / role / api_key / error / init / exceptions
+│   ├── monitor/                # 监控服务 + neighborhood
+│   ├── system/                 # auth / user / role / api_key / wechat / error / exceptions / init_service
 │   └── utils/                  # 日期解析等工具
 ├── models/                     # 数据模型层（按领域模块化）
 │   ├── common/                 # Base / BaseModel / 枚举 / encrypted 字段
-│   ├── property/               # Community / PropertyCurrent / PropertyHistory / PropertyMedia
+│   ├── property/               # Community / CommunityAlias / CommunityCompetitor / PropertyCurrent / PropertyHistory / PropertyMedia
 │   ├── lead/                   # Lead / LeadFollowUp / LeadPriceHistory
-│   ├── project/                # Project 及 8 个子模型（合同/业主/销售/跟进/互动/财务/状态日志/装修）
+│   ├── project/                # Project + 10 个子模型（合同/文书/业主/销售/跟进/互动/财务/财务日志/状态日志/装修/装修照片）
+│   ├── investment/             # Investment / Investor / ReturnAdjustment / InvestmentLog
 │   ├── marketing/              # L4MarketingProject / L4MarketingMedia
-│   ├── system/                 # FailedRecord / PropertyImportTask
-│   └── user/                   # User / Role / ApiKey
-├── schemas/                    # Pydantic Schema（按领域分模块）
+│   ├── system/                 # FailedRecord / PropertyImportTask / WeChatOAuthState / WeChatTempCode
+│   └── user/                   # User / Role / ApiKey / RefreshToken
+├── schemas/                    # Pydantic Schema（按领域分模块，含 *Create / *Update / *Response / *Filter）
 ├── dependencies/               # FastAPI 依赖注入（auth / common / projects）
-├── utils/                      # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
-├── migrations/                 # 启动时数据迁移（幂等，列变更/明文加密等）
-├── scripts/                    # 一次性脚本
-├── main.py                     # 应用入口
+├── utils/                      # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger / mask / error_formatters / image_processing / common(limiter + XFF)
+├── migrations/                 # 启动时幂等迁移（25+ 个函数：列变更 / 明文加密 / 列类型修复 / 枚举同步 / 表创建 / 索引重建）
+├── scripts/                    # 一次性脚本（当前为空）
+├── main.py                     # 应用入口（含 CSRF 中间件 + 健康检查 + openapi_tags）
 ├── db.py                       # SQLAlchemy 引擎 + 会话工厂 + init_db()
-├── settings.py                 # Pydantic Settings
+├── settings.py                 # Pydantic Settings（app v0.9.0）
 ├── error_handlers.py           # 全局异常处理器
-├── exceptions.py               # 通用异常
-└── init_admin.py               # 初始化角色与管理员脚本（首次部署手动执行）
+├── init_admin.py               # 初始化角色与管理员脚本（首次部署手动执行）
+├── init_db.py                  # 建表脚本
+├── conftest.py                 # pytest 配置（PostgreSQL + SAVEPOINT 隔离）
+└── openapi.json                # OpenAPI 3.0 schema 副本
 ```
 
 #### 关键设计模式
 
-- **依赖注入**：`DbSessionDep = Annotated[Session, Depends(get_db)]`，`CurrentUserDep`、`CurrentAdminUserDep`、`CurrentInternalUserDep` 等预定义鉴权依赖
-- **服务异常**：Service 层抛出 `ServiceException` / `AuthenticationError` / `ResourceNotFoundError` 等（`services/system/exceptions.py`），由全局 handler 捕获。**禁止在 Service 层抛 `HTTPException`**
-- **响应格式**：直接返回 Pydantic 模型；分页用 `PaginatedResponse[T]`；列表查询带过滤+排序
+- **依赖注入**：`DbSessionDep = Annotated[Session, Depends(get_db)]`，`CurrentUserDep`、`CurrentAdminUserDep`、`CurrentInternalUserDep` 等预定义鉴权依赖；`PaginationDep`、`ProjectServiceDep` 等领域依赖
+- **服务异常**：Service 层抛出 `ServiceException` / `AuthenticationError` / `ResourceNotFoundError` / `ValidationError` / `BusinessLogicError` 等（`services/system/exceptions.py`），由全局 handler 捕获。**禁止在 Service 层抛 `HTTPException`**
+- **响应格式**：直接返回 Pydantic 模型；分页用 `PaginatedResponse[T]`；列表查询带过滤+排序（`*Filter` Schema + `Depends()`）
 - **逻辑外键**：关联用 `user_id: int` 等软外键，级联由 Service 控制
-- **加密字段**：通过 `models/common/encrypted.py` 的 `EncryptedString` 类型自动加密身份证 / 手机号 / 微信会话密钥
-- **时区处理**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PostgreSQL 存储 `TIMESTAMP WITH TIME ZONE`
+- **加密字段**：通过 `models/common/encrypted.py` 的 `EncryptedString` 类型自动加密身份证 / 手机号 / 微信会话密钥；`phone_hash` 列承载唯一约束（Fernet 随机 IV 导致原列无法唯一）
+- **时区处理**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PostgreSQL 存储 `TIMESTAMP WITH TIME ZONE`；启动迁移自动将旧 `timestamp without time zone` 列迁移为 `timestamptz`
+- **CSRF 防护**：`main.py` 内的 `csrf_protect` 中间件——纯 Cookie 认证的非安全方法（POST/PUT/PATCH/DELETE）必须携带 `X-Requested-With` 头；Server Action 与 API Key 请求使用 Authorization / X-API-Key 头认证，不受影响
+- **速率限制**：`utils/common.py` 内 `RateLimits` 集中管理所有端点限流值；`_get_client_ip` 通过 `TRUSTED_PROXIES`（支持 CIDR 网段）从右向左跳过可信代理，防 XFF 伪造
 
 #### 统一入口导入
 
@@ -300,10 +321,13 @@ backend/
 from services import (
     PropertyQueryService, PropertyImporter, CommunityMerger,
     ProjectService, ProjectCoreService, RenovationService, SalesService, FinanceService,
-    MarketingProjectService, MarketingImportService,
+    CashFlowService, ProjectResponseBuilder, ProjectStateManager,
+    MarketingProjectService, MarketingImportService, MarketingMediaService,
     AuthService, UserService, RoleService, ApiKeyService,
     MonitorService,
 )
+# 跟投管理需按子模块导入（未在顶层 __init__ 暴露）
+from services.investment import InvestmentService
 # 或按子模块导入
 from services.market import PropertyQueryService
 from services.projects import ProjectService
@@ -413,7 +437,7 @@ docker compose up -d --build frontend  # 仅重建前端
 |------|---------|------|
 | Node.js | ≥ 20 | 前端运行环境 |
 | pnpm | ≥ 9 | 前端包管理器 |
-| Python | ≥ 3.13 | 后端运行环境（与 Docker 镜像一致） |
+| Python | ≥ 3.10 | 后端运行环境（与 Docker 镜像及 `pyproject.toml` 一致） |
 | uv | 最新 | 后端包管理器（替代 pip/venv） |
 | PostgreSQL | ≥ 14 | 本地数据库（或通过 `docker compose up db` 启动单服务） |
 
@@ -504,7 +528,8 @@ pnpm dev                # 开发服务器（端口 3000）
 pnpm build              # 生产构建
 pnpm lint               # ESLint（max-warnings 0）
 pnpm test               # Vitest 单元测试
-pnpm test:e2e           # Playwright E2E 测试
+pnpm test:coverage      # Vitest 带覆盖率
+pnpm exec playwright test  # Playwright E2E 测试（配置见 playwright.config.ts）
 pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端运行）
 ```
 
@@ -521,25 +546,35 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
 | `POSTGRES_USER` | ✅ | `profo` | PostgreSQL 用户名 |
-| `POSTGRES_PASSWORD` | ✅ | - | PostgreSQL 强密码（**生产环境务必使用强密码**） |
+| `POSTGRES_PASSWORD` | ✅ | - | PostgreSQL 强密码（**生产环境务必使用强密码**，仅字母数字，避免 `# @ : /` 等 URL 保留字符） |
 | `POSTGRES_DB` | ✅ | `profo` | PostgreSQL 数据库名 |
 | `DATABASE_URL` | - | 见 `.env.docker.example` | 数据库连接串；compose 会用 `${POSTGRES_*}` 重新拼装覆盖指向 `db:5432`，此处仅占位 |
 | `JWT_SECRET_KEY` | ✅ | - | JWT 签名密钥，`openssl rand -hex 32` 生成 |
-| `ENCRYPTION_KEY` | ✅ | - | Fernet 对称加密密钥，`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` 生成 |
+| `ENCRYPTION_KEY` | ✅ | - | Fernet 对称加密密钥，`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` 生成（**生成后不可更改**，否则已加密数据无法解密） |
 | `WECHAT_APPID` | ✅ | - | 微信 AppID（不使用微信登录也需填占位符） |
 | `WECHAT_SECRET` | ✅ | - | 微信 AppSecret |
+| `WECHAT_REDIRECT_URI` | - | 见 settings.py | 微信回调地址（生产环境改为实际域名） |
+| `FRONTEND_URL` | - | `http://localhost:3000` | 前端 URL（用于微信回调重定向等） |
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | - | `30` | 访问令牌过期时间 |
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | - | `7` | 刷新令牌过期时间 |
 | `JWT_KEY_ROTATION_ENABLED` | - | `false` | 是否启用密钥轮换 |
 | `JWT_SECRET_KEY_OLD` | - | - | 旧密钥（轮换过渡期） |
-| `CORS_ORIGINS` | - | `[]` | 允许的跨域来源（同域部署留空即可） |
+| `CORS_ORIGINS` | - | `[]` | 允许的跨域来源（同域部署留空即可；list 类型用 JSON 数组格式） |
+| `TRUSTED_PROXIES` | - | `["127.0.0.1","::1"]` | 可信代理 IP/CIDR 列表（用于 slowapi 读取 X-Forwarded-For，Docker 部署需补 `172.16.0.0/12` 网段；list 类型用 JSON 数组格式） |
 | `API_PREFIX` | - | `/api` | API 前缀 |
 | `UPLOAD_DIR` | - | `/app/static/uploads` | 上传目录（容器内路径，勿改） |
 | `MAX_UPLOAD_SIZE` | - | `104857600` | 上传大小上限（100 MB） |
-| `DEBUG` | - | `false` | 调试模式 |
+| `DEBUG` | - | `false` | 调试模式（生产必须 false；为 false 时 `/docs` `/redoc` `/openapi.json` 不暴露） |
+| `PRODUCTION_DOMAIN` | - | - | 生产域名（可选，作为 frontend 构建参数 `--build-arg PRODUCTION_DOMAIN=...` 注入；nginx 正确传递 Host 头时非必需） |
 
 > **Docker 专有环境变量**（仅在 `docker-compose.yml` 中显式设置，不在 `.env` 中）：
-> - `frontend.environment.SERVER_API_URL=http://backend:8000` — Server Action / Server Component 在容器内运行时直连 backend 容器（不设此项会回退到 `http://127.0.0.1:8000`，指向 frontend 自己，导致登录"网络错误"）
+> - `frontend.environment.SERVER_API_URL=http://backend:8000` — Server Action / Server Component 在容器内运行时直连 backend 容器
+> - `frontend.build.args.SERVER_API_URL` — 构建时注入 `next.config.ts` 的 rewrites，让 SSR 阶段代理直连 backend 容器
+> - `frontend.build.args.PRODUCTION_DOMAIN` — 构建时注入生产域名（可选）
+> - `db.command` — PostgreSQL 调优（`shared_buffers=128MB`、`work_mem=4MB`、`maintenance_work_mem=64MB`、`max_connections=50`，适配 1.6G 服务器）
+> - 各服务均设 `mem_limit`：db 384m / backend 512m / frontend 256m
+> - backend / frontend 服务均设 `platform: linux/amd64`（Mac arm64 开发机需构建 amd64 镜像才能在 x86_64 服务器运行）
+> - db / backend 均配置 `healthcheck`；frontend `depends_on: backend: service_healthy`（frontend 自身无 healthcheck，Next.js standalone 无内置健康探针）
 
 ### 前端环境变量（`frontend/.env.local`，仅本地开发）
 
@@ -563,38 +598,90 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 
 ### 主要端点
 
+所有接口前缀 `/api/v1`，文档地址 `http://localhost/docs`（Docker，需 `DEBUG=true`）或 `http://127.0.0.1:8000/docs`（本地开发）。完整端点见 `backend/openapi.json`（117 路径 / 152 方法）。
+
 | 模块 | 路径 | 方法 | 说明 |
 |------|------|------|------|
-| **认证** | `/auth/login` | POST | 用户登录（返回 access + refresh token） |
+| **认证** | `/auth/token` | POST | OAuth2 password flow（表单登录） |
+| | `/auth/login` | POST | JSON 登录（返回 access + refresh token） |
 | | `/auth/refresh` | POST | 刷新 Token |
 | | `/auth/me` | GET | 获取当前用户 |
-| | `/auth/logout` | POST | 登出 |
-| **项目** | `/projects` | GET/POST | 列表 / 创建 |
+| | `/auth/api-key` | POST | 生成 API Key |
+| | `/auth/wechat/authorize` | GET | 微信授权跳转 |
+| | `/auth/wechat/callback` | GET | 微信授权回调 |
+| | `/auth/wechat/login` | POST | 微信登录（code 换 token） |
+| | `/auth/exchange-token` | POST | 临时码换 Token（微信场景） |
+| **项目** | `/projects` | GET/POST | 列表 / 创建（支持 `ProjectFilter` + 导出 CSV） |
+| | `/projects/stats` | GET | 项目统计 |
+| | `/projects/export` | GET | 导出 CSV |
 | | `/projects/{id}` | GET/PUT/DELETE | 详情 / 更新 / 删除 |
-| | `/projects/contract-no/next` | GET | 生成合同编号（格式 `MFB-YYYYMM-XXXX`） |
-| | `/projects/{id}/cashflow` | GET/POST | 现金流查询 / 创建 |
+| | `/projects/{id}/status` | PATCH | 状态转换 |
+| | `/projects/{id}/complete` | POST | 标记完成 |
+| | `/projects/{id}/report` | GET | 项目报告 |
+| | `/projects/contract-no/next` | GET | 生成合同编号（`SH{序号}-{SG/DL}`，按 business_form 区分代理/收购） |
+| | `/projects/{id}/documents` | GET/POST | 文书签收列表 / 新增 |
+| | `/projects/{id}/documents/initialize` | POST | 批量初始化文书模板 |
+| | `/projects/{id}/documents/{doc_id}` | PATCH/DELETE | 更新 / 删除文书 |
 | | `/projects/{id}/renovation` | GET/PUT | 装修信息 |
-| | `/projects/{id}/sales` | GET/PUT | 销售信息 |
+| | `/projects/{id}/renovation/photos` | GET/POST | 装修照片（支持 media_type 区分图/视频） |
+| | `/projects/{id}/renovation/contract` | GET/PUT | 装修合同 |
+| | `/projects/{id}/selling/{roles,viewings,offers,negotiations,records}` | GET/POST | 销售子模块 |
+| | `/projects/{id}/cashflow` | GET/POST | 现金流查询 / 创建 |
+| **资金账本** | `/admin/ledger` | GET | 资金账本项目列表（含收支/净现金流/ROI 聚合） |
+| | `/admin/ledger/stats` | GET | 全局统计 |
+| | `/admin/ledger/export` | GET | Excel 导出 |
+| | `/admin/ledger/{project_id}` | GET | 项目流水明细 |
+| | `/admin/ledger/{project_id}/statistics` | GET | 项目统计（含计算明细 dialog） |
+| | `/admin/ledger/{project_id}/logs` | GET | 操作日志 |
+| | `/admin/ledger/{project_id}/export` | GET | 项目流水 Excel 导出 |
+| | `/admin/ledger/{project_id}/settle` | POST | 结算 |
+| | `/admin/ledger/{project_id}/unsettle` | POST | 取消结算 |
+| | `/admin/ledger/{record_id}` | PATCH/DELETE | 更新 / 删除流水 |
+| **跟投管理** | `/admin/investments` | GET/POST | 跟投记录列表 / 创建 |
+| | `/admin/investments/stats` | GET | 统计 |
+| | `/admin/investments/export` | GET | Excel 导出 |
+| | `/admin/investments/{id}` | GET/PUT/DELETE | 详情 / 更新 / 删除 |
+| | `/admin/investments/by-project/{project_id}` | GET | 按项目查跟投 |
+| | `/admin/investments/{id}/investors` | GET/POST | 投资方列表 / 新增 |
+| | `/admin/investments/{id}/investors/{investor_id}` | PUT/DELETE | 更新 / 删除投资方 |
+| | `/admin/investments/{id}/distribution-adjustments` | GET/POST | 分配比例调整记录 |
+| | `/admin/investments/{id}/settle` | POST | 结算 |
+| | `/admin/investments/{id}/unsettle` | POST | 取消结算 |
+| | `/admin/investments/{id}/copy` | POST | 复制跟投记录 |
 | **线索** | `/leads` | GET/POST | 列表 / 创建 |
+| | `/leads/stats` `/leads/stats/funnel` | GET | 统计 / 漏斗 |
 | | `/leads/{id}` | GET/PUT/DELETE | 详情 / 更新 / 删除 |
 | | `/leads/{id}/follow-ups` | GET/POST | 跟进记录 |
 | | `/leads/{id}/prices` | GET/POST | 价格历史 |
-| **市场情报** | `/properties` | GET | 房源列表（导出 CSV） |
-| | `/communities` | GET/POST | 小区管理 |
-| | `/communities/merge` | POST | 小区合并 |
+| **市场情报** | `/properties` | GET | 房源列表（支持导出 CSV） |
+| | `/properties/communities/search` | GET | 小区搜索 |
+| | `/admin/communities` | GET/POST | 小区管理 |
+| | `/admin/communities/{id}` | GET/PUT/DELETE | 小区 CRUD |
+| | `/admin/communities/merge` | POST | 小区合并 |
+| | `/admin/dictionaries` | GET | 小区字典 |
 | **营销 L4** | `/admin/l4-marketing/projects` | GET/POST | 营销项目 |
 | | `/admin/l4-marketing/projects/{id}` | GET/PUT/DELETE | 营销项目 CRUD |
 | | `/admin/l4-marketing/projects/{id}/media` | GET/POST | 媒体管理 |
-| | `/admin/l4-marketing/import` | POST | 从 L3 项目导入 |
-| **监控** | `/monitor/...` | GET | 竞品 / 雷达 / 趋势 / 情绪 / AI 策略 |
-| **C 端公开** | `/public/projects` | GET | 已发布房源列表（无需登录） |
+| | `/admin/l4-marketing/projects/{id}/media/sort-order` | PATCH | 媒体排序 |
+| | `/admin/l4-marketing/available-projects` | GET | 可导入的 L3 项目 |
+| | `/admin/l4-marketing/projects/import-from-l3/{project_id}` | POST | 从 L3 项目导入 |
+| **监控** | `/monitor/communities/{id}/{sentiment,trends,radar,competitors,market-stats}` | GET | 监控数据 |
+| | `/monitor/communities/{id}/competitors/{competitor_id}` | POST/DELETE | 竞品管理 |
+| | `/monitor/ai-strategy` | GET | AI 策略 |
+| **C 端公开** | `/public/projects` `/public/projects/sold` | GET | 已发布 / 已售房源列表（无需登录） |
 | | `/public/projects/{id}` | GET | 房源详情 |
-| | `/public/leads` | POST | 提交估价线索 |
-| | `/public/auth/*` | POST | 注册 / 登录 / 微信登录 |
-| **系统** | `/users` | GET/POST | 用户管理 |
+| | `/public/projects/{id}/consultant` | GET | 顾问信息 |
+| | `/public/stats/platform` | GET | 平台统计 |
+| | `/public/leads` `/public/leads/mine` | GET/POST | 提交估价线索 / 我的线索 |
+| | `/public/auth/{register,token,refresh,me,logout,wechat/*}` | POST/GET | 注册 / 登录 / 微信 OAuth |
+| | `/public/users/{profile,phone}` | GET/PATCH | 用户资料 / 修改手机号 |
+| | `/public/communities/search` | GET | C 端小区搜索 |
+| | `/public/files/upload` | POST | C 端文件上传 |
+| **系统** | `/users` `/users/simple` `/users/me` | GET/POST | 用户管理（含简化列表与当前用户） |
+| | `/users/{id}/reset-password` `/users/change-password` `/users/init-data` | POST | 密码管理 |
 | | `/roles` | GET/POST | 角色管理 |
-| | `/upload` | POST | 文件上传 |
-| | `/files` | GET | 文件管理 |
+| | `/upload/csv` `/upload/tasks` `/upload/download/{filename}` | POST/GET | CSV 上传 / 导入任务 / 下载 |
+| | `/files/upload` | POST | 通用文件上传 |
 | | `/push` | POST | JSON 数据推送 |
 
 ### 速率限制
@@ -636,7 +723,7 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 - **时区**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PG 存储为 `TIMESTAMP WITH TIME ZONE`
 - **编译缓存**：`execution_options={"compiled_cache": {}}`
 - **建表**：通过 `Base.metadata.create_all` 自动建表（应用启动时执行 `init_db()`）
-- **数据迁移**：`backend/migrations/` 目录下的幂等启动迁移（列变更、明文加密等），应用启动时自动执行；schema 变更通过 Alembic 管理（如需）
+- **数据迁移**：`backend/migrations/` 目录下的 25+ 个幂等启动迁移函数（应用启动时 `lifespan` 自动执行，详见下方「数据迁移」章节）
 
 ### ER 概览
 
@@ -645,16 +732,25 @@ erDiagram
     USER ||--o{ PROJECT : "manages"
     USER }|--|| ROLE : "has"
     USER ||--o{ API_KEY : "owns"
+    USER ||--o{ REFRESH_TOKEN : "owns"
+    USER ||--o{ WECHAT_OAUTH_STATE : "wechat state"
+    USER ||--o{ WECHAT_TEMP_CODE : "wechat temp"
     PROJECT ||--|| PROJECT_CONTRACT : "has"
     PROJECT ||--o{ PROJECT_OWNER : "has"
     PROJECT ||--|| PROJECT_SALE : "has"
     PROJECT ||--o{ PROJECT_FOLLOW_UP : "has"
     PROJECT ||--o{ PROJECT_EVALUATION : "has"
     PROJECT ||--o{ PROJECT_INTERACTION : "has"
+    PROJECT ||--o{ PROJECT_DOCUMENT : "has"
     PROJECT ||--o{ FINANCE_RECORD : "has"
+    FINANCE_RECORD ||--o{ FINANCE_RECORD_LOG : "logs"
     PROJECT ||--o{ PROJECT_STATUS_LOG : "has"
     PROJECT ||--|| PROJECT_RENOVATION : "has"
     PROJECT_RENOVATION ||--o{ RENOVATION_PHOTO : "has"
+    PROJECT ||--o| INVESTMENT : "invested by"
+    INVESTMENT ||--o{ INVESTOR : "has"
+    INVESTMENT ||--o{ RETURN_ADJUSTMENT : "adjusted by"
+    INVESTMENT ||--o{ INVESTMENT_LOG : "logged by"
     LEAD ||--o{ LEAD_FOLLOWUP : "has"
     LEAD ||--o{ LEAD_PRICE_HISTORY : "has"
     L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : "has"
@@ -670,29 +766,40 @@ erDiagram
 
 | 表 | 模块 | 说明 |
 |----|------|------|
-| `users` | user | 用户（含微信字段、加密手机号、`must_change_password` 标记） |
+| `users` | user | 用户（含微信字段、加密手机号、`phone_hash` 唯一索引、`token_version`、`must_change_password` 标记） |
 | `roles` | user | 角色（admin / operator / user / customer） |
 | `api_keys` | user | API Key（哈希存储，过期时间，最后使用时间） |
+| `refresh_tokens` | user | Refresh Token 持久化（支持登出吊销） |
+| `wechat_oauth_states` | system | 微信 OAuth state（防 CSRF，TTL 清理） |
+| `wechat_temp_codes` | system | 微信临时码（场景码换 Token 中转） |
 | `communities` | property | 小区（含别名、竞品关联） |
+| `community_aliases` | property | 小区别名 |
+| `community_competitors` | property | 小区竞品关联 |
 | `property_current` | property | 房源当前数据 |
 | `property_history` | property | 房源历史快照 |
-| `property_media` | property | 房源媒体 |
+| `property_media` | property | 房源媒体（含 `thumbnail_url`） |
 | `leads` | lead | 线索（含评估价、状态、来源 property_id） |
 | `lead_followups` | lead | 线索跟进 |
 | `lead_price_history` | lead | 线索价格历史 |
-| `projects` | project | 项目主表（status: signing/renovating/selling/sold/deleted） |
-| `project_contracts` | project | 合同（合同号唯一，自动生成 `MFB-YYYYMM-XXXX`） |
-| `project_owners` | project | 业主（身份证加密） |
+| `projects` | project | 项目主表（status: signing/renovating/selling/sold/deleted；含 `finance_settlement_status`/`finance_settled_date`/`finance_settled_note`/`business_form`/`commission_start_date`/`commission_end_date`） |
+| `project_contracts` | project | 合同（合同号部分唯一索引，`WHERE is_deleted=false`，允许软删后复用） |
+| `project_owners` | project | 业主（身份证 / 手机号 / 银行卡加密） |
 | `project_sales` | project | 销售信息 |
-| `project_renovations` | project | 装修（含硬装合同 / 软装 / 设计费 / 拆除费等） |
-| `renovation_photos` | project | 装修照片（按阶段） |
+| `project_renovations` | project | 装修（含硬装合同 / 软装 / 设计费 / 拆除费 / 定制柜 / 窗户 / 墙面处理 / 对接负责人） |
+| `renovation_photos` | project | 装修照片（按阶段，含 `media_type` 图/视频区分、`thumbnail_url`） |
 | `project_follow_ups` | project | 项目跟进 |
 | `project_interactions` | project | 带看 / 出价等互动 |
 | `project_evaluations` | project | 评估记录 |
-| `finance_records` | project | 财务流水（income/expense） |
+| `project_documents` | project | 文书签收（含状态、归档日期、文件 URL） |
+| `finance_records` | project | 财务流水（income/expense，含 `counterparty`/`counterparty_type`/`receipt_urls` 多票据 JSON） |
+| `finance_record_logs` | project | 财务流水操作日志（settle/unsettle/create/update/delete） |
 | `project_status_logs` | project | 状态变更日志 |
-| `l4_marketing_projects` | marketing | 营销项目 |
-| `l4_marketing_media` | marketing | 营销媒体 |
+| `investments` | investment | 跟投记录（关联项目，含投资总额、收益总额、结算状态） |
+| `investors` | investment | 投资方（子投资人，含分配比例） |
+| `return_adjustments` | investment | 分配比例调整记录（默认比例 vs 调整后比例） |
+| `investment_logs` | investment | 跟投操作日志 |
+| `l4_marketing_projects` | marketing | 营销项目（含 `stage_completed_dates` JSON） |
+| `l4_marketing_media` | marketing | 营销媒体（图/视频，排序） |
 | `property_import_tasks` | system | 导入任务（CSV/JSON 批量） |
 | `failed_records` | system | 导入失败记录 |
 
@@ -721,9 +828,9 @@ stateDiagram-v2
     selling --> deleted: 删除
 ```
 
-各阶段在 `project_detail/views/` 下有独立视图：
-- `default/` — 基础信息 + 附件 + 交付
-- `renovation/` — 装修时间线 + 合同 + 成本汇总 + 阶段照片
+各阶段在前端 `frontend/src/app/(main)/admin/projects/_components/project-detail/views/` 下有独立视图：
+- `default/` — 基础信息 + 附件 + 交付 + 文书签收
+- `renovation/` — 装修时间线 + 合同 + 成本汇总 + 阶段照片（图/视频）
 - `selling/` — 活动 / 团队 / KPI / 成交对话框
 - `sold/` — 财务生命周期 + 视觉旅程 + 总结报告
 
@@ -833,15 +940,19 @@ curl http://127.0.0.1:8000/health
 
 ### 生产环境注意事项
 
-1. **HTTPS**：当前 compose 内不运行 nginx，生产环境需在宿主机器配置 nginx/Caddy/Traefik 等反代，并终止 HTTPS。宿主反代目标为 `127.0.0.1:3000`（前端）与 `127.0.0.1:8000`（后端 API/静态资源），示例配置可参考 `docs/server-conf/`。
-2. **密钥管理**：`.env` 中的 `JWT_SECRET_KEY` / `ENCRYPTION_KEY` / `POSTGRES_PASSWORD` 务必使用强随机值，**严禁提交到 Git**（`.env` 已在 `.gitignore` 中）。
-3. **数据库备份**：定期备份 `pgdata` volume，或使用 `pg_dump`：
+1. **HTTPS**：当前 compose 内不运行 nginx，生产环境需在宿主机器配置 nginx/Caddy/Traefik 等反代，并终止 HTTPS。宿主反代目标为 `127.0.0.1:3000`（前端）与 `127.0.0.1:8000`（后端 API/静态资源）。nginx 关键配置：
+   - `proxy_set_header Host $host;`（Server Actions 自动允许同源 Host，`PRODUCTION_DOMAIN` 非必需）
+   - `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`（slowapi 通过 `TRUSTED_PROXIES` 解析真实客户端 IP）
+2. **密钥管理**：`.env` 中的 `JWT_SECRET_KEY` / `ENCRYPTION_KEY` / `POSTGRES_PASSWORD` 务必使用强随机值，**严禁提交到 Git**（`.env` 已在 `.gitignore` 中）。`ENCRYPTION_KEY` 一旦生成不可更改，否则已加密的身份证 / 手机号 / 微信会话密钥将无法解密。
+3. **`TRUSTED_PROXIES` 配置**：Docker bridge 网络下，容器内 `request.client.host` 看到的是 Docker 网关 IP（如 `172.18.0.1`），不在默认 `127.0.0.1` 中。需补充 `172.16.0.0/12` 网段，否则所有请求共享网关 IP 对应的限流桶，导致全站限流或限流失效。
+4. **数据库备份**：定期备份 `pgdata` volume，或使用 `pg_dump`：
    ```bash
    docker compose exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup_$(date +%F).sql
    ```
-4. **日志**：`docker compose logs -f` 跟踪日志；如需持久化，建议配置外部日志驱动。
-5. **资源限制**：低配服务器可在 `docker-compose.yml` 中添加 `mem_limit` / `cpus` 限制单个容器资源。
-6. **密码安全**：`POSTGRES_PASSWORD` 避免包含 `#`、`@`、`:`、`/` 等 URL 保留字符，防止 `DATABASE_URL` 解析失败。如必须使用，需对密码做 URL 编码。
+5. **日志**：`docker compose logs -f` 跟踪日志；如需持久化，建议配置外部日志驱动。
+6. **资源限制**：`docker-compose.yml` 已为低配服务器（1.6G）配置 `mem_limit`：db 384m / backend 512m / frontend 256m。如服务器资源充裕可适当上调。
+7. **密码安全**：`POSTGRES_PASSWORD` 避免包含 `#`、`@`、`:`、`/` 等 URL 保留字符，防止 `DATABASE_URL` 解析失败。如必须使用，需对密码做 URL 编码。
+8. **跨平台构建**：开发机为 Mac arm64 时，必须显式构建 amd64 镜像才能在 x86_64 服务器运行。`docker-compose.yml` 已默认 `platform: linux/amd64`；`deploy-local.sh` 也已处理跨平台构建。
 
 ### 升级流程
 
@@ -861,18 +972,22 @@ docker compose up -d --build
 
 ### 启动时数据迁移（自动）
 
-`backend/migrations/` 目录下的迁移在应用启动时由 `main.py` 的 `lifespan` 调用 `run_startup_migrations(engine)` 自动执行，幂等设计：
-- 列变更（`ALTER TABLE ADD COLUMN`）
-- 明文手机号加密
-- 图片 URL 路径修正（绝对 URL → 相对路径）
+`backend/migrations/` 目录下的迁移在应用启动时由 `main.py` 的 `lifespan` 调用 `run_startup_migrations(engine)` 自动执行，**全部幂等设计**，无需手动执行。当前包含 25+ 个迁移函数，主要分类如下：
 
-无需手动执行。
+| 类别 | 迁移函数（节选） | 说明 |
+|------|------------------|------|
+| **加列 / 加索引** | `add_token_version_column`、`add_phone_hash_column`、`add_stage_completed_dates_column`、`add_thumbnail_url_to_photos`、`add_renovation_extra_amount_columns`、`add_contact_person_id_column`、`add_finance_record_counterparty_columns`、`add_finance_record_receipt_urls_column`、`add_project_finance_settlement_columns`、`add_media_type_to_renovation_photos`、`add_counterparty_type_to_finance_records` | 为既有表添加新列 / 索引（H-XXX 系列） |
+| **删列 / 重命名** | `drop_other_decoration_amount_column`、`drop_soft_actual_cost_column`、`rename_return_adjustment_columns` | 移除前端已弃用的字段，或语义重命名（旧数据清空） |
+| **加密 / 数据修复** | `encrypt_existing_phones`、`populate_phone_hash`、`run_fix_image_urls` | 将明文手机号加密为 Fernet 密文并回填 `phone_hash`；将绝对图片 URL 转为相对路径 |
+| **建表** | `create_investment_tables`、`create_finance_record_logs_table`、`create_wechat_oauth_tables` | 幂等创建跟投管理 4 表、资金账本日志表、微信 OAuth 2 表 |
+| **PG enum 同步** | `add_cashflow_category_enum_values`、`add_project_finance_settlement_columns` | 将 Python 枚举新增值同步到 PostgreSQL `enum` 类型（`ALTER TYPE ... ADD VALUE IF NOT EXISTS`） |
+| **列类型修复** | `migrate_record_date_to_timestamptz`、`migrate_project_date_columns_to_date`、`migrate_user_datetime_columns_to_timestamptz`、`migrate_encrypted_columns_to_text`、`migrate_all_datetime_columns_to_timestamptz` | 将旧 `timestamp without time zone` 列统一迁移为 `timestamptz`；将 `VARCHAR(10)` 日期列迁移为 `date`；将 `EncryptedString` 列从 `varchar` 迁移为 `text`（Fernet 密文远超声明长度） |
+| **业务数据迁移** | `migrate_installation_stage_to_delivery` | 将 projects / renovation_photos / l4_marketing_media 中「安装」阶段数据迁移为「交付」（移除安装阶段） |
+| **索引重建** | `rebuild_contract_no_index`、`cleanup_reserved_contracts` | 重建 `idx_contract_no` 为部分唯一索引（`WHERE is_deleted=false`），清理已删除项目的合同记录，允许合同号在项目软删除后被复用 |
 
 ---
 
 ## 📐 开发规范
-
-详见 [AGENTS.md](AGENTS.md)。核心要点：
 
 ### 通用
 
@@ -895,7 +1010,7 @@ docker compose up -d --build
 - Service 层抛 `ServiceException`，**禁止抛 `HTTPException`**
 - 所有函数完整类型注解；Pydantic 分 `*Create/*Update/*Response/*Filter`
 - 文件 >250 行需注释说明不拆理由
-- Schema 变更通过 Alembic 迁移管理；启动时 `migrations/` 会执行幂等兼容迁移
+- Schema 变更通过 `migrations/` 目录下幂等启动迁移管理（应用启动时自动执行）
 
 ### 提交前
 
@@ -1021,66 +1136,67 @@ docker compose up -d --build     # 重新启动
 ```
 ProFo/
 ├── README.md                      # 本文件
-├── AGENTS.md                      # 编码规范（必读）
-├── CLAUDE.md                      # Claude Code 指引
-├── DESIGN.md                      # 设计风格参考
+├── DESIGN.md                      # 设计风格参考（Steep 主题）
 │
-├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend）
+├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend，含 healthcheck / mem_limit / platform）
 ├── docker-compose.dev.yml         # 开发环境 override（映射 db 端口到本地）
 ├── .env.docker.example            # Docker 部署环境变量模板
-├── init-env.sh                    # 一键生成密钥并初始化 .env
-├── setup.sh                       # 一键初始化数据库与管理员账号
-├── dev-start.sh                   # 本地开发一键启停（db + backend + frontend）
-├── deploy-local.sh                # 本地构建镜像并推送到服务器
+├── init-env.sh                    # 一键生成密钥并初始化 .env（支持 --show / --force）
+├── setup.sh                       # 一键初始化数据库与管理员账号（支持 --docker / --reset-admin / --admin-password / --skip-db）
+├── dev-start.sh                   # 本地开发一键启停（db + backend + frontend，子命令 up/db/stop/status/logs/down）
+├── dev-start.bat                  # Windows 版本开发启停脚本
+├── deploy-local.sh                # 本地构建镜像并推送到服务器（amd64 跨平台构建）
 ├── deploy-server.sh               # 服务器端加载镜像并启动 compose
 │
 ├── frontend/                      # 前端（Next.js 16，standalone 输出）
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── (main)/            # B 端受保护路由组
-│   │   │   │   ├── admin/         # 仪表盘 + 市场数据
-│   │   │   │   ├── projects/      # 项目管理（cashflow / monitor / detail views）
-│   │   │   │   ├── leads/         # 线索管理（含监控仪表盘）
-│   │   │   │   ├── l4-marketing/  # 营销 CMS（照片 DnD + 预览）
-│   │   │   │   ├── properties/    # 房源（列表 / 上传 / 治理合并）
-│   │   │   │   ├── users/         # 用户 + 角色管理
-│   │   │   │   ├── settings/api-key/  # API Key 管理
+│   │   │   │   ├── admin/         # 仪表盘 + 市场数据 + 快捷入口
+│   │   │   │   ├── investments/   # 跟投管理（列表 + 详情：投资方 / 分配比例 / 结算 / 复制 / 日志）
+│   │   │   │   ├── ledger/        # 资金账本（项目列表 + 流水明细 + 统计 + 结算）
+│   │   │   │   ├── projects/      # 项目管理（[id] 含 cashflow / renovation / selling + monitor / create-project / project-detail）
+│   │   │   │   ├── leads/         # 线索管理（含监控仪表盘 + 抽屉详情 + 跟进）
+│   │   │   │   ├── l4-marketing/  # 营销 CMS（照片 DnD + 预览 + 编辑）
 │   │   │   │   └── layout.tsx     # 鉴权布局
 │   │   │   ├── (c)/               # C 端公开路由组
 │   │   │   │   ├── projects/      # 房源浏览
 │   │   │   │   ├── valuation/     # 估价提交
+│   │   │   │   ├── leads/         # 我的线索
 │   │   │   │   ├── login/ register/ my/ profile/
 │   │   │   │   └── about/ contact/
 │   │   │   ├── login/             # B 端登录
 │   │   │   └── api/auth/refresh/  # Next.js API 路由（Token 刷新）
 │   │   ├── components/ui/         # shadcn/ui 组件
-│   │   ├── lib/                   # api-server / api-client / api-types / config / formatters / utils
+│   │   ├── lib/                   # api-server / api-client / api-c（C端）/ api-types / auth / formatters / utils / swr / logger / chart-colors / status-colors / i18n
 │   │   └── hooks/
 │   ├── public/
-│   ├── next.config.ts             # React Compiler + rewrites 代理
+│   ├── next.config.ts             # React Compiler + rewrites 代理 + images.unoptimized + turbopack
 │   ├── Dockerfile                 # 多阶段构建（deps → builder → runner）
 │   ├── playwright.config.ts       # E2E 测试
 │   └── package.json
 │
 ├── backend/                       # 后端（FastAPI）
-│   ├── routers/                   # 按领域分模块（见上文）
+│   ├── constants/                 # 业务常量（documents 文书模板）
+│   ├── routers/                   # 按领域分模块（详见上文「服务分层」）
 │   ├── services/                  # 按领域分模块
 │   ├── models/                    # 按领域分模块
 │   ├── schemas/                   # 按领域分模块
 │   ├── dependencies/              # auth / common / projects
-│   ├── utils/                     # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger
-│   ├── migrations/                # 启动时幂等迁移（列变更 / 明文加密 / URL 修正）
-│   ├── scripts/                   # 一次性脚本
-│   ├── main.py                    # 应用入口
+│   ├── utils/                     # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger / mask / error_formatters / image_processing / common(limiter + XFF)
+│   ├── migrations/                # 启动时幂等迁移（25+ 函数，详见「数据迁移」章节）
+│   ├── review/                    # 代码审查记录（11 个会话 + 总结 + 跟踪表）
+│   ├── scripts/                   # 一次性脚本（当前为空）
+│   ├── main.py                    # 应用入口（含 CSRF 中间件 + 健康检查 + openapi_tags）
 │   ├── db.py                      # SQLAlchemy 引擎 + 会话（PostgreSQL）
-│   ├── settings.py                # Pydantic Settings
+│   ├── settings.py                # Pydantic Settings（app v0.9.0）
 │   ├── error_handlers.py          # 全局异常 handler
-│   ├── exceptions.py              # 通用异常
 │   ├── init_db.py                 # 建表脚本
 │   ├── init_admin.py              # 初始化角色和管理员
 │   ├── conftest.py                # pytest 配置（PostgreSQL + SAVEPOINT 隔离）
+│   ├── openapi.json               # OpenAPI 3.0 schema 副本
 │   ├── Dockerfile                 # 多阶段构建（builder → runner）
-│   ├── pyproject.toml             # 依赖与工具配置
+│   ├── pyproject.toml             # 依赖与工具配置（ruff select=ALL）
 │   └── uv.lock
 │
 ├── .github/workflows/lint.yml     # GitHub Actions Lint
