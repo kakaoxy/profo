@@ -66,7 +66,7 @@ export interface ProjectData {
   signing_price: number | null;
   list_price: number | null;
   signing_date: string | null;
-  signing_period: number | null; // 免租期（天数）
-  extension_period: number | null; // 顺延期（天）
-  extension_rent: number | null; // 顺延期租金（元/月）
+  signing_period: number | null; // 合同周期(天)
+  extension_period: number | null; // 顺延期(天)
+  extension_rent: number | null; // 顺延期租金(元/月)
 }
