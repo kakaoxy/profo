@@ -334,3 +334,37 @@ class FinanceSettlementResponse(BaseModel):
 # ========== 资金账本统计页面 ==========
 # 统计页面 Schema 已拆分至 ledger_statistics.py（13 个模型），降低单文件行数。
 # 聚合入口 schemas/project/__init__.py 同时从 .finance 与 .ledger_statistics 导出。
+
+
+# ========== 应收应付参考表 ==========
+
+
+class ReceivablePayableItem(BaseModel):
+    """应收应付参考表单项."""
+
+    type: CashFlowType
+    business_type: str  # general/agent/wholesale
+    stage: str  # 签约/装修/在售/已售/其他
+    category: CashFlowCategory
+    category_label: str  # 前端显示名
+    calculation_logic: str  # 计算逻辑文本
+    expected_amount: Decimal | None = None
+    actual_amount: Decimal
+    difference: Decimal | None = None
+
+    @field_serializer("expected_amount", "difference")
+    def serialize_optional_decimal(self, v: Decimal | None) -> float | None:
+        return float(v) if v is not None else None
+
+    @field_serializer("actual_amount")
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReceivablePayableResponse(BaseModel):
+    """应收应付参考表响应."""
+
+    items: list[ReceivablePayableItem]
+    model_config = ConfigDict(from_attributes=True)
