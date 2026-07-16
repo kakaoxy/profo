@@ -27,7 +27,7 @@ function DashboardHeader() {
   return (
     <div className="mb-8 flex items-center gap-3">
       <div className="p-2 bg-card rounded-lg shadow-sm">
-        <LayoutDashboard className="w-6 h-6 text-muted-foreground" />
+        <LayoutDashboard className="w-6 h-6 text-muted-foreground" aria-hidden="true" />
       </div>
       <div>
         <h1 className="text-2xl font-bold text-foreground">
@@ -46,21 +46,23 @@ function MonitorSectionSkeleton() {
   return (
     <section className="mb-8 overflow-hidden">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-on-surface dark:text-white">
+        <h2 className="text-xl font-bold text-on-surface dark:text-white">
           重点监控项目
-        </h3>
+        </h2>
         <div className="flex gap-2">
           <button
             disabled
+            aria-label="筛选功能开发中"
             className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             disabled
+            aria-label="排序功能开发中"
             className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60"
           >
-            <SortAsc className="w-4 h-4" />
+            <SortAsc className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -69,11 +71,11 @@ function MonitorSectionSkeleton() {
         {/* 添加项目卡片占位 */}
         <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center min-h-[400px]">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5">
-            <Plus className="w-8 h-8" />
+            <Plus className="w-8 h-8" aria-hidden="true" />
           </div>
-          <h4 className="text-lg font-bold text-muted-foreground">
+          <p className="text-lg font-bold text-muted-foreground">
             添加新项目
-          </h4>
+          </p>
         </div>
       </div>
     </section>
@@ -83,27 +85,27 @@ function MonitorSectionSkeleton() {
 // 项目监控区域组件
 function MonitorSection() {
   return (
-    <section className="mb-8 overflow-hidden">
+    <section className="mb-8 overflow-hidden" aria-labelledby="monitor-section-title">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-on-surface dark:text-white">
+        <h2 id="monitor-section-title" className="text-xl font-bold text-on-surface dark:text-white">
           重点监控项目
-        </h3>
+        </h2>
         <div className="flex gap-2">
           <button
             disabled
-            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60"
+            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="筛选功能开发中"
             aria-label="筛选功能开发中"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             disabled
-            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60"
+            className="p-2 rounded-lg bg-card border border-border text-muted-foreground cursor-not-allowed opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             title="排序功能开发中"
             aria-label="排序功能开发中"
           >
-            <SortAsc className="w-4 h-4" />
+            <SortAsc className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -115,13 +117,13 @@ function MonitorSection() {
 
         <CreateProjectDialog
           trigger={
-            <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-all min-h-[400px]">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                <Plus className="w-8 h-8" />
+            <div className="w-full sm:w-[280px] sm:shrink-0 bg-muted rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center p-6 text-center group cursor-pointer hover:bg-card hover:border-primary/40 transition-[background-color,border-color] min-h-[400px]">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-5 group-hover:bg-primary group-hover:text-white transition-colors shadow-sm">
+                <Plus className="w-8 h-8" aria-hidden="true" />
               </div>
-              <h4 className="text-lg font-bold text-muted-foreground group-hover:text-primary">
+              <p className="text-lg font-bold text-muted-foreground group-hover:text-primary transition-colors">
                 添加新项目
-              </h4>
+              </p>
               <p className="text-xs text-muted-foreground mt-2 max-w-[140px]">
                 快速录入房源或新建开发项目
               </p>
@@ -135,7 +137,18 @@ function MonitorSection() {
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-muted p-4 md:p-8 min-w-0 overflow-x-hidden">
+    <main
+      id="dashboard-main"
+      className="min-h-screen bg-muted p-4 md:p-8 min-w-0 overflow-x-hidden scroll-mt-4"
+    >
+      {/* Skip link for keyboard / AT users */}
+      <a
+        href="#dashboard-main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg"
+      >
+        跳到主内容
+      </a>
+
       {/* Header - 静态部分 */}
       <DashboardHeader />
 
@@ -169,6 +182,6 @@ export default function DashboardPage() {
       <Suspense fallback={<DashboardLeadsTableSkeleton />}>
         <DashboardLeadsWrapper />
       </Suspense>
-    </div>
+    </main>
   );
 }

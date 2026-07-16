@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useCallback } from "react";
 import { MoreHorizontal, MapPin, Home } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,16 +29,33 @@ export function ProjectCardClient({
 }: ProjectCardClientProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const handleUpdateAttachments = async (attachments: SigningMaterial[]) => {
-    const result = await updateProjectAction(project.id, {
-      signing_materials: attachments.length
-        ? attachments.map((a) => ({ ...a, size: a.size ?? 0 }))
-        : null,
-    });
-    if (!result.success) {
-      toast.error(result.message || "附件保存失败");
-    }
-  };
+  const handleUpdateAttachments = useCallback(
+    async (attachments: SigningMaterial[]) => {
+      const result = await updateProjectAction(project.id, {
+        signing_materials: attachments.length
+          ? attachments.map((a) => ({ ...a, size: a.size ?? 0 }))
+          : null,
+      });
+      if (!result.success) {
+        toast.error(result.message || "附件保存失败");
+      }
+    },
+    [project.id],
+  );
+
+  const handleOpen = useCallback(() => {
+    setIsDetailOpen(true);
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setIsDetailOpen(true);
+      }
+    },
+    [],
+  );
 
   const contractNo = project.contract_no || "N/A";
   const communityName = project.community_name || "未命名项目";
@@ -56,29 +72,32 @@ export function ProjectCardClient({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.01 }}
-        onClick={() => setIsDetailOpen(true)}
-        className="bg-card rounded-xl border border-border shadow-card overflow-hidden flex flex-col hover:border-primary/40 transition-all group cursor-pointer"
+      <button
+        type="button"
+        onClick={handleOpen}
+        onKeyDown={handleKeyDown}
+        aria-label={`查看项目 ${communityName} 详情`}
+        className="w-full text-left bg-card rounded-xl border border-border shadow-card overflow-hidden flex flex-col hover:border-primary/40 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-[border-color,transform,box-shadow] group cursor-pointer motion-safe:animate-fade-in-up"
       >
         <div className="p-4 border-b border-border bg-muted">
           <div className="flex justify-between items-start mb-1">
             <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded">
               #{contractNo}
             </span>
-            <MoreHorizontal className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <MoreHorizontal
+              className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"
+              aria-hidden="true"
+            />
           </div>
-          <h4 className="text-lg font-semibold text-foreground truncate">
+          <h3 className="text-lg font-semibold text-foreground truncate">
             {communityName}
-          </h4>
+          </h3>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-            <MapPin className="w-3 h-3" />
+            <MapPin className="w-3 h-3" aria-hidden="true" />
             {address}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <Home className="w-3 h-3" />
+            <Home className="w-3 h-3" aria-hidden="true" />
             {layout} · {area}
           </p>
           <div className="mt-2">
@@ -114,7 +133,7 @@ export function ProjectCardClient({
             />
           </div>
         </div>
-      </motion.div>
+      </button>
 
       <ProjectDetailSheet
         project={projectData}

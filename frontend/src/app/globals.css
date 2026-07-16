@@ -289,12 +289,39 @@
   .rounded-inputs {
     border-radius: var(--radius-inputs);
   }
+  /* 工作台项目卡片入场动画（仅在允许动画时生效，配合 motion-safe 使用） */
+  .animate-fade-in-up {
+    animation: fade-in-up 0.3s ease-out both;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* C-side: hide bottom nav on desktop */
 @media (min-width: 768px) {
   nav.fixed.bottom-0.h-20 {
     display: none !important;
+  }
+}
+
+/* Respect prefers-reduced-motion: disable non-essential animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

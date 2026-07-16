@@ -1,4 +1,5 @@
 import type { FunnelData } from "../types";
+import { formatConversionRate } from "@/lib/formatters";
 
 interface LeadsFunnelCardProps {
   funnelData: FunnelData;
@@ -20,16 +21,23 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
   const getPercent = (value: number) =>
     total > 0 ? Math.round((value / total) * 100) : 0;
 
-  const conversionRate =
-    total > 0 && signed > 0 ? ((signed / total) * 100).toFixed(1) + "%" : "暂无";
+  const conversionRate = formatConversionRate(total, signed);
 
   return (
-    <div className="col-span-12 lg:col-span-6 bg-card rounded-xl border border-border shadow-card p-5 h-auto flex flex-col min-w-0">
+    <div
+      className="col-span-12 lg:col-span-6 bg-card rounded-xl border border-border shadow-card p-5 h-auto flex flex-col min-w-0"
+      role="region"
+      aria-label="线索漏斗转化"
+    >
       <span className="text-xs text-muted-foreground font-black uppercase tracking-widest block mb-2">
         线索漏斗
       </span>
 
-      <div className="flex-1 flex items-stretch gap-1 min-w-0">
+      <div
+        className="flex-1 flex items-stretch gap-1 min-w-0"
+        role="list"
+        aria-label="各阶段线索数量"
+      >
         {stages.map((stage) => {
           const widthPercent = (stage.value / maxValue) * 100;
           // 所有阶段都保证最小宽度,避免标签被挤压截断
@@ -38,14 +46,16 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
           return (
             <div
               key={stage.key}
-              className={`h-14 ${stage.color} rounded-md flex flex-col items-center justify-center text-white relative group cursor-pointer transition-all duration-300 hover:opacity-90 min-w-0 px-1`}
-              style={{ flex: minWidth }}
+              role="listitem"
+              className={`h-14 ${stage.color} rounded-md flex flex-col items-center justify-center text-white relative min-w-0 px-1`}
+              style={{ flexGrow: minWidth, flexBasis: 0 }}
               title={`${stage.label}: ${stage.value} (${getPercent(stage.value)}%)`}
+              aria-label={`${stage.label}: ${stage.value} 个, 占比 ${getPercent(stage.value)}%`}
             >
               <span className="text-[10px] font-bold opacity-90 text-center leading-tight whitespace-nowrap">
                 {stage.label}
               </span>
-              <span className="text-sm font-black">{stage.value}</span>
+              <span className="text-sm font-black tabular-nums">{stage.value}</span>
             </div>
           );
         })}
@@ -54,10 +64,10 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
       <div className="flex justify-between items-center mt-2 pt-2 border-t border-border">
         <div className="flex items-center gap-4">
           <span className="text-xs text-muted-foreground">
-            总线索: <span className="font-bold text-foreground">{total}</span>
+            总线索: <span className="font-bold text-foreground tabular-nums">{total}</span>
           </span>
           <span className="text-xs text-muted-foreground hidden sm:inline">
-            签约: <span className="font-bold text-primary">{signed}</span>
+            签约: <span className="font-bold text-primary tabular-nums">{signed}</span>
           </span>
         </div>
         <span className="text-xs font-bold text-foreground">
