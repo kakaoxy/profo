@@ -3,11 +3,11 @@
 负责项目数据的查询和加载.
 """
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import case, func, text
+from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
-from models import Project
-from models.common import BusinessForm
+from models import Project, ProjectContract
+from models.common import BusinessForm, ProjectStatus
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
 from utils.formatters import escape_like
@@ -113,6 +113,7 @@ class ProjectQueryService:
         page_size: int | None = None,
         *,
         include_interactions: bool = False,
+        monitor_sort: bool = False,
     ) -> list[Project]:
         """分页获取项目列表.
 
@@ -125,6 +126,8 @@ class ProjectQueryService:
             page: 页码，从1开始
             page_size: 每页数量
             include_interactions: 是否包含互动记录（sales_records）
+            monitor_sort: 工作台重点监控排序，状态优先级(在售→装修→签约→已售)
+                + 创建时间升序，需在 LIMIT 前应用以保证返回优先级最高的项目
 
         Returns:
             包含项目列表和分页信息的字典
@@ -145,8 +148,7 @@ class ProjectQueryService:
             query = query.filter(Project.business_form == business_form)
 
         # 预加载关联数据（列表页所需：contract/owners/sale/project_manager/renovation_photos/finance_records）
-        options = [
-            joinedload(Project.contract),
+        options: list = [
             selectinload(Project.owners),
             joinedload(Project.sale),
             selectinload(Project.project_manager),
@@ -156,17 +158,62 @@ class ProjectQueryService:
         if include_interactions:
             # 工作台重点监控卡片需展示项目动态(带看/出价)，预加载互动记录避免 N+1
             options.append(selectinload(Project.interactions))
+
+        if monitor_sort:
+            # 工作台重点监控：显式 join contract 用于排序，用 contains_eager 复用
+            # 此 join 同时承担预加载，避免 joinedload 产生重复 join
+            query = query.outerjoin(ProjectContract, ProjectContract.project_id == Project.id)
+            options.append(contains_eager(Project.contract))
+        else:
+            options.append(joinedload(Project.contract))
         query = query.options(*options)
 
         total = query.count()
 
-        projects = (
-            query.order_by(
-                Project.created_at.desc(),
+        if monitor_sort:
+            # 状态优先级(在售→装修→签约→已售)
+            # 在售阶段：按到期时间(signing_date + 合同周期天 + 顺延期天)升序，
+            #   缺 signing_date 或 signing_period 的排到在售组末尾
+            # 其他阶段：保持 created_at 升序
+            # 到期时间 = 签约日期 + (合同周期 + 顺延期) 天
+            expiration_expr = ProjectContract.signing_date + (
+                func.coalesce(ProjectContract.signing_period, 0) + func.coalesce(ProjectContract.extension_period, 0)
+            ) * text("INTERVAL '1 day'")
+
+            # 在售项目缺少到期计算所需数据时为 1(排末尾)，否则 0；其他阶段固定 0
+            selling_missing = case(
+                (
+                    Project.status == ProjectStatus.SELLING,
+                    case(
+                        (
+                            (ProjectContract.signing_date.is_(None)) | (ProjectContract.signing_period.is_(None)),
+                            1,
+                        ),
+                        else_=0,
+                    ),
+                ),
+                else_=0,
             )
-            .offset((page - 1) * effective_page_size)
-            .limit(effective_page_size)
-            .all()
+
+            status_priority = case(
+                (Project.status == ProjectStatus.SELLING, 1),
+                (Project.status == ProjectStatus.RENOVATING, 2),
+                (Project.status == ProjectStatus.SIGNING, 3),
+                (Project.status == ProjectStatus.SOLD, 4),
+                else_=99,
+            )
+
+            order_clause = (
+                status_priority,
+                selling_missing,
+                expiration_expr.asc().nulls_last(),
+                Project.created_at.asc(),
+            )
+        else:
+            order_clause = (Project.created_at.desc(),)
+
+        projects = (
+            query.order_by(*order_clause).offset((page - 1) * effective_page_size).limit(effective_page_size).all()
         )
 
         return {
