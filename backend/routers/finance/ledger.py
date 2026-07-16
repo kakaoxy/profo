@@ -26,6 +26,7 @@ from schemas.project import (
     LedgerRecordUpdate,
     LedgerStatsResponse,
     ProjectLedgerStatisticsResponse,
+    ReceivablePayableResponse,
 )
 from schemas.project.finance import (
     FinanceSettlementChangeRequest,
@@ -151,6 +152,18 @@ def get_project_statistics(
     一次性返回 8 分组：项目基础信息 / 投资 / 装修 / 保证金 / 佣金 / 营销 / 运营 / 资金汇总.
     """
     return service.get_statistics(project_id)
+
+
+@router.get(
+    "/{project_id}/receivable-payable",
+    summary="获取项目应收应付参考表",
+)
+def get_receivable_payable(
+    project_id: Annotated[str, Path(description="项目ID")],
+    service: _FinanceServiceDep,
+) -> ReceivablePayableResponse:
+    """获取项目应收应付参考表数据（预期金额 vs 实际金额对比）."""
+    return service.get_receivable_payable(project_id)
 
 
 @router.get(

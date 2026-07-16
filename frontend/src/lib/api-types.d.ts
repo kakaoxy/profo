@@ -1493,6 +1493,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ledger/{project_id}/receivable-payable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取项目应收应付参考表
+         * @description 获取项目应收应付参考表数据（预期金额 vs 实际金额对比）.
+         */
+        get: operations["get_receivable_payable_api_v1_admin_ledger__project_id__receivable_payable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ledger/{project_id}/logs": {
         parameters: {
             query?: never;
@@ -7679,6 +7699,36 @@ export interface components {
             }[];
         };
         /**
+         * ReceivablePayableItem
+         * @description 应收应付参考表单项.
+         */
+        ReceivablePayableItem: {
+            type: components["schemas"]["CashFlowType"];
+            /** Business Type */
+            business_type: string;
+            /** Stage */
+            stage: string;
+            category: components["schemas"]["CashFlowCategory"];
+            /** Category Label */
+            category_label: string;
+            /** Calculation Logic */
+            calculation_logic: string;
+            /** Expected Amount */
+            expected_amount?: number | null;
+            /** Actual Amount */
+            actual_amount: number;
+            /** Difference */
+            difference?: number | null;
+        };
+        /**
+         * ReceivablePayableResponse
+         * @description 应收应付参考表响应.
+         */
+        ReceivablePayableResponse: {
+            /** Items */
+            items: components["schemas"]["ReceivablePayableItem"][];
+        };
+        /**
          * RecordType
          * @description 销售记录类型枚举.
          * @enum {string}
@@ -11836,6 +11886,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectLedgerStatisticsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_receivable_payable_api_v1_admin_ledger__project_id__receivable_payable_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 项目ID */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceivablePayableResponse"];
                 };
             };
             /** @description Validation Error */

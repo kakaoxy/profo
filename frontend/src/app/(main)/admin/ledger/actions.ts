@@ -20,6 +20,8 @@ type FinanceSettlementResponse =
   components["schemas"]["FinanceSettlementResponse"];
 type ProjectLedgerStatisticsResponse =
   components["schemas"]["ProjectLedgerStatisticsResponse"];
+type ReceivablePayableResponse =
+  components["schemas"]["ReceivablePayableResponse"];
 
 type LedgerListQuery = NonNullable<
   paths["/api/v1/admin/ledger"]["get"]["parameters"]["query"]
@@ -332,6 +334,36 @@ export async function fetchProjectStatistics(
     };
   } catch (e) {
     logger.error("获取资金账本统计数据异常:", e);
+    return { success: false, message: "网络错误，请稍后重试" };
+  }
+}
+
+/**
+ * 获取项目应收应付参考表（预期 vs 实际对比）
+ *
+ * @param projectId 项目ID
+ */
+export async function fetchReceivablePayable(
+  projectId: string,
+): Promise<ActionResult<ReceivablePayableResponse>> {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/admin/ledger/{project_id}/receivable-payable",
+      { params: { path: { project_id: projectId } } },
+    );
+
+    if (error) {
+      const msg = (error as { message?: string }).message || "获取应收应付数据失败";
+      return { success: false, message: msg };
+    }
+
+    return {
+      success: true,
+      data: extractApiData<ReceivablePayableResponse>(data),
+    };
+  } catch (e) {
+    logger.error("获取应收应付参考表异常:", e);
     return { success: false, message: "网络错误，请稍后重试" };
   }
 }

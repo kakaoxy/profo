@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/popover";
 import { ImageUpload } from "@/components/common/image-upload";
 import type { ImageItem } from "@/components/common/image-upload";
+import { ReceivablePayableTable } from "@/components/finance/receivable-payable-table";
 
 import { createRecord } from "@/app/(main)/admin/ledger/actions";
 import type { components } from "@/lib/api-types";
@@ -115,6 +116,7 @@ export function RecordDialog({
   businessForm,
 }: RecordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReceivablePayable, setShowReceivablePayable] = useState(false);
 
   // 表单状态
   const [type, setType] = useState<TransactionType>("expense");
@@ -143,6 +145,7 @@ export function RecordDialog({
       setReceiptUrls([]);
       setNotes("");
       setUploadKey((k) => k + 1);
+      setShowReceivablePayable(false);
     }
   }, [isOpen, businessForm]);
 
@@ -193,6 +196,241 @@ export function RecordDialog({
 
   const stageGroups = LEDGER_CATEGORY_DATA[type][businessType] ?? [];
 
+  // 表单内容抽到变量中，单栏/双栏布局复用，避免字段 JSX 重复
+  const formContent = (
+    <div className="grid gap-5 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
+      {/* 1. 收支切换 Tabs */}
+      <Tabs
+        value={type}
+        onValueChange={(v) => {
+          setType(v as TransactionType);
+          setCategory("");
+        }}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger
+            value="expense"
+            className="data-[state=active]:bg-success-container data-[state=active]:text-success"
+          >
+            支出
+          </TabsTrigger>
+          <TabsTrigger
+            value="income"
+            className="data-[state=active]:bg-error-container data-[state=active]:text-error"
+          >
+            收入
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* 2. 交易方（必填，移至顶部） */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">
+          交易方 <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          value={counterparty}
+          onChange={(e) => setCounterparty(e.target.value)}
+          placeholder="例如：张三/某某公司…"
+          name="counterparty"
+          autoComplete="off"
+          required
+        />
+      </div>
+
+      {/* 2.1 支付方类型（公司/个人） */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">
+          支付方类型 <span className="text-destructive">*</span>
+        </Label>
+        <div className="flex gap-2">
+          {([
+            { value: "company", label: "公司" },
+            { value: "individual", label: "个人" },
+          ] as const).map((opt) => {
+            const isSelected = counterpartyType === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setCounterpartyType(opt.value)}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
+                  !isSelected &&
+                    "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
+                  isSelected &&
+                    type === "expense" &&
+                    "bg-success border-emerald-600 text-white shadow-sm",
+                  isSelected &&
+                    type === "income" &&
+                    "bg-error border-red-600 text-white shadow-sm",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. 金额 + 发生日期 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label className="text-xs text-muted-foreground">金额 (元)</Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            name="amount"
+            autoComplete="off"
+            className={cn(
+              "font-mono focus-visible:ring-1 text-lg font-semibold tabular-nums",
+              type === "income"
+                ? "text-error focus-visible:ring-error placeholder:text-error/30"
+                : "text-success focus-visible:ring-success placeholder:text-success/30",
+            )}
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label className="text-xs text-muted-foreground">发生日期</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full pl-3 text-left font-normal",
+                  !date && "text-muted-foreground",
+                )}
+              >
+                {date ? format(date, "yyyy-MM-dd") : <span>选日期</span>}
+                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* 4. 业务类型（通用/代理/收购，胶囊按钮组） */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">业务类型</Label>
+        <div className="flex gap-2">
+          {BUSINESS_TYPE_OPTIONS.map((opt) => {
+            const isSelected = businessType === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  setBusinessType(opt.value);
+                  setCategory("");
+                }}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
+                  !isSelected &&
+                    "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
+                  isSelected &&
+                    type === "expense" &&
+                    "bg-success border-emerald-600 text-white shadow-sm",
+                  isSelected &&
+                    type === "income" &&
+                    "bg-error border-red-600 text-white shadow-sm",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 5. 分类（按阶段分组渲染） */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">
+          分类 <span className="text-destructive">*</span>
+        </Label>
+        <div className="grid gap-3">
+          {stageGroups.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">该业务类型下暂无分类配置</p>
+          ) : (
+            stageGroups.map((group) => (
+              <div key={group.stage} className="grid gap-1.5">
+                <span className="text-[11px] text-muted-foreground/70 font-medium">
+                  {group.stage}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.items.map((c) => {
+                    const isSelected = category === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setCategory(c)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200 flex items-center gap-1",
+                          !isSelected &&
+                            "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
+                          isSelected &&
+                            type === "expense" &&
+                            "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
+                          isSelected &&
+                            type === "income" &&
+                            "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1",
+                        )}
+                      >
+                        {isSelected && <Check className="h-3 w-3" />}
+                        {c}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 6. 票据上传（支持多张） */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">
+          票据（最多 9 张）
+        </Label>
+        <ImageUpload
+          key={uploadKey}
+          maxCount={9}
+          gridCols={3}
+          aspectRatio="aspect-video"
+          title="点击或拖拽图片上传票据"
+          onChange={handleReceiptChange}
+        />
+      </div>
+
+      {/* 7. 备注 */}
+      <div className="grid gap-2">
+        <Label className="text-xs text-muted-foreground">备注说明</Label>
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="例如：支付首期款…"
+          className="h-20 resize-none"
+          name="notes"
+          autoComplete="off"
+        />
+      </div>
+    </div>
+  );
+
   return (
     <Dialog
       open={isOpen}
@@ -200,261 +438,85 @@ export function RecordDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-[450px]">
+      <DialogContent
+        className={cn(
+          "sm:max-w-[450px] rounded-[20px]",
+          showReceivablePayable && "sm:max-w-[1000px]",
+        )}
+      >
         <DialogHeader>
-          <DialogTitle>记一笔</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-[17px] font-medium tracking-[-0.009em] text-ink">
+              记一笔
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => setShowReceivablePayable((v) => !v)}
+              className={cn(
+                "rounded-full text-[13px] font-medium tracking-[-0.009em] text-ink",
+                showReceivablePayable ? "bg-fog" : "hover:bg-fog",
+              )}
+            >
+              应收应付
+            </Button>
+          </div>
         </DialogHeader>
 
-        <div className="grid gap-5 py-2 max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
-          {/* 1. 收支切换 Tabs */}
-          <Tabs
-            value={type}
-            onValueChange={(v) => {
-              setType(v as TransactionType);
-              setCategory("");
-            }}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger
-                value="expense"
-                className="data-[state=active]:bg-success-container data-[state=active]:text-success"
-              >
-                支出
-              </TabsTrigger>
-              <TabsTrigger
-                value="income"
-                className="data-[state=active]:bg-error-container data-[state=active]:text-error"
-              >
-                收入
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* 2. 交易方（必填，移至顶部） */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              交易方 <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              value={counterparty}
-              onChange={(e) => setCounterparty(e.target.value)}
-              placeholder="例如：张三/某某公司…"
-              name="counterparty"
-              autoComplete="off"
-              required
-            />
-          </div>
-
-          {/* 2.1 支付方类型（公司/个人） */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              支付方类型 <span className="text-destructive">*</span>
-            </Label>
-            <div className="flex gap-2">
-              {([
-                { value: "company", label: "公司" },
-                { value: "individual", label: "个人" },
-              ] as const).map((opt) => {
-                const isSelected = counterpartyType === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setCounterpartyType(opt.value)}
-                    className={cn(
-                      "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
-                      !isSelected &&
-                        "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                      isSelected &&
-                        type === "expense" &&
-                        "bg-success border-emerald-600 text-white shadow-sm",
-                      isSelected &&
-                        type === "income" &&
-                        "bg-error border-red-600 text-white shadow-sm",
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 3. 金额 + 发生日期 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">金额 (元)</Label>
-              <Input
-                type="number"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                name="amount"
-                autoComplete="off"
-                className={cn(
-                  "font-mono focus-visible:ring-1 text-lg font-semibold tabular-nums",
-                  type === "income"
-                    ? "text-error focus-visible:ring-error placeholder:text-error/30"
-                    : "text-success focus-visible:ring-success placeholder:text-success/30",
-                )}
+        {showReceivablePayable ? (
+          <div className="flex gap-6">
+            <div className="w-[480px] shrink-0 border-r border-dove/30 pr-6 overflow-hidden">
+              <ReceivablePayableTable
+                projectId={projectId}
+                transactionType={type}
               />
             </div>
-
-            <div className="grid gap-2">
-              <Label className="text-xs text-muted-foreground">发生日期</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full pl-3 text-left font-normal",
-                      !date && "text-muted-foreground",
-                    )}
-                  >
-                    {date ? format(date, "yyyy-MM-dd") : <span>选日期</span>}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+            <div className="w-[450px] shrink-0">
+              {formContent}
+              <DialogFooter>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className={cn(
+                    "w-full text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] rounded-full",
+                    type === "income"
+                      ? "bg-rust hover:bg-rust/90"
+                      : "bg-ink hover:bg-ink/90",
+                  )}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "确认记账"
+                  )}
+                </Button>
+              </DialogFooter>
             </div>
           </div>
-
-          {/* 4. 业务类型（通用/代理/收购，胶囊按钮组） */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">业务类型</Label>
-            <div className="flex gap-2">
-              {BUSINESS_TYPE_OPTIONS.map((opt) => {
-                const isSelected = businessType === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      setBusinessType(opt.value);
-                      setCategory("");
-                    }}
-                    className={cn(
-                      "flex-1 px-3 py-2 rounded-full text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200",
-                      !isSelected &&
-                        "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                      isSelected &&
-                        type === "expense" &&
-                        "bg-success border-emerald-600 text-white shadow-sm",
-                      isSelected &&
-                        type === "income" &&
-                        "bg-error border-red-600 text-white shadow-sm",
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 5. 分类（按阶段分组渲染） */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              分类 <span className="text-destructive">*</span>
-            </Label>
-            <div className="grid gap-3">
-              {stageGroups.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">该业务类型下暂无分类配置</p>
-              ) : (
-                stageGroups.map((group) => (
-                  <div key={group.stage} className="grid gap-1.5">
-                    <span className="text-[11px] text-muted-foreground/70 font-medium">
-                      {group.stage}
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.items.map((c) => {
-                        const isSelected = category === c;
-                        return (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setCategory(c)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-md text-xs font-medium border transition-[background-color,border-color,box-shadow] duration-200 flex items-center gap-1",
-                              !isSelected &&
-                                "bg-card border-border text-muted-foreground hover:border-border hover:bg-muted",
-                              isSelected &&
-                                type === "expense" &&
-                                "bg-success border-emerald-600 text-white shadow-sm ring-2 ring-emerald-100 ring-offset-1",
-                              isSelected &&
-                                type === "income" &&
-                                "bg-error border-red-600 text-white shadow-sm ring-2 ring-red-100 ring-offset-1",
-                            )}
-                          >
-                            {isSelected && <Check className="h-3 w-3" />}
-                            {c}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 6. 票据上传（支持多张） */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">
-              票据（最多 9 张）
-            </Label>
-            <ImageUpload
-              key={uploadKey}
-              maxCount={9}
-              gridCols={3}
-              aspectRatio="aspect-video"
-              title="点击或拖拽图片上传票据"
-              onChange={handleReceiptChange}
-            />
-          </div>
-
-          {/* 7. 备注 */}
-          <div className="grid gap-2">
-            <Label className="text-xs text-muted-foreground">备注说明</Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="例如：支付首期款…"
-              className="h-20 resize-none"
-              name="notes"
-              autoComplete="off"
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={cn(
-              "w-full text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] rounded-full",
-              type === "income"
-                ? "bg-error hover:bg-red-700"
-                : "bg-success hover:bg-success",
-            )}
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "确认记账"
-            )}
-          </Button>
-        </DialogFooter>
+        ) : (
+          <>
+            {formContent}
+            <DialogFooter>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className={cn(
+                  "w-full text-white shadow-sm transition-[background-color,transform] active:scale-[0.98] rounded-full",
+                  type === "income"
+                    ? "bg-rust hover:bg-rust/90"
+                    : "bg-ink hover:bg-ink/90",
+                )}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "确认记账"
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
