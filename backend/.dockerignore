@@ -41,6 +41,10 @@ review
 static/uploads
 static/uploads/**
 
+# Temp runtime files (CSV imports etc., generated at runtime)
+temp
+temp/**
+
 # VCS & misc
 .git
 .gitignore
