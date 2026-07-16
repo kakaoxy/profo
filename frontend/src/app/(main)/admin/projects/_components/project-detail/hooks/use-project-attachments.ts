@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { toast } from "sonner";
 import type { AttachmentInfo, AttachmentHandlers } from "../types";
 
@@ -13,7 +13,8 @@ export function useProjectAttachments({
   signingMaterials,
   onUpdateAttachments,
 }: UseProjectAttachmentsOptions) {
-  const attachments = useMemo<AttachmentInfo[]>(() => {
+  // 从 signingMaterials 派生的基础附件列表
+  const baseAttachments = useMemo<AttachmentInfo[]>(() => {
     if (!signingMaterials) return [];
 
     if (Array.isArray(signingMaterials)) {
@@ -59,6 +60,21 @@ export function useProjectAttachments({
     return [];
   }, [signingMaterials]);
 
+  // 本地 override：跟踪删除/上传的乐观更新，避免连续操作时基于 stale 的
+  // signingMaterials 派生值计算。
+  const [override, setOverride] = useState<AttachmentInfo[] | null>(null);
+  // 当 signingMaterials 引用变化（父组件刷新）时重置 override，
+  // 以权威的后端数据为准。使用 render-phase setState 模式（非 useEffect），
+  // 避免 cascading render。
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevSigningMaterials, setPrevSigningMaterials] = useState(signingMaterials);
+  if (prevSigningMaterials !== signingMaterials) {
+    setPrevSigningMaterials(signingMaterials);
+    setOverride(null);
+  }
+
+  const attachments = override ?? baseAttachments;
+
   const createHandlers = useCallback(
     (setPreviewImage: (url: string | null) => void): AttachmentHandlers => ({
       onPreview: (url, fileType) => {
@@ -77,6 +93,7 @@ export function useProjectAttachments({
       onDelete: onUpdateAttachments
         ? (url) => {
             const newAttachments = attachments.filter((att) => att.url !== url);
+            setOverride(newAttachments);
             onUpdateAttachments(
               newAttachments.map((att) => ({
                 filename: att.filename,
@@ -93,5 +110,26 @@ export function useProjectAttachments({
     [attachments, onUpdateAttachments],
   );
 
-  return { attachments, createHandlers };
+  const onUpload = useCallback(
+    (attachment: AttachmentInfo) => {
+      if (!onUpdateAttachments) {
+        toast.error("当前无法保存附件");
+        return;
+      }
+      const newAttachments = [...attachments, attachment];
+      setOverride(newAttachments);
+      onUpdateAttachments(
+        newAttachments.map((a) => ({
+          filename: a.filename,
+          url: a.url,
+          category: a.category,
+          fileType: a.fileType,
+          size: a.size || 0,
+        })),
+      );
+    },
+    [attachments, onUpdateAttachments],
+  );
+
+  return { attachments, createHandlers, onUpload };
 }

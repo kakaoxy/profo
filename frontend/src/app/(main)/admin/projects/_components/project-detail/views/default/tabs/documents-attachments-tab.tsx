@@ -15,6 +15,8 @@ interface DocumentsAttachmentsTabProps {
   attachments: AttachmentInfo[];
   handlers: AttachmentHandlers;
   onUpdateAttachments?: (attachments: AttachmentInfo[]) => void;
+  /** 由 useProjectAttachments 提供的上传处理器，维护本地 override 状态 */
+  onUploadAttachment?: (attachment: AttachmentInfo) => void;
 }
 
 /**
@@ -27,7 +29,10 @@ export function DocumentsAttachmentsTab({
   attachments,
   handlers,
   onUpdateAttachments,
+  onUploadAttachment,
 }: DocumentsAttachmentsTabProps) {
+  // 当未提供 hook 管理的 onUploadAttachment 时，回退到直接拼接
+  // （不维护 override，存在 stale 风险，仅用于兼容无 hook 场景）
   const handleUploadAttachment = (attachment: AttachmentInfo) => {
     if (!onUpdateAttachments) {
       toast.error("当前无法保存附件");
@@ -50,7 +55,8 @@ export function DocumentsAttachmentsTab({
       <DocumentsTab
         project={project}
         onUploadAttachment={
-          onUpdateAttachments ? handleUploadAttachment : undefined
+          onUploadAttachment ??
+          (onUpdateAttachments ? handleUploadAttachment : undefined)
         }
       />
       <Separator />
