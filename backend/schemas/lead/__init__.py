@@ -88,6 +88,8 @@ class LeadCreate(LeadBase):
 
     status: LeadStatus | None = LeadStatus.PENDING_ASSESSMENT
     images: list[str] = Field(default_factory=list)
+    # 允许导入场景显式指定创建时间；未提供时由 DB 默认值填充当前时间
+    created_at: datetime | None = None
 
 
 class LeadUpdate(BaseModel):
@@ -113,6 +115,8 @@ class LeadUpdate(BaseModel):
     remarks: str | None = None
 
     last_follow_up_at: datetime | None = None
+    # 用于数据导入修复场景，一般业务更新不应改动创建时间
+    created_at: datetime | None = None
 
 
 class LeadResponse(LeadBase):
