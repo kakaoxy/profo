@@ -510,5 +510,5 @@ class _ReceivablePayableMixin:
                 return None
             return investment.total_investment
         if calc_type == "bond":
-            return Decimal(20000)
+            return Decimal("20000")
         return None
