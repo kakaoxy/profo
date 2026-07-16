@@ -46,7 +46,7 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
     return (
       <div className="space-y-4">
         <div className="rounded-xl border border-status-pending/30 bg-status-pending/10 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-status-pending flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-status-pending shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-status-pending">
               请立即复制您的 API Key
@@ -86,7 +86,7 @@ export function ApiKeyClient({ initialData }: ApiKeyClientProps) {
     <>
       <div className="space-y-4">
         <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-success-container/50 dark:bg-emerald-900/20 p-4 flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-success dark:text-success flex-shrink-0 mt-0.5" />
+          <CheckCircle2 className="h-5 w-5 text-success dark:text-success shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
               API Key 已激活
