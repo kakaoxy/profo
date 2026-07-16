@@ -55,8 +55,10 @@ class LeadService:
             创建成功的线索对象
 
         """
+        # 使用 exclude_unset=True：未显式提供的字段不传入构造，
+        # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
         db_lead = Lead(
-            **lead_data.model_dump(),
+            **lead_data.model_dump(exclude_unset=True),
             id=str(uuid.uuid4()),
             creator_id=creator_id,
         )
