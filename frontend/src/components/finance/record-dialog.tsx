@@ -470,6 +470,7 @@ export function RecordDialog({
               <ReceivablePayableTable
                 projectId={projectId}
                 transactionType={type}
+                businessForm={businessForm}
               />
             </div>
             <div className="w-[450px] shrink-0">

@@ -16,6 +16,8 @@ interface ReceivablePayableTableProps {
   projectId: string;
   /** 联动记一笔的收支状态：只渲染对应分区 */
   transactionType: "expense" | "income";
+  /** 业务模式：用于按业务类型筛选（general 始终显示，再叠加对应业务类型） */
+  businessForm?: "agent" | "wholesale" | null;
 }
 
 // 按 stage 分组：签约 → 装修 → 在售 → 已售 → 其他（符合项目生命周期心智）
@@ -114,6 +116,7 @@ function formatAmount(
 export function ReceivablePayableTable({
   projectId,
   transactionType,
+  businessForm,
 }: ReceivablePayableTableProps) {
   const { data, error, isLoading, mutate } = useSWR<ReceivablePayableResponse>(
     ["receivable-payable", projectId, transactionType],
@@ -155,7 +158,17 @@ export function ReceivablePayableTable({
   const items = data?.items ?? [];
   const section = SECTION_DEFS.find((s) => s.type === transactionType);
   if (!section) return null;
-  const sectionItems = items.filter((i) => i.type === section.type);
+
+  // 按业务模式筛选：general 始终显示，再叠加对应业务类型
+  const allowedBusinessTypes = new Set<string>(["general"]);
+  if (businessForm === "agent") allowedBusinessTypes.add("agent");
+  if (businessForm === "wholesale") allowedBusinessTypes.add("wholesale");
+
+  const sectionItems = items.filter(
+    (i) =>
+      i.type === section.type &&
+      allowedBusinessTypes.has(i.business_type),
+  );
   const groups = groupByStage(sectionItems);
   const totalCount = sectionItems.length;
 
