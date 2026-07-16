@@ -24,7 +24,7 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
   const today = useCurrentDate();
 
   // 1. 计算倒计时
-  // 公式：交房日期 + 签约周期(天) + 延长期(月*30) - 今天
+  // 公式：交房日期 + 签约周期(天) + 延长期(天) - 今天
   const { daysLeft, deadlineDate } = useMemo(() => {
     if (!project.planned_handover_date || !today) {
       return { daysLeft: 0, deadlineDate: null };
@@ -35,9 +35,8 @@ export function SellingBasicInfo({ project }: SellingBasicInfoProps) {
     // 加上签约周期 (天)
     const signingPeriodDays = project.signing_period || 0;
 
-    // 加上延长期 (月 -> 天，按30天/月计算)
-    const extensionMonths = project.extension_period || 0;
-    const extensionDays = extensionMonths * 30;
+    // 加上顺延期 (天)
+    const extensionDays = project.extension_period || 0;
 
     const totalDaysToAdd = signingPeriodDays + extensionDays;
     const finalDeadline = addDays(handoverDate, totalDaysToAdd);
