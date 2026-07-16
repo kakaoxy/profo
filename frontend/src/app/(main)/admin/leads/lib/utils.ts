@@ -1,6 +1,5 @@
 import { Lead, LeadStatus } from "../types";
 import { components } from "@/lib/api-types";
-import { safeParseDate } from "@/lib/validators";
 
 type BackendLead = components["schemas"]["LeadResponse"];
 
@@ -20,6 +19,7 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     auditReason: backendLead.audit_reason ?? undefined,
     auditorId: backendLead.auditor_id?.toString() ?? undefined,
     auditTime: backendLead.audit_time ?? undefined,
+    // createdAt / updatedAt 均保留原始 ISO 字符串，由展示层统一格式化
     updatedAt: backendLead.updated_at ?? undefined,
     images: backendLead.images || [],
     district: backendLead.district ?? "",
@@ -27,6 +27,6 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     remarks: backendLead.remarks ?? "",
     creatorName: backendLead.creator_name ?? "未知",
     lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
-    createdAt: safeParseDate(backendLead.created_at)?.toLocaleString() ?? "-",
+    createdAt: backendLead.created_at ?? "",
   };
 }
