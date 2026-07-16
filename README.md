@@ -430,16 +430,16 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
 # DATABASE_URL 由 dev-start.sh 或 setup.sh 自动覆盖为 127.0.0.1:5432
 ```
 
-### 前端
+### 前端依赖安装
 
 ```bash
 cd frontend
 pnpm install
 cp .env.example .env.local    # 默认值可直接用（NEXT_PUBLIC_API_URL=http://127.0.0.1:8000）
-pnpm dev                      # http://localhost:3000
+cd ..                         # 返回项目根目录
 ```
 
-### 后端
+### 后端依赖安装
 
 ```bash
 cd backend
@@ -451,12 +451,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh        # macOS/Linux
 # 创建虚拟环境并安装依赖
 uv venv
 uv sync
-cd ..
+cd ..                         # 返回项目根目录
 ```
 
 ### 一键初始化（推荐）
 
-回到项目根目录，使用脚本完成密钥生成、数据库建表、管理员创建：
+在项目根目录执行，完成密钥生成、数据库建表、管理员创建：
 
 ```bash
 # 1. 生成 .env 密钥（首次运行自动从模板创建 .env）
@@ -479,13 +479,15 @@ cd ..
 # 自动启动 DB + 后端(uvicorn --reload) + 前端(next dev)
 ./dev-start.sh
 
-# 方式二：手动分别启动
+# 方式二：手动分别启动（需开两个终端）
 cd backend && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && pnpm dev
 # API:   http://127.0.0.1:8000
 # 文档:  http://127.0.0.1:8000/docs
 # 前端:  http://localhost:3000
 ```
+
+> `dev-start.sh` 支持的子命令：`up`（默认，启动全部）、`db`（仅启动数据库）、`stop`（停止 db 容器）、`status`（查看状态）、`logs`（查看 db 日志）、`down`（删除容器，保留数据卷）。
 
 ### 开发命令
 
