@@ -30,6 +30,7 @@ class CommunityResponse(BaseModel):
     business_circle: str | None = None
     avg_price_wan: float | None = None
     total_properties: int
+    is_active: bool = Field(default=True, description="是否激活(软删除)")
     created_at: datetime
     aliases: list[CommunityAliasResponse] = Field(default_factory=list, description="关联别名列表(合并历史)")
 

@@ -3203,6 +3203,12 @@ export interface components {
             /** Total Properties */
             total_properties: number;
             /**
+             * Is Active
+             * @description 是否激活(软删除)
+             * @default true
+             */
+            is_active: boolean;
+            /**
              * Created At
              * Format: date-time
              */

@@ -135,6 +135,7 @@ class CommunityQueryService:
                 business_circle=community.business_circle,
                 avg_price_wan=community.avg_price_wan,
                 total_properties=p_count,
+                is_active=community.is_active,
                 created_at=community.created_at,
                 aliases=aliases_map.get(community.id, []),
             )
