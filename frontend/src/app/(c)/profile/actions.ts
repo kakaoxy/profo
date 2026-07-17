@@ -6,6 +6,7 @@ import { apiPaths } from "@/lib/config";
 import { ActionResult, createSuccessResult, createErrorResult } from "@/lib/action-result";
 import { cServerActionFetch } from "@/lib/api-c/server";
 import { cLocale } from "@/lib/i18n/c-locale";
+import { passwordSchema } from "@/app/(main)/admin/users/_components/password-schema";
 
 const updateProfileSchema = z.object({
   nickname: z.string().min(1, cLocale.profileAction.nicknameRequired).max(100, cLocale.profileAction.nicknameMaxLength),
@@ -13,7 +14,7 @@ const updateProfileSchema = z.object({
 
 const updatePhoneSchema = z.object({
   phone: z.string().min(1, cLocale.profileAction.phoneRequired).regex(/^1[3-9]\d{9}$/, cLocale.profileAction.phoneInvalid),
-  password: z.string().min(6, cLocale.profileAction.passwordMinLength),
+  password: passwordSchema,
 });
 
 export async function updateProfileAction(_: ActionResult<{ nickname: string }>, formData: FormData): Promise<ActionResult<{ nickname: string }>> {

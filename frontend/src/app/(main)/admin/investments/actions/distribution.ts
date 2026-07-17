@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
@@ -11,6 +12,20 @@ import type {
   ReturnAdjustmentResponse,
 } from "./types";
 
+// 与后端 ReturnAdjustmentItem Pydantic 语义对齐
+// 分配比例合计 = 100% 等业务校验由后端执行
+const investmentIdSchema = z.string().min(1, "投资 ID 不能为空");
+
+const returnAdjustmentItemSchema = z.object({
+  investor_id: z.string().min(1, "投资方 ID 不能为空"),
+  adjusted_distribution_ratio: z.union([z.number(), z.string()]),
+  remark: z.string().nullable().optional(),
+});
+
+const adjustmentsSchema = z
+  .array(returnAdjustmentItemSchema)
+  .min(1, "调整项不能为空");
+
 /**
  * 批量保存分配比例调整
  * 调用 PUT /api/v1/admin/investments/{id}/distribution-adjustments。
@@ -20,6 +35,22 @@ export async function adjustDistribution(
   investmentId: string,
   adjustments: ReturnAdjustmentItem[],
 ): Promise<ActionResult<ReturnAdjustmentResponse[]>> {
+  const idParsed = investmentIdSchema.safeParse(investmentId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  const parsed = adjustmentsSchema.safeParse(adjustments);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const body: ReturnAdjustmentBatchRequest = { adjustments };

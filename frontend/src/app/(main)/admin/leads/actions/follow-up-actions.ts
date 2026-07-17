@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { safeParseDate } from "@/lib/validators";
@@ -11,11 +12,27 @@ import type { operations } from "@/lib/api-types";
 type FollowUpCreatePayload =
   operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"]["requestBody"]["content"]["application/json"];
 
+const addFollowUpSchema = z.object({
+  leadId: z.string().min(1, "线索 ID 不能为空"),
+  method: z.enum(["phone", "wechat", "face", "visit"], {
+    message: "跟进方式不合法",
+  }),
+  content: z.string().min(1, "跟进内容不能为空").max(500, "跟进内容最多 500 字"),
+});
+
 export async function addFollowUpAction(
   leadId: string,
   method: FollowUpMethod,
   content: string,
 ): Promise<ActionResult<void>> {
+  const parsed = addFollowUpSchema.safeParse({ leadId, method, content });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "跟进参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
 

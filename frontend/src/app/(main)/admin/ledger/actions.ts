@@ -7,6 +7,7 @@ import { getApiUrl } from "@/lib/config";
 import { extractApiData } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
 import type { components, paths } from "@/lib/api-types";
+import { createRecordSchema, projectIdSchema, recordIdSchema, settleLedgerSchema, unsettleLedgerSchema, updateRecordSchema } from "./_components/ledger-schema";
 
 type LedgerListResponse = components["schemas"]["LedgerListResponse"];
 type LedgerStatsResponse = components["schemas"]["LedgerStatsResponse"];
@@ -181,6 +182,13 @@ export async function exportProjectLedger(
 export async function createRecord(
   data: LedgerRecordCreate,
 ): Promise<ActionResult<CashFlowRecordResponse>> {
+  const parsed = createRecordSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST("/api/v1/admin/ledger", {
@@ -216,6 +224,13 @@ export async function deleteRecord(
   recordId: string,
   projectId?: string,
 ): Promise<ActionResult<null>> {
+  const idParsed = recordIdSchema.safeParse(recordId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -252,6 +267,20 @@ export async function updateRecordAction(
     counterparty_type?: "company" | "individual";
   },
 ): Promise<ActionResult<CashFlowRecordResponse>> {
+  const idParsed = recordIdSchema.safeParse(recordId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
+  const patchParsed = updateRecordSchema.safeParse(payload);
+  if (!patchParsed.success) {
+    return {
+      success: false,
+      message: patchParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.PATCH(
@@ -378,6 +407,20 @@ export async function settleProjectLedger(
   projectId: string,
   data: FinanceSettlementChangeRequest,
 ): Promise<ActionResult<FinanceSettlementResponse>> {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
+  const bodyParsed = settleLedgerSchema.safeParse(data);
+  if (!bodyParsed.success) {
+    return {
+      success: false,
+      message: bodyParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST(
@@ -412,6 +455,20 @@ export async function unsettleProjectLedger(
   projectId: string,
   data: FinanceUnsettleRequest,
 ): Promise<ActionResult<FinanceSettlementResponse>> {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
+  const bodyParsed = unsettleLedgerSchema.safeParse(data);
+  if (!bodyParsed.success) {
+    return {
+      success: false,
+      message: bodyParsed.error.issues[0]?.message ?? "账本参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST(

@@ -11,8 +11,8 @@ export const publishStatusSchema = z.enum(["草稿", "发布"]);
 // 前端表单使用的Schema - 所有字段都是必填的
 export const formSchema = z.object({
   // 小区信息
-  community_id: z.string().min(1, "请选择小区"),
-  community_name: z.string().trim().optional(),
+  community_id: z.string().min(1, "请选择小区").max(36),
+  community_name: z.string().trim().max(200).nullable().optional(),
 
   // 户型信息
   layout: z.string().trim().min(1, "请输入户型").max(100),
@@ -29,8 +29,8 @@ export const formSchema = z.object({
   images: z.array(z.string()),
   sort_order: z.number().int().min(0),
   tags: z.array(z.string()),
-  decoration_style: z.string().trim().max(100).optional(),
-  stage_completed_dates: z.record(z.string(), z.string()).optional(),
+  decoration_style: z.string().trim().max(100).nullable().optional(),
+  stage_completed_dates: z.record(z.string(), z.string()).nullable().optional(),
 
   // 状态
   publish_status: publishStatusSchema,
@@ -49,7 +49,7 @@ export type FormValues = z.infer<typeof formSchema>;
 // 后端已支持数组格式，前端直接发送数组
 export const createSchema = z.object({
   // 必填字段 - 小区信息
-  community_id: z.string().min(1, "请选择小区"),
+  community_id: z.string().min(1, "请选择小区").max(36),
 
   // 必填字段 - 户型信息
   layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符"),
@@ -81,7 +81,7 @@ export const createSchema = z.object({
 // 更新表单 Schema - 与后端 L4MarketingProjectUpdate 保持一致
 // 后端已支持数组格式，前端直接发送数组
 export const updateSchema = z.object({
-  community_id: z.string().min(1, "请选择小区").optional(),
+  community_id: z.string().min(1, "请选择小区").max(36).optional(),
   community_name: z.string().trim().max(200, "小区名称最多200个字符").nullable().optional(),
   layout: z.string().trim().min(1, "户型不能为空").max(100, "户型最多100个字符").optional(),
   orientation: z.string().trim().min(1, "朝向不能为空").max(50, "朝向最多50个字符").optional(),

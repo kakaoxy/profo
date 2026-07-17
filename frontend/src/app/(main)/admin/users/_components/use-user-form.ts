@@ -8,16 +8,12 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { createUserAction, updateUserAction } from "../actions/index";
 import type { UserResponse, UserUpdate, UserCreate } from "../actions/index";
+import { passwordSchema } from "./password-schema";
 
 const createSchema = z.object({
   username: z.string().min(3, "用户名至少3个字符").max(100),
   nickname: z.string().max(100).optional(),
-  password: z.string()
-    .min(8, "密码至少8个字符")
-    .regex(/[A-Z]/, "密码必须包含至少一个大写字母")
-    .regex(/[a-z]/, "密码必须包含至少一个小写字母")
-    .regex(/\d/, "密码必须包含至少一个数字")
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, "密码必须包含至少一个特殊字符"),
+  password: passwordSchema,
   role_id: z.string().min(1, "请选择角色"),
   phone: z.string().max(20).optional().or(z.literal("")),
 });

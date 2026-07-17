@@ -5,8 +5,21 @@ import { redirect } from "next/navigation";
 import { LoginResponseSchema } from "@/lib/auth/schemas";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { createActionLogger } from "@/lib/logger";
+import { z } from "zod";
+import { passwordSchema } from "@/app/(main)/admin/users/_components/password-schema";
 
 const logger = createActionLogger("login");
+
+const loginSchema = z.object({
+  username: z.string().min(1, "请输入用户名"),
+  password: z.string().min(1, "请输入密码"),
+});
+
+// 原密码仅做非空校验，新密码复用全站密码复杂度策略
+const changePasswordSchema = z.object({
+  current_password: z.string().min(1, "请输入原密码"),
+  new_password: passwordSchema,
+});
 
 export type LoginState = {
   error?: string;
@@ -24,8 +37,9 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
   const username = formData.get("username") as string;
   const password = formData.get("password") as string;
 
-  if (!username || !password) {
-    return { error: "请输入账号和密码" };
+  const loginParsed = loginSchema.safeParse({ username, password });
+  if (!loginParsed.success) {
+    return { error: loginParsed.error.issues[0]?.message ?? "登录参数不合法" };
   }
 
   const apiUrl = getApiUrl(apiPaths.auth.token);
@@ -120,8 +134,17 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
   const newPassword = formData.get("new_password") as string;
   const tempToken = formData.get("temp_token") as string;
 
-  if (!newPassword || newPassword.length < 8) {
-    return { success: false, error: "新密码长度至少需要 8 位", mustChangePassword: true, username };
+  const changeParsed = changePasswordSchema.safeParse({
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+  if (!changeParsed.success) {
+    return {
+      success: false,
+      error: changeParsed.error.issues[0]?.message ?? "密码参数不合法",
+      mustChangePassword: true,
+      username,
+    };
   }
 
   // 注意：这里调用的是修改密码接口

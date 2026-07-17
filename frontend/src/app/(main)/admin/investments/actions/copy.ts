@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
@@ -10,6 +11,13 @@ import type {
   InvestmentResponse,
 } from "./types";
 
+// 与后端 CopyInvestmentRequest Pydantic 语义对齐
+const investmentIdSchema = z.string().min(1, "投资 ID 不能为空");
+
+const copyInvestmentSchema = z.object({
+  target_project_id: z.string().min(1, "目标项目 ID 不能为空"),
+});
+
 /**
  * 复制跟投配置到目标项目
  * 调用 POST /api/v1/admin/investments/{id}/copy。返回新创建的跟投记录。
@@ -18,6 +26,22 @@ export async function copyInvestment(
   investmentId: string,
   data: CopyInvestmentRequest,
 ): Promise<ActionResult<InvestmentResponse>> {
+  const idParsed = investmentIdSchema.safeParse(investmentId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  const parsed = copyInvestmentSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST(

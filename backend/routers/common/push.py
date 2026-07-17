@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/push", tags=["push"])
 
-_MAX_PUSH_RECORDS = 10000
+_MAX_PUSH_RECORDS = 1000
 
 
 @router.post("")
@@ -55,7 +55,7 @@ async def push_properties(
         raise ValidationError(msg)
 
     if len(properties) > _MAX_PUSH_RECORDS:
-        msg = "单次推送最多支持 10000 条记录"
+        msg = "单次推送最多支持 1000 条记录"
         raise ValidationError(msg)
 
     logger.info("接收到 JSON 推送请求，包含 %d 条记录", len(properties))

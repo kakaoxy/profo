@@ -11,6 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { searchCommunitiesAction, createCommunityAction } from "@/app/(main)/admin/leads/actions";
+import type { CreateCommunityResult } from "@/app/(main)/admin/leads/actions";
 import { toast } from "sonner";
 
 /**
@@ -37,7 +38,7 @@ export interface CommunitySelectProps {
   variant?: "default" | "marketing";
   allowCreate?: boolean;
   onSearch?: (query: string) => Promise<Community[]>;
-  onCreate?: (data: { name: string; district?: string | null; business_circle?: string | null }) => Promise<{ id: string; name: string; district: string | null; business_circle: string | null } | null>;
+  onCreate?: (data: { name: string; district?: string | null; business_circle?: string | null }) => Promise<CreateCommunityResult>;
 }
 
 /**
@@ -140,18 +141,19 @@ export function CommunitySelect({
           business_circle: null,
         });
 
-    if (result) {
+    if (result.success) {
       // 创建成功，返回真实的小区数据
+      const { data } = result;
       const newCommunity: Community = {
-        id: result.id,
-        name: result.name,
-        district: result.district || undefined,
-        businessCircle: result.business_circle || undefined,
+        id: data.id,
+        name: data.name,
+        district: data.district || undefined,
+        businessCircle: data.business_circle || undefined,
       };
       onChange(newCommunity, true);
-      toast.success(`小区"${result.name}"已创建`);
+      toast.success(`小区"${data.name}"已创建`);
     } else {
-      toast.error("创建小区失败，请重试");
+      toast.error(result.message);
       // 即使创建失败，也允许前端继续使用输入的名称
       const fallbackCommunity: Community = {
         id: "",

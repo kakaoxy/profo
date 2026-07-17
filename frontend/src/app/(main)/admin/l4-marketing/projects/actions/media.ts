@@ -4,10 +4,61 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidateTag } from "next/cache";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
+import { z } from "zod";
 import type {
   L4MarketingMediaCreate,
   L4MarketingMediaUpdate,
 } from "@/app/(main)/admin/l4-marketing/projects/types";
+
+// ============================================================================
+// Zod schemas
+// ============================================================================
+
+const mediaIdSchema = z.number().int().min(1, "媒体 ID 不合法");
+const projectIdSchema = z.number().int().min(1, "项目 ID 不合法");
+
+// 与 L4MarketingMediaCreate 对齐
+// file_url 允许空字符串：批量导入场景依赖 origin_media_id，file_url 由后端回填
+const l4MediaCreateSchema = z
+  .object({
+    media_type: z.enum(["image", "video"]),
+    photo_category: z.enum(["marketing", "renovation"]),
+    renovation_stage: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    sort_order: z.number().int().min(0, "排序不能小于0"),
+    origin_media_id: z.string().nullable().optional(),
+    file_url: z.string(),
+    thumbnail_url: z.string().nullable().optional(),
+  })
+  .refine(
+    (data) => data.file_url.trim().length > 0 || (data.origin_media_id?.trim().length ?? 0) > 0,
+    { message: "file_url 与 origin_media_id 至少需提供一个" },
+  );
+
+// 与 L4MarketingMediaUpdate 对齐（所有字段可选）
+const l4MediaUpdateSchema = z.object({
+  photo_category: z.enum(["marketing", "renovation"]).nullable().optional(),
+  renovation_stage: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  sort_order: z.number().int().min(0, "排序不能小于0").nullable().optional(),
+  thumbnail_url: z.string().nullable().optional(),
+});
+
+// 批量添加照片
+const batchAddPhotosSchema = z.object({
+  projectId: projectIdSchema,
+  photoIds: z.array(z.string().min(1, "照片 ID 不能为空")).min(1, "至少选择一张照片"),
+});
+
+// 批量更新排序（与 MediaSortOrderUpdate 对齐）
+const mediaSortItemSchema = z.object({
+  media_id: z.number().int().min(1, "媒体 ID 不合法"),
+  sort_order: z.number().int().min(0, "排序不能小于0"),
+});
+const batchUpdateSortSchema = z.object({
+  projectId: projectIdSchema,
+  sortUpdates: z.array(mediaSortItemSchema).min(1, "至少一条排序更新"),
+});
 
 /**
  * 获取媒体列表
@@ -52,6 +103,14 @@ export async function createL4MarketingMediaAction(
   projectId: number,
   body: L4MarketingMediaCreate,
 ) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return { success: false, error: idParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const parsed = l4MediaCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(
@@ -91,6 +150,18 @@ export async function updateL4MarketingMediaAction(
   projectId: number,
   body: L4MarketingMediaUpdate,
 ) {
+  const mediaIdParsed = mediaIdSchema.safeParse(mediaId);
+  if (!mediaIdParsed.success) {
+    return { success: false, error: mediaIdParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const projectIdParsed = projectIdSchema.safeParse(projectId);
+  if (!projectIdParsed.success) {
+    return { success: false, error: projectIdParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const parsed = l4MediaUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.PUT(
@@ -125,6 +196,14 @@ export async function updateL4MarketingMediaAction(
  * @param projectId - 项目ID，用于缓存重新验证
  */
 export async function deleteL4MarketingMediaAction(mediaId: number, projectId: number) {
+  const mediaIdParsed = mediaIdSchema.safeParse(mediaId);
+  if (!mediaIdParsed.success) {
+    return { success: false, error: mediaIdParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const projectIdParsed = projectIdSchema.safeParse(projectId);
+  if (!projectIdParsed.success) {
+    return { success: false, error: projectIdParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -159,6 +238,10 @@ export async function batchAddL4PhotosAction(
   projectId: number,
   photoIds: string[],
 ) {
+  const parsed = batchAddPhotosSchema.safeParse({ projectId, photoIds });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
+  }
   const results = [];
   const errors: string[] = [];
 
@@ -204,6 +287,10 @@ export async function batchUpdateMediaSortOrderAction(
   projectId: number,
   sortUpdates: { media_id: number; sort_order: number }[]
 ) {
+  const parsed = batchUpdateSortSchema.safeParse({ projectId, sortUpdates });
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
+  }
   try {
     const client = await fetchClient();
     // 使用类型断言绕过 OpenAPI 类型检查

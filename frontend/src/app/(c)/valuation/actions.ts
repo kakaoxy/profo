@@ -17,7 +17,7 @@ const createLeadSchema = z.object({
   district: z.string().nullable().optional(),
   business_area: z.string().nullable().optional(),
   layout: z.string().nullable().optional(),
-  area: z.number().nullable().optional(),
+  area: z.number().positive("面积必须为正数").nullable().optional(),
   floor_info: z.string().nullable().optional(),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),

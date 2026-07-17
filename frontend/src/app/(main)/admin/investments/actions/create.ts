@@ -13,6 +13,49 @@ import type {
   InvestorResponse,
   InvestorUpdate,
 } from "./types";
+import { z } from "zod";
+
+// ===== Zod 校验 schema（与后端 InvestmentCreate/Update、InvestorCreate/Update 语义对齐）=====
+// safeParse 仅作入参门禁，通过后仍转发原始 data（避免 strip 字段）。
+// ID 校验与既有 actions 一致使用 .min(1)（非 uuid）。
+const investmentIdSchema = z.string().min(1, "投资 ID 不能为空");
+const investorIdSchema = z.string().min(1, "投资人 ID 不能为空");
+
+// 后端允许 number | string | null（数值类字段做字符串到数值的隐式转换）
+const nullableNumber = z.union([z.number(), z.string(), z.null()]);
+
+// 投资方类型枚举 - 对齐后端 InvestorType: enterprise/individual
+const investorTypeSchema = z.enum(["enterprise", "individual"], "投资方类型不合法");
+
+// 子投资人 - 对齐 SubInvestorCreate
+const subInvestorCreateSchema = z.object({
+  name: z.string().min(1, "子投资人姓名不能为空"),
+  share_ratio: nullableNumber,
+  remark: z.string().nullable().optional(),
+});
+
+// InvestmentCreate - 与后端 InvestmentCreate 对齐
+const createInvestmentSchema = z.object({
+  project_id: z.string().min(1, "项目 ID 不能为空"),
+  total_investment: nullableNumber,
+  total_return: nullableNumber.optional(),
+  remark: z.string().nullable().optional(),
+});
+
+// InvestmentUpdate - 全 optional（PUT 语义）
+const updateInvestmentSchema = createInvestmentSchema.partial();
+
+// InvestorCreate - 与后端 InvestorCreate 对齐
+const createInvestorSchema = z.object({
+  name: z.string().min(1, "投资方名称不能为空"),
+  type: investorTypeSchema,
+  share_ratio: nullableNumber,
+  remark: z.string().nullable().optional(),
+  sub_investors: z.array(subInvestorCreateSchema).nullable().optional(),
+});
+
+// InvestorUpdate - 全 optional
+const updateInvestorSchema = createInvestorSchema.partial();
 
 /**
  * 创建跟投记录（成功后 revalidatePath 刷新列表）
@@ -20,6 +63,13 @@ import type {
 export async function createInvestment(
   data: InvestmentCreate,
 ): Promise<ActionResult<InvestmentResponse>> {
+  const parsed = createInvestmentSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST("/api/v1/admin/investments", {
@@ -50,6 +100,20 @@ export async function updateInvestment(
   id: string,
   data: InvestmentUpdate,
 ): Promise<ActionResult<InvestmentResponse>> {
+  const idParsed = investmentIdSchema.safeParse(id);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
+  const parsed = updateInvestmentSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.PUT(
@@ -81,6 +145,13 @@ export async function updateInvestment(
 export async function deleteInvestment(
   investmentId: string,
 ): Promise<ActionResult<null>> {
+  const idParsed = investmentIdSchema.safeParse(investmentId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -109,6 +180,20 @@ export async function addInvestor(
   investmentId: string,
   data: InvestorCreate,
 ): Promise<ActionResult<InvestorResponse>> {
+  const idParsed = investmentIdSchema.safeParse(investmentId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
+  const parsed = createInvestorSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST(
@@ -141,6 +226,27 @@ export async function updateInvestor(
   investorId: string,
   data: InvestorUpdate,
 ): Promise<ActionResult<InvestorResponse>> {
+  const investmentIdParsed = investmentIdSchema.safeParse(investmentId);
+  if (!investmentIdParsed.success) {
+    return {
+      success: false,
+      message: investmentIdParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
+  const investorIdParsed = investorIdSchema.safeParse(investorId);
+  if (!investorIdParsed.success) {
+    return {
+      success: false,
+      message: investorIdParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
+  const parsed = updateInvestorSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.PUT(
@@ -177,6 +283,20 @@ export async function deleteInvestor(
   investmentId: string,
   investorId: string,
 ): Promise<ActionResult<null>> {
+  const investmentIdParsed = investmentIdSchema.safeParse(investmentId);
+  if (!investmentIdParsed.success) {
+    return {
+      success: false,
+      message: investmentIdParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
+  const investorIdParsed = investorIdSchema.safeParse(investorId);
+  if (!investorIdParsed.success) {
+    return {
+      success: false,
+      message: investorIdParsed.error.issues[0]?.message ?? "投资参数不合法",
+    };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(

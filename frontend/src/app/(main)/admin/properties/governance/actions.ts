@@ -4,6 +4,12 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
+import { z } from "zod";
+
+const mergeCommunitiesSchema = z.object({
+  primaryId: z.string().min(1, "主小区 ID 不能为空"),
+  mergeIds: z.array(z.string().min(1)).min(1, "至少选择 1 个待合并小区"),
+});
 
 export interface MergeResult {
   success: boolean;
@@ -19,8 +25,12 @@ export async function mergeCommunitiesAction(
   primaryId: string,
   mergeIds: string[],
 ): Promise<MergeResult> {
-  if (!primaryId || mergeIds.length === 0) {
-    return { success: false, message: "参数错误：未选择主小区或被合并小区" };
+  const parsed = mergeCommunitiesSchema.safeParse({ primaryId, mergeIds });
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "合并参数不合法",
+    };
   }
 
   try {
