@@ -22,11 +22,6 @@
 4. 统一出口模式是Python包的常见做法，便于使用者一次性导入所需模型
 """  # noqa: D400, D415
 
-# 2. Common
-from .common import (
-    FailedRecordResponse,
-)
-
 # 4. Community (小区)
 from .community import (
     CommunityListResponse,
@@ -114,7 +109,6 @@ from .property import (
     FloorInfo,
     PaginatedPropertyResponse,
     PropertyDetailResponse,
-    PropertyHistoryResponse,
     PropertyIngestionModel,
     PropertyResponse,
 )
@@ -124,7 +118,6 @@ from .response import ErrorResponse, PaginatedResponse
 
 # 5. Upload (上传导入)
 from .upload import (
-    BatchImportResult,
     ImportResult,
     ImportTaskCreateResponse,
     ImportTaskStatusResponse,
@@ -153,7 +146,6 @@ __all__ = [
     "AIStrategyRequest",
     "AIStrategyResponse",
     "AddCompetitorRequest",
-    "BatchImportResult",
     "CashFlowRecordCreate",
     "CashFlowRecordResponse",
     "CashFlowResponse",
@@ -167,7 +159,6 @@ __all__ = [
     "CompetitorResponse",
     # Common
     "ErrorResponse",
-    "FailedRecordResponse",
     "FloorInfo",
     # Monitor
     "FloorStats",
@@ -221,7 +212,6 @@ __all__ = [
     "ProjectStatusUpdate",
     "ProjectUpdate",
     "PropertyDetailResponse",
-    "PropertyHistoryResponse",
     # Property
     "PropertyIngestionModel",
     "PropertyResponse",

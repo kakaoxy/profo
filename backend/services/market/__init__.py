@@ -10,7 +10,6 @@
 from .batch_importer import CSVBatchImporter
 from .community_service import (
     CommunityQueryService,
-    _find_existing_community_by_name,
     get_community_service,
 )
 from .csv_parser import CSVParser
@@ -50,7 +49,6 @@ __all__ = [
     # 查询服务
     "PropertyQueryService",
     "PropertyService",
-    "_find_existing_community_by_name",
     # 筛选排序工具
     "apply_filters",
     "apply_sorting",

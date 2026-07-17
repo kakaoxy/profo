@@ -3,11 +3,7 @@
 包含历史记录、失败记录、楼层解析等通用模型.
 """  # noqa: D400, D415
 
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict
-
-from models.common import ChangeType, PropertyStatus
+from pydantic import BaseModel
 
 
 class FloorInfo(BaseModel):
@@ -16,30 +12,3 @@ class FloorInfo(BaseModel):
     floor_number: int | None = None
     total_floors: int | None = None
     floor_level: str | None = None
-
-
-class PropertyHistoryResponse(BaseModel):
-    """房源历史记录响应."""
-
-    id: int
-    change_type: ChangeType
-    captured_at: datetime
-    status: PropertyStatus
-    listed_price_wan: float | None = None
-    sold_price_wan: float | None = None
-    build_area: float | None = None
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class FailedRecordResponse(BaseModel):
-    """失败记录响应."""
-
-    id: int
-    data_source: str | None = None
-    failure_type: str
-    failure_reason: str
-    occurred_at: datetime
-    is_handled: bool
-
-    model_config = ConfigDict(from_attributes=True)

@@ -1,7 +1,6 @@
 """JWT密钥验证和初始化工具."""
 
 import logging
-import secrets
 import sys
 
 logger = logging.getLogger(__name__)
@@ -60,21 +59,6 @@ def validate_jwt_secret_key() -> bool:
     return True
 
 
-def generate_secure_jwt_key(length: int = 64) -> str:
-    """生成安全的JWT密钥.
-
-    Args:
-        length: 密钥长度（默认64字符）
-
-    Returns:
-        str: 生成的安全密钥
-
-    """
-    # 使用secrets模块生成加密安全的随机字符串
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
-    return "".join(secrets.choice(alphabet) for _ in range(length))
-
-
 def check_jwt_configuration() -> None:
     """检查JWT配置并在启动时提供有用的提示."""
     # 延迟导入，避免在模块加载时就实例化settings
@@ -90,7 +74,7 @@ def check_jwt_configuration() -> None:
         logger.error("   JWT_SECRET_KEY=your-secure-random-key-here")
         logger.error("\n生成安全密钥命令：")
         logger.error(
-            '   python -c "from utils.jwt_validator import generate_secure_jwt_key; print(generate_secure_jwt_key())"',
+            '   python -c "import secrets; print(secrets.token_urlsafe(48))"',
         )
         sys.exit(1)
 
@@ -105,16 +89,13 @@ def check_jwt_configuration() -> None:
 
 
 if __name__ == "__main__":
-    # 命令行工具：生成安全密钥
+    # 命令行工具：检查 JWT 配置
     import argparse
 
     parser = argparse.ArgumentParser(description="JWT密钥管理工具")
-    parser.add_argument("--generate", "-g", type=int, default=64, help="生成指定长度的安全密钥（默认64字符）")
     parser.add_argument("--check", "-c", action="store_true", help="检查当前JWT配置")
 
     args = parser.parse_args()
 
     if args.check:
         check_jwt_configuration()
-    else:
-        key = generate_secure_jwt_key(args.generate)
