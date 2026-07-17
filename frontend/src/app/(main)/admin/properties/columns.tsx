@@ -354,29 +354,26 @@ export const columns: ColumnDef<Property>[] = [
       );
     },
   },
-  // 7. 朝向
-  {
-    accessorKey: "orientation",
-    header: () => <span className="inline text-xs">朝向</span>,
-    cell: ({ row }) => (
-      <span className="inline text-xs">
-        {row.getValue("orientation")}
-      </span>
-    ),
-  },
-  // 8. 楼层
+  // 7. 楼层/朝向（原楼层列合并朝向）
   {
     accessorKey: "floor_display",
     header: () => (
       <div className="block">
-        <SortableHeader title="楼层" value="floor_number" />
+        <SortableHeader title="楼层/朝向" value="floor_number" />
       </div>
     ),
-    cell: ({ row }) => (
-      <span className="inline whitespace-nowrap text-xs">
-        {row.getValue("floor_display")}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const floor = row.getValue("floor_display") as string;
+      const orientation = row.original.orientation;
+      return (
+        <div className="flex flex-col gap-1 py-2 whitespace-nowrap">
+          <span className="text-xs leading-tight">{floor}</span>
+          <span className="text-[10px] text-muted-foreground leading-tight">
+            {orientation}
+          </span>
+        </div>
+      );
+    },
   },
   // 9. 面积
   {
@@ -392,41 +389,28 @@ export const columns: ColumnDef<Property>[] = [
       </div>
     ),
   },
-  // 10. 总价 - 移动端堆叠显示价格+面积
+  // 10. 价格（原总价列合并单价）
   {
     accessorKey: "total_price",
-    header: () => <span className="text-xs">价格</span>,
+    header: () => (
+      <div className="block">
+        <SortableHeader title="价格" value="unit_price" />
+      </div>
+    ),
     cell: ({ row }) => {
       const price = row.getValue("total_price") as number;
-      const area = row.original.build_area;
+      const unitPrice = row.original.unit_price;
       return (
-        <div className="min-w-0">
-          {/* 桌面端只显示价格 */}
-          <div className="hidden sm:block text-error font-bold text-sm">
+        <div className="flex flex-col gap-1 py-2 min-w-0">
+          <span className="text-error font-bold text-sm leading-tight">
             {price}万
-          </div>
-          {/* 移动端堆叠显示 */}
-          <div className="sm:hidden flex flex-col">
-            <span className="text-error font-bold text-xs">{price}万</span>
-            <span className="text-[10px] text-muted-foreground">{area}㎡</span>
-          </div>
+          </span>
+          <span className="text-[10px] text-muted-foreground leading-tight">
+            {unitPrice} 元/㎡
+          </span>
         </div>
       );
     },
-  },
-  // 11. 单价
-  {
-    accessorKey: "unit_price",
-    header: () => (
-      <div className="block">
-        <SortableHeader title="单价(元/㎡)" value="unit_price" />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="block text-xs text-muted-foreground">
-        {row.getValue("unit_price")}
-      </div>
-    ),
   },
   // 12. 时间
   {
@@ -456,6 +440,32 @@ export const columns: ColumnDef<Property>[] = [
         </span>
       );
     },
+  },
+  // 备注（与详情页"挂牌备注"同源 listing_remarks）
+  {
+    id: "listing_remarks",
+    header: () => <span className="inline text-xs">备注</span>,
+    cell: ({ row }) => {
+      const remarks = row.original.listing_remarks;
+      if (!remarks || remarks.trim() === "") {
+        return <span className="text-xs text-muted-foreground">-</span>;
+      }
+      return (
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <div className="max-w-[200px] truncate text-xs text-muted-foreground cursor-help">
+                {remarks}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[400px]">
+              <p className="whitespace-pre-wrap break-words text-xs">{remarks}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
+    size: 200,
   },
   // 13. 数据源
   {

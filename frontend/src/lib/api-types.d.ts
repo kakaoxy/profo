@@ -4778,6 +4778,8 @@ export interface components {
             status: components["schemas"]["LeadStatus"] | null;
             /** Images */
             images?: string[];
+            /** Created At */
+            created_at?: string | null;
         };
         /**
          * LeadFunnelResponse
@@ -5015,6 +5017,8 @@ export interface components {
             remarks?: string | null;
             /** Last Follow Up At */
             last_follow_up_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
         };
         /**
          * LedgerListResponse
@@ -6645,6 +6649,8 @@ export interface components {
             decoration?: string | null;
             /** Elevator */
             elevator?: boolean | null;
+            /** Listing Remarks */
+            listing_remarks?: string | null;
             /** Picture Links */
             picture_links?: string[] | null;
             /**

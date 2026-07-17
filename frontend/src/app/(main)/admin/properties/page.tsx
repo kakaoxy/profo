@@ -32,12 +32,14 @@ export default async function PropertiesPage(props: PageProps) {
         community_name: query.q || undefined, 
         status: query.status || undefined,
         rooms: query.rooms || undefined,
+        rooms_gte: query.rooms_gte || undefined,
         floor_levels: query.floor_levels || undefined,
         min_price: query.min_price || undefined,
         max_price: query.max_price || undefined,
         min_area: query.min_area || undefined,
         max_area: query.max_area || undefined,
         districts: query.districts || undefined,
+        business_circles: query.business_circles || undefined,
         sort_by: query.sort_by,
         sort_order: query.sort_order as "asc" | "desc", // 类型断言
       }
