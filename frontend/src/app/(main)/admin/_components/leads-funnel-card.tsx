@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import type { FunnelData } from "../types";
 import { formatConversionRate } from "@/lib/formatters";
 
@@ -29,9 +31,18 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
       role="region"
       aria-label="线索漏斗转化"
     >
-      <span className="text-xs text-muted-foreground font-black uppercase tracking-widest block mb-2">
-        线索漏斗
-      </span>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground font-black uppercase tracking-widest">
+          线索漏斗
+        </span>
+        <Link
+          href="/admin/leads/new"
+          className="inline-flex items-center gap-1 rounded-full bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          新增
+        </Link>
+      </div>
 
       <div
         className="flex-1 flex items-stretch gap-1 min-w-0"
