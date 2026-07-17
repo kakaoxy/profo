@@ -157,9 +157,7 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
     loadContractData();
   }, [projectId, form]);
 
-  const handleSave = async () => {
-    const values = form.getValues();
-
+  const handleSave = async (values: RenovationContractFormValues) => {
     try {
       setIsSaving(true);
 
@@ -249,7 +247,7 @@ export function RenovationContractForm({ projectId, area }: RenovationContractFo
                 </Button>
                 <Button
                   size="sm"
-                  onClick={handleSave}
+                  onClick={form.handleSubmit(handleSave)}
                   disabled={isSaving}
                   className="h-7 text-xs px-2"
                 >

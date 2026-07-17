@@ -5,6 +5,10 @@ import { fetchClient } from "@/lib/api-server";
 import { CompetitorItem } from "./types";
 import { getProjectDetailAction } from "../core";
 import { extractApiData, extractPaginatedData } from "@/lib/api-helpers";
+import { z } from "zod";
+
+const communityIdSchema = z.string().min(1, "小区 ID 不能为空");
+const competitorIdSchema = z.string().min(1, "竞品小区 ID 不能为空");
 
 /**
  * 获取当前小区的竞品列表
@@ -103,6 +107,22 @@ export async function addCompetitorAction(
   communityId: string,
   competitorId: string,
 ) {
+  const idParsed = communityIdSchema.safeParse(communityId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  const competitorParsed = competitorIdSchema.safeParse(competitorId);
+  if (!competitorParsed.success) {
+    return {
+      success: false,
+      message: competitorParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST(
@@ -131,6 +151,22 @@ export async function removeCompetitorAction(
   communityId: string,
   competitorId: string,
 ) {
+  const idParsed = communityIdSchema.safeParse(communityId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  const competitorParsed = competitorIdSchema.safeParse(competitorId);
+  if (!competitorParsed.success) {
+    return {
+      success: false,
+      message: competitorParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { z } from "zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/client";
@@ -16,6 +17,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { cLocale } from "@/lib/i18n/c-locale";
+
+const loginSchema = z.object({
+  username: z.string().min(1, "请输入用户名"),
+  password: z.string().min(1, "请输入密码"),
+});
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -42,10 +48,15 @@ function LoginForm() {
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
 
-    const errors: { username?: string; password?: string } = {};
-    if (!username.trim()) errors.username = cLocale.login.validation.usernameRequired;
-    if (!password) errors.password = cLocale.login.validation.passwordRequired;
-    if (Object.keys(errors).length > 0) {
+    const parsed = loginSchema.safeParse({ username, password });
+    if (!parsed.success) {
+      const errors: { username?: string; password?: string } = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0]?.toString();
+        if (field === "username" || field === "password") {
+          if (!errors[field]) errors[field] = issue.message;
+        }
+      }
       setValidationErrors(errors);
       return;
     }
