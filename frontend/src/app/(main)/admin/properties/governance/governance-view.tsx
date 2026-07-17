@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   getCoreRowModel,
@@ -10,17 +10,16 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Search } from "lucide-react";
 
-import { columns } from "./columns";
+import { createColumns } from "./columns";
 import { MergeDialog } from "./merge-dialog";
 import { CreateCommunityDialog } from "./create-community-dialog";
-import { components } from "@/lib/api-types";
-
-type Community = components["schemas"]["CommunityResponse"];
+import type { CommunityMinified } from "./pick-community-fields";
 
 interface GovernanceViewProps {
-  data: Community[];
+  data: CommunityMinified[];
   total: number;
   page: number;
   pageSize: number;
@@ -33,9 +32,14 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
 
   // 1. 行选择状态
   const [rowSelection, setRowSelection] = useState({});
-  
+
   // 2. 搜索框状态（初始值为 URL 中的 search 参数）
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "");
+
+  const columns = useMemo(
+    () => createColumns({ onSuccess: () => router.refresh() }),
+    [router]
+  );
 
   // useReactTable 返回函数无法被 React Compiler 安全 memoize，需显式禁用规则
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -81,98 +85,100 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
   const selectedCommunities = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
 
   return (
-    <div className="space-y-4">
-      {/* 工具栏 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <form onSubmit={handleSearch} className="relative flex items-center gap-2">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="搜索小区名称..."
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              className="pl-8 w-full sm:w-[300px]"
-            />
-            <Button type="submit" variant="secondary" size="sm">搜索</Button>
-          </form>
-        </div>
-        
-        {/* 合并按钮 - 传入选中项 */}
-        <div className="flex items-center gap-2">
-          <CreateCommunityDialog
-            onSuccess={() => router.refresh()}
-          />
-          <MergeDialog
-            selectedCommunities={selectedCommunities}
-            onSuccess={() => setRowSelection({})} // 合并成功后清空选择
-          />
-        </div>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-4">
+        {/* 工具栏 */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <form onSubmit={handleSearch} className="relative flex items-center gap-2">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="搜索小区名称..."
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                className="pl-8 w-full sm:w-[300px]"
+              />
+              <Button type="submit" variant="secondary" size="sm">搜索</Button>
+            </form>
+          </div>
 
-      <div className="rounded-md border bg-card overflow-x-auto scrollbar-hide">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+          {/* 合并按钮 - 传入选中项 */}
+          <div className="flex items-center gap-2">
+            <CreateCommunityDialog
+              onSuccess={() => router.refresh()}
+            />
+            <MergeDialog
+              selectedCommunities={selectedCommunities}
+              onSuccess={() => setRowSelection({})} // 合并成功后清空选择
+            />
+          </div>
+        </div>
+
+        <div className="rounded-md border bg-card overflow-x-auto scrollbar-hide">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  暂无数据
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* 分页控制栏 */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-2">
-        <div className="text-xs sm:text-sm text-muted-foreground">
-          共 {total} 条，第 {page}/{totalPages} 页
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    暂无数据
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page <= 1}
-          >
-            上一页
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page >= totalPages}
-          >
-            下一页
-          </Button>
+
+        {/* 分页控制栏 */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-2">
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            共 {total} 条，第 {page}/{totalPages} 页
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page <= 1}
+            >
+              上一页
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page >= totalPages}
+            >
+              下一页
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
