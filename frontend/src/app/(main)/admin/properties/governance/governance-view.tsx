@@ -51,13 +51,13 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
     const next = typeof updater === "function" ? updater(rowSelection) : updater;
     setRowSelection(next);
     setSelectedMap((prev) => {
-      const updated: Record<string, CommunityMinified> = {};
+      const updated: Record<string, CommunityMinified> = { ...prev };
       for (const id of Object.keys(next)) {
-        if (next[id] && prev[id]) {
-          updated[id] = prev[id];
-        } else if (next[id]) {
+        if (next[id]) {
           const found = data.find((c) => c.id === id);
           if (found) updated[id] = found;
+        } else {
+          delete updated[id];
         }
       }
       return updated;
