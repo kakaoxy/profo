@@ -88,9 +88,13 @@ def apply_filters(
     if districts:
         query = query.filter(Community.district.in_(districts))
 
-    # 商圈筛选（多选）
+    # 商圈筛选（模糊匹配任意关键词）
     if business_circles:
-        query = query.filter(Community.business_circle.in_(business_circles))
+        business_circle_conditions = [
+            Community.business_circle.like(f"%{escape_like(bc)}%", escape="\\") for bc in business_circles if bc
+        ]
+        if business_circle_conditions:
+            query = query.filter(or_(*business_circle_conditions))
 
     # 价格范围筛选
     if min_price is not None or max_price is not None:
@@ -131,10 +135,18 @@ def apply_filters(
     if max_area is not None:
         query = query.filter(PropertyCurrent.build_area <= max_area)
 
-    # 户型筛选
-    if rooms:
+    # 户型筛选：rooms（精确匹配室数量）与 rooms_gte（≥5室）为 OR 关系
+    # 同时选择"4"和"5+"时应匹配 rooms IN (4) OR rooms >= 5
+    if rooms and rooms_gte is not None:
+        query = query.filter(
+            or_(
+                PropertyCurrent.rooms.in_(rooms),
+                PropertyCurrent.rooms >= rooms_gte,
+            ),
+        )
+    elif rooms:
         query = query.filter(PropertyCurrent.rooms.in_(rooms))
-    if rooms_gte is not None:
+    elif rooms_gte is not None:
         query = query.filter(PropertyCurrent.rooms >= rooms_gte)
 
     # 楼层级别筛选（多选）

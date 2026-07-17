@@ -12,6 +12,7 @@ export const searchParamsParsers = {
   q: parseAsString.withDefault(""), // 小区名搜索
   status: parseAsString.withDefault(""), // 状态
   rooms: parseAsString.withDefault(""), // 户型 (逗号分隔)
+  rooms_gte: parseAsInteger, // 最少室数量 (5+ 等)
   floor_levels: parseAsString.withDefault(""), // 楼层
   min_price: parseAsInteger,
   max_price: parseAsInteger,

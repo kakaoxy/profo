@@ -24,6 +24,11 @@ export function PropertyFilters() {
 
   const [districts, setDistricts] = useQueryState("districts", { defaultValue: "", shallow: false });
 
+  // 5+ 户型：用 rooms_gte 表示“5室及以上”
+  const [roomsGte, setRoomsGte] = useQueryState("rooms_gte", { shallow: false });
+  // 商圈搜索
+  const [businessCircles, setBusinessCircles] = useQueryState("business_circles", { defaultValue: "", throttleMs: 500, shallow: false });
+
   // 辅助函数：通用的多选切换逻辑 (逗号分隔字符串)
   const toggleSelection = (currentValue: string | null, valueToToggle: string, setter: (val: string | null) => void) => {
     const current = currentValue ? currentValue.split(",") : [];
@@ -47,6 +52,8 @@ export function PropertyFilters() {
     setMinArea(null);
     setMaxArea(null);
     setDistricts(null);
+    setRoomsGte(null);
+    setBusinessCircles(null);
   };
 
   return (
@@ -85,31 +92,53 @@ export function PropertyFilters() {
           <Label className="text-xs font-medium text-muted-foreground">小区名称</Label>
           <div className="relative">
             <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="搜索小区..." 
-              className="pl-8 h-8 text-sm" 
+            <Input
+              placeholder="搜索小区..."
+              className="pl-8 h-8 text-sm"
               maxLength={50}
-              value={q || ""} 
-              onChange={(e) => setQ(e.target.value || null)} 
+              value={q || ""}
+              onChange={(e) => setQ(e.target.value || null)}
             />
           </div>
         </div>
 
-        {/* 3. 户型 (多选) */}
+        {/* 2.1 商圈搜索 */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground">商圈名称</Label>
+          <div className="relative">
+            <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索商圈..."
+              className="pl-8 h-8 text-sm"
+              maxLength={50}
+              value={businessCircles || ""}
+              onChange={(e) => setBusinessCircles(e.target.value || null)}
+            />
+          </div>
+        </div>
+
+        {/* 3. 户型 (多选，5+ 走 rooms_gte) */}
         <div className="space-y-2">
           <Label className="text-xs font-medium text-muted-foreground">户型 (室)</Label>
           <div className="flex flex-wrap gap-1.5">
-            {["1", "2", "3", "4", "5", "5+"].map((r) => (
-              <Button
-                key={r}
-                variant={rooms?.split(",").includes(r) ? "default" : "outline"}
-                size="sm"
-                className="w-9 h-8 p-0 text-xs"
-                onClick={() => toggleSelection(rooms, r, setRooms)}
-              >
-                {r}
-              </Button>
-            ))}
+            {["1", "2", "3", "4", "5+"].map((r) => {
+              const isPlus = r === "5+";
+              const isActive = isPlus ? roomsGte === "5" : rooms?.split(",").includes(r);
+              const handleClick = isPlus
+                ? () => setRoomsGte(roomsGte === "5" ? null : "5")
+                : () => toggleSelection(rooms, r, setRooms);
+              return (
+                <Button
+                  key={r}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  className="w-9 h-8 p-0 text-xs"
+                  onClick={handleClick}
+                >
+                  {r}
+                </Button>
+              );
+            })}
           </div>
         </div>
 

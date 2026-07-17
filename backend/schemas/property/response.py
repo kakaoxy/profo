@@ -126,6 +126,8 @@ class PropertyResponse(BaseModel):
     decoration: str | None = None
     elevator: bool | None = None
 
+    listing_remarks: str | None = None
+
     picture_links: list[str] | None = None
 
     created_at: datetime
@@ -188,6 +190,7 @@ class PropertyResponse(BaseModel):
             build_year=property_obj.build_year,
             decoration=property_obj.decoration,
             elevator=property_obj.elevator,
+            listing_remarks=property_obj.listing_remarks,
             created_at=property_obj.created_at,
             updated_at=property_obj.updated_at,
             picture_links=_get_picture_links(property_obj, preloaded_media),
