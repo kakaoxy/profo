@@ -228,7 +228,6 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
 # 预定义的角色依赖类型
 CurrentAdminUserDep = Annotated[User, Depends(require_roles(["admin"]))]
 CurrentOperatorUserDep = Annotated[User, Depends(require_roles(["admin", "operator"]))]
-CurrentNormalUserDep = Annotated[User, Depends(require_roles(["admin", "operator", "user"]))]
 CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operator"]))]
 CurrentCustomerUserDep = Annotated[User, Depends(require_roles(["customer"]))]
 
@@ -239,7 +238,6 @@ __all__ = [
     "CurrentAdminUserDep",
     "CurrentCustomerUserDep",
     "CurrentInternalUserDep",
-    "CurrentNormalUserDep",
     "CurrentOperatorUserDep",
     "CurrentUserDep",
     # 类型别名

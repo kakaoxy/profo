@@ -69,12 +69,3 @@ class ImportResult(BaseModel):
     success: bool
     property_id: int | None = None
     error: str | None = None
-
-
-class BatchImportResult(BaseModel):
-    """批量导入结果."""
-
-    total: int
-    success: int
-    failed: int
-    failed_records: list[dict] = Field(default_factory=list)

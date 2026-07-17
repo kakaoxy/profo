@@ -5,14 +5,8 @@
 
 from .cashflow import router as cashflow_router
 from .core import router as core_router
-from .documents import router as documents_router
-from .renovation import router as renovation_router
-from .sales import router as sales_router
 
 __all__ = [
     "cashflow_router",
     "core_router",
-    "documents_router",
-    "renovation_router",
-    "sales_router",
 ]

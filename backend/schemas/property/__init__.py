@@ -1,7 +1,7 @@
 """房源相关Schema (聚合入口)."""
 
 # 1. 导入通用模型 (从 common 导入，重新导出以向后兼容)
-from schemas.common import FloorInfo, PropertyHistoryResponse
+from schemas.common import FloorInfo
 
 # 2. 导入核心接收模型
 from .core import PropertyFilter, PropertyIngestionModel
@@ -20,7 +20,6 @@ __all__ = [
     "PropertyDetailResponse",
     # Core
     "PropertyFilter",
-    "PropertyHistoryResponse",
     "PropertyIngestionModel",
     # Response
     "PropertyResponse",
