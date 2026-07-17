@@ -108,7 +108,12 @@ export function UserTable({ data, onEdit, onResetPassword }: UserTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{user.role?.name || "未知角色"}</Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="outline">{user.role?.name || "未知角色"}</Badge>
+                    {user.additional_roles?.map((role) => (
+                      <Badge key={role.id} variant="outline">{role.name}</Badge>
+                    ))}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {getStatusBadge(user.status)}

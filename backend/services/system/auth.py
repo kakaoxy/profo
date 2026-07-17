@@ -186,7 +186,7 @@ class AuthService:
             raise PermissionDeniedError(msg)
         return user
 
-    # 后台允许的角色（C 端 customer 明确禁止登录后台）
+    # 后台允许的角色（无任何后台身份的用户禁止登录后台）
     # 注意：与 dependencies/auth.py 的 _INTERNAL_ROLE_CODES 不同。
     #   BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
     #   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
@@ -194,10 +194,29 @@ class AuthService:
     BACKEND_ROLE_CODES: ClassVar[set[str]] = {"admin", "operator", "user"}
 
     @staticmethod
-    def authenticate_backend_user(db: Session, username: str, password: str) -> User:
-        """验证后台用户名密码并校验角色 (Sync - Blocking).
+    def has_backend_identity(user: User) -> bool:
+        """判断用户是否具备后台身份（主角色或附加角色含后台角色）.
 
-        在 authenticate_user 基础上额外拒绝 C 端 customer 角色登录后台。
+        Args:
+            user: 用户对象（需有 role 与 roles 关系）
+
+        Returns:
+            True 表示可登录后台，False 表示无后台身份
+
+        """
+        backend_codes = AuthService.BACKEND_ROLE_CODES
+        # 主角色检查
+        if user.role and user.role.code in backend_codes:
+            return True
+        # 附加角色检查
+        return any(r.code in backend_codes for r in (user.roles or []))
+
+    @staticmethod
+    def authenticate_backend_user(db: Session, username: str, password: str) -> User:
+        """验证后台用户名密码并校验后台身份 (Sync - Blocking).
+
+        在 authenticate_user 基础上额外拒绝没有任何后台身份的用户登录后台
+        （主角色或附加角色需至少包含一个 BACKEND_ROLE_CODES 中的角色）。
 
         Args:
             db: 数据库会话
@@ -209,11 +228,11 @@ class AuthService:
 
         Raises:
             AuthenticationError: 用户名或密码错误
-            PermissionDeniedError: 用户已被禁用 或 角色不允许登录后台
+            PermissionDeniedError: 用户已被禁用 或 无后台身份
 
         """
         user = AuthService.authenticate_user(db, username, password)
-        if user.role is None or user.role.code not in AuthService.BACKEND_ROLE_CODES:
+        if not AuthService.has_backend_identity(user):
             msg = "该账号无权登录后台"
             raise PermissionDeniedError(msg)
         return user
@@ -268,6 +287,7 @@ class AuthService:
         force_temp_token: bool = False,
         update_login_time: bool = True,
         audience: str | None = None,
+        role_claim: str | None = None,
     ) -> TokenResult:
         """为用户生成令牌 (Sync).
 
@@ -279,18 +299,29 @@ class AuthService:
             force_temp_token: 是否强制使用临时令牌（用于密码重置）
             update_login_time: 是否更新最后登录时间（刷新token时不应更新）
             audience: Token 受众标识；不传则按角色推断（customer->c, 其他->admin）
+            role_claim: Token 中 role 字段的值；不传则使用 user.role.code。
+                用于多角色用户登录特定端时覆盖默认主角色（如 admin+customer
+                用户登录 C 端时强制传 "customer"）。
 
         """
         # 推断受众：C 端 customer -> "c"，后台角色 -> "admin"
         if audience is None:
             audience = AUDIENCE_C if user.role and user.role.code == "customer" else AUDIENCE_ADMIN
 
+        # role claim：默认使用主角色 code；显式传入时覆盖（用于多角色用户登录特定端）
+        effective_role_code = role_claim if role_claim is not None else (user.role.code if user.role else "")
+
         # 检查是否强制修改密码逻辑
         if force_temp_token and user.must_change_password:
             # 生成临时 Token logic
             temp_expires = timedelta(minutes=10)
             temp_token = create_access_token(
-                data={"sub": user.id, "role": user.role.code, "scope": "reset_password", "ver": user.token_version},
+                data={
+                    "sub": user.id,
+                    "role": effective_role_code,
+                    "scope": "reset_password",
+                    "ver": user.token_version,
+                },
                 expires_delta=temp_expires,
                 audience=audience,
             )
@@ -308,7 +339,7 @@ class AuthService:
         # 创建令牌（携带 token_version 以支持服务端撤销）
         access_token_expires = timedelta(minutes=settings.jwt_access_token_expire_minutes)
         access_token = create_access_token(
-            data={"sub": user.id, "role": user.role.code, "ver": user.token_version},
+            data={"sub": user.id, "role": effective_role_code, "ver": user.token_version},
             expires_delta=access_token_expires,
             audience=audience,
         )

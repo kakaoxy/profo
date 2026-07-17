@@ -120,7 +120,7 @@ def create_user(
 
     速率限制：10次/小时（防止批量创建用户攻击）.
     """
-    return user_service.create_user(db, user_data)
+    return user_service.create_user(db, user_data, additional_role_ids=user_data.additional_role_ids)
 
 
 @router.put("/{user_id}")
@@ -136,7 +136,7 @@ def update_user(
 
     速率限制：100次/小时.
     """
-    return user_service.update_user(db, user_id, user_data)
+    return user_service.update_user(db, user_id, user_data, additional_role_ids=user_data.additional_role_ids)
 
 
 @router.put("/{user_id}/reset-password")

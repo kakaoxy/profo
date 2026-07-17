@@ -31,6 +31,7 @@
 - migrate_encrypted_columns_to_text: 将 EncryptedString 列从 character varying 迁移为 text
   （Fernet 密文远超声明长度，PG 严格强制 VARCHAR 长度会报错，幂等）
 - create_wechat_oauth_tables: 幂等创建微信 OAuth state/temp_code 表并清理过期记录
+- create_user_roles_table: 幂等创建 user_roles 关联表（用户附加角色多对多）
 - migrate_installation_stage_to_delivery: 将 projects/renovation_photos/l4_marketing_media 中"安装"阶段
   数据迁移为"交付"（移除安装阶段）
 - add_media_type_to_renovation_photos: 为 renovation_photos 表添加 media_type 列（图片/视频区分）
@@ -874,6 +875,24 @@ def create_wechat_oauth_tables(engine: Engine) -> None:
         logger.info("迁移：清理 %d 条过期微信临时码记录", deleted)
 
 
+def create_user_roles_table(engine: Engine) -> None:
+    """幂等创建 user_roles 关联表（用户附加角色多对多）.
+
+    使用 SQLAlchemy 模型 __table__ 元数据创建，checkfirst=True 确保表已存在时跳过。
+    表结构由 backend.models.user.user.UserRole 定义，user_id / role_id 均为逻辑外键
+    （与 User.role_id 一致，不由数据库 FK 约束强制）。
+    """
+    from models import Base  # noqa: PLC0415
+    from models.user import UserRole  # noqa: PLC0415
+
+    inspector = inspect(engine)
+    if "user_roles" in inspector.get_table_names():
+        return
+
+    logger.info("迁移：创建 user_roles 关联表")
+    Base.metadata.create_all(bind=engine, tables=[UserRole.__table__], checkfirst=True)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
@@ -901,6 +920,7 @@ def run_startup_migrations(engine: Engine) -> None:
         migrate_encrypted_columns_to_text(engine)
         migrate_all_datetime_columns_to_timestamptz(engine)
         create_wechat_oauth_tables(engine)
+        create_user_roles_table(engine)
         migrate_installation_stage_to_delivery(engine)
         add_media_type_to_renovation_photos(engine)
         add_counterparty_type_to_finance_records(engine)

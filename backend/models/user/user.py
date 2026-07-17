@@ -2,11 +2,47 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from models.common.base import BaseModel
+from models.common.base import Base, BaseModel
 from models.common.encrypted import EncryptedString
+
+
+class UserRole(Base):
+    """用户-角色关联模型（附加角色）.
+
+    通过 user_roles 关联表存储用户的「附加角色」，与 User.role_id 主角色
+    关系向后兼容。user_id / role_id 均为逻辑外键，级联由 Service 层处理
+    （与 User.role_id 一致，不由数据库 FK 约束强制）。
+    """
+
+    __tablename__ = "user_roles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="用户ID(逻辑外键)")
+    role_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="角色ID(逻辑外键)")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_roles_user_role"),)
+
+
+# 关联表对象（与 UserRole.__table__ 同源），供 relationship secondary= 引用
+user_roles = UserRole.__table__
 
 
 class Role(BaseModel):
@@ -27,6 +63,13 @@ class Role(BaseModel):
 
     # 关联关系（逻辑外键，级联由Service处理）
     users = relationship("User", back_populates="role", primaryjoin="foreign(User.role_id) == Role.id")
+    # 附加角色反向关系：通过 user_roles 关联表关联的「非主角色」用户
+    additional_users: Mapped[list["User"]] = relationship(
+        secondary=user_roles,
+        primaryjoin="foreign(user_roles.c.role_id) == Role.id",
+        secondaryjoin="foreign(user_roles.c.user_id) == User.id",
+        back_populates="roles",
+    )
 
     def __repr__(self) -> str:
         """返回字符串表示."""
@@ -83,6 +126,14 @@ class User(BaseModel):
         back_populates="users",
         foreign_keys=[role_id],
         primaryjoin="foreign(User.role_id) == Role.id",
+    )
+    # 附加角色（与主角色 role 并存），通过 user_roles 关联表
+    roles: Mapped[list["Role"]] = relationship(
+        secondary=user_roles,
+        primaryjoin="foreign(user_roles.c.user_id) == User.id",
+        secondaryjoin="foreign(user_roles.c.role_id) == Role.id",
+        back_populates="additional_users",
+        lazy="selectin",
     )
 
     # 索引
