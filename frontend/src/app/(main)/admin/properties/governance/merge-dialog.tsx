@@ -23,14 +23,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { components } from "@/lib/api-types";
 import { mergeCommunitiesAction } from "./actions";
-
-// 使用 OpenAPI 生成的类型
-type Community = components["schemas"]["CommunityResponse"];
+import type { CommunityMinified } from "./pick-community-fields";
 
 interface MergeDialogProps {
-  selectedCommunities: Community[];
+  selectedCommunities: CommunityMinified[];
   onSuccess?: () => void; // 合并成功后的回调（如清空选项）
 }
 
