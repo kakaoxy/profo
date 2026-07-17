@@ -3066,6 +3066,23 @@ export interface components {
          */
         CashFlowType: "income" | "expense";
         /**
+         * CommunityAliasResponse
+         * @description 小区别名响应模型(合并历史).
+         */
+        CommunityAliasResponse: {
+            /** Id */
+            id: string;
+            /** Alias Name */
+            alias_name: string;
+            /** Data Source */
+            data_source: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
          * CommunityCreateRequest
          * @description 创建小区请求.
          */
@@ -3190,6 +3207,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Aliases
+             * @description 关联别名列表(合并历史)
+             */
+            aliases?: components["schemas"]["CommunityAliasResponse"][];
         };
         /**
          * CommunitySearchResponse

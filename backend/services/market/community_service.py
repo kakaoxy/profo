@@ -11,8 +11,9 @@ from sqlalchemy import distinct, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models.property import Community, PropertyCurrent
+from models.property import Community, CommunityAlias, PropertyCurrent
 from schemas.community import (
+    CommunityAliasResponse,
     CommunityCreateRequest,
     CommunityListResponse,
     CommunityResponse,
@@ -121,6 +122,9 @@ class CommunityQueryService:
 
         results = stmt.all()
 
+        community_ids = [community.id for community, _ in results]
+        aliases_map = _fetch_aliases_map(db, community_ids)
+
         items = []
         for community, p_count in results:
             resp = CommunityResponse(
@@ -132,6 +136,7 @@ class CommunityQueryService:
                 avg_price_wan=community.avg_price_wan,
                 total_properties=p_count,
                 created_at=community.created_at,
+                aliases=aliases_map.get(community.id, []),
             )
             items.append(resp)
 
@@ -290,7 +295,10 @@ class CommunityQueryService:
             msg = "更新小区失败"
             raise ServiceException(msg) from None
 
-        return CommunityQueryService.build_response_from_community(community)
+        aliases_map = _fetch_aliases_map(db, [community.id])
+        resp = CommunityQueryService.build_response_from_community(community)
+        resp.aliases = aliases_map.get(community.id, [])
+        return resp
 
 
 def _find_existing_community_by_name(db: Session, name: str) -> Community | None:
@@ -312,6 +320,40 @@ def _find_existing_community_by_name(db: Session, name: str) -> Community | None
         )
         .first()
     )
+
+
+def _fetch_aliases_map(
+    db: Session,
+    community_ids: list[str],
+) -> dict[str, list[CommunityAliasResponse]]:
+    """单次查询批量获取小区别名(合并历史),按 community_id 分组.
+
+    过滤软删除项,避免 N+1 查询.
+
+    Args:
+        db: 数据库会话
+        community_ids: 需要查询别名的小区ID列表
+
+    Returns:
+        dict[str, list[CommunityAliasResponse]]: community_id -> 别名响应列表
+
+    """
+    if not community_ids:
+        return {}
+
+    aliases: list[CommunityAlias] = (
+        db.query(CommunityAlias)
+        .filter(
+            CommunityAlias.community_id.in_(community_ids),
+            CommunityAlias.is_deleted.is_(False),
+        )
+        .all()
+    )
+
+    grouped: dict[str, list[CommunityAliasResponse]] = {}
+    for alias in aliases:
+        grouped.setdefault(alias.community_id, []).append(CommunityAliasResponse.model_validate(alias))
+    return grouped
 
 
 # 依赖注入工厂函数

@@ -17,12 +17,17 @@ export interface CommunityMinified {
   district: Community["district"];
   business_circle: Community["business_circle"];
   total_properties: Community["total_properties"];
+  is_active: boolean;
   created_at: Community["created_at"];
+  aliases: { id: string; alias_name: string; data_source: string; created_at: string }[];
 }
 
 /**
  * 从完整 CommunityResponse 中提取前端实际使用的字段。
  * 剔除：city_id、avg_price_wan（前端无任何引用）。
+ *
+ * is_active 当前 CommunityResponse 未暴露，列表查询已过滤 is_active=True，
+ * 故此处硬编码为 true。
  */
 export function pickCommunityFields(c: Community): CommunityMinified {
   return {
@@ -31,6 +36,8 @@ export function pickCommunityFields(c: Community): CommunityMinified {
     district: c.district,
     business_circle: c.business_circle,
     total_properties: c.total_properties,
+    is_active: true,
     created_at: c.created_at,
+    aliases: c.aliases ?? [],
   };
 }

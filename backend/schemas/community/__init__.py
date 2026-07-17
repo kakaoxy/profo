@@ -9,6 +9,17 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
 
+class CommunityAliasResponse(BaseModel):
+    """小区别名响应模型(合并历史)."""
+
+    id: str
+    alias_name: str
+    data_source: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CommunityResponse(BaseModel):
     """小区响应模型."""
 
@@ -20,6 +31,7 @@ class CommunityResponse(BaseModel):
     avg_price_wan: float | None = None
     total_properties: int
     created_at: datetime
+    aliases: list[CommunityAliasResponse] = Field(default_factory=list, description="关联别名列表(合并历史)")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -98,6 +110,7 @@ class CommunitySearchResponse(BaseModel):
 
 
 __all__ = [
+    "CommunityAliasResponse",
     "CommunityCreateRequest",
     "CommunityListResponse",
     "CommunityMergeRequest",
