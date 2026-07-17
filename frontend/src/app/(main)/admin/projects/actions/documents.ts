@@ -4,12 +4,38 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import { components } from "@/lib/api-types";
+import { z } from "zod";
 
 export type DocumentResponse = components["schemas"]["DocumentResponse"];
 export type DocumentCreate = components["schemas"]["DocumentCreate"];
 export type DocumentUpdate = components["schemas"]["DocumentUpdate"];
 export type DocumentInitializeResponse =
   components["schemas"]["DocumentInitializeResponse"];
+
+// ===== Zod 校验 schema（与后端 DocumentCreate/DocumentUpdate 语义对齐）=====
+const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
+const documentIdSchema = z.string().min(1, "文档 ID 不能为空");
+
+// 创建文书 - 与 DocumentCreate (api-types:3291) 对齐
+const documentCreateSchema = z.object({
+  document_name: z.string().min(1, "文档名称不能为空"),
+  display_order: z.number().int().nullable().optional(),
+});
+
+// 更新文书 - 与 DocumentUpdate (api-types:3364) 对齐
+// signoff_status 枚举: unsigned/signed/archived
+const documentUpdateSchema = z.object({
+  document_name: z.string().nullable().optional(),
+  signoff_status: z
+    .enum(["unsigned", "signed", "archived"])
+    .nullable()
+    .optional(),
+  archive_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "归档日期格式应为 YYYY-MM-DD")
+    .nullable()
+    .optional(),
+});
 
 /**
  * 获取项目文书签收列表
@@ -43,6 +69,14 @@ export async function createProjectDocumentAction(
   projectId: string,
   payload: DocumentCreate,
 ): Promise<DocumentResponse> {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    throw new Error(idParsed.error.issues[0]?.message || "输入校验失败");
+  }
+  const parsed = documentCreateSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || "输入校验失败");
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(
@@ -70,6 +104,18 @@ export async function updateProjectDocumentAction(
   documentId: string,
   payload: DocumentUpdate,
 ): Promise<DocumentResponse> {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    throw new Error(idParsed.error.issues[0]?.message || "输入校验失败");
+  }
+  const docIdParsed = documentIdSchema.safeParse(documentId);
+  if (!docIdParsed.success) {
+    throw new Error(docIdParsed.error.issues[0]?.message || "输入校验失败");
+  }
+  const parsed = documentUpdateSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || "输入校验失败");
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.PATCH(
@@ -96,6 +142,14 @@ export async function deleteProjectDocumentAction(
   projectId: string,
   documentId: string,
 ): Promise<void> {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    throw new Error(idParsed.error.issues[0]?.message || "输入校验失败");
+  }
+  const docIdParsed = documentIdSchema.safeParse(documentId);
+  if (!docIdParsed.success) {
+    throw new Error(docIdParsed.error.issues[0]?.message || "输入校验失败");
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -119,6 +173,10 @@ export async function deleteProjectDocumentAction(
 export async function initializeDocumentsAction(
   projectId: string,
 ): Promise<DocumentInitializeResponse> {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    throw new Error(idParsed.error.issues[0]?.message || "输入校验失败");
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(

@@ -4,12 +4,43 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
+import { z } from "zod";
 
 interface UserSimple {
   id: string;
   nickname: string | null;
   username: string;
 }
+
+// ===== Zod 校验 schema（与后端 SalesRolesUpdate/SalesRecordCreate/ProjectCompleteRequest 语义对齐）=====
+const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
+const recordIdSchema = z.string().min(1, "记录 ID 不能为空");
+
+// 与 SalesRolesUpdate api-types:8332 对齐
+const salesRolesUpdateSchema = z.object({
+  channel_manager_id: z.string().nullable().optional(),
+  property_agent_id: z.string().nullable().optional(),
+  negotiator_id: z.string().nullable().optional(),
+});
+
+// 与 SalesRecordCreate api-types:7734 对齐（前端 payload 字段名 camelCase）
+const salesRecordCreateSchema = z.object({
+  recordType: z.enum(["viewing", "offer", "negotiation"], {
+    error: "记录类型不合法",
+  }),
+  recordDate: z.string().min(1, "记录日期不能为空"),
+  customerName: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  price: z.union([z.number(), z.string()]).nullable().optional(),
+});
+
+// 与 ProjectCompleteRequest api-types:5757 对齐（前端 payload 字段名 camelCase）
+const projectCompleteSchema = z.object({
+  soldPrice: z.union([z.number(), z.string()], {
+    error: "成交价格必须为数字",
+  }),
+  soldDate: z.string().min(1, "成交日期不能为空"),
+});
 
 /**
  * 更新销售角色
@@ -22,6 +53,20 @@ export async function updateSalesRolesAction(
     negotiator_id?: string | null;
   },
 ) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
+  const parsed = salesRolesUpdateSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
   try {
     const client = await fetchClient();
 
@@ -135,6 +180,13 @@ export async function createSalesRecordAction(payload: {
   recordDate: string;
   notes?: string;
 }) {
+  const parsed = salesRecordCreateSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
   try {
     const client = await fetchClient();
 
@@ -206,6 +258,20 @@ export async function deleteSalesRecordAction(
   projectId: string,
   recordId: string,
 ) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
+  const recordParsed = recordIdSchema.safeParse(recordId);
+  if (!recordParsed.success) {
+    return {
+      success: false,
+      message: recordParsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -240,6 +306,20 @@ export async function completeProjectAction(
   projectId: string,
   payload: { soldPrice: number; soldDate: string },
 ) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
+  const parsed = projectCompleteSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message || "输入校验失败",
+    };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(

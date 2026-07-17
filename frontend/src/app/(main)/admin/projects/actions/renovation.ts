@@ -7,6 +7,7 @@ import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
+const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
 
 // addRenovationPhotoAction 入参（JSON，文件已通过 useUpload 单独上传）
 const addRenovationPhotoSchema = z.object({
@@ -62,6 +63,22 @@ export async function deleteRenovationPhotoAction(
   projectId: string,
   photoId: string,
 ) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  const photoParsed = photoIdSchema.safeParse(photoId);
+  if (!photoParsed.success) {
+    return {
+      success: false,
+      message: photoParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
