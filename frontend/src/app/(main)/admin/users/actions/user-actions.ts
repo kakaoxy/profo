@@ -19,19 +19,21 @@ export type PasswordChange = components["schemas"]["PasswordChange"];
 // 与 use-user-form.ts 中的 createSchema/editSchema 对齐
 const createSchema = z.object({
   username: z.string().min(3, "用户名至少3个字符").max(100),
-  nickname: z.string().max(100).optional(),
+  nickname: z.string().max(100).nullish(),
   password: passwordSchema,
   role_id: z.string().min(1, "请选择角色"),
-  phone: z.string().max(20).optional().or(z.literal("")),
+  phone: z.string().max(20).nullish().or(z.literal("")),
+  enable_customer_identity: z.boolean().default(false),
 });
 
 const editSchema = z.object({
   username: z.string().optional(),
   password: z.string().optional(),
-  nickname: z.string().max(100).optional(),
+  nickname: z.string().max(100).nullish(),
   role_id: z.string().min(1, "请选择角色"),
-  phone: z.string().max(20).optional().or(z.literal("")),
+  phone: z.string().max(20).nullish().or(z.literal("")),
   status: z.string().optional(),
+  enable_customer_identity: z.boolean().default(false),
 });
 
 const resetPasswordSchema = z.object({

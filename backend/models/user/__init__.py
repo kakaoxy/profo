@@ -5,6 +5,6 @@
 
 from .api_key import ApiKey
 from .refresh_token import RefreshToken
-from .user import Role, User
+from .user import Role, User, UserRole, user_roles
 
-__all__ = ["ApiKey", "RefreshToken", "Role", "User"]
+__all__ = ["ApiKey", "RefreshToken", "Role", "User", "UserRole", "user_roles"]

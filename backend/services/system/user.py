@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from models import Role, User
+from models import Role, User, UserRole
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
@@ -58,8 +58,79 @@ class UserService:
         """根据ID获取用户."""
         return db.query(User).filter(User.id == user_id).first()
 
-    def create_user(self, db: Session, user_data: UserCreate) -> User:
-        """创建用户."""
+    def _build_additional_user_roles(
+        self,
+        db: Session,
+        user: User,
+        additional_role_ids: list[str],
+    ) -> list[UserRole]:
+        """校验附加角色ID并返回待写入的 UserRole 对象列表.
+
+        校验规则：
+        - 所有 role_id 必须存在
+        - 所有附加角色 code 必须为 "customer"
+        - 主角色 code 不能为 "customer"（否则无需附加）
+
+        Args:
+            db: 数据库会话
+            user: 用户对象（需有 id 和 role_id）
+            additional_role_ids: 附加角色ID列表（可能含重复）
+
+        Returns:
+            待写入的 UserRole 对象列表（已去重）
+
+        Raises:
+            ValueError: 附加角色不存在 / 不是 customer / 主角色已为 customer
+
+        """
+        # 去重并保留顺序
+        unique_ids = list(dict.fromkeys(additional_role_ids))
+
+        # 查询并校验附加角色存在性（query 会触发 session auto-flush，确保 user.id 可用）
+        roles = db.query(Role).filter(Role.id.in_(unique_ids)).all()
+        if len(roles) != len(unique_ids):
+            msg = "附加角色不存在"
+            raise ValueError(msg)
+
+        # 校验所有附加角色 code == "customer"
+        if any(r.code != "customer" for r in roles):
+            msg = "附加角色仅支持 customer"
+            raise ValueError(msg)
+
+        # 校验主角色 code != "customer"（直接使用已加载的 user.role 关系，避免重复查询）
+        main_role = user.role
+        if not main_role:
+            msg = "主角色不存在"
+            raise ValueError(msg)
+        if main_role.code == "customer":
+            msg = "主角色已为 C 端身份，无需附加"
+            raise ValueError(msg)
+
+        return [UserRole(user_id=user.id, role_id=role_id) for role_id in unique_ids]
+
+    def create_user(
+        self,
+        db: Session,
+        user_data: UserCreate,
+        additional_role_ids: list[str] | None = None,
+    ) -> User:
+        """创建用户.
+
+        Args:
+            db: 数据库会话
+            user_data: 用户创建数据
+            additional_role_ids: 附加角色ID列表（None 或空列表表示无附加角色；
+                非空时校验所有角色必须为 customer，且主角色不能为 customer）
+
+        Returns:
+            创建的 User 对象
+
+        Raises:
+            ConflictError: 用户名或手机号已被使用
+            ValidationError: 密码强度不足
+            ValueError: 附加角色校验失败
+
+        """
         # Check username existence
         existing_user = db.query(User).filter(User.username == user_data.username).first()
         if existing_user:
@@ -80,14 +151,25 @@ class UserService:
         if not is_valid:
             raise ValidationError(error_msg)
 
-        # Create user
+        # Create user（additional_role_ids 由 UserRole 表管理，不写入 User 列）
         db_user = User(
-            **user_data.model_dump(exclude={"password"}),
+            **user_data.model_dump(exclude={"password", "additional_role_ids"}),
             phone_hash=phone_hash_value,
             password=get_password_hash(user_data.password),
         )
         db.add(db_user)
+        # 显式 flush 让 db_user.id 在调用 _build_additional_user_roles 前生成
+        # （SessionLocal autoflush=False，依赖 db.query 触发 flush 不可靠；
+        # UserRole.user_id 是 NOT NULL，需 db_user.id 有值）
+        if additional_role_ids:
+            db.flush()
+
         try:
+            # 处理附加角色（与主用户记录在同一事务内提交）
+            # None 视为未提供，等同空列表
+            if additional_role_ids:
+                user_roles_to_add = self._build_additional_user_roles(db, db_user, additional_role_ids)
+                db.add_all(user_roles_to_add)
             db.commit()
             db.refresh(db_user)
         except IntegrityError as e:
@@ -97,8 +179,31 @@ class UserService:
 
         return db_user
 
-    def update_user(self, db: Session, user_id: str, user_data: UserUpdate) -> User:
-        """更新用户."""
+    def update_user(
+        self,
+        db: Session,
+        user_id: str,
+        user_data: UserUpdate,
+        additional_role_ids: list[str] | None = None,
+    ) -> User:
+        """更新用户.
+
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            user_data: 用户更新数据
+            additional_role_ids: 附加角色ID列表（None=不修改；[]=清空；
+                非空=校验后全量替换，所有角色必须为 customer）
+
+        Returns:
+            更新后的 User 对象
+
+        Raises:
+            ResourceNotFoundError: 用户不存在
+            ConflictError: 手机号已被使用
+            ValueError: 附加角色校验失败
+
+        """
         user = self.get_user_by_id(db, user_id)
         if not user:
             msg = "用户不存在"
@@ -130,6 +235,14 @@ class UserService:
                 user.phone_hash = hash_phone(value) if value else None
             elif field in _USER_ALLOWED_FIELDS:
                 setattr(user, field, value)
+
+        # 处理附加角色（全量替换）
+        # None=不修改；[]=清空；非空=校验后替换
+        if additional_role_ids is not None:
+            db.query(UserRole).filter(UserRole.user_id == user_id).delete(synchronize_session=False)
+            if additional_role_ids:
+                user_roles_to_add = self._build_additional_user_roles(db, user, additional_role_ids)
+                db.add_all(user_roles_to_add)
 
         # 用户由启用变为禁用时，立即撤销已签发 Token，避免旧 Token 在过期前继续访问
         if was_active and user.status != "active":

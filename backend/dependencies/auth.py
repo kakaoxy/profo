@@ -63,7 +63,7 @@ async def _authenticate_by_api_key(db: DbSessionDep, api_key: str) -> User:
         msg = "API Key 无效"
         raise AuthenticationError(msg) from None
     # 角色二次校验：仅允许后台内部角色
-    if user.role is None or user.role.code not in _INTERNAL_ROLE_CODES:
+    if not _user_has_any_role(user, set(_INTERNAL_ROLE_CODES)):
         msg = "该账号无权使用 API Key 调用机器接口"
         raise PermissionDeniedError(msg)
     return user
@@ -205,6 +205,26 @@ def get_current_active_user(
 CurrentActiveUserDep = Annotated[User, Depends(get_current_active_user)]
 
 
+def _user_has_any_role(user: User, required: set[str]) -> bool:
+    """判断用户主角色或附加角色是否命中任一 required 角色代码.
+
+    Args:
+        user: 用户对象（需有 role 与 roles 关系）
+        required: 需要的角色代码集合
+
+    Returns:
+        True 表示任一角色命中，False 表示全部未命中
+
+    """
+    user_role_codes: set[str] = set()
+    if user.role and user.role.code:
+        user_role_codes.add(user.role.code)
+    for r in user.roles or []:
+        if r.code:
+            user_role_codes.add(r.code)
+    return bool(user_role_codes & required)
+
+
 def require_roles(required_roles: list[str]) -> Callable[..., User]:
     """角色检查依赖工厂函数.
 
@@ -217,7 +237,7 @@ def require_roles(required_roles: list[str]) -> Callable[..., User]:
     """
 
     def role_checker(user: CurrentActiveUserDep) -> User:
-        if user.role is None or user.role.code not in required_roles:
+        if not _user_has_any_role(user, set(required_roles)):
             msg = "权限不足"
             raise PermissionDeniedError(msg)
         return user

@@ -20,10 +20,28 @@ from schemas.public import (
 )
 from services.system.auth import AuthService
 from services.system.exceptions import PermissionDeniedError
+from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
 
 router = APIRouter(prefix="/public/auth", tags=["public-auth"])
+
+
+def has_customer_identity(user: User) -> bool:
+    """判断用户是否具备 C 端 customer 身份（主角色或附加角色含 customer）.
+
+    Args:
+        user: 用户对象（需有 role 与 roles 关系）
+
+    Returns:
+        True 表示可登录 C 端，False 表示无 customer 身份
+
+    """
+    # 主角色检查
+    if user.role and user.role.code == "customer":
+        return True
+    # 附加角色检查
+    return any(r.code == "customer" for r in (user.roles or []))
 
 
 def _build_user_info(user: User) -> PublicUserInfo:
@@ -95,11 +113,18 @@ def login_for_access_token(
     """C端用户登录，验证用户名密码后返回JWT令牌."""
     user = AuthService.authenticate_user(db, form_data.username, form_data.password)
 
-    if user.role.code != "customer":
+    if not has_customer_identity(user):
         msg = "此接口仅限C端用户登录"
         raise PermissionDeniedError(msg)
 
-    token_data = AuthService.create_tokens_for_user(db, user)
+    # C 端登录固定签发 aud=c, role=customer 的令牌：
+    # 即使主角色为 admin 但具备 customer 附加角色，C 端身份下 role claim 固定为 customer
+    token_data = AuthService.create_tokens_for_user(
+        db,
+        user,
+        audience=AUDIENCE_C,
+        role_claim="customer",
+    )
 
     return PublicLoginResponse(
         access_token=token_data["access_token"],

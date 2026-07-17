@@ -1,8 +1,9 @@
 """用户和认证相关的Pydantic模型."""
 
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from schemas.response import PaginatedResponse
 
@@ -36,6 +37,10 @@ class UserCreate(BaseUser):
 
     password: str = Field(min_length=8, max_length=255, description="密码")
     role_id: str = Field(description="角色ID")
+    additional_role_ids: list[str] = Field(
+        default_factory=list,
+        description="附加角色ID列表（仅允许customer）",
+    )
 
 
 class UserUpdate(BaseModel):
@@ -46,6 +51,10 @@ class UserUpdate(BaseModel):
     avatar: str | None = Field(None, max_length=500, description="头像")
     role_id: str | None = Field(None, description="角色ID")
     status: str | None = Field(None, description="用户状态")
+    additional_role_ids: list[str] | None = Field(
+        None,
+        description="附加角色ID列表（仅允许customer；None=不修改，[]=清空）",
+    )
 
 
 class RoleCreate(BaseRole):
@@ -122,6 +131,16 @@ class ExchangeTokenRequest(BaseModel):
 # =======================================
 # 响应模型
 # =======================================
+class RoleBrief(BaseModel):
+    """角色精简信息（用于 UserResponse.additional_roles）."""
+
+    id: str = Field(description="角色ID")
+    code: str = Field(description="角色代码")
+    name: str = Field(description="角色名称")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class RoleResponse(BaseRole):
     """角色响应模型."""
 
@@ -143,8 +162,21 @@ class UserResponse(BaseUser):
     last_login_at: datetime | None = Field(None, description="最后登录时间")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
+    # ORM User.roles 关系存储附加角色，响应字段名为 additional_roles，
+    # 通过 validation_alias 桥接字段名差异
+    additional_roles: list[RoleBrief] = Field(
+        default_factory=list,
+        description="附加角色列表",
+        validation_alias=AliasChoices("roles", "additional_roles"),
+    )
 
-    model_config = ConfigDict(from_attributes=True)
+    @field_validator("additional_roles", mode="before")
+    @classmethod
+    def _normalize_additional_roles(cls, v: Any) -> Any:  # noqa: ANN401
+        """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
+        return v if v is not None else []
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class UserListResponse(PaginatedResponse[UserResponse]):
@@ -207,6 +239,7 @@ __all__ = [
     "PasswordChange",
     "PasswordResetRequest",
     "RefreshTokenRequest",
+    "RoleBrief",
     "RoleCreate",
     "RoleListResponse",
     "RoleResponse",

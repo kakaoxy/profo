@@ -8133,6 +8133,27 @@ export interface components {
             daily_cost: number;
         };
         /**
+         * RoleBrief
+         * @description 角色精简信息（用于 UserResponse.additional_roles）.
+         */
+        RoleBrief: {
+            /**
+             * Id
+             * @description 角色ID
+             */
+            id: string;
+            /**
+             * Code
+             * @description 角色代码
+             */
+            code: string;
+            /**
+             * Name
+             * @description 角色名称
+             */
+            name: string;
+        };
+        /**
          * RoleCreate
          * @description 角色创建模型.
          */
@@ -8570,6 +8591,11 @@ export interface components {
              * @description 角色ID
              */
             role_id: string;
+            /**
+             * Additional Role Ids
+             * @description 附加角色ID列表（仅允许customer）
+             */
+            additional_role_ids?: string[];
         };
         /**
          * UserListResponse
@@ -8669,6 +8695,11 @@ export interface components {
              * @description 更新时间
              */
             updated_at: string;
+            /**
+             * Additional Roles
+             * @description 附加角色列表
+             */
+            additional_roles?: components["schemas"]["RoleBrief"][];
         };
         /**
          * UserSimpleListResponse
@@ -8760,6 +8791,11 @@ export interface components {
              * @description 用户状态
              */
             status?: string | null;
+            /**
+             * Additional Role Ids
+             * @description 附加角色ID列表（仅允许customer；None=不修改，[]=清空）
+             */
+            additional_role_ids?: string[] | null;
         };
         /** ValidationError */
         ValidationError: {

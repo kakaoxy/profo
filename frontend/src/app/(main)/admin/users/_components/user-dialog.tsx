@@ -41,7 +41,9 @@ interface UserDialogProps {
 }
 
 export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps) {
-  const { form, isPending, isEdit, onSubmit } = useUserForm({ user, open, onOpenChange });
+  const { form, isPending, isEdit, onSubmit } = useUserForm({ user, open, onOpenChange, roles });
+  const selectedRoleIsCustomer =
+    roles.find((r) => r.id === form.watch("role_id"))?.code === "customer";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,6 +128,27 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                 </FormItem>
               )}
             />
+
+            {!selectedRoleIsCustomer && (
+              <FormField
+                control={form.control}
+                name="enable_customer_identity"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">同时开通 C 端身份</FormLabel>
+                      <FormDescription>开启后该用户可同时登录 C 端平台</FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
