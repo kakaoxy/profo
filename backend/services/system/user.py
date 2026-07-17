@@ -158,16 +158,16 @@ class UserService:
             password=get_password_hash(user_data.password),
         )
         db.add(db_user)
-        # 显式 flush 让 db_user.id 在调用 _build_additional_user_roles 前生成
-        # （SessionLocal autoflush=False，依赖 db.query 触发 flush 不可靠；
-        # UserRole.user_id 是 NOT NULL，需 db_user.id 有值）
-        if additional_role_ids:
-            db.flush()
 
         try:
             # 处理附加角色（与主用户记录在同一事务内提交）
             # None 视为未提供，等同空列表
             if additional_role_ids:
+                # 显式 flush 让 db_user.id 在调用 _build_additional_user_roles 前生成
+                # （SessionLocal autoflush=False，依赖 db.query 触发 flush 不可靠；
+                # UserRole.user_id 是 NOT NULL，需 db_user.id 有值）
+                # flush 放在 try 内部：若触发唯一约束冲突（用户名/手机号）也能被捕获转 ConflictError
+                db.flush()
                 user_roles_to_add = self._build_additional_user_roles(db, db_user, additional_role_ids)
                 db.add_all(user_roles_to_add)
             db.commit()
