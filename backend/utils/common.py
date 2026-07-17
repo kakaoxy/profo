@@ -165,7 +165,9 @@ class RateLimits:
     TASK_STATUS_QUERY = "120/minute"
 
     # ==================== 推送接口模块 ====================
-    PUSH_API = "10/hour"
+    # 推送接口使用 API Key 认证，受信任客户端；单次最多 1000 条，每小时 1000 次
+    # 理论上限 100 万条/小时，覆盖业主实际批量推送需求
+    PUSH_API = "1000/hour"
 
     # ==================== C端公开接口 ====================
     PUBLIC_PROFILE_UPDATE = "20/minute"

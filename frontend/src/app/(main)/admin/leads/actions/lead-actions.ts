@@ -7,6 +7,11 @@ import { Lead } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
 import type { operations } from "@/lib/api-types";
 import { mapBackendToFrontend } from "../lib/utils";
+import {
+  createLeadSchema,
+  updateLeadSchema,
+  leadIdSchema,
+} from "../_components/lead-schema";
 
 type LeadCreatePayload =
   operations["create_lead_api_v1_leads_post"]["requestBody"]["content"]["application/json"];
@@ -36,6 +41,14 @@ function toLeadPayload(data: Partial<Lead>): Record<string, unknown> {
 export async function createLeadAction(
   data: Omit<Lead, "id" | "createdAt">
 ): Promise<ActionResult<Lead>> {
+  const parsed = createLeadSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "线索参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
 
@@ -65,6 +78,22 @@ export async function updateLeadAction(
   leadId: string,
   data: Partial<Lead>
 ): Promise<ActionResult<Lead>> {
+  const idParsed = leadIdSchema.safeParse(leadId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      error: idParsed.error.issues[0]?.message ?? "线索参数不合法",
+    };
+  }
+
+  const parsed = updateLeadSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "线索参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
 
@@ -93,6 +122,14 @@ export async function updateLeadAction(
 export async function deleteLeadAction(
   leadId: string
 ): Promise<ActionResult<void>> {
+  const idParsed = leadIdSchema.safeParse(leadId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      error: idParsed.error.issues[0]?.message ?? "线索参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
 

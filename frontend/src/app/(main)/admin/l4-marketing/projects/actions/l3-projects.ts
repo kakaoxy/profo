@@ -3,8 +3,12 @@
 import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { parseApiError, parseNetworkError } from "@/lib/error-utils";
+import { z } from "zod";
 import type { ProjectQueryParams } from "@/app/(main)/admin/l4-marketing/projects/_components/project-selector/types";
 import type { ActionResult } from "@/app/(main)/admin/l4-marketing/projects/actions/projects";
+
+// L3 项目 ID schema（字符串 UUID，使用 min(1) 而非 uuid）
+const l3ProjectIdSchema = z.string().min(1, "L3 项目 ID 不能为空");
 
 /**
  * 获取可关联的L3项目列表
@@ -48,6 +52,10 @@ export async function getAvailableL3ProjectsAction(
  * 从L3项目导入数据
  */
 export async function importFromL3ProjectAction(projectId: string): Promise<ActionResult<unknown>> {
+  const idParsed = l3ProjectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return { success: false, error: idParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(

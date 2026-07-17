@@ -8,6 +8,8 @@ import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { passwordSchema } from "./password-schema";
+
 import {
   Dialog,
   DialogContent,
@@ -31,7 +33,7 @@ import { resetUserPasswordAction } from "../actions/index";
 import type { UserResponse } from "../actions/index";
 
 const schema = z.object({
-  password: z.string().min(6, "密码至少6个字符"),
+  password: passwordSchema,
 });
 
 interface ResetPasswordDialogProps {

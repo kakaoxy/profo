@@ -4,6 +4,56 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
+import { z } from "zod";
+
+const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
+
+// addRenovationPhotoAction 入参（JSON，文件已通过 useUpload 单独上传）
+const addRenovationPhotoSchema = z.object({
+  projectId: projectIdSchema,
+  stage: z.string().min(1, "装修阶段不能为空"),
+  url: z.string().min(1, "照片 URL 不能为空"),
+  thumbnail_url: z.string().optional(),
+  filename: z.string().optional(),
+});
+
+// updateRenovationStageAction 入参
+const updateRenovationStageSchema = z.object({
+  projectId: projectIdSchema,
+  renovation_stage: z.string().min(1, "装修阶段不能为空"),
+  stage_completed_at: z.string().optional(),
+});
+
+// updateRenovationContractAction 入参
+// 参考 renovation/contract-form/schema.ts::renovationContractSchema
+// 日期字段在表单 handleSave 中已 format 为 "yyyy-MM-dd" 字符串，故使用 z.string()
+const updateRenovationContractSchema = z.object({
+  renovation_company: z.string().max(200).optional(),
+  contact_person_id: z.string().max(36).optional(),
+  contract_start_date: z.string().optional(),
+  contract_end_date: z.string().optional(),
+  actual_start_date: z.string().optional(),
+  actual_end_date: z.string().optional(),
+  hard_contract_amount: z.number().optional(),
+  payment_node_1: z.string().max(100).optional(),
+  payment_ratio_1: z.number().min(0).max(100).optional(),
+  payment_node_2: z.string().max(100).optional(),
+  payment_ratio_2: z.number().min(0).max(100).optional(),
+  payment_node_3: z.string().max(100).optional(),
+  payment_ratio_3: z.number().min(0).max(100).optional(),
+  payment_node_4: z.string().max(100).optional(),
+  payment_ratio_4: z.number().min(0).max(100).optional(),
+  soft_budget: z.number().optional(),
+  soft_detail_attachment: z.string().max(500).optional(),
+  custom_cabinet_amount: z.number().optional(),
+  window_amount: z.number().optional(),
+  wall_treatment_amount: z.number().optional(),
+  design_fee: z.number().optional(),
+  demolition_fee: z.number().optional(),
+  garbage_fee: z.number().optional(),
+  other_extra_fee: z.number().optional(),
+  other_fee_reason: z.string().optional(),
+});
 
 /**
  * 删除装修照片
@@ -78,6 +128,14 @@ export async function addRenovationPhotoAction(payload: {
   thumbnail_url?: string;
   filename?: string;
 }) {
+  const parsed = addRenovationPhotoSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST(
@@ -117,6 +175,14 @@ export async function updateRenovationStageAction(payload: {
   renovation_stage: string;
   stage_completed_at?: string;
 }) {
+  const parsed = updateRenovationStageSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.PUT(
@@ -177,6 +243,22 @@ export async function updateRenovationContractAction(
   projectId: string,
   payload: Record<string, unknown>
 ) {
+  const idParsed = projectIdSchema.safeParse(projectId);
+  if (!idParsed.success) {
+    return {
+      success: false,
+      message: idParsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  const parsed = updateRenovationContractSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
   try {
     const client = await fetchClient();
     const { data, error } = await client.PUT(

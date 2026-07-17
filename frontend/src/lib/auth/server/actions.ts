@@ -2,6 +2,7 @@
 
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import {
   clearTokenCookies,
   getTokensFromCookies,
@@ -16,6 +17,17 @@ import type {
 import { TokenPairSchema } from "../types";
 import { getGlobalAuthConfig, debugLog } from "../config";
 import { sanitizeCallbackUrl } from "../utils/sanitize-callback-url";
+
+// ─── Validation Schemas ──────────────────────────────────────────────────────
+
+const credentialsSchema = z
+  .object({
+    username: z.string().min(1, "用户名不能为空"),
+    password: z.string().min(1, "密码不能为空"),
+  })
+  .passthrough(); // 允许其他字段透传，避免破坏 adapter 自定义字段
+
+const accessTokenSchema = z.string().min(1, "access_token 不能为空");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -162,9 +174,17 @@ export async function loginAction(
     hasCallbackUrl: !!callbackUrl,
   });
 
+  const parsed = credentialsSchema.safeParse(credentials);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "凭证格式不合法",
+    };
+  }
+
   try {
     const config = getGlobalAuthConfig();
-    const rawTokens = await config.adapter.login(credentials);
+    const rawTokens = await config.adapter.login(parsed.data);
     const tokens = validateTokenPair(rawTokens);
     await setTokenCookies(tokens, config);
     const user = await config.adapter.fetchUser(tokens.accessToken);
@@ -291,8 +311,12 @@ export async function updateSessionTokenAction(
 ): Promise<ActionResult<SessionActionData>> {
   debugLog("updateSessionTokenAction: called");
 
-  if (!newAccessToken || typeof newAccessToken !== "string") {
-    return { success: false, error: "Invalid access token provided." };
+  const parsed = accessTokenSchema.safeParse(newAccessToken);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "access_token 不合法",
+    };
   }
 
   try {
@@ -304,7 +328,7 @@ export async function updateSessionTokenAction(
     }
 
     const newTokens = {
-      accessToken: newAccessToken,
+      accessToken: parsed.data,
       refreshToken: tokens.refreshToken,
     };
 

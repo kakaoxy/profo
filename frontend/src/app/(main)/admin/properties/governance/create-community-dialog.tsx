@@ -53,13 +53,13 @@ export function CreateCommunityDialog({
         district: district.trim() || null,
         business_circle: businessCircle.trim() || null,
       });
-      if (result) {
-        toast.success(`小区"${result.name}"已创建`);
+      if (result.success) {
+        toast.success(`小区"${result.data.name}"已创建`);
         handleReset();
         setIsOpen(false);
         onSuccess?.();
       } else {
-        toast.error("创建失败，请重试");
+        toast.error(result.message);
       }
     } catch {
       toast.error("网络错误");

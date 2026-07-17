@@ -6,14 +6,22 @@ import { redirect } from "next/navigation";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { auth } from "@/auth";
 import { ActionResult, createErrorResult } from "@/lib/action-result";
+import { passwordSchema } from "@/app/(main)/admin/users/_components/password-schema";
 
 const registerInputSchema = z.object({
-  username: z.string().min(1, "请输入账号"),
-  password: z
+  username: z
     .string()
-    .min(8, "密码至少 8 位")
-    .regex(/[a-zA-Z]/, "密码需包含字母")
-    .regex(/[0-9]/, "密码需包含数字"),
+    .min(4, "用户名至少 4 位")
+    .max(50, "用户名最多 50 字符")
+    .regex(/^[a-zA-Z0-9_]+$/, "用户名仅允许字母、数字、下划线"),
+  password: passwordSchema,
+  nickname: z
+    .string()
+    .min(1, "请输入昵称")
+    .max(50, "昵称最多 50 字符"),
+  phone: z
+    .string()
+    .regex(/^1[3-9]\d{9}$/, "手机号格式不正确"),
 });
 
 interface RegisterTokenResponse {
@@ -42,14 +50,14 @@ export async function registerAction(
   const nickname = formData.get("nickname") as string;
   const phone = formData.get("phone") as string;
 
-  const parsed = registerInputSchema.safeParse({ username, password });
+  const parsed = registerInputSchema.safeParse({ username, password, nickname, phone });
   if (!parsed.success) {
-    return createErrorResult(parsed.error.issues[0].message);
+    return createErrorResult(parsed.error.issues[0]?.message ?? "注册参数不合法");
   }
 
   const payload: RegisterPayload = { username: parsed.data.username, password: parsed.data.password };
-  if (nickname) payload.nickname = nickname;
-  if (phone) payload.phone = phone;
+  if (parsed.data.nickname) payload.nickname = parsed.data.nickname;
+  if (parsed.data.phone) payload.phone = parsed.data.phone;
 
   try {
     const response = await fetch(getApiUrl(apiPaths.cAuth.register), {
