@@ -31,7 +31,10 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
   const searchParams = useSearchParams();
 
   // 1. 行选择状态
-  const [rowSelection, setRowSelection] = useState({});
+  // rowSelection: React Table 内部状态(仅 rowId→boolean),驱动表格 checkbox UI
+  // selectedMap: 跨搜索持久化的完整对象字典,解决切换搜索后选中对象丢失问题
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [selectedMap, setSelectedMap] = useState<Record<string, CommunityMinified>>({});
 
   // 2. 搜索框状态（初始值为 URL 中的 search 参数）
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "");
@@ -41,18 +44,35 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
     [router]
   );
 
+  // 同步 rowSelection 与 selectedMap:用户只能勾选当前显示的行,故被勾选项必在 data 中
+  const handleRowSelectionChange = (
+    updater: Record<string, boolean> | ((old: Record<string, boolean>) => Record<string, boolean>),
+  ) => {
+    const next = typeof updater === "function" ? updater(rowSelection) : updater;
+    setRowSelection(next);
+    setSelectedMap((prev) => {
+      const updated: Record<string, CommunityMinified> = {};
+      for (const id of Object.keys(next)) {
+        if (next[id] && prev[id]) {
+          updated[id] = prev[id];
+        } else if (next[id]) {
+          const found = data.find((c) => c.id === id);
+          if (found) updated[id] = found;
+        }
+      }
+      return updated;
+    });
+  };
+
   // useReactTable 返回函数无法被 React Compiler 安全 memoize，需显式禁用规则
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    // 移除客户端分页和筛选模型
-    // getPaginationRowModel: getPaginationRowModel(), 
-    // getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     manualFiltering: true,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: handleRowSelectionChange,
     state: {
       rowSelection,
     },
@@ -81,8 +101,8 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
     router.replace(`${pathname}?${params.toString()}`);
   };
 
-  // 获取当前选中的完整数据对象
-  const selectedCommunities = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
+  // 跨搜索持久化的已选小区完整对象数组
+  const selectedCommunities = useMemo(() => Object.values(selectedMap), [selectedMap]);
 
   return (
     <TooltipProvider>
@@ -109,7 +129,10 @@ export function GovernanceView({ data, total, page, pageSize }: GovernanceViewPr
             />
             <MergeDialog
               selectedCommunities={selectedCommunities}
-              onSuccess={() => setRowSelection({})} // 合并成功后清空选择
+              onSuccess={() => {
+                setRowSelection({});
+                setSelectedMap({});
+              }}
             />
           </div>
         </div>
