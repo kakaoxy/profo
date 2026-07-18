@@ -6,7 +6,7 @@
 from sqlalchemy import case, func, text
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
-from models import Project, ProjectContract
+from models import Project, ProjectContract, ProjectInteraction
 from models.common import BusinessForm, ProjectStatus
 from services.system.exceptions import ResourceNotFoundError
 from settings import settings
@@ -62,7 +62,7 @@ class ProjectQueryService:
                 selectinload(Project.owners),
                 joinedload(Project.sale),
                 selectinload(Project.renovation_photos),
-                selectinload(Project.interactions),
+                selectinload(Project.interactions).selectinload(ProjectInteraction.operator),
                 selectinload(Project.finance_records),
                 joinedload(Project.renovation),
                 selectinload(Project.status_logs),
@@ -71,6 +71,7 @@ class ProjectQueryService:
         else:
             # 标准加载：预加载 builder.build(slim=False) 访问的所有关联
             # 含 contract/owners/sale/project_manager/renovation_photos/finance_records/interactions/renovation
+            # interactions.operator 预加载用于构建销售记录操作人嵌套对象
             query = query.options(
                 joinedload(Project.contract),
                 selectinload(Project.owners),
@@ -78,7 +79,7 @@ class ProjectQueryService:
                 selectinload(Project.project_manager),
                 selectinload(Project.renovation_photos),
                 selectinload(Project.finance_records),
-                selectinload(Project.interactions),
+                selectinload(Project.interactions).selectinload(ProjectInteraction.operator),
                 joinedload(Project.renovation),
             )
 
@@ -157,7 +158,8 @@ class ProjectQueryService:
         ]
         if include_interactions:
             # 工作台重点监控卡片需展示项目动态(带看/出价)，预加载互动记录避免 N+1
-            options.append(selectinload(Project.interactions))
+            # 同时预加载 operator 关系以构建销售记录操作人嵌套对象
+            options.append(selectinload(Project.interactions).selectinload(ProjectInteraction.operator))
 
         if monitor_sort:
             # 工作台重点监控：显式 join contract 用于排序，用 contains_eager 复用

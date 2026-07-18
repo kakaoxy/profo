@@ -156,15 +156,25 @@ def _seed_permissions(session: Session, roles: list[Role]) -> None:
 
     复用 migrations 中的权限种子数据，确保测试中 require_permission 依赖
     能正确解析角色权限（与生产环境一致）。
+
+    幂等：先查询已存在的权限点与角色权限关联，避免唯一约束冲突
+    （savepoint 隔离失效时前序测试的种子数据可能未被回滚）。
     """
     from migrations import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED  # noqa: PLC0415
 
     role_by_code = {r.code: r for r in roles}
     perm_by_code: dict[str, Permission] = {}
 
+    # 预加载已存在的权限点，避免重复 INSERT 触发 ix_permissions_code 唯一约束
+    existing_perms = {p.code: p for p in session.query(Permission).all()}
+
     for perm_data in _PERMISSIONS_SEED:
+        code = perm_data["code"]
+        if code in existing_perms:
+            perm_by_code[code] = existing_perms[code]
+            continue
         perm = Permission(
-            code=perm_data["code"],
+            code=code,
             name=perm_data["name"],
             module=perm_data["module"],
             category=PermissionCategory(perm_data["category"]),
@@ -174,7 +184,12 @@ def _seed_permissions(session: Session, roles: list[Role]) -> None:
         )
         session.add(perm)
         session.flush()
-        perm_by_code[perm.code] = perm
+        perm_by_code[code] = perm
+
+    # 预加载已存在的角色权限关联，避免重复 INSERT
+    existing_role_perms: set[tuple[str, str]] = {
+        (rp.role_id, rp.permission_id) for rp in session.execute(role_permissions.select()).all()
+    }
 
     for role_code, perm_codes in _ROLE_PERMISSIONS_SEED.items():
         role = role_by_code.get(role_code)
@@ -182,52 +197,84 @@ def _seed_permissions(session: Session, roles: list[Role]) -> None:
             continue
         for code in perm_codes:
             perm = perm_by_code.get(code)
-            if perm:
-                session.execute(
-                    role_permissions.insert().values(role_id=role.id, permission_id=perm.id),
-                )
+            if not perm:
+                continue
+            key = (role.id, perm.id)
+            if key in existing_role_perms:
+                continue
+            session.execute(
+                role_permissions.insert().values(role_id=role.id, permission_id=perm.id),
+            )
+            existing_role_perms.add(key)
 
 
 def _seed_roles_and_users(session: Session) -> dict[str, User]:
-    """种子数据：创建角色和管理员/普通用户."""
-    roles = [
-        Role(
-            id="admin-role",
-            name="管理员",
-            code="admin",
-            permissions=["view_data", "edit_data", "manage_users", "manage_roles"],
-        ),
-        Role(id="operator-role", name="运营人员", code="operator", permissions=["view_data", "edit_data"]),
-        Role(id="user-role", name="普通用户", code="user", permissions=["view_data"]),
-        Role(id="customer-role", name="C端用户", code="customer", permissions=["view_data"]),
+    """种子数据：创建角色和管理员/普通用户.
+
+    幂等：先查询已存在的角色与用户，避免主键约束冲突
+    （savepoint 隔离失效时前序测试的种子数据可能未被回滚）。
+    """
+    role_specs = [
+        {
+            "id": "admin-role",
+            "name": "管理员",
+            "code": "admin",
+            "permissions": ["view_data", "edit_data", "manage_users", "manage_roles"],
+        },
+        {
+            "id": "operator-role",
+            "name": "运营人员",
+            "code": "operator",
+            "permissions": ["view_data", "edit_data"],
+        },
+        {"id": "user-role", "name": "普通用户", "code": "user", "permissions": ["view_data"]},
+        {"id": "customer-role", "name": "C端用户", "code": "customer", "permissions": ["view_data"]},
     ]
-    for r in roles:
-        session.add(r)
+
+    existing_roles = {r.id: r for r in session.query(Role).all()}
+    roles: list[Role] = []
+    for spec in role_specs:
+        role = existing_roles.get(spec["id"])
+        if role is None:
+            role = Role(
+                id=spec["id"],
+                name=spec["name"],
+                code=spec["code"],
+                permissions=spec["permissions"],
+            )
+            session.add(role)
+            session.flush()
+        roles.append(role)
     session.commit()
 
     _seed_permissions(session, roles)
 
-    admin_user = User(
-        id="admin-user",
-        username="admin",
-        password=get_password_hash("Admin123!"),
-        nickname="管理员",
-        role_id="admin-role",
-        status="active",
-    )
-    normal_user = User(
-        id="normal-user",
-        username="testuser",
-        password=get_password_hash("Test123!"),
-        nickname="测试用户",
-        role_id="user-role",
-        status="active",
-    )
-    session.add(admin_user)
-    session.add(normal_user)
+    existing_users = {u.id: u for u in session.query(User).all()}
+    if "admin-user" not in existing_users:
+        admin_user = User(
+            id="admin-user",
+            username="admin",
+            password=get_password_hash("Admin123!"),
+            nickname="管理员",
+            role_id="admin-role",
+            status="active",
+        )
+        session.add(admin_user)
+        existing_users["admin-user"] = admin_user
+    if "normal-user" not in existing_users:
+        normal_user = User(
+            id="normal-user",
+            username="testuser",
+            password=get_password_hash("Test123!"),
+            nickname="测试用户",
+            role_id="user-role",
+            status="active",
+        )
+        session.add(normal_user)
+        existing_users["normal-user"] = normal_user
     session.commit()
 
-    return {"admin": admin_user, "normal": normal_user}
+    return {"admin": existing_users["admin-user"], "normal": existing_users["normal-user"]}
 
 
 @pytest.fixture

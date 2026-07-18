@@ -11,13 +11,14 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
+from constants.role_codes import RoleCode
 from models.common import CashFlowType, ProjectStatus
 from utils.mask import mask_bank_card
 
 from . import owners
 
 if TYPE_CHECKING:
-    from models import Project
+    from models import Project, User
 
 
 class ProjectResponseBuilder:
@@ -43,7 +44,14 @@ class ProjectResponseBuilder:
         """
         self.db = db
 
-    def build(self, project: "Project", *, slim: bool = False, include_interactions: bool = False) -> dict[str, Any]:
+    def build(
+        self,
+        project: "Project",
+        *,
+        slim: bool = False,
+        include_interactions: bool = False,
+        current_user: "User | None" = None,
+    ) -> dict[str, Any]:
         """构建项目响应数据.
 
         将项目模型及其关联数据组合成完整的响应字典.
@@ -54,6 +62,8 @@ class ProjectResponseBuilder:
                 财务统计始终构建，列表页需展示现金流）
             include_interactions: slim模式下是否仍构建互动记录(sales_records)，
                 供工作台重点监控卡片展示项目动态(带看/出价)；slim=False 时始终构建
+            current_user: 当前请求用户，用于计算 can_edit_renovation / can_edit_sales
+                业务身份标志；列表页（slim=True）可传 None，此时 can_edit_* 默认为 False
 
         Returns:
             包含项目信息的字典
@@ -63,12 +73,13 @@ class ProjectResponseBuilder:
         response.update(self._build_contract_info(project))
         response.update(self._build_owner_info(project))
         response.update(self._build_owners_list(project))
-        response.update(self._build_sale_info(project))
+        response.update(self._build_sale_info(project, current_user=current_user))
         response.update(self._build_finance_info(project))
 
         if not slim:
             response.update(self._build_interactions(project))
             response.update(self._build_stage_dates(project))
+            response.update(self._build_renovation_info(project, current_user=current_user))
         elif include_interactions:
             response.update(self._build_interactions(project))
 
@@ -191,25 +202,52 @@ class ProjectResponseBuilder:
             ],
         }
 
-    def _build_sale_info(self, project: "Project") -> dict[str, Any]:
+    def _build_sale_info(self, project: "Project", *, current_user: "User | None") -> dict[str, Any]:
         """构建销售信息.
 
         通过预加载的 project.sale 关系访问，过滤软删除记录。
+        同时构建嵌套 `sale` 对象，包含 can_edit_sales 业务身份标志（基于 current_user 计算）。
         """
         sale = project.sale
 
         if not sale or sale.is_deleted:
-            return {}
+            # sale 不存在时仍返回嵌套对象（can_edit_sales=False），便于前端统一处理
+            return {
+                "sale": {
+                    "can_edit_sales": False,
+                    "channel_manager_id": None,
+                    "property_agent_id": None,
+                    "negotiator_id": None,
+                },
+            }
+
+        channel_manager_id = sale.channel_manager_id
+        property_agent_id = sale.property_agent_id
+        negotiator_id = sale.negotiator_id
+        can_edit_sales = self._compute_can_edit_sales(
+            current_user,
+            channel_manager_id,
+            property_agent_id,
+            negotiator_id,
+        )
 
         return {
+            # 保留原有平铺字段（向后兼容）
             "listing_date": sale.listing_date.strftime("%Y-%m-%d") if sale.listing_date else None,
             "list_price": sale.list_price or None,
             "sold_date": sale.sold_date.strftime("%Y-%m-%d") if sale.sold_date else None,
             "sold_price": sale.sold_price or None,
             "transaction_status": sale.transaction_status,
-            "channel_manager_id": sale.channel_manager_id,
-            "property_agent_id": sale.property_agent_id,
-            "negotiator_id": sale.negotiator_id,
+            "channel_manager_id": channel_manager_id,
+            "property_agent_id": property_agent_id,
+            "negotiator_id": negotiator_id,
+            # 新增嵌套 sale 对象（业务身份标志）
+            "sale": {
+                "can_edit_sales": can_edit_sales,
+                "channel_manager_id": channel_manager_id,
+                "property_agent_id": property_agent_id,
+                "negotiator_id": negotiator_id,
+            },
         }
 
     def _build_finance_info(self, project: "Project") -> dict[str, Any]:
@@ -244,6 +282,8 @@ class ProjectResponseBuilder:
         """构建互动记录（销售记录）.
 
         通过预加载的 project.interactions 关系访问，按互动时间倒序排列。
+        每条记录包含 operator 嵌套对象（id/nickname/avatar），需调用方通过
+        selectinload(Project.interactions).selectinload(ProjectInteraction.operator) 预加载。
         """
         interactions = project.interactions
 
@@ -266,6 +306,15 @@ class ProjectResponseBuilder:
                 "price": float(interaction.price) if interaction.price else None,
                 "notes": interaction.content,
                 "created_at": interaction.created_at.isoformat() if interaction.created_at else None,
+                "operator": (
+                    {
+                        "id": interaction.operator.id,
+                        "nickname": interaction.operator.nickname,
+                        "avatar": interaction.operator.avatar,
+                    }
+                    if interaction.operator
+                    else None
+                ),
             }
             for interaction in sorted_interactions
         ]
@@ -323,6 +372,73 @@ class ProjectResponseBuilder:
                     stage_dates[stage_name] = date_value.strftime("%Y-%m-%d")
 
         return {"renovation_stage_dates": stage_dates} if stage_dates else {}
+
+    def _build_renovation_info(self, project: "Project", *, current_user: "User | None") -> dict[str, Any]:
+        """构建装修业务身份标志（嵌套 `renovation` 对象）.
+
+        包含 can_edit_renovation（基于 current_user 计算）与 contact_person_id.
+        用于前端装修详情页按钮显隐判断（权限码 OR 业务身份双通道）。
+        """
+        renovation = project.renovation
+        contact_person_id = (
+            renovation.contact_person_id if renovation and not getattr(renovation, "is_deleted", False) else None
+        )
+        can_edit_renovation = self._compute_can_edit_renovation(current_user, contact_person_id)
+        return {
+            "renovation": {
+                "can_edit_renovation": can_edit_renovation,
+                "contact_person_id": contact_person_id,
+            },
+        }
+
+    def _compute_can_edit_renovation(self, current_user: "User | None", contact_person_id: str | None) -> bool:
+        """计算当前用户是否有装修写权限.
+
+        校验顺序：
+        1. current_user 为 None → False（列表页无用户上下文）
+        2. admin 角色 → True
+        3. 持 project:renovation:upload_photo 权限码（operator）→ True
+        4. user 角色为对接负责人（contact_person_id == current_user.id）→ True
+        5. 其他 → False
+        """
+        if current_user is None:
+            return False
+        # lazy import 规避 dependencies.auth → services → services.projects.internal.builder 循环依赖
+        from dependencies.auth import has_permission  # noqa: PLC0415
+
+        if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
+            return True
+        if has_permission(current_user, "project:renovation:upload_photo", self.db):
+            return True
+        return contact_person_id is not None and contact_person_id == str(current_user.id)
+
+    def _compute_can_edit_sales(
+        self,
+        current_user: "User | None",
+        channel_manager_id: str | None,
+        property_agent_id: str | None,
+        negotiator_id: str | None,
+    ) -> bool:
+        """计算当前用户是否有销售写权限.
+
+        校验顺序：
+        1. current_user 为 None → False（列表页无用户上下文）
+        2. admin 角色 → True
+        3. 持 project:sales:add_record 权限码（operator）→ True
+        4. user 角色为销售团队成员（3 角色字段任一匹配）→ True
+        5. 其他 → False
+        """
+        if current_user is None:
+            return False
+        # lazy import 规避 dependencies.auth → services → services.projects.internal.builder 循环依赖
+        from dependencies.auth import has_permission  # noqa: PLC0415
+
+        if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
+            return True
+        if has_permission(current_user, "project:sales:add_record", self.db):
+            return True
+        user_id = str(current_user.id)
+        return user_id in {channel_manager_id, property_agent_id, negotiator_id}
 
     def _compute_days_on_market(self, project: "Project") -> int | None:
         """计算用时天数.

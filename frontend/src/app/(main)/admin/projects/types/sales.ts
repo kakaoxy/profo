@@ -1,6 +1,12 @@
 // src/app/(main)/projects/types/sales.ts
 // 销售相关类型定义
 
+export interface SalesRecordOperator {
+  id: string;
+  nickname?: string | null;
+  avatar?: string | null;
+}
+
 export interface SalesRecord {
   id: string;
   project_id: string;
@@ -10,4 +16,5 @@ export interface SalesRecord {
   record_date: string;
   notes?: string;
   created_at?: string;
+  operator?: SalesRecordOperator | null;
 }

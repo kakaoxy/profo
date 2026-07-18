@@ -4,7 +4,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
-from dependencies.auth import CurrentInternalUserDep
+from dependencies.auth import (
+    CurrentInternalUserDep,
+    ProjectRenovationCompleteStagePermDep,
+    ProjectRenovationUploadPhotoPermDep,
+    ProjectSalesManageTeamPermDep,
+)
 from dependencies.projects import ProjectServiceDep
 from schemas.project import ProjectResponse, RenovationPhotoResponse, RenovationUpdate
 from schemas.project.renovation import (
@@ -24,13 +29,13 @@ def update_renovation_stage(
     project_id: Annotated[str, Path(description="项目ID")],
     renovation_data: RenovationUpdate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectRenovationCompleteStagePermDep,
 ) -> ProjectResponse:
     """更新改造阶段.
 
     速率限制：100次/小时.
     """
-    return service.update_renovation_stage(project_id, renovation_data)
+    return service.update_renovation_stage(project_id, renovation_data, current_user=current_user)
 
 
 @router.post("/{project_id}/renovation/photos")
@@ -41,7 +46,7 @@ def upload_renovation_photo(
     stage: Annotated[str, Query(max_length=100, description="改造阶段")],
     url: Annotated[str, Query(max_length=2000, description="图片URL", pattern=r"^(https?://|/)[^\s]+$")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectRenovationUploadPhotoPermDep,
     filename: Annotated[str | None, Query(max_length=255, description="文件名")] = None,
     description: Annotated[str | None, Query(max_length=500, description="描述")] = None,
     thumbnail_url: Annotated[
@@ -50,7 +55,16 @@ def upload_renovation_photo(
     media_type: Annotated[str, Query(max_length=10, description="媒体种类: image/video")] = "image",
 ) -> RenovationPhotoResponse:
     """上传改造阶段照片."""
-    return service.add_renovation_photo(project_id, stage, url, filename, description, thumbnail_url, media_type)
+    return service.add_renovation_photo(
+        project_id,
+        stage,
+        url,
+        filename,
+        description,
+        thumbnail_url,
+        media_type,
+        current_user=current_user,
+    )
 
 
 @router.get("/{project_id}/renovation/photos")
@@ -73,13 +87,13 @@ def delete_renovation_photo(
     project_id: Annotated[str, Path(description="项目ID")],
     photo_id: Annotated[str, Path(description="照片ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectRenovationUploadPhotoPermDep,
 ) -> None:
     """删除改造阶段照片.
 
     速率限制：20次/小时.
     """
-    service.delete_renovation_photo(project_id, photo_id)
+    service.delete_renovation_photo(project_id, photo_id, current_user=current_user)
 
 
 @router.get("/{project_id}/renovation/contract")
@@ -99,7 +113,7 @@ def update_renovation_contract(
     project_id: Annotated[str, Path(description="项目ID")],
     contract_data: RenovationContractUpdate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectSalesManageTeamPermDep,
 ) -> RenovationContractResponse:
     """更新装修合同信息.
 

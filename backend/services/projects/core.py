@@ -7,7 +7,7 @@
 """
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -26,6 +26,9 @@ from .internal import (
     ProjectUpdater,
 )
 from .internal.owners import get_bank_card_number
+
+if TYPE_CHECKING:
+    from models import User
 
 
 class ProjectCoreService:
@@ -111,19 +114,27 @@ class ProjectCoreService:
         project = self.query_service.get_by_id(project.id, include_all=False)
         return ProjectResponse.model_validate(self.response_builder.build(project))
 
-    def get_project(self, project_id: str, *, include_all: bool = False) -> ProjectResponse | None:
+    def get_project(
+        self,
+        project_id: str,
+        *,
+        include_all: bool = False,
+        current_user: "User | None" = None,
+    ) -> ProjectResponse | None:
         """获取项目详情.
 
         Args:
             project_id: 项目ID
             include_all: 是否加载所有关联数据
+            current_user: 当前请求用户，用于计算 can_edit_renovation / can_edit_sales
+                业务身份标志；列表页可传 None
 
         Returns:
             项目响应数据，不存在时返回None
 
         """
         project = self.query_service.get_by_id(project_id, include_all=include_all)
-        return ProjectResponse.model_validate(self.response_builder.build(project))
+        return ProjectResponse.model_validate(self.response_builder.build(project, current_user=current_user))
 
     def exists(self, project_id: str) -> bool:
         """检查项目是否存在.

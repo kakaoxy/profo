@@ -4,7 +4,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
-from dependencies.auth import CurrentInternalUserDep
+from dependencies.auth import (
+    CurrentActiveUserDep,
+    ProjectSalesAddRecordPermDep,
+    ProjectSalesManageTeamPermDep,
+)
 from dependencies.projects import ProjectServiceDep
 from schemas.project import (
     ProjectResponse,
@@ -25,13 +29,13 @@ def update_sales_roles(
     project_id: Annotated[str, Path(description="项目ID")],
     roles_data: SalesRolesUpdate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectSalesManageTeamPermDep,
 ) -> ProjectResponse:
     """更新销售角色.
 
     速率限制：100次/小时.
     """
-    return service.update_sales_roles(project_id, roles_data)
+    return service.update_sales_roles(project_id, roles_data, current_user=current_user)
 
 
 @router.post("/{project_id}/selling/viewings", status_code=201)
@@ -41,10 +45,10 @@ def create_viewing_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectSalesAddRecordPermDep,
 ) -> SalesRecordResponse:
     """创建带看记录."""
-    return service.create_sales_record(project_id, record_data)
+    return service.create_sales_record(project_id, record_data, current_user=current_user)
 
 
 @router.post("/{project_id}/selling/offers", status_code=201)
@@ -54,10 +58,10 @@ def create_offer_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectSalesAddRecordPermDep,
 ) -> SalesRecordResponse:
     """创建出价记录."""
-    return service.create_sales_record(project_id, record_data)
+    return service.create_sales_record(project_id, record_data, current_user=current_user)
 
 
 @router.post("/{project_id}/selling/negotiations", status_code=201)
@@ -67,20 +71,23 @@ def create_negotiation_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_data: SalesRecordCreate,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectSalesAddRecordPermDep,
 ) -> SalesRecordResponse:
     """创建面谈记录."""
-    return service.create_sales_record(project_id, record_data)
+    return service.create_sales_record(project_id, record_data, current_user=current_user)
 
 
 @router.get("/{project_id}/selling/records")
 def get_sales_records(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: CurrentActiveUserDep,
     record_type: Annotated[str | None, Query(max_length=100, description="记录类型筛选")] = None,
 ) -> SalesRecordListResponse:
-    """获取销售记录."""
+    """获取销售记录.
+
+    使用 CurrentActiveUserDep 允许 user 角色访问（业务身份 user 需查看自己负责项目的销售记录）.
+    """
     records = service.get_sales_records(project_id, record_type)
     items = [SalesRecordResponse.model_validate(r) for r in records]
     return SalesRecordListResponse(items=items, total=len(items))
@@ -93,10 +100,10 @@ def delete_sales_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: ProjectSalesAddRecordPermDep,
 ) -> None:
     """删除销售记录.
 
     速率限制：20次/小时.
     """
-    service.delete_sales_record(project_id, record_id)
+    service.delete_sales_record(project_id, record_id, current_user=current_user)

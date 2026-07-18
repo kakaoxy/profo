@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { safeFormatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { components } from "@/lib/api-types";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { deleteSalesRecordAction } from "../../actions/sales";
 import {
@@ -19,7 +21,9 @@ import {
 import { getListingDaysText } from "../../../_components/project-card-utils";
 import { MobileRecordForm } from "./mobile-record-form";
 
-type ProjectResponse = components["schemas"]["ProjectResponse"];
+type ProjectResponse = components["schemas"]["ProjectResponse"] & {
+  sale?: { can_edit_sales?: boolean } | null;
+};
 
 interface MobileSellingViewProps {
   projectId: string;
@@ -39,8 +43,16 @@ export function MobileSellingView({
   project,
 }: MobileSellingViewProps) {
   const router = useRouter();
+  const { hasAnyPermission } = usePermission();
   const [activeTab, setActiveTab] = useState<TabType>("viewing");
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const canAddByPermission = hasAnyPermission([
+    PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
+  const canEditSales =
+    canAddByPermission || project.sale?.can_edit_sales === true;
 
   const records = useMemo(
     () => validateSalesRecords(project.sales_records),
@@ -83,6 +95,7 @@ export function MobileSellingView({
   };
 
   const isSelling = project.status === "selling";
+  const canAdd = isSelling && canEditSales;
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/30">
@@ -148,8 +161,8 @@ export function MobileSellingView({
         </TabsContent>
       </Tabs>
 
-      {/* 4. 底部新增按钮 (仅在售项目可新增) */}
-      {isSelling && (
+      {/* 4. 底部新增按钮 (仅在售项目且具备业务身份可新增) */}
+      {canAdd && (
         <div className="sticky bottom-0 left-0 right-0 z-40 border-t border-border bg-card/80 p-3 backdrop-blur-xl">
           <Button
             onClick={() => setIsFormOpen(true)}

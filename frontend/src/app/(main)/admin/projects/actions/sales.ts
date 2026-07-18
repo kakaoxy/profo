@@ -6,7 +6,10 @@ import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import { requirePermission } from "@/lib/auth/server/require-permission";
+import {
+  requireAnyPermission,
+  requirePermission,
+} from "@/lib/auth/server/require-permission";
 
 interface UserSimple {
   id: string;
@@ -69,7 +72,9 @@ export async function updateSalesRolesAction(
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  const permCheck = await requirePermission(
+    PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM,
+  );
   if (!permCheck.ok) {
     return { success: false, message: permCheck.message };
   }
@@ -193,7 +198,10 @@ export async function createSalesRecordAction(payload: {
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  const permCheck = await requireAnyPermission([
+    PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
   if (!permCheck.ok) {
     return { success: false, message: permCheck.message };
   }
@@ -282,7 +290,10 @@ export async function deleteSalesRecordAction(
       message: recordParsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  const permCheck = await requireAnyPermission([
+    PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
   if (!permCheck.ok) {
     return { success: false, message: permCheck.message };
   }

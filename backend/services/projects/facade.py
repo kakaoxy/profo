@@ -16,7 +16,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 # 导入模型和 Schema 类型
-from models import ProjectInteraction, ProjectRenovation, RenovationPhoto
+from models import ProjectInteraction, ProjectRenovation, RenovationPhoto, User
 from models.common import BusinessForm
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
@@ -65,9 +65,15 @@ class ProjectService:
         """创建项目."""
         return self._core_service.create_project(project_data)
 
-    def get_project(self, project_id: str, include_all: bool = False) -> ProjectResponse | None:
+    def get_project(
+        self,
+        project_id: str,
+        *,
+        current_user: User,
+        include_all: bool = False,
+    ) -> ProjectResponse | None:
         """获取项目详情."""
-        return self._core_service.get_project(project_id, include_all=include_all)
+        return self._core_service.get_project(project_id, current_user=current_user, include_all=include_all)
 
     def get_projects(
         self,
@@ -118,24 +124,32 @@ class ProjectService:
 
     # ========== RenovationService 方法委托 ==========
 
-    def update_renovation_stage(self, project_id: str, renovation_data: RenovationUpdate) -> ProjectResponse:
+    def update_renovation_stage(
+        self,
+        project_id: str,
+        renovation_data: RenovationUpdate,
+        *,
+        current_user: User,
+    ) -> ProjectResponse:
         """更新装修阶段."""
-        project = self._renovation_service.update_stage(project_id, renovation_data)
+        project = self._renovation_service.update_stage(project_id, renovation_data, current_user)
         from .internal import ProjectResponseBuilder  # noqa: PLC0415
 
-        return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project))
+        return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
 
-    def get_renovation_info(self, project_id: str) -> ProjectResponse | None:
+    def get_renovation_info(self, project_id: str, *, current_user: User) -> ProjectResponse | None:
         """获取装修信息."""
         renovation = self._renovation_service.get_info(project_id)
         if not renovation:
             return None
-        return self._core_service.get_project(project_id, include_all=False)
+        return self._core_service.get_project(project_id, current_user=current_user, include_all=False)
 
-    def update_renovation_info(self, project_id: str, renovation_data: dict[str, Any]) -> ProjectResponse:
+    def update_renovation_info(
+        self, project_id: str, renovation_data: dict[str, Any], *, current_user: User
+    ) -> ProjectResponse:
         """更新装修信息."""
         self._renovation_service.update_info(project_id, renovation_data)
-        return self._core_service.get_project(project_id, include_all=False)
+        return self._core_service.get_project(project_id, current_user=current_user, include_all=False)
 
     def add_renovation_photo(
         self,
@@ -146,19 +160,28 @@ class ProjectService:
         description: str | None = None,
         thumbnail_url: str | None = None,
         media_type: str = "image",
+        *,
+        current_user: User,
     ) -> RenovationPhoto:
         """添加装修照片."""
         return self._renovation_service.add_photo(
-            project_id, stage, url, filename, description, thumbnail_url, media_type
+            project_id,
+            stage,
+            url,
+            filename,
+            description,
+            thumbnail_url,
+            media_type,
+            current_user=current_user,
         )
 
     def get_renovation_photos(self, project_id: str, stage: str | None = None) -> list[RenovationPhoto]:
         """获取装修照片."""
         return self._renovation_service.get_photos(project_id, stage)
 
-    def delete_renovation_photo(self, project_id: str, photo_id: str) -> None:
+    def delete_renovation_photo(self, project_id: str, photo_id: str, *, current_user: User) -> None:
         """删除装修照片."""
-        return self._renovation_service.delete_photo(project_id, photo_id)
+        return self._renovation_service.delete_photo(project_id, photo_id, current_user=current_user)
 
     def get_renovation_contract(self, project_id: str) -> ProjectRenovation:
         """获取装修合同."""
@@ -174,13 +197,17 @@ class ProjectService:
 
     # ========== SalesService 方法委托 ==========
 
-    def update_sales_roles(self, project_id: str, roles_data: SalesRolesUpdate) -> ProjectResponse:
+    def update_sales_roles(
+        self, project_id: str, roles_data: SalesRolesUpdate, *, current_user: User
+    ) -> ProjectResponse:
         """更新销售角色."""
-        return self._sales_service.update_roles(project_id, roles_data)
+        return self._sales_service.update_roles(project_id, roles_data, current_user=current_user)
 
-    def create_sales_record(self, project_id: str, record_data: SalesRecordCreate) -> ProjectInteraction:
+    def create_sales_record(
+        self, project_id: str, record_data: SalesRecordCreate, *, current_user: User
+    ) -> ProjectInteraction:
         """创建销售记录."""
-        return self._sales_service.create_record(project_id, record_data)
+        return self._sales_service.create_record(project_id, record_data, current_user)
 
     def get_sales_records(
         self,
@@ -190,13 +217,15 @@ class ProjectService:
         """获取销售记录."""
         return self._sales_service.get_records(project_id, record_type)
 
-    def delete_sales_record(self, project_id: str, record_id: str) -> None:
+    def delete_sales_record(self, project_id: str, record_id: str, *, current_user: User) -> None:
         """删除销售记录."""
-        return self._sales_service.delete_record(project_id, record_id)
+        return self._sales_service.delete_record(project_id, record_id, current_user)
 
-    def complete_project(self, project_id: str, complete_data: ProjectCompleteRequest) -> ProjectResponse:
+    def complete_project(
+        self, project_id: str, complete_data: ProjectCompleteRequest, *, current_user: User
+    ) -> ProjectResponse:
         """完成项目（标记已售）."""
-        return self._sales_service.complete_project(project_id, complete_data)
+        return self._sales_service.complete_project(project_id, complete_data, current_user=current_user)
 
     # ========== FinanceService 方法委托 ==========
 

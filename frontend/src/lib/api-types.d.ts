@@ -790,6 +790,9 @@ export interface paths {
         /**
          * Get Project
          * @description 获取项目详情.
+         *
+         *     使用 CurrentActiveUserDep 允许 user 角色访问（业务身份标志 can_edit_*
+         *     基于当前用户计算，user 被指派为对接负责人/销售团队成员时 can_edit_*=true）.
          */
         get: operations["get_project_api_v1_projects__project_id__get"];
         /**
@@ -2021,6 +2024,9 @@ export interface paths {
         /**
          * Get Roles
          * @description 获取角色列表，支持搜索和筛选.
+         *
+         *     列表项也填充 permission_codes，供前端编辑弹窗初始化勾选状态
+         *     及角色表格的权限 Badge 展示（避免单独 GET /{id} 的 N+1 调用）。
          */
         get: operations["get_roles_api_v1_roles_get"];
         put?: never;
@@ -6640,6 +6646,10 @@ export interface components {
              * @description 资金账本结算说明
              */
             finance_settled_note?: string | null;
+            /** @description 装修业务身份标志（含 can_edit_renovation / contact_person_id） */
+            renovation?: components["schemas"]["RenovationInfoResponse"] | null;
+            /** @description 销售业务身份标志（含 can_edit_sales / 3 个销售团队字段） */
+            sale?: components["schemas"]["SaleInfoResponse"] | null;
         };
         /**
          * ProjectStatsResponse
@@ -8401,6 +8411,28 @@ export interface components {
             other_fee_reason?: string | null;
         };
         /**
+         * RenovationInfoResponse
+         * @description 项目详情中装修业务身份标志响应.
+         *
+         *     附带在项目详情响应的 `renovation` 字段下，用于前端按钮显隐判断：
+         *     - admin/operator 持 `project:renovation:upload_photo` 权限 → can_edit_renovation=True
+         *     - user 角色：当前用户为对接负责人（contact_person_id == user.id）→ can_edit_renovation=True
+         *     - 其他 → can_edit_renovation=False
+         */
+        RenovationInfoResponse: {
+            /**
+             * Can Edit Renovation
+             * @description 当前用户是否有装修写权限（admin/operator 持权限码 或 user 为对接负责人）
+             * @default false
+             */
+            can_edit_renovation: boolean;
+            /**
+             * Contact Person Id
+             * @description 对接负责人ID（user 角色据此判断业务身份）
+             */
+            contact_person_id?: string | null;
+        };
+        /**
          * RenovationPhotoListResponse
          * @description 照片列表响应.
          */
@@ -8762,6 +8794,38 @@ export interface components {
             permission_codes?: string[] | null;
         };
         /**
+         * SaleInfoResponse
+         * @description 项目详情中销售业务身份标志响应.
+         *
+         *     附带在项目详情响应的 `sale` 字段下，用于前端按钮显隐判断：
+         *     - admin/operator 持 `project:sales:add_record` 权限 → can_edit_sales=True
+         *     - user 角色：当前用户为销售团队成员（3 角色字段任一匹配）→ can_edit_sales=True
+         *     - 其他 → can_edit_sales=False
+         */
+        SaleInfoResponse: {
+            /**
+             * Can Edit Sales
+             * @description 当前用户是否有销售写权限（admin/operator 持权限码 或 user 为销售团队成员）
+             * @default false
+             */
+            can_edit_sales: boolean;
+            /**
+             * Channel Manager Id
+             * @description 渠道负责人ID
+             */
+            channel_manager_id?: string | null;
+            /**
+             * Property Agent Id
+             * @description 房源维护人ID(讲房人)
+             */
+            property_agent_id?: string | null;
+            /**
+             * Negotiator Id
+             * @description 联卖谈判人ID
+             */
+            negotiator_id?: string | null;
+        };
+        /**
          * SalesRecordCreate
          * @description 创建销售记录.
          */
@@ -8843,6 +8907,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** @description 操作人嵌套对象（id/nickname/avatar），历史记录可能为 null */
+            operator?: components["schemas"]["UserBriefResponse"] | null;
         };
         /**
          * SalesRolesUpdate
@@ -9019,6 +9085,30 @@ export interface components {
              * @description 用户名
              */
             username?: string | null;
+        };
+        /**
+         * UserBriefResponse
+         * @description 用户简要信息响应 - 用于关联对象嵌套展示（如销售记录操作人）.
+         *
+         *     仅包含前端展示所需的最小字段集：id/nickname/avatar.
+         *     历史记录可能缺失 operator_id，此时响应中 operator 字段为 null.
+         */
+        UserBriefResponse: {
+            /**
+             * Id
+             * @description 用户ID
+             */
+            id: string;
+            /**
+             * Nickname
+             * @description 昵称
+             */
+            nickname?: string | null;
+            /**
+             * Avatar
+             * @description 头像
+             */
+            avatar?: string | null;
         };
         /**
          * UserCreate

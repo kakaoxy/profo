@@ -21,6 +21,8 @@ import { zhCN } from "date-fns/locale";
 import type { components } from "@/lib/api-types";
 import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -41,7 +43,11 @@ import {
 } from "../../actions/renovation";
 import type { RenovationPhoto } from "../../types";
 
-type ProjectResponse = components["schemas"]["ProjectResponse"];
+// 后端 ProjectResponse 已附带 renovation.can_edit_renovation 业务身份标志，
+// 但该字段由后端动态计算，api-types.d.ts 可能未及时同步，此处以交叉类型补齐
+type ProjectResponse = components["schemas"]["ProjectResponse"] & {
+  renovation?: { can_edit_renovation?: boolean } | null;
+};
 
 interface MobileRenovationViewProps {
   projectId: string;
@@ -60,6 +66,8 @@ interface MobileStageCardProps {
   photos: RenovationPhoto[];
   isExpanded: boolean;
   isReadOnly: boolean;
+  canEditRenovation: boolean;
+  canComplete: boolean;
   stageFinishDate?: string | null;
   onToggle: () => void;
   onRefresh: () => void;
@@ -74,6 +82,8 @@ function MobileStageCard({
   photos,
   isExpanded,
   isReadOnly,
+  canEditRenovation,
+  canComplete,
   stageFinishDate,
   onToggle,
   onRefresh,
@@ -97,7 +107,7 @@ function MobileStageCard({
   const isCompleted = !!stageFinishDate || index < currentIndex;
   const isCurrent = !isCompleted && index === currentIndex;
   const isFuture = !isCompleted && index > currentIndex;
-  const canEdit = !isReadOnly && !isFuture;
+  const canEdit = canEditRenovation && !isReadOnly && !isFuture;
 
   const handleSubmit = async () => {
     if (uploadQueue.length > 0) {
@@ -305,8 +315,8 @@ function MobileStageCard({
           </label>
         )}
 
-        {/* 完成阶段按钮（仅当前阶段且非只读） */}
-        {isCurrent && !isReadOnly && (
+        {/* 完成阶段按钮（仅当前阶段且非只读且有权限） */}
+        {isCurrent && !isReadOnly && canComplete && (
           <div className="flex flex-col gap-3 pt-1">
             <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
@@ -416,8 +426,23 @@ export function MobileRenovationView({
   project,
 }: MobileRenovationViewProps) {
   const router = useRouter();
+  const { hasAnyPermission } = usePermission();
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 业务身份校验：权限码 OR 后端计算的业务身份标志
+  const canEditByPermission = hasAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
+  const canCompleteByPermission = hasAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
+  const canEditRenovation =
+    canEditByPermission || project.renovation?.can_edit_renovation === true;
+  const canComplete =
+    canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
   // 计算当前阶段索引（与 kpi.tsx 逻辑一致）
   const currentIndex = useMemo(() => {
@@ -557,6 +582,8 @@ export function MobileRenovationView({
                 photos={stagePhotos}
                 isExpanded={isExpanded}
                 isReadOnly={isReadOnly}
+                canEditRenovation={canEditRenovation}
+                canComplete={canComplete}
                 stageFinishDate={stageFinishDate}
                 onToggle={() =>
                   setExpandedStage((prev) =>

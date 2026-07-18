@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy import Boolean, DateTime, Index, Numeric, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.common.base import BaseModel, RecordType
 
@@ -25,11 +25,18 @@ class ProjectInteraction(BaseModel):
     interaction_target: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="互动对象")
     content: Mapped[str | None] = mapped_column(Text, nullable=True, comment="互动详情")
     interaction_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, comment="互动时间")
-    operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="操作人ID")
+    operator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True, comment="操作人ID")
 
     price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="出价金额(万)")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+
+    # 操作人关系（逻辑外键，避免与 User 已有的 managed_projects 关系冲突）
+    operator = relationship(
+        "User",
+        foreign_keys=[operator_id],
+        primaryjoin="foreign(ProjectInteraction.operator_id) == User.id",
+    )
 
     __table_args__ = (
         Index("idx_interaction_project", "project_id"),

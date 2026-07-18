@@ -56,6 +56,11 @@ export const PERMISSION_CODES = {
   PROJECT_READ: "project:read",
   PROJECT_WRITE: "project:write",
   PROJECT_DELETE: "project:delete",
+  // 项目业务身份子权限（对接负责人 / 销售团队成员）
+  PROJECT_RENOVATION_UPLOAD_PHOTO: "project:renovation:upload_photo",
+  PROJECT_RENOVATION_COMPLETE_STAGE: "project:renovation:complete_stage",
+  PROJECT_SALES_ADD_RECORD: "project:sales:add_record",
+  PROJECT_SALES_MANAGE_TEAM: "project:sales:manage_team",
   // 财务台账
   LEDGER_READ: "ledger:read",
   LEDGER_WRITE: "ledger:write",
@@ -100,6 +105,8 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/properties/upload", permission: PERMISSION_CODES.PROPERTY_UPLOAD },
   // 审计日志 → 需 operation_log:read 权限
   { prefix: "/admin/audit-logs", permission: PERMISSION_CODES.OPERATION_LOG_READ },
+  // 项目管理 → 需 project:read 权限
+  { prefix: "/admin/projects", permission: PERMISSION_CODES.PROJECT_READ },
   // 设置（API Key 等）→ 需 api_key:manage 权限
   { prefix: "/admin/settings", permission: PERMISSION_CODES.API_KEY_MANAGE },
   // 用户管理 → 需 user:read 权限
