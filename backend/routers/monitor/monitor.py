@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import CurrentInternalUserDep, DbSessionDep, ProjectReadPermDep
 from schemas.monitor import (
     AddCompetitorRequest,
     AIStrategyRequest,
@@ -37,7 +37,7 @@ _MonitorServiceDep = Annotated[MonitorService, Depends(get_monitor_service)]
 def get_sentiment(
     community_id: CommunityIdPath,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
 ) -> MarketSentimentResponse:
     """获取市场情绪数据."""
     return service.get_market_sentiment(community_id)
@@ -47,7 +47,7 @@ def get_sentiment(
 def get_trends(
     community_id: CommunityIdPath,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
     months: Annotated[int, Query(ge=1, le=24)] = 6,
 ) -> list[TrendData]:
     """获取趋势数据."""
@@ -68,7 +68,7 @@ def generate_strategy(
 def get_neighborhood_radar(
     community_id: CommunityIdPath,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
 ) -> NeighborhoodRadarResponse:
     """获取周边竞品雷达数据，包含分渠道统计."""
     return service.get_neighborhood_radar(community_id)
@@ -78,7 +78,7 @@ def get_neighborhood_radar(
 def get_competitors(
     community_id: CommunityIdPath,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
 ) -> list[CompetitorResponse]:
     """获取竞品列表."""
     return service.get_competitors(community_id)
@@ -121,7 +121,7 @@ def remove_competitor(
 def get_community_market_stats(
     community_id: CommunityIdPath,
     service: _MonitorServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
 ) -> CommunityMarketStatsResponse:
     """获取小区市场统计数据.
 

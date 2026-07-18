@@ -4,7 +4,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Request
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import (
+    DbSessionDep,
+    LeadReadPermDep,
+    LeadWritePermDep,
+)
 from schemas.lead import FollowUpCreate, FollowUpResponse
 from services.leads import LeadFollowUpService
 from utils.common import RateLimits, limiter
@@ -17,7 +21,7 @@ router = APIRouter()
 def add_follow_up(
     request: Request,
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: LeadWritePermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
     follow_up_in: FollowUpCreate,
 ) -> FollowUpResponse:
@@ -27,14 +31,14 @@ def add_follow_up(
         lead_id=lead_id,
         method=follow_up_in.method,
         content=follow_up_in.content,
-        created_by_id=_current_user.id,
+        created_by_id=current_user.id,
     )
 
 
 @router.get("/{lead_id}/follow-ups")
 def get_follow_ups(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadReadPermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
 ) -> list[FollowUpResponse]:
     """获取线索的跟进记录列表."""

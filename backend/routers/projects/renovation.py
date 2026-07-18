@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request
 
 from dependencies.auth import (
-    CurrentInternalUserDep,
+    ProjectReadOrBusinessPermDep,
     ProjectRenovationCompleteStagePermDep,
     ProjectRenovationUploadPhotoPermDep,
     ProjectSalesManageTeamPermDep,
@@ -46,7 +46,7 @@ def upload_renovation_photo(
     stage: Annotated[str, Query(max_length=100, description="改造阶段")],
     url: Annotated[str, Query(max_length=2000, description="图片URL", pattern=r"^(https?://|/)[^\s]+$")],
     service: ProjectServiceDep,
-    current_user: ProjectRenovationUploadPhotoPermDep,
+    _current_user: ProjectRenovationUploadPhotoPermDep,
     filename: Annotated[str | None, Query(max_length=255, description="文件名")] = None,
     description: Annotated[str | None, Query(max_length=500, description="描述")] = None,
     thumbnail_url: Annotated[
@@ -63,7 +63,6 @@ def upload_renovation_photo(
         description,
         thumbnail_url,
         media_type,
-        current_user=current_user,
     )
 
 
@@ -71,10 +70,14 @@ def upload_renovation_photo(
 def get_renovation_photos(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadOrBusinessPermDep,
     stage: Annotated[str | None, Query(max_length=100, description="改造阶段筛选")] = None,
 ) -> RenovationPhotoListResponse:
-    """获取改造阶段照片."""
+    """获取改造阶段照片.
+
+    使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
+    装修对接负责人需查看自己负责项目的照片以执行上传/删除操作。
+    """
     photos = service.get_renovation_photos(project_id, stage)
     items = [RenovationPhotoResponse.model_validate(p) for p in photos]
     return RenovationPhotoListResponse(items=items, total=len(items))
@@ -87,22 +90,25 @@ def delete_renovation_photo(
     project_id: Annotated[str, Path(description="项目ID")],
     photo_id: Annotated[str, Path(description="照片ID")],
     service: ProjectServiceDep,
-    current_user: ProjectRenovationUploadPhotoPermDep,
+    _current_user: ProjectRenovationUploadPhotoPermDep,
 ) -> None:
     """删除改造阶段照片.
 
     速率限制：20次/小时.
     """
-    service.delete_renovation_photo(project_id, photo_id, current_user=current_user)
+    service.delete_renovation_photo(project_id, photo_id)
 
 
 @router.get("/{project_id}/renovation/contract")
 def get_renovation_contract(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadOrBusinessPermDep,
 ) -> RenovationContractResponse:
-    """获取装修合同信息."""
+    """获取装修合同信息.
+
+    使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
+    """
     return service.get_renovation_contract(project_id)
 
 

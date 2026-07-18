@@ -10,7 +10,14 @@ from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from dependencies.auth import CurrentActiveUserDep, CurrentAdminUserDep, CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import (
+    CurrentActiveUserDep,
+    CurrentAdminUserDep,
+    CurrentInternalUserDep,
+    DbSessionDep,
+    ProjectReadOrBusinessPermDep,
+    ProjectReadPermDep,
+)
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
 from schemas.project import (
@@ -43,7 +50,7 @@ router.include_router(sales_router, tags=["sales"])
 @router.get("/contract-no/next")
 def get_next_contract_no(
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
     business_form: Annotated[
         str,
         Query(description="业务形式: agent(代理美化) / wholesale(收购美化)"),
@@ -116,7 +123,7 @@ def create_project(
 @router.get("")
 def get_projects(
     service: ProjectServiceDep,
-    _current_user: CurrentActiveUserDep,
+    _current_user: ProjectReadPermDep,
     pagination: PaginationDep,
     filters: Annotated[ProjectFilter, Depends()],
     include_interactions: Annotated[
@@ -130,8 +137,9 @@ def get_projects(
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表.
 
-    使用 CurrentActiveUserDep 允许 user 角色访问（user 持 project:read 权限，
-    且作为业务身份需在 dashboard 看到自己负责的项目）.
+    使用 ProjectReadPermDep 基于权限码校验：
+    - admin/operator/user 持 project:read 权限可访问
+    - 移除 user 角色的 project:read 权限后，user 立即失去访问权
     """
     result = service.get_projects(
         status_filter=filters.status,
@@ -153,13 +161,29 @@ def get_projects(
 @router.get("/stats")
 def get_project_stats(
     service: ProjectServiceDep,
-    _current_user: CurrentActiveUserDep,
+    _current_user: ProjectReadPermDep,
 ) -> ProjectStatsResponse:
     """获取项目统计.
 
-    使用 CurrentActiveUserDep 允许 user 角色访问（dashboard 需展示统计卡片）.
+    使用 ProjectReadPermDep 基于权限码校验（dashboard 统计卡片需 project:read）.
     """
     return service.get_project_stats()
+
+
+@router.get("/my-responsible")
+def get_my_responsible_projects(
+    service: ProjectServiceDep,
+    current_user: CurrentActiveUserDep,
+) -> list[ProjectResponse]:
+    """获取当前用户作为业务身份负责的项目列表.
+
+    用于工作台"我负责的项目"卡片：普通用户即使无 project:read 权限，被指派为
+    项目装修对接负责人或销售团队成员后也能查看自己负责的项目。
+
+    权限校验：仅需登录态（CurrentActiveUserDep），不检查权限码——业务身份本身
+    即为访问凭证。返回的列表已按 created_at 降序，前端直接渲染卡片。
+    """
+    return service.get_my_responsible_projects(str(current_user.id), current_user=current_user)
 
 
 @router.get("/export")
@@ -259,14 +283,17 @@ def export_projects(
 def get_project(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    current_user: CurrentActiveUserDep,
+    current_user: ProjectReadOrBusinessPermDep,
     *,
     full: Annotated[bool, Query(description="是否获取完整详情(包含大字段)")] = False,
 ) -> ProjectResponse:
     """获取项目详情.
 
-    使用 CurrentActiveUserDep 允许 user 角色访问（业务身份标志 can_edit_*
-    基于当前用户计算，user 被指派为对接负责人/销售团队成员时 can_edit_*=true）.
+    使用 ProjectReadOrBusinessPermDep 双通道校验：
+    - 持 project:read / project:write 权限可访问（admin/operator/有权限的 user）；
+    - 被指派为该项目装修对接负责人或销售团队成员的用户可访问（业务身份优先级最高，
+      不被角色权限覆盖——普通用户即使无 project:read 也能查看自己负责的项目）；
+    - 业务身份标志 can_edit_* 基于当前用户计算，前端据此显隐操作按钮。
     """
     project = service.get_project(project_id, include_all=full, current_user=current_user)
     if not project:
@@ -349,9 +376,12 @@ def complete_project(
 def get_project_report(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadOrBusinessPermDep,
 ) -> ProjectReportResponse:
-    """获取项目报告."""
+    """获取项目报告.
+
+    使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
+    """
     report = service.get_project_report(project_id)
     if not report:
         msg = "报告不存在"

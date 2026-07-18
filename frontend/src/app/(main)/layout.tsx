@@ -1,11 +1,10 @@
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { hasPathPermission } from "@/lib/auth/permissions";
+import { PermissionGuard } from "@/components/permission-guard";
 
 // 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
 export const dynamic = 'force-dynamic';
@@ -63,19 +62,17 @@ export default async function DashboardLayout({
     redirect("/admin/login");
   }
 
-  // 服务端权限守卫：受限路径按 PATH_PERMISSION_MAP 配置的权限码要求拦截
-  const headersList = await headers();
-  const pathname =
-    headersList.get("x-invoke-path") ?? headersList.get("x-pathname") ?? "";
-  if (!hasPathPermission(pathname, user.permissions)) {
-    redirect("/admin");
-  }
+  // 客户端权限守卫：Next.js 16 中 Server Component 无法通过 headers() 获取
+  // pathname（x-invoke-path / x-pathname 已移除），改用 Client Component
+  // PermissionGuard 在客户端用 usePathname() 做权限拦截。
+  // 后端 API 已基于权限码校验（require_permission），客户端守卫仅用于提升
+  // 用户体验（避免显示空数据页面），被绕过也安全。
 
   return (
     <SidebarProvider defaultOpen={false}>
       {/* 1. 侧边栏 */}
       <AppSidebar user={user} />
-      
+
       {/* 2. 主体区域 (移除了 Header) */}
       <SidebarInset className="bg-card min-w-0">
         {/* 移动端顶部导航栏 */}
@@ -88,9 +85,9 @@ export default async function DashboardLayout({
             <span className="font-semibold text-sm text-foreground">Profo</span>
           </div>
         </header>
-        {/* 直接渲染子页面，没有公共头了 */}
+        {/* 客户端权限守卫 + 直接渲染子页面 */}
         <ErrorBoundary>
-          {children}
+          <PermissionGuard>{children}</PermissionGuard>
         </ErrorBoundary>
       </SidebarInset>
     </SidebarProvider>

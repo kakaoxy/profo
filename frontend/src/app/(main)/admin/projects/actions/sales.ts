@@ -5,11 +5,6 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
-import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import {
-  requireAnyPermission,
-  requirePermission,
-} from "@/lib/auth/server/require-permission";
 
 interface UserSimple {
   id: string;
@@ -72,12 +67,7 @@ export async function updateSalesRolesAction(
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requirePermission(
-    PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM,
-  );
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectSalesManageTeamPermDep 执行（纯权限码，仅 admin/operator）。
   try {
     const client = await fetchClient();
 
@@ -198,13 +188,7 @@ export async function createSalesRecordAction(payload: {
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requireAnyPermission([
-    PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
-    PERMISSION_CODES.PROJECT_WRITE,
-  ]);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectSalesAddRecordPermDep（业务身份双通道）执行。
   try {
     const client = await fetchClient();
 
@@ -290,13 +274,7 @@ export async function deleteSalesRecordAction(
       message: recordParsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requireAnyPermission([
-    PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
-    PERMISSION_CODES.PROJECT_WRITE,
-  ]);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectSalesAddRecordPermDep（业务身份双通道）执行。
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -345,10 +323,7 @@ export async function completeProjectAction(
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 CurrentInternalUserDep 执行（仅 admin/operator）。
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(
