@@ -12,10 +12,11 @@ from typing import Any
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from models import Project, ProjectRenovation, RenovationPhoto
+from constants.role_codes import RoleCode
+from models import Project, ProjectRenovation, RenovationPhoto, User
 from models.common import ProjectStatus
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
-from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
+from services.system.exceptions import BusinessLogicError, PermissionDeniedError, ResourceNotFoundError
 
 # 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
 _RENOVATION_ALLOWED_FIELDS = {
@@ -91,8 +92,39 @@ class RenovationService:
 
         return renovation
 
-    def update_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
+    def _check_renovation_identity(self, project_id: str, code: str, current_user: User) -> None:
+        """业务身份双重校验：admin/持权限码用户/对接负责人放行，否则抛 PermissionDeniedError.
+
+        校验顺序：
+        1. admin 角色直接放行；
+        2. 持有子权限码（operator）放行；
+        3. 当前用户为该项目对接负责人（ProjectRenovation.contact_person_id）放行；
+        4. 否则抛 PermissionDeniedError.
+
+        Args:
+            project_id: 项目ID
+            code: 业务子权限码（如 "project:renovation:upload_photo"）
+            current_user: 当前用户
+
+        Raises:
+            PermissionDeniedError: 当前用户非该项目的对接负责人
+
+        """
+        # lazy import 规避 dependencies.auth → services.system → services → services.projects.renovation 循环依赖
+        from dependencies.auth import _check_business_identity, has_permission  # noqa: PLC0415
+
+        if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
+            return
+        if has_permission(current_user, code, self.db):
+            return
+        if _check_business_identity(self.db, project_id, code, str(current_user.id)):
+            return
+        msg = "当前用户非该项目的对接负责人"
+        raise PermissionDeniedError(msg)
+
+    def update_stage(self, project_id: str, renovation_data: RenovationUpdate, current_user: User) -> Project:
         """更新改造阶段."""
+        self._check_renovation_identity(project_id, "project:renovation:complete_stage", current_user)
         project = self._get_project(project_id)
 
         # 验证当前状态
@@ -183,8 +215,11 @@ class RenovationService:
         description: str | None = None,
         thumbnail_url: str | None = None,
         media_type: str = "image",
+        *,
+        current_user: User,
     ) -> RenovationPhoto:
         """添加改造阶段照片."""
+        self._check_renovation_identity(project_id, "project:renovation:upload_photo", current_user)
         project = self._get_project(project_id)
 
         allowed_statuses = [
@@ -231,8 +266,9 @@ class RenovationService:
             query = query.filter(RenovationPhoto.stage == stage)
         return query.order_by(RenovationPhoto.created_at.desc()).all()
 
-    def delete_photo(self, project_id: str, photo_id: str) -> None:
+    def delete_photo(self, project_id: str, photo_id: str, *, current_user: User) -> None:
         """删除改造阶段照片 (软删除)."""
+        self._check_renovation_identity(project_id, "project:renovation:upload_photo", current_user)
         photo = (
             self.db.query(RenovationPhoto)
             .filter(

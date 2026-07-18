@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 interface SalesTeamPanelProps {
   project: Project;
@@ -112,99 +114,143 @@ export function SalesTeamPanel({ project }: SalesTeamPanelProps) {
         {/* 1. 渠道 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">渠道</Label>
-          <Select
-            value={channelManagerId || "__empty__"}
-            onValueChange={(value) => {
-              const newValue = value === "__empty__" ? null : value;
-              setChannelManagerId(newValue);
-              handleSave(
-                "channel_manager_id",
-                newValue,
-                project.channel_manager_id || null,
-              );
-            }}
-            disabled={isLoadingUsers}
+          <HasPermission
+            code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
+            fallback={
+              <ReadOnlyMember
+                value={getUserDisplayName(channelManagerId)}
+                isLoading={isLoadingUsers}
+              />
+            }
           >
-            <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
-              <SelectValue placeholder="选择渠道负责人">
-                {getUserDisplayName(channelManagerId) || "选择渠道负责人"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__empty__">未选择</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.nickname || user.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={channelManagerId || "__empty__"}
+              onValueChange={(value) => {
+                const newValue = value === "__empty__" ? null : value;
+                setChannelManagerId(newValue);
+                handleSave(
+                  "channel_manager_id",
+                  newValue,
+                  project.channel_manager_id || null,
+                );
+              }}
+              disabled={isLoadingUsers}
+            >
+              <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
+                <SelectValue placeholder="选择渠道负责人">
+                  {getUserDisplayName(channelManagerId) || "选择渠道负责人"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__empty__">未选择</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </HasPermission>
         </div>
 
         {/* 2. 讲房 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">讲房</Label>
-          <Select
-            value={propertyAgentId || "__empty__"}
-            onValueChange={(value) => {
-              const newValue = value === "__empty__" ? null : value;
-              setPropertyAgentId(newValue);
-              handleSave(
-                "property_agent_id",
-                newValue,
-                project.property_agent_id || null,
-              );
-            }}
-            disabled={isLoadingUsers}
+          <HasPermission
+            code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
+            fallback={
+              <ReadOnlyMember
+                value={getUserDisplayName(propertyAgentId)}
+                isLoading={isLoadingUsers}
+              />
+            }
           >
-            <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
-              <SelectValue placeholder="选择讲房人">
-                {getUserDisplayName(propertyAgentId) || "选择讲房人"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__empty__">未选择</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.nickname || user.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={propertyAgentId || "__empty__"}
+              onValueChange={(value) => {
+                const newValue = value === "__empty__" ? null : value;
+                setPropertyAgentId(newValue);
+                handleSave(
+                  "property_agent_id",
+                  newValue,
+                  project.property_agent_id || null,
+                );
+              }}
+              disabled={isLoadingUsers}
+            >
+              <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
+                <SelectValue placeholder="选择讲房人">
+                  {getUserDisplayName(propertyAgentId) || "选择讲房人"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__empty__">未选择</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </HasPermission>
         </div>
 
         {/* 3. 谈判 */}
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">谈判</Label>
-          <Select
-            value={negotiatorId || "__empty__"}
-            onValueChange={(value) => {
-              const newValue = value === "__empty__" ? null : value;
-              setNegotiatorId(newValue);
-              handleSave(
-                "negotiator_id",
-                newValue,
-                project.negotiator_id || null,
-              );
-            }}
-            disabled={isLoadingUsers}
+          <HasPermission
+            code={PERMISSION_CODES.PROJECT_SALES_MANAGE_TEAM}
+            fallback={
+              <ReadOnlyMember
+                value={getUserDisplayName(negotiatorId)}
+                isLoading={isLoadingUsers}
+              />
+            }
           >
-            <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
-              <SelectValue placeholder="选择谈判人">
-                {getUserDisplayName(negotiatorId) || "选择谈判人"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__empty__">未选择</SelectItem>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.nickname || user.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select
+              value={negotiatorId || "__empty__"}
+              onValueChange={(value) => {
+                const newValue = value === "__empty__" ? null : value;
+                setNegotiatorId(newValue);
+                handleSave(
+                  "negotiator_id",
+                  newValue,
+                  project.negotiator_id || null,
+                );
+              }}
+              disabled={isLoadingUsers}
+            >
+              <SelectTrigger className="h-8 text-sm bg-card focus:ring-success w-full">
+                <SelectValue placeholder="选择谈判人">
+                  {getUserDisplayName(negotiatorId) || "选择谈判人"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__empty__">未选择</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </HasPermission>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ReadOnlyMember({
+  value,
+  isLoading,
+}: {
+  value: string;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="h-8 flex items-center px-3 text-sm bg-card border border-border rounded-md w-full">
+      {isLoading ? "加载中..." : value || "未设置"}
     </div>
   );
 }

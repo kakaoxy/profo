@@ -14,6 +14,7 @@ from decimal import Decimal
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from models.common import RecordType
+from schemas.user import UserBriefResponse
 
 # ========== 销售角色更新 (来自 project_sales.py) ==========
 
@@ -77,6 +78,10 @@ class SalesRecordResponse(BaseModel):
     result: str | None = None
     related_agent: str | None = None
     created_at: datetime
+    operator: UserBriefResponse | None = Field(
+        None,
+        description="操作人嵌套对象（id/nickname/avatar），历史记录可能为 null",
+    )
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
@@ -155,6 +160,29 @@ class SaleListResponse(BaseModel):
 
     items: list[SaleResponse]
     total: int
+
+
+# ========== 项目详情 - 销售业务身份标志 ==========
+
+
+class SaleInfoResponse(BaseModel):
+    """项目详情中销售业务身份标志响应.
+
+    附带在项目详情响应的 `sale` 字段下，用于前端按钮显隐判断：
+    - admin/operator 持 `project:sales:add_record` 权限 → can_edit_sales=True
+    - user 角色：当前用户为销售团队成员（3 角色字段任一匹配）→ can_edit_sales=True
+    - 其他 → can_edit_sales=False
+    """
+
+    can_edit_sales: bool = Field(
+        default=False,
+        description="当前用户是否有销售写权限（admin/operator 持权限码 或 user 为销售团队成员）",
+    )
+    channel_manager_id: str | None = Field(None, description="渠道负责人ID")
+    property_agent_id: str | None = Field(None, description="房源维护人ID(讲房人)")
+    negotiator_id: str | None = Field(None, description="联卖谈判人ID")
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ========== 互动记录 (来自 interaction.py) ==========

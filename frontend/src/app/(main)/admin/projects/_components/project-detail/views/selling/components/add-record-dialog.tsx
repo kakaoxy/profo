@@ -31,6 +31,7 @@ interface AddRecordDialogProps {
   onClose: () => void;
   onSuccess: () => void;
   defaultTab: "viewing" | "offer" | "negotiation";
+  canEditSales?: boolean;
 }
 
 export function AddRecordDialog({
@@ -39,6 +40,7 @@ export function AddRecordDialog({
   onClose,
   onSuccess,
   defaultTab,
+  canEditSales = true,
 }: AddRecordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [date, setDate] = useState<Date | undefined>(undefined);
@@ -205,7 +207,7 @@ export function AddRecordDialog({
         <DialogFooter>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !canEditSales}
             className="bg-success hover:bg-success w-full text-white"
           >
             确认添加

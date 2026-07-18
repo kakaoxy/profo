@@ -14,6 +14,7 @@ interface ActionBarProps {
   isCurrent: boolean;
   selectedDate: Date | undefined;
   isLoading: boolean;
+  canComplete: boolean;
   onDateSelect: (date: Date | undefined) => void;
   onSubmit: (isComplete: boolean) => void;
 }
@@ -22,11 +23,12 @@ export function ActionBar({
   isCurrent,
   selectedDate,
   isLoading,
+  canComplete,
   onDateSelect,
   onSubmit,
 }: ActionBarProps) {
-  // 当前阶段显示完整操作栏
-  if (isCurrent) {
+  // 当前阶段且有权限时显示完整操作栏
+  if (isCurrent && canComplete) {
     return (
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-md mt-4 border bg-status-renovating/10/30 border-orange-100">
         <div className="text-xs text-muted-foreground flex items-center gap-2">

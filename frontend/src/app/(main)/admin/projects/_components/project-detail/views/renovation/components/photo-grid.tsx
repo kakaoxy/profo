@@ -42,6 +42,7 @@ interface PhotoGridProps {
   isCurrent: boolean;
   isFuture: boolean;
   isLoading: boolean;
+  canEditRenovation: boolean;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDelete: (photoId: string) => void;
 }
@@ -50,10 +51,11 @@ interface PhotoGridProps {
 interface PhotoItemProps {
   photo: RenovationPhoto;
   isFuture: boolean;
+  canEditRenovation: boolean;
   onDelete: (photoId: string) => void;
 }
 
-const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoItemProps) {
+const PhotoItem = memo(function PhotoItem({ photo, isFuture, canEditRenovation, onDelete }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   // 网格缩略图和大图预览统一使用缩略图（800px WebP），避免加载原图导致卡顿
   const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
@@ -92,7 +94,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, onDelete }: PhotoIt
         </DialogTrigger>
 
         {/* Delete Button */}
-        {!isFuture && (
+        {!isFuture && canEditRenovation && (
           <div
             className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => e.stopPropagation()}
@@ -207,6 +209,7 @@ export function PhotoGrid({
   isCurrent,
   isFuture,
   isLoading,
+  canEditRenovation,
   onUpload,
   onDelete,
 }: PhotoGridProps) {
@@ -218,6 +221,7 @@ export function PhotoGrid({
           key={photo.id}
           photo={photo}
           isFuture={isFuture}
+          canEditRenovation={canEditRenovation}
           onDelete={onDelete}
         />
       ))}
@@ -228,7 +232,7 @@ export function PhotoGrid({
       ))}
 
       {/* 3. Upload Button */}
-      {!isFuture && (
+      {!isFuture && canEditRenovation && (
         <label className="aspect-square rounded-md border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
           <input
             type="file"

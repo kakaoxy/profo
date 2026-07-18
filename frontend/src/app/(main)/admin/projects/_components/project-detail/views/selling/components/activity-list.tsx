@@ -3,7 +3,12 @@
 import { safeFormatDate } from "@/lib/formatters";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SalesRecord } from "../../../../../types";
+import { SalesRecord, SalesRecordOperator } from "../../../../../types";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -17,9 +22,39 @@ interface ActivityListProps {
   type: "viewing" | "offer" | "negotiation";
   data: SalesRecord[];
   onDelete: (id: string) => void;
+  canEditSales?: boolean;
 }
 
-export function ActivityList({ type, data, onDelete }: ActivityListProps) {
+function getInitial(name?: string | null): string {
+  if (!name) return "?";
+  return name.charAt(0).toUpperCase();
+}
+
+function OperatorCell({ operator }: { operator?: SalesRecordOperator | null }) {
+  if (!operator) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      <Avatar className="size-5">
+        {operator.avatar ? (
+          <AvatarImage src={operator.avatar} alt={operator.nickname ?? ""} />
+        ) : null}
+        <AvatarFallback className="text-[10px]">
+          {getInitial(operator.nickname)}
+        </AvatarFallback>
+      </Avatar>
+      <span className="text-xs text-muted-foreground">
+        {operator.nickname ?? "未知"}
+      </span>
+    </div>
+  );
+}
+
+export function ActivityList({
+  type,
+  data,
+  onDelete,
+  canEditSales = true,
+}: ActivityListProps) {
   // 按时间倒序排列
   const sortedData = [...data].sort(
     (a, b) =>
@@ -44,6 +79,7 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-[120px] text-xs">时间</TableHead>
               <TableHead className="text-xs">带看人/机构</TableHead>
+              <TableHead className="text-xs">操作人</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -57,12 +93,17 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                   {item.customer_name}
                 </TableCell>
                 <TableCell>
-                  <button
-                    onClick={() => onDelete(item.id)}
-                    className="text-muted-foreground hover:text-error transition-colors"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  <OperatorCell operator={item.operator} />
+                </TableCell>
+                <TableCell>
+                  {canEditSales && (
+                    <button
+                      onClick={() => onDelete(item.id)}
+                      className="text-muted-foreground hover:text-error transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -113,13 +154,20 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
                 <span className="text-[10px] text-muted-foreground">
                   {safeFormatDate(item.record_date, "MM-dd HH:mm")}
                 </span>
+                {item.operator && (
+                  <div className="mt-1 flex justify-end">
+                    <OperatorCell operator={item.operator} />
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="text-muted-foreground hover:text-error p-1"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              {canEditSales && (
+                <button
+                  onClick={() => onDelete(item.id)}
+                  className="text-muted-foreground hover:text-error p-1"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           );
         })}
@@ -139,16 +187,21 @@ export function ActivityList({ type, data, onDelete }: ActivityListProps) {
               <span className="text-xs text-muted-foreground font-mono">
                 {safeFormatDate(item.record_date, "yyyy/MM/dd HH:mm")}
               </span>
-              <button
-                onClick={() => onDelete(item.id)}
-                className="text-muted-foreground hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
+              {canEditSales && (
+                <button
+                  onClick={() => onDelete(item.id)}
+                  className="text-muted-foreground hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
             </div>
             <div className="text-sm font-bold text-foreground">
               {item.customer_name}
             </div>
+            {item.operator && (
+              <OperatorCell operator={item.operator} />
+            )}
             {item.notes && (
               <div className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1 border border-border">
                 {item.notes}

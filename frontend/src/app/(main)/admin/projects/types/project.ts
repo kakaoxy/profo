@@ -124,6 +124,14 @@ export interface ProjectManager {
   username?: string;
 }
 
+export interface ProjectSaleInfo {
+  can_edit_sales?: boolean;
+}
+
+export interface ProjectRenovationInfo {
+  can_edit_renovation?: boolean;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -223,4 +231,9 @@ export interface Project {
   channel_manager?: string;
   presenter?: string;
   negotiator?: string;
+
+  // 销售子模块权限标志（含 can_edit_sales）
+  sale?: ProjectSaleInfo | null;
+  // 装修子模块权限标志（含 can_edit_renovation）
+  renovation?: ProjectRenovationInfo | null;
 }

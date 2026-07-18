@@ -238,3 +238,27 @@ class RenovationListResponse(BaseModel):
 
     items: list[RenovationResponse]
     total: int
+
+
+# ========== 项目详情 - 装修业务身份标志 ==========
+
+
+class RenovationInfoResponse(BaseModel):
+    """项目详情中装修业务身份标志响应.
+
+    附带在项目详情响应的 `renovation` 字段下，用于前端按钮显隐判断：
+    - admin/operator 持 `project:renovation:upload_photo` 权限 → can_edit_renovation=True
+    - user 角色：当前用户为对接负责人（contact_person_id == user.id）→ can_edit_renovation=True
+    - 其他 → can_edit_renovation=False
+    """
+
+    can_edit_renovation: bool = Field(
+        default=False,
+        description="当前用户是否有装修写权限（admin/operator 持权限码 或 user 为对接负责人）",
+    )
+    contact_person_id: str | None = Field(
+        None,
+        description="对接负责人ID（user 角色据此判断业务身份）",
+    )
+
+    model_config = ConfigDict(from_attributes=True)

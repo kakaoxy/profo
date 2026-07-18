@@ -8,7 +8,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from constants.role_codes import INTERNAL_ROLE_CODES
+from constants.role_codes import INTERNAL_ROLE_CODES, RoleCode
 from db import get_db
 from models import User
 from services.system import ApiKeyService
@@ -328,8 +328,116 @@ PropertyUploadPermDep = Annotated[User, Depends(require_permission("property:upl
 # project 模块
 ProjectReadPermDep = Annotated[User, Depends(require_permission("project:read"))]
 ProjectWritePermDep = Annotated[User, Depends(require_permission("project:write"))]
+# project 业务身份子权限码（仅 admin/operator 持有，user 由业务身份豁免）
+ProjectSalesManageTeamPermDep = Annotated[User, Depends(require_permission("project:sales:manage_team"))]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
+
+
+# ==================== 业务身份双通道校验 ====================
+
+
+def _check_business_identity(
+    db: Session,
+    project_id: str,
+    code: str,
+    user_id: str,
+) -> bool:
+    """业务身份校验：根据权限码前缀路由到不同的身份检查逻辑.
+
+    Args:
+        db: 数据库会话
+        project_id: 项目ID（来自路径参数）
+        code: 权限码（用于路由身份检查类型）
+        user_id: 当前用户ID
+
+    Returns:
+        True 表示业务身份匹配，False 表示不匹配
+
+    """
+    # lazy import 规避 dependencies.auth → models.project → models 循环依赖
+    from models import ProjectRenovation, ProjectSale  # noqa: PLC0415
+
+    if code.startswith("project:renovation:"):
+        renovation = (
+            db.query(ProjectRenovation)
+            .filter(
+                ProjectRenovation.project_id == project_id,
+                ProjectRenovation.is_deleted.is_(False),
+            )
+            .first()
+        )
+        return renovation is not None and renovation.contact_person_id == user_id
+    if code.startswith("project:sales:"):
+        sale = (
+            db.query(ProjectSale)
+            .filter(
+                ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if sale is None:
+            return False
+        return user_id in {sale.channel_manager_id, sale.property_agent_id, sale.negotiator_id}
+    return False
+
+
+def require_project_business_permission(
+    code: str,
+    project_id_param: str = "project_id",
+) -> Callable[..., User]:
+    """业务身份双通道权限校验工厂.
+
+    校验链路：
+    1. 权限码校验：admin 通过 project:write 放行；operator 通过子权限码放行；
+    2. 业务身份校验：user 角色通过 contact_person_id / 销售团队成员字段放行；
+    3. 都不通过 → 403 PermissionDeniedError.
+
+    Args:
+        code: 业务子权限码（如 "project:renovation:upload_photo"）
+        project_id_param: 路径参数名（默认 "project_id"）
+
+    Returns:
+        依赖函数，返回当前用户
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 权限不足且非项目业务身份
+
+    """
+
+    def permission_checker(
+        request: Request,
+        db: DbSessionDep,
+        current_user: Annotated[User, Depends(get_current_active_user)],
+    ) -> User:
+        # 1. 权限码校验：子权限码 或 project:write 任一通过即放行
+        if has_permission(current_user, code, db) or has_permission(current_user, "project:write", db):
+            return current_user
+
+        # 2. user 角色业务身份校验（admin/operator 已通过权限码放行，此处仅 user 命中）
+        if current_user.role and current_user.role.code == RoleCode.USER.value:
+            project_id = request.path_params.get(project_id_param)
+            if project_id and _check_business_identity(db, str(project_id), code, str(current_user.id)):
+                return current_user
+
+        # 3. 都不通过 → 403
+        msg = f"权限不足：缺少权限 {code} 且非项目业务身份"
+        raise PermissionDeniedError(msg)
+
+    return permission_checker
+
+
+# project 业务身份权限依赖类型（基于 require_project_business_permission 工厂）
+ProjectRenovationUploadPhotoPermDep = Annotated[
+    User, Depends(require_project_business_permission("project:renovation:upload_photo", "project_id"))
+]
+ProjectRenovationCompleteStagePermDep = Annotated[
+    User, Depends(require_project_business_permission("project:renovation:complete_stage", "project_id"))
+]
+ProjectSalesAddRecordPermDep = Annotated[
+    User, Depends(require_project_business_permission("project:sales:add_record", "project_id"))
+]
 
 
 __all__ = [
@@ -346,6 +454,10 @@ __all__ = [
     "PermissionManagePermDep",
     "PermissionReadPermDep",
     "ProjectReadPermDep",
+    "ProjectRenovationCompleteStagePermDep",
+    "ProjectRenovationUploadPhotoPermDep",
+    "ProjectSalesAddRecordPermDep",
+    "ProjectSalesManageTeamPermDep",
     "ProjectWritePermDep",
     "PropertyReadPermDep",
     "PropertyUploadPermDep",
@@ -366,5 +478,6 @@ __all__ = [
     "has_permission",
     "require_api_key",
     "require_permission",
+    "require_project_business_permission",
     "require_roles",
 ]

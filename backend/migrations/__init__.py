@@ -253,6 +253,39 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 30,
         "description": "删除项目",
     },
+    # project 业务身份权限点（button 类，配合业务身份双通道校验，is_system=True）
+    {
+        "code": "project:renovation:upload_photo",
+        "name": "上传装修照片",
+        "module": "project",
+        "category": "button",
+        "sort_order": 40,
+        "description": "装修阶段上传/删除照片",
+    },
+    {
+        "code": "project:renovation:complete_stage",
+        "name": "完成装修阶段",
+        "module": "project",
+        "category": "button",
+        "sort_order": 50,
+        "description": "装修阶段完成阶段流转",
+    },
+    {
+        "code": "project:sales:add_record",
+        "name": "添加销售记录",
+        "module": "project",
+        "category": "button",
+        "sort_order": 60,
+        "description": "在售阶段添加带看/出价/面谈记录",
+    },
+    {
+        "code": "project:sales:manage_team",
+        "name": "维护销售团队",
+        "module": "project",
+        "category": "button",
+        "sort_order": 70,
+        "description": "维护销售团队 3 角色（渠道/讲房/谈判）",
+    },
     # 财务台账模块
     {
         "code": "ledger:read",
@@ -363,6 +396,11 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "lead:export",
         "project:read",
         "project:write",
+        # project 业务身份子权限码（user/customer 不分配，由业务身份豁免）
+        "project:renovation:upload_photo",
+        "project:renovation:complete_stage",
+        "project:sales:add_record",
+        "project:sales:manage_team",
         "ledger:read",
         "ledger:write",
         "ledger:settle",
@@ -1373,6 +1411,112 @@ def migrate_permission_system(engine: Engine) -> None:
         logger.info("迁移：为内置角色分配 %d 条权限关联", inserted_links)
 
 
+def migrate_project_business_permission(engine: Engine) -> None:
+    """幂等迁移：插入 project 业务身份权限点 + 分配角色 + ProjectInteraction.operator_id 索引.
+
+    覆盖场景：
+    1. 插入 4 个新权限点（已存在的跳过）；
+    2. 为 admin/operator 分配新权限码（user/customer 不分配，由业务身份豁免）；
+    3. 通过 _index_exists 检查后创建 ProjectInteraction.operator_id 索引
+       （ix_project_interaction_operator_id）。
+
+    幂等性：所有步骤通过 _table_exists/_index_exists/已存在 code 检查跳过。
+    """
+    import uuid  # noqa: PLC0415
+
+    from sqlalchemy import bindparam  # noqa: PLC0415
+
+    # 1. 插入新权限点（跳过已存在的 code）
+    new_perm_codes = [
+        "project:renovation:upload_photo",
+        "project:renovation:complete_stage",
+        "project:sales:add_record",
+        "project:sales:manage_team",
+    ]
+    new_perm_defs = {p["code"]: p for p in _PERMISSIONS_SEED if p["code"] in new_perm_codes}
+
+    with engine.begin() as conn:
+        existing_codes = {
+            row[0] for row in conn.execute(text("SELECT code FROM permissions")).fetchall() if row[0] in new_perm_codes
+        }
+        inserted = 0
+        for code in new_perm_codes:
+            if code in existing_codes:
+                continue
+            perm = new_perm_defs[code]
+            conn.execute(
+                text(
+                    "INSERT INTO permissions "
+                    "(id, code, name, module, category, sort_order, is_system, description, created_at, updated_at) "
+                    "VALUES (:id, :code, :name, :module, :category, :sort_order, TRUE, :description, NOW(), NOW())"
+                ),
+                {
+                    "id": str(uuid.uuid4()),
+                    "code": perm["code"],
+                    "name": perm["name"],
+                    "module": perm["module"],
+                    "category": perm["category"],
+                    "sort_order": perm["sort_order"],
+                    "description": perm["description"],
+                },
+            )
+            inserted += 1
+    if inserted:
+        logger.info("迁移：插入 %d 个 project 业务身份权限点", inserted)
+
+    # 2. 为 admin/operator 分配新权限码（跳过已存在的关联）
+    role_codes_to_update = ["admin", "operator"]
+    with engine.begin() as conn:
+        role_stmt = text("SELECT id, code FROM roles WHERE code IN :codes").bindparams(
+            bindparam("codes", expanding=True)
+        )
+        role_rows = conn.execute(role_stmt, {"codes": role_codes_to_update}).fetchall()
+        role_id_by_code: dict[str, str] = {row[1]: row[0] for row in role_rows}
+
+        perm_stmt = text("SELECT id, code FROM permissions WHERE code IN :codes").bindparams(
+            bindparam("codes", expanding=True)
+        )
+        perm_rows = conn.execute(perm_stmt, {"codes": new_perm_codes}).fetchall()
+        perm_id_by_code: dict[str, str] = {row[1]: row[0] for row in perm_rows}
+
+        existing_pairs: set[tuple[str, str]] = set()
+        for role_code in role_codes_to_update:
+            role_id = role_id_by_code.get(role_code)
+            if not role_id:
+                continue
+            rows = conn.execute(
+                text("SELECT permission_id FROM role_permissions WHERE role_id = :rid"),
+                {"rid": role_id},
+            ).fetchall()
+            for row in rows:
+                existing_pairs.add((role_id, row[0]))
+
+        inserted_links = 0
+        for role_code in role_codes_to_update:
+            role_id = role_id_by_code.get(role_code)
+            if not role_id:
+                continue
+            for perm_code in new_perm_codes:
+                perm_id = perm_id_by_code.get(perm_code)
+                if not perm_id:
+                    continue
+                if (role_id, perm_id) in existing_pairs:
+                    continue
+                conn.execute(
+                    text("INSERT INTO role_permissions (role_id, permission_id) VALUES (:rid, :pid)"),
+                    {"rid": role_id, "pid": perm_id},
+                )
+                inserted_links += 1
+    if inserted_links:
+        logger.info("迁移：为 admin/operator 分配 %d 条 project 业务身份权限关联", inserted_links)
+
+    # 3. 创建 ProjectInteraction.operator_id 索引（幂等）
+    if not _index_exists(engine, "ix_project_interaction_operator_id"):
+        logger.info("迁移：创建 ix_project_interaction_operator_id 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX ix_project_interaction_operator_id ON project_interactions (operator_id)"))
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
@@ -1407,6 +1551,7 @@ def run_startup_migrations(engine: Engine) -> None:
         cleanup_reserved_contracts(engine)
         rebuild_contract_no_index(engine)
         migrate_permission_system(engine)
+        migrate_project_business_permission(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

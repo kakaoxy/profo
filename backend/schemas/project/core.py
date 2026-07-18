@@ -2,12 +2,15 @@
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 
 from models.common import BusinessForm, ProjectStatus, RenovationStage, SettlementStatus
 from schemas.project.contract import SigningMaterial
 from schemas.project.owner import OwnerInlineCreate, OwnerInlineUpdate, OwnerResponse
+from schemas.project.renovation import RenovationInfoResponse
+from schemas.project.sales import SaleInfoResponse
 from schemas.response import PaginatedResponse
 
 
@@ -262,8 +265,8 @@ class ProjectResponse(BaseModel):
     roi: float | None = Field(default=0.0)
 
     signing_materials: list[SigningMaterial] | None = Field(None, description="签约材料列表")
-    sales_records: list[dict[str, str | float | None]] | None = Field(None, description="销售活动记录列表")
-    renovation_photos: list[dict[str, str | None]] | None = Field(None, description="装修阶段照片列表")
+    sales_records: list[dict[str, Any]] | None = Field(None, description="销售活动记录列表")
+    renovation_photos: list[dict[str, Any]] | None = Field(None, description="装修阶段照片列表")
 
     renovation_stage_dates: dict[str, str] | None = Field(
         None,
@@ -280,6 +283,16 @@ class ProjectResponse(BaseModel):
     )
     finance_settled_date: date | None = Field(None, description="资金账本结算日期")
     finance_settled_note: str | None = Field(None, description="资金账本结算说明")
+
+    # 业务身份标志（基于当前请求用户计算，用于前端按钮显隐判断）
+    renovation: RenovationInfoResponse | None = Field(
+        None,
+        description="装修业务身份标志（含 can_edit_renovation / contact_person_id）",
+    )
+    sale: SaleInfoResponse | None = Field(
+        None,
+        description="销售业务身份标志（含 can_edit_sales / 3 个销售团队字段）",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

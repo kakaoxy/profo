@@ -6,7 +6,10 @@ import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import { requirePermission } from "@/lib/auth/server/require-permission";
+import {
+  requireAnyPermission,
+  requirePermission,
+} from "@/lib/auth/server/require-permission";
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
@@ -81,7 +84,11 @@ export async function deleteRenovationPhotoAction(
     };
   }
 
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  const permCheck = await requireAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
+    PERMISSION_CODES.PROJECT_WRITE,
+    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
+  ]);
   if (!permCheck.ok) {
     return { success: false, message: permCheck.message };
   }
@@ -160,7 +167,11 @@ export async function addRenovationPhotoAction(payload: {
     };
   }
 
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  const permCheck = await requireAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
+    PERMISSION_CODES.PROJECT_WRITE,
+    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
+  ]);
   if (!permCheck.ok) {
     return { success: false, message: permCheck.message };
   }
@@ -212,7 +223,11 @@ export async function updateRenovationStageAction(payload: {
     };
   }
 
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  const permCheck = await requireAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
+    PERMISSION_CODES.PROJECT_WRITE,
+    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
+  ]);
   if (!permCheck.ok) {
     return { success: false, message: permCheck.message };
   }

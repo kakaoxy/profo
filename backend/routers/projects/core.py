@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from dependencies.auth import CurrentAdminUserDep, CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import CurrentActiveUserDep, CurrentAdminUserDep, CurrentInternalUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
 from schemas.project import (
@@ -116,7 +116,7 @@ def create_project(
 @router.get("")
 def get_projects(
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: CurrentActiveUserDep,
     pagination: PaginationDep,
     filters: Annotated[ProjectFilter, Depends()],
     include_interactions: Annotated[
@@ -128,7 +128,11 @@ def get_projects(
         Query(description="工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序）"),
     ] = False,
 ) -> PaginatedResponse[ProjectResponse]:
-    """获取项目列表."""
+    """获取项目列表.
+
+    使用 CurrentActiveUserDep 允许 user 角色访问（user 持 project:read 权限，
+    且作为业务身份需在 dashboard 看到自己负责的项目）.
+    """
     result = service.get_projects(
         status_filter=filters.status,
         community_name=filters.community_name,
@@ -149,9 +153,12 @@ def get_projects(
 @router.get("/stats")
 def get_project_stats(
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: CurrentActiveUserDep,
 ) -> ProjectStatsResponse:
-    """获取项目统计."""
+    """获取项目统计.
+
+    使用 CurrentActiveUserDep 允许 user 角色访问（dashboard 需展示统计卡片）.
+    """
     return service.get_project_stats()
 
 
@@ -252,12 +259,16 @@ def export_projects(
 def get_project(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: CurrentActiveUserDep,
     *,
     full: Annotated[bool, Query(description="是否获取完整详情(包含大字段)")] = False,
 ) -> ProjectResponse:
-    """获取项目详情."""
-    project = service.get_project(project_id, include_all=full)
+    """获取项目详情.
+
+    使用 CurrentActiveUserDep 允许 user 角色访问（业务身份标志 can_edit_*
+    基于当前用户计算，user 被指派为对接负责人/销售团队成员时 can_edit_*=true）.
+    """
+    project = service.get_project(project_id, include_all=full, current_user=current_user)
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)
@@ -324,10 +335,10 @@ def complete_project(
     project_id: Annotated[str, Path(description="项目ID")],
     complete_data: ProjectCompleteRequest,
     service: ProjectServiceDep,
-    _current_user: CurrentInternalUserDep,
+    current_user: CurrentInternalUserDep,
 ) -> ProjectResponse:
     """完成项目."""
-    project = service.complete_project(project_id, complete_data)
+    project = service.complete_project(project_id, complete_data, current_user=current_user)
     if not project:
         msg = "项目不存在"
         raise ResourceNotFoundError(msg)

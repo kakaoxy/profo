@@ -221,6 +221,20 @@ class UserSimpleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserBriefResponse(BaseModel):
+    """用户简要信息响应 - 用于关联对象嵌套展示（如销售记录操作人）.
+
+    仅包含前端展示所需的最小字段集：id/nickname/avatar.
+    历史记录可能缺失 operator_id，此时响应中 operator 字段为 null.
+    """
+
+    id: str = Field(description="用户ID")
+    nickname: str | None = Field(None, description="昵称")
+    avatar: str | None = Field(None, description="头像")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserSimpleListResponse(PaginatedResponse[UserSimpleResponse]):
     """简化用户列表响应模型."""
 
@@ -273,6 +287,7 @@ __all__ = [
     "RoleResponse",
     "RoleUpdate",
     "TokenResponse",
+    "UserBriefResponse",
     "UserCreate",
     "UserListResponse",
     "UserResponse",

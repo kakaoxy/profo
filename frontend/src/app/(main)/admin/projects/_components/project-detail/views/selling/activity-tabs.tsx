@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 
 import { Project, SalesRecord } from "../../../../types";
 import { deleteSalesRecordAction } from "../../../../actions/sales";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { ActivityList } from "./components/activity-list";
 import { AddRecordDialog } from "./components/add-record-dialog";
 
@@ -23,6 +25,14 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
   const records: SalesRecord[] = project.sales_records || [];
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("viewing");
+
+  const { hasAnyPermission } = usePermission();
+  const canAddByPermission = hasAnyPermission([
+    PERMISSION_CODES.PROJECT_SALES_ADD_RECORD,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
+  const canEditSales =
+    canAddByPermission || project.sale?.can_edit_sales === true;
 
   // 删除逻辑
   const handleDelete = async (id: string) => {
@@ -52,15 +62,17 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
       {/* 标题栏 */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">销售活动记录</h3>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 border-emerald-200 text-emerald-700 hover:bg-success-container hover:text-emerald-800"
-          onClick={() => setIsDialogOpen(true)}
-        >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          新增记录
-        </Button>
+        {canEditSales && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 border-emerald-200 text-emerald-700 hover:bg-success-container hover:text-emerald-800"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            新增记录
+          </Button>
+        )}
       </div>
 
       <Tabs
@@ -94,11 +106,17 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
             type="viewing"
             data={viewings}
             onDelete={handleDelete}
+            canEditSales={canEditSales}
           />
         </TabsContent>
 
         <TabsContent value="offer" className="mt-4">
-          <ActivityList type="offer" data={offers} onDelete={handleDelete} />
+          <ActivityList
+            type="offer"
+            data={offers}
+            onDelete={handleDelete}
+            canEditSales={canEditSales}
+          />
         </TabsContent>
 
         <TabsContent value="negotiation" className="mt-4">
@@ -106,6 +124,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
             type="negotiation"
             data={talks}
             onDelete={handleDelete}
+            canEditSales={canEditSales}
           />
         </TabsContent>
       </Tabs>
@@ -119,6 +138,7 @@ export function ActivityTabs({ project, onRefresh }: ActivityTabsProps) {
           if (onRefresh) onRefresh();
         }}
         defaultTab={activeTab}
+        canEditSales={canEditSales}
       />
     </div>
   );

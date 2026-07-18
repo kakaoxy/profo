@@ -21,6 +21,8 @@ import { useRenovationUpload } from "./use-renovation-upload";
 import { Project, RenovationPhoto } from "../../../../../types";
 import { RENOVATION_STAGES } from "../../../constants";
 import { updateRenovationStageAction, deleteRenovationPhotoAction } from "../../../../../actions/renovation";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 interface TimelineItemProps {
   stage: (typeof RENOVATION_STAGES)[number];
@@ -42,6 +44,7 @@ export function TimelineItem({
   onRefresh,
 }: TimelineItemProps) {
   const router = useRouter();
+  const { hasAnyPermission } = usePermission();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   useEffect(() => { setSelectedDate(new Date()); }, []);
@@ -57,6 +60,20 @@ export function TimelineItem({
   const isCompleted = !!stageFinishDateStr || index < currentIndex;
   const isCurrent = !isCompleted && index === currentIndex;
   const isFuture = !isCompleted && index > currentIndex;
+
+  // 业务身份校验：权限码 OR 后端计算的业务身份标志
+  const canEditByPermission = hasAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
+  const canCompleteByPermission = hasAnyPermission([
+    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
+    PERMISSION_CODES.PROJECT_WRITE,
+  ]);
+  const canEditRenovation =
+    canEditByPermission || project.renovation?.can_edit_renovation === true;
+  const canComplete =
+    canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
   const handleSubmit = async () => {
     if (uploadQueue.length > 0) {
@@ -149,8 +166,8 @@ export function TimelineItem({
 
       <AccordionContent className="pl-12 pt-4 pb-2">
         <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-card border-status-renovating/30 shadow-sm" : "bg-muted/50 border-border")}>
-          <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} onUpload={handleUpload} onDelete={handleDelete} />
-          <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
+          <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} canEditRenovation={canEditRenovation} onUpload={handleUpload} onDelete={handleDelete} />
+          <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} canComplete={canComplete} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
         </div>
       </AccordionContent>
     </AccordionItem>
