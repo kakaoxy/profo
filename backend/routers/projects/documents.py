@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Path, Request
 from sqlalchemy.orm import Session
 
 from db import get_db
-from dependencies.auth import CurrentInternalUserDep
+from dependencies.auth import CurrentInternalUserDep, ProjectReadPermDep
 from models.common import BusinessForm
 from schemas.project import (
     DocumentCreate,
@@ -26,10 +26,13 @@ _get_db_dep = Depends(get_db)
 @router.get("/{project_id}/documents")
 def list_documents(
     db: Annotated[Session, _get_db_dep],
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
     project_id: Annotated[str, Path(description="项目ID")],
 ) -> list[DocumentResponse]:
-    """获取项目文书签收列表."""
+    """获取项目文书签收列表.
+
+    使用 ProjectReadPermDep 基于权限码校验（需 project:read）.
+    """
     documents_service.assert_project_exists(db, project_id)
     docs = documents_service.list_documents(db, project_id)
     return [DocumentResponse.model_validate(d) for d in docs]

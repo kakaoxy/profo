@@ -5,11 +5,6 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
-import { PERMISSION_CODES } from "@/lib/auth/permissions";
-import {
-  requireAnyPermission,
-  requirePermission,
-} from "@/lib/auth/server/require-permission";
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
@@ -84,14 +79,8 @@ export async function deleteRenovationPhotoAction(
     };
   }
 
-  const permCheck = await requireAnyPermission([
-    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
-    PERMISSION_CODES.PROJECT_WRITE,
-    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
-  ]);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectRenovationUploadPhotoPermDep（业务身份双通道）执行，
+  // Server Action 不再重复校验——业务身份优先级最高，不被角色权限覆盖。
 
   try {
     const client = await fetchClient();
@@ -167,14 +156,7 @@ export async function addRenovationPhotoAction(payload: {
     };
   }
 
-  const permCheck = await requireAnyPermission([
-    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
-    PERMISSION_CODES.PROJECT_WRITE,
-    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
-  ]);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectRenovationUploadPhotoPermDep（业务身份双通道）执行。
 
   try {
     const client = await fetchClient();
@@ -223,14 +205,7 @@ export async function updateRenovationStageAction(payload: {
     };
   }
 
-  const permCheck = await requireAnyPermission([
-    PERMISSION_CODES.PROJECT_RENOVATION_UPLOAD_PHOTO,
-    PERMISSION_CODES.PROJECT_WRITE,
-    PERMISSION_CODES.PROJECT_RENOVATION_COMPLETE_STAGE,
-  ]);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectRenovationCompleteStagePermDep（业务身份双通道）执行。
 
   try {
     const client = await fetchClient();
@@ -308,10 +283,7 @@ export async function updateRenovationContractAction(
     };
   }
 
-  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
-  if (!permCheck.ok) {
-    return { success: false, message: permCheck.message };
-  }
+  // 权限校验由后端 ProjectSalesManageTeamPermDep 执行（纯权限码，仅 admin/operator）。
 
   try {
     const client = await fetchClient();

@@ -330,6 +330,21 @@ ProjectReadPermDep = Annotated[User, Depends(require_permission("project:read"))
 ProjectWritePermDep = Annotated[User, Depends(require_permission("project:write"))]
 # project 业务身份子权限码（仅 admin/operator 持有，user 由业务身份豁免）
 ProjectSalesManageTeamPermDep = Annotated[User, Depends(require_permission("project:sales:manage_team"))]
+# lead 模块
+LeadReadPermDep = Annotated[User, Depends(require_permission("lead:read"))]
+LeadWritePermDep = Annotated[User, Depends(require_permission("lead:write"))]
+LeadExportPermDep = Annotated[User, Depends(require_permission("lead:export"))]
+# ledger 模块
+LedgerReadPermDep = Annotated[User, Depends(require_permission("ledger:read"))]
+LedgerWritePermDep = Annotated[User, Depends(require_permission("ledger:write"))]
+LedgerSettlePermDep = Annotated[User, Depends(require_permission("ledger:settle"))]
+# investment 模块
+InvestmentReadPermDep = Annotated[User, Depends(require_permission("investment:read"))]
+InvestmentWritePermDep = Annotated[User, Depends(require_permission("investment:write"))]
+InvestmentCopyPermDep = Annotated[User, Depends(require_permission("investment:copy"))]
+# l4_marketing 模块
+L4MarketingReadPermDep = Annotated[User, Depends(require_permission("l4_marketing:read"))]
+L4MarketingWritePermDep = Annotated[User, Depends(require_permission("l4_marketing:write"))]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
 
@@ -441,6 +456,101 @@ ProjectSalesAddRecordPermDep = Annotated[
 ]
 
 
+def _check_any_business_identity(db: Session, project_id: str, user_id: str) -> bool:
+    """业务身份校验：当前用户是否为该项目的装修对接负责人或销售团队成员.
+
+    与 `_check_business_identity` 区别：本函数不区分具体权限码前缀，任一业务身份匹配
+    即返回 True。用于项目详情/列表/合同等读端点——被指派为任意负责人即可读项目。
+
+    Args:
+        db: 数据库会话
+        project_id: 项目ID
+        user_id: 当前用户ID
+
+    Returns:
+        True 表示业务身份匹配，False 表示不匹配
+
+    """
+    # lazy import 规避 dependencies.auth → models.project → models 循环依赖
+    from models import ProjectRenovation, ProjectSale  # noqa: PLC0415
+
+    renovation = (
+        db.query(ProjectRenovation)
+        .filter(
+            ProjectRenovation.project_id == project_id,
+            ProjectRenovation.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if renovation is not None and renovation.contact_person_id == user_id:
+        return True
+
+    sale = (
+        db.query(ProjectSale)
+        .filter(
+            ProjectSale.project_id == project_id,
+            ProjectSale.is_deleted.is_(False),
+        )
+        .first()
+    )
+    return sale is not None and user_id in {
+        sale.channel_manager_id,
+        sale.property_agent_id,
+        sale.negotiator_id,
+    }
+
+
+def require_project_read_or_business_permission(
+    project_id_param: str = "project_id",
+) -> Callable[..., User]:
+    """读业务身份双通道权限校验工厂.
+
+    用于项目读端点（详情/照片列表/销售记录/合同/报告）的权限校验。校验链路：
+    1. 权限码校验：持 project:read 或 project:write 任一即放行（admin/operator/有权限的 user）；
+    2. 业务身份校验：被指派为该项目的装修对接负责人或销售团队成员即放行
+       （不限制角色——业务身份优先级最高，不被角色权限覆盖）；
+    3. 都不通过 → 403 PermissionDeniedError.
+
+    设计意图：普通用户即使无 project:read，被指派为项目负责人后也能查看自己负责的
+    项目详情，并执行上传照片/添加销售记录等操作。
+
+    Args:
+        project_id_param: 路径参数名（默认 "project_id"）
+
+    Returns:
+        依赖函数，返回当前用户
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 无 project:read 且非项目业务身份
+
+    """
+
+    def permission_checker(
+        request: Request,
+        db: DbSessionDep,
+        current_user: Annotated[User, Depends(get_current_active_user)],
+    ) -> User:
+        # 1. 权限码校验：project:read 或 project:write 任一通过即放行
+        if has_permission(current_user, "project:read", db) or has_permission(current_user, "project:write", db):
+            return current_user
+
+        # 2. 业务身份校验：被指派为该项目任意业务负责人即放行
+        project_id = request.path_params.get(project_id_param)
+        if project_id and _check_any_business_identity(db, str(project_id), str(current_user.id)):
+            return current_user
+
+        # 3. 都不通过 → 403
+        msg = "权限不足：缺少权限 project:read 且非项目业务身份"
+        raise PermissionDeniedError(msg)
+
+    return permission_checker
+
+
+# 项目读端点业务身份双通道依赖类型
+# 用于 GET /projects/{id}、GET /projects/{id}/renovation/photos 等读端点
+ProjectReadOrBusinessPermDep = Annotated[User, Depends(require_project_read_or_business_permission("project_id"))]
+
+
 __all__ = [
     "ApiKeyAuthDep",
     "CurrentActiveUserDep",
@@ -451,9 +561,21 @@ __all__ = [
     "CurrentUserDep",
     # 类型别名
     "DbSessionDep",
+    "InvestmentCopyPermDep",
+    "InvestmentReadPermDep",
+    "InvestmentWritePermDep",
+    "L4MarketingReadPermDep",
+    "L4MarketingWritePermDep",
+    "LeadExportPermDep",
+    "LeadReadPermDep",
+    "LeadWritePermDep",
+    "LedgerReadPermDep",
+    "LedgerSettlePermDep",
+    "LedgerWritePermDep",
     "OperationLogReadPermDep",
     "PermissionManagePermDep",
     "PermissionReadPermDep",
+    "ProjectReadOrBusinessPermDep",
     "ProjectReadPermDep",
     "ProjectRenovationCompleteStagePermDep",
     "ProjectRenovationUploadPhotoPermDep",
@@ -480,5 +602,6 @@ __all__ = [
     "require_api_key",
     "require_permission",
     "require_project_business_permission",
+    "require_project_read_or_business_permission",
     "require_roles",
 ]

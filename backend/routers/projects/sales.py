@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request
 
 from dependencies.auth import (
-    CurrentActiveUserDep,
+    ProjectReadOrBusinessPermDep,
     ProjectSalesAddRecordPermDep,
     ProjectSalesManageTeamPermDep,
 )
@@ -81,12 +81,13 @@ def create_negotiation_record(
 def get_sales_records(
     project_id: Annotated[str, Path(description="项目ID")],
     service: ProjectServiceDep,
-    _current_user: CurrentActiveUserDep,
+    _current_user: ProjectReadOrBusinessPermDep,
     record_type: Annotated[str | None, Query(max_length=100, description="记录类型筛选")] = None,
 ) -> SalesRecordListResponse:
     """获取销售记录.
 
-    使用 CurrentActiveUserDep 允许 user 角色访问（业务身份 user 需查看自己负责项目的销售记录）.
+    使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
+    销售团队成员（渠道/讲房/谈判）需查看自己负责项目的销售记录以执行添加/删除操作。
     """
     records = service.get_sales_records(project_id, record_type)
     items = [SalesRecordResponse.model_validate(r) for r in records]
@@ -100,10 +101,10 @@ def delete_sales_record(
     project_id: Annotated[str, Path(description="项目ID")],
     record_id: Annotated[str, Path(description="记录ID")],
     service: ProjectServiceDep,
-    current_user: ProjectSalesAddRecordPermDep,
+    _current_user: ProjectSalesAddRecordPermDep,
 ) -> None:
     """删除销售记录.
 
     速率限制：20次/小时.
     """
-    service.delete_sales_record(project_id, record_id, current_user=current_user)
+    service.delete_sales_record(project_id, record_id)

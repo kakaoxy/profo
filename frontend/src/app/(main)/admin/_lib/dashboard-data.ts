@@ -37,6 +37,7 @@ export interface DashboardDataResult {
     sellingProjects?: string;
     leads?: string;
     marketData?: string;
+    myResponsibleProjects?: string;
   };
 }
 
@@ -181,6 +182,8 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
         },
       },
     }),
+    // 业务身份入口：普通用户无 project:read 时，QuickEntrySection 用此结果按 status 过滤
+    client.GET("/api/v1/projects/my-responsible", {}),
   ]);
 
   const errors: DashboardDataResult["errors"] = {};
@@ -193,6 +196,7 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     leadsRes,
     renovationProjectsRes,
     sellingProjectsRes,
+    myResponsibleRes,
   ] = results;
 
   const projectStats =
@@ -231,22 +235,36 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
     logger.error("[Dashboard] 项目列表获取失败:", projectsRes.reason);
   }
 
-  const renovationProjects =
-    renovationProjectsRes.status === "fulfilled" && renovationProjectsRes.value.data
-      ? validateProjectResponseList(renovationProjectsRes.value.data.items)
+  // my-responsible 端点返回裸数组（list[ProjectResponse]），非分页包装
+  const myResponsibleProjects =
+    myResponsibleRes.status === "fulfilled" && myResponsibleRes.value.data
+      ? validateProjectResponseList(myResponsibleRes.value.data)
       : [];
-  if (renovationProjectsRes.status === "rejected") {
-    errors.renovationProjects = "获取装修中项目失败";
-    logger.error("[Dashboard] 装修中项目获取失败:", renovationProjectsRes.reason);
+  if (myResponsibleRes.status === "rejected") {
+    errors.myResponsibleProjects = "获取我负责的项目失败";
+    logger.error("[Dashboard] 我负责的项目获取失败:", myResponsibleRes.reason);
   }
 
-  const sellingProjects =
-    sellingProjectsRes.status === "fulfilled" && sellingProjectsRes.value.data
-      ? validateProjectResponseList(sellingProjectsRes.value.data.items)
-      : [];
-  if (sellingProjectsRes.status === "rejected") {
-    errors.sellingProjects = "获取在售项目失败";
-    logger.error("[Dashboard] 在售项目获取失败:", sellingProjectsRes.reason);
+  // QuickEntrySection 数据源：admin/operator 走 ?status=... 端点看全部；
+  // 普通用户无 project:read 时该端点 403 rejected，fallback 到 my-responsible 按 status 过滤
+  let renovationProjects: ProjectResponse[];
+  if (renovationProjectsRes.status === "fulfilled" && renovationProjectsRes.value.data) {
+    renovationProjects = validateProjectResponseList(renovationProjectsRes.value.data.items);
+  } else {
+    if (renovationProjectsRes.status === "rejected") {
+      logger.debug("[Dashboard] 装修中项目获取失败，回退到 my-responsible:", renovationProjectsRes.reason);
+    }
+    renovationProjects = myResponsibleProjects.filter((p) => p.status === "renovating");
+  }
+
+  let sellingProjects: ProjectResponse[];
+  if (sellingProjectsRes.status === "fulfilled" && sellingProjectsRes.value.data) {
+    sellingProjects = validateProjectResponseList(sellingProjectsRes.value.data.items);
+  } else {
+    if (sellingProjectsRes.status === "rejected") {
+      logger.debug("[Dashboard] 在售项目获取失败，回退到 my-responsible:", sellingProjectsRes.reason);
+    }
+    sellingProjects = myResponsibleProjects.filter((p) => p.status === "selling");
   }
 
   const leadItems =

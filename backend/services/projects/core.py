@@ -201,6 +201,33 @@ class ProjectCoreService:
             "page_size": result["page_size"],
         }
 
+    def get_my_responsible_projects(
+        self,
+        user_id: str,
+        *,
+        current_user: "User | None" = None,
+    ) -> list[ProjectResponse]:
+        """获取当前用户作为业务身份（装修对接负责人或销售团队成员）负责的项目列表.
+
+        用于工作台"我负责的项目"卡片：普通用户即使无 project:read 权限，被指派为
+        项目业务负责人后也能看到自己负责的项目。业务身份优先级最高，不被角色权限覆盖。
+
+        Args:
+            user_id: 当前用户ID
+            current_user: 当前请求用户，用于计算 can_edit_* 业务身份标志
+
+        Returns:
+            项目响应列表（按 created_at 降序）
+
+        """
+        projects = self.query_service.get_by_business_identity(user_id)
+        return [
+            ProjectResponse.model_validate(
+                self.response_builder.build(p, slim=True, current_user=current_user),
+            )
+            for p in projects
+        ]
+
     def update_project(self, project_id: str, update_data: ProjectUpdate) -> ProjectResponse:
         """更新项目信息.
 

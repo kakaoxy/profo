@@ -11,7 +11,6 @@ from typing import Any
 
 from sqlalchemy.orm import Session, selectinload
 
-from constants.role_codes import RoleCode
 from models import Project, ProjectInteraction, ProjectSale, User
 from models.common import ProjectStatus
 from schemas.project import ProjectResponse
@@ -20,7 +19,7 @@ from schemas.project.sales import (
     SalesRecordCreate,
     SalesRolesUpdate,
 )
-from services.system.exceptions import BusinessLogicError, PermissionDeniedError, ResourceNotFoundError, ValidationError
+from services.system.exceptions import BusinessLogicError, ResourceNotFoundError, ValidationError
 
 from .internal import ProjectQueryService, ProjectResponseBuilder
 
@@ -70,37 +69,6 @@ class SalesService:
                 msg = f"无效的用户ID: {user_id} (字段: {field_name})"
                 raise ValidationError(msg)
 
-    def _check_record_identity(self, project_id: str, code: str, current_user: User) -> None:
-        """业务身份双重校验：admin/持权限码用户/销售团队成员放行，否则抛 PermissionDeniedError.
-
-        校验顺序：
-        1. admin 角色直接放行；
-        2. 持有 project:sales:add_record 权限码（operator）放行；
-        3. 当前用户为该项目销售团队成员
-           （channel_manager_id/property_agent_id/negotiator_id 任一匹配）放行；
-        4. 否则抛 PermissionDeniedError.
-
-        Args:
-            project_id: 项目ID
-            code: 业务子权限码（如 "project:sales:add_record"）
-            current_user: 当前用户
-
-        Raises:
-            PermissionDeniedError: 当前用户非该项目的销售团队成员
-
-        """
-        # lazy import 规避 dependencies.auth → services.system → services → services.projects.sales 循环依赖
-        from dependencies.auth import _check_business_identity, has_permission  # noqa: PLC0415
-
-        if current_user.role and current_user.role.code == RoleCode.ADMIN.value:
-            return
-        if has_permission(current_user, code, self.db):
-            return
-        if _check_business_identity(self.db, project_id, code, str(current_user.id)):
-            return
-        msg = "当前用户非该项目的销售团队成员"
-        raise PermissionDeniedError(msg)
-
     def update_roles(self, project_id: str, roles_data: SalesRolesUpdate, *, current_user: User) -> ProjectResponse:
         """更新销售角色 (渠道、讲房、谈判)."""
         project = self._get_project(project_id)
@@ -144,8 +112,10 @@ class SalesService:
         return ProjectResponse.model_validate(self.response_builder.build(project, current_user=current_user))
 
     def create_record(self, project_id: str, record_data: SalesRecordCreate, current_user: User) -> ProjectInteraction:
-        """创建销售记录（互动记录）."""
-        self._check_record_identity(project_id, "project:sales:add_record", current_user)
+        """创建销售记录（互动记录）.
+
+        权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
+        """
         project = self._get_project(project_id)
 
         # 严格校验
@@ -208,9 +178,11 @@ class SalesService:
             for r in records
         ]
 
-    def delete_record(self, project_id: str, record_id: str, current_user: User) -> None:
-        """删除销售记录（互动记录）."""
-        self._check_record_identity(project_id, "project:sales:add_record", current_user)
+    def delete_record(self, project_id: str, record_id: str) -> None:
+        """删除销售记录（互动记录）.
+
+        权限校验由 Router 层 ProjectSalesAddRecordPermDep 注入。
+        """
         self._get_project(project_id)
         record = (
             self.db.query(ProjectInteraction)

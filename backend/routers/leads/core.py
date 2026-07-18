@@ -4,7 +4,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import (
+    DbSessionDep,
+    LeadReadPermDep,
+    LeadWritePermDep,
+)
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
 from schemas.lead import (
@@ -60,7 +64,7 @@ def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
 @router.get("")
 def get_leads(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadReadPermDep,
     pagination: PaginationDep,
     search: Annotated[str | None, Query(max_length=100, description="小区名称搜索")] = None,
     statuses: Annotated[list[LeadStatus] | None, Query(description="状态筛选")] = None,
@@ -100,7 +104,7 @@ def get_leads(
 def create_lead(
     request: Request,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    current_user: LeadWritePermDep,
     lead_in: LeadCreate,
 ) -> LeadResponse:
     """创建线索."""
@@ -111,7 +115,7 @@ def create_lead(
 @router.get("/stats")
 def get_leads_stats(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadReadPermDep,
 ) -> LeadStatsResponse:
     """获取线索状态统计（不受分页影响）."""
     service = LeadService(db)
@@ -121,7 +125,7 @@ def get_leads_stats(
 @router.get("/{lead_id}")
 def get_lead(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadReadPermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
 ) -> LeadResponse:
     """获取单个线索详情."""
@@ -134,7 +138,7 @@ def get_lead(
 def update_lead(
     request: Request,
     db: DbSessionDep,
-    current_user: CurrentInternalUserDep,
+    current_user: LeadWritePermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
     lead_in: LeadUpdate,
 ) -> LeadResponse:
@@ -151,7 +155,7 @@ def update_lead(
 def delete_lead(
     request: Request,
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadWritePermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
 ) -> None:
     """删除线索.
@@ -165,7 +169,7 @@ def delete_lead(
 @router.get("/stats/funnel")
 def get_leads_funnel(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadReadPermDep,
 ) -> LeadFunnelResponse:
     """获取线索漏斗统计数据."""
     service = LeadService(db)

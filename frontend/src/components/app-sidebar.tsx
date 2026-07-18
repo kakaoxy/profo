@@ -101,8 +101,9 @@ const data: { navMain: NavItem[] } = {
       title: "房源管理",
       url: "/admin/properties",
       icon: Building2,
+      permission: PERMISSION_CODES.PROPERTY_READ,
       items: [
-        { title: "房源列表", url: "/admin/properties" },
+        { title: "房源列表", url: "/admin/properties", permission: PERMISSION_CODES.PROPERTY_READ },
         { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_UPLOAD },
         { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
       ],
@@ -111,24 +112,27 @@ const data: { navMain: NavItem[] } = {
       title: "线索中心",
       url: "/admin/leads",
       icon: PhoneIncoming,
+      permission: PERMISSION_CODES.LEAD_READ,
     },
     {
       title: "项目管理",
       url: "/admin/projects",
       icon: FolderKanban,
+      permission: PERMISSION_CODES.PROJECT_READ,
     },
     {
       title: "房源营销",
       url: "/admin/l4-marketing/projects",
       icon: Smartphone,
+      permission: PERMISSION_CODES.L4_MARKETING_READ,
     },
     {
       title: "财务管理",
       url: "/admin/ledger",
       icon: Wallet,
       items: [
-        { title: "跟投管理", url: "/admin/investments" },
-        { title: "资金账本", url: "/admin/ledger" },
+        { title: "跟投管理", url: "/admin/investments", permission: PERMISSION_CODES.INVESTMENT_READ },
+        { title: "资金账本", url: "/admin/ledger", permission: PERMISSION_CODES.LEDGER_READ },
       ],
     },
     {

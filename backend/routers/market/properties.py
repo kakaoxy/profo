@@ -11,8 +11,8 @@ from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import StreamingResponse
 
 from dependencies.auth import (
-    CurrentInternalUserDep,
     DbSessionDep,
+    PropertyReadPermDep,
 )
 from dependencies.common import PaginationDep
 from models import Community, PropertyCurrent
@@ -45,7 +45,7 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 def search_communities(
     q: Annotated[str, Query(min_length=1, max_length=100, description="搜索关键词")],
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: PropertyReadPermDep,
     detail_service: DetailServiceDep,
 ) -> list[CommunitySearchResponse]:
     """Search communities by name."""
@@ -55,7 +55,7 @@ def search_communities(
 @router.get("")
 def get_properties(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: PropertyReadPermDep,
     service: PropertyServiceDep,
     pagination: PaginationDep,
     status: Annotated[str | None, Query(max_length=100, description="房源状态: 在售 | 成交")] = None,
@@ -119,7 +119,7 @@ def get_properties(
 @router.get("/export")
 def export_properties(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: PropertyReadPermDep,
     service: PropertyServiceDep,
     status: Annotated[str | None, Query(max_length=100, description="房源状态: 在售 | 成交")] = None,
     community_name: Annotated[str | None, Query(max_length=100, description="小区名称（模糊搜索）")] = None,
@@ -179,7 +179,7 @@ def export_properties(
 def get_property_detail(
     property_id: Annotated[int, Path(ge=1, description="房源ID")],
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: PropertyReadPermDep,
     detail_service: DetailServiceDep,
 ) -> PropertyDetailResponse:
     """获取房源详情."""

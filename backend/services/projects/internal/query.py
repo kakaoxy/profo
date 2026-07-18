@@ -224,3 +224,53 @@ class ProjectQueryService:
             "page": page,
             "page_size": effective_page_size,
         }
+
+    def get_by_business_identity(self, user_id: str) -> list[Project]:
+        """查询当前用户作为业务身份（装修对接负责人或销售团队成员）负责的项目.
+
+        业务身份匹配规则（任一即命中）：
+        - ProjectRenovation.contact_person_id == user_id
+        - ProjectSale.channel_manager_id == user_id
+        - ProjectSale.property_agent_id == user_id
+        - ProjectSale.negotiator_id == user_id
+
+        已软删除的项目/装修记录/销售记录不参与匹配。结果按 created_at 降序。
+
+        Args:
+            user_id: 当前用户ID
+
+        Returns:
+            项目列表（已预加载 builder 所需关联）
+
+        """
+        from models import ProjectRenovation, ProjectSale  # noqa: PLC0415
+
+        # 通过 UNION 合并两类业务身份对应的项目 ID（去重），再回查 Project
+        # 使用 distinct() 防止一个项目同时命中装修 + 销售身份时返回重复行
+        renovation_proj_ids = self.db.query(ProjectRenovation.project_id.label("pid")).filter(
+            ProjectRenovation.contact_person_id == user_id,
+            ProjectRenovation.is_deleted.is_(False),
+        )
+        sale_proj_ids = self.db.query(ProjectSale.project_id.label("pid")).filter(
+            ProjectSale.is_deleted.is_(False),
+            (ProjectSale.channel_manager_id == user_id)
+            | (ProjectSale.property_agent_id == user_id)
+            | (ProjectSale.negotiator_id == user_id),
+        )
+        union_ids = renovation_proj_ids.union(sale_proj_ids).subquery()
+
+        return (
+            self.db.query(Project)
+            .filter(Project.id.in_(union_ids), Project.is_deleted.is_(False))
+            .options(
+                joinedload(Project.contract),
+                selectinload(Project.owners),
+                joinedload(Project.sale),
+                selectinload(Project.project_manager),
+                selectinload(Project.renovation_photos),
+                selectinload(Project.finance_records),
+                joinedload(Project.renovation),
+            )
+            .order_by(Project.created_at.desc())
+            .all()
+        )

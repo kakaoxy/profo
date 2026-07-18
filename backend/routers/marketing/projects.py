@@ -7,7 +7,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from dependencies.auth import DbSessionDep, require_roles
+from dependencies.auth import (
+    DbSessionDep,
+    L4MarketingReadPermDep,
+    L4MarketingWritePermDep,
+)
 from dependencies.common import PaginationDep
 from schemas.l4_marketing import (
     L4MarketingMediaCreate,
@@ -33,7 +37,6 @@ from utils.common import RateLimits, limiter
 router = APIRouter(
     prefix="/admin/l4-marketing",
     tags=["l4-marketing"],
-    dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 
 
@@ -57,6 +60,7 @@ _MediaServiceDep = Annotated[L4MarketingMediaService, Depends(get_media_service)
 )
 def list_marketing_projects(
     service: _ProjectServiceDep,
+    _current_user: L4MarketingReadPermDep,
     pagination: PaginationDep,
     publish_status: Annotated[str | None, Query(max_length=100, description="发布状态: 草稿/发布")] = None,
     project_status: Annotated[str | None, Query(max_length=100, description="项目状态: 在途/在售/已售")] = None,
@@ -100,6 +104,7 @@ def create_marketing_project(
     request: Request,
     data: L4MarketingProjectCreate,
     service: _ProjectServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """创建独立营销项目.
 
@@ -115,6 +120,7 @@ def create_marketing_project(
 def get_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _ProjectServiceDep,
+    _current_user: L4MarketingReadPermDep,
 ) -> L4MarketingProjectResponse:
     """获取营销项目详情."""
     item = service.get_project(project_id)
@@ -134,6 +140,7 @@ def update_marketing_project(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingProjectUpdate,
     service: _ProjectServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> L4MarketingProjectResponse:
     """更新营销项目.
 
@@ -156,6 +163,7 @@ def delete_marketing_project(
     request: Request,
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _ProjectServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> None:
     """逻辑删除营销项目.
 
@@ -173,6 +181,7 @@ def delete_marketing_project(
 def list_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     service: _MediaServiceDep,
+    _current_user: L4MarketingReadPermDep,
     pagination: PaginationDep,
 ) -> L4MarketingMediaListResponse:
     """获取营销项目的媒体列表."""
@@ -195,6 +204,7 @@ def create_marketing_media(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     data: L4MarketingMediaCreate,
     service: _MediaServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> L4MarketingMediaResponse:
     """为营销项目添加媒体."""
     return service.create_media(data, project_id)
@@ -210,6 +220,7 @@ def update_marketing_media(
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     data: L4MarketingMediaUpdate,
     service: _MediaServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> L4MarketingMediaResponse:
     """更新媒体信息.
 
@@ -232,6 +243,7 @@ def delete_marketing_media(
     request: Request,
     media_id: Annotated[int, Path(ge=1, description="媒体ID")],
     service: _MediaServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> None:
     """逻辑删除媒体.
 
@@ -252,6 +264,7 @@ def update_media_sort_order(
     project_id: Annotated[int, Path(ge=1, description="项目ID")],
     sort_updates: list[MediaSortOrderUpdate],
     service: _MediaServiceDep,
+    current_user: L4MarketingWritePermDep,
 ) -> L4SyncResponse:
     """批量更新媒体排序顺序.
 

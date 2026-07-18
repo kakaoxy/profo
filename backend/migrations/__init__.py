@@ -413,10 +413,10 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "api_key:manage",
     ],
     "user": [
-        # 仅读取
+        # 仅读取（不含 project:read：普通用户默认不应查看项目管理，
+        # 如需开放请通过 UI 手动分配，迁移脚本不会自动补回）
         "property:read",
         "lead:read",
-        "project:read",
         "ledger:read",
         "investment:read",
         "l4_marketing:read",

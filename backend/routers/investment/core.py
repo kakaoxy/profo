@@ -14,7 +14,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, require_roles
+from dependencies.auth import (
+    CurrentInternalUserDep,
+    DbSessionDep,
+    InvestmentCopyPermDep,
+    InvestmentReadPermDep,
+    InvestmentWritePermDep,
+)
 from models.common import ProjectStatus, SettlementStatus
 from schemas.investment import (
     CopyInvestmentRequest,
@@ -38,7 +44,6 @@ from utils.common import RateLimits, limiter
 router = APIRouter(
     prefix="/admin/investments",
     tags=["investment"],
-    dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 
 
@@ -59,6 +64,7 @@ _InvestmentServiceDep = Annotated[InvestmentService, Depends(get_investment_serv
 )
 def list_investments(
     service: _InvestmentServiceDep,
+    _current_user: InvestmentReadPermDep,
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索: 项目编号/小区/地址")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
     settlement_status: Annotated[SettlementStatus | None, Query(description="跟投状态筛选")] = None,
@@ -82,6 +88,7 @@ def list_investments(
 )
 def get_investment_stats(
     service: _InvestmentServiceDep,
+    _current_user: InvestmentReadPermDep,
 ) -> InvestmentStatsResponse:
     """5 张汇总卡片统计：总项目 / 投资总额 / 收益总额 / 平均回报率 / 未结算数."""
     return service.get_stats()
@@ -95,6 +102,7 @@ def get_investment_stats(
 def export_investments(
     request: Request,
     service: _InvestmentServiceDep,
+    _current_user: InvestmentReadPermDep,
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
     settlement_status: Annotated[SettlementStatus | None, Query(description="跟投状态筛选")] = None,
@@ -133,7 +141,7 @@ def create_investment(
     request: Request,
     data: InvestmentCreate,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> InvestmentResponse:
     """创建跟投记录：校验项目存在、未软删、无重复跟投；写日志.
 
@@ -149,6 +157,7 @@ def create_investment(
 def get_investment(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     service: _InvestmentServiceDep,
+    _current_user: InvestmentReadPermDep,
 ) -> InvestmentResponse:
     """获取跟投记录详情（含投资方树 + 操作日志）."""
     item = service.get_investment(investment_id)
@@ -165,6 +174,7 @@ def get_investment(
 def get_investment_by_project(
     project_id: Annotated[str, Path(description="项目ID")],
     service: _InvestmentServiceDep,
+    _current_user: InvestmentReadPermDep,
 ) -> InvestmentResponse:
     """按项目ID查询跟投记录详情（每个项目最多一条跟投记录）.
 
@@ -187,7 +197,7 @@ def update_investment(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: InvestmentUpdate,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentWritePermDep,
 ) -> InvestmentResponse:
     """更新跟投记录：仅 unsettled 可改；修改总额触发投资方金额重算并写日志.
 
@@ -288,7 +298,7 @@ def delete_investor(
 def list_distribution_adjustments(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    _current_user: InvestmentReadPermDep,
 ) -> list[ReturnAdjustmentResponse]:
     """查询指定跟投记录的分配比例调整记录（最新一批）."""
     return service.list_distribution_adjustments(investment_id)
@@ -369,7 +379,7 @@ def copy_investment(
     investment_id: Annotated[str, Path(description="跟投记录ID")],
     data: CopyInvestmentRequest,
     service: _InvestmentServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: InvestmentCopyPermDep,
 ) -> InvestmentResponse:
     """复制投资方结构到目标项目（仅 name/type/share_ratio/子投资人，金额重算，状态重置）.
 

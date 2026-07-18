@@ -114,6 +114,18 @@ class ProjectService:
         """获取项目统计."""
         return self._core_service.get_project_stats()
 
+    def get_my_responsible_projects(
+        self,
+        user_id: str,
+        *,
+        current_user: User,
+    ) -> list[ProjectResponse]:
+        """获取当前用户作为业务身份负责的项目列表（工作台"我负责的项目"卡片）.
+
+        普通用户即使无 project:read 权限，被指派为项目业务负责人后也能查看自己负责的项目。
+        """
+        return self._core_service.get_my_responsible_projects(user_id, current_user=current_user)
+
     def generate_contract_no(self, business_form: str) -> str:
         """生成合同编号."""
         return self._core_service.generate_contract_no(business_form)
@@ -132,7 +144,7 @@ class ProjectService:
         current_user: User,
     ) -> ProjectResponse:
         """更新装修阶段."""
-        project = self._renovation_service.update_stage(project_id, renovation_data, current_user)
+        project = self._renovation_service.update_stage(project_id, renovation_data)
         from .internal import ProjectResponseBuilder  # noqa: PLC0415
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
@@ -160,8 +172,6 @@ class ProjectService:
         description: str | None = None,
         thumbnail_url: str | None = None,
         media_type: str = "image",
-        *,
-        current_user: User,
     ) -> RenovationPhoto:
         """添加装修照片."""
         return self._renovation_service.add_photo(
@@ -172,16 +182,15 @@ class ProjectService:
             description,
             thumbnail_url,
             media_type,
-            current_user=current_user,
         )
 
     def get_renovation_photos(self, project_id: str, stage: str | None = None) -> list[RenovationPhoto]:
         """获取装修照片."""
         return self._renovation_service.get_photos(project_id, stage)
 
-    def delete_renovation_photo(self, project_id: str, photo_id: str, *, current_user: User) -> None:
+    def delete_renovation_photo(self, project_id: str, photo_id: str) -> None:
         """删除装修照片."""
-        return self._renovation_service.delete_photo(project_id, photo_id, current_user=current_user)
+        return self._renovation_service.delete_photo(project_id, photo_id)
 
     def get_renovation_contract(self, project_id: str) -> ProjectRenovation:
         """获取装修合同."""
@@ -217,9 +226,9 @@ class ProjectService:
         """获取销售记录."""
         return self._sales_service.get_records(project_id, record_type)
 
-    def delete_sales_record(self, project_id: str, record_id: str, *, current_user: User) -> None:
+    def delete_sales_record(self, project_id: str, record_id: str) -> None:
         """删除销售记录."""
-        return self._sales_service.delete_record(project_id, record_id, current_user)
+        return self._sales_service.delete_record(project_id, record_id)
 
     def complete_project(
         self, project_id: str, complete_data: ProjectCompleteRequest, *, current_user: User

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Request
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, require_roles
+from dependencies.auth import CurrentInternalUserDep, DbSessionDep, ProjectReadPermDep
 from schemas.project import (
     CashFlowRecordCreate,
     CashFlowRecordResponse,
@@ -16,7 +16,6 @@ from utils.common import RateLimits, limiter
 router = APIRouter(
     prefix="/projects",
     tags=["cashflow"],
-    dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 
 
@@ -44,10 +43,13 @@ def create_cashflow_record(
 @router.get("/{project_id}/cashflow")
 def get_project_cashflow(
     service: CashFlowServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: ProjectReadPermDep,
     project_id: Annotated[str, Path(description="项目ID")],
 ) -> CashFlowResponse:
-    """获取项目现金流明细和汇总."""
+    """获取项目现金流明细和汇总.
+
+    使用 ProjectReadPermDep 基于权限码校验（需 project:read）.
+    """
     records = service.get_cashflow_records(project_id)
     summary = service.get_cashflow_summary(project_id)
 

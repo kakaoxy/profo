@@ -22,6 +22,7 @@ interface QuickEntryCardProps {
   accentClass: string;
   routeSuffix: string;
   renderRow: (project: ProjectResponse) => ReactNode;
+  showViewAll?: boolean;
 }
 
 export function QuickEntryCard({
@@ -33,6 +34,7 @@ export function QuickEntryCard({
   accentClass,
   routeSuffix,
   renderRow,
+  showViewAll = true,
 }: QuickEntryCardProps) {
   const router = useRouter();
 
@@ -64,13 +66,15 @@ export function QuickEntryCard({
           <span className="text-[10px] text-muted-foreground tabular-nums">
             {projects.length}个项目
           </span>
-          <Link
-            href={viewAllHref}
-            className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-          >
-            查看全部
-            <ChevronRight className="h-3 w-3" aria-hidden="true" />
-          </Link>
+          {showViewAll && (
+            <Link
+              href={viewAllHref}
+              className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+            >
+              查看全部
+              <ChevronRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </div>
 

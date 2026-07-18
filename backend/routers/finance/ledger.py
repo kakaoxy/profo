@@ -14,7 +14,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep, require_roles
+from dependencies.auth import (
+    CurrentInternalUserDep,
+    DbSessionDep,
+    LedgerReadPermDep,
+    LedgerSettlePermDep,
+    LedgerWritePermDep,
+)
 from models.common import ProjectStatus
 from schemas.project import (
     CashFlowRecordResponse,
@@ -39,7 +45,6 @@ from utils.common import RateLimits, limiter
 router = APIRouter(
     prefix="/admin/ledger",
     tags=["finance-ledger"],
-    dependencies=[Depends(require_roles(["admin", "operator"]))],
 )
 
 
@@ -60,6 +65,7 @@ _FinanceServiceDep = Annotated[FinanceService, Depends(get_finance_service)]
 )
 def list_ledger_projects(
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索: 项目编号/小区/地址")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
@@ -86,6 +92,7 @@ def list_ledger_projects(
 )
 def get_ledger_stats(
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
 ) -> LedgerStatsResponse:
     """全局汇总：有流水记录的项目数、总收入、总支出、净现金流、记录数."""
     return LedgerStatsResponse(**service.get_overall_stats())
@@ -99,6 +106,7 @@ def get_ledger_stats(
 def export_ledger(
     request: Request,
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索")] = None,
     project_status: Annotated[ProjectStatus | None, Query(description="项目状态筛选")] = None,
 ) -> StreamingResponse:
@@ -132,6 +140,7 @@ def export_ledger(
 def get_ledger_detail(
     project_id: Annotated[str, Path(description="项目ID")],
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
 ) -> CashFlowResponse:
     """获取项目资金账本详情（含流水记录列表 + 汇总）."""
     records = service.get_records(project_id)
@@ -146,6 +155,7 @@ def get_ledger_detail(
 def get_project_statistics(
     project_id: Annotated[str, Path(description="项目ID")],
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
 ) -> ProjectLedgerStatisticsResponse:
     """获取项目资金账本统计页面聚合数据.
 
@@ -161,6 +171,7 @@ def get_project_statistics(
 def get_receivable_payable(
     project_id: Annotated[str, Path(description="项目ID")],
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
 ) -> ReceivablePayableResponse:
     """获取项目应收应付参考表数据（预期金额 vs 实际金额对比）."""
     return service.get_receivable_payable(project_id)
@@ -173,7 +184,7 @@ def get_receivable_payable(
 def list_project_logs(
     project_id: Annotated[str, Path(description="项目ID")],
     service: _FinanceServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LedgerReadPermDep,
 ) -> list[FinanceLogResponse]:
     """获取指定项目的资金账本操作日志（按时间降序）."""
     return service.list_logs(project_id)
@@ -188,6 +199,7 @@ def export_project_ledger(
     request: Request,
     project_id: Annotated[str, Path(description="项目ID")],
     service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
 ) -> StreamingResponse:
     """导出单项目流水为 zip（含流水 CSV + 票据图片）.
 
@@ -218,7 +230,7 @@ def settle_project_finance(
     project_id: Annotated[str, Path(description="项目ID")],
     data: FinanceSettlementChangeRequest,
     service: _FinanceServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: LedgerSettlePermDep,
 ) -> FinanceSettlementResponse:
     """结算：锁定该项目资金账本，禁止新增/删除记录.
 
@@ -237,7 +249,7 @@ def unsettle_project_finance(
     project_id: Annotated[str, Path(description="项目ID")],
     data: FinanceUnsettleRequest,
     service: _FinanceServiceDep,
-    current_user: CurrentInternalUserDep,
+    current_user: LedgerSettlePermDep,
 ) -> FinanceSettlementResponse:
     """反结算：解锁资金账本，恢复可编辑.
 
@@ -259,7 +271,7 @@ def create_ledger_record(
     request: Request,
     data: LedgerRecordCreate,
     service: _FinanceServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LedgerWritePermDep,
 ) -> CashFlowRecordResponse:
     """创建资金账本流水记录（body 含 project_id）.
 
@@ -298,7 +310,7 @@ def update_ledger_record(
     record_id: Annotated[str, Path(description="流水记录ID")],
     data: LedgerRecordUpdate,
     service: _FinanceServiceDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LedgerWritePermDep,
 ) -> CashFlowRecordResponse:
     """补充上传记账凭证或更新支付方类型."""
     record = service.update_record(record_id, data, _current_user.id)

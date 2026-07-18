@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Request
 
-from dependencies.auth import CurrentInternalUserDep, DbSessionDep
+from dependencies.auth import CurrentInternalUserDep, DbSessionDep, LeadReadPermDep
 from schemas.lead import PriceHistoryCreate, PriceHistoryResponse
 from services.leads import LeadPriceService
 from utils.common import RateLimits, limiter
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/{lead_id}/prices")
 def get_price_history(
     db: DbSessionDep,
-    _current_user: CurrentInternalUserDep,
+    _current_user: LeadReadPermDep,
     lead_id: Annotated[str, Path(description="线索ID")],
 ) -> list[PriceHistoryResponse]:
     """获取线索价格历史记录."""

@@ -75,11 +75,15 @@ class ProjectResponseBuilder:
         response.update(self._build_owners_list(project))
         response.update(self._build_sale_info(project, current_user=current_user))
         response.update(self._build_finance_info(project))
+        # renovation 业务身份标志（can_edit_renovation / contact_person_id）始终构建：
+        # 工作台"我负责的项目"卡片用 slim=True，但用户点击卡片后详情抽屉的装修页
+        # 需要 can_edit_renovation 决定上传按钮显隐。project.renovation 已通过
+        # joinedload 预加载，无额外查询开销。
+        response.update(self._build_renovation_info(project, current_user=current_user))
 
         if not slim:
             response.update(self._build_interactions(project))
             response.update(self._build_stage_dates(project))
-            response.update(self._build_renovation_info(project, current_user=current_user))
         elif include_interactions:
             response.update(self._build_interactions(project))
 

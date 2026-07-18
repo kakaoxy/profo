@@ -384,6 +384,8 @@ export interface paths {
         /**
          * List Documents
          * @description 获取项目文书签收列表.
+         *
+         *     使用 ProjectReadPermDep 基于权限码校验（需 project:read）.
          */
         get: operations["list_documents_api_v1_projects__project_id__documents_get"];
         put?: never;
@@ -474,6 +476,9 @@ export interface paths {
         /**
          * Get Renovation Photos
          * @description 获取改造阶段照片.
+         *
+         *     使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
+         *     装修对接负责人需查看自己负责项目的照片以执行上传/删除操作。
          */
         get: operations["get_renovation_photos_api_v1_projects__project_id__renovation_photos_get"];
         put?: never;
@@ -520,6 +525,8 @@ export interface paths {
         /**
          * Get Renovation Contract
          * @description 获取装修合同信息.
+         *
+         *     使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
          */
         get: operations["get_renovation_contract_api_v1_projects__project_id__renovation_contract_get"];
         /**
@@ -629,7 +636,8 @@ export interface paths {
          * Get Sales Records
          * @description 获取销售记录.
          *
-         *     使用 CurrentActiveUserDep 允许 user 角色访问（业务身份 user 需查看自己负责项目的销售记录）.
+         *     使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
+         *     销售团队成员（渠道/讲房/谈判）需查看自己负责项目的销售记录以执行添加/删除操作。
          */
         get: operations["get_sales_records_api_v1_projects__project_id__selling_records_get"];
         put?: never;
@@ -724,8 +732,9 @@ export interface paths {
          * Get Projects
          * @description 获取项目列表.
          *
-         *     使用 CurrentActiveUserDep 允许 user 角色访问（user 持 project:read 权限，
-         *     且作为业务身份需在 dashboard 看到自己负责的项目）.
+         *     使用 ProjectReadPermDep 基于权限码校验：
+         *     - admin/operator/user 持 project:read 权限可访问
+         *     - 移除 user 角色的 project:read 权限后，user 立即失去访问权
          */
         get: operations["get_projects_api_v1_projects_get"];
         put?: never;
@@ -753,9 +762,35 @@ export interface paths {
          * Get Project Stats
          * @description 获取项目统计.
          *
-         *     使用 CurrentActiveUserDep 允许 user 角色访问（dashboard 需展示统计卡片）.
+         *     使用 ProjectReadPermDep 基于权限码校验（dashboard 统计卡片需 project:read）.
          */
         get: operations["get_project_stats_api_v1_projects_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/my-responsible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Responsible Projects
+         * @description 获取当前用户作为业务身份负责的项目列表.
+         *
+         *     用于工作台"我负责的项目"卡片：普通用户即使无 project:read 权限，被指派为
+         *     项目装修对接负责人或销售团队成员后也能查看自己负责的项目。
+         *
+         *     权限校验：仅需登录态（CurrentActiveUserDep），不检查权限码——业务身份本身
+         *     即为访问凭证。返回的列表已按 created_at 降序，前端直接渲染卡片。
+         */
+        get: operations["get_my_responsible_projects_api_v1_projects_my_responsible_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -798,8 +833,11 @@ export interface paths {
          * Get Project
          * @description 获取项目详情.
          *
-         *     使用 CurrentActiveUserDep 允许 user 角色访问（业务身份标志 can_edit_*
-         *     基于当前用户计算，user 被指派为对接负责人/销售团队成员时 can_edit_*=true）.
+         *     使用 ProjectReadOrBusinessPermDep 双通道校验：
+         *     - 持 project:read / project:write 权限可访问（admin/operator/有权限的 user）；
+         *     - 被指派为该项目装修对接负责人或销售团队成员的用户可访问（业务身份优先级最高，
+         *       不被角色权限覆盖——普通用户即使无 project:read 也能查看自己负责的项目）；
+         *     - 业务身份标志 can_edit_* 基于当前用户计算，前端据此显隐操作按钮。
          */
         get: operations["get_project_api_v1_projects__project_id__get"];
         /**
@@ -874,6 +912,8 @@ export interface paths {
         /**
          * Get Project Report
          * @description 获取项目报告.
+         *
+         *     使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
          */
         get: operations["get_project_report_api_v1_projects__project_id__report_get"];
         put?: never;
@@ -894,6 +934,8 @@ export interface paths {
         /**
          * Get Project Cashflow
          * @description 获取项目现金流明细和汇总.
+         *
+         *     使用 ProjectReadPermDep 基于权限码校验（需 project:read）.
          */
         get: operations["get_project_cashflow_api_v1_projects__project_id__cashflow_get"];
         put?: never;
@@ -11034,6 +11076,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectStatsResponse"];
+                };
+            };
+        };
+    };
+    get_my_responsible_projects_api_v1_projects_my_responsible_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"][];
                 };
             };
         };
