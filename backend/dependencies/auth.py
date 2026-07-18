@@ -8,7 +8,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from constants.role_codes import INTERNAL_ROLE_CODES, RoleCode
+from constants.role_codes import INTERNAL_ROLE_CODES
 from db import get_db
 from models import User
 from services.system import ApiKeyService
@@ -391,7 +391,8 @@ def require_project_business_permission(
 
     校验链路：
     1. 权限码校验：admin 通过 project:write 放行；operator 通过子权限码放行；
-    2. 业务身份校验：user 角色通过 contact_person_id / 销售团队成员字段放行；
+    2. 业务身份校验：任意角色的用户被指派为对接负责人 / 销售团队成员即放行
+       （不限制角色，覆盖自定义角色等其他角色的业务负责人）；
     3. 都不通过 → 403 PermissionDeniedError.
 
     Args:
@@ -415,11 +416,11 @@ def require_project_business_permission(
         if has_permission(current_user, code, db) or has_permission(current_user, "project:write", db):
             return current_user
 
-        # 2. user 角色业务身份校验（admin/operator 已通过权限码放行，此处仅 user 命中）
-        if current_user.role and current_user.role.code == RoleCode.USER.value:
-            project_id = request.path_params.get(project_id_param)
-            if project_id and _check_business_identity(db, str(project_id), code, str(current_user.id)):
-                return current_user
+        # 2. 业务身份校验：admin/operator 已通过权限码放行，此处为业务身份兜底。
+        #    不限制角色——任意角色（含自定义角色）用户被指派为项目业务负责人即放行。
+        project_id = request.path_params.get(project_id_param)
+        if project_id and _check_business_identity(db, str(project_id), code, str(current_user.id)):
+            return current_user
 
         # 3. 都不通过 → 403
         msg = f"权限不足：缺少权限 {code} 且非项目业务身份"

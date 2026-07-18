@@ -33,6 +33,7 @@ export const apiPaths = {
   auth: {
     token: "/api/v1/auth/token",
     refresh: "/api/v1/auth/refresh",
+    logout: "/api/v1/auth/logout",
   },
   users: {
     changePassword: "/api/v1/users/change-password",

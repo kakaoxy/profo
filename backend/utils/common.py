@@ -99,6 +99,7 @@ class RateLimits:
     # ==================== 认证模块 ====================
     AUTH_LOGIN = "5/minute"
     AUTH_REFRESH = "10/minute"
+    AUTH_LOGOUT = "60/minute"
     AUTH_API_KEY_DELETE = "20/hour"
     AUTH_API_KEY_CREATE = "20/hour"
 
