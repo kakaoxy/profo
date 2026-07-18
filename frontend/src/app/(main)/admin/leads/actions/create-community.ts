@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { apiPaths } from "@/lib/config";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export interface CreateCommunityRequest {
   name: string;
@@ -40,6 +42,11 @@ export async function createCommunityAction(
     const message = parsed.error.issues[0]?.message ?? "小区参数不合法";
     logger.warn("Create community validation error:", message);
     return { success: false, message };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

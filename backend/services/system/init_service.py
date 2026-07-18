@@ -10,6 +10,7 @@ import string
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from constants.role_codes import RoleCode
 from models import Role, User
 from utils.auth import get_password_hash
 
@@ -40,7 +41,7 @@ class SystemInitService:
                     roles.append(db.query(Role).filter(Role.code == role_data["code"]).first())
 
             if not existing_admin:
-                admin_role = next(r for r in roles if r.code == "admin")
+                admin_role = next(r for r in roles if r.code == RoleCode.ADMIN.value)
 
                 alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
                 temp_password = "".join(secrets.choice(alphabet) for _ in range(12))
@@ -84,28 +85,28 @@ class SystemInitService:
             {
                 "id": "admin-role",
                 "name": "管理员",
-                "code": "admin",
+                "code": RoleCode.ADMIN.value,
                 "description": "拥有所有权限，包括用户管理、权限配置",
                 "permissions": ["view_data", "edit_data", "manage_users", "manage_roles"],
             },
             {
                 "id": "operator-role",
                 "name": "运营人员",
-                "code": "operator",
+                "code": RoleCode.OPERATOR.value,
                 "description": "拥有数据修改权限，包括项目、房源的增删改查",
                 "permissions": ["view_data", "edit_data"],
             },
             {
                 "id": "user-role",
                 "name": "普通用户",
-                "code": "user",
+                "code": RoleCode.USER.value,
                 "description": "仅拥有数据查看权限",
                 "permissions": ["view_data"],
             },
             {
                 "id": "customer-role",
                 "name": "C端用户",
-                "code": "customer",
+                "code": RoleCode.CUSTOMER.value,
                 "description": "C端注册用户，可浏览房源、提交估价",
                 "permissions": ["view_data"],
             },

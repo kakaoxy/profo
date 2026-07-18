@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from constants.role_codes import RoleCode
 from dependencies.auth import CurrentCustomerUserDep, DbSessionDep, require_roles
 from models import User
 from schemas.public import (
@@ -18,6 +19,7 @@ from schemas.public import (
     PublicRegisterResponse,
     PublicUserInfo,
 )
+from services.system import permission_service
 from services.system.auth import AuthService
 from services.system.exceptions import PermissionDeniedError
 from utils.auth import AUDIENCE_C
@@ -38,14 +40,23 @@ def has_customer_identity(user: User) -> bool:
 
     """
     # 主角色检查
-    if user.role and user.role.code == "customer":
+    if user.role and user.role.code == RoleCode.CUSTOMER.value:
         return True
     # 附加角色检查
-    return any(r.code == "customer" for r in (user.roles or []))
+    return any(r.code == RoleCode.CUSTOMER.value for r in (user.roles or []))
 
 
-def _build_user_info(user: User) -> PublicUserInfo:
-    """构建用户公开信息响应."""
+def _build_user_info(
+    user: User,
+    permissions: list[str] | None = None,
+) -> PublicUserInfo:
+    """构建用户公开信息响应.
+
+    Args:
+        user: 用户对象
+        permissions: 权限代码列表；None 时默认空列表（保持 register/login 向后兼容）
+
+    """
     return PublicUserInfo(
         id=user.id,
         username=user.username,
@@ -54,6 +65,7 @@ def _build_user_info(user: User) -> PublicUserInfo:
         avatar=user.avatar,
         status=user.status,
         created_at=user.created_at,
+        permissions=permissions if permissions is not None else [],
     )
 
 
@@ -123,7 +135,7 @@ def login_for_access_token(
         db,
         user,
         audience=AUDIENCE_C,
-        role_claim="customer",
+        role_claim=RoleCode.CUSTOMER.value,
     )
 
     return PublicLoginResponse(
@@ -181,9 +193,11 @@ def refresh_access_token(
 def get_current_user_info(
     request: Request,
     current_user: CurrentCustomerUserDep,
+    db: DbSessionDep,
 ) -> PublicUserInfo:
     """获取当前登录的C端用户信息."""
-    return _build_user_info(current_user)
+    perm_codes = permission_service.get_user_permission_codes(db, current_user)
+    return _build_user_info(current_user, permissions=sorted(perm_codes))
 
 
 @router.post(

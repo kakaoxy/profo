@@ -3,6 +3,8 @@
 import { logger } from "@/lib/logger";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { getValidAccessToken } from "@/lib/token-refresh-server";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export interface FileUploadResponse {
   url: string;
@@ -27,6 +29,11 @@ function isValidFileUploadResponse(data: unknown): data is FileUploadResponse {
  * 使用 httpOnly cookie 中的 token 进行认证，避免在客户端暴露 token
  */
 export async function uploadFileAction(formData: FormData) {
+  const permCheck = await requirePermission(PERMISSION_CODES.PROPERTY_UPLOAD);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     // 从服务端获取有效的 access_token（自动处理刷新）
     const token = await getValidAccessToken();

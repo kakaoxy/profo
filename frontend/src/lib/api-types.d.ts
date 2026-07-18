@@ -699,7 +699,8 @@ export interface paths {
          *
          *     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
          *     仅 admin 角色可调用（银行卡号为敏感财务数据）。
-         *     service 层会校验 owner 所属 project 未被软删除，并记录审计日志。
+         *     service 层会校验 owner 所属 project 未被软删除；
+         *     审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
          */
         get: operations["get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get"];
         put?: never;
@@ -2061,6 +2062,121 @@ export interface paths {
          *     速率限制：20次/小时.
          */
         delete: operations["delete_role_api_v1_roles__role_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Permissions
+         * @description 获取权限点列表，支持按模块/类别/系统权限过滤.
+         */
+        get: operations["list_permissions_api_v1_permissions_get"];
+        put?: never;
+        /**
+         * Create Permission
+         * @description 创建权限点.
+         */
+        post: operations["create_permission_api_v1_permissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/permissions/modules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Permissions Grouped By Module
+         * @description 获取按模块分组的权限字典（供前端权限选择器使用）.
+         */
+        get: operations["list_permissions_grouped_by_module_api_v1_permissions_modules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/permissions/{permission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Permission
+         * @description 更新权限点.
+         */
+        put: operations["update_permission_api_v1_permissions__permission_id__put"];
+        post?: never;
+        /**
+         * Delete Permission
+         * @description 删除权限点（系统权限点禁止删除）.
+         */
+        delete: operations["delete_permission_api_v1_permissions__permission_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/permissions/roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Role Permissions
+         * @description 获取角色权限代码列表.
+         */
+        get: operations["get_role_permissions_api_v1_permissions_roles__role_id__get"];
+        /**
+         * Set Role Permissions
+         * @description 全量替换角色权限.
+         */
+        put: operations["set_role_permissions_api_v1_permissions_roles__role_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operation-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Operation Logs
+         * @description 分页查询操作审计日志.
+         *
+         *     支持按 user_id/action/resource_type/时间范围筛选，按 created_at 倒序排列。
+         *     需要 ``operation_log:read`` 权限。
+         */
+        get: operations["list_operation_logs_api_v1_operation_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5471,6 +5587,112 @@ export interface components {
             items: components["schemas"]["NeighborhoodRadarItem"][];
         };
         /**
+         * OperationLogListResponse
+         * @description 操作审计日志分页响应模型.
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
+         */
+        OperationLogListResponse: {
+            /**
+             * Items
+             * @description 数据列表
+             */
+            items: components["schemas"]["OperationLogResponse"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * OperationLogResponse
+         * @description 操作审计日志响应模型.
+         */
+        OperationLogResponse: {
+            /**
+             * Id
+             * @description 日志ID
+             */
+            id: string;
+            /**
+             * User Id
+             * @description 操作者用户ID(逻辑外键)
+             */
+            user_id?: string | null;
+            /**
+             * Action
+             * @description 操作类型：create/update/delete/sensitive_data_access等
+             */
+            action: string;
+            /**
+             * Resource Type
+             * @description 资源类型：user/role/permission/project等
+             */
+            resource_type: string;
+            /**
+             * Resource Id
+             * @description 资源ID
+             */
+            resource_id?: string | null;
+            /**
+             * Ip
+             * @description 操作者IP地址(IPv4/IPv6)
+             */
+            ip?: string | null;
+            /**
+             * User Agent
+             * @description User-Agent
+             */
+            user_agent?: string | null;
+            /**
+             * Before
+             * @description 变更前快照
+             */
+            before?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * After
+             * @description 变更后快照
+             */
+            after?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
          * OwnerInlineCreate
          * @description 项目创建时内联的业主数据（不含 project_id）.
          */
@@ -5742,6 +5964,196 @@ export interface components {
              * @description 新密码
              */
             password: string;
+        };
+        /**
+         * PermissionCreate
+         * @description 权限创建模型.
+         */
+        PermissionCreate: {
+            /**
+             * Code
+             * @description 权限代码，格式 module:action
+             */
+            code: string;
+            /**
+             * Name
+             * @description 权限名称
+             */
+            name: string;
+            /**
+             * Module
+             * @description 所属模块
+             */
+            module: string;
+            /**
+             * Category
+             * @description 权限类别
+             * @enum {string}
+             */
+            category: "menu" | "button" | "api";
+            /**
+             * Sort Order
+             * @description 排序序号
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Description
+             * @description 权限描述
+             */
+            description?: string | null;
+            /**
+             * Is System
+             * @description 是否系统内置权限点
+             * @default false
+             */
+            is_system: boolean;
+        };
+        /**
+         * PermissionListResponse
+         * @description 权限列表响应模型.
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "1"
+         *         },
+         *         {
+         *           "id": "2"
+         *         }
+         *       ],
+         *       "page": 1,
+         *       "page_size": 50,
+         *       "total": 100
+         *     }
+         */
+        PermissionListResponse: {
+            /**
+             * Items
+             * @description 数据列表
+             */
+            items: components["schemas"]["PermissionResponse"][];
+            /**
+             * Total
+             * @description 总记录数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 当前页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+        };
+        /**
+         * PermissionModuleGroup
+         * @description 按模块分组的权限响应模型.
+         */
+        PermissionModuleGroup: {
+            /**
+             * Module
+             * @description 模块名称
+             */
+            module: string;
+            /**
+             * Permissions
+             * @description 该模块下的权限列表
+             */
+            permissions: components["schemas"]["PermissionResponse"][];
+        };
+        /**
+         * PermissionResponse
+         * @description 权限响应模型.
+         */
+        PermissionResponse: {
+            /**
+             * Code
+             * @description 权限代码，格式 module:action
+             */
+            code: string;
+            /**
+             * Name
+             * @description 权限名称
+             */
+            name: string;
+            /**
+             * Module
+             * @description 所属模块
+             */
+            module: string;
+            /**
+             * Category
+             * @description 权限类别
+             * @enum {string}
+             */
+            category: "menu" | "button" | "api";
+            /**
+             * Sort Order
+             * @description 排序序号
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Description
+             * @description 权限描述
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description 权限ID
+             */
+            id: string;
+            /**
+             * Is System
+             * @description 是否系统内置权限点
+             */
+            is_system: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description 更新时间
+             */
+            updated_at: string;
+        };
+        /**
+         * PermissionUpdate
+         * @description 权限更新模型（所有字段可选）.
+         */
+        PermissionUpdate: {
+            /**
+             * Name
+             * @description 权限名称
+             */
+            name?: string | null;
+            /**
+             * Module
+             * @description 所属模块
+             */
+            module?: string | null;
+            /**
+             * Category
+             * @description 权限类别
+             */
+            category?: ("menu" | "button" | "api") | null;
+            /**
+             * Sort Order
+             * @description 排序序号
+             */
+            sort_order?: number | null;
+            /**
+             * Description
+             * @description 权限描述
+             */
+            description?: string | null;
         };
         /**
          * PhotoCategory
@@ -7647,6 +8059,11 @@ export interface components {
              * @description 创建时间
              */
             created_at: string;
+            /**
+             * Permissions
+             * @description 用户有效权限代码列表（主角色+附加角色权限并集）
+             */
+            permissions?: string[];
         };
         /**
          * PublicUserProfileResponse
@@ -7689,6 +8106,11 @@ export interface components {
              * @description 创建时间
              */
             created_at: string;
+            /**
+             * Permissions
+             * @description 用户有效权限代码列表（主角色+附加角色权限并集）
+             */
+            permissions?: string[];
             /**
              * Updated At
              * Format: date-time
@@ -8175,9 +8597,14 @@ export interface components {
             description?: string | null;
             /**
              * Permissions
-             * @description 权限列表
+             * @description 权限列表（已废弃，使用 permission_codes）
              */
             permissions?: string[] | null;
+            /**
+             * Permission Codes
+             * @description 权限代码列表
+             */
+            permission_codes?: string[];
         };
         /**
          * RoleListResponse
@@ -8219,6 +8646,33 @@ export interface components {
             page_size: number;
         };
         /**
+         * RolePermissionsResponse
+         * @description 角色权限响应模型.
+         */
+        RolePermissionsResponse: {
+            /**
+             * Role Id
+             * @description 角色ID
+             */
+            role_id: string;
+            /**
+             * Permission Codes
+             * @description 权限代码列表
+             */
+            permission_codes: string[];
+        };
+        /**
+         * RolePermissionsUpdate
+         * @description 角色权限更新模型.
+         */
+        RolePermissionsUpdate: {
+            /**
+             * Permission Codes
+             * @description 权限代码列表（全量替换）
+             */
+            permission_codes: string[];
+        };
+        /**
          * RoleResponse
          * @description 角色响应模型.
          */
@@ -8240,9 +8694,14 @@ export interface components {
             description?: string | null;
             /**
              * Permissions
-             * @description 权限列表
+             * @description 权限列表（已废弃，使用 permission_codes）
              */
             permissions?: string[] | null;
+            /**
+             * Permission Codes
+             * @description 权限代码列表（从 role_permissions 关联表派生）
+             */
+            permission_codes?: string[];
             /**
              * Id
              * @description 角色ID
@@ -8288,7 +8747,7 @@ export interface components {
             description?: string | null;
             /**
              * Permissions
-             * @description 权限列表
+             * @description 权限列表（已废弃，使用 permission_codes）
              */
             permissions?: string[] | null;
             /**
@@ -8296,6 +8755,11 @@ export interface components {
              * @description 是否激活
              */
             is_active?: boolean | null;
+            /**
+             * Permission Codes
+             * @description 权限代码列表（全量替换）
+             */
+            permission_codes?: string[] | null;
         };
         /**
          * SalesRecordCreate
@@ -8700,6 +9164,11 @@ export interface components {
              * @description 附加角色列表
              */
             additional_roles?: components["schemas"]["RoleBrief"][];
+            /**
+             * Permissions
+             * @description 用户有效权限代码列表（主角色+附加角色权限并集）
+             */
+            permissions?: string[];
         };
         /**
          * UserSimpleListResponse
@@ -13131,6 +13600,273 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_permissions_api_v1_permissions_get: {
+        parameters: {
+            query?: {
+                /** @description 按模块过滤 */
+                module?: string | null;
+                /** @description 按类别过滤: menu/button/api */
+                category?: ("menu" | "button" | "api") | null;
+                /** @description 按是否系统权限过滤 */
+                is_system?: boolean | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_permission_api_v1_permissions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_permissions_grouped_by_module_api_v1_permissions_modules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionModuleGroup"][];
+                };
+            };
+        };
+    };
+    update_permission_api_v1_permissions__permission_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                permission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_permission_api_v1_permissions__permission_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                permission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_role_permissions_api_v1_permissions_roles__role_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolePermissionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_role_permissions_api_v1_permissions_roles__role_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RolePermissionsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolePermissionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_operation_logs_api_v1_operation_logs_get: {
+        parameters: {
+            query?: {
+                /** @description 按操作者用户ID过滤 */
+                user_id?: string | null;
+                /** @description 按操作类型过滤: create/update/delete等 */
+                action?: string | null;
+                /** @description 按资源类型过滤: user/role/permission/project等 */
+                resource_type?: string | null;
+                /** @description 起始时间过滤(>=, ISO 8601) */
+                start_time?: string | null;
+                /** @description 结束时间过滤(<=, ISO 8601) */
+                end_time?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationLogListResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

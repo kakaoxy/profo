@@ -12,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { UserTable } from "./user-table";
 import { UserDialog } from "./user-dialog";
@@ -111,10 +113,12 @@ export function UsersClient({ initialData, roles }: UsersClientProps) {
             <Button variant="secondary" size="sm" onClick={handleSearch}>搜索</Button>
         </div>
         
-        <Button onClick={handleCreate} size="sm">
-          <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">新建用户</span>
-        </Button>
+        <HasPermission code={PERMISSION_CODES.USER_CREATE}>
+          <Button onClick={handleCreate} size="sm">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">新建用户</span>
+          </Button>
+        </HasPermission>
       </div>
 
       <UserTable 

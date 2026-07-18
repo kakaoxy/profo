@@ -5,6 +5,8 @@ import { fetchClient } from "@/lib/api-server";
 import { extractApiData } from "@/lib/api-helpers";
 import { components } from "@/lib/api-types";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export type DocumentResponse = components["schemas"]["DocumentResponse"];
 export type DocumentCreate = components["schemas"]["DocumentCreate"];
@@ -77,6 +79,10 @@ export async function createProjectDocumentAction(
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message || "输入校验失败");
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    throw new Error(permCheck.message);
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(
@@ -116,6 +122,10 @@ export async function updateProjectDocumentAction(
   if (!parsed.success) {
     throw new Error(parsed.error.issues[0]?.message || "输入校验失败");
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    throw new Error(permCheck.message);
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.PATCH(
@@ -150,6 +160,10 @@ export async function deleteProjectDocumentAction(
   if (!docIdParsed.success) {
     throw new Error(docIdParsed.error.issues[0]?.message || "输入校验失败");
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    throw new Error(permCheck.message);
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -176,6 +190,10 @@ export async function initializeDocumentsAction(
   const idParsed = projectIdSchema.safeParse(projectId);
   if (!idParsed.success) {
     throw new Error(idParsed.error.issues[0]?.message || "输入校验失败");
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    throw new Error(permCheck.message);
   }
   try {
     const client = await fetchClient();

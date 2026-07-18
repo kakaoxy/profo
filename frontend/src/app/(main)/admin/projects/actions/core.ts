@@ -7,6 +7,8 @@ import { components } from "@/lib/api-types";
 import type { operations } from "@/lib/api-types";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 type ProjectCreate = components["schemas"]["ProjectCreate"];
 type ProjectUpdate = components["schemas"]["ProjectUpdate"];
@@ -123,6 +125,11 @@ export async function createProjectAction(data: ProjectCreate) {
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST("/api/v1/projects", {
@@ -160,6 +167,10 @@ export async function updateProjectAction(id: string, data: ProjectUpdate) {
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.PUT("/api/v1/projects/{project_id}", {
@@ -190,6 +201,10 @@ export async function deleteProjectAction(id: string) {
       success: false,
       message: idParsed.error.issues[0]?.message || "输入校验失败",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_DELETE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();
@@ -232,6 +247,10 @@ export async function updateProjectStatusAction(
       success: false,
       message: statusParsed.error.issues[0]?.message || "项目状态不合法",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();

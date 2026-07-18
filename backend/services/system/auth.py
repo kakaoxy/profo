@@ -14,6 +14,8 @@ from typing import ClassVar, Literal, TypedDict
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
+from constants.role_codes import BACKEND_ROLE_CODES as _BACKEND_ROLE_CODES
+from constants.role_codes import RoleCode
 from models import RefreshToken, Role, User
 from settings import settings
 from utils.auth import (
@@ -107,7 +109,7 @@ class AuthService:
                 msg = "手机号已被绑定"
                 raise ConflictError(msg)
 
-        customer_role = db.query(Role).filter(Role.code == "customer").first()
+        customer_role = db.query(Role).filter(Role.code == RoleCode.CUSTOMER.value).first()
         if not customer_role:
             msg = "系统未初始化customer角色"
             raise ResourceNotFoundError(msg)
@@ -187,11 +189,12 @@ class AuthService:
         return user
 
     # 后台允许的角色（无任何后台身份的用户禁止登录后台）
-    # 注意：与 dependencies/auth.py 的 _INTERNAL_ROLE_CODES 不同。
+    # 注意：与 dependencies/auth.py 的 INTERNAL_ROLE_CODES 不同。
     #   BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
-    #   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
+    #   INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
     # user 角色可登录后台但不应生成/使用 API Key。
-    BACKEND_ROLE_CODES: ClassVar[set[str]] = {"admin", "operator", "user"}
+    # 常量定义在 constants.role_codes，此处保留 ClassVar 别名以兼容 AuthService.BACKEND_ROLE_CODES 引用。
+    BACKEND_ROLE_CODES: ClassVar[frozenset[str]] = _BACKEND_ROLE_CODES
 
     @staticmethod
     def has_backend_identity(user: User) -> bool:
@@ -306,7 +309,7 @@ class AuthService:
         """
         # 推断受众：C 端 customer -> "c"，后台角色 -> "admin"
         if audience is None:
-            audience = AUDIENCE_C if user.role and user.role.code == "customer" else AUDIENCE_ADMIN
+            audience = AUDIENCE_C if user.role and user.role.code == RoleCode.CUSTOMER.value else AUDIENCE_ADMIN
 
         # role claim：默认使用主角色 code；显式传入时覆盖（用于多角色用户登录特定端）
         effective_role_code = role_claim if role_claim is not None else (user.role.code if user.role else "")
@@ -345,8 +348,10 @@ class AuthService:
         )
 
         refresh_token_expires = timedelta(days=settings.jwt_refresh_token_expire_days)
+        # refresh_token 携带 role：刷新时透传回 create_tokens_for_user 的 role_claim，
+        # 避免多角色用户（如 admin+customer）刷新后 role 漂移到主角色
         refresh_token, refresh_jti = create_refresh_token(
-            data={"sub": user.id, "ver": user.token_version},
+            data={"sub": user.id, "role": effective_role_code, "ver": user.token_version},
             expires_delta=refresh_token_expires,
             audience=audience,
         )
@@ -439,6 +444,9 @@ class AuthService:
 
         # 继承原 Token 的受众，避免刷新后跨系统
         inherited_audience = payload.get("aud")
+        # 透传原 Token 的 role_claim，避免多角色用户刷新后 role 漂移到主角色
+        # 旧版 refresh_token（未携带 role）此处为 None，回落到主角色 code，行为不变
+        inherited_role_claim = payload.get("role")
 
         # 刷新token时不更新登录时间，避免事务冲突
         # create_tokens_for_user 会签发新 jti 并写入跟踪记录
@@ -447,6 +455,7 @@ class AuthService:
             user,
             update_login_time=False,
             audience=inherited_audience,
+            role_claim=inherited_role_claim,
         )
 
     @staticmethod

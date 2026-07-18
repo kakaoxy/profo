@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from dependencies.auth import CurrentAdminUserDep, CurrentInternalUserDep
+from dependencies.auth import CurrentAdminUserDep, CurrentInternalUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
 from schemas.project import (
@@ -25,6 +25,7 @@ from schemas.project import (
 )
 from schemas.response import PaginatedResponse
 from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.system.operation_log import operation_log_service
 from utils.common import RateLimits, limiter
 from utils.csv_exporter import generate_csv_response
 
@@ -69,12 +70,14 @@ def get_owner_bank_card(
     owner_id: Annotated[UUID4, Path(description="业主ID")],
     service: ProjectServiceDep,
     current_user: CurrentAdminUserDep,
+    db: DbSessionDep,
 ) -> dict[str, str | None]:
     """获取业主未脱敏银行卡号.
 
     完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。
     仅 admin 角色可调用（银行卡号为敏感财务数据）。
-    service 层会校验 owner 所属 project 未被软删除，并记录审计日志。
+    service 层会校验 owner 所属 project 未被软删除；
+    审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
     """
     bank_card_number = service.get_owner_bank_card_number(
         str(owner_id),
@@ -83,6 +86,15 @@ def get_owner_bank_card(
     if bank_card_number is None:
         msg = "业主不存在"
         raise ResourceNotFoundError(msg)
+    # 敏感数据访问审计日志：仅记录访问行为，不写入银行卡号本身
+    operation_log_service.log_action(
+        db,
+        user_id=str(current_user.id),
+        action="sensitive_data_access",
+        resource_type="owner_bank_card",
+        resource_id=str(owner_id),
+        request=request,
+    )
     return {"bank_card_number": bank_card_number}
 
 

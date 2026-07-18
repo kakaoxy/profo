@@ -20,7 +20,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 import db
-from models import Base, Role, User
+from models import Base, Permission, PermissionCategory, Role, User, role_permissions
 from settings import settings
 from utils.auth import create_access_token, get_password_hash
 
@@ -151,6 +151,43 @@ def db_session(test_engine: Engine) -> Generator[Session, None, None]:
     connection.close()
 
 
+def _seed_permissions(session: Session, roles: list[Role]) -> None:
+    """种子权限点并按 _ROLE_PERMISSIONS_SEED 关联到角色.
+
+    复用 migrations 中的权限种子数据，确保测试中 require_permission 依赖
+    能正确解析角色权限（与生产环境一致）。
+    """
+    from migrations import _PERMISSIONS_SEED, _ROLE_PERMISSIONS_SEED  # noqa: PLC0415
+
+    role_by_code = {r.code: r for r in roles}
+    perm_by_code: dict[str, Permission] = {}
+
+    for perm_data in _PERMISSIONS_SEED:
+        perm = Permission(
+            code=perm_data["code"],
+            name=perm_data["name"],
+            module=perm_data["module"],
+            category=PermissionCategory(perm_data["category"]),
+            sort_order=perm_data["sort_order"],
+            is_system=True,
+            description=perm_data["description"],
+        )
+        session.add(perm)
+        session.flush()
+        perm_by_code[perm.code] = perm
+
+    for role_code, perm_codes in _ROLE_PERMISSIONS_SEED.items():
+        role = role_by_code.get(role_code)
+        if not role:
+            continue
+        for code in perm_codes:
+            perm = perm_by_code.get(code)
+            if perm:
+                session.execute(
+                    role_permissions.insert().values(role_id=role.id, permission_id=perm.id),
+                )
+
+
 def _seed_roles_and_users(session: Session) -> dict[str, User]:
     """种子数据：创建角色和管理员/普通用户."""
     roles = [
@@ -167,6 +204,8 @@ def _seed_roles_and_users(session: Session) -> dict[str, User]:
     for r in roles:
         session.add(r)
     session.commit()
+
+    _seed_permissions(session, roles)
 
     admin_user = User(
         id="admin-user",

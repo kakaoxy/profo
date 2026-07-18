@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { RoleTable } from "./role-table";
 import { RoleDialog } from "./role-dialog";
@@ -60,10 +62,12 @@ export function RolesClient({ initialData }: RolesClientProps) {
           />
           <Button type="submit" variant="secondary" size="sm">搜索</Button>
         </form>
-        <Button onClick={handleCreate} size="sm">
-          <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">新建角色</span>
-        </Button>
+        <HasPermission code={PERMISSION_CODES.ROLE_CREATE}>
+          <Button onClick={handleCreate} size="sm">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">新建角色</span>
+          </Button>
+        </HasPermission>
       </div>
 
       <RoleTable data={initialData.items} onEdit={handleEdit} />

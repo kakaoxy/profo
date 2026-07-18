@@ -8,7 +8,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
-from dependencies.auth import CurrentAdminUserDep, CurrentOperatorUserDep, DbSessionDep
+from dependencies.auth import (
+    DbSessionDep,
+    PropertyReadPermDep,
+    PropertyWritePermDep,
+)
 from dependencies.common import PaginationDep
 from schemas.community import (
     CommunityCreateRequest,
@@ -34,7 +38,7 @@ CommunityServiceDep = Annotated[CommunityQueryService, Depends(get_community_ser
 @router.get("/communities")
 def get_communities(
     db: DbSessionDep,
-    _current_user: CurrentOperatorUserDep,
+    _current_user: PropertyReadPermDep,
     pagination: PaginationDep,
     service: CommunityServiceDep,
     search: Annotated[str | None, Query(max_length=100, description="小区名称搜索（模糊匹配）")] = None,
@@ -54,7 +58,7 @@ def get_communities(
 )
 def get_dictionaries(
     db: DbSessionDep,
-    _current_user: CurrentOperatorUserDep,
+    _current_user: PropertyReadPermDep,
     service: CommunityServiceDep,
     dict_type: Annotated[str, Query(max_length=100, description="字典类型: district | business_circle")],
     search: Annotated[str | None, Query(max_length=100, description="模糊搜索关键词")] = None,
@@ -73,7 +77,7 @@ def merge_communities(
     request: Request,
     merge_request: CommunityMergeRequest,
     db: DbSessionDep,
-    _current_user: CurrentAdminUserDep,
+    _current_user: PropertyWritePermDep,
 ) -> CommunityMergeResponse:
     """合并小区操作.
 
@@ -125,7 +129,7 @@ def create_community(
     request: Request,
     body: CommunityCreateRequest,
     db: DbSessionDep,
-    _current_user: CurrentOperatorUserDep,
+    _current_user: PropertyWritePermDep,
     service: CommunityServiceDep,
 ) -> CommunityResponse:
     """创建新小区.
@@ -142,7 +146,7 @@ def update_community(
     community_id: Annotated[str, Path(description="小区ID")],
     body: CommunityUpdateRequest,
     db: DbSessionDep,
-    _current_user: CurrentOperatorUserDep,
+    _current_user: PropertyWritePermDep,
     service: CommunityServiceDep,
 ) -> CommunityResponse:
     """更新小区信息.

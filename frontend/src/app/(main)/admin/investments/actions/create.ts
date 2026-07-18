@@ -14,6 +14,8 @@ import type {
   InvestorUpdate,
 } from "./types";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 // ===== Zod 校验 schema（与后端 InvestmentCreate/Update、InvestorCreate/Update 语义对齐）=====
 // safeParse 仅作入参门禁，通过后仍转发原始 data（避免 strip 字段）。
@@ -70,6 +72,10 @@ export async function createInvestment(
       message: parsed.error.issues[0]?.message ?? "投资参数不合法",
     };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.POST("/api/v1/admin/investments", {
@@ -114,6 +120,10 @@ export async function updateInvestment(
       message: parsed.error.issues[0]?.message ?? "投资参数不合法",
     };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.PUT(
@@ -151,6 +161,10 @@ export async function deleteInvestment(
       success: false,
       message: idParsed.error.issues[0]?.message ?? "投资参数不合法",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();
@@ -193,6 +207,10 @@ export async function addInvestor(
       success: false,
       message: parsed.error.issues[0]?.message ?? "投资参数不合法",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();
@@ -247,6 +265,10 @@ export async function updateInvestor(
       message: parsed.error.issues[0]?.message ?? "投资参数不合法",
     };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { data: resData, error } = await client.PUT(
@@ -296,6 +318,10 @@ export async function deleteInvestor(
       success: false,
       message: investorIdParsed.error.issues[0]?.message ?? "投资参数不合法",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();

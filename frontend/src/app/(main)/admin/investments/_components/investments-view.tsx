@@ -18,6 +18,8 @@ import {
 import type { components } from "@/lib/api-types";
 import { InvestmentsTable } from "./investments-table";
 import { exportInvestments } from "../actions";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // 动态导入弹窗组件（ssr: false，仅在客户端加载）
 const CreateInvestmentDialog = dynamic(
@@ -211,13 +213,15 @@ export function InvestmentsView({ data, total }: InvestmentsViewProps) {
               )}
               导出 Excel
             </Button>
-            <Button
-              className="flex-1 lg:flex-none bg-primary hover:bg-primary/90"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              新增跟投
-            </Button>
+            <HasPermission code={PERMISSION_CODES.INVESTMENT_WRITE}>
+              <Button
+                className="flex-1 lg:flex-none bg-primary hover:bg-primary/90"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                新增跟投
+              </Button>
+            </HasPermission>
           </div>
         </div>
 

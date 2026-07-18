@@ -65,6 +65,13 @@ class PublicUserInfo(BaseModel):
     avatar: str | None = Field(None, description="头像")
     status: str = Field(description="用户状态")
     created_at: datetime = Field(description="创建时间")
+    # 用户有效权限集（主角色 + 附加角色权限并集），从 role_permissions 关联表派生，
+    # 非 ORM User 字段，需在路由层通过 permission_service 填充；默认空列表以保持
+    # register/login 响应向后兼容
+    permissions: list[str] = Field(
+        default_factory=list,
+        description="用户有效权限代码列表（主角色+附加角色权限并集）",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

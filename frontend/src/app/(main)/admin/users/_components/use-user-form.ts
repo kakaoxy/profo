@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { createUserAction, updateUserAction } from "../actions/index";
 import type { UserResponse, UserUpdate, UserCreate, RoleResponse } from "../actions/index";
 import { passwordSchema } from "./password-schema";
+import { ROLE_CODES } from "@/lib/auth/permissions";
 
 const createSchema = z.object({
   username: z.string().min(3, "用户名至少3个字符").max(100),
@@ -67,7 +68,7 @@ export function useUserForm({ user, open, onOpenChange, roles }: UseUserFormProp
         role_id: user.role_id,
         phone: user.phone || "",
         status: user.status || "active",
-        enable_customer_identity: !!(user.additional_roles?.some((r) => r.code === "customer")),
+        enable_customer_identity: !!(user.additional_roles?.some((r) => r.code === ROLE_CODES.CUSTOMER)),
       });
     } else {
       form.reset(defaultFormValues);
@@ -80,8 +81,8 @@ export function useUserForm({ user, open, onOpenChange, roles }: UseUserFormProp
     try {
       // 仅当主角色不是 customer 时，附加 customer 角色才有意义；
       // 主角色为 customer 时后端会拒绝附加，这里通过清空数组避免无效提交
-      const customerId = roles.find((r) => r.code === "customer")?.id;
-      const mainRoleIsCustomer = roles.find((r) => r.id === values.role_id)?.code === "customer";
+      const customerId = roles.find((r) => r.code === ROLE_CODES.CUSTOMER)?.id;
+      const mainRoleIsCustomer = roles.find((r) => r.id === values.role_id)?.code === ROLE_CODES.CUSTOMER;
       const additionalRoleIds =
         values.enable_customer_identity && customerId && !mainRoleIsCustomer ? [customerId] : [];
 

@@ -12,6 +12,11 @@ from dependencies.auth import (
     CurrentAdminUserDep,
     CurrentInternalUserDep,
     DbSessionDep,
+    UserCreatePermDep,
+    UserDeletePermDep,
+    UserReadPermDep,
+    UserResetPasswordPermDep,
+    UserUpdatePermDep,
 )
 from dependencies.common import PaginationDep
 from schemas.user import (
@@ -36,7 +41,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 def get_users(
     request: Request,
     db: DbSessionDep,
-    _current_user: CurrentAdminUserDep,
+    _current_user: UserReadPermDep,
     pagination: PaginationDep,
     username: Annotated[str | None, Query(max_length=100, description="用户名搜索")] = None,
     nickname: Annotated[str | None, Query(max_length=100, description="昵称搜索")] = None,
@@ -98,7 +103,7 @@ def get_current_user(
 def get_user(
     user_id: str,
     db: DbSessionDep,
-    _current_user: CurrentAdminUserDep,
+    _current_user: UserReadPermDep,
 ) -> UserResponse:
     """获取指定用户信息."""
     user = user_service.get_user_by_id(db, user_id)
@@ -114,13 +119,19 @@ def create_user(
     request: Request,
     user_data: UserCreate,
     db: DbSessionDep,
-    _current_user: CurrentAdminUserDep,
+    current_user: UserCreatePermDep,
 ) -> UserResponse:
     """创建新用户.
 
     速率限制：10次/小时（防止批量创建用户攻击）.
     """
-    return user_service.create_user(db, user_data, additional_role_ids=user_data.additional_role_ids)
+    return user_service.create_user(
+        db,
+        user_data,
+        additional_role_ids=user_data.additional_role_ids,
+        operator_id=str(current_user.id),
+        request=request,
+    )
 
 
 @router.put("/{user_id}")
@@ -130,13 +141,20 @@ def update_user(
     user_id: str,
     user_data: UserUpdate,
     db: DbSessionDep,
-    _current_user: CurrentAdminUserDep,
+    current_user: UserUpdatePermDep,
 ) -> UserResponse:
     """更新用户信息.
 
     速率限制：100次/小时.
     """
-    return user_service.update_user(db, user_id, user_data, additional_role_ids=user_data.additional_role_ids)
+    return user_service.update_user(
+        db,
+        user_id,
+        user_data,
+        additional_role_ids=user_data.additional_role_ids,
+        operator_id=str(current_user.id),
+        request=request,
+    )
 
 
 @router.put("/{user_id}/reset-password")
@@ -146,13 +164,19 @@ def reset_user_password(
     user_id: str,
     password_data: PasswordResetRequest,
     db: DbSessionDep,
-    _current_user: CurrentAdminUserDep,
+    current_user: UserResetPasswordPermDep,
 ) -> dict:
     """重置用户密码.
 
     速率限制：5次/小时（防止密码重置滥用）.
     """
-    return user_service.reset_password(db, user_id, password_data)
+    return user_service.reset_password(
+        db,
+        user_id,
+        password_data,
+        operator_id=str(current_user.id),
+        request=request,
+    )
 
 
 @router.delete("/{user_id}", status_code=204)
@@ -161,13 +185,13 @@ def delete_user(
     request: Request,
     user_id: str,
     db: DbSessionDep,
-    current_user: CurrentAdminUserDep,
+    current_user: UserDeletePermDep,
 ) -> None:
     """删除用户.
 
     速率限制：20次/小时.
     """
-    user_service.delete_user(db, user_id, current_user.id)
+    user_service.delete_user(db, user_id, current_user.id, request=request)
 
 
 @router.post("/change-password")

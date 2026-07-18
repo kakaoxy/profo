@@ -32,10 +32,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES, ROLE_CODES } from "@/lib/auth/permissions";
 
 import { deleteRoleAction } from "../../actions/index";
 import type { RoleResponse } from "../../actions/index";
-import { PERMISSIONS } from "../../constants";
 
 interface RoleTableProps {
   data: RoleResponse[];
@@ -45,10 +46,6 @@ interface RoleTableProps {
 export function RoleTable({ data, onEdit }: RoleTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const getPermissionLabel = (code: string) => {
-    return PERMISSIONS.find(p => p.value === code)?.label || code;
-  };
 
   const handleDelete = async () => {
     if (!deletingId) return;
@@ -95,11 +92,19 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {role.permissions?.map((p) => (
-                      <Badge key={p} variant="secondary" className="text-xs">
-                        {getPermissionLabel(p)}
+                    {(role.permission_codes ?? []).slice(0, 3).map((code) => (
+                      <Badge key={code} variant="secondary" className="text-xs">
+                        {code}
                       </Badge>
                     ))}
+                    {(role.permission_codes?.length ?? 0) > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{(role.permission_codes?.length ?? 0) - 3}
+                      </Badge>
+                    )}
+                    {(!role.permission_codes || role.permission_codes.length === 0) && (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -118,18 +123,22 @@ export function RoleTable({ data, onEdit }: RoleTableProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(role)}>
-                        <SquarePen className="mr-2 h-4 w-4" />
-                        编辑
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setDeletingId(role.id)}
-                        disabled={role.code === 'admin'} // 禁止删除管理员角色
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        删除
-                      </DropdownMenuItem>
+                      <HasPermission code={PERMISSION_CODES.ROLE_UPDATE}>
+                        <DropdownMenuItem onClick={() => onEdit(role)}>
+                          <SquarePen className="mr-2 h-4 w-4" />
+                          编辑
+                        </DropdownMenuItem>
+                      </HasPermission>
+                      <HasPermission code={PERMISSION_CODES.ROLE_DELETE}>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeletingId(role.id)}
+                          disabled={role.code === ROLE_CODES.ADMIN} // 禁止删除管理员角色
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除
+                        </DropdownMenuItem>
+                      </HasPermission>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

@@ -21,6 +21,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -179,43 +181,47 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                   className="flex items-center justify-end gap-1"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8 p-0 rounded-full transition-all"
-                    onClick={() => onEdit(lead)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 w-8 p-0 rounded-full transition-all"
+                      onClick={() => onEdit(lead)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </HasPermission>
 
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full transition-all"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          此操作将永久删除该线索，无法恢复。
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => onDelete(lead.id)}
-                          className="bg-error hover:bg-red-700"
+                  <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full transition-all"
                         >
-                          确认删除
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            此操作将永久删除该线索，无法恢复。
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDelete(lead.id)}
+                            className="bg-error hover:bg-red-700"
+                          >
+                            确认删除
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </HasPermission>
                 </div>
               </td>
             </tr>

@@ -5,6 +5,8 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 interface UserSimple {
   id: string;
@@ -66,6 +68,10 @@ export async function updateSalesRolesAction(
       success: false,
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();
@@ -187,6 +193,10 @@ export async function createSalesRecordAction(payload: {
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
 
@@ -272,6 +282,10 @@ export async function deleteSalesRecordAction(
       message: recordParsed.error.issues[0]?.message || "输入校验失败",
     };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -319,6 +333,10 @@ export async function completeProjectAction(
       success: false,
       message: parsed.error.issues[0]?.message || "输入校验失败",
     };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
   try {
     const client = await fetchClient();

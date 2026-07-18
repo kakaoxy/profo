@@ -11,6 +11,8 @@ import type {
   SettlementChangeRequest,
   UnsettleRequest,
 } from "./types";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 // 与后端 SettlementChangeRequest / UnsettleRequest Pydantic 语义对齐
 const investmentIdSchema = z.string().min(1, "投资 ID 不能为空");
@@ -46,6 +48,11 @@ export async function settleInvestment(
       success: false,
       message: parsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {
@@ -94,6 +101,11 @@ export async function unsettleInvestment(
       success: false,
       message: parsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

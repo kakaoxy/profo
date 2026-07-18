@@ -8,6 +8,8 @@ import { revalidatePath } from "next/cache";
 import { FollowUpMethod, FollowUp } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
 import type { operations } from "@/lib/api-types";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 type FollowUpCreatePayload =
   operations["add_follow_up_api_v1_leads__lead_id__follow_ups_post"]["requestBody"]["content"]["application/json"];
@@ -31,6 +33,11 @@ export async function addFollowUpAction(
       success: false,
       error: parsed.error.issues[0]?.message ?? "跟进参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
   }
 
   try {

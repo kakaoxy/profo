@@ -6,6 +6,8 @@ import { parseApiError, parseNetworkError } from "@/lib/error-utils";
 import { z } from "zod";
 import type { ProjectQueryParams } from "@/app/(main)/admin/l4-marketing/projects/_components/project-selector/types";
 import type { ActionResult } from "@/app/(main)/admin/l4-marketing/projects/actions/projects";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 // L3 项目 ID schema（字符串 UUID，使用 min(1) 而非 uuid）
 const l3ProjectIdSchema = z.string().min(1, "L3 项目 ID 不能为空");
@@ -55,6 +57,10 @@ export async function importFromL3ProjectAction(projectId: string): Promise<Acti
   const idParsed = l3ProjectIdSchema.safeParse(projectId);
   if (!idParsed.success) {
     return { success: false, error: idParsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
   }
   try {
     const client = await fetchClient();

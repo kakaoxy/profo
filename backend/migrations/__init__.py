@@ -38,6 +38,8 @@
 - add_counterparty_type_to_finance_records: 为 finance_records 表添加 counterparty_type 列（公司/个人支付方）
 - rebuild_contract_no_index: 重建 idx_contract_no 为部分唯一索引（WHERE is_deleted=false），
   清理已删除项目的合同记录，允许合同编号在项目软删除后被复用
+- migrate_permission_system: 幂等创建权限系统三张表（permissions/role_permissions/operation_logs），
+  初始化系统权限点，为 4 个内置角色分配默认权限集
 
 """
 
@@ -58,6 +60,335 @@ logger = logging.getLogger(__name__)
 
 _FERNET_CIPHER_PREFIX = "gAAAAA"
 _MIGRATION_BATCH_SIZE = 500
+
+# 权限点种子数据：所有 is_system=True，覆盖系统全部模块的 API 权限点
+_PERMISSIONS_SEED: list[dict] = [
+    # 用户管理模块
+    {
+        "code": "user:read",
+        "name": "查看用户",
+        "module": "user",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看用户列表与详情",
+    },
+    {
+        "code": "user:create",
+        "name": "创建用户",
+        "module": "user",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新建用户账号",
+    },
+    {
+        "code": "user:update",
+        "name": "更新用户",
+        "module": "user",
+        "category": "api",
+        "sort_order": 30,
+        "description": "编辑用户信息与角色分配",
+    },
+    {
+        "code": "user:delete",
+        "name": "删除用户",
+        "module": "user",
+        "category": "api",
+        "sort_order": 40,
+        "description": "删除用户账号",
+    },
+    {
+        "code": "user:reset_password",
+        "name": "重置密码",
+        "module": "user",
+        "category": "api",
+        "sort_order": 50,
+        "description": "重置用户密码",
+    },
+    # 角色管理模块
+    {
+        "code": "role:read",
+        "name": "查看角色",
+        "module": "role",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看角色列表与详情",
+    },
+    {
+        "code": "role:create",
+        "name": "创建角色",
+        "module": "role",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新建角色",
+    },
+    {
+        "code": "role:update",
+        "name": "更新角色",
+        "module": "role",
+        "category": "api",
+        "sort_order": 30,
+        "description": "编辑角色信息与权限分配",
+    },
+    {
+        "code": "role:delete",
+        "name": "删除角色",
+        "module": "role",
+        "category": "api",
+        "sort_order": 40,
+        "description": "删除（停用）角色",
+    },
+    {
+        "code": "role:assign_permissions",
+        "name": "分配角色权限",
+        "module": "role",
+        "category": "api",
+        "sort_order": 50,
+        "description": "为角色分配权限点",
+    },
+    # 权限字典模块
+    {
+        "code": "permission:read",
+        "name": "查看权限字典",
+        "module": "permission",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看权限点列表",
+    },
+    {
+        "code": "permission:manage",
+        "name": "管理权限字典",
+        "module": "permission",
+        "category": "api",
+        "sort_order": 20,
+        "description": "创建/更新/删除权限点",
+    },
+    # 房源管理模块
+    {
+        "code": "property:read",
+        "name": "查看房源",
+        "module": "property",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看房源列表与详情",
+    },
+    {
+        "code": "property:write",
+        "name": "编辑房源",
+        "module": "property",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑房源",
+    },
+    {
+        "code": "property:upload",
+        "name": "批量上传房源",
+        "module": "property",
+        "category": "api",
+        "sort_order": 30,
+        "description": "批量上传房源数据",
+    },
+    {
+        "code": "property:governance",
+        "name": "数据治理",
+        "module": "property",
+        "category": "api",
+        "sort_order": 40,
+        "description": "房源数据治理操作",
+    },
+    # 线索管理模块
+    {
+        "code": "lead:read",
+        "name": "查看线索",
+        "module": "lead",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看线索列表与详情",
+    },
+    {
+        "code": "lead:write",
+        "name": "编辑线索",
+        "module": "lead",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑线索",
+    },
+    {
+        "code": "lead:export",
+        "name": "导出线索",
+        "module": "lead",
+        "category": "api",
+        "sort_order": 30,
+        "description": "导出线索数据",
+    },
+    {
+        "code": "lead:submit",
+        "name": "提交线索",
+        "module": "lead",
+        "category": "api",
+        "sort_order": 40,
+        "description": "C 端提交线索",
+    },
+    # 项目管理模块
+    {
+        "code": "project:read",
+        "name": "查看项目",
+        "module": "project",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看项目列表与详情",
+    },
+    {
+        "code": "project:write",
+        "name": "编辑项目",
+        "module": "project",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑项目",
+    },
+    {
+        "code": "project:delete",
+        "name": "删除项目",
+        "module": "project",
+        "category": "api",
+        "sort_order": 30,
+        "description": "删除项目",
+    },
+    # 财务台账模块
+    {
+        "code": "ledger:read",
+        "name": "查看台账",
+        "module": "ledger",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看财务台账",
+    },
+    {
+        "code": "ledger:write",
+        "name": "编辑台账",
+        "module": "ledger",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑台账记录",
+    },
+    {
+        "code": "ledger:settle",
+        "name": "台账结算",
+        "module": "ledger",
+        "category": "api",
+        "sort_order": 30,
+        "description": "项目财务结算操作",
+    },
+    # 投资管理模块
+    {
+        "code": "investment:read",
+        "name": "查看跟投",
+        "module": "investment",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看跟投项目",
+    },
+    {
+        "code": "investment:write",
+        "name": "编辑跟投",
+        "module": "investment",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑跟投",
+    },
+    {
+        "code": "investment:copy",
+        "name": "复制跟投",
+        "module": "investment",
+        "category": "api",
+        "sort_order": 30,
+        "description": "复制跟投到其他项目",
+    },
+    # L4 市场营销模块
+    {
+        "code": "l4_marketing:read",
+        "name": "查看营销",
+        "module": "l4_marketing",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看营销项目",
+    },
+    {
+        "code": "l4_marketing:write",
+        "name": "编辑营销",
+        "module": "l4_marketing",
+        "category": "api",
+        "sort_order": 20,
+        "description": "新增/编辑营销项目",
+    },
+    # 审计日志模块
+    {
+        "code": "operation_log:read",
+        "name": "查看审计日志",
+        "module": "operation_log",
+        "category": "api",
+        "sort_order": 10,
+        "description": "查看操作审计日志",
+    },
+    # API Key 管理
+    {
+        "code": "api_key:manage",
+        "name": "管理 API Key",
+        "module": "api_key",
+        "category": "api",
+        "sort_order": 10,
+        "description": "生成/撤销 API Key",
+    },
+    # C 端估价
+    {
+        "code": "valuation:write",
+        "name": "提交估价",
+        "module": "valuation",
+        "category": "api",
+        "sort_order": 10,
+        "description": "C 端提交估价申请",
+    },
+]
+
+# 内置角色 → 默认权限集（admin 拥有全部权限）
+_ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
+    "admin": [p["code"] for p in _PERMISSIONS_SEED],
+    "operator": [
+        # 业务读写
+        "property:read",
+        "property:write",
+        "property:upload",
+        "property:governance",
+        "lead:read",
+        "lead:write",
+        "lead:export",
+        "project:read",
+        "project:write",
+        "ledger:read",
+        "ledger:write",
+        "ledger:settle",
+        "investment:read",
+        "investment:write",
+        "investment:copy",
+        "l4_marketing:read",
+        "l4_marketing:write",
+        # 运营可管理 API Key
+        "api_key:manage",
+    ],
+    "user": [
+        # 仅读取
+        "property:read",
+        "lead:read",
+        "project:read",
+        "ledger:read",
+        "investment:read",
+        "l4_marketing:read",
+    ],
+    "customer": [
+        # C 端权限
+        "valuation:write",
+        "lead:submit",
+    ],
+}
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
@@ -893,6 +1224,155 @@ def create_user_roles_table(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine, tables=[UserRole.__table__], checkfirst=True)
 
 
+def migrate_permission_system(engine: Engine) -> None:
+    """幂等创建权限系统三张表并初始化系统权限点与内置角色默认权限集.
+
+    1. 幂等创建三张表：
+       - permissions：权限点字典（module:action 编码）
+       - role_permissions：角色-权限关联表（Table 对象，逻辑外键，级联由 Service 处理）
+       - operation_logs：操作审计日志表
+       参考 create_investment_tables / create_user_roles_table，使用 Base.metadata.create_all
+       + checkfirst=True，新建表语义（CREATE TABLE IF NOT EXISTS）。
+
+    2. 初始化系统权限点（_PERMISSIONS_SEED，所有 is_system=True）：
+       - 查询已存在 code 集合，跳过已存在的，仅插入缺失项
+       - 使用 text() + 绑定参数，参考 encrypt_existing_phones
+
+    3. 为 4 个内置角色（admin/operator/user/customer）分配默认权限集
+       （_ROLE_PERMISSIONS_SEED）：跳过已存在的 (role_id, permission_id) 关联，
+       仅插入缺失关联，参考 _ROLE_PERMISSIONS_SEED 映射。
+
+    4. 关于现有 Role.permissions JSON 数据迁移：决策跳过。
+       原因：旧权限码（view_data/edit_data/manage_users/manage_roles）与新权限码
+       （user:read 等）语义不一致，映射困难；本迁移已通过 _ROLE_PERMISSIONS_SEED
+       为 4 个内置角色分配正确的新权限集，覆盖了所有现有角色。旧 Role.permissions
+       JSON 字段保留（向后兼容），但不再使用。
+    """
+    import uuid  # noqa: PLC0415
+
+    from sqlalchemy import bindparam  # noqa: PLC0415
+
+    from models import Base  # noqa: PLC0415
+    from models.system import OperationLog  # noqa: PLC0415
+    from models.user import Permission, role_permissions  # noqa: PLC0415
+
+    # 1. 幂等创建三张表
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    target_tables = [Permission.__table__, role_permissions, OperationLog.__table__]
+    missing_tables = [t for t in target_tables if t.name not in existing_tables]
+
+    if missing_tables:
+        table_names = [t.name for t in missing_tables]
+        logger.info("迁移：创建权限系统表 %s", table_names)
+        Base.metadata.create_all(bind=engine, tables=missing_tables, checkfirst=True)
+
+    # 1.1 同步 permissioncategory enum 类型（PG enum 类型创建后不会随 Python enum 自动扩展）
+    if engine.dialect.name == "postgresql":
+        from models.user.permission import PermissionCategory  # noqa: PLC0415
+
+        with engine.connect() as conn:
+            type_exists = conn.execute(text("SELECT 1 FROM pg_type WHERE typname = 'permissioncategory'")).scalar()
+        if type_exists:
+            added = 0
+            for member in PermissionCategory:
+                val = member.value
+                with engine.begin() as conn:
+                    exists = conn.execute(
+                        text(
+                            "SELECT 1 FROM pg_enum e "
+                            "JOIN pg_type t ON e.enumtypid = t.oid "
+                            "WHERE t.typname = 'permissioncategory' AND e.enumlabel = :label",
+                        ),
+                        {"label": val},
+                    ).scalar()
+                    if not exists:
+                        # PostgreSQL DDL 不支持绑定参数；枚举值来自可信 Python enum，非用户输入
+                        conn.execute(text(f"ALTER TYPE permissioncategory ADD VALUE IF NOT EXISTS '{val}'"))
+                        added += 1
+            if added:
+                logger.info("迁移：同步 permissioncategory enum（共 %d 个值）", added)
+
+    # 2. 初始化系统权限点（幂等：跳过已存在的 code）
+    with engine.begin() as conn:
+        existing_codes = {row[0] for row in conn.execute(text("SELECT code FROM permissions")).fetchall()}
+        inserted = 0
+        for perm in _PERMISSIONS_SEED:
+            if perm["code"] in existing_codes:
+                continue
+            conn.execute(
+                text(
+                    "INSERT INTO permissions "
+                    "(id, code, name, module, category, sort_order, is_system, description, created_at, updated_at) "
+                    "VALUES (:id, :code, :name, :module, :category, :sort_order, TRUE, :description, NOW(), NOW())"
+                ),
+                {
+                    "id": str(uuid.uuid4()),
+                    "code": perm["code"],
+                    "name": perm["name"],
+                    "module": perm["module"],
+                    "category": perm["category"],
+                    "sort_order": perm["sort_order"],
+                    "description": perm["description"],
+                },
+            )
+            inserted += 1
+    if inserted:
+        logger.info("迁移：初始化 %d 个系统权限点", inserted)
+
+    # 3. 为 4 个内置角色分配默认权限集（幂等：跳过已存在的关联）
+    with engine.begin() as conn:
+        # 3.1 查询内置角色 id（按 code）
+        role_stmt = text("SELECT id, code FROM roles WHERE code IN :codes").bindparams(
+            bindparam("codes", expanding=True)
+        )
+        role_rows = conn.execute(role_stmt, {"codes": list(_ROLE_PERMISSIONS_SEED.keys())}).fetchall()
+        role_id_by_code: dict[str, str] = {row[1]: row[0] for row in role_rows}
+
+        # 3.2 查询所需权限点 id（一次性 expanding IN）
+        all_perm_codes: set[str] = set()
+        for codes in _ROLE_PERMISSIONS_SEED.values():
+            all_perm_codes.update(codes)
+        perm_stmt = text("SELECT id, code FROM permissions WHERE code IN :codes").bindparams(
+            bindparam("codes", expanding=True)
+        )
+        perm_rows = conn.execute(perm_stmt, {"codes": list(all_perm_codes)}).fetchall()
+        perm_id_by_code: dict[str, str] = {row[1]: row[0] for row in perm_rows}
+
+        # 3.3 查询已存在的 (role_id, permission_id) 关联
+        existing_pairs: set[tuple[str, str]] = set()
+        for role_code in _ROLE_PERMISSIONS_SEED:
+            role_id = role_id_by_code.get(role_code)
+            if not role_id:
+                continue
+            rows = conn.execute(
+                text("SELECT permission_id FROM role_permissions WHERE role_id = :rid"),
+                {"rid": role_id},
+            ).fetchall()
+            for row in rows:
+                existing_pairs.add((role_id, row[0]))
+
+        # 3.4 插入缺失关联
+        inserted_links = 0
+        for role_code, perm_codes in _ROLE_PERMISSIONS_SEED.items():
+            role_id = role_id_by_code.get(role_code)
+            if not role_id:
+                continue
+            for perm_code in perm_codes:
+                perm_id = perm_id_by_code.get(perm_code)
+                if not perm_id:
+                    continue
+                if (role_id, perm_id) in existing_pairs:
+                    continue
+                conn.execute(
+                    text("INSERT INTO role_permissions (role_id, permission_id) VALUES (:rid, :pid)"),
+                    {"rid": role_id, "pid": perm_id},
+                )
+                inserted_links += 1
+    if inserted_links:
+        logger.info("迁移：为内置角色分配 %d 条权限关联", inserted_links)
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
@@ -926,6 +1406,7 @@ def run_startup_migrations(engine: Engine) -> None:
         add_counterparty_type_to_finance_records(engine)
         cleanup_reserved_contracts(engine)
         rebuild_contract_no_index(engine)
+        migrate_permission_system(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
