@@ -628,6 +628,8 @@ export interface paths {
         /**
          * Get Sales Records
          * @description 获取销售记录.
+         *
+         *     使用 CurrentActiveUserDep 允许 user 角色访问（业务身份 user 需查看自己负责项目的销售记录）.
          */
         get: operations["get_sales_records_api_v1_projects__project_id__selling_records_get"];
         put?: never;
@@ -721,6 +723,9 @@ export interface paths {
         /**
          * Get Projects
          * @description 获取项目列表.
+         *
+         *     使用 CurrentActiveUserDep 允许 user 角色访问（user 持 project:read 权限，
+         *     且作为业务身份需在 dashboard 看到自己负责的项目）.
          */
         get: operations["get_projects_api_v1_projects_get"];
         put?: never;
@@ -747,6 +752,8 @@ export interface paths {
         /**
          * Get Project Stats
          * @description 获取项目统计.
+         *
+         *     使用 CurrentActiveUserDep 允许 user 角色访问（dashboard 需展示统计卡片）.
          */
         get: operations["get_project_stats_api_v1_projects_stats_get"];
         put?: never;
@@ -1695,6 +1702,26 @@ export interface paths {
          *     仅接受后台受众(aud=admin)的刷新令牌，拒绝C端Token.
          */
         post: operations["refresh_access_token_api_v1_auth_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 后台退出登录
+         * @description 后台用户退出登录，服务端撤销当前 refresh_token（access_token 短期过期自然失效）
+         */
+        post: operations["logout_api_v1_auth_logout_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5521,6 +5548,17 @@ export interface components {
             password: string;
         };
         /**
+         * LogoutResponse
+         * @description 后台登出响应模型.
+         */
+        LogoutResponse: {
+            /**
+             * Message
+             * @description 提示信息
+             */
+            message: string;
+        };
+        /**
          * MarketSentimentResponse
          * @description 市场情绪响应.
          */
@@ -6613,14 +6651,14 @@ export interface components {
              * @description 销售活动记录列表
              */
             sales_records?: {
-                [key: string]: string | number | null;
+                [key: string]: unknown;
             }[] | null;
             /**
              * Renovation Photos
              * @description 装修阶段照片列表
              */
             renovation_photos?: {
-                [key: string]: string | null;
+                [key: string]: unknown;
             }[] | null;
             /**
              * Renovationstagedates
@@ -12881,6 +12919,60 @@ export interface operations {
             };
             /** @description 刷新令牌无效或已失效 */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description 请求过于频繁 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogoutResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 账号已禁用 */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

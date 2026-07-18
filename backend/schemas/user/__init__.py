@@ -115,6 +115,12 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(description="刷新令牌")
 
 
+class LogoutResponse(BaseModel):
+    """后台登出响应模型."""
+
+    message: str = Field(description="提示信息")
+
+
 class WechatLoginRequest(BaseModel):
     """微信登录请求模型."""
 
@@ -278,6 +284,7 @@ __all__ = [
     "ApiKeyInfoResponse",
     "ExchangeTokenRequest",
     "LoginRequest",
+    "LogoutResponse",
     "PasswordChange",
     "PasswordResetRequest",
     "RefreshTokenRequest",

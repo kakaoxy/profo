@@ -17,6 +17,7 @@ from schemas.user import (
     ApiKeyInfoResponse,
     ExchangeTokenRequest,
     LoginRequest,
+    LogoutResponse,
     RefreshTokenRequest,
     TokenResponse,
     UserResponse,
@@ -26,6 +27,7 @@ from schemas.user import (
 from services.system import ApiKeyService, AuthService, WeChatAuthService, permission_service
 from services.system.exceptions import AuthenticationError, BusinessLogicError
 from settings import settings
+from utils.auth import AUDIENCE_ADMIN
 from utils.common import RateLimits, limiter
 
 logger = logging.getLogger(__name__)
@@ -125,8 +127,38 @@ def refresh_access_token(
     return AuthService.refresh_user_token(
         db,
         refresh_data.refresh_token,
-        expected_audience="admin",
+        expected_audience=AUDIENCE_ADMIN,
     )
+
+
+@router.post(
+    "/logout",
+    summary="后台退出登录",
+    description="后台用户退出登录，服务端撤销当前 refresh_token（access_token 短期过期自然失效）",
+    responses={
+        401: {"description": "未认证"},
+        403: {"description": "账号已禁用"},
+        429: {"description": "请求过于频繁"},
+    },
+)
+@limiter.limit(RateLimits.AUTH_LOGOUT)
+def logout(
+    request: Request,
+    refresh_data: Annotated[RefreshTokenRequest, Body()],
+    _current_user: CurrentActiveUserDep,
+    db: DbSessionDep,
+) -> LogoutResponse:
+    """后台退出登录，撤销当前 refresh_token.
+
+    access_token 为 JWT 无状态令牌，短期过期自然失效；
+    refresh_token 按 jti 撤销，防止退出后被重放刷新。
+    """
+    AuthService.revoke_refresh_token(
+        db,
+        refresh_data.refresh_token,
+        expected_audience=AUDIENCE_ADMIN,
+    )
+    return LogoutResponse(message="退出登录成功")
 
 
 @router.get("/wechat/authorize")

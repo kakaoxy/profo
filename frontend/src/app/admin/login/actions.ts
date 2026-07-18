@@ -197,6 +197,26 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
 
 export async function logoutAction() {
   const cookieStore = await cookies();
+  const accessToken = cookieStore.get("access_token")?.value;
+  const refreshToken = cookieStore.get("refresh_token")?.value;
+
+  // 调后端 logout 撤销 refresh_token，防止登出后 refresh_token 7 天内被滥用
+  if (accessToken && refreshToken) {
+    try {
+      await fetch(getApiUrl(apiPaths.auth.logout), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+    } catch (error) {
+      // 后端调用失败不阻断登出流程，仍清前端 cookie 保证 UX
+      logger.error("后端 logout 调用失败", error);
+    }
+  }
+
   // 删除时必须指定与设置时相同的 path，否则浏览器不会匹配删除
   cookieStore.delete({ name: "access_token", path: "/" });
   cookieStore.delete({ name: "refresh_token", path: "/" });
