@@ -8,6 +8,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from constants.role_codes import INTERNAL_ROLE_CODES
 from db import get_db
 from models import User
 from services.system import ApiKeyService
@@ -28,9 +29,9 @@ DbSessionDep = Annotated[Session, Depends(get_db)]
 # 后台内部角色：API Key 生成与使用仅限这些角色
 # 注意：与 services/system/auth.py 的 BACKEND_ROLE_CODES 不同。
 #   BACKEND_ROLE_CODES = {admin, operator, user}  → 后台登录允许的角色（含 user）
-#   _INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
+#   INTERNAL_ROLE_CODES = {admin, operator}        → API Key 机器接口仅限内部角色（不含 user）
 # C 端 user 角色可登录后台但不允许生成/使用 API Key 调用机器接口。
-_INTERNAL_ROLE_CODES = {"admin", "operator"}
+# 角色码集合定义在 constants.role_codes.INTERNAL_ROLE_CODES。
 
 
 def _infer_audience_from_path(path: str) -> str:
@@ -63,7 +64,7 @@ async def _authenticate_by_api_key(db: DbSessionDep, api_key: str) -> User:
         msg = "API Key 无效"
         raise AuthenticationError(msg) from None
     # 角色二次校验：仅允许后台内部角色
-    if not _user_has_any_role(user, set(_INTERNAL_ROLE_CODES)):
+    if not _user_has_any_role(user, set(INTERNAL_ROLE_CODES)):
         msg = "该账号无权使用 API Key 调用机器接口"
         raise PermissionDeniedError(msg)
     return user
@@ -252,6 +253,85 @@ CurrentInternalUserDep = Annotated[User, Depends(require_roles(["admin", "operat
 CurrentCustomerUserDep = Annotated[User, Depends(require_roles(["customer"]))]
 
 
+# ==================== 权限校验（基于权限码） ====================
+
+
+def has_permission(user: User, code: str, db: Session) -> bool:
+    """判断用户是否拥有指定权限（非抛异常版）.
+
+    每次请求直接查数据库计算用户有效权限集合（主角色 + 附加角色权限并集）。
+
+    Args:
+        user: 用户对象
+        code: 权限代码（如 "user:delete"）
+        db: 数据库会话
+
+    Returns:
+        True 表示拥有权限，False 表示无权限
+
+    """
+    from services.system.permission import permission_service  # noqa: PLC0415
+
+    perms = permission_service.get_user_permission_codes(db, user)
+    return code in perms
+
+
+def require_permission(code: str) -> Callable[..., User]:
+    """权限检查依赖工厂函数.
+
+    与 ``require_roles`` 类似，但基于权限码而非角色码。
+    每次请求查数据库计算用户有效权限集合（主角色 + 附加角色权限并集）。
+
+    Args:
+        code: 需要的权限代码（如 "user:delete"）
+
+    Returns:
+        依赖函数，用于检查用户权限
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 用户无该权限
+
+    """
+
+    def permission_checker(
+        user: CurrentActiveUserDep,
+        db: DbSessionDep,
+    ) -> User:
+        if not has_permission(user, code, db):
+            msg = f"权限不足：缺少权限 {code}"
+            raise PermissionDeniedError(msg)
+        return user
+
+    return permission_checker
+
+
+# 预定义的权限依赖类型（按需扩展，Task 9 将逐步替换 CurrentAdminUserDep）
+# user 模块
+UserReadPermDep = Annotated[User, Depends(require_permission("user:read"))]
+UserCreatePermDep = Annotated[User, Depends(require_permission("user:create"))]
+UserUpdatePermDep = Annotated[User, Depends(require_permission("user:update"))]
+UserDeletePermDep = Annotated[User, Depends(require_permission("user:delete"))]
+UserResetPasswordPermDep = Annotated[User, Depends(require_permission("user:reset_password"))]
+# role 模块
+RoleReadPermDep = Annotated[User, Depends(require_permission("role:read"))]
+RoleUpdatePermDep = Annotated[User, Depends(require_permission("role:update"))]
+RoleCreatePermDep = Annotated[User, Depends(require_permission("role:create"))]
+RoleDeletePermDep = Annotated[User, Depends(require_permission("role:delete"))]
+RoleAssignPermissionsPermDep = Annotated[User, Depends(require_permission("role:assign_permissions"))]
+# permission 模块
+PermissionReadPermDep = Annotated[User, Depends(require_permission("permission:read"))]
+PermissionManagePermDep = Annotated[User, Depends(require_permission("permission:manage"))]
+# property 模块
+PropertyReadPermDep = Annotated[User, Depends(require_permission("property:read"))]
+PropertyWritePermDep = Annotated[User, Depends(require_permission("property:write"))]
+PropertyUploadPermDep = Annotated[User, Depends(require_permission("property:upload"))]
+# project 模块
+ProjectReadPermDep = Annotated[User, Depends(require_permission("project:read"))]
+ProjectWritePermDep = Annotated[User, Depends(require_permission("project:write"))]
+# operation_log 模块
+OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
+
+
 __all__ = [
     "ApiKeyAuthDep",
     "CurrentActiveUserDep",
@@ -262,9 +342,29 @@ __all__ = [
     "CurrentUserDep",
     # 类型别名
     "DbSessionDep",
-    "get_current_active_user",
+    "OperationLogReadPermDep",
+    "PermissionManagePermDep",
+    "PermissionReadPermDep",
+    "ProjectReadPermDep",
+    "ProjectWritePermDep",
+    "PropertyReadPermDep",
+    "PropertyUploadPermDep",
+    "PropertyWritePermDep",
+    "RoleAssignPermissionsPermDep",
+    "RoleCreatePermDep",
+    "RoleDeletePermDep",
+    "RoleReadPermDep",
+    "RoleUpdatePermDep",
+    "UserCreatePermDep",
+    "UserDeletePermDep",
+    "UserReadPermDep",
+    "UserResetPasswordPermDep",
+    "UserUpdatePermDep",
     # 依赖函数
+    "get_current_active_user",
     "get_current_user",
+    "has_permission",
     "require_api_key",
+    "require_permission",
     "require_roles",
 ]

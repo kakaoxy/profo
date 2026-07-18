@@ -3,6 +3,8 @@
 import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export interface UpdateCommunityRequest {
   name?: string;
@@ -66,6 +68,11 @@ export async function updateCommunityAction(
       success: false,
       message: parsed.error.issues[0]?.message ?? "小区参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

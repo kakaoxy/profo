@@ -34,6 +34,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { deleteUserAction } from "../actions/index";
 import type { UserResponse } from "../actions/index";
@@ -133,23 +135,29 @@ export function UserTable({ data, onEdit, onResetPassword }: UserTableProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(user)}>
-                        <SquarePen className="mr-2 h-4 w-4" />
-                        编辑用户
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onResetPassword(user)}>
-                        <KeyRound className="mr-2 h-4 w-4" />
-                        重置密码
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setDeletingId(user.id)}
-                        disabled={user.username === 'admin'} // 禁止删除admin
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        删除用户
-                      </DropdownMenuItem>
+                      <HasPermission code={PERMISSION_CODES.USER_UPDATE}>
+                        <DropdownMenuItem onClick={() => onEdit(user)}>
+                          <SquarePen className="mr-2 h-4 w-4" />
+                          编辑用户
+                        </DropdownMenuItem>
+                      </HasPermission>
+                      <HasPermission code={PERMISSION_CODES.USER_RESET_PASSWORD}>
+                        <DropdownMenuItem onClick={() => onResetPassword(user)}>
+                          <KeyRound className="mr-2 h-4 w-4" />
+                          重置密码
+                        </DropdownMenuItem>
+                      </HasPermission>
+                      <HasPermission code={PERMISSION_CODES.USER_DELETE}>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeletingId(user.id)}
+                          disabled={user.username === 'admin'} // 禁止删除admin
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除用户
+                        </DropdownMenuItem>
+                      </HasPermission>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

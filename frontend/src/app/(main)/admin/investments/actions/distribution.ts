@@ -11,6 +11,8 @@ import type {
   ReturnAdjustmentItem,
   ReturnAdjustmentResponse,
 } from "./types";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 // 与后端 ReturnAdjustmentItem Pydantic 语义对齐
 // 分配比例合计 = 100% 等业务校验由后端执行
@@ -49,6 +51,11 @@ export async function adjustDistribution(
       success: false,
       message: parsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

@@ -15,6 +15,7 @@ import {
   Smartphone,
   Settings,
   Wallet,
+  ScrollText,
   LucideIcon,
 } from "lucide-react";
 import {
@@ -52,6 +53,8 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { logoutAction } from "@/app/admin/login/actions";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES, ROLE_CODES } from "@/lib/auth/permissions";
 
 interface User {
   username: string;
@@ -66,7 +69,10 @@ interface User {
 interface NavSubItem {
   title: string;
   url: string;
+  // 允许访问该菜单的角色代码列表；不填表示对所有后台角色可见
   roles?: string[];
+  // 权限码：若声明则优先用 hasPermission 校验，未声明时回退到 roles 判断
+  permission?: string;
 }
 
 interface NavItem {
@@ -79,12 +85,9 @@ interface NavItem {
   items?: NavSubItem[];
   // 折叠态点击图标直接跳转的目标 URL；不填则保持原弹出子菜单行为
   collapsedUrl?: string;
+  // 权限码：若声明则优先用 hasPermission 校验，未声明时回退到 roles 判断
+  permission?: string;
 }
-
-// 后台内部角色代码：admin 超级管理员 / operator 运营 / user 普通用户
-// 无 roles 字段的菜单项对所有后台角色可见
-const ROLE_ADMIN = "admin";
-const ROLE_OPERATOR = "operator";
 
 const data: { navMain: NavItem[] } = {
   navMain: [
@@ -100,8 +103,8 @@ const data: { navMain: NavItem[] } = {
       icon: Building2,
       items: [
         { title: "房源列表", url: "/admin/properties" },
-        { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
-        { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
+        { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_UPLOAD },
+        { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
       ],
     },
     {
@@ -132,19 +135,27 @@ const data: { navMain: NavItem[] } = {
       title: "用户管理",
       url: "#",
       icon: Users,
-      roles: [ROLE_ADMIN],
+      roles: [ROLE_CODES.ADMIN],
+      permission: PERMISSION_CODES.USER_READ,
       items: [
-        { title: "用户列表", url: "/admin/users", roles: [ROLE_ADMIN] },
-        { title: "权限管理", url: "/admin/users/roles", roles: [ROLE_ADMIN] },
+        { title: "用户列表", url: "/admin/users", roles: [ROLE_CODES.ADMIN], permission: PERMISSION_CODES.USER_READ },
+        { title: "权限管理", url: "/admin/users/roles", roles: [ROLE_CODES.ADMIN], permission: PERMISSION_CODES.USER_READ },
       ],
+    },
+    {
+      title: "审计日志",
+      url: "/admin/audit-logs",
+      icon: ScrollText,
+      permission: PERMISSION_CODES.OPERATION_LOG_READ,
     },
     {
       title: "设置",
       url: "#",
       icon: Settings,
-      roles: [ROLE_ADMIN, ROLE_OPERATOR],
+      roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+      permission: PERMISSION_CODES.API_KEY_MANAGE,
       items: [
-        { title: "API Key", url: "/admin/settings/api-key", roles: [ROLE_ADMIN, ROLE_OPERATOR] },
+        { title: "API Key", url: "/admin/settings/api-key", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.API_KEY_MANAGE },
       ],
     },
   ],
@@ -202,9 +213,19 @@ export function AppSidebar({ user }: { user: User | null }) {
   const { state, isMobile, setOpen } = useSidebar();
   const pathname = usePathname();
   const roleCode = user?.role?.code;
+  const { hasPermission } = usePermission();
 
-  // 角色可见性判断：未声明 roles 的项对所有后台角色可见；声明了则需匹配
-  const isVisible = (roles?: string[]) => !roles || (roleCode != null && roles.includes(roleCode));
+  // 可见性判断：permission 优先（用 hasPermission 校验），未声明 permission 时回退到 roles 判断；
+  // 两者都未声明则对所有后台角色可见。
+  const isVisible = (item: { permission?: string; roles?: string[] }) => {
+    if (item.permission) {
+      return hasPermission(item.permission);
+    }
+    if (item.roles) {
+      return roleCode != null && item.roles.includes(roleCode);
+    }
+    return true;
+  };
 
   // 进入非首页的功能页面时自动折叠侧边栏
   React.useEffect(() => {
@@ -217,6 +238,7 @@ export function AppSidebar({ user }: { user: User | null }) {
       "/admin/investments",
       "/admin/ledger",
       "/admin/users",
+      "/admin/audit-logs",
       "/admin/settings",
     ];
 
@@ -229,12 +251,12 @@ export function AppSidebar({ user }: { user: User | null }) {
     }
   }, [pathname, setOpen, isMobile]);
 
-  // 按角色过滤一级菜单与子菜单
+  // 按权限/角色过滤一级菜单与子菜单
   const visibleNav = data.navMain
-    .filter((item) => isVisible(item.roles))
+    .filter((item) => isVisible(item))
     .map((item) => ({
       ...item,
-      items: item.items?.filter((sub) => isVisible(sub.roles)),
+      items: item.items?.filter((sub) => isVisible(sub)),
     }))
     .filter((item) => !item.items || item.items.length > 0);
 

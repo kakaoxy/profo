@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export type ApiKeyCreateResponse = components["schemas"]["ApiKeyCreateResponse"];
 export type ApiKeyInfoResponse = components["schemas"]["ApiKeyInfoResponse"];
@@ -26,6 +28,10 @@ export async function getApiKeyInfoAction() {
 }
 
 export async function generateApiKeyAction() {
+  const permCheck = await requirePermission(PERMISSION_CODES.API_KEY_MANAGE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST("/api/v1/auth/api-key");
@@ -43,6 +49,10 @@ export async function generateApiKeyAction() {
 }
 
 export async function deleteApiKeyAction() {
+  const permCheck = await requirePermission(PERMISSION_CODES.API_KEY_MANAGE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE("/api/v1/auth/api-key");

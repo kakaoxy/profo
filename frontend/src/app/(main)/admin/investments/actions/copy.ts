@@ -10,6 +10,8 @@ import type {
   CopyInvestmentRequest,
   InvestmentResponse,
 } from "./types";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 // 与后端 CopyInvestmentRequest Pydantic 语义对齐
 const investmentIdSchema = z.string().min(1, "投资 ID 不能为空");
@@ -40,6 +42,11 @@ export async function copyInvestment(
       success: false,
       message: parsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.INVESTMENT_COPY);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

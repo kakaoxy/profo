@@ -9,6 +9,8 @@ import type {
   L4MarketingMediaCreate,
   L4MarketingMediaUpdate,
 } from "@/app/(main)/admin/l4-marketing/projects/types";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 // ============================================================================
 // Zod schemas
@@ -111,6 +113,10 @@ export async function createL4MarketingMediaAction(
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.POST(
@@ -162,6 +168,10 @@ export async function updateL4MarketingMediaAction(
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { data, error } = await client.PUT(
@@ -204,6 +214,10 @@ export async function deleteL4MarketingMediaAction(mediaId: number, projectId: n
   if (!projectIdParsed.success) {
     return { success: false, error: projectIdParsed.error.issues[0]?.message ?? "参数不合法" };
   }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
+  }
   try {
     const client = await fetchClient();
     const { error } = await client.DELETE(
@@ -241,6 +255,10 @@ export async function batchAddL4PhotosAction(
   const parsed = batchAddPhotosSchema.safeParse({ projectId, photoIds });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
   }
   const results = [];
   const errors: string[] = [];
@@ -290,6 +308,10 @@ export async function batchUpdateMediaSortOrderAction(
   const parsed = batchUpdateSortSchema.safeParse({ projectId, sortUpdates });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "参数不合法" };
+  }
+  const permCheck = await requirePermission(PERMISSION_CODES.L4_MARKETING_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
   }
   try {
     const client = await fetchClient();

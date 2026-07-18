@@ -43,7 +43,13 @@ from routers.public import (
     public_projects_router,
     public_users_router,
 )
-from routers.system import auth_router, roles_router, users_router
+from routers.system import (
+    auth_router,
+    operation_logs_router,
+    permissions_router,
+    roles_router,
+    users_router,
+)
 from services.system.exceptions import ServiceException
 from settings import settings
 from utils.common import limiter
@@ -116,6 +122,8 @@ app = FastAPI(
         {"name": "auth", "description": "认证授权 - 登录、令牌、API Key"},
         {"name": "users", "description": "用户管理"},
         {"name": "roles", "description": "角色管理"},
+        {"name": "permissions", "description": "权限管理"},
+        {"name": "operation-logs", "description": "操作审计日志"},
         {"name": "upload", "description": "文件上传与导入任务"},
         {"name": "push", "description": "JSON 数据推送"},
         {"name": "files", "description": "文件管理"},
@@ -215,6 +223,8 @@ app.include_router(ledger_router, prefix=API_V1_PREFIX)
 app.include_router(auth_router, prefix=API_V1_PREFIX)
 app.include_router(users_router, prefix=API_V1_PREFIX)
 app.include_router(roles_router, prefix=API_V1_PREFIX)
+app.include_router(permissions_router, prefix=API_V1_PREFIX)
+app.include_router(operation_logs_router, prefix=API_V1_PREFIX)
 app.include_router(upload_router, prefix=API_V1_PREFIX)
 app.include_router(push_router, prefix=API_V1_PREFIX)
 app.include_router(files_router, prefix=API_V1_PREFIX)

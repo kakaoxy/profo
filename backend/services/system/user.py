@@ -3,22 +3,41 @@
 处理用户管理的业务逻辑.
 """
 
+from typing import Any
+
+from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from constants.role_codes import RoleCode
 from models import Role, User, UserRole
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
 from utils.crypto import hash_phone
-from utils.formatters import escape_like
+from utils.formatters import escape_like, mask_phone
 
 from .auth import AuthService
 from .exceptions import AuthenticationError, ConflictError, ResourceNotFoundError, ValidationError
+from .operation_log import operation_log_service
 
 # 允许更新的用户字段白名单（防止设置 password/wechat_*/id 等敏感字段）
 _USER_ALLOWED_FIELDS = {"nickname", "phone", "avatar", "role_id", "status"}
+
+
+def _user_snapshot(user: User) -> dict[str, Any]:
+    """构建用户审计快照.
+
+    仅包含业务关键字段；phone 脱敏后记录，password/phone_hash 等敏感字段不记录。
+    """
+    return {
+        "username": user.username,
+        "nickname": user.nickname,
+        "role_id": user.role_id,
+        "status": user.status,
+        "phone": mask_phone(user.phone),
+    }
 
 
 class UserService:
@@ -80,7 +99,7 @@ class UserService:
             待写入的 UserRole 对象列表（已去重）
 
         Raises:
-            ValueError: 附加角色不存在 / 不是 customer / 主角色已为 customer
+            ValidationError: 附加角色不存在 / 不是 customer / 主角色已为 customer
 
         """
         # 去重并保留顺序
@@ -90,21 +109,21 @@ class UserService:
         roles = db.query(Role).filter(Role.id.in_(unique_ids)).all()
         if len(roles) != len(unique_ids):
             msg = "附加角色不存在"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         # 校验所有附加角色 code == "customer"
-        if any(r.code != "customer" for r in roles):
+        if any(r.code != RoleCode.CUSTOMER.value for r in roles):
             msg = "附加角色仅支持 customer"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         # 校验主角色 code != "customer"（直接使用已加载的 user.role 关系，避免重复查询）
         main_role = user.role
         if not main_role:
             msg = "主角色不存在"
-            raise ValueError(msg)
-        if main_role.code == "customer":
+            raise ValidationError(msg)
+        if main_role.code == RoleCode.CUSTOMER.value:
             msg = "主角色已为 C 端身份，无需附加"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         return [UserRole(user_id=user.id, role_id=role_id) for role_id in unique_ids]
 
@@ -113,6 +132,9 @@ class UserService:
         db: Session,
         user_data: UserCreate,
         additional_role_ids: list[str] | None = None,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> User:
         """创建用户.
 
@@ -121,14 +143,15 @@ class UserService:
             user_data: 用户创建数据
             additional_role_ids: 附加角色ID列表（None 或空列表表示无附加角色；
                 非空时校验所有角色必须为 customer，且主角色不能为 customer）
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Returns:
             创建的 User 对象
 
         Raises:
             ConflictError: 用户名或手机号已被使用
-            ValidationError: 密码强度不足
-            ValueError: 附加角色校验失败
+            ValidationError: 密码强度不足 / 附加角色校验失败
 
         """
         # Check username existence
@@ -177,6 +200,16 @@ class UserService:
             msg = "用户名或手机号已被使用"
             raise ConflictError(msg) from e
 
+        # 审计日志在主操作成功后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
+        operation_log_service.log_action(
+            db,
+            user_id=operator_id,
+            action="create",
+            resource_type="user",
+            resource_id=str(db_user.id),
+            after=_user_snapshot(db_user),
+            request=request,
+        )
         return db_user
 
     def update_user(
@@ -185,6 +218,9 @@ class UserService:
         user_id: str,
         user_data: UserUpdate,
         additional_role_ids: list[str] | None = None,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
     ) -> User:
         """更新用户.
 
@@ -194,6 +230,8 @@ class UserService:
             user_data: 用户更新数据
             additional_role_ids: 附加角色ID列表（None=不修改；[]=清空；
                 非空=校验后全量替换，所有角色必须为 customer）
+            operator_id: 操作者用户ID（用于审计日志，可选）
+            request: FastAPI Request 对象（用于审计日志提取 IP/UA，可选）
 
         Returns:
             更新后的 User 对象
@@ -201,13 +239,16 @@ class UserService:
         Raises:
             ResourceNotFoundError: 用户不存在
             ConflictError: 手机号已被使用
-            ValueError: 附加角色校验失败
+            ValidationError: 附加角色校验失败
 
         """
         user = self.get_user_by_id(db, user_id)
         if not user:
             msg = "用户不存在"
             raise ResourceNotFoundError(msg)
+
+        # 审计快照：在更新前记录
+        before_snapshot = _user_snapshot(user)
 
         # Check phone uniqueness (via hash)
         if user_data.phone and user_data.phone != user.phone:
@@ -244,16 +285,49 @@ class UserService:
                 user_roles_to_add = self._build_additional_user_roles(db, user, additional_role_ids)
                 db.add_all(user_roles_to_add)
 
+        # 判断是否需要因角色变更递增 token_version（触发权限缓存失效）
+        # role_id 在 update_data 中 或 additional_role_ids 显式传入（含空列表）均视为变更
+        needs_token_invalidation: bool = "role_id" in update_data or additional_role_ids is not None
+
         # 用户由启用变为禁用时，立即撤销已签发 Token，避免旧 Token 在过期前继续访问
         if was_active and user.status != "active":
             db.commit()
+            # invalidate_user_tokens 已递增 token_version，无需再次递增
             AuthService.invalidate_user_tokens(db, user)
+        elif needs_token_invalidation:
+            db.commit()
+            # 角色变更：仅递增 token_version 使权限缓存失效，不撤销 refresh_token。
+            # 用户可继续用 refresh_token 换取新 access_token（携带新 token_version）。
+            db.query(User).filter(User.id == user_id).update(
+                {User.token_version: User.token_version + 1}, synchronize_session=False
+            )
+            db.commit()
         else:
             db.commit()
         db.refresh(user)
+
+        # 审计日志在主操作成功后写入
+        operation_log_service.log_action(
+            db,
+            user_id=operator_id,
+            action="update",
+            resource_type="user",
+            resource_id=user_id,
+            before=before_snapshot,
+            after=_user_snapshot(user),
+            request=request,
+        )
         return user
 
-    def reset_password(self, db: Session, user_id: str, password_data: PasswordResetRequest) -> dict:
+    def reset_password(
+        self,
+        db: Session,
+        user_id: str,
+        password_data: PasswordResetRequest,
+        *,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> dict:
         """重置密码."""
         user = self.get_user_by_id(db, user_id)
         if not user:
@@ -268,9 +342,26 @@ class UserService:
         db.commit()
         # 撤销该用户已签发的所有 Token，强制重新登录
         AuthService.invalidate_user_tokens(db, user)
+
+        # 审计日志在主操作成功后写入（不记录密码本身）
+        operation_log_service.log_action(
+            db,
+            user_id=operator_id,
+            action="reset_password",
+            resource_type="user",
+            resource_id=user_id,
+            request=request,
+        )
         return {"message": "密码重置成功"}
 
-    def delete_user(self, db: Session, user_id: str, current_user_id: str) -> dict:
+    def delete_user(
+        self,
+        db: Session,
+        user_id: str,
+        current_user_id: str,
+        *,
+        request: Request | None = None,
+    ) -> dict:
         """删除用户."""
         if user_id == current_user_id:
             msg = "不能删除自己"
@@ -281,10 +372,24 @@ class UserService:
             msg = "用户不存在"
             raise ResourceNotFoundError(msg)
 
+        # 审计快照：在删除（停用）前记录
+        before_snapshot = _user_snapshot(user)
+
         user.status = "inactive"
         db.commit()
         # 禁用后立即撤销已签发 Token，避免过期前继续访问
         AuthService.invalidate_user_tokens(db, user)
+
+        # 审计日志在主操作成功后写入；操作者即 current_user_id
+        operation_log_service.log_action(
+            db,
+            user_id=current_user_id,
+            action="delete",
+            resource_type="user",
+            resource_id=user_id,
+            before=before_snapshot,
+            request=request,
+        )
         return {"message": "用户删除成功"}
 
     def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict:

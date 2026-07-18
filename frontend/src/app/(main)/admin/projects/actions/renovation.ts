@@ -5,6 +5,8 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
@@ -77,6 +79,11 @@ export async function deleteRenovationPhotoAction(
       success: false,
       message: photoParsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {
@@ -153,6 +160,11 @@ export async function addRenovationPhotoAction(payload: {
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST(
@@ -198,6 +210,11 @@ export async function updateRenovationStageAction(payload: {
       success: false,
       message: parsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {
@@ -274,6 +291,11 @@ export async function updateRenovationContractAction(
       success: false,
       message: parsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.PROJECT_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

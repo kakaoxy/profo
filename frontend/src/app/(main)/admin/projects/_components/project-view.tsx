@@ -21,6 +21,8 @@ import { columns } from "./columns";
 import { Project } from "../types";
 import { updateProjectAction } from "../actions/core";
 import type { SigningMaterial } from "./project-detail/types";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 interface ProjectViewProps {
   data: Project[];
@@ -152,9 +154,11 @@ export function ProjectView({ data, total }: ProjectViewProps) {
               导出
             </Button>
 
-            <div className="flex-1 lg:flex-none">
-              <CreateProjectDialog />
-            </div>
+            <HasPermission code={PERMISSION_CODES.PROJECT_WRITE}>
+              <div className="flex-1 lg:flex-none">
+                <CreateProjectDialog />
+              </div>
+            </HasPermission>
           </>
         }
         totalCount={total}

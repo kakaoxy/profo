@@ -6,6 +6,8 @@ import { Download, List, LayoutGrid, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SearchBar } from "@/components/common";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 import { LeadTabValue, LeadStatus } from "../types";
 
@@ -131,13 +133,15 @@ export function LeadsToolbar({
           导出
         </Button>
 
-        <Button
-          className="flex-1 lg:flex-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-          onClick={onAddLead}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          新增线索
-        </Button>
+        <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+          <Button
+            className="flex-1 lg:flex-none bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+            onClick={onAddLead}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            新增线索
+          </Button>
+        </HasPermission>
       </div>
     </div>
   );

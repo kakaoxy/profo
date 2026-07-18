@@ -32,6 +32,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { useUserForm } from "./use-user-form";
 import type { UserResponse, RoleResponse } from "../actions/index";
+import { ROLE_CODES } from "@/lib/auth/permissions";
 
 interface UserDialogProps {
   open: boolean;
@@ -43,7 +44,7 @@ interface UserDialogProps {
 export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps) {
   const { form, isPending, isEdit, onSubmit } = useUserForm({ user, open, onOpenChange, roles });
   const selectedRoleIsCustomer =
-    roles.find((r) => r.id === form.watch("role_id"))?.code === "customer";
+    roles.find((r) => r.id === form.watch("role_id"))?.code === ROLE_CODES.CUSTOMER;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -5,6 +5,8 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
 import { z } from "zod";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export type RoleResponse = components["schemas"]["RoleResponse"];
 export type RoleCreate = components["schemas"]["RoleCreate"];
@@ -23,7 +25,7 @@ const roleCreateSchema = z.object({
     .max(50, "代码不能超过50个字符")
     .regex(/^[a-zA-Z0-9_]+$/, "代码只能包含字母、数字和下划线"),
   description: z.string().optional(),
-  permissions: z.array(z.string()).optional(),
+  permission_codes: z.array(z.string()).optional(),
   is_active: z.boolean(),
 });
 
@@ -40,7 +42,7 @@ const roleUpdateSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "代码只能包含字母、数字和下划线")
     .optional(),
   description: z.string().optional(),
-  permissions: z.array(z.string()).optional(),
+  permission_codes: z.array(z.string()).optional(),
   is_active: z.boolean().optional(),
 });
 
@@ -80,6 +82,11 @@ export async function createRoleAction(data: RoleCreate) {
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.ROLE_CREATE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST("/api/v1/roles", { body: data });
@@ -114,6 +121,11 @@ export async function updateRoleAction(roleId: string, data: RoleUpdate) {
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.ROLE_UPDATE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.PUT("/api/v1/roles/{role_id}", {
@@ -141,6 +153,11 @@ export async function deleteRoleAction(roleId: string) {
       success: false,
       message: idParsed.error.issues[0]?.message ?? "参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.ROLE_DELETE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

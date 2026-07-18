@@ -19,6 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { type InvestmentResponse, SettlementBadge } from "./shared";
 
 /** 只读模式顶部操作栏：返回链接、标题、结算状态、编辑/结算/导出/更多操作 */
@@ -54,25 +56,27 @@ export function DetailHeader({
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <SettlementBadge status={investment.settlement_status} />
-          {isSettled ? (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled
-              className="gap-1.5"
-              title="已结算，不可编辑"
-            >
-              <Pencil className="h-4 w-4" />
-              编辑
-            </Button>
-          ) : (
-            <Button asChild variant="outline" size="sm" className="gap-1.5">
-              <Link href={`?edit=1`} prefetch={false}>
+          <HasPermission code={PERMISSION_CODES.INVESTMENT_WRITE}>
+            {isSettled ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="gap-1.5"
+                title="已结算，不可编辑"
+              >
                 <Pencil className="h-4 w-4" />
                 编辑
-              </Link>
-            </Button>
-          )}
+              </Button>
+            ) : (
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Link href={`?edit=1`} prefetch={false}>
+                  <Pencil className="h-4 w-4" />
+                  编辑
+                </Link>
+              </Button>
+            )}
+          </HasPermission>
           {isSettled ? (
             <Button
               variant="outline"
@@ -112,17 +116,21 @@ export function DetailHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onCopy}>
-                <Copy className="h-4 w-4" />
-                复制跟投配置
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-                删除跟投记录
-              </DropdownMenuItem>
+              <HasPermission code={PERMISSION_CODES.INVESTMENT_COPY}>
+                <DropdownMenuItem onClick={onCopy}>
+                  <Copy className="h-4 w-4" />
+                  复制跟投配置
+                </DropdownMenuItem>
+              </HasPermission>
+              <HasPermission code={PERMISSION_CODES.INVESTMENT_WRITE}>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  删除跟投记录
+                </DropdownMenuItem>
+              </HasPermission>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

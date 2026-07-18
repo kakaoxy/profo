@@ -5,47 +5,10 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { hasPathPermission } from "@/lib/auth/permissions";
 
 // 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
 export const dynamic = 'force-dynamic';
-
-// 受限路径前缀 → 允许访问的角色代码列表（对齐 app-sidebar.tsx 的 roles 配置）
-// 不在此列表的路径对所有后台角色（admin/operator/user）开放
-const PATH_ROLE_RESTRICTIONS: ReadonlyArray<{
-  prefix: string;
-  roles: ReadonlyArray<string>;
-}> = [
-  // 房源管理 → 批量上传/数据治理：admin + operator
-  { prefix: "/admin/properties/upload", roles: ["admin", "operator"] },
-  { prefix: "/admin/properties/governance", roles: ["admin", "operator"] },
-  // 用户管理：admin only
-  { prefix: "/admin/users", roles: ["admin"] },
-  // 设置：admin + operator
-  { prefix: "/admin/settings", roles: ["admin", "operator"] },
-];
-
-/**
- * 判断路径是否为后台受限路径（有角色要求）。
- */
-export function isRestrictedAdminPath(pathname: string): boolean {
-  return PATH_ROLE_RESTRICTIONS.some(({ prefix }) => pathname.startsWith(prefix));
-}
-
-/**
- * 判断角色代码是否具备指定路径的访问权限。
- * 非受限路径返回 true（对所有后台角色开放）。
- */
-export function hasAdminAccess(
-  pathname: string,
-  roleCode: string | undefined | null,
-): boolean {
-  for (const { prefix, roles } of PATH_ROLE_RESTRICTIONS) {
-    if (pathname.startsWith(prefix)) {
-      return roleCode != null && roles.includes(roleCode);
-    }
-  }
-  return true;
-}
 
 async function getUser() {
   try {
@@ -100,11 +63,11 @@ export default async function DashboardLayout({
     redirect("/admin/login");
   }
 
-  // 服务端角色守卫：受限路径按 PATH_ROLE_RESTRICTIONS 配置的角色要求拦截
+  // 服务端权限守卫：受限路径按 PATH_PERMISSION_MAP 配置的权限码要求拦截
   const headersList = await headers();
   const pathname =
     headersList.get("x-invoke-path") ?? headersList.get("x-pathname") ?? "";
-  if (!hasAdminAccess(pathname, user?.role?.code)) {
+  if (!hasPathPermission(pathname, user.permissions)) {
     redirect("/admin");
   }
 

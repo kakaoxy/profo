@@ -73,10 +73,20 @@ from .property import (
 )
 
 # 系统模块
-from .system import FailedRecord, PropertyImportTask, WeChatOAuthState, WeChatTempCode
+from .system import FailedRecord, OperationLog, PropertyImportTask, WeChatOAuthState, WeChatTempCode
 
 # 用户权限模块
-from .user import ApiKey, RefreshToken, Role, User, UserRole, user_roles
+from .user import (
+    ApiKey,
+    Permission,
+    PermissionCategory,
+    RefreshToken,
+    Role,
+    User,
+    UserRole,
+    role_permissions,
+    user_roles,
+)
 
 __all__ = [
     "ApiKey",
@@ -113,6 +123,9 @@ __all__ = [
     "LeadStatus",
     "MarketingProjectStatus",
     "MediaType",
+    "OperationLog",
+    "Permission",
+    "PermissionCategory",
     "PhotoCategory",
     # 项目
     "Project",
@@ -145,5 +158,6 @@ __all__ = [
     # 微信 OAuth
     "WeChatOAuthState",
     "WeChatTempCode",
+    "role_permissions",
     "user_roles",
 ]

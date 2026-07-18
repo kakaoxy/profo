@@ -14,7 +14,7 @@ const formSchema = z.object({
   code: z.string().min(2, "代码至少2个字符").max(50, "代码不能超过50个字符")
     .regex(/^[a-zA-Z0-9_]+$/, "代码只能包含字母、数字和下划线"),
   description: z.string().optional(),
-  permissions: z.array(z.string()).optional(),
+  permission_codes: z.array(z.string()).optional(),
   is_active: z.boolean(),
 });
 
@@ -22,7 +22,7 @@ const defaultFormValues = {
   name: "",
   code: "",
   description: "",
-  permissions: [] as string[],
+  permission_codes: [] as string[],
   is_active: true,
 };
 
@@ -51,7 +51,7 @@ export function useRoleForm({ role, open, onOpenChange }: UseRoleFormProps) {
         name: role.name,
         code: role.code,
         description: role.description || "",
-        permissions: role.permissions || [],
+        permission_codes: role.permission_codes ?? [],
         is_active: role.is_active,
       });
     } else {

@@ -12,6 +12,8 @@ import {
   updateLeadSchema,
   leadIdSchema,
 } from "../_components/lead-schema";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 type LeadCreatePayload =
   operations["create_lead_api_v1_leads_post"]["requestBody"]["content"]["application/json"];
@@ -47,6 +49,11 @@ export async function createLeadAction(
       success: false,
       error: parsed.error.issues[0]?.message ?? "线索参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
   }
 
   try {
@@ -94,6 +101,11 @@ export async function updateLeadAction(
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
 
@@ -128,6 +140,11 @@ export async function deleteLeadAction(
       success: false,
       error: idParsed.error.issues[0]?.message ?? "线索参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_WRITE);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
   }
 
   try {

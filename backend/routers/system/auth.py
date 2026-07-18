@@ -23,7 +23,7 @@ from schemas.user import (
     WechatAuthUrlResponse,
     WechatLoginRequest,
 )
-from services.system import ApiKeyService, AuthService, WeChatAuthService
+from services.system import ApiKeyService, AuthService, WeChatAuthService, permission_service
 from services.system.exceptions import AuthenticationError, BusinessLogicError
 from settings import settings
 from utils.common import RateLimits, limiter
@@ -261,9 +261,13 @@ async def wechat_app_login(
 @limiter.exempt
 def get_current_user_info(
     current_user: CurrentActiveUserDep,
+    db: DbSessionDep,
 ) -> UserResponse:
     """获取当前用户信息."""
-    return current_user
+    perm_codes = permission_service.get_user_permission_codes(db, current_user)
+    response = UserResponse.model_validate(current_user)
+    response.permissions = sorted(perm_codes)
+    return response
 
 
 @router.post(

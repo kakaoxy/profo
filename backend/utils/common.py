@@ -69,8 +69,11 @@ def _get_client_ip(request: Request) -> str:
                 for ip in reversed(ips):
                     if not _is_trusted_proxy(ip):
                         return ip
-                # 全部为可信代理（异常情况）— 回退到直连 host
-                logger.warning("XFF all trusted proxies, fallback to client_host: %s", client_host)
+                # XFF 全为可信代理 — 回退到直连 host
+                # 本地开发或单层代理场景下常见（Next.js dev server 转发请求时 XFF
+                # 中只有本地回环 IP），并非真正异常，降级为 DEBUG 避免刷屏。
+                # 真正的 XFF 污染攻击会通过其他机制（限流异常等）发现。
+                logger.debug("XFF all trusted proxies, fallback to client_host: %s", client_host)
                 return client_host
     return client_host
 

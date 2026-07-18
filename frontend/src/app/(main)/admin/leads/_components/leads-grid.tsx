@@ -21,6 +21,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 interface LeadsGridProps {
   leads: Lead[];
@@ -85,45 +87,49 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({
                 className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-primary"
-                  onClick={() => onEdit(lead)}
-                  aria-label="编辑线索"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-primary"
+                    onClick={() => onEdit(lead)}
+                    aria-label="编辑线索"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                </HasPermission>
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-error"
-                      aria-label="删除线索"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        此操作将永久删除该线索，无法恢复。
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>取消</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => onDelete(lead.id)}
-                        className="bg-error hover:bg-red-700"
+                <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 bg-background/90 backdrop-blur-sm hover:bg-background rounded-full shadow-sm text-muted-foreground hover:text-error"
+                        aria-label="删除线索"
                       >
-                        确认删除
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          此操作将永久删除该线索，无法恢复。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onDelete(lead.id)}
+                          className="bg-error hover:bg-red-700"
+                        >
+                          确认删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </HasPermission>
               </div>
             </div>
 

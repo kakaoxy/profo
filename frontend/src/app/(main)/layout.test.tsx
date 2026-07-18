@@ -62,7 +62,7 @@ vi.mock("@/components/error-boundary", () => ({
     React.createElement(React.Fragment, null, children),
 }));
 
-describe("DashboardLayout role guard", () => {
+describe("DashboardLayout permission guard", () => {
   beforeEach(() => {
     mockRedirect.mockClear();
     mockUserState.user = null;
@@ -73,11 +73,11 @@ describe("DashboardLayout role guard", () => {
     vi.clearAllMocks();
   });
 
-  // SubTask 6.1: RED — user role blocked on /admin/users
-  it("user with role.code='user' accessing /admin/users should redirect to /admin", async () => {
+  // /admin/users → 需 user:read 权限
+  it("user without user:read permission accessing /admin/users should redirect to /admin", async () => {
     mockUserState.user = {
       username: "u",
-      role: { code: "user", name: "User" },
+      permissions: [],
     };
     mockPathnameState.pathname = "/admin/users";
 
@@ -92,11 +92,10 @@ describe("DashboardLayout role guard", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/admin");
   });
 
-  // SubTask 6.2: RED — admin role passes on /admin/users
-  it("user with role.code='admin' accessing /admin/users should NOT redirect, renders children", async () => {
+  it("user with user:read permission accessing /admin/users should NOT redirect, renders children", async () => {
     mockUserState.user = {
       username: "admin",
-      role: { code: "admin", name: "Administrator" },
+      permissions: ["user:read"],
     };
     mockPathnameState.pathname = "/admin/users";
 
@@ -111,11 +110,10 @@ describe("DashboardLayout role guard", () => {
     expect(screen.getByText("content")).toBeInTheDocument();
   });
 
-  // SubTask 6.2: RED — null role blocked on /admin/users
-  it("user with role=null accessing /admin/users should redirect to /admin", async () => {
+  it("user with permissions=null accessing /admin/users should redirect to /admin", async () => {
     mockUserState.user = {
       username: "u",
-      role: null,
+      permissions: null,
     };
     mockPathnameState.pathname = "/admin/users";
 
@@ -130,11 +128,29 @@ describe("DashboardLayout role guard", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/admin");
   });
 
-  // SubTask 6.2: RED — user role on non-restricted /admin passes
-  it("user with role.code='user' accessing /admin (not restricted) should NOT redirect, renders children", async () => {
+  it("user with undefined permissions accessing /admin/users should redirect to /admin", async () => {
     mockUserState.user = {
       username: "u",
-      role: { code: "user", name: "User" },
+      // permissions 字段缺失，模拟 gen-api 未同步的 UserResponse
+    };
+    mockPathnameState.pathname = "/admin/users";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    await expect(
+      DashboardLayout({
+        children: React.createElement("div", null, "content"),
+      }),
+    ).rejects.toThrow("__REDIRECT__/admin");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/admin");
+  });
+
+  // 非受限路径 — /admin 对所有后台用户开放
+  it("user with empty permissions accessing /admin (not restricted) should NOT redirect, renders children", async () => {
+    mockUserState.user = {
+      username: "u",
+      permissions: [],
     };
     mockPathnameState.pathname = "/admin";
 
@@ -149,11 +165,11 @@ describe("DashboardLayout role guard", () => {
     expect(screen.getByText("content")).toBeInTheDocument();
   });
 
-  // Issue 1: 缺失路径 — /admin/properties/upload 应限制为 admin/operator
-  it("user with role.code='user' accessing /admin/properties/upload should redirect to /admin", async () => {
+  // /admin/properties/upload → 需 property:upload 权限
+  it("user without property:upload permission accessing /admin/properties/upload should redirect to /admin", async () => {
     mockUserState.user = {
       username: "u",
-      role: { code: "user", name: "User" },
+      permissions: [],
     };
     mockPathnameState.pathname = "/admin/properties/upload";
 
@@ -168,11 +184,29 @@ describe("DashboardLayout role guard", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/admin");
   });
 
-  // Issue 1: 缺失路径 — /admin/properties/governance 应限制为 admin/operator
-  it("user with role.code='user' accessing /admin/properties/governance should redirect to /admin", async () => {
+  it("user with property:upload permission accessing /admin/properties/upload should NOT redirect", async () => {
+    mockUserState.user = {
+      username: "op",
+      permissions: ["property:upload"],
+    };
+    mockPathnameState.pathname = "/admin/properties/upload";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    const result = await DashboardLayout({
+      children: React.createElement("div", null, "content"),
+    });
+    render(result);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+    expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  // /admin/properties/governance → 需 property:governance 权限
+  it("user without property:governance permission accessing /admin/properties/governance should redirect to /admin", async () => {
     mockUserState.user = {
       username: "u",
-      role: { code: "user", name: "User" },
+      permissions: [],
     };
     mockPathnameState.pathname = "/admin/properties/governance";
 
@@ -187,13 +221,13 @@ describe("DashboardLayout role guard", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/admin");
   });
 
-  // Issue 1: 角色粒度 — /admin/users 应为 admin only，operator 应被拦截
-  it("user with role.code='operator' accessing /admin/users should redirect to /admin (admin-only path)", async () => {
+  // 权限粒度：持有 user:read 但不持有 property:upload，访问上传页应被拦截
+  it("user with user:read but without property:upload accessing /admin/properties/upload should redirect", async () => {
     mockUserState.user = {
-      username: "op",
-      role: { code: "operator", name: "Operator" },
+      username: "admin",
+      permissions: ["user:read"],
     };
-    mockPathnameState.pathname = "/admin/users";
+    mockPathnameState.pathname = "/admin/properties/upload";
 
     const { default: DashboardLayout } = await import("./layout");
 
@@ -206,30 +240,11 @@ describe("DashboardLayout role guard", () => {
     expect(mockRedirect).toHaveBeenCalledWith("/admin");
   });
 
-  // Issue 1: 正向 — operator 访问 admin/operator 路径应放行
-  it("user with role.code='operator' accessing /admin/properties/upload should NOT redirect", async () => {
+  // /admin/settings → 需 api_key:manage 权限
+  it("user with api_key:manage permission accessing /admin/settings/api-key should NOT redirect", async () => {
     mockUserState.user = {
       username: "op",
-      role: { code: "operator", name: "Operator" },
-    };
-    mockPathnameState.pathname = "/admin/properties/upload";
-
-    const { default: DashboardLayout } = await import("./layout");
-
-    const result = await DashboardLayout({
-      children: React.createElement("div", null, "content"),
-    });
-    render(result);
-
-    expect(mockRedirect).not.toHaveBeenCalled();
-    expect(screen.getByText("content")).toBeInTheDocument();
-  });
-
-  // Issue 1: 正向 — operator 访问 /admin/settings/api-key 应放行
-  it("user with role.code='operator' accessing /admin/settings/api-key should NOT redirect", async () => {
-    mockUserState.user = {
-      username: "op",
-      role: { code: "operator", name: "Operator" },
+      permissions: ["api_key:manage"],
     };
     mockPathnameState.pathname = "/admin/settings/api-key";
 
@@ -244,11 +259,11 @@ describe("DashboardLayout role guard", () => {
     expect(screen.getByText("content")).toBeInTheDocument();
   });
 
-  // Issue 1: 非受限路径 — /admin/leads 对所有后台角色开放（对齐 sidebar 无 roles 配置）
-  it("user with role.code='user' accessing /admin/leads should NOT redirect (open to all admin roles)", async () => {
+  // 非受限路径 — /admin/leads 对所有后台用户开放
+  it("user with empty permissions accessing /admin/leads should NOT redirect (open to all admin roles)", async () => {
     mockUserState.user = {
       username: "u",
-      role: { code: "user", name: "User" },
+      permissions: [],
     };
     mockPathnameState.pathname = "/admin/leads";
 
@@ -261,5 +276,81 @@ describe("DashboardLayout role guard", () => {
 
     expect(mockRedirect).not.toHaveBeenCalled();
     expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  // /admin/properties/governance → 需 property:governance 权限（正向用例）
+  it("user with property:governance permission accessing /admin/properties/governance should NOT redirect", async () => {
+    mockUserState.user = {
+      username: "op",
+      permissions: ["property:governance"],
+    };
+    mockPathnameState.pathname = "/admin/properties/governance";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    const result = await DashboardLayout({
+      children: React.createElement("div", null, "content"),
+    });
+    render(result);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+    expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  // /admin/audit-logs → 需 operation_log:read 权限（反向用例）
+  it("user without operation_log:read permission accessing /admin/audit-logs should redirect to /admin", async () => {
+    mockUserState.user = {
+      username: "u",
+      permissions: [],
+    };
+    mockPathnameState.pathname = "/admin/audit-logs";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    await expect(
+      DashboardLayout({
+        children: React.createElement("div", null, "content"),
+      }),
+    ).rejects.toThrow("__REDIRECT__/admin");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/admin");
+  });
+
+  // /admin/audit-logs → 需 operation_log:read 权限（正向用例）
+  it("user with operation_log:read permission accessing /admin/audit-logs should NOT redirect", async () => {
+    mockUserState.user = {
+      username: "admin",
+      permissions: ["operation_log:read"],
+    };
+    mockPathnameState.pathname = "/admin/audit-logs";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    const result = await DashboardLayout({
+      children: React.createElement("div", null, "content"),
+    });
+    render(result);
+
+    expect(mockRedirect).not.toHaveBeenCalled();
+    expect(screen.getByText("content")).toBeInTheDocument();
+  });
+
+  // /admin/settings → 需 api_key:manage 权限（反向用例）
+  it("user without api_key:manage permission accessing /admin/settings should redirect to /admin", async () => {
+    mockUserState.user = {
+      username: "u",
+      permissions: ["user:read"],
+    };
+    mockPathnameState.pathname = "/admin/settings";
+
+    const { default: DashboardLayout } = await import("./layout");
+
+    await expect(
+      DashboardLayout({
+        children: React.createElement("div", null, "content"),
+      }),
+    ).rejects.toThrow("__REDIRECT__/admin");
+
+    expect(mockRedirect).toHaveBeenCalledWith("/admin");
   });
 });

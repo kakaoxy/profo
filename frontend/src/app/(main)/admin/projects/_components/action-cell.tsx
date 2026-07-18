@@ -24,6 +24,8 @@ import {
 import { toast } from "sonner";
 import { Project } from "../types";
 import { deleteProjectAction } from "../actions/core";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // 表格 meta 类型:提供 onEdit 回调用于打开详情 Sheet
 export type ProjectTableMeta = TableMeta<Project> & {
@@ -101,20 +103,24 @@ export function ActionCell({ row, onEdit }: ActionCellProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={handleClick}>
-            <DropdownMenuItem
-              onSelect={() => onEdit?.(row.original)}
-              disabled={!onEdit}
-            >
-              <Pencil className="h-3.5 w-3.5 mr-2" />
-              编辑
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => setDeleteOpen(true)}
-              className="text-error focus:text-error"
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-2" />
-              删除
-            </DropdownMenuItem>
+            <HasPermission code={PERMISSION_CODES.PROJECT_WRITE}>
+              <DropdownMenuItem
+                onSelect={() => onEdit?.(row.original)}
+                disabled={!onEdit}
+              >
+                <Pencil className="h-3.5 w-3.5 mr-2" />
+                编辑
+              </DropdownMenuItem>
+            </HasPermission>
+            <HasPermission code={PERMISSION_CODES.PROJECT_DELETE}>
+              <DropdownMenuItem
+                onSelect={() => setDeleteOpen(true)}
+                className="text-error focus:text-error"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                删除
+              </DropdownMenuItem>
+            </HasPermission>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

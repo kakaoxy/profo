@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
 import { z } from "zod";
 import { passwordSchema } from "../_components/password-schema";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/server/require-permission";
 
 export type UserResponse = components["schemas"]["UserResponse"];
 export type UserCreate = components["schemas"]["UserCreate"];
@@ -16,14 +18,16 @@ export type UserSimpleListResponse = components["schemas"]["UserSimpleListRespon
 export type PasswordResetRequest = components["schemas"]["PasswordResetRequest"];
 export type PasswordChange = components["schemas"]["PasswordChange"];
 
-// 与 use-user-form.ts 中的 createSchema/editSchema 对齐
+// 校验发往后端的 UserCreate/UserUpdate 载荷形状（与 backend schemas/user.__init__.py 对齐）
+// 注意：表单层 use-user-form.ts 使用 enable_customer_identity: boolean，由 onSubmit
+// 转换为 additional_role_ids: string[] 后传入 Server Action，故本 schema 校验后者
 const createSchema = z.object({
   username: z.string().min(3, "用户名至少3个字符").max(100),
   nickname: z.string().max(100).nullish(),
   password: passwordSchema,
   role_id: z.string().min(1, "请选择角色"),
   phone: z.string().max(20).nullish().or(z.literal("")),
-  enable_customer_identity: z.boolean().default(false),
+  additional_role_ids: z.array(z.string()).default([]),
 });
 
 const editSchema = z.object({
@@ -33,7 +37,7 @@ const editSchema = z.object({
   role_id: z.string().min(1, "请选择角色"),
   phone: z.string().max(20).nullish().or(z.literal("")),
   status: z.string().optional(),
-  enable_customer_identity: z.boolean().default(false),
+  additional_role_ids: z.array(z.string()).nullish(),
 });
 
 const resetPasswordSchema = z.object({
@@ -118,6 +122,11 @@ export async function createUserAction(data: UserCreate) {
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.USER_CREATE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.POST("/api/v1/users", { body: data });
@@ -152,6 +161,11 @@ export async function updateUserAction(userId: string, data: UserUpdate) {
     };
   }
 
+  const permCheck = await requirePermission(PERMISSION_CODES.USER_UPDATE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
+  }
+
   try {
     const client = await fetchClient();
     const { error } = await client.PUT("/api/v1/users/{user_id}", {
@@ -179,6 +193,11 @@ export async function deleteUserAction(userId: string) {
       success: false,
       message: idParsed.error.issues[0]?.message ?? "用户参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.USER_DELETE);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {
@@ -215,6 +234,11 @@ export async function resetUserPasswordAction(userId: string, data: PasswordRese
       success: false,
       message: parsed.error.issues[0]?.message ?? "用户参数不合法",
     };
+  }
+
+  const permCheck = await requirePermission(PERMISSION_CODES.USER_RESET_PASSWORD);
+  if (!permCheck.ok) {
+    return { success: false, message: permCheck.message };
   }
 
   try {

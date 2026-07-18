@@ -26,7 +26,9 @@ class BaseRole(BaseModel):
     name: str = Field(min_length=2, max_length=100, description="角色名称")
     code: str = Field(min_length=2, max_length=50, description="角色代码")
     description: str | None = Field(None, description="角色描述")
-    permissions: list[str] | None = Field(None, description="权限列表")
+    # 旧 JSON 字段，保留向后兼容；新接口应使用 permission_codes（关联表派生）
+    permissions: list[str] | None = Field(None, description="权限列表（已废弃，使用 permission_codes）")
+    permission_codes: list[str] | None = Field(None, description="权限代码列表")
 
 
 # =======================================
@@ -60,6 +62,8 @@ class UserUpdate(BaseModel):
 class RoleCreate(BaseRole):
     """角色创建模型."""
 
+    permission_codes: list[str] = Field(default_factory=list, description="权限代码列表")
+
 
 class RoleUpdate(BaseModel):
     """角色更新模型."""
@@ -67,8 +71,9 @@ class RoleUpdate(BaseModel):
     name: str | None = Field(None, min_length=2, max_length=100, description="角色名称")
     code: str | None = Field(None, min_length=2, max_length=50, description="角色代码")
     description: str | None = Field(None, description="角色描述")
-    permissions: list[str] | None = Field(None, description="权限列表")
+    permissions: list[str] | None = Field(None, description="权限列表（已废弃，使用 permission_codes）")
     is_active: bool | None = Field(None, description="是否激活")
+    permission_codes: list[str] | None = Field(None, description="权限代码列表（全量替换）")
 
 
 class PasswordChange(BaseModel):
@@ -148,6 +153,17 @@ class RoleResponse(BaseRole):
     is_active: bool = Field(description="是否激活")
     created_at: datetime = Field(description="创建时间")
     updated_at: datetime = Field(description="更新时间")
+    # 从 role_permissions 关联表派生，覆盖 BaseRole 的 Optional 定义为非 Optional
+    permission_codes: list[str] = Field(
+        default_factory=list,
+        description="权限代码列表（从 role_permissions 关联表派生）",
+    )
+
+    @field_validator("permission_codes", mode="before")
+    @classmethod
+    def _normalize_permission_codes(cls, v: Any) -> Any:  # noqa: ANN401
+        """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
+        return v if v is not None else []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -169,10 +185,22 @@ class UserResponse(BaseUser):
         description="附加角色列表",
         validation_alias=AliasChoices("roles", "additional_roles"),
     )
+    # 用户有效权限集（主角色 + 附加角色权限并集），从 role_permissions 关联表派生，
+    # 非 ORM User 字段，需在路由层通过 permission_service 填充
+    permissions: list[str] = Field(
+        default_factory=list,
+        description="用户有效权限代码列表（主角色+附加角色权限并集）",
+    )
 
     @field_validator("additional_roles", mode="before")
     @classmethod
     def _normalize_additional_roles(cls, v: Any) -> Any:  # noqa: ANN401
+        """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
+        return v if v is not None else []
+
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions(cls, v: Any) -> Any:  # noqa: ANN401
         """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
         return v if v is not None else []
 

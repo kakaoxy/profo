@@ -13,6 +13,8 @@ import {
   getStatusLabel,
   DEFAULT_STATUS,
 } from "@/lib/status-colors";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 type InvestmentListItem = components["schemas"]["InvestmentListItemResponse"];
 
@@ -69,16 +71,18 @@ function ActionCell({ row }: { row: InvestmentListItem }) {
           <Eye className="h-4 w-4" />
         </Button>
       </Link>
-      <Link href={editHref} onClick={stop} title="编辑">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 w-8 p-0 rounded-full"
-          aria-label="编辑"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </Link>
+      <HasPermission code={PERMISSION_CODES.INVESTMENT_WRITE}>
+        <Link href={editHref} onClick={stop} title="编辑">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 w-8 p-0 rounded-full"
+            aria-label="编辑"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </Link>
+      </HasPermission>
     </div>
   );
 }
