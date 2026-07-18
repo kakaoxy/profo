@@ -87,7 +87,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "编辑角色" : "新建角色"}</DialogTitle>
           <DialogDescription>
@@ -155,7 +155,7 @@ export function RoleDialog({ open, onOpenChange, role }: RoleDialogProps) {
                       </FormDescription>
                     </div>
 
-                    <div className="max-h-[360px] overflow-y-auto rounded-lg border p-1">
+                    <div className="max-h-[40vh] overflow-y-auto rounded-lg border p-1">
                       {isLoading ? (
                         <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
