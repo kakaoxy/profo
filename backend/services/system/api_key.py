@@ -10,7 +10,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import ApiKey, User
 from settings import settings
@@ -245,7 +245,7 @@ class ApiKeyService:
 
         user = (
             db.query(User)
-            .options(joinedload(User.role))
+            .options(joinedload(User.role), selectinload(User.roles))
             .filter(
                 User.id == key_record.user_id,
                 User.status == "active",

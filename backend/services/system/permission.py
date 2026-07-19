@@ -152,22 +152,39 @@ class PermissionService:
             grouped[role_id].append(code)
         return grouped
 
-    def set_role_permissions(self, db: Session, role_id: str, permission_codes: list[str]) -> list[str]:
+    def set_role_permissions(
+        self,
+        db: Session,
+        role_id: str,
+        permission_codes: list[str],
+        *,
+        operator_id: str | None = None,
+    ) -> list[str]:
         """全量替换角色权限（删除未传入的、新增传入的）.
 
         Args:
             db: 数据库会话
             role_id: 角色 ID
             permission_codes: 权限代码列表（全量替换）
+            operator_id: 操作者用户ID；传入时校验操作者不属于该角色（自提权防护），
+                None 时跳过校验（兼容 RoleService.create_role/update_role 内部调用，
+                这些场景已在外层完成校验或场景安全）
 
         Returns:
             最新的权限代码列表
 
         Raises:
             ResourceNotFoundError: 角色不存在
-            ValidationError: 传入的权限代码包含不存在的代码
+            ValidationError: 传入的权限代码包含不存在的代码 / 自提权防护触发
 
         """
+        # 自提权防护：操作者不能修改自身所属角色的权限集
+        # 路由直连调用时传入 operator_id；RoleService.update_role 已在顶部校验，传 None 跳过
+        if operator_id is not None:
+            from .role import _assert_operator_not_in_role  # noqa: PLC0415
+
+            _assert_operator_not_in_role(db, operator_id, role_id)
+
         # 校验角色存在
         role = db.query(Role).filter(Role.id == role_id).first()
         if not role:
