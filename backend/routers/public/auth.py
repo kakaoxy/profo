@@ -214,13 +214,19 @@ def get_current_user_info(
 def logout(
     request: Request,
     body: PublicRefreshTokenRequest,
-    _current_user: Annotated[User, Depends(require_roles(["customer"]))],
+    current_user: Annotated[User, Depends(require_roles(["customer"]))],
     db: DbSessionDep,
 ) -> PublicLogoutResponse:
     """C端退出登录，撤销当前 refresh_token.
 
     access_token 为 JWT 无状态令牌，短期过期自然失效；
     refresh_token 按 jti 撤销，防止退出后被重放刷新。
+    归属校验：refresh_token 必须属于当前登录用户，否则静默跳过（防 DoS）。
     """
-    AuthService.revoke_refresh_token(db, body.refresh_token, expected_audience="c")
+    AuthService.revoke_refresh_token(
+        db,
+        body.refresh_token,
+        expected_audience="c",
+        expected_user_id=str(current_user.id),
+    )
     return PublicLogoutResponse(message="退出登录成功")

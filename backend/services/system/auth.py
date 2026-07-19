@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import ClassVar, Literal, TypedDict
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from constants.role_codes import BACKEND_ROLE_CODES as _BACKEND_ROLE_CODES
 from constants.role_codes import RoleCode
@@ -146,7 +146,9 @@ class AuthService:
             User | None: 用户对象，不存在时返回 None
 
         """
-        return db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
+        return (
+            db.query(User).options(joinedload(User.role), selectinload(User.roles)).filter(User.id == user_id).first()
+        )
 
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> User:
@@ -179,7 +181,12 @@ class AuthService:
                 pass
 
         """
-        user = db.query(User).options(joinedload(User.role)).filter(User.username == username).first()
+        user = (
+            db.query(User)
+            .options(joinedload(User.role), selectinload(User.roles))
+            .filter(User.username == username)
+            .first()
+        )
         if not user or not verify_password(password, user.password):
             msg = "用户名或密码错误"
             raise AuthenticationError(msg)
@@ -412,7 +419,9 @@ class AuthService:
             msg = "刷新令牌无效"
             raise AuthenticationError(msg)
 
-        user = db.query(User).options(joinedload(User.role)).filter(User.id == user_id).first()
+        user = (
+            db.query(User).options(joinedload(User.role), selectinload(User.roles)).filter(User.id == user_id).first()
+        )
         if user is None:
             msg = "用户不存在"
             raise AuthenticationError(msg)
@@ -479,15 +488,24 @@ class AuthService:
         db.commit()
 
     @staticmethod
-    def revoke_refresh_token(db: Session, refresh_token: str, expected_audience: str | None = None) -> None:
+    def revoke_refresh_token(
+        db: Session,
+        refresh_token: str,
+        expected_audience: str | None = None,
+        *,
+        expected_user_id: str | None = None,
+    ) -> None:
         """撤销指定 refresh_token（按 jti 撤销），用于 logout (Sync).
 
         即使 token 无效也不报错（幂等），避免攻击者通过响应推测 token 有效性。
+        归属校验：若 expected_user_id 传入且与 token/record 的 user_id 不匹配，静默跳过撤销
+        （保持幂等行为，避免攻击者通过响应差异探测 token 有效性）。
 
         Args:
             db: 数据库会话
             refresh_token: 待撤销的刷新令牌
             expected_audience: 期望的受众标识（如 "c"），传入时校验 aud 匹配
+            expected_user_id: 期望的用户ID；传入时校验 token 归属，不匹配则静默跳过
 
         """
         payload = validate_token(
@@ -498,11 +516,20 @@ class AuthService:
         if not payload:
             return
 
+        # 归属校验：token 的 sub 必须匹配当前认证用户
+        if expected_user_id is not None:
+            token_sub = payload.get("sub")
+            if token_sub != expected_user_id:
+                return
+
         jti = payload.get("jti")
         if not jti:
             return
 
         record = db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
         if record and not record.revoked:
+            # 二次归属校验：DB 记录的 user_id 必须匹配（防御 JWT sub 与 DB 记录不一致的极端情况）
+            if expected_user_id is not None and record.user_id != expected_user_id:
+                return
             record.revoked = True
             db.commit()

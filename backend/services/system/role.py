@@ -14,12 +14,36 @@ from schemas.user import RoleCreate, RoleUpdate
 from settings import settings
 from utils.formatters import escape_like
 
-from .exceptions import ConflictError, ResourceNotFoundError
+from .exceptions import ConflictError, ResourceNotFoundError, ValidationError
 from .operation_log import operation_log_service
 from .permission import permission_service
 
 # 允许更新的角色字段白名单（防止设置 id 等敏感字段）
 _ROLE_ALLOWED_FIELDS = {"name", "code", "description", "permissions", "is_active"}
+
+
+def _assert_operator_not_in_role(db: Session, operator_id: str | None, role_id: str) -> None:
+    """自提权防护：操作者不能修改自身所属的角色（主角色或附加角色）.
+
+    Args:
+        db: 数据库会话
+        operator_id: 操作者用户ID；None 时跳过校验（兼容内部调用）
+        role_id: 被修改的角色ID
+
+    Raises:
+        ValidationError: 操作者的主角色或附加角色包含 role_id
+
+    """
+    if operator_id is None:
+        return
+    # 主角色命中
+    if db.query(User.id).filter(User.id == operator_id, User.role_id == role_id).first() is not None:
+        msg = "不能修改自身所属的角色"
+        raise ValidationError(msg)
+    # 附加角色命中
+    if db.query(UserRole.id).filter(UserRole.user_id == operator_id, UserRole.role_id == role_id).first() is not None:
+        msg = "不能修改自身所属的角色"
+        raise ValidationError(msg)
 
 
 def _role_snapshot(role: Role, permission_codes: list[str] | None = None) -> dict[str, Any]:
@@ -154,6 +178,9 @@ class RoleService:
             更新后的 Role 对象
 
         """
+        # 自提权防护：操作者不能修改自身所属角色（含 permission_codes 字段修改）
+        _assert_operator_not_in_role(db, operator_id, role_id)
+
         role = self.get_role_by_id(db, role_id)
         if not role:
             msg = "角色不存在"

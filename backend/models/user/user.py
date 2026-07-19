@@ -128,12 +128,15 @@ class User(BaseModel):
         primaryjoin="foreign(User.role_id) == Role.id",
     )
     # 附加角色（与主角色 role 并存），通过 user_roles 关联表
+    # lazy="select"（默认按需加载）：避免全局 selectin 在名字映射/顾问查询等场景
+    # 触发无谓 SELECT IN；需要遍历附加角色的热路径（认证/刷新/API Key/登录）
+    # 由调用方显式 selectinload(User.roles) 预加载
     roles: Mapped[list["Role"]] = relationship(
         secondary=user_roles,
         primaryjoin="foreign(user_roles.c.user_id) == User.id",
         secondaryjoin="foreign(user_roles.c.role_id) == Role.id",
         back_populates="additional_users",
-        lazy="selectin",
+        lazy="select",
     )
 
     # 索引

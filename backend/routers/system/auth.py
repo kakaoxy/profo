@@ -145,18 +145,20 @@ def refresh_access_token(
 def logout(
     request: Request,
     refresh_data: Annotated[RefreshTokenRequest, Body()],
-    _current_user: CurrentActiveUserDep,
+    current_user: CurrentActiveUserDep,
     db: DbSessionDep,
 ) -> LogoutResponse:
     """后台退出登录，撤销当前 refresh_token.
 
     access_token 为 JWT 无状态令牌，短期过期自然失效；
     refresh_token 按 jti 撤销，防止退出后被重放刷新。
+    归属校验：refresh_token 必须属于当前登录用户，否则静默跳过（防 DoS）。
     """
     AuthService.revoke_refresh_token(
         db,
         refresh_data.refresh_token,
         expected_audience=AUDIENCE_ADMIN,
+        expected_user_id=str(current_user.id),
     )
     return LogoutResponse(message="退出登录成功")
 

@@ -120,8 +120,13 @@ def set_role_permissions(
     role_id: str,
     data: RolePermissionsUpdate,
     db: DbSessionDep,
-    _current_user: RoleAssignPermissionsPermDep,
+    current_user: RoleAssignPermissionsPermDep,
 ) -> RolePermissionsResponse:
     """全量替换角色权限."""
-    codes = permission_service.set_role_permissions(db, role_id, data.permission_codes)
+    codes = permission_service.set_role_permissions(
+        db,
+        role_id,
+        data.permission_codes,
+        operator_id=str(current_user.id),
+    )
     return RolePermissionsResponse(role_id=role_id, permission_codes=codes)

@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from constants.role_codes import RoleCode
 from models import Role, User, UserRole
@@ -55,7 +55,7 @@ class UserService:
     ) -> tuple[int, list[User]]:
         """获取用户列表."""
         effective_page_size = page_size if page_size is not None else settings.default_page_size
-        query = db.query(User)
+        query = db.query(User).options(joinedload(User.role), selectinload(User.roles))
 
         if username:
             query = query.filter(User.username.like(f"%{escape_like(username)}%", escape="\\"))
@@ -75,7 +75,9 @@ class UserService:
 
     def get_user_by_id(self, db: Session, user_id: str) -> User | None:
         """根据ID获取用户."""
-        return db.query(User).filter(User.id == user_id).first()
+        return (
+            db.query(User).options(joinedload(User.role), selectinload(User.roles)).filter(User.id == user_id).first()
+        )
 
     def _build_additional_user_roles(
         self,
@@ -239,9 +241,18 @@ class UserService:
         Raises:
             ResourceNotFoundError: 用户不存在
             ConflictError: 手机号已被使用
-            ValidationError: 附加角色校验失败
+            ValidationError: 附加角色校验失败 / 自提权防护触发
 
         """
+        # 自提权防护：操作者不能修改自身的角色/状态/附加角色
+        # admin 同样受限——纵深防御：admin 账号被盗也无法立即提权或锁死其他管理员
+        if operator_id is not None and user_id == operator_id:
+            update_data_preview = user_data.model_dump(exclude_unset=True)
+            forbidden_fields = {"role_id", "status"} & update_data_preview.keys()
+            if forbidden_fields or additional_role_ids is not None:
+                msg = "不能修改自身的角色、状态或附加角色"
+                raise ValidationError(msg)
+
         user = self.get_user_by_id(db, user_id)
         if not user:
             msg = "用户不存在"
