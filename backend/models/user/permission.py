@@ -9,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Index,
     Integer,
     String,
     Table,
@@ -74,4 +75,5 @@ role_permissions = Table(
     Column("role_id", String(36), primary_key=True, comment="角色ID(逻辑外键)"),
     Column("permission_id", String(36), primary_key=True, comment="权限ID(逻辑外键)"),
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Index("ix_role_permissions_permission_id", "permission_id"),
 )

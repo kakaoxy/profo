@@ -327,7 +327,7 @@ class UserService:
         *,
         operator_id: str | None = None,
         request: Request | None = None,
-    ) -> dict:
+    ) -> dict[str, str]:
         """重置密码."""
         user = self.get_user_by_id(db, user_id)
         if not user:
@@ -361,7 +361,7 @@ class UserService:
         current_user_id: str,
         *,
         request: Request | None = None,
-    ) -> dict:
+    ) -> dict[str, str]:
         """删除用户."""
         if user_id == current_user_id:
             msg = "不能删除自己"
@@ -392,7 +392,7 @@ class UserService:
         )
         return {"message": "用户删除成功"}
 
-    def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict:
+    def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict[str, str]:
         """修改密码."""
         if not verify_password(password_data.current_password, current_user.password):
             msg = "当前密码错误"

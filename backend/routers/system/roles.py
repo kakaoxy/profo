@@ -50,7 +50,15 @@ def get_roles(
     """
     total, roles = role_service.get_roles(db, name, code, is_active, pagination.page, pagination.page_size)
 
-    items = [_role_response_with_permissions(db, role) for role in roles]
+    # 批量获取所有角色的权限码（单次查询，消除 N+1）
+    role_ids = [str(role.id) for role in roles]
+    perms_map = permission_service.get_roles_permission_codes(db, role_ids)
+
+    items = []
+    for role in roles:
+        resp = RoleResponse.model_validate(role)
+        resp.permission_codes = perms_map.get(str(role.id), [])
+        items.append(resp)
 
     return RoleListResponse(
         total=total,

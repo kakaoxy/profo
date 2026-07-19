@@ -53,7 +53,7 @@ export function ActivityList({
   type,
   data,
   onDelete,
-  canEditSales = true,
+  canEditSales = false,
 }: ActivityListProps) {
   // 按时间倒序排列
   const sortedData = [...data].sort(

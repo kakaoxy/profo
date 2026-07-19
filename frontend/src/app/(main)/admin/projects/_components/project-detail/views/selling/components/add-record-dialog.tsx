@@ -40,7 +40,7 @@ export function AddRecordDialog({
   onClose,
   onSuccess,
   defaultTab,
-  canEditSales = true,
+  canEditSales = false,
 }: AddRecordDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [date, setDate] = useState<Date | undefined>(undefined);

@@ -1517,6 +1517,25 @@ def migrate_project_business_permission(engine: Engine) -> None:
             conn.execute(text("CREATE INDEX ix_project_interaction_operator_id ON project_interactions (operator_id)"))
 
 
+def add_permission_foreign_indexes(engine: Engine) -> None:
+    """为 user_roles.role_id 和 role_permissions.permission_id 创建索引（幂等）.
+
+    user_roles 的复合唯一约束 (user_id, role_id) 仅支持 user_id 前缀查询，
+    按 role_id 查询（如角色更新时查找受影响用户）需要独立索引。
+    role_permissions 的复合主键 (role_id, permission_id) 同理，
+    按 permission_id 删除（如删除权限点时清理关联）需要独立索引。
+    """
+    if not _index_exists(engine, "ix_user_roles_role_id"):
+        logger.info("迁移：创建 ix_user_roles_role_id 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX ix_user_roles_role_id ON user_roles (role_id)"))
+
+    if not _index_exists(engine, "ix_role_permissions_permission_id"):
+        logger.info("迁移：创建 ix_role_permissions_permission_id 索引")
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX ix_role_permissions_permission_id ON role_permissions (permission_id)"))
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
@@ -1552,6 +1571,7 @@ def run_startup_migrations(engine: Engine) -> None:
         rebuild_contract_no_index(engine)
         migrate_permission_system(engine)
         migrate_project_business_permission(engine)
+        add_permission_foreign_indexes(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

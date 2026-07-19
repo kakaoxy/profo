@@ -23,11 +23,14 @@ export default async function LeadDetailPage({ params }: PageProps) {
     getLeadFollowUpsAction(leadId),
   ]);
 
-  const { data, error } = leadResponse;
+  const { data, error, response } = leadResponse;
   if (error || !data) {
-    // notFound() 返回 404，但实际可能是 403/500 等；记录原始错误便于排障
     logger.error("获取线索详情失败", { leadId, error });
-    notFound();
+    // 仅 404 走 notFound()；其他错误（403/500/网络）交由 error boundary 处理
+    if (response.status === 404) {
+      notFound();
+    }
+    throw new Error(`获取线索详情失败: ${response.status}`);
   }
 
   const lead = mapBackendToFrontend(data);

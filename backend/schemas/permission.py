@@ -20,9 +20,11 @@ class PermissionBase(BaseModel):
 
 
 class PermissionCreate(PermissionBase):
-    """权限创建模型."""
+    """权限创建模型.
 
-    is_system: bool = Field(default=False, description="是否系统内置权限点")
+    注意：is_system 不暴露给 API 调用方，由服务层强制设为 False，
+    防止通过 API 注入不可删除的系统权限点。
+    """
 
 
 class PermissionUpdate(BaseModel):
