@@ -30,7 +30,7 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
       <ActivityTabs project={project} onRefresh={onRefresh} />
 
       {/* 4. 底部固定操作栏 */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border flex items-center justify-between sm:absolute sm:rounded-b-xl z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-10 flex items-center justify-between border-t border-border bg-card p-4 md:absolute md:bottom-0 md:rounded-b-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">当前状态</span>
           <Badge
@@ -43,7 +43,7 @@ export function SellingView({ project, onRefresh, onDealSuccess }: SellingViewPr
 
         <div className="w-[180px]">
           {/* 覆盖默认按钮样式为翠绿色 */}
-          <div className="[&_button]:bg-success [&_button]:hover:bg-success [&_button]:text-white">
+          <div className="[&_button]:bg-success [&_button]:hover:brightness-95 [&_button]:text-white">
             <DealDialog project={project} onSuccess={onDealSuccess} />
           </div>
         </div>

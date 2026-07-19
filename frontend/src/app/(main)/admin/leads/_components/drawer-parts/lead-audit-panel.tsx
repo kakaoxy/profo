@@ -108,7 +108,7 @@ const PendingAssessmentPanel: React.FC<PendingAssessmentPanelProps> = ({
     </div>
     <div className="grid grid-cols-2 gap-3">
       <Button
-        className="h-12 rounded-xl bg-success hover:bg-success font-bold shadow-lg shadow-emerald-100"
+        className="h-12 rounded-xl bg-success hover:brightness-95 font-bold shadow-lg shadow-emerald-100"
         onClick={() =>
           onAudit(
             lead.id,

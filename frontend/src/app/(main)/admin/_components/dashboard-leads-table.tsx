@@ -1,16 +1,14 @@
 import { ClipboardCheck, UserCircle2, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import type { RawDashboardLead } from "../types";
-import {
-  getLeadStatusBadgeClass,
-  getStatusLabel,
-} from "@/lib/status-colors";
+import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
   formatAreaSqm,
   formatPriceWan,
   formatUnitPriceWan,
   formatDashboardDateTime,
 } from "@/lib/formatters";
+import { DashboardLeadsCardList } from "./dashboard-leads-card-list";
 
 interface DashboardLeadsTableProps {
   leads: RawDashboardLead[];
@@ -43,7 +41,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
         </Link>
       </div>
 
-      <div className="overflow-x-auto px-4 md:px-6 pb-6">
+      <div className="hidden sm:block overflow-x-auto px-4 md:px-6 pb-6">
         <table className="w-full text-left" aria-label="近期线索跟进列表">
           <caption className="sr-only">
             近期线索跟进列表，包含小区、户型、面积、楼层、总价、单价、状态、区域、录入人与更新时间
@@ -56,6 +54,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
               <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">楼层</th>
               <th scope="col" className="px-2 py-3 font-black">总价</th>
               <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">单价</th>
+              <th scope="col" className="px-2 py-3 font-black">评估价</th>
               <th scope="col" className="px-2 py-3 font-black">状态</th>
               <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">区域</th>
               <th scope="col" className="px-2 py-3 font-black hidden md:table-cell">录入人</th>
@@ -65,7 +64,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
           <tbody className="divide-y divide-border">
             {isEmpty ? (
               <tr>
-                <td colSpan={10} className="py-12 text-center">
+                <td colSpan={11} className="py-12 text-center">
                   <div className="flex flex-col items-center justify-center text-muted-foreground">
                     <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                       <ClipboardList className="w-8 h-8 opacity-50" aria-hidden="true" />
@@ -78,7 +77,9 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                 </td>
               </tr>
             ) : (
-              leads.map((lead) => (
+              leads.map((lead) => {
+                const config = getStatusStyleConfig(lead.status);
+                return (
                 <tr
                   key={lead.id}
                   className="hover:bg-muted transition-colors group"
@@ -108,11 +109,14 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                   <td className="px-2 py-4 text-xs font-semibold text-muted-foreground hidden md:table-cell tabular-nums">
                     {formatUnitPriceWan(lead.unitPrice)}
                   </td>
+                  <td className="px-2 py-4 text-sm font-medium text-foreground tabular-nums">
+                    {formatPriceWan(lead.evalPrice)}
+                  </td>
                   <td className="px-2 py-4">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${getLeadStatusBadgeClass(lead.status)}`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${config.className}`}
                     >
-                      {getStatusLabel(lead.status)}
+                      {config.label}
                     </span>
                   </td>
                   <td className="px-2 py-4 text-sm font-medium text-muted-foreground hidden md:table-cell">
@@ -130,10 +134,15 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                     {formatDashboardDateTime(lead.updatedAt)}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="sm:hidden px-4 pb-6">
+        <DashboardLeadsCardList leads={leads} />
       </div>
     </div>
   );

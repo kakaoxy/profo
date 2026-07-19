@@ -63,7 +63,7 @@ export function LeadsFunnelCard({ funnelData }: LeadsFunnelCardProps) {
               title={`${stage.label}: ${stage.value} (${getPercent(stage.value)}%)`}
               aria-label={`${stage.label}: ${stage.value} 个, 占比 ${getPercent(stage.value)}%`}
             >
-              <span className="text-[10px] font-bold opacity-90 text-center leading-tight whitespace-nowrap">
+              <span className="text-[10px] font-bold opacity-90 text-center leading-tight truncate max-w-full">
                 {stage.label}
               </span>
               <span className="text-sm font-black tabular-nums">{stage.value}</span>

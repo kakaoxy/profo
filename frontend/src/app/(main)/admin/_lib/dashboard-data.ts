@@ -128,6 +128,7 @@ export function transformLeadToDashboard(lead: LeadListItem): RawDashboardLead {
     floor: lead.floor_info || "-",
     totalPrice: lead.total_price ?? null,
     unitPrice: lead.unit_price ?? null,
+    evalPrice: lead.eval_price ?? null,
     status: lead.status,
     region: lead.district || lead.business_area || "-",
     creator: lead.creator_name || "-",

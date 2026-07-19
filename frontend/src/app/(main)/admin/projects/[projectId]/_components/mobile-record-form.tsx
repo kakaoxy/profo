@@ -213,7 +213,7 @@ export function MobileRecordForm({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="h-12 w-full bg-success text-base font-semibold text-white hover:bg-success"
+            className="h-12 w-full bg-success text-base font-semibold text-white hover:brightness-95"
           >
             确认添加
           </Button>

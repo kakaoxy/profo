@@ -1,10 +1,11 @@
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PermissionGuard } from "@/components/permission-guard";
+import { AdminMobileTabBar } from "@/components/admin-mobile-tab-bar";
 
 // 统一设置动态渲染：所有使用 cookies/headers 的子页面都需要
 export const dynamic = 'force-dynamic';
@@ -74,11 +75,10 @@ export default async function DashboardLayout({
       <AppSidebar user={user} />
 
       {/* 2. 主体区域 (移除了 Header) */}
-      <SidebarInset className="bg-card min-w-0">
-        {/* 移动端顶部导航栏 */}
+      <SidebarInset className="bg-card min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        {/* 移动端顶部导航栏 - 简化为只显示 Logo */}
         <header className="flex md:hidden items-center h-14 px-4 border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40">
-          <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg" />
-          <div className="ml-3 flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-[10px]">
               P
             </div>
@@ -89,6 +89,8 @@ export default async function DashboardLayout({
         <ErrorBoundary>
           <PermissionGuard>{children}</PermissionGuard>
         </ErrorBoundary>
+        {/* 移动端底部 Tab Bar（fixed 定位，不影响布局流） */}
+        <AdminMobileTabBar />
       </SidebarInset>
     </SidebarProvider>
   );

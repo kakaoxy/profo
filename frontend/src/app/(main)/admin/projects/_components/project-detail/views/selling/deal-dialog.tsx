@@ -64,7 +64,7 @@ export function DealDialog({ project, onSuccess }: DealDialogProps) {
       triggerIcon={
         <Gavel className="mr-2 h-4 w-4" />
       }
-      triggerClassName="w-full bg-success hover:bg-success text-white shadow-sm transition-all duration-200 active:scale-[0.98]"
+      triggerClassName="w-full bg-success hover:brightness-95 text-white shadow-sm transition-all duration-200 active:scale-[0.98]"
       title="确认成交信息"
       description="请填写最终的成交价格和日期，系统将自动计算利润并归档项目。"
       confirmLabel="确认结案"

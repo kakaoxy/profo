@@ -36,6 +36,7 @@ export interface RawDashboardLead {
   floor: string;
   totalPrice: number | null;
   unitPrice: number | null;
+  evalPrice: number | null;
   status: string;
   region: string;
   creator: string;
