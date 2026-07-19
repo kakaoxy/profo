@@ -293,6 +293,14 @@
   .animate-fade-in-up {
     animation: fade-in-up 0.3s ease-out both;
   }
+  /* 隐藏滚动条：用于水平滚动 Chip 工具条等场景 */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes fade-in-up {

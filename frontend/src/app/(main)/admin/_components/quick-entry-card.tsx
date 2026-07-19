@@ -149,7 +149,7 @@ export function SellingRow(project: ProjectResponse): ReactNode {
         </p>
         <p className="text-[10px] text-muted-foreground">{listingText}</p>
       </div>
-      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 ml-auto">
         <span className="rounded bg-status-selling/10 px-1.5 py-0.5 text-status-selling tabular-nums">
           带看{stats.viewing}
         </span>

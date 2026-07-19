@@ -14,6 +14,8 @@ import { fetcher } from "@/lib/swr";
  */
 interface AuthMePermissionResponse {
   permissions?: string[] | null;
+  /** 主角色 code；用于无 permission 字段的菜单项回退到 roles 判断 */
+  role?: { code?: string | null } | null;
 }
 
 /** SWR key：固定为后端当前用户信息端点 */
@@ -22,6 +24,8 @@ const AUTH_ME_KEY = "/api/v1/auth/me";
 export interface UsePermissionReturn {
   /** 当前用户持有的权限码列表；未登录或加载中时为空数组 */
   permissions: string[];
+  /** 当前用户主角色 code；未登录或加载中时为 null */
+  roleCode: string | null;
   /** 判断是否持有指定权限码 */
   hasPermission: (code: string) => boolean;
   /** 判断是否持有给定权限码列表中的任一权限 */
@@ -53,6 +57,11 @@ export function usePermission(): UsePermissionReturn {
     [data],
   );
 
+  const roleCode = useMemo<string | null>(
+    () => data?.role?.code ?? null,
+    [data],
+  );
+
   const hasPermission = useCallback(
     (code: string): boolean => permissions.includes(code),
     [permissions],
@@ -65,6 +74,7 @@ export function usePermission(): UsePermissionReturn {
 
   return {
     permissions,
+    roleCode,
     hasPermission,
     hasAnyPermission,
     isLoading,

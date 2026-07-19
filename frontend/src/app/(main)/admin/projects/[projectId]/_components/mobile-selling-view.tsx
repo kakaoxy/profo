@@ -98,9 +98,9 @@ export function MobileSellingView({
   const canAdd = isSelling && canEditSales;
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/30">
+    <div className="flex flex-1 flex-col bg-muted/30">
       {/* 1. 顶部导航栏 */}
-      <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-card/80 px-2 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/80 px-2 backdrop-blur-xl">
         <button
           onClick={() => router.back()}
           className="flex h-10 w-10 items-center justify-center rounded-md text-foreground transition-colors hover:bg-muted"
@@ -121,60 +121,62 @@ export function MobileSellingView({
         <KpiCell label="面谈" value={String(negotiations.length)} />
       </section>
 
-      {/* 3. 记录列表 (Tabs) */}
+      {/* 3. 记录列表 (Tabs + 新增按钮同行) */}
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as TabType)}
         className="flex flex-1 flex-col"
       >
-        <TabsList className="mx-3 grid h-10 grid-cols-3 bg-muted">
-          <TabsTrigger
-            value="viewing"
-            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
-          >
-            带看记录
-          </TabsTrigger>
-          <TabsTrigger
-            value="offer"
-            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
-          >
-            出价记录
-          </TabsTrigger>
-          <TabsTrigger
-            value="negotiation"
-            className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
-          >
-            面谈记录
-          </TabsTrigger>
-        </TabsList>
+        {/* Tabs 行：左侧 TabsList + 右侧新增按钮 */}
+        <div className="flex items-center gap-2 px-3">
+          <TabsList className="grid h-10 flex-1 grid-cols-3 bg-muted">
+            <TabsTrigger
+              value="viewing"
+              className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
+            >
+              带看记录
+            </TabsTrigger>
+            <TabsTrigger
+              value="offer"
+              className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
+            >
+              出价记录
+            </TabsTrigger>
+            <TabsTrigger
+              value="negotiation"
+              className="text-xs data-[state=active]:bg-card data-[state=active]:text-emerald-700"
+            >
+              面谈记录
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="viewing" className="mt-3 flex-1 px-3">
+          {/* 新增按钮：与 TabsList 同行右侧；canAdd=false 时占位保持布局高度一致 */}
+          {canAdd ? (
+            <Button
+              onClick={() => setIsFormOpen(true)}
+              size="icon"
+              aria-label={`新增${TAB_LABEL[activeTab]}记录`}
+              className="h-10 w-10 shrink-0 rounded-lg bg-success text-white shadow-sm hover:brightness-95"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          ) : (
+            <div className="h-10 w-10 shrink-0" aria-hidden />
+          )}
+        </div>
+
+        <TabsContent value="viewing" className="mt-3 flex-1 px-3 pb-4">
           <ViewingList data={viewings} onDelete={handleDelete} />
         </TabsContent>
-
-        <TabsContent value="offer" className="mt-3 flex-1 px-3">
+        <TabsContent value="offer" className="mt-3 flex-1 px-3 pb-4">
           <OfferList data={offers} onDelete={handleDelete} />
         </TabsContent>
-
-        <TabsContent value="negotiation" className="mt-3 flex-1 px-3">
+        <TabsContent value="negotiation" className="mt-3 flex-1 px-3 pb-4">
           <NegotiationList data={negotiations} onDelete={handleDelete} />
         </TabsContent>
       </Tabs>
 
-      {/* 4. 底部新增按钮 (仅在售项目且具备业务身份可新增) */}
-      {canAdd && (
-        <div className="sticky bottom-0 left-0 right-0 z-40 border-t border-border bg-card/80 p-3 backdrop-blur-xl">
-          <Button
-            onClick={() => setIsFormOpen(true)}
-            className="h-14 w-full gap-2 bg-success text-base font-semibold text-white hover:bg-success"
-          >
-            <Plus className="h-5 w-5" />
-            新增{TAB_LABEL[activeTab]}记录
-          </Button>
-        </div>
-      )}
-
-      {/* 5. 新增记录表单 */}
+      {/* 4. 新增记录表单 */}
       <MobileRecordForm
         projectId={projectId}
         isOpen={isFormOpen}

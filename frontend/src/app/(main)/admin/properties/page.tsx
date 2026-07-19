@@ -3,10 +3,12 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "./columns";
 import { PropertyFilters } from "./_components/property-filters";
 import { PropertyFilterSheet } from "./_components/property-filter-sheet";
+import { PropertyFilterChips } from "./_components/property-filter-chips";
 import { ExportButton } from "./_components/export-button";
 import { searchParamsCache } from "./search-params";
 import { PropertyPagination } from "./_components/property-pagination";
 import { PropertyDetailSheet } from "./_components/property-detail-sheet";
+import { PropertyCardList } from "./_components/property-card-list";
 
 // 1. 修改类型定义：searchParams 是一个 Promise
 type PageProps = {
@@ -72,10 +74,16 @@ export default async function PropertiesPage(props: PageProps) {
 
         {/* 右侧表格区域 */}
         <div className="flex-1 overflow-hidden p-2 sm:p-4 flex flex-col min-w-0">
-           <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-hide border rounded-md bg-card shadow-sm">
+           <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-hide border rounded-md bg-card shadow-sm hidden md:block">
               <DataTable columns={columns} data={data?.items || []} />
            </div>
-           <div className="mt-2 relative z-50 bg-card">
+           {/* 移动端筛选 Chip 工具条 */}
+           <PropertyFilterChips />
+           {/* 移动端卡片列表 */}
+           <div className="flex-1 overflow-y-auto md:hidden">
+              <PropertyCardList properties={data?.items || []} />
+           </div>
+           <div className="mt-2 relative z-50 bg-card md:pb-2">
              <PropertyPagination total={data?.total || 0}  />
            </div>
         </div>

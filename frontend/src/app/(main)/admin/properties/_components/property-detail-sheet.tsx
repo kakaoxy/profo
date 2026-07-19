@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Home, Calendar, Tag, Layers, LucideIcon } from "lucide-react";
 import { getProjectStatusBadgeClass } from "@/lib/status-colors";
+import { isValidUrl } from "@/lib/validators";
 
 type PropertyDetail = components["schemas"]["PropertyDetailResponse"];
 
@@ -83,7 +84,7 @@ export function PropertyDetailSheet() {
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="w-[400px] sm:w-[600px] p-0 flex flex-col gap-0 bg-background">
+      <SheetContent className="w-full sm:w-[600px] p-0 flex flex-col gap-0 bg-background">
         
         {/* 头部：标题与状态 */}
         <SheetHeader className="p-6 bg-card border-b shrink-0">
@@ -145,39 +146,44 @@ export function PropertyDetailSheet() {
                 </div>
 
                  {/* 4. 图片预览 (如果有链接) */}
-                 {data.picture_links && data.picture_links.length > 0 && (
-                   <div>
-                      <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
-                        <Layers className="w-4 h-4" /> 图片预览
-                      </h3>
-                      <div className="grid grid-cols-3 gap-2">
-                        {data.picture_links.slice(0, 6).map((link, idx) => (
-                           // 使用 next/image 与 columns.tsx 对齐；unoptimized 保留外链原 URL
-                           <div
-                              key={idx}
-                              className="relative w-full aspect-4/3 rounded border bg-muted overflow-hidden"
-                           >
-                              <Image
-                                 src={link}
-                                 alt={`图${idx}`}
-                                 fill
-                                 sizes="(max-width: 600px) 50vw, 200px"
-                                 className="object-cover"
-                                 referrerPolicy="no-referrer"
-                                 unoptimized
-                              />
-                           </div>
-                        ))}
-                      </div>
-                   </div>
-                 )}
+                 {/* 安全：与 columns.tsx / property-card-list.tsx 对齐，过滤非 http/https 的脏数据 */}
+                 {(() => {
+                   const validLinks = (data.picture_links ?? []).filter(isValidUrl).slice(0, 6);
+                   if (validLinks.length === 0) return null;
+                   return (
+                     <div>
+                        <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
+                          <Layers className="w-4 h-4" /> 图片预览
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2">
+                          {validLinks.map((link, idx) => (
+                             // 使用 next/image 与 columns.tsx 对齐；unoptimized 保留外链原 URL
+                             <div
+                                key={idx}
+                                className="relative w-full aspect-4/3 rounded border bg-muted overflow-hidden"
+                             >
+                                <Image
+                                   src={link}
+                                   alt={`图${idx}`}
+                                   fill
+                                   sizes="(max-width: 600px) 50vw, 200px"
+                                   className="object-cover"
+                                   referrerPolicy="no-referrer"
+                                   unoptimized
+                                />
+                             </div>
+                          ))}
+                        </div>
+                     </div>
+                   );
+                 })()}
 
                 {/* 2. 基础信息 */}
                 <div>
                   <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                     <Home className="w-4 h-4" /> 基础属性
                   </h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-card p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-8 bg-card p-4 rounded-lg border">
                     <Field label="户型结构" value={data.layout_display} />
                     <Field label="所在楼层" value={data.floor_display} />
                     <Field label="房屋朝向" value={data.orientation} />
@@ -194,7 +200,7 @@ export function PropertyDetailSheet() {
                   <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-foreground">
                     <Tag className="w-4 h-4" /> 交易属性
                   </h3>
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-8 bg-card p-4 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-8 bg-card p-4 rounded-lg border">
                     <Field label="挂牌时间" value={data.listed_date?.split("T")[0]} icon={Calendar} />
                     <Field label="上次交易" value={data.last_transaction?.split("T")[0]} />
                     <Field label="持有年限" value={data.ownership_years ? `满${data.ownership_years}年` : ""} />

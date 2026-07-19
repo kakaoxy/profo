@@ -16,6 +16,8 @@ import {
   DashboardQuickEntryWrapper,
 } from "./_components";
 import { CreateProjectDialog } from "./projects/_components/create-project";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 // 页面元数据
 export const metadata = {
@@ -139,7 +141,7 @@ export default function DashboardPage() {
   return (
     <main
       id="dashboard-main"
-      className="min-h-screen bg-muted p-4 md:p-8 min-w-0 overflow-x-hidden scroll-mt-4"
+      className="min-h-screen bg-muted p-4 md:p-8 md:pb-8 min-w-0 overflow-x-hidden scroll-mt-4"
     >
       {/* Skip link for keyboard / AT users */}
       <a
@@ -157,15 +159,21 @@ export default function DashboardPage() {
         <Suspense fallback={null}>
           <DashboardErrorWrapper />
         </Suspense>
-        <Suspense fallback={<ProjectOverviewCardSkeleton />}>
-          <DashboardOverviewWrapper />
-        </Suspense>
-        <Suspense fallback={<LeadsFunnelCardSkeleton />}>
-          <DashboardFunnelWrapper />
-        </Suspense>
-        <Suspense fallback={<AlertCardSkeleton />}>
-          <DashboardAlertWrapper />
-        </Suspense>
+        <HasPermission code={PERMISSION_CODES.PROJECT_READ}>
+          <Suspense fallback={<ProjectOverviewCardSkeleton />}>
+            <DashboardOverviewWrapper />
+          </Suspense>
+        </HasPermission>
+        <HasPermission code={PERMISSION_CODES.LEAD_READ}>
+          <Suspense fallback={<LeadsFunnelCardSkeleton />}>
+            <DashboardFunnelWrapper />
+          </Suspense>
+        </HasPermission>
+        <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+          <Suspense fallback={<AlertCardSkeleton />}>
+            <DashboardAlertWrapper />
+          </Suspense>
+        </HasPermission>
       </div>
 
       {/* Quick Entry Section */}
@@ -174,14 +182,18 @@ export default function DashboardPage() {
       </Suspense>
 
       {/* Monitor Projects Section */}
-      <Suspense fallback={<MonitorSectionSkeleton />}>
-        <MonitorSection />
-      </Suspense>
+      <HasPermission code={PERMISSION_CODES.PROJECT_READ}>
+        <Suspense fallback={<MonitorSectionSkeleton />}>
+          <MonitorSection />
+        </Suspense>
+      </HasPermission>
 
       {/* Leads Table Section */}
-      <Suspense fallback={<DashboardLeadsTableSkeleton />}>
-        <DashboardLeadsWrapper />
-      </Suspense>
+      <HasPermission code={PERMISSION_CODES.LEAD_READ}>
+        <Suspense fallback={<DashboardLeadsTableSkeleton />}>
+          <DashboardLeadsWrapper />
+        </Suspense>
+      </HasPermission>
     </main>
   );
 }

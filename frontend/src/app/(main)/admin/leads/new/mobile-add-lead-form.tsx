@@ -94,9 +94,9 @@ export function MobileAddLeadForm() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-3.5rem)] mx-auto max-w-md">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-40 h-14 bg-card/80 backdrop-blur-xl border-b border-border flex items-center gap-2 px-4">
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] mx-auto max-w-md pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 md:h-auto md:min-h-[calc(100vh-3.5rem)]">
+      {/* Header (shrink-0，自然贴顶) */}
+      <header className="shrink-0 z-40 h-14 bg-card/80 backdrop-blur-xl border-b border-border flex items-center gap-2 px-4">
         <Link
           href="/admin"
           aria-label="返回工作台"
@@ -110,7 +110,7 @@ export function MobileAddLeadForm() {
       {/* Form wraps body + footer so submit button works natively */}
       <form
         onSubmit={handleSubmit}
-        className="flex-1 flex flex-col"
+        className="flex-1 flex flex-col overflow-hidden"
       >
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5 no-scrollbar">
@@ -267,8 +267,8 @@ export function MobileAddLeadForm() {
         </div>
         </div>
 
-        {/* Sticky Footer (inside form so type="submit" works) */}
-        <footer className="sticky bottom-0 bg-card border-t border-border p-4">
+        {/* Footer (shrink-0，自然贴底，浮动在 Tab Bar 上方) */}
+        <footer className="shrink-0 bg-card/95 backdrop-blur-xl border-t border-border p-4">
           <Button
             type="submit"
             disabled={isSubmitting}
