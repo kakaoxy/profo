@@ -1,3 +1,7 @@
+"use client";
+
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { ClipboardCheck, UserCircle2, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import type { RawDashboardLead } from "../types";
@@ -15,7 +19,15 @@ interface DashboardLeadsTableProps {
 }
 
 export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
+  const router = useRouter();
   const isEmpty = leads.length === 0;
+
+  const handleRowClick = useCallback(
+    (id: string) => {
+      router.push(`/admin/leads/${id}`);
+    },
+    [router],
+  );
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-card">
@@ -82,7 +94,15 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                 return (
                 <tr
                   key={lead.id}
-                  className="hover:bg-muted transition-colors group"
+                  className="hover:bg-muted transition-colors group cursor-pointer"
+                  onClick={() => handleRowClick(lead.id)}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleRowClick(lead.id);
+                    }
+                  }}
                 >
                   <td className="pl-0 pr-2 py-4">
                     <div className="flex items-center gap-2">
