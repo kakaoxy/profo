@@ -428,7 +428,11 @@ def require_project_business_permission(
         current_user: Annotated[User, Depends(get_current_active_user)],
     ) -> User:
         # 1. 权限码校验：子权限码 或 project:write 任一通过即放行
-        if has_permission(current_user, code, db) or has_permission(current_user, "project:write", db):
+        #    一次性获取权限集合，避免重复查库
+        from services.system.permission import permission_service  # noqa: PLC0415
+
+        perms = permission_service.get_user_permission_codes(db, current_user)
+        if code in perms or "project:write" in perms:
             return current_user
 
         # 2. 业务身份校验：admin/operator 已通过权限码放行，此处为业务身份兜底。
@@ -531,7 +535,11 @@ def require_project_read_or_business_permission(
         current_user: Annotated[User, Depends(get_current_active_user)],
     ) -> User:
         # 1. 权限码校验：project:read 或 project:write 任一通过即放行
-        if has_permission(current_user, "project:read", db) or has_permission(current_user, "project:write", db):
+        #    一次性获取权限集合，避免重复查库
+        from services.system.permission import permission_service  # noqa: PLC0415
+
+        perms = permission_service.get_user_permission_codes(db, current_user)
+        if "project:read" in perms or "project:write" in perms:
             return current_user
 
         # 2. 业务身份校验：被指派为该项目任意业务负责人即放行

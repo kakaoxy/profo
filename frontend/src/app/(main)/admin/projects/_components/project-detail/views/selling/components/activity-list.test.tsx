@@ -241,7 +241,7 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
     expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
-  it("canEditSales 默认为 true（未传 prop 时）", () => {
+  it("canEditSales 默认为 false（未传 prop 时不显示删除按钮）", () => {
     const records: SalesRecord[] = [
       makeRecord({ id: "r1", record_type: "viewing" }),
     ];
@@ -251,12 +251,11 @@ describe("ActivityList - canEditSales 控制删除按钮显隐", () => {
         type="viewing"
         data={records}
         onDelete={vi.fn()}
-        // 不传 canEditSales，使用默认值 true
+        // 不传 canEditSales，使用默认值 false（最小权限原则）
       />,
     );
 
-    const deleteButtons = screen.getAllByRole("button");
-    expect(deleteButtons.length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
   });
 
   it("空数据时：渲染空状态提示", () => {

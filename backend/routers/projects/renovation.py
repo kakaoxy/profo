@@ -8,7 +8,6 @@ from dependencies.auth import (
     ProjectReadOrBusinessPermDep,
     ProjectRenovationCompleteStagePermDep,
     ProjectRenovationUploadPhotoPermDep,
-    ProjectSalesManageTeamPermDep,
 )
 from dependencies.projects import ProjectServiceDep
 from schemas.project import ProjectResponse, RenovationPhotoResponse, RenovationUpdate
@@ -119,7 +118,7 @@ def update_renovation_contract(
     project_id: Annotated[str, Path(description="项目ID")],
     contract_data: RenovationContractUpdate,
     service: ProjectServiceDep,
-    current_user: ProjectSalesManageTeamPermDep,
+    current_user: ProjectRenovationCompleteStagePermDep,
 ) -> RenovationContractResponse:
     """更新装修合同信息.
 

@@ -31,7 +31,7 @@ class UserRole(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="用户ID(逻辑外键)")
-    role_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="角色ID(逻辑外键)")
+    role_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True, comment="角色ID(逻辑外键)")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

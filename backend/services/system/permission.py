@@ -77,6 +77,7 @@ class PermissionService:
         # category 字符串转枚举
         data = perm_data.model_dump()
         data["category"] = PermissionCategory(data["category"])
+        data["is_system"] = False  # API 创建的权限点一律非系统内置
         perm = Permission(**data)
         db.add(perm)
         db.commit()
@@ -101,7 +102,7 @@ class PermissionService:
         db.refresh(perm)
         return perm
 
-    def delete_permission(self, db: Session, permission_id: str) -> dict:
+    def delete_permission(self, db: Session, permission_id: str) -> dict[str, str]:
         """删除权限点（系统权限点禁止删除，返回 409）."""
         perm = self.get_permission_by_id(db, permission_id)
         if not perm:
@@ -127,6 +128,29 @@ class PermissionService:
             .where(role_permissions.c.role_id == role_id)
         ).fetchall()
         return [row[0] for row in result]
+
+    def get_roles_permission_codes(self, db: Session, role_ids: list[str]) -> dict[str, list[str]]:
+        """批量获取多个角色的权限代码（单次查询，消除 N+1）.
+
+        Args:
+            db: 数据库会话
+            role_ids: 角色 ID 列表
+
+        Returns:
+            dict[role_id, list[permission_code]]
+
+        """
+        if not role_ids:
+            return {}
+        result = db.execute(
+            select(role_permissions.c.role_id, Permission.code)
+            .join(Permission, role_permissions.c.permission_id == Permission.id)
+            .where(role_permissions.c.role_id.in_(role_ids))
+        ).fetchall()
+        grouped: dict[str, list[str]] = {rid: [] for rid in role_ids}
+        for role_id, code in result:
+            grouped[role_id].append(code)
+        return grouped
 
     def set_role_permissions(self, db: Session, role_id: str, permission_codes: list[str]) -> list[str]:
         """全量替换角色权限（删除未传入的、新增传入的）.
