@@ -46,6 +46,7 @@ from services.reports.bucketing import (
 )
 from services.reports.cache import cached_report
 from services.reports.filter_builder import (
+    _UNCATEGORIZED,
     apply_reports_filter,
     get_granularity,
     get_range_bounds,
@@ -64,9 +65,6 @@ _ROOM_3 = 3
 
 # 上期环比样本下限: 上期样本 < 此值或上期值为 0 → qoq=null
 _MIN_PREV_SAMPLE = 3
-
-# 商圈"未分类"标签 (business_circle 为 NULL/空串时归入)
-_UNCATEGORIZED = "未分类"
 
 # 小区列表默认时间窗口 (近 12 月成交)
 _COMMUNITY_LIST_DAYS = 365
