@@ -22,7 +22,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
-from sqlalchemy import Select, case, func, select
+from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -928,6 +928,30 @@ def _build_bc_expr() -> ColumnElement:
     ).label("bc")
 
 
+def _build_bc_match_predicate(business_circles: list[str]) -> ColumnElement:
+    """构建多商圈对比的匹配谓词.
+
+    与 _build_bc_expr() 的归一化逻辑对齐:
+    - "未分类" → 匹配 NULL 或空串 (因为 _build_bc_expr 将 NULL/空串 显示为 "未分类")
+    - 其他值 → 精确匹配 (对比接口传完整商圈名, 不做 LIKE 模糊匹配)
+
+    替代 ``Community.business_circle.in_(business_circles)``:
+    SQL ``IN`` 无法匹配 NULL, 会导致用户对比 "未分类" 商圈时返回空结果.
+    """
+    conditions: list[ColumnElement] = []
+    for bc in business_circles:
+        if bc == _UNCATEGORIZED:
+            conditions.append(
+                or_(
+                    Community.business_circle.is_(None),
+                    Community.business_circle == "",
+                )
+            )
+        else:
+            conditions.append(Community.business_circle == bc)
+    return or_(*conditions)
+
+
 @cached_report()
 def get_business_district_rows(
     db: Session,
@@ -1222,7 +1246,8 @@ def get_community_rows(
             CommunityRow(
                 community_id=row.community_id,
                 community_name=row.community_name,
-                business_circle=row.business_circle or "",
+                # 与 _build_bc_expr() 显示层归一化对齐: NULL/空串 → "未分类"
+                business_circle=row.business_circle or _UNCATEGORIZED,
                 district=row.district,
                 sold_count=sold_count,
                 avg_price_wan=avg_price,
@@ -1340,10 +1365,16 @@ def get_comparison_data(
     prev_start, _ = _get_previous_bounds(range_start, now)
     three_months_ago = now - timedelta(days=_ABSORPTION_RECENT_DAYS)
 
+    # 商圈归一化表达式与匹配谓词:
+    # - bc_expr 用于 SELECT/GROUP BY, 将 NULL/空串归一化为 "未分类" (与显示层一致)
+    # - bc_match 用于 WHERE, 处理 "未分类" 反向匹配 NULL/空串 (SQL IN 无法匹配 NULL)
+    bc_expr = _build_bc_expr()
+    bc_match = _build_bc_match_predicate(business_circles)
+
     # 1. summary: 一次 SQL 取出每个商圈的所有指标
     summary_query = (
         select(
-            Community.business_circle.label("bc"),
+            bc_expr,
             func.count()
             .filter(
                 (PropertyCurrent.status == PropertyStatus.SOLD)
@@ -1396,10 +1427,10 @@ def get_comparison_data(
             PropertyCurrent.community_id == Community.id,
         )
         .where(
-            Community.business_circle.in_(business_circles),
+            bc_match,
             Community.is_active.is_(True),
         )
-        .group_by(Community.business_circle)
+        .group_by(bc_expr)
     )
 
     # 已显式 JOIN Community, 关闭 auto_join_community 避免重复 JOIN
@@ -1451,7 +1482,7 @@ def get_comparison_data(
     trend_query = (
         select(
             period_expr,
-            Community.business_circle.label("bc"),
+            bc_expr,
             func.count().label("volume"),
             func.avg(PropertyCurrent.sold_price_wan).label("avg_price_wan"),
         )
@@ -1465,10 +1496,10 @@ def get_comparison_data(
             PropertyCurrent.sold_date >= range_start,
             PropertyCurrent.sold_date <= now,
             PropertyCurrent.sold_date.isnot(None),
-            Community.business_circle.in_(business_circles),
+            bc_match,
             Community.is_active.is_(True),
         )
-        .group_by(period_expr, Community.business_circle)
+        .group_by(period_expr, bc_expr)
         .order_by(period_expr)
     )
     # 已显式 JOIN Community, 关闭 auto_join_community 避免重复 JOIN
@@ -1507,7 +1538,7 @@ def get_comparison_data(
     # 3. floor_structure: 每商圈一行 {business_circle, low, mid, high}
     floor_query = (
         select(
-            Community.business_circle.label("bc"),
+            bc_expr,
             PropertyCurrent.floor_level.label("floor_level"),
             func.count().label("count"),
         )
@@ -1521,10 +1552,10 @@ def get_comparison_data(
             PropertyCurrent.sold_date >= range_start,
             PropertyCurrent.sold_date <= now,
             PropertyCurrent.sold_date.isnot(None),
-            Community.business_circle.in_(business_circles),
+            bc_match,
             Community.is_active.is_(True),
         )
-        .group_by(Community.business_circle, PropertyCurrent.floor_level)
+        .group_by(bc_expr, PropertyCurrent.floor_level)
     )
     # 已显式 JOIN Community, 关闭 auto_join_community 避免重复 JOIN
     floor_query = apply_reports_filter(floor_query, base_filter, include_time_window=False, auto_join_community=False)
@@ -1551,7 +1582,7 @@ def get_comparison_data(
     # 4. room_structure: 每商圈一行 {business_circle, r1, r2, r3, r4plus}
     room_query = (
         select(
-            Community.business_circle.label("bc"),
+            bc_expr,
             PropertyCurrent.rooms.label("rooms"),
             func.count().label("count"),
         )
@@ -1565,10 +1596,10 @@ def get_comparison_data(
             PropertyCurrent.sold_date >= range_start,
             PropertyCurrent.sold_date <= now,
             PropertyCurrent.sold_date.isnot(None),
-            Community.business_circle.in_(business_circles),
+            bc_match,
             Community.is_active.is_(True),
         )
-        .group_by(Community.business_circle, PropertyCurrent.rooms)
+        .group_by(bc_expr, PropertyCurrent.rooms)
     )
     # 已显式 JOIN Community, 关闭 auto_join_community 避免重复 JOIN
     room_query = apply_reports_filter(room_query, base_filter, include_time_window=False, auto_join_community=False)
