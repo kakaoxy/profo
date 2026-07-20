@@ -65,21 +65,43 @@ export function getChartColors(): ChartColors {
 /**
  * React Hook: 获取图表颜色并监听主题变化
  * 当暗色模式切换时自动更新颜色
+ *
+ * 注意：useSyncExternalStore 要求 getSnapshot 在未变化时返回引用相等的值，
+ * 否则 React 会陷入无限循环。这里通过模块级缓存 + 主题变更时失效实现。
  */
+let cachedChartColors: ChartColors | null = null;
+
+/** 清除缓存的主题颜色快照（主题切换时调用） */
+function invalidateChartColorsCache(): void {
+  cachedChartColors = null;
+}
+
+/** 获取（缓存的）图表颜色快照，供 useSyncExternalStore 使用 */
+function getChartColorsSnapshot(): ChartColors {
+  if (cachedChartColors) {
+    return cachedChartColors;
+  }
+  cachedChartColors = getChartColors();
+  return cachedChartColors;
+}
+
+/** 订阅 documentElement class 变化（暗色模式切换） */
+function subscribeChartColors(callback: () => void): () => void {
+  const observer = new MutationObserver(() => {
+    invalidateChartColorsCache();
+    callback();
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
+}
+
 export function useChartColors(): ChartColors {
   return useSyncExternalStore(
-    // subscribe
-    (callback) => {
-      const observer = new MutationObserver(callback);
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-      return () => observer.disconnect();
-    },
-    // getSnapshot
-    getChartColors,
-    // getServerSnapshot (for SSR)
+    subscribeChartColors,
+    getChartColorsSnapshot,
     getDefaultChartColors
   );
 }

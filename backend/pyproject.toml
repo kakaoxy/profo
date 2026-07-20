@@ -78,6 +78,9 @@ ignore = [
 "tests/*.py" = ["S101", "D100", "D101", "D102", "D103", "D104", "PLR2004", "ARG001", "PLC0415"]
 # routers: slowapi @limiter.limit 要求 request 参数；FastAPI 依赖注入要求 current_user
 "routers/**/*.py" = ["ARG001"]
+# reports 子模块: spec 显式要求声明 response_model（与 return 注解冗余）；
+# valid_community_id 依赖在依赖层消费 {community_id} 路径参数（FAST003 静态分析无法识别）
+"routers/reports/**/*.py" = ["FAST001", "FAST003"]
 # 迁移脚本: 循环变量转换、复杂度
 "scripts/*.py" = ["PLW2901"]
 # 统计聚合方法: try-except 在循环内（跳过坏文件）

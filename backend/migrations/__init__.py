@@ -1536,6 +1536,28 @@ def add_permission_foreign_indexes(engine: Engine) -> None:
             conn.execute(text("CREATE INDEX ix_role_permissions_permission_id ON role_permissions (permission_id)"))
 
 
+def add_reports_indexes(engine: Engine) -> None:
+    """为 property_current 表创建报表模块复合索引（幂等）.
+
+    报表聚合查询核心 WHERE 模式为 is_active + status + sold_date 范围扫描，
+    以及 community_id + status + sold_date 的小区维度聚合。
+    现有 idx_status 仅覆盖单列（选择性低），idx_dates 的 sold_date 为第二列无法用于前缀扫描。
+    """
+    if not _index_exists(engine, "idx_reports_core"):
+        logger.info("迁移：创建 idx_reports_core 索引 (is_active, status, sold_date)")
+        with engine.begin() as conn:
+            conn.execute(
+                text("CREATE INDEX idx_reports_core ON property_current (is_active, status, sold_date)"),
+            )
+
+    if not _index_exists(engine, "idx_community_status_date"):
+        logger.info("迁移：创建 idx_community_status_date 索引 (community_id, status, sold_date)")
+        with engine.begin() as conn:
+            conn.execute(
+                text("CREATE INDEX idx_community_status_date ON property_current (community_id, status, sold_date)"),
+            )
+
+
 def run_startup_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
@@ -1572,6 +1594,7 @@ def run_startup_migrations(engine: Engine) -> None:
         migrate_permission_system(engine)
         migrate_project_business_permission(engine)
         add_permission_foreign_indexes(engine)
+        add_reports_indexes(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
