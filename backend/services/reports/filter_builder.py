@@ -35,6 +35,11 @@ _ROOMS_PLUS_SENTINEL = "4plus"
 # 4室+ 起始阈值
 _ROOMS_PLUS_THRESHOLD = 4
 
+# 商圈"未分类"标签 (与 services.reports.aggregations._UNCATEGORIZED 保持一致)
+# business_circle 为 NULL/空串时, 显示层 _build_bc_expr() 归一化为 "未分类",
+# 过滤层必须能反向匹配 NULL/空串, 否则用户点击 "未分类" 行跳转后页面为空
+_UNCATEGORIZED = "未分类"
+
 
 def build_reports_filter(
     range: str = "4w",  # noqa: A002
@@ -125,10 +130,22 @@ def apply_reports_filter(
         query = query.join_from(PropertyCurrent, Community, PropertyCurrent.community_id == Community.id)
 
     # 商圈多关键词模糊匹配（OR LIKE）
+    # "未分类" 特殊处理: 与 aggregations._build_bc_expr() 归一化逻辑对齐,
+    # 反向匹配 DB 中的 NULL 或空串 (SQL LIKE 无法匹配 NULL, IN 也无法匹配 NULL)
     if filter.business_circles:
-        business_circle_conditions = [
-            Community.business_circle.like(f"%{escape_like(bc)}%", escape="\\") for bc in filter.business_circles if bc
-        ]
+        business_circle_conditions = []
+        for bc in filter.business_circles:
+            if not bc:
+                continue
+            if bc == _UNCATEGORIZED:
+                business_circle_conditions.append(
+                    or_(
+                        Community.business_circle.is_(None),
+                        Community.business_circle == "",
+                    )
+                )
+            else:
+                business_circle_conditions.append(Community.business_circle.like(f"%{escape_like(bc)}%", escape="\\"))
         if business_circle_conditions:
             query = query.where(
                 or_(*business_circle_conditions),
