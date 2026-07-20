@@ -325,6 +325,8 @@ PermissionManagePermDep = Annotated[User, Depends(require_permission("permission
 PropertyReadPermDep = Annotated[User, Depends(require_permission("property:read"))]
 PropertyWritePermDep = Annotated[User, Depends(require_permission("property:write"))]
 PropertyUploadPermDep = Annotated[User, Depends(require_permission("property:upload"))]
+# reports 模块（复用 property:read 权限，不新增权限码）
+ReportsReadPermDep = Annotated[User, Depends(require_permission("property:read"))]
 # project 模块
 ProjectReadPermDep = Annotated[User, Depends(require_permission("project:read"))]
 ProjectWritePermDep = Annotated[User, Depends(require_permission("project:write"))]
@@ -593,6 +595,7 @@ __all__ = [
     "PropertyReadPermDep",
     "PropertyUploadPermDep",
     "PropertyWritePermDep",
+    "ReportsReadPermDep",
     "RoleAssignPermissionsPermDep",
     "RoleCreatePermDep",
     "RoleDeletePermDep",

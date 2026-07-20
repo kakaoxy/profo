@@ -874,7 +874,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommunityListResponse"
+                  "$ref": "#/components/schemas/schemas__community__CommunityListResponse"
                 }
               }
             }
@@ -1829,7 +1829,7 @@
           "documents"
         ],
         "summary": "List Documents",
-        "description": "获取项目文书签收列表.",
+        "description": "获取项目文书签收列表.\n\n使用 ProjectReadPermDep 基于权限码校验（需 project:read）.",
         "operationId": "list_documents_api_v1_projects__project_id__documents_get",
         "security": [
           {
@@ -2281,6 +2281,19 @@
               "title": "Thumbnail Url"
             },
             "description": "缩略图URL"
+          },
+          {
+            "name": "media_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 10,
+              "description": "媒体种类: image/video",
+              "default": "image",
+              "title": "Media Type"
+            },
+            "description": "媒体种类: image/video"
           }
         ],
         "responses": {
@@ -2312,7 +2325,7 @@
           "renovation"
         ],
         "summary": "Get Renovation Photos",
-        "description": "获取改造阶段照片.",
+        "description": "获取改造阶段照片.\n\n使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.\n装修对接负责人需查看自己负责项目的照片以执行上传/删除操作。",
         "operationId": "get_renovation_photos_api_v1_projects__project_id__renovation_photos_get",
         "security": [
           {
@@ -2437,7 +2450,7 @@
           "renovation"
         ],
         "summary": "Get Renovation Contract",
-        "description": "获取装修合同信息.",
+        "description": "获取装修合同信息.\n\n使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.",
         "operationId": "get_renovation_contract_api_v1_projects__project_id__renovation_contract_get",
         "security": [
           {
@@ -2791,7 +2804,7 @@
           "sales"
         ],
         "summary": "Get Sales Records",
-        "description": "获取销售记录.",
+        "description": "获取销售记录.\n\n使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.\n销售团队成员（渠道/讲房/谈判）需查看自己负责项目的销售记录以执行添加/删除操作。",
         "operationId": "get_sales_records_api_v1_projects__project_id__selling_records_get",
         "security": [
           {
@@ -2915,8 +2928,26 @@
           "projects"
         ],
         "summary": "Get Next Contract No",
-        "description": "获取下一个合同编号.\n\n格式: MFB-年月-4位自增序号，如 MFB-202604-0001\n后端生成保证唯一性，避免前端竞态条件",
+        "description": "获取下一个合同编号.\n\n格式: SH + 4位自增序号 + - + 后缀\n- agent(代理美化) -> SG，如 SH0028-SG\n- wholesale(收购美化) -> DL，如 SH0028-DL\n后端生成保证唯一性，避免前端竞态条件。\nbusiness_form 非 agent/wholesale 时返回 400。",
         "operationId": "get_next_contract_no_api_v1_projects_contract_no_next_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "business_form",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "业务形式: agent(代理美化) / wholesale(收购美化)",
+              "title": "Business Form"
+            },
+            "description": "业务形式: agent(代理美化) / wholesale(收购美化)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2928,13 +2959,80 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
+        }
+      }
+    },
+    "/api/v1/projects/owners/{owner_id}/bank-card": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Owner Bank Card",
+        "description": "获取业主未脱敏银行卡号.\n\n完整卡号不随项目详情下发（默认脱敏），需调用本接口按需获取。\n仅 admin 角色可调用（银行卡号为敏感财务数据）。\nservice 层会校验 owner 所属 project 未被软删除；\n审计日志（OperationLog）在路由层记录，不记录银行卡号本身。",
+        "operationId": "get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get",
         "security": [
           {
             "OAuth2PasswordBearer": []
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "owner_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "业主ID",
+              "title": "Owner Id"
+            },
+            "description": "业主ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "title": "Response Get Owner Bank Card Api V1 Projects Owners  Owner Id  Bank Card Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/projects": {
@@ -2988,7 +3086,7 @@
           "projects"
         ],
         "summary": "Get Projects",
-        "description": "获取项目列表.",
+        "description": "获取项目列表.\n\n使用 ProjectReadPermDep 基于权限码校验：\n- admin/operator/user 持 project:read 权限可访问\n- 移除 user 角色的 project:read 权限后，user 立即失去访问权",
         "operationId": "get_projects_api_v1_projects_get",
         "security": [
           {
@@ -3007,6 +3105,18 @@
               "title": "Include Interactions"
             },
             "description": "是否包含互动记录(sales_records)，工作台重点监控卡片需传 true"
+          },
+          {
+            "name": "monitor_sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序）",
+              "default": false,
+              "title": "Monitor Sort"
+            },
+            "description": "工作台重点监控排序（状态优先级 在售→装修→签约→已售 + 创建时间升序）"
           },
           {
             "name": "page",
@@ -3114,7 +3224,7 @@
           "projects"
         ],
         "summary": "Get Project Stats",
-        "description": "获取项目统计.",
+        "description": "获取项目统计.\n\n使用 ProjectReadPermDep 基于权限码校验（dashboard 统计卡片需 project:read）.",
         "operationId": "get_project_stats_api_v1_projects_stats_get",
         "responses": {
           "200": {
@@ -3123,6 +3233,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectStatsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/projects/my-responsible": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get My Responsible Projects",
+        "description": "获取当前用户作为业务身份负责的项目列表.\n\n用于工作台\"我负责的项目\"卡片：普通用户即使无 project:read 权限，被指派为\n项目装修对接负责人或销售团队成员后也能查看自己负责的项目。\n\n权限校验：仅需登录态（CurrentActiveUserDep），不检查权限码——业务身份本身\n即为访问凭证。返回的列表已按 created_at 降序，前端直接渲染卡片。",
+        "operationId": "get_my_responsible_projects_api_v1_projects_my_responsible_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get My Responsible Projects Api V1 Projects My Responsible Get"
                 }
               }
             }
@@ -3216,7 +3357,7 @@
           "projects"
         ],
         "summary": "Get Project",
-        "description": "获取项目详情.",
+        "description": "获取项目详情.\n\n使用 ProjectReadOrBusinessPermDep 双通道校验：\n- 持 project:read / project:write 权限可访问（admin/operator/有权限的 user）；\n- 被指派为该项目装修对接负责人或销售团队成员的用户可访问（业务身份优先级最高，\n  不被角色权限覆盖——普通用户即使无 project:read 也能查看自己负责的项目）；\n- 业务身份标志 can_edit_* 基于当前用户计算，前端据此显隐操作按钮。",
         "operationId": "get_project_api_v1_projects__project_id__get",
         "security": [
           {
@@ -3497,7 +3638,7 @@
           "projects"
         ],
         "summary": "Get Project Report",
-        "description": "获取项目报告.",
+        "description": "获取项目报告.\n\n使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.",
         "operationId": "get_project_report_api_v1_projects__project_id__report_get",
         "security": [
           {
@@ -3605,7 +3746,7 @@
           "cashflow"
         ],
         "summary": "Get Project Cashflow",
-        "description": "获取项目现金流明细和汇总.",
+        "description": "获取项目现金流明细和汇总.\n\n使用 ProjectReadPermDep 基于权限码校验（需 project:read）.",
         "operationId": "get_project_cashflow_api_v1_projects__project_id__cashflow_get",
         "security": [
           {
@@ -5863,6 +6004,56 @@
         }
       }
     },
+    "/api/v1/admin/ledger/{project_id}/receivable-payable": {
+      "get": {
+        "tags": [
+          "finance-ledger"
+        ],
+        "summary": "获取项目应收应付参考表",
+        "description": "获取项目应收应付参考表数据（预期金额 vs 实际金额对比）.",
+        "operationId": "get_receivable_payable_api_v1_admin_ledger__project_id__receivable_payable_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "项目ID",
+              "title": "Project Id"
+            },
+            "description": "项目ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivablePayableResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/ledger/{project_id}/logs": {
       "get": {
         "tags": [
@@ -6126,6 +6317,64 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "finance-ledger"
+        ],
+        "summary": "更新资金账本流水（补充凭证/支付方类型）",
+        "description": "补充上传记账凭证或更新支付方类型.",
+        "operationId": "update_ledger_record_api_v1_admin_ledger__record_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "record_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "流水记录ID",
+              "title": "Record Id"
+            },
+            "description": "流水记录ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerRecordUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowRecordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/auth/token": {
@@ -6262,6 +6511,62 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "后台退出登录",
+        "description": "后台用户退出登录，服务端撤销当前 refresh_token（access_token 短期过期自然失效）",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证"
+          },
+          "403": {
+            "description": "账号已禁用"
+          },
+          "429": {
+            "description": "请求过于频繁"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/v1/auth/wechat/authorize": {
@@ -7210,7 +7515,7 @@
           "roles"
         ],
         "summary": "Get Roles",
-        "description": "获取角色列表，支持搜索和筛选.",
+        "description": "获取角色列表，支持搜索和筛选.\n\n列表项也填充 permission_codes，供前端编辑弹窗初始化勾选状态\n及角色表格的权限 Badge 展示（避免单独 GET /{id} 的 N+1 调用）。",
         "operationId": "get_roles_api_v1_roles_get",
         "security": [
           {
@@ -7514,6 +7819,570 @@
         }
       }
     },
+    "/api/v1/permissions": {
+      "get": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "List Permissions",
+        "description": "获取权限点列表，支持按模块/类别/系统权限过滤.",
+        "operationId": "list_permissions_api_v1_permissions_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "module",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按模块过滤",
+              "title": "Module"
+            },
+            "description": "按模块过滤"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "menu",
+                    "button",
+                    "api"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按类别过滤: menu/button/api",
+              "title": "Category"
+            },
+            "description": "按类别过滤: menu/button/api"
+          },
+          {
+            "name": "is_system",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按是否系统权限过滤",
+              "title": "Is System"
+            },
+            "description": "按是否系统权限过滤"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "页码",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "页码"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 50,
+              "title": "Page Size"
+            },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "Create Permission",
+        "description": "创建权限点.",
+        "operationId": "create_permission_api_v1_permissions_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/modules": {
+      "get": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "List Permissions Grouped By Module",
+        "description": "获取按模块分组的权限字典（供前端权限选择器使用）.",
+        "operationId": "list_permissions_grouped_by_module_api_v1_permissions_modules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PermissionModuleGroup"
+                  },
+                  "type": "array",
+                  "title": "Response List Permissions Grouped By Module Api V1 Permissions Modules Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/permissions/{permission_id}": {
+      "put": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "Update Permission",
+        "description": "更新权限点.",
+        "operationId": "update_permission_api_v1_permissions__permission_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "permission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Permission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "Delete Permission",
+        "description": "删除权限点（系统权限点禁止删除）.",
+        "operationId": "delete_permission_api_v1_permissions__permission_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "permission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Permission Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/roles/{role_id}": {
+      "get": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "Get Role Permissions",
+        "description": "获取角色权限代码列表.",
+        "operationId": "get_role_permissions_api_v1_permissions_roles__role_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermissionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "permissions"
+        ],
+        "summary": "Set Role Permissions",
+        "description": "全量替换角色权限.",
+        "operationId": "set_role_permissions_api_v1_permissions_roles__role_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolePermissionsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermissionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operation-logs": {
+      "get": {
+        "tags": [
+          "operation-logs"
+        ],
+        "summary": "List Operation Logs",
+        "description": "分页查询操作审计日志.\n\n支持按 user_id/action/resource_type/时间范围筛选，按 created_at 倒序排列。\n需要 ``operation_log:read`` 权限。",
+        "operationId": "list_operation_logs_api_v1_operation_logs_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 36
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按操作者用户ID过滤",
+              "title": "User Id"
+            },
+            "description": "按操作者用户ID过滤"
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按操作类型过滤: create/update/delete等",
+              "title": "Action"
+            },
+            "description": "按操作类型过滤: create/update/delete等"
+          },
+          {
+            "name": "resource_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按资源类型过滤: user/role/permission/project等",
+              "title": "Resource Type"
+            },
+            "description": "按资源类型过滤: user/role/permission/project等"
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "起始时间过滤(>=, ISO 8601)",
+              "title": "Start Time"
+            },
+            "description": "起始时间过滤(>=, ISO 8601)"
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "结束时间过滤(<=, ISO 8601)",
+              "title": "End Time"
+            },
+            "description": "结束时间过滤(<=, ISO 8601)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "页码",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "页码"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 50,
+              "title": "Page Size"
+            },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationLogListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/upload/csv": {
       "post": {
         "tags": [
@@ -7567,7 +8436,7 @@
           "upload"
         ],
         "summary": "Get Task Status",
-        "description": "查询导入任务状态和进度.\n\n前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次",
+        "description": "查询导入任务状态和进度.\n\n前端应轮询此接口获取任务进度，建议每 2-3 秒查询一次.\n速率限制：120/分钟（适配 2 秒轮询场景，默认 50/hour 会在 100 秒内耗尽）",
         "operationId": "get_task_status_api_v1_upload_tasks__task_id__get",
         "security": [
           {
@@ -9319,6 +10188,1478 @@
           }
         }
       }
+    },
+    "/api/v1/reports/market/kpi": {
+      "get": {
+        "tags": [
+          "reports-market"
+        ],
+        "summary": "KPI 指标卡片",
+        "description": "返回选定筛选条件下的 4 张 KPI 卡片聚合数据",
+        "operationId": "get_kpi_api_v1_reports_market_kpi_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围：4w/8w=周；6m/12m/24m=月",
+              "default": "4w",
+              "title": "Range"
+            },
+            "description": "时间范围：4w/8w=周；6m/12m/24m=月"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的数据来源（链家/贝壳/网签）",
+              "title": "Sources"
+            },
+            "description": "逗号分隔的数据来源（链家/贝壳/网签）"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "行政区筛选",
+              "title": "District"
+            },
+            "description": "行政区筛选"
+          },
+          {
+            "name": "business_circle",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "商圈筛选",
+              "title": "Business Circle"
+            },
+            "description": "商圈筛选"
+          },
+          {
+            "name": "community_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "小区ID筛选",
+              "title": "Community Id"
+            },
+            "description": "小区ID筛选"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "房源状态：在售/成交",
+              "title": "Status"
+            },
+            "description": "房源状态：在售/成交"
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的户型（如 1,2,4plus）",
+              "title": "Rooms"
+            },
+            "description": "逗号分隔的户型（如 1,2,4plus）"
+          },
+          {
+            "name": "floor_levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的楼层级别（低/中/高）",
+              "title": "Floor Levels"
+            },
+            "description": "逗号分隔的楼层级别（低/中/高）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/market/trend": {
+      "get": {
+        "tags": [
+          "reports-market"
+        ],
+        "summary": "成交趋势图",
+        "description": "返回按维度分组的成交量与单价趋势",
+        "operationId": "get_trend_api_v1_reports_market_trend_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "trend_dim",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TrendDimension",
+              "description": "趋势维度: overall(综合) / rooms(户型) / floor(楼层) / price(价格段)",
+              "default": "overall"
+            },
+            "description": "趋势维度: overall(综合) / rooms(户型) / floor(楼层) / price(价格段)"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围：4w/8w=周；6m/12m/24m=月",
+              "default": "4w",
+              "title": "Range"
+            },
+            "description": "时间范围：4w/8w=周；6m/12m/24m=月"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的数据来源（链家/贝壳/网签）",
+              "title": "Sources"
+            },
+            "description": "逗号分隔的数据来源（链家/贝壳/网签）"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "行政区筛选",
+              "title": "District"
+            },
+            "description": "行政区筛选"
+          },
+          {
+            "name": "business_circle",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "商圈筛选",
+              "title": "Business Circle"
+            },
+            "description": "商圈筛选"
+          },
+          {
+            "name": "community_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "小区ID筛选",
+              "title": "Community Id"
+            },
+            "description": "小区ID筛选"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "房源状态：在售/成交",
+              "title": "Status"
+            },
+            "description": "房源状态：在售/成交"
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的户型（如 1,2,4plus）",
+              "title": "Rooms"
+            },
+            "description": "逗号分隔的户型（如 1,2,4plus）"
+          },
+          {
+            "name": "floor_levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的楼层级别（低/中/高）",
+              "title": "Floor Levels"
+            },
+            "description": "逗号分隔的楼层级别（低/中/高）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrendDataPoint"
+                  },
+                  "title": "Response Get Trend Api V1 Reports Market Trend Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "不支持的 trend_dim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/market/price-distribution": {
+      "get": {
+        "tags": [
+          "reports-market"
+        ],
+        "summary": "成交价格分布",
+        "description": "返回基于分位数的动态价格区间分布",
+        "operationId": "get_price_distribution_api_v1_reports_market_price_distribution_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围：4w/8w=周；6m/12m/24m=月",
+              "default": "4w",
+              "title": "Range"
+            },
+            "description": "时间范围：4w/8w=周；6m/12m/24m=月"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的数据来源（链家/贝壳/网签）",
+              "title": "Sources"
+            },
+            "description": "逗号分隔的数据来源（链家/贝壳/网签）"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "行政区筛选",
+              "title": "District"
+            },
+            "description": "行政区筛选"
+          },
+          {
+            "name": "business_circle",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "商圈筛选",
+              "title": "Business Circle"
+            },
+            "description": "商圈筛选"
+          },
+          {
+            "name": "community_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "小区ID筛选",
+              "title": "Community Id"
+            },
+            "description": "小区ID筛选"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "房源状态：在售/成交",
+              "title": "Status"
+            },
+            "description": "房源状态：在售/成交"
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的户型（如 1,2,4plus）",
+              "title": "Rooms"
+            },
+            "description": "逗号分隔的户型（如 1,2,4plus）"
+          },
+          {
+            "name": "floor_levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的楼层级别（低/中/高）",
+              "title": "Floor Levels"
+            },
+            "description": "逗号分隔的楼层级别（低/中/高）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceDistributionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/market/business-districts": {
+      "get": {
+        "tags": [
+          "reports-market"
+        ],
+        "summary": "商圈列表",
+        "description": "返回按商圈聚合的成交/在售指标行",
+        "operationId": "get_business_districts_api_v1_reports_market_business_districts_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "排序字段: sold_count / avg_price_wan / avg_unit_price / on_sale_count / absorption_months / price_qoq / volume_qoq",
+              "default": "sold_count",
+              "title": "Sort By"
+            },
+            "description": "排序字段: sold_count / avg_price_wan / avg_unit_price / on_sale_count / absorption_months / price_qoq / volume_qoq"
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortOrder",
+              "description": "排序方向: asc / desc",
+              "default": "desc"
+            },
+            "description": "排序方向: asc / desc"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "页码, 从 1 开始",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "页码, 从 1 开始"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量, 1-100",
+              "default": 20,
+              "title": "Page Size"
+            },
+            "description": "每页数量, 1-100"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围：4w/8w=周；6m/12m/24m=月",
+              "default": "4w",
+              "title": "Range"
+            },
+            "description": "时间范围：4w/8w=周；6m/12m/24m=月"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的数据来源（链家/贝壳/网签）",
+              "title": "Sources"
+            },
+            "description": "逗号分隔的数据来源（链家/贝壳/网签）"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "行政区筛选",
+              "title": "District"
+            },
+            "description": "行政区筛选"
+          },
+          {
+            "name": "business_circle",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "商圈筛选",
+              "title": "Business Circle"
+            },
+            "description": "商圈筛选"
+          },
+          {
+            "name": "community_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "小区ID筛选",
+              "title": "Community Id"
+            },
+            "description": "小区ID筛选"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "房源状态：在售/成交",
+              "title": "Status"
+            },
+            "description": "房源状态：在售/成交"
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的户型（如 1,2,4plus）",
+              "title": "Rooms"
+            },
+            "description": "逗号分隔的户型（如 1,2,4plus）"
+          },
+          {
+            "name": "floor_levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的楼层级别（低/中/高）",
+              "title": "Floor Levels"
+            },
+            "description": "逗号分隔的楼层级别（低/中/高）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDistrictListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "不支持的排序参数",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/market/dictionaries": {
+      "get": {
+        "tags": [
+          "reports-market"
+        ],
+        "summary": "报表字典",
+        "description": "返回报表专用动态字典（来源/户型/楼层/最近更新）",
+        "operationId": "get_dictionaries_api_v1_reports_market_dictionaries_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dict_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "data_source",
+                "rooms",
+                "floor_level",
+                "last_updated"
+              ],
+              "type": "string",
+              "description": "字典类型: data_source / rooms / floor_level / last_updated",
+              "title": "Dict Type"
+            },
+            "description": "字典类型: data_source / rooms / floor_level / last_updated"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DictionaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "不支持的 dict_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/market/compare": {
+      "get": {
+        "tags": [
+          "reports-market"
+        ],
+        "summary": "多商圈对比分析",
+        "description": "返回多商圈（2-5 个）对比汇总表、成交量趋势、价格趋势、楼层结构与户型结构",
+        "operationId": "get_compare_api_v1_reports_market_compare_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围：4w/8w=周；6m/12m/24m=月",
+              "default": "4w",
+              "title": "Range"
+            },
+            "description": "时间范围：4w/8w=周；6m/12m/24m=月"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的数据来源（链家/贝壳/网签）",
+              "title": "Sources"
+            },
+            "description": "逗号分隔的数据来源（链家/贝壳/网签）"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "行政区筛选",
+              "title": "District"
+            },
+            "description": "行政区筛选"
+          },
+          {
+            "name": "business_circle",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "商圈筛选",
+              "title": "Business Circle"
+            },
+            "description": "商圈筛选"
+          },
+          {
+            "name": "community_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "小区ID筛选",
+              "title": "Community Id"
+            },
+            "description": "小区ID筛选"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "房源状态：在售/成交",
+              "title": "Status"
+            },
+            "description": "房源状态：在售/成交"
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的户型（如 1,2,4plus）",
+              "title": "Rooms"
+            },
+            "description": "逗号分隔的户型（如 1,2,4plus）"
+          },
+          {
+            "name": "floor_levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的楼层级别（低/中/高）",
+              "title": "Floor Levels"
+            },
+            "description": "逗号分隔的楼层级别（低/中/高）"
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "逗号分隔的商圈名列表",
+              "title": "Ids"
+            },
+            "description": "逗号分隔的商圈名列表"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ids 数量非法 (需 2-5 个)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/communities/": {
+      "get": {
+        "tags": [
+          "reports-communities"
+        ],
+        "summary": "小区明细列表",
+        "description": "返回指定商圈下达到最低成交数的小区行",
+        "operationId": "list_communities_api_v1_reports_communities__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "business_circle",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "商圈名称 (必填)",
+              "title": "Business Circle"
+            },
+            "description": "商圈名称 (必填)"
+          },
+          {
+            "name": "min_sold_count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "最低成交套数阈值, 默认 3",
+              "default": 3,
+              "title": "Min Sold Count"
+            },
+            "description": "最低成交套数阈值, 默认 3"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围：4w/8w=周；6m/12m/24m=月",
+              "default": "4w",
+              "title": "Range"
+            },
+            "description": "时间范围：4w/8w=周；6m/12m/24m=月"
+          },
+          {
+            "name": "sources",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的数据来源（链家/贝壳/网签）",
+              "title": "Sources"
+            },
+            "description": "逗号分隔的数据来源（链家/贝壳/网签）"
+          },
+          {
+            "name": "district",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "行政区筛选",
+              "title": "District"
+            },
+            "description": "行政区筛选"
+          },
+          {
+            "name": "community_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "小区ID筛选",
+              "title": "Community Id"
+            },
+            "description": "小区ID筛选"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "房源状态：在售/成交",
+              "title": "Status"
+            },
+            "description": "房源状态：在售/成交"
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的户型（如 1,2,4plus）",
+              "title": "Rooms"
+            },
+            "description": "逗号分隔的户型（如 1,2,4plus）"
+          },
+          {
+            "name": "floor_levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "逗号分隔的楼层级别（低/中/高）",
+              "title": "Floor Levels"
+            },
+            "description": "逗号分隔的楼层级别（低/中/高）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/schemas__reports__communities__CommunityListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "缺少必填参数 business_circle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/communities/{community_id}/analysis": {
+      "get": {
+        "tags": [
+          "reports-communities"
+        ],
+        "summary": "小区成交分析",
+        "description": "返回小区成交分析聚合数据（KPI+趋势+价格分布+同商圈对比）",
+        "operationId": "get_community_analysis_api_v1_reports_communities__community_id__analysis_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "community_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "小区ID",
+              "title": "Community Id"
+            },
+            "description": "小区ID"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "时间范围: 4w/8w=周; 6m/12m/24m=月, 默认 12m",
+              "default": "12m",
+              "title": "Range"
+            },
+            "description": "时间范围: 4w/8w=周; 6m/12m/24m=月, 默认 12m"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunityDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "小区不存在或已停用",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9644,6 +11985,129 @@
         ],
         "title": "Body_upload_file_api_v1_public_files_upload_post"
       },
+      "BusinessDistrictListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BusinessDistrictRow"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "商圈行列表"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "商圈总数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "BusinessDistrictListResponse",
+        "description": "商圈列表响应."
+      },
+      "BusinessDistrictRow": {
+        "properties": {
+          "business_circle": {
+            "type": "string",
+            "title": "Business Circle",
+            "description": "商圈名"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District",
+            "description": "主要行政区（众数）"
+          },
+          "sold_count": {
+            "type": "integer",
+            "title": "Sold Count",
+            "description": "成交套数"
+          },
+          "avg_price_wan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Price Wan",
+            "description": "平均总价(万)"
+          },
+          "avg_unit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Unit Price",
+            "description": "平均单价(元/㎡)"
+          },
+          "on_sale_count": {
+            "type": "integer",
+            "title": "On Sale Count",
+            "description": "在售套数"
+          },
+          "absorption_months": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absorption Months",
+            "description": "去化周期(月)；分母为 0 时为 null"
+          },
+          "price_qoq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Qoq",
+            "description": "价格环比(%)"
+          },
+          "volume_qoq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume Qoq",
+            "description": "成交量环比(%)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_circle",
+          "sold_count",
+          "on_sale_count"
+        ],
+        "title": "BusinessDistrictRow",
+        "description": "商圈列表行."
+      },
       "BusinessForm": {
         "type": "string",
         "enum": [
@@ -9777,6 +12241,17 @@
             "title": "Counterparty",
             "description": "交易方(必填)"
           },
+          "counterparty_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CounterpartyType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "支付方类型: company/individual"
+          },
           "receipt_urls": {
             "anyOf": [
               {
@@ -9864,6 +12339,17 @@
             ],
             "title": "Counterparty",
             "description": "交易方"
+          },
+          "counterparty_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CounterpartyType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "支付方类型"
           },
           "receipt_urls": {
             "items": {
@@ -10017,6 +12503,36 @@
         "title": "CashFlowType",
         "description": "现金流类型枚举."
       },
+      "CommunityAliasResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "alias_name": {
+            "type": "string",
+            "title": "Alias Name"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "alias_name",
+          "data_source",
+          "created_at"
+        ],
+        "title": "CommunityAliasResponse",
+        "description": "小区别名响应模型(合并历史)."
+      },
       "CommunityCreateRequest": {
         "properties": {
           "name": {
@@ -10060,27 +12576,61 @@
         "title": "CommunityCreateRequest",
         "description": "创建小区请求."
       },
-      "CommunityListResponse": {
+      "CommunityDetailResponse": {
         "properties": {
-          "total": {
-            "type": "integer",
-            "title": "Total"
+          "community": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Community",
+            "description": "小区基本信息（community_id/community_name/business_circle/district）"
           },
-          "items": {
+          "kpi": {
+            "$ref": "#/components/schemas/KpiData",
+            "description": "KPI 卡片聚合"
+          },
+          "trend": {
             "items": {
-              "$ref": "#/components/schemas/CommunityResponse"
+              "$ref": "#/components/schemas/TrendDataPoint"
             },
             "type": "array",
-            "title": "Items"
+            "title": "Trend",
+            "description": "成交趋势"
+          },
+          "price_distribution": {
+            "$ref": "#/components/schemas/PriceDistributionResponse",
+            "description": "价格分布"
+          },
+          "main_layout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Layout",
+            "description": "主力户型（近 12 月成交占比最高）"
+          },
+          "peers": {
+            "items": {
+              "$ref": "#/components/schemas/CommunityPeer"
+            },
+            "type": "array",
+            "title": "Peers",
+            "description": "同商圈对比小区列表"
           }
         },
         "type": "object",
         "required": [
-          "total",
-          "items"
+          "community",
+          "kpi",
+          "trend",
+          "price_distribution",
+          "peers"
         ],
-        "title": "CommunityListResponse",
-        "description": "小区列表响应."
+        "title": "CommunityDetailResponse",
+        "description": "小区成交分析详情响应."
       },
       "CommunityMarketStatsResponse": {
         "properties": {
@@ -10174,6 +12724,51 @@
         "title": "CommunityMergeResponse",
         "description": "小区合并响应."
       },
+      "CommunityPeer": {
+        "properties": {
+          "community_id": {
+            "type": "string",
+            "title": "Community Id",
+            "description": "小区ID"
+          },
+          "community_name": {
+            "type": "string",
+            "title": "Community Name",
+            "description": "小区名称"
+          },
+          "avg_price_wan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Price Wan",
+            "description": "平均总价(万)"
+          },
+          "sold_count": {
+            "type": "integer",
+            "title": "Sold Count",
+            "description": "成交套数"
+          },
+          "on_sale_count": {
+            "type": "integer",
+            "title": "On Sale Count",
+            "description": "在售套数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "community_id",
+          "community_name",
+          "sold_count",
+          "on_sale_count"
+        ],
+        "title": "CommunityPeer",
+        "description": "同商圈对比小区."
+      },
       "CommunityResponse": {
         "properties": {
           "id": {
@@ -10232,10 +12827,24 @@
             "type": "integer",
             "title": "Total Properties"
           },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "是否激活(软删除)",
+            "default": true
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "aliases": {
+            "items": {
+              "$ref": "#/components/schemas/CommunityAliasResponse"
+            },
+            "type": "array",
+            "title": "Aliases",
+            "description": "关联别名列表(合并历史)"
           }
         },
         "type": "object",
@@ -10247,6 +12856,123 @@
         ],
         "title": "CommunityResponse",
         "description": "小区响应模型."
+      },
+      "CommunityRow": {
+        "properties": {
+          "community_id": {
+            "type": "string",
+            "title": "Community Id",
+            "description": "小区ID"
+          },
+          "community_name": {
+            "type": "string",
+            "title": "Community Name",
+            "description": "小区名称"
+          },
+          "business_circle": {
+            "type": "string",
+            "title": "Business Circle",
+            "description": "所属商圈"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District",
+            "description": "所属行政区"
+          },
+          "sold_count": {
+            "type": "integer",
+            "title": "Sold Count",
+            "description": "成交套数"
+          },
+          "avg_price_wan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Price Wan",
+            "description": "平均总价(万)"
+          },
+          "avg_unit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Unit Price",
+            "description": "平均单价(元/㎡)"
+          },
+          "main_layout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Layout",
+            "description": "主力户型（如 '3室2厅'）"
+          },
+          "main_floor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Floor",
+            "description": "主力楼层（如 '中楼层'）"
+          },
+          "avg_area": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Area",
+            "description": "平均面积(㎡)"
+          },
+          "price_qoq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Qoq",
+            "description": "价格环比(%)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "community_id",
+          "community_name",
+          "business_circle",
+          "sold_count"
+        ],
+        "title": "CommunityRow",
+        "description": "小区行."
       },
       "CommunitySearchResponse": {
         "properties": {
@@ -10374,6 +13100,188 @@
         "title": "CommunityUpdateRequest",
         "description": "更新小区请求.\n\n所有字段可选，仅更新请求体中显式提供的字段（PATCH 语义）."
       },
+      "ComparisonData": {
+        "properties": {
+          "business_circles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Business Circles",
+            "description": "对比商圈名列表"
+          },
+          "summary": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonSummaryRow"
+            },
+            "type": "array",
+            "title": "Summary",
+            "description": "汇总行列表（7 行指标）"
+          },
+          "volume_trend": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonTrendPoint"
+            },
+            "type": "array",
+            "title": "Volume Trend",
+            "description": "成交量趋势；键为商圈名"
+          },
+          "price_trend": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonTrendPoint"
+            },
+            "type": "array",
+            "title": "Price Trend",
+            "description": "均价趋势；键为商圈名"
+          },
+          "floor_structure": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonFloorStructure"
+            },
+            "type": "array",
+            "title": "Floor Structure",
+            "description": "楼层结构列表"
+          },
+          "room_structure": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonRoomStructure"
+            },
+            "type": "array",
+            "title": "Room Structure",
+            "description": "户型结构列表"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_circles",
+          "summary",
+          "volume_trend",
+          "price_trend",
+          "floor_structure",
+          "room_structure"
+        ],
+        "title": "ComparisonData",
+        "description": "多商圈对比数据."
+      },
+      "ComparisonFloorStructure": {
+        "properties": {
+          "business_circle": {
+            "type": "string",
+            "title": "Business Circle",
+            "description": "商圈名"
+          },
+          "low": {
+            "type": "integer",
+            "title": "Low",
+            "description": "低楼层成交套数"
+          },
+          "mid": {
+            "type": "integer",
+            "title": "Mid",
+            "description": "中楼层成交套数"
+          },
+          "high": {
+            "type": "integer",
+            "title": "High",
+            "description": "高楼层成交套数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_circle",
+          "low",
+          "mid",
+          "high"
+        ],
+        "title": "ComparisonFloorStructure",
+        "description": "对比楼层结构（成交套数）."
+      },
+      "ComparisonRoomStructure": {
+        "properties": {
+          "business_circle": {
+            "type": "string",
+            "title": "Business Circle",
+            "description": "商圈名"
+          },
+          "r1": {
+            "type": "integer",
+            "title": "R1",
+            "description": "1室成交套数"
+          },
+          "r2": {
+            "type": "integer",
+            "title": "R2",
+            "description": "2室成交套数"
+          },
+          "r3": {
+            "type": "integer",
+            "title": "R3",
+            "description": "3室成交套数"
+          },
+          "r4plus": {
+            "type": "integer",
+            "title": "R4Plus",
+            "description": "4室及以上成交套数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "business_circle",
+          "r1",
+          "r2",
+          "r3",
+          "r4plus"
+        ],
+        "title": "ComparisonRoomStructure",
+        "description": "对比户型结构（成交套数）."
+      },
+      "ComparisonSummaryRow": {
+        "properties": {
+          "metric": {
+            "type": "string",
+            "title": "Metric",
+            "description": "指标名称"
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Values",
+            "description": "各商圈对应值；与 business_circles 对齐"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metric",
+          "values"
+        ],
+        "title": "ComparisonSummaryRow",
+        "description": "对比汇总行：行=指标，列=商圈（与 business_circles 对齐）."
+      },
+      "ComparisonTrendPoint": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period",
+            "description": "周期起始日期 YYYY-MM-DD"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "period"
+        ],
+        "title": "ComparisonTrendPoint",
+        "description": "多商圈对比趋势点：周期 + 各商圈值.\n\n除 period 外，其他键为商圈名，值为对应数值或 null.\n使用 extra='allow' 接收动态商圈键."
+      },
       "CompetitorResponse": {
         "properties": {
           "community_id": {
@@ -10417,6 +13325,15 @@
         ],
         "title": "CopyInvestmentRequest",
         "description": "复制跟投配置到目标项目请求."
+      },
+      "CounterpartyType": {
+        "type": "string",
+        "enum": [
+          "company",
+          "individual"
+        ],
+        "title": "CounterpartyType",
+        "description": "支付方类型枚举."
       },
       "DictionaryResponse": {
         "properties": {
@@ -10591,6 +13508,27 @@
         "title": "DocumentUpdate",
         "description": "更新文书请求."
       },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "错误码，等同 HTTP 状态码，非零"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "错误信息"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorResponse",
+        "description": "报表模块错误响应模型.\n\n遵循 AGENTS.md §2：错误响应统一 {\"code\":≠0, \"message\":\"...\"} 格式.\ncode 取 HTTP 状态码."
+      },
       "ExchangeTokenRequest": {
         "properties": {
           "code": {
@@ -10642,7 +13580,8 @@
           "create",
           "delete",
           "settle",
-          "unsettle"
+          "unsettle",
+          "update"
         ],
         "title": "FinanceActionType",
         "description": "资金账本操作日志类型枚举."
@@ -11889,6 +14828,76 @@
         "type": "object",
         "title": "InvestorUpdate",
         "description": "更新投资方请求（仅 unsettled 可改）."
+      },
+      "KpiCard": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "description": "当前值（套数或均价）"
+          },
+          "qoq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qoq",
+            "description": "环比百分比；样本不足或上期为 0 时为 null"
+          },
+          "qoq_direction": {
+            "$ref": "#/components/schemas/QoqDirection",
+            "description": "环比方向"
+          }
+        },
+        "type": "object",
+        "required": [
+          "qoq_direction"
+        ],
+        "title": "KpiCard",
+        "description": "单张 KPI 卡片数据."
+      },
+      "KpiData": {
+        "properties": {
+          "sold_count": {
+            "$ref": "#/components/schemas/KpiCard",
+            "description": "成交套数卡片"
+          },
+          "avg_price_wan": {
+            "$ref": "#/components/schemas/KpiCard",
+            "description": "平均总价(万)卡片"
+          },
+          "avg_unit_price": {
+            "$ref": "#/components/schemas/KpiCard",
+            "description": "平均单价(元/㎡)卡片"
+          },
+          "on_sale_count": {
+            "$ref": "#/components/schemas/KpiCard",
+            "description": "在售套数卡片"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sold_count",
+          "avg_price_wan",
+          "avg_unit_price",
+          "on_sale_count"
+        ],
+        "title": "KpiData",
+        "description": "报表页 4 张 KPI 卡片聚合."
       },
       "L3ProjectBriefResponse": {
         "properties": {
@@ -13367,6 +16376,18 @@
             },
             "type": "array",
             "title": "Images"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
           }
         },
         "type": "object",
@@ -14151,6 +17172,18 @@
               }
             ],
             "title": "Last Follow Up At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
           }
         },
         "type": "object",
@@ -14333,6 +17366,17 @@
             "title": "Counterparty",
             "description": "交易方(必填)"
           },
+          "counterparty_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CounterpartyType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "支付方类型: company/individual"
+          },
           "receipt_urls": {
             "anyOf": [
               {
@@ -14360,6 +17404,39 @@
         ],
         "title": "LedgerRecordCreate",
         "description": "资金账本创建流水请求（含 project_id，不通过 URL path 传递）."
+      },
+      "LedgerRecordUpdate": {
+        "properties": {
+          "receipt_urls": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Urls",
+            "description": "票据图片URL列表（追加）"
+          },
+          "counterparty_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CounterpartyType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "支付方类型: company/individual"
+          }
+        },
+        "type": "object",
+        "title": "LedgerRecordUpdate",
+        "description": "资金账本流水更新请求（仅允许补充凭证和支付方类型）."
       },
       "LedgerStatisticsCalcBreakdown": {
         "properties": {
@@ -14979,17 +18056,6 @@
             ],
             "title": "Other Decoration"
           },
-          "other_fee": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Other Fee"
-          },
           "days": {
             "type": "integer",
             "title": "Days",
@@ -15131,6 +18197,21 @@
         ],
         "title": "LoginRequest",
         "description": "登录请求模型."
+      },
+      "LogoutResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "LogoutResponse",
+        "description": "后台登出响应模型."
       },
       "MarketSentimentResponse": {
         "properties": {
@@ -15276,6 +18357,172 @@
         ],
         "title": "NeighborhoodRadarResponse",
         "description": "周边竞品雷达响应."
+      },
+      "OperationLogListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OperationLogResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "数据列表"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "总记录数"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "当前页码"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "每页数量"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "OperationLogListResponse",
+        "description": "操作审计日志分页响应模型.",
+        "examples": [
+          {
+            "items": [
+              {
+                "id": "1"
+              },
+              {
+                "id": "2"
+              }
+            ],
+            "page": 1,
+            "page_size": 50,
+            "total": 100
+          }
+        ]
+      },
+      "OperationLogResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "日志ID"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "操作者用户ID(逻辑外键)"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "description": "操作类型：create/update/delete/sensitive_data_access等"
+          },
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type",
+            "description": "资源类型：user/role/permission/project等"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id",
+            "description": "资源ID"
+          },
+          "ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip",
+            "description": "操作者IP地址(IPv4/IPv6)"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent",
+            "description": "User-Agent"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before",
+            "description": "变更前快照"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After",
+            "description": "变更后快照"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "更新时间"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "resource_type",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OperationLogResponse",
+        "description": "操作审计日志响应模型."
       },
       "OwnerInlineCreate": {
         "properties": {
@@ -15776,6 +19023,313 @@
         "title": "PasswordResetRequest",
         "description": "密码重置请求模型."
       },
+      "PermissionCreate": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Code",
+            "description": "权限代码，格式 module:action"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "权限名称"
+          },
+          "module": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Module",
+            "description": "所属模块"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "menu",
+              "button",
+              "api"
+            ],
+            "title": "Category",
+            "description": "权限类别"
+          },
+          "sort_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "description": "排序序号",
+            "default": 0
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "权限描述"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "module",
+          "category"
+        ],
+        "title": "PermissionCreate",
+        "description": "权限创建模型.\n\n注意：is_system 不暴露给 API 调用方，由服务层强制设为 False，\n防止通过 API 注入不可删除的系统权限点。"
+      },
+      "PermissionListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "数据列表"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "总记录数"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "当前页码"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "每页数量"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PermissionListResponse",
+        "description": "权限列表响应模型.",
+        "examples": [
+          {
+            "items": [
+              {
+                "id": "1"
+              },
+              {
+                "id": "2"
+              }
+            ],
+            "page": 1,
+            "page_size": 50,
+            "total": 100
+          }
+        ]
+      },
+      "PermissionModuleGroup": {
+        "properties": {
+          "module": {
+            "type": "string",
+            "title": "Module",
+            "description": "模块名称"
+          },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionResponse"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "该模块下的权限列表"
+          }
+        },
+        "type": "object",
+        "required": [
+          "module",
+          "permissions"
+        ],
+        "title": "PermissionModuleGroup",
+        "description": "按模块分组的权限响应模型."
+      },
+      "PermissionResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Code",
+            "description": "权限代码，格式 module:action"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "权限名称"
+          },
+          "module": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Module",
+            "description": "所属模块"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "menu",
+              "button",
+              "api"
+            ],
+            "title": "Category",
+            "description": "权限类别"
+          },
+          "sort_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "description": "排序序号",
+            "default": 0
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "权限描述"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "权限ID"
+          },
+          "is_system": {
+            "type": "boolean",
+            "title": "Is System",
+            "description": "是否系统内置权限点"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "更新时间"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "module",
+          "category",
+          "id",
+          "is_system",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PermissionResponse",
+        "description": "权限响应模型."
+      },
+      "PermissionUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "权限名称"
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Module",
+            "description": "所属模块"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "menu",
+                  "button",
+                  "api"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category",
+            "description": "权限类别"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order",
+            "description": "排序序号"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "权限描述"
+          }
+        },
+        "type": "object",
+        "title": "PermissionUpdate",
+        "description": "权限更新模型（所有字段可选）."
+      },
       "PhotoCategory": {
         "type": "string",
         "enum": [
@@ -15784,6 +19338,93 @@
         ],
         "title": "PhotoCategory",
         "description": "照片分类枚举."
+      },
+      "PriceBucket": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "桶标签（如 '150-200万' 或 '<150' 或 '350+'）"
+          },
+          "lower": {
+            "type": "integer",
+            "title": "Lower",
+            "description": "下限(万元)；最低桶为 0"
+          },
+          "upper": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper",
+            "description": "上限(万元)；最高桶为 null（开放区间）"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "桶内成交套数"
+          },
+          "avg_area": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Area",
+            "description": "桶内平均面积(㎡)"
+          },
+          "avg_unit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Unit Price",
+            "description": "桶内平均单价(元/㎡)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "lower",
+          "count"
+        ],
+        "title": "PriceBucket",
+        "description": "价格分布桶."
+      },
+      "PriceDistributionResponse": {
+        "properties": {
+          "buckets": {
+            "items": {
+              "$ref": "#/components/schemas/PriceBucket"
+            },
+            "type": "array",
+            "title": "Buckets",
+            "description": "价格桶列表"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "成交样本总数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "buckets",
+          "total"
+        ],
+        "title": "PriceDistributionResponse",
+        "description": "价格分布响应."
       },
       "PriceHistoryCreate": {
         "properties": {
@@ -17106,19 +20747,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -17134,16 +20763,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -17210,6 +20830,28 @@
             ],
             "title": "Finance Settled Note",
             "description": "资金账本结算说明"
+          },
+          "renovation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RenovationInfoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "装修业务身份标志（含 can_edit_renovation / contact_person_id）"
+          },
+          "sale": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SaleInfoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "销售业务身份标志（含 can_edit_sales / 3 个销售团队字段）"
           }
         },
         "type": "object",
@@ -18587,6 +22229,17 @@
             ],
             "title": "Elevator"
           },
+          "listing_remarks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listing Remarks"
+          },
           "picture_links": {
             "anyOf": [
               {
@@ -19003,6 +22656,21 @@
             "type": "array",
             "title": "Images",
             "description": "户型图URL列表"
+          },
+          "image_thumbnails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Thumbnails",
+            "description": "户型图缩略图URL列表"
           },
           "follow_ups": {
             "items": {
@@ -19774,6 +23442,18 @@
             "title": "Cover Image",
             "description": "封面图URL"
           },
+          "cover_thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Thumbnail Url",
+            "description": "封面缩略图URL"
+          },
           "tags": {
             "items": {
               "type": "string"
@@ -20044,6 +23724,18 @@
             "title": "Cover Image",
             "description": "封面图URL"
           },
+          "cover_thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Thumbnail Url",
+            "description": "封面缩略图URL"
+          },
           "sold_days": {
             "anyOf": [
               {
@@ -20175,6 +23867,14 @@
             "format": "date-time",
             "title": "Created At",
             "description": "创建时间"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "用户有效权限代码列表（主角色+附加角色权限并集）"
           }
         },
         "type": "object",
@@ -20246,6 +23946,14 @@
             "title": "Created At",
             "description": "创建时间"
           },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "用户有效权限代码列表（主角色+附加角色权限并集）"
+          },
           "updated_at": {
             "type": "string",
             "format": "date-time",
@@ -20309,6 +24017,98 @@
         "title": "PushResult",
         "description": "JSON推送结果."
       },
+      "QoqDirection": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down",
+          "flat",
+          "unknown"
+        ],
+        "title": "QoqDirection",
+        "description": "环比方向."
+      },
+      "ReceivablePayableItem": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/CashFlowType"
+          },
+          "business_type": {
+            "type": "string",
+            "title": "Business Type"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CashFlowCategory"
+          },
+          "category_label": {
+            "type": "string",
+            "title": "Category Label"
+          },
+          "calculation_logic": {
+            "type": "string",
+            "title": "Calculation Logic"
+          },
+          "expected_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Amount"
+          },
+          "actual_amount": {
+            "type": "number",
+            "title": "Actual Amount"
+          },
+          "difference": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "business_type",
+          "stage",
+          "category",
+          "category_label",
+          "calculation_logic",
+          "actual_amount"
+        ],
+        "title": "ReceivablePayableItem",
+        "description": "应收应付参考表单项."
+      },
+      "ReceivablePayableResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivablePayableItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ReceivablePayableResponse",
+        "description": "应收应付参考表响应."
+      },
       "RecordType": {
         "type": "string",
         "enum": [
@@ -20354,6 +24154,17 @@
               }
             ],
             "title": "Renovation Company"
+          },
+          "contact_person_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person Id"
           },
           "contract_start_date": {
             "anyOf": [
@@ -20566,18 +24377,6 @@
             ],
             "title": "Wall Treatment Amount"
           },
-          "other_decoration_amount": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Other Decoration Amount"
-          },
           "design_fee": {
             "anyOf": [
               {
@@ -20672,6 +24471,19 @@
             ],
             "title": "Renovation Company",
             "description": "合作装修公司"
+          },
+          "contact_person_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person Id",
+            "description": "对接负责人(内部用户ID)"
           },
           "contract_start_date": {
             "anyOf": [
@@ -20942,22 +24754,6 @@
             "title": "Wall Treatment Amount",
             "description": "墙面处理金额"
           },
-          "other_decoration_amount": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Other Decoration Amount",
-            "description": "其他装修金额"
-          },
           "design_fee": {
             "anyOf": [
               {
@@ -21032,12 +24828,37 @@
               }
             ],
             "title": "Other Fee Reason",
-            "description": "其他费用原因"
+            "description": "其他装修原因"
           }
         },
         "type": "object",
         "title": "RenovationContractUpdate",
         "description": "更新装修合同信息请求模型."
+      },
+      "RenovationInfoResponse": {
+        "properties": {
+          "can_edit_renovation": {
+            "type": "boolean",
+            "title": "Can Edit Renovation",
+            "description": "当前用户是否有装修写权限（admin/operator 持权限码 或 user 为对接负责人）",
+            "default": false
+          },
+          "contact_person_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person Id",
+            "description": "对接负责人ID（user 角色据此判断业务身份）"
+          }
+        },
+        "type": "object",
+        "title": "RenovationInfoResponse",
+        "description": "项目详情中装修业务身份标志响应.\n\n附带在项目详情响应的 `renovation` 字段下，用于前端按钮显隐判断：\n- admin/operator 持 `project:renovation:upload_photo` 权限 → can_edit_renovation=True\n- user 角色：当前用户为对接负责人（contact_person_id == user.id）→ can_edit_renovation=True\n- 其他 → can_edit_renovation=False"
       },
       "RenovationPhotoListResponse": {
         "properties": {
@@ -21123,6 +24944,10 @@
             ],
             "title": "Thumbnail Url"
           },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -21147,6 +24972,7 @@
           "project_id",
           "stage",
           "url",
+          "media_type",
           "created_at"
         ],
         "title": "RenovationPhotoResponse",
@@ -21160,7 +24986,6 @@
           "水电",
           "木瓦",
           "油漆",
-          "安装",
           "交付",
           "已完成"
         ],
@@ -21348,6 +25173,33 @@
         "title": "RiskPoints",
         "description": "风险点."
       },
+      "RoleBrief": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "角色ID"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "角色代码"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "角色名称"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "title": "RoleBrief",
+        "description": "角色精简信息（用于 UserResponse.additional_roles）."
+      },
       "RoleCreate": {
         "properties": {
           "name": {
@@ -21389,7 +25241,15 @@
               }
             ],
             "title": "Permissions",
-            "description": "权限列表"
+            "description": "权限列表（已废弃，使用 permission_codes）"
+          },
+          "permission_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permission Codes",
+            "description": "权限代码列表"
           }
         },
         "type": "object",
@@ -21451,6 +25311,48 @@
           }
         ]
       },
+      "RolePermissionsResponse": {
+        "properties": {
+          "role_id": {
+            "type": "string",
+            "title": "Role Id",
+            "description": "角色ID"
+          },
+          "permission_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permission Codes",
+            "description": "权限代码列表"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role_id",
+          "permission_codes"
+        ],
+        "title": "RolePermissionsResponse",
+        "description": "角色权限响应模型."
+      },
+      "RolePermissionsUpdate": {
+        "properties": {
+          "permission_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permission Codes",
+            "description": "权限代码列表（全量替换）"
+          }
+        },
+        "type": "object",
+        "required": [
+          "permission_codes"
+        ],
+        "title": "RolePermissionsUpdate",
+        "description": "角色权限更新模型."
+      },
       "RoleResponse": {
         "properties": {
           "name": {
@@ -21492,7 +25394,15 @@
               }
             ],
             "title": "Permissions",
-            "description": "权限列表"
+            "description": "权限列表（已废弃，使用 permission_codes）"
+          },
+          "permission_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permission Codes",
+            "description": "权限代码列表（从 role_permissions 关联表派生）"
           },
           "id": {
             "type": "string",
@@ -21584,7 +25494,7 @@
               }
             ],
             "title": "Permissions",
-            "description": "权限列表"
+            "description": "权限列表（已废弃，使用 permission_codes）"
           },
           "is_active": {
             "anyOf": [
@@ -21597,11 +25507,75 @@
             ],
             "title": "Is Active",
             "description": "是否激活"
+          },
+          "permission_codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permission Codes",
+            "description": "权限代码列表（全量替换）"
           }
         },
         "type": "object",
         "title": "RoleUpdate",
         "description": "角色更新模型."
+      },
+      "SaleInfoResponse": {
+        "properties": {
+          "can_edit_sales": {
+            "type": "boolean",
+            "title": "Can Edit Sales",
+            "description": "当前用户是否有销售写权限（admin/operator 持权限码 或 user 为销售团队成员）",
+            "default": false
+          },
+          "channel_manager_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Manager Id",
+            "description": "渠道负责人ID"
+          },
+          "property_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Property Agent Id",
+            "description": "房源维护人ID(讲房人)"
+          },
+          "negotiator_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Negotiator Id",
+            "description": "联卖谈判人ID"
+          }
+        },
+        "type": "object",
+        "title": "SaleInfoResponse",
+        "description": "项目详情中销售业务身份标志响应.\n\n附带在项目详情响应的 `sale` 字段下，用于前端按钮显隐判断：\n- admin/operator 持 `project:sales:add_record` 权限 → can_edit_sales=True\n- user 角色：当前用户为销售团队成员（3 角色字段任一匹配）→ can_edit_sales=True\n- 其他 → can_edit_sales=False"
       },
       "SalesRecordCreate": {
         "properties": {
@@ -21877,6 +25851,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserBriefResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "操作人嵌套对象（id/nickname/avatar），历史记录可能为 null"
           }
         },
         "type": "object",
@@ -22012,6 +25997,15 @@
         "title": "SigningMaterial",
         "description": "签约材料附件."
       },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "SortOrder",
+        "description": "排序方向."
+      },
       "SubInvestorCreate": {
         "properties": {
           "name": {
@@ -22124,6 +26118,102 @@
         "title": "TrendData",
         "description": "趋势数据模型."
       },
+      "TrendDataPoint": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period",
+            "description": "周期起始日期 YYYY-MM-DD"
+          },
+          "volume": {
+            "type": "integer",
+            "title": "Volume",
+            "description": "成交套数"
+          },
+          "avg_price_wan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Price Wan",
+            "description": "平均总价(万)"
+          },
+          "avg_unit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Unit Price",
+            "description": "平均单价(元/㎡)"
+          },
+          "volume_qoq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume Qoq",
+            "description": "量环比(%)；首期或上期样本不足时为 null"
+          },
+          "price_qoq": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Qoq",
+            "description": "价环比(%)；首期或上期样本不足时为 null"
+          },
+          "dim_breakdown": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dim Breakdown",
+            "description": "维度下钻（户型/楼层/价格段）；overall 维度无此字段"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "volume"
+        ],
+        "title": "TrendDataPoint",
+        "description": "趋势数据点（周/月粒度）."
+      },
+      "TrendDimension": {
+        "type": "string",
+        "enum": [
+          "overall",
+          "rooms",
+          "floor",
+          "price"
+        ],
+        "title": "TrendDimension",
+        "description": "趋势维度."
+      },
       "UnsettleRequest": {
         "properties": {
           "reason": {
@@ -22191,6 +26281,45 @@
         "title": "UserBrief",
         "description": "用户简要信息 - 用于关联对象展示."
       },
+      "UserBriefResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "用户ID"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname",
+            "description": "昵称"
+          },
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar",
+            "description": "头像"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "UserBriefResponse",
+        "description": "用户简要信息响应 - 用于关联对象嵌套展示（如销售记录操作人）.\n\n仅包含前端展示所需的最小字段集：id/nickname/avatar.\n历史记录可能缺失 operator_id，此时响应中 operator 字段为 null."
+      },
       "UserCreate": {
         "properties": {
           "username": {
@@ -22250,6 +26379,14 @@
             "type": "string",
             "title": "Role Id",
             "description": "角色ID"
+          },
+          "additional_role_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Additional Role Ids",
+            "description": "附加角色ID列表（仅允许customer）"
           }
         },
         "type": "object",
@@ -22403,6 +26540,22 @@
             "format": "date-time",
             "title": "Updated At",
             "description": "更新时间"
+          },
+          "additional_roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleBrief"
+            },
+            "type": "array",
+            "title": "Additional Roles",
+            "description": "附加角色列表"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permissions",
+            "description": "用户有效权限代码列表（主角色+附加角色权限并集）"
           }
         },
         "type": "object",
@@ -22566,6 +26719,21 @@
             ],
             "title": "Status",
             "description": "用户状态"
+          },
+          "additional_role_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Role Ids",
+            "description": "附加角色ID列表（仅允许customer；None=不修改，[]=清空）"
           }
         },
         "type": "object",
@@ -22641,6 +26809,52 @@
         ],
         "title": "WechatLoginRequest",
         "description": "微信登录请求模型."
+      },
+      "schemas__community__CommunityListResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommunityResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "CommunityListResponse",
+        "description": "小区列表响应."
+      },
+      "schemas__reports__communities__CommunityListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommunityRow"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "小区行列表"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "小区总数"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "CommunityListResponse",
+        "description": "小区明细列表响应."
       }
     },
     "securitySchemes": {
@@ -22725,6 +26939,14 @@
       "description": "角色管理"
     },
     {
+      "name": "permissions",
+      "description": "权限管理"
+    },
+    {
+      "name": "operation-logs",
+      "description": "操作审计日志"
+    },
+    {
       "name": "upload",
       "description": "文件上传与导入任务"
     },
@@ -22763,6 +26985,14 @@
     {
       "name": "public-files",
       "description": "C端公开 - 文件上传"
+    },
+    {
+      "name": "reports-market",
+      "description": "数据报表 - 商圈分析"
+    },
+    {
+      "name": "reports-communities",
+      "description": "数据报表 - 小区分析"
     }
   ]
 }

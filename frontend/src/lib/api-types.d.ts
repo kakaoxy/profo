@@ -2931,6 +2931,206 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/market/kpi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * KPI 指标卡片
+         * @description 返回选定筛选条件下的 4 张 KPI 卡片聚合数据
+         */
+        get: operations["get_kpi_api_v1_reports_market_kpi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 成交趋势图
+         * @description 返回按维度分组的成交量与单价趋势
+         */
+        get: operations["get_trend_api_v1_reports_market_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/price-distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 成交价格分布
+         * @description 返回基于分位数的动态价格区间分布
+         */
+        get: operations["get_price_distribution_api_v1_reports_market_price_distribution_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/rooms-distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 户型分布
+         * @description 返回基于户型的成交分布（1室/2室/3室/4室+）
+         */
+        get: operations["get_rooms_distribution_api_v1_reports_market_rooms_distribution_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/floor-distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 楼层分布
+         * @description 返回基于楼层的成交分布（低楼层/中楼层/高楼层）
+         */
+        get: operations["get_floor_distribution_api_v1_reports_market_floor_distribution_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/business-districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 商圈列表
+         * @description 返回按商圈聚合的成交/在售指标行
+         */
+        get: operations["get_business_districts_api_v1_reports_market_business_districts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/dictionaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 报表字典
+         * @description 返回报表专用动态字典（来源/户型/楼层/最近更新）
+         */
+        get: operations["get_dictionaries_api_v1_reports_market_dictionaries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/market/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 多商圈对比分析
+         * @description 返回多商圈（2-5 个）对比汇总表、成交量趋势、价格趋势、楼层结构与户型结构
+         */
+        get: operations["get_compare_api_v1_reports_market_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/communities/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 小区明细列表
+         * @description 返回指定商圈下达到最低成交数的小区行
+         */
+        get: operations["list_communities_api_v1_reports_communities__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/communities/{community_id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 小区成交分析
+         * @description 返回小区成交分析聚合数据（KPI+趋势+价格分布+同商圈对比）
+         */
+        get: operations["get_community_analysis_api_v1_reports_communities__community_id__analysis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3093,6 +3293,73 @@ export interface components {
         Body_upload_file_api_v1_public_files_upload_post: {
             /** File */
             file: string;
+        };
+        /**
+         * BusinessDistrictListResponse
+         * @description 商圈列表响应.
+         */
+        BusinessDistrictListResponse: {
+            /**
+             * Items
+             * @description 商圈行列表
+             */
+            items: components["schemas"]["BusinessDistrictRow"][];
+            /**
+             * Total
+             * @description 商圈总数
+             */
+            total: number;
+        };
+        /**
+         * BusinessDistrictRow
+         * @description 商圈列表行.
+         */
+        BusinessDistrictRow: {
+            /**
+             * Business Circle
+             * @description 商圈名
+             */
+            business_circle: string;
+            /**
+             * District
+             * @description 主要行政区（众数）
+             */
+            district?: string | null;
+            /**
+             * Sold Count
+             * @description 成交套数
+             */
+            sold_count: number;
+            /**
+             * Avg Price Wan
+             * @description 平均总价(万)
+             */
+            avg_price_wan?: number | null;
+            /**
+             * Avg Unit Price
+             * @description 平均单价(元/㎡)
+             */
+            avg_unit_price?: number | null;
+            /**
+             * On Sale Count
+             * @description 在售套数
+             */
+            on_sale_count: number;
+            /**
+             * Absorption Months
+             * @description 去化周期(月)；分母为 0 时为 null
+             */
+            absorption_months?: number | null;
+            /**
+             * Price Qoq
+             * @description 价格环比(%)
+             */
+            price_qoq?: number | null;
+            /**
+             * Volume Qoq
+             * @description 成交量环比(%)
+             */
+            volume_qoq?: number | null;
         };
         /**
          * BusinessForm
@@ -3295,14 +3562,35 @@ export interface components {
             business_circle?: string | null;
         };
         /**
-         * CommunityListResponse
-         * @description 小区列表响应.
+         * CommunityDetailResponse
+         * @description 小区成交分析详情响应.
          */
-        CommunityListResponse: {
-            /** Total */
-            total: number;
-            /** Items */
-            items: components["schemas"]["CommunityResponse"][];
+        CommunityDetailResponse: {
+            /**
+             * Community
+             * @description 小区基本信息（community_id/community_name/business_circle/district）
+             */
+            community: {
+                [key: string]: unknown;
+            };
+            /** @description KPI 卡片聚合 */
+            kpi: components["schemas"]["KpiData"];
+            /**
+             * Trend
+             * @description 成交趋势
+             */
+            trend: components["schemas"]["TrendDataPoint"][];
+            /** @description 价格分布 */
+            price_distribution: components["schemas"]["PriceDistributionResponse"];
+            /** @description 户型分布 */
+            rooms_distribution: components["schemas"]["DistributionResponse"];
+            /** @description 楼层分布 */
+            floor_distribution: components["schemas"]["DistributionResponse"];
+            /**
+             * Main Layout
+             * @description 主力户型（近 12 月成交占比最高）
+             */
+            main_layout?: string | null;
         };
         /**
          * CommunityMarketStatsResponse
@@ -3411,6 +3699,67 @@ export interface components {
             aliases?: components["schemas"]["CommunityAliasResponse"][];
         };
         /**
+         * CommunityRow
+         * @description 小区行.
+         */
+        CommunityRow: {
+            /**
+             * Community Id
+             * @description 小区ID
+             */
+            community_id: string;
+            /**
+             * Community Name
+             * @description 小区名称
+             */
+            community_name: string;
+            /**
+             * Business Circle
+             * @description 所属商圈
+             */
+            business_circle: string;
+            /**
+             * District
+             * @description 所属行政区
+             */
+            district?: string | null;
+            /**
+             * Sold Count
+             * @description 成交套数
+             */
+            sold_count: number;
+            /**
+             * Avg Price Wan
+             * @description 平均总价(万)
+             */
+            avg_price_wan?: number | null;
+            /**
+             * Avg Unit Price
+             * @description 平均单价(元/㎡)
+             */
+            avg_unit_price?: number | null;
+            /**
+             * Main Layout
+             * @description 主力户型（如 '3室2厅'）
+             */
+            main_layout?: string | null;
+            /**
+             * Main Floor
+             * @description 主力楼层（如 '中楼层'）
+             */
+            main_floor?: string | null;
+            /**
+             * Avg Area
+             * @description 平均面积(㎡)
+             */
+            avg_area?: number | null;
+            /**
+             * Price Qoq
+             * @description 价格环比(%)
+             */
+            price_qoq?: number | null;
+        };
+        /**
          * CommunitySearchResponse
          * @description 小区搜索响应模型 - 精简字段用于搜索建议.
          */
@@ -3463,6 +3812,131 @@ export interface components {
             is_active?: boolean | null;
         };
         /**
+         * ComparisonData
+         * @description 多商圈对比数据.
+         */
+        ComparisonData: {
+            /**
+             * Business Circles
+             * @description 对比商圈名列表
+             */
+            business_circles: string[];
+            /**
+             * Summary
+             * @description 汇总行列表（7 行指标）
+             */
+            summary: components["schemas"]["ComparisonSummaryRow"][];
+            /**
+             * Volume Trend
+             * @description 成交量趋势；键为商圈名
+             */
+            volume_trend: components["schemas"]["ComparisonTrendPoint"][];
+            /**
+             * Price Trend
+             * @description 均价趋势；键为商圈名
+             */
+            price_trend: components["schemas"]["ComparisonTrendPoint"][];
+            /**
+             * Floor Structure
+             * @description 楼层结构列表
+             */
+            floor_structure: components["schemas"]["ComparisonFloorStructure"][];
+            /**
+             * Room Structure
+             * @description 户型结构列表
+             */
+            room_structure: components["schemas"]["ComparisonRoomStructure"][];
+        };
+        /**
+         * ComparisonFloorStructure
+         * @description 对比楼层结构（成交套数）.
+         */
+        ComparisonFloorStructure: {
+            /**
+             * Business Circle
+             * @description 商圈名
+             */
+            business_circle: string;
+            /**
+             * Low
+             * @description 低楼层成交套数
+             */
+            low: number;
+            /**
+             * Mid
+             * @description 中楼层成交套数
+             */
+            mid: number;
+            /**
+             * High
+             * @description 高楼层成交套数
+             */
+            high: number;
+        };
+        /**
+         * ComparisonRoomStructure
+         * @description 对比户型结构（成交套数）.
+         */
+        ComparisonRoomStructure: {
+            /**
+             * Business Circle
+             * @description 商圈名
+             */
+            business_circle: string;
+            /**
+             * R1
+             * @description 1室成交套数
+             */
+            r1: number;
+            /**
+             * R2
+             * @description 2室成交套数
+             */
+            r2: number;
+            /**
+             * R3
+             * @description 3室成交套数
+             */
+            r3: number;
+            /**
+             * R4Plus
+             * @description 4室及以上成交套数
+             */
+            r4plus: number;
+        };
+        /**
+         * ComparisonSummaryRow
+         * @description 对比汇总行：行=指标，列=商圈（与 business_circles 对齐）.
+         */
+        ComparisonSummaryRow: {
+            /**
+             * Metric
+             * @description 指标名称
+             */
+            metric: string;
+            /**
+             * Values
+             * @description 各商圈对应值；与 business_circles 对齐
+             */
+            values: (number | null)[];
+        };
+        /**
+         * ComparisonTrendPoint
+         * @description 多商圈对比趋势点：周期 + 各商圈值.
+         *
+         *     除 period 外，其他键为商圈名，值为对应数值或 null.
+         *     使用 extra='allow' 接收动态商圈键.
+         */
+        ComparisonTrendPoint: {
+            /**
+             * Period
+             * @description 周期起始日期 YYYY-MM-DD
+             */
+            period: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * CompetitorResponse
          * @description 竞品响应.
          */
@@ -3502,6 +3976,48 @@ export interface components {
             type: string;
             /** Items */
             items: string[];
+        };
+        /**
+         * DistributionBucket
+         * @description 通用分布桶 (户型/楼层等).
+         */
+        DistributionBucket: {
+            /**
+             * Label
+             * @description 桶标签 (如 '1室' / '4室+' / '低楼层')
+             */
+            label: string;
+            /**
+             * Count
+             * @description 桶内成交套数
+             */
+            count: number;
+            /**
+             * Avg Area
+             * @description 桶内平均面积(㎡)
+             */
+            avg_area?: number | null;
+            /**
+             * Avg Unit Price
+             * @description 桶内平均单价(元/㎡)
+             */
+            avg_unit_price?: number | null;
+        };
+        /**
+         * DistributionResponse
+         * @description 通用分布响应 (户型/楼层等).
+         */
+        DistributionResponse: {
+            /**
+             * Buckets
+             * @description 分布桶列表
+             */
+            buckets: components["schemas"]["DistributionBucket"][];
+            /**
+             * Total
+             * @description 成交样本总数
+             */
+            total: number;
         };
         /**
          * DocumentCreate
@@ -3596,6 +4112,25 @@ export interface components {
              * @description 归档日期 YYYY-MM-DD
              */
             archive_date?: string | null;
+        };
+        /**
+         * ErrorResponse
+         * @description 报表模块错误响应模型.
+         *
+         *     遵循 AGENTS.md §2：错误响应统一 {"code":≠0, "message":"..."} 格式.
+         *     code 取 HTTP 状态码.
+         */
+        ErrorResponse: {
+            /**
+             * Code
+             * @description 错误码，等同 HTTP 状态码，非零
+             */
+            code: number;
+            /**
+             * Message
+             * @description 错误信息
+             */
+            message: string;
         };
         /**
          * ExchangeTokenRequest
@@ -4320,6 +4855,38 @@ export interface components {
              * @description 子投资人列表(整体替换)
              */
             sub_investors?: components["schemas"]["SubInvestorCreate"][] | null;
+        };
+        /**
+         * KpiCard
+         * @description 单张 KPI 卡片数据.
+         */
+        KpiCard: {
+            /**
+             * Value
+             * @description 当前值（套数或均价）
+             */
+            value?: number | null;
+            /**
+             * Qoq
+             * @description 环比百分比；样本不足或上期为 0 时为 null
+             */
+            qoq?: number | null;
+            /** @description 环比方向 */
+            qoq_direction: components["schemas"]["QoqDirection"];
+        };
+        /**
+         * KpiData
+         * @description 报表页 4 张 KPI 卡片聚合.
+         */
+        KpiData: {
+            /** @description 成交套数卡片 */
+            sold_count: components["schemas"]["KpiCard"];
+            /** @description 平均总价(万)卡片 */
+            avg_price_wan: components["schemas"]["KpiCard"];
+            /** @description 平均单价(元/㎡)卡片 */
+            avg_unit_price: components["schemas"]["KpiCard"];
+            /** @description 在售套数卡片 */
+            on_sale_count: components["schemas"]["KpiCard"];
         };
         /**
          * L3ProjectBriefResponse
@@ -6054,6 +6621,9 @@ export interface components {
         /**
          * PermissionCreate
          * @description 权限创建模型.
+         *
+         *     注意：is_system 不暴露给 API 调用方，由服务层强制设为 False，
+         *     防止通过 API 注入不可删除的系统权限点。
          */
         PermissionCreate: {
             /**
@@ -6088,12 +6658,6 @@ export interface components {
              * @description 权限描述
              */
             description?: string | null;
-            /**
-             * Is System
-             * @description 是否系统内置权限点
-             * @default false
-             */
-            is_system: boolean;
         };
         /**
          * PermissionListResponse
@@ -6247,6 +6811,58 @@ export interface components {
          * @enum {string}
          */
         PhotoCategory: "marketing" | "renovation";
+        /**
+         * PriceBucket
+         * @description 价格分布桶.
+         */
+        PriceBucket: {
+            /**
+             * Label
+             * @description 桶标签（如 '150-200万' 或 '<150' 或 '350+'）
+             */
+            label: string;
+            /**
+             * Lower
+             * @description 下限(万元)；最低桶为 0
+             */
+            lower: number;
+            /**
+             * Upper
+             * @description 上限(万元)；最高桶为 null（开放区间）
+             */
+            upper?: number | null;
+            /**
+             * Count
+             * @description 桶内成交套数
+             */
+            count: number;
+            /**
+             * Avg Area
+             * @description 桶内平均面积(㎡)
+             */
+            avg_area?: number | null;
+            /**
+             * Avg Unit Price
+             * @description 桶内平均单价(元/㎡)
+             */
+            avg_unit_price?: number | null;
+        };
+        /**
+         * PriceDistributionResponse
+         * @description 价格分布响应.
+         */
+        PriceDistributionResponse: {
+            /**
+             * Buckets
+             * @description 价格桶列表
+             */
+            buckets: components["schemas"]["PriceBucket"][];
+            /**
+             * Total
+             * @description 成交样本总数
+             */
+            total: number;
+        };
         /**
          * PriceHistoryCreate
          * @description 创建价格历史请求.
@@ -8243,6 +8859,18 @@ export interface components {
             }[];
         };
         /**
+         * QoqDirection
+         * @description 环比方向.
+         * @enum {string}
+         */
+        QoqDirection: "up" | "down" | "flat" | "unknown";
+        /**
+         * RangeOption
+         * @description 时间范围选项：4w/8w=周；6m/12m/24m=月.
+         * @enum {string}
+         */
+        RangeOption: "4w" | "8w" | "6m" | "12m" | "24m";
+        /**
          * ReceivablePayableItem
          * @description 应收应付参考表单项.
          */
@@ -9067,6 +9695,12 @@ export interface components {
             size: number;
         };
         /**
+         * SortOrder
+         * @description 排序方向.
+         * @enum {string}
+         */
+        SortOrder: "asc" | "desc";
+        /**
          * SubInvestorCreate
          * @description 创建子投资人请求（属于某母投资方，内部占比）.
          */
@@ -9129,6 +9763,57 @@ export interface components {
             /** Volume */
             volume: number;
         };
+        /**
+         * TrendDataPoint
+         * @description 趋势数据点（周/月粒度）.
+         */
+        TrendDataPoint: {
+            /**
+             * Period
+             * @description 周期起始日期 YYYY-MM-DD
+             */
+            period: string;
+            /**
+             * Volume
+             * @description 成交套数
+             */
+            volume: number;
+            /**
+             * Avg Price Wan
+             * @description 平均总价(万)
+             */
+            avg_price_wan?: number | null;
+            /**
+             * Avg Unit Price
+             * @description 平均单价(元/㎡)
+             */
+            avg_unit_price?: number | null;
+            /**
+             * Volume Qoq
+             * @description 量环比(%)；首期或上期样本不足时为 null
+             */
+            volume_qoq?: number | null;
+            /**
+             * Price Qoq
+             * @description 价环比(%)；首期或上期样本不足时为 null
+             */
+            price_qoq?: number | null;
+            /**
+             * Dim Breakdown
+             * @description 维度下钻（户型/楼层/价格段）；overall 维度无此字段
+             */
+            dim_breakdown?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            } | null;
+        };
+        /**
+         * TrendDimension
+         * @description 趋势维度.
+         * @enum {string}
+         */
+        TrendDimension: "overall" | "rooms" | "floor" | "price";
         /**
          * UnsettleRequest
          * @description 反结算请求（settled → unsettled）.
@@ -9471,6 +10156,32 @@ export interface components {
              */
             code: string;
         };
+        /**
+         * CommunityListResponse
+         * @description 小区列表响应.
+         */
+        schemas__community__CommunityListResponse: {
+            /** Total */
+            total: number;
+            /** Items */
+            items: components["schemas"]["CommunityResponse"][];
+        };
+        /**
+         * CommunityListResponse
+         * @description 小区明细列表响应.
+         */
+        schemas__reports__communities__CommunityListResponse: {
+            /**
+             * Items
+             * @description 小区行列表
+             */
+            items: components["schemas"]["CommunityRow"][];
+            /**
+             * Total
+             * @description 小区总数
+             */
+            total: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -9734,7 +10445,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CommunityListResponse"];
+                    "application/json": components["schemas"]["schemas__community__CommunityListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -15258,6 +15969,678 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicCommunitySearchItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kpi_api_v1_reports_market_kpi_get: {
+        parameters: {
+            query?: {
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KpiData"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trend_api_v1_reports_market_trend_get: {
+        parameters: {
+            query?: {
+                /** @description 趋势维度: overall(综合) / rooms(户型) / floor(楼层) / price(价格段) */
+                trend_dim?: components["schemas"]["TrendDimension"];
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendDataPoint"][];
+                };
+            };
+            /** @description 不支持的 trend_dim */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_price_distribution_api_v1_reports_market_price_distribution_get: {
+        parameters: {
+            query?: {
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceDistributionResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rooms_distribution_api_v1_reports_market_rooms_distribution_get: {
+        parameters: {
+            query?: {
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_floor_distribution_api_v1_reports_market_floor_distribution_get: {
+        parameters: {
+            query?: {
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_business_districts_api_v1_reports_market_business_districts_get: {
+        parameters: {
+            query?: {
+                /** @description 排序字段 */
+                sort_by?: "sold_count" | "avg_price_wan" | "avg_unit_price" | "on_sale_count" | "absorption_months" | "price_qoq" | "volume_qoq";
+                /** @description 排序方向: asc / desc */
+                sort_order?: components["schemas"]["SortOrder"];
+                /** @description 页码, 从 1 开始 */
+                page?: number;
+                /** @description 每页数量, 1-100 */
+                page_size?: number;
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessDistrictListResponse"];
+                };
+            };
+            /** @description 不支持的排序参数 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dictionaries_api_v1_reports_market_dictionaries_get: {
+        parameters: {
+            query: {
+                /** @description 字典类型: data_source / rooms / floor_level / last_updated */
+                dict_type: "data_source" | "rooms" | "floor_level" | "last_updated";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DictionaryResponse"];
+                };
+            };
+            /** @description 不支持的 dict_type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_compare_api_v1_reports_market_compare_get: {
+        parameters: {
+            query: {
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+                /** @description 逗号分隔的商圈名列表 */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonData"];
+                };
+            };
+            /** @description ids 数量非法 (需 2-5 个) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_communities_api_v1_reports_communities__get: {
+        parameters: {
+            query: {
+                /** @description 商圈名称列表 (必填, 逗号分隔) */
+                business_circles: string;
+                /** @description 最低成交套数阈值, 默认 3 */
+                min_sold_count?: number;
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["schemas__reports__communities__CommunityListResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 缺少必填参数 business_circles */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_community_analysis_api_v1_reports_communities__community_id__analysis_get: {
+        parameters: {
+            query?: {
+                /** @description 趋势维度: overall(综合) / rooms(户型) / floor(楼层) / price(价格段) */
+                trend_dim?: components["schemas"]["TrendDimension"];
+                /** @description 时间范围：4w/8w=周；6m/12m/24m=月 */
+                range?: components["schemas"]["RangeOption"];
+                /** @description 逗号分隔的数据来源（链家/贝壳/网签） */
+                sources?: string | null;
+                /** @description 逗号分隔的商圈名称列表（多关键词模糊匹配） */
+                business_circles?: string | null;
+                /** @description 小区名称模糊搜索 */
+                community_name?: string | null;
+                /** @description 房源状态：在售/成交 */
+                status?: string | null;
+                /** @description 逗号分隔的户型（如 1,2,4plus） */
+                rooms?: string | null;
+                /** @description 逗号分隔的楼层级别（低/中/高） */
+                floor_levels?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityDetailResponse"];
+                };
+            };
+            /** @description 未认证 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 权限不足 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 小区不存在或已停用 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */

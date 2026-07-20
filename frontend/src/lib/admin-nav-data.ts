@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Building2,
   FolderKanban,
   LayoutDashboard,
@@ -52,6 +53,12 @@ export const navMain: NavItem[] = [
       { title: "批量上传", url: "/admin/properties/upload", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_UPLOAD },
       { title: "数据治理", url: "/admin/properties/governance", roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR], permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
     ],
+  },
+  {
+    title: "数据报表",
+    url: "/admin/reports/market",
+    icon: BarChart3,
+    permission: PERMISSION_CODES.PROPERTY_READ,
   },
   {
     title: "线索中心",

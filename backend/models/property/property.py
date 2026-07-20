@@ -133,6 +133,10 @@ class PropertyCurrent(Base):
         Index("idx_property_type", "property_type"),
         # 朝向查询索引
         Index("idx_orientation", "orientation"),
+        # 报表模块核心过滤索引（is_active + status + sold_date 范围扫描）
+        Index("idx_reports_core", "is_active", "status", "sold_date"),
+        # 报表模块小区维度聚合索引
+        Index("idx_community_status_date", "community_id", "status", "sold_date"),
     )
 
     def __repr__(self) -> str:
