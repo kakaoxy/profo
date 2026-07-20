@@ -35,9 +35,9 @@ _ROOMS_PLUS_SENTINEL = "4plus"
 # 4室+ 起始阈值
 _ROOMS_PLUS_THRESHOLD = 4
 
-# 商圈"未分类"标签 (与 services.reports.aggregations._UNCATEGORIZED 保持一致)
-# business_circle 为 NULL/空串时, 显示层 _build_bc_expr() 归一化为 "未分类",
-# 过滤层必须能反向匹配 NULL/空串, 否则用户点击 "未分类" 行跳转后页面为空
+# 商圈"未分类"标签 (business_circle 为 NULL/空串时, 显示层 _build_bc_expr() 归一化为 "未分类",
+# 过滤层必须能反向匹配 NULL/空串, 否则用户点击 "未分类" 行跳转后页面为空)
+# 注意: aggregations.py 复用此常量, 修改时需同步显示层归一化逻辑
 _UNCATEGORIZED = "未分类"
 
 
