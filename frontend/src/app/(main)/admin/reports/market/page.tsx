@@ -277,20 +277,23 @@ export default async function MarketReportsPage({
           total={priceDistData.total}
           viewKey="price_view"
         />
-        <DistributionChart
-          title="户型分布图"
-          bucketLabelHeader="户型"
-          buckets={roomsDistData.buckets}
-          total={roomsDistData.total}
-          viewKey="rooms_view"
-        />
-        <DistributionChart
-          title="楼层分布图"
-          bucketLabelHeader="楼层"
-          buckets={floorDistData.buckets}
-          total={floorDistData.total}
-          viewKey="floor_view"
-        />
+        {/* 桌面端户型/楼层分布图并排（桶数少，全宽过稀疏）；移动端单列堆叠 */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <DistributionChart
+            title="户型分布图"
+            bucketLabelHeader="户型"
+            buckets={roomsDistData.buckets}
+            total={roomsDistData.total}
+            viewKey="rooms_view"
+          />
+          <DistributionChart
+            title="楼层分布图"
+            bucketLabelHeader="楼层"
+            buckets={floorDistData.buckets}
+            total={floorDistData.total}
+            viewKey="floor_view"
+          />
+        </div>
         <BusinessDistrictTable
           initialItems={bdRowsData.items}
           initialTotal={bdRowsData.total}

@@ -190,9 +190,9 @@ export function TopFilterBar({
         {!hideLocationSelector && (
           <div className="flex flex-wrap items-center gap-4">
             {/* 商圈名称 */}
-            <div className="space-y-2">
+            <div className="flex items-center gap-2">
               <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                商圈名称
+                商圈
               </Label>
               <div className="relative">
                 <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
@@ -207,9 +207,9 @@ export function TopFilterBar({
             </div>
 
             {/* 小区名称 */}
-            <div className="space-y-2">
+            <div className="flex items-center gap-2">
               <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                小区名称
+                小区
               </Label>
               <div className="relative">
                 <Search className="absolute left-2 top-2 h-4 w-4 text-muted-foreground" />
