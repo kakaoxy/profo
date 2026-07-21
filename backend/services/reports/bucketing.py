@@ -1,7 +1,7 @@
 """价格分布分段算法.
 
-基于 PostgreSQL PERCENTILE_CONT 计算 P10/P25/P50/P75/P90 分位数，
-动态生成价格区间桶；样本量 < 30 时回退到固定分段.
+基于 PostgreSQL PERCENTILE_CONT(0.05/0.95) 计算数据范围,
+使用等宽候选步长生成 4-8 个等宽内部分段; 样本量 < 30 时回退到固定分段.
 
 参考 spec §8.3 / §16.4.
 """
@@ -29,29 +29,30 @@ FALLBACK_PRICE_BUCKETS: list[tuple[int | None, int | None, str]] = [
     (350, None, "350万+"),
 ]
 
-# 动态分段触发阈值：样本量 >= 此值才使用 PERCENTILE_CONT
+# 动态分段触发阈值：样本量 >= 此值才使用 P5/P95 等宽分段
 _MIN_SAMPLE_FOR_PERCENTILE = 30
+# 等宽分段触发阈值别名 - 保留旧名以减小测试改动
+_MIN_SAMPLE_FOR_EQUAL_WIDTH = _MIN_SAMPLE_FOR_PERCENTILE
 
-# 切点取整单位（万）：切点向上取整到此值的整数倍
+# P5/P95 分位数用于确定数据范围（裁剪两端各 5% 离群点，避免离群点拉伸区间）
+_P5_PERCENTILE = 0.05
+_P95_PERCENTILE = 0.95
+
+# 等宽候选步长（万），按升序遍历选取使分段数 <= _MAX_INNER_SEGMENTS 的最小值
+_EQUAL_WIDTH_CANDIDATES: tuple[int, ...] = (10, 20, 25, 50, 100, 200, 250, 500)
+
+# 内部分段数约束
+_MIN_INNER_SEGMENTS = 4
+_MAX_INNER_SEGMENTS = 8
+
+# 切点取整单位（万）：下沿向下取整、上沿向上取整到此值的整数倍
 _ROUND_UNIT = 10
-
-# 相邻切点最小间距（万）：低于此值合并
-_MIN_SPACING = 10
-
-# 最少段数（含首末段）
-_MIN_SEGMENTS = 4
-
-# 最多段数（含首末段）
-_MAX_SEGMENTS = 8
 
 # 单位换算：万 -> 元
 _WAN_TO_YUAN = 10000
 
 # 户型合并阈值：>= 4 室合并为 "4室+"
 _ROOMS_PLUS_THRESHOLD = 4
-
-# 分位数键名（与 SQL label 对齐）
-_PERCENTILE_KEYS: tuple[str, ...] = ("p10", "p25", "p50", "p75", "p90")
 
 
 def compute_price_buckets(
@@ -60,13 +61,14 @@ def compute_price_buckets(
     community_id: str | None = None,
     reference_date: datetime | None = None,
 ) -> list[PriceBucket]:
-    """使用 PostgreSQL PERCENTILE_CONT 计算 P10/P25/P50/P75/P90 分位数.
+    """使用 PostgreSQL PERCENTILE_CONT(0.05/0.95) 计算数据范围, 生成等宽分段.
 
-    - 切点向上取整到 10 万的整数倍
-    - 首段下沿 = 0，末段上沿 = None（开放区间）
-    - 分位数差异 < 10 万时合并相邻段
-    - 最少 4 段、最多 8 段
-    - 返回每个 bucket 的 count / avg_area / avg_unit_price
+    - 样本量 >= 30: P5 向下取整到 10 万倍数作为下沿, P95 向上取整到 10 万倍数作为上沿
+    - 从候选步长 [10,20,25,50,100,200,250,500] 中选取使分段数 <= 8 的最小值
+    - 生成 4-8 个等宽内部分段
+    - 若有数据 < 下沿, 追加首部边缘桶 "<{下沿}万"
+    - 若有数据 >= 上沿, 追加尾部边缘桶 "{上沿}万+"
+    - 样本量 < 30: 回退到固定分段 (FALLBACK_PRICE_BUCKETS)
 
     Args:
         db: SQLAlchemy 同步 Session
@@ -79,14 +81,13 @@ def compute_price_buckets(
         list[PriceBucket]: 价格分段列表；样本量 < 30 时返回固定分段
 
     """
-    # 1. 一次查询获取样本量与 5 个分位数
+    # 1. 单次查询: count + P5 + P95 + min + max (用于判断是否需要边缘桶)
     base_query = select(
         func.count().label("total"),
-        func.percentile_cont(0.1).within_group(PropertyCurrent.sold_price_wan.asc()).label("p10"),
-        func.percentile_cont(0.25).within_group(PropertyCurrent.sold_price_wan.asc()).label("p25"),
-        func.percentile_cont(0.5).within_group(PropertyCurrent.sold_price_wan.asc()).label("p50"),
-        func.percentile_cont(0.75).within_group(PropertyCurrent.sold_price_wan.asc()).label("p75"),
-        func.percentile_cont(0.9).within_group(PropertyCurrent.sold_price_wan.asc()).label("p90"),
+        func.percentile_cont(_P5_PERCENTILE).within_group(PropertyCurrent.sold_price_wan.asc()).label("p5"),
+        func.percentile_cont(_P95_PERCENTILE).within_group(PropertyCurrent.sold_price_wan.asc()).label("p95"),
+        func.min(PropertyCurrent.sold_price_wan).label("min_price"),
+        func.max(PropertyCurrent.sold_price_wan).label("max_price"),
     ).where(PropertyCurrent.sold_price_wan.isnot(None))
     base_query = apply_reports_filter(base_query, filter, include_time_window=False)
     # 手动追加 sold_date 时间窗口（基于 reference_date，与 KPI/Trend 对齐）
@@ -101,90 +102,95 @@ def compute_price_buckets(
     row = db.execute(base_query).one()
     total = int(row.total or 0)
 
-    # 2. 样本量 < 30：用 SQL 查询固定分段统计
+    # 2. 样本量 < 30: 回退兜底分段
     if total < _MIN_SAMPLE_FOR_PERCENTILE:
         return _query_buckets_by_bounds(db, filter, FALLBACK_PRICE_BUCKETS, community_id, reference_date)
 
-    # 3. 构建动态切点
-    percentiles: dict[str, float | None] = {}
-    for key in _PERCENTILE_KEYS:
-        value = getattr(row, key)
-        percentiles[key] = float(value) if value is not None else None
+    # 3. P5/P95 可能为 None (理论上不会, 防御性处理)
+    p5 = float(row.p5) if row.p5 is not None else float(row.min_price or 0)
+    p95 = float(row.p95) if row.p95 is not None else float(row.max_price or 0)
 
-    bounds = _build_bucket_bounds(percentiles)
+    # 4. 构建等宽边界
+    lower_bound = math.floor(p5 / _ROUND_UNIT) * _ROUND_UNIT
+    has_below = row.min_price is not None and float(row.min_price) < lower_bound
+    # has_above 判断需要在确定 selected_upper 后再做, 见 _build_equal_width_bounds 内部
+    bounds = _build_equal_width_bounds(p5, p95, has_below, row.max_price)
 
-    # 4. 切点不足或无法构建：回退兜底分段
     if bounds is None:
         return _query_buckets_by_bounds(db, filter, FALLBACK_PRICE_BUCKETS, community_id, reference_date)
 
-    # 5. 查询动态分段统计
+    # 5. 查询分段统计
     return _query_buckets_by_bounds(db, filter, bounds, community_id, reference_date)
 
 
-def _build_bucket_bounds(
-    percentiles: dict[str, float | None],
+def _build_equal_width_bounds(
+    p5: float,
+    p95: float,
+    has_below: bool,
+    max_price: float | None,
 ) -> list[tuple[int | None, int | None, str]] | None:
-    """从分位数构建 bucket 边界列表.
+    """从 P5/P95 构建等宽分段边界.
+
+    - 下沿: P5 向下取整到 10 万整数倍
+    - 上沿: P95 向上取整到 10 万整数倍, 并对齐到 下沿 + N * step
+    - 候选步长按 (10, 20, 25, 50, 100, 200, 250, 500) 升序遍历,
+      选取使分段数在 [4, 8] 区间的最小值
+    - 若所有候选步长分段数都 > 8, 使用最大候选步长并裁剪到 8 段
+    - 首部边缘桶: 当 has_below=True 时追加 "<{下沿}万"
+    - 尾部边缘桶: 当 max_price >= selected_upper 时追加 "{上沿}万+"
 
     Args:
-        percentiles: 分位数字典，键为 p10/p25/p50/p75/p90
+        p5: 5% 分位数 (万)
+        p95: 95% 分位数 (万)
+        has_below: 是否存在数据 < 下沿 (P5 向下取整)
+        max_price: 数据中的最大价格 (万); None 时无法判断尾部边缘桶
 
     Returns:
-        list of (lower, upper, label) 元组；无法构建足够段数时返回 None
+        list of (lower, upper, label) 元组; 数据范围过小无法分段时返回 None
 
     """
-    # 提取并取整切点（向上取整到 10 万的整数倍）
-    raw_cutpoints: list[int] = []
-    for key in _PERCENTILE_KEYS:
-        p = percentiles.get(key)
-        if p is None:
-            continue
-        rounded = math.ceil(p / _ROUND_UNIT) * _ROUND_UNIT
-        if rounded > 0:
-            raw_cutpoints.append(rounded)
+    lower_bound = math.floor(p5 / _ROUND_UNIT) * _ROUND_UNIT
+    raw_upper = math.ceil(p95 / _ROUND_UNIT) * _ROUND_UNIT
 
-    if not raw_cutpoints:
-        return None
+    if raw_upper <= lower_bound:
+        return None  # 数据范围过小, 无法分段
 
-    # 去重（保持顺序）
-    unique_cutpoints: list[int] = []
-    seen: set[int] = set()
-    for cp in raw_cutpoints:
-        if cp not in seen:
-            seen.add(cp)
-            unique_cutpoints.append(cp)
+    selected_step: int | None = None
+    n_segments = 0
+    selected_upper = raw_upper
 
-    # 合并相邻差异 < 10 万的切点，保证至少 3 个切点（4 段）
-    min_cutpoints = _MIN_SEGMENTS - 1
-    i = 0
-    while i < len(unique_cutpoints) - 1:
-        if len(unique_cutpoints) <= min_cutpoints:
+    for step in _EQUAL_WIDTH_CANDIDATES:
+        n = math.ceil((raw_upper - lower_bound) / step)
+        if _MIN_INNER_SEGMENTS <= n <= _MAX_INNER_SEGMENTS:
+            selected_step = step
+            n_segments = n
+            selected_upper = lower_bound + n * step
             break
-        if unique_cutpoints[i + 1] - unique_cutpoints[i] < _MIN_SPACING:
-            unique_cutpoints.pop(i + 1)
-        else:
-            i += 1
 
-    # 仍不足 3 个切点：无法构建 4 段
-    if len(unique_cutpoints) < min_cutpoints:
-        return None
+    if selected_step is None:
+        # 所有候选步长都 > 8 段, 使用最大候选步长并裁剪到 8 段
+        selected_step = _EQUAL_WIDTH_CANDIDATES[-1]
+        n_segments = _MAX_INNER_SEGMENTS
+        selected_upper = lower_bound + n_segments * selected_step
 
-    # 限制最多 8 段（理论上不会触发，初始最多 6 段）
-    if len(unique_cutpoints) + 1 > _MAX_SEGMENTS:
-        unique_cutpoints = unique_cutpoints[: _MAX_SEGMENTS - 1]
+    # 判断是否存在尾部边缘桶: max_price 不小于 selected_upper
+    has_above = max_price is not None and float(max_price) >= selected_upper
 
-    # 构建边界列表
     bounds: list[tuple[int | None, int | None, str]] = []
-    prev_lower: int | None = None
-    for idx, cp in enumerate(unique_cutpoints):
-        lower = 0 if idx == 0 else prev_lower
-        upper = cp
-        label = f"<{upper}万" if idx == 0 else f"{lower}-{upper}万"
-        bounds.append((lower, upper, label))
-        prev_lower = cp
 
-    # 末段（开放区间）
-    bounds.append((prev_lower, None, f"{prev_lower}万+"))
+    # 首部边缘桶
+    if has_below:
+        bounds.append((None, lower_bound, f"<{lower_bound}万"))
+
+    # 内部等宽段
+    for i in range(n_segments):
+        seg_lower = lower_bound + i * selected_step
+        seg_upper = lower_bound + (i + 1) * selected_step
+        bounds.append((seg_lower, seg_upper, f"{seg_lower}-{seg_upper}万"))
+
+    # 尾部边缘桶
+    if has_above:
+        bounds.append((selected_upper, None, f"{selected_upper}万+"))
 
     return bounds
 
