@@ -168,9 +168,19 @@ def _build_equal_width_bounds(
             break
 
     if selected_step is None:
-        # 所有候选步长都 > 8 段, 使用最大候选步长并裁剪到 8 段
-        selected_step = _EQUAL_WIDTH_CANDIDATES[-1]
-        n_segments = _MAX_INNER_SEGMENTS
+        # 无候选步长满足 [4, 8] 区间, 区分两种边界场景:
+        # - 数据范围过小 (所有 step 都给 n < 4): 使用最小步长, 接受 n < 4
+        # - 数据范围过大 (所有 step 都给 n > 8): 使用最大步长, 裁剪到 8 段
+        smallest_step = _EQUAL_WIDTH_CANDIDATES[0]
+        n_smallest = math.ceil((raw_upper - lower_bound) / smallest_step)
+        if n_smallest < _MIN_INNER_SEGMENTS:
+            # 数据范围过小: 使用最小步长, 接受不足 4 段 (优于回退到 500 万宽的荒谬分段)
+            selected_step = smallest_step
+            n_segments = n_smallest
+        else:
+            # 数据范围过大: 使用最大候选步长并裁剪到 8 段
+            selected_step = _EQUAL_WIDTH_CANDIDATES[-1]
+            n_segments = _MAX_INNER_SEGMENTS
         selected_upper = lower_bound + n_segments * selected_step
 
     # 判断是否存在尾部边缘桶: max_price 不小于 selected_upper
