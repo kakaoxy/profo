@@ -3,7 +3,7 @@
 实现 7 个聚合函数, 所有聚合在数据库层完成 (SQL 优先):
 - KPI 4 卡片 (sold_count / avg_price_wan / avg_unit_price / on_sale_count)
 - 成交趋势 (overall / rooms / floor / price 维度)
-- 价格分布 (PERCENTILE_CONT 动态分段)
+- 价格分布 (P5/P95 等宽动态分段)
 - 商圈列表 (按 communities.business_circle 聚合)
 - 小区明细列表 (近 12 月成交)
 - 小区成交分析详情 (组合 KPI/Trend/PriceDist/RoomsDist/FloorDist + main_layout)
@@ -40,10 +40,7 @@ from schemas.reports.market import (
     KpiData,
     TrendDataPoint,
 )
-from services.reports.bucketing import (
-    FALLBACK_PRICE_BUCKETS,
-    compute_price_buckets,
-)
+from services.reports.bucketing import compute_price_buckets
 from services.reports.cache import cached_report
 from services.reports.filter_builder import (
     _UNCATEGORIZED,
@@ -72,7 +69,7 @@ _COMMUNITY_LIST_DAYS = 365
 # 商圈去化周期: 近 3 月成交套数 (用于 absorption_months = on_sale_count / (近3月成交/3))
 _ABSORPTION_RECENT_DAYS = 90
 
-# 趋势 dim_breakdown 价格维度使用兜底分段 (与 mock 行为一致, 周期内动态分段成本过高)
+# 趋势 dim_breakdown 价格维度复用 compute_price_buckets 等宽分段, 与分布图标签一致
 _PRICE_TREND_DIM = "price"
 _PRICE_TREND_ROOMS_DIM = "rooms"
 _PRICE_TREND_FLOOR_DIM = "floor"
@@ -456,6 +453,7 @@ def _compute_trend_dim_breakdown(
     now: datetime,
     granularity: Literal["week", "month"],
     community_id: str | None = None,
+    reference_date: datetime | None = None,
 ) -> dict[datetime, dict[str, dict[str, int | float | None]]]:
     """计算趋势维度下钻 (rooms/floor/price).
 
@@ -467,6 +465,7 @@ def _compute_trend_dim_breakdown(
         now: 时间窗口结束
         granularity: 粒度 ('week' / 'month')
         community_id: 可选小区过滤
+        reference_date: 时间窗口终止基准 (用于价格维度调用 compute_price_buckets)
 
     Returns:
         dict[period, dict[dim_key, {volume, avg_unit_price}]]
@@ -533,9 +532,24 @@ def _compute_trend_dim_breakdown(
         return result
 
     if trend_dim == _PRICE_TREND_DIM:
-        # 按价格段分组 (使用 FALLBACK_PRICE_BUCKETS 边界, 与 mock 一致)
+        # 按价格段分组, 复用 compute_price_buckets 的等宽分段边界 (与分布图一致)
+        price_buckets = compute_price_buckets(db, filter, community_id, reference_date=reference_date)
+        # 提取 (lower, upper, label) 列表, 与 _query_buckets_by_bounds 输入格式对齐
+        # PriceBucket.lower 为 int (首部边缘桶为 0), upper 为 int | None (尾部边缘桶为 None)
+        # 通过 label 形态还原为首部边缘桶 (None, upper, label) 格式:
+        #   - label 以 "<" 开头 → 首部边缘桶
+        #   - upper 为 None → 尾部边缘桶
+        trend_bounds: list[tuple[int | None, int | None, str]] = []
+        for b in price_buckets:
+            if b.label.startswith("<"):
+                trend_bounds.append((None, b.upper, b.label))
+            elif b.upper is None:
+                trend_bounds.append((b.lower, None, b.label))
+            else:
+                trend_bounds.append((b.lower, b.upper, b.label))
+
         whens: list[tuple[Any, int]] = []
-        for idx, (lower, upper, _) in enumerate(FALLBACK_PRICE_BUCKETS):
+        for idx, (lower, upper, _) in enumerate(trend_bounds):
             if lower is None:
                 condition = PropertyCurrent.sold_price_wan < upper
             elif upper is None:
@@ -566,7 +580,7 @@ def _compute_trend_dim_breakdown(
         for row in db.execute(query).all():
             if row.bucket_idx is None:
                 continue
-            label = FALLBACK_PRICE_BUCKETS[int(row.bucket_idx)][2]
+            label = trend_bounds[int(row.bucket_idx)][2]
             result[_normalize_period(row.period)][label] = {
                 "volume": int(row.volume or 0),
                 "avg_unit_price": float(row.avg_unit_price) if row.avg_unit_price is not None else None,
@@ -627,7 +641,16 @@ def _get_trend_data_impl(
     # 3. 计算 dim_breakdown (若需要)
     dim_data: dict[datetime, dict[str, dict[str, int | float | None]]] = {}
     if trend_dim != "overall":
-        dim_data = _compute_trend_dim_breakdown(db, base_filter, trend_dim, range_start, now, granularity, community_id)
+        dim_data = _compute_trend_dim_breakdown(
+            db,
+            base_filter,
+            trend_dim,
+            range_start,
+            now,
+            granularity,
+            community_id,
+            reference_date=reference_date,
+        )
 
     # 4. 构造 TrendDataPoint 列表, 计算 volume_qoq / price_qoq
     points: list[TrendDataPoint] = []
@@ -710,7 +733,7 @@ def _get_price_distribution_impl(
 ) -> dict:
     """价格分布实现层, 可选 community_id 过滤.
 
-    调用 bucketing.compute_price_buckets (样本量 >= 30 时 PERCENTILE_CONT 动态分段,
+    调用 bucketing.compute_price_buckets (样本量 >= 30 时 P5/P95 等宽动态分段,
     < 30 时使用兜底固定分段). community_id 直接透传给 compute_price_buckets,
     在 SQL 层追加精确过滤, 避免重复查询.
 
