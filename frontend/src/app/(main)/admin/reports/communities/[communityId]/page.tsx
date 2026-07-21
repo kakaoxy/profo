@@ -283,20 +283,23 @@ export default async function CommunityDetailPage({
           total={detail.price_distribution.total}
           viewKey="price_view"
         />
-        <DistributionChart
-          title="户型分布图"
-          bucketLabelHeader="户型"
-          buckets={detail.rooms_distribution.buckets}
-          total={detail.rooms_distribution.total}
-          viewKey="rooms_view"
-        />
-        <DistributionChart
-          title="楼层分布图"
-          bucketLabelHeader="楼层"
-          buckets={detail.floor_distribution.buckets}
-          total={detail.floor_distribution.total}
-          viewKey="floor_view"
-        />
+        {/* 桌面端户型/楼层分布图并排（桶数少，全宽过稀疏）；移动端单列堆叠 */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <DistributionChart
+            title="户型分布图"
+            bucketLabelHeader="户型"
+            buckets={detail.rooms_distribution.buckets}
+            total={detail.rooms_distribution.total}
+            viewKey="rooms_view"
+          />
+          <DistributionChart
+            title="楼层分布图"
+            bucketLabelHeader="楼层"
+            buckets={detail.floor_distribution.buckets}
+            total={detail.floor_distribution.total}
+            viewKey="floor_view"
+          />
+        </div>
 
         {/* 同商圈小区列表 */}
         {peersList && peersList.items.length > 0 && (
