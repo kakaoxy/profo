@@ -205,7 +205,7 @@ export interface Project {
   cost_assumption_type?: string;
   cost_assumption_other?: string;
   other_agreements?: string;
-  signing_materials?: string[] | { attachments?: AttachmentInfo[] } | null;
+  signing_materials?: string[] | AttachmentInfo[] | { attachments?: AttachmentInfo[] } | null;
 
   notes?: string;
   remarks?: string;
