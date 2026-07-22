@@ -298,6 +298,7 @@ def migrate_uploads_to_oss(engine: Engine) -> None:
             return
     except Exception:  # noqa: BLE001
         logger.debug("Redis 不可用，无法检查迁移标记，继续执行迁移")
+        redis_client = None
 
     logger.info("迁移：开始将本地 uploads 迁移到 OSS（base_url=%s）", oss_base)
 
@@ -320,6 +321,7 @@ def migrate_uploads_to_oss(engine: Engine) -> None:
 
     # 写入完成标记（无 TTL，持久化；Redis 数据丢失时迁移会重新执行，幂等无副作用）
     try:
-        redis_client.set(_MIGRATION_DONE_KEY, "1")
+        if redis_client is not None:
+            redis_client.set(_MIGRATION_DONE_KEY, "1")
     except Exception:  # noqa: BLE001
         logger.warning("迁移：无法写入 Redis 完成标记，下次启动将重新检查")

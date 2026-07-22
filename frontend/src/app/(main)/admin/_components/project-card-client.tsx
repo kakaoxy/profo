@@ -12,6 +12,7 @@ import type { SigningMaterial } from "../projects/_components/project-detail/typ
 import { ProjectStatsSection } from "./project-stats-section";
 import { mapProjectResponseToProject } from "./project-card-utils";
 import { validateSalesRecords } from "./project-card-types";
+import type { Project } from "../projects/types/project";
 import { getStatusLabel, getProjectStatusClassName, DEFAULT_STATUS } from "@/lib/status-colors";
 
 type ProjectResponse = components["schemas"]["ProjectResponse"];
@@ -28,6 +29,10 @@ export function ProjectCardClient({
   marketData,
 }: ProjectCardClientProps) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // 用 state 缓存 projectData，只在打开抽屉时设置。
+  // 避免每次渲染重新计算（新引用）导致 useProjectDetail 的 useEffect([initialProject]) 触发，
+  // 进而 formKey 变化使 ProjectFormDialog 重新挂载、activeTab 重置。
+  const [projectData, setProjectData] = useState<Project | null>(null);
 
   const handleUpdateAttachments = useCallback(
     async (attachments: SigningMaterial[]) => {
@@ -44,17 +49,19 @@ export function ProjectCardClient({
   );
 
   const handleOpen = useCallback(() => {
+    setProjectData(mapProjectResponseToProject(project));
     setIsDetailOpen(true);
-  }, []);
+  }, [project]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
+        setProjectData(mapProjectResponseToProject(project));
         setIsDetailOpen(true);
       }
     },
-    [],
+    [project],
   );
 
   const contractNo = project.contract_no || "N/A";
@@ -66,7 +73,6 @@ export function ProjectCardClient({
   const hasCommunityId = !!project.community_id;
 
   const salesRecords = validateSalesRecords(project.sales_records);
-  const projectData = mapProjectResponseToProject(project);
 
   const status = project.status || DEFAULT_STATUS;
 

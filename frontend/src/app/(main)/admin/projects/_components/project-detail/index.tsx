@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import {
   Sheet,
@@ -24,7 +24,7 @@ import { SoldView } from "./views/sold";
 import { useProjectDetail } from "./hooks/use-project-detail";
 import { useProjectAttachments } from "./hooks/use-project-attachments";
 
-import type { ProjectDetailSheetProps } from "./types";
+import type { ProjectDetailSheetProps, SigningMaterial } from "./types";
 
 export * from "./types";
 export * from "./utils";
@@ -53,6 +53,15 @@ export function ProjectDetailSheet({
     signingMaterials: project?.signing_materials,
     onUpdateAttachments,
   });
+
+  // 上传后刷新 project 数据，避免 override 被 stale signingMaterials 重置
+  const handleUpdateAttachmentsWithRefresh = useCallback(
+    async (updatedAttachments: SigningMaterial[]) => {
+      await onUpdateAttachments?.(updatedAttachments);
+      await refreshProjectData(true);
+    },
+    [onUpdateAttachments, refreshProjectData],
+  );
 
   if (!project) return null;
 
@@ -120,7 +129,7 @@ export function ProjectDetailSheet({
                     project={project}
                     attachments={attachments}
                     handlers={handlers}
-                    onUpdateAttachments={onUpdateAttachments}
+                    onUpdateAttachments={handleUpdateAttachmentsWithRefresh}
                     onUploadAttachment={
                       onUpdateAttachments ? onUpload : undefined
                     }

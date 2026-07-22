@@ -23,14 +23,23 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileUploader as CommonFileUploader, compressImage } from "@/components/common/upload";
 import type { UploadResponse } from "@/components/common/upload";
 import type { Project, AttachmentInfo } from "../../../../../types";
 import {
+  ATTACHMENT_CATEGORIES,
   ALLOWED_EXTENSIONS,
   ALLOWED_MIME_TYPES,
   MAX_FILE_SIZE,
   getFileType,
+  type AttachmentCategory,
 } from "../../../../create-project/attachment-types";
 import {
   getProjectDocumentsAction,
@@ -67,6 +76,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadCategory, setUploadCategory] = useState<AttachmentCategory>("signing_contract");
   const [deleteTarget, setDeleteTarget] = useState<DocumentResponse | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -211,18 +221,21 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
     }
   };
 
-  const handleUploadComplete = (response: UploadResponse) => {
-    const fileType = getFileType(response.filename || "");
+  const handleUploadComplete = (response: UploadResponse, file: File) => {
+    const fileType = getFileType(file.name);
     if (!response.url) return;
     const attachment: AttachmentInfo = {
-      filename: response.filename || "unknown",
+      filename: file.name,
       url: response.url,
-      category: "other",
+      category: uploadCategory,
       fileType: fileType || "other",
       size: response.size || 0,
     };
     onUploadAttachment?.(attachment);
-    loadDocs();
+    // 不调 loadDocs()：上传文件只更新 signing_materials（附件），
+    // 不影响文书签收清单。loadDocs() 会重置 drafts，导致用户未保存的
+    // 归档状态丢失。
+    setIsUploadOpen(false);
   };
 
   if (loading) {
@@ -239,11 +252,11 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
         <p className="text-lg">暂无文书</p>
         {hasBusinessForm ? (
           <div className="flex items-center justify-center gap-2">
-            <Button variant="outline" onClick={handleInitialize}>
+            <Button type="button" variant="outline" onClick={handleInitialize}>
               <RotateCcw className="mr-2 h-4 w-4" />
               初始化默认清单
             </Button>
-            <Button variant="outline" onClick={() => setIsCreateOpen(true)}>
+            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               新增文书
             </Button>
@@ -262,6 +275,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
             />
             <div className="flex justify-end gap-2 pt-1">
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -271,7 +285,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
               >
                 取消
               </Button>
-              <Button size="sm" onClick={handleCreate}>
+              <Button type="button" size="sm" onClick={handleCreate}>
                 新增
               </Button>
             </div>
@@ -285,11 +299,12 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
     <div className="space-y-4">
       {/* 顶部操作栏：新增 + 保存 */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)}>
+        <Button type="button" variant="outline" size="sm" onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />
           新增文书
         </Button>
         <Button
+          type="button"
           size="sm"
           onClick={handleSave}
           disabled={!hasDirty || saving}
@@ -311,6 +326,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
               autoFocus
             />
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => {
@@ -320,7 +336,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
             >
               取消
             </Button>
-            <Button size="sm" onClick={handleCreate}>
+            <Button type="button" size="sm" onClick={handleCreate}>
               新增
             </Button>
           </div>
@@ -400,6 +416,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
               {/* 上传文件（仅归档文书） */}
               {showUpload && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   className="h-8"
@@ -412,6 +429,7 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
 
               {/* 删除 */}
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
@@ -430,6 +448,24 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
           <DialogHeader>
             <DialogTitle>上传文件</DialogTitle>
           </DialogHeader>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground">选择分类：</span>
+            <Select
+              value={uploadCategory}
+              onValueChange={(v) => setUploadCategory(v as AttachmentCategory)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="选择附件分类" />
+              </SelectTrigger>
+              <SelectContent>
+                {ATTACHMENT_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <CommonFileUploader
             options={{
               maxSize: MAX_FILE_SIZE,

@@ -54,5 +54,8 @@ export function mapProjectResponseToProject(project: ProjectResponse): Project {
     channel_manager_id: project.channel_manager_id ?? undefined,
     property_agent_id: project.property_agent_id ?? undefined,
     negotiator_id: project.negotiator_id ?? undefined,
+    // 保留 signing_materials,避免 useProjectDetail 的 useEffect([initialProject])
+    // 在父组件重渲染时用缺失该字段的 initialProject 覆盖 refresh 拉取的完整数据
+    signing_materials: project.signing_materials ?? undefined,
   };
 }
