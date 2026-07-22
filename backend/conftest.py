@@ -13,6 +13,10 @@ import os
 from collections.abc import Generator
 from typing import Any
 
+# 防御性 setdefault：.env 未配置 REDIS_URL 时兜底（与 JWT_SECRET_KEY 等一致）
+# 必须在 from settings import settings 之前执行，否则 Settings() 导入期即 sys.exit(1)
+os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, inspect, text
@@ -91,6 +95,7 @@ def _profo_test_env() -> Generator[None, None, None]:
     通过 setdefault 注入测试所需的密钥（仅当对应环境变量未设置时）。
     DATABASE_URL 由 _get_test_database_url() 解析，不在此处强制。
     """
+    os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:6379/0")
     os.environ.setdefault("JWT_SECRET_KEY", "0123456789abcdef0123456789abcdef")
     os.environ.setdefault("WECHAT_APPID", "test")
     os.environ.setdefault("WECHAT_SECRET", "test")
@@ -100,6 +105,20 @@ def _profo_test_env() -> Generator[None, None, None]:
 
     with contextlib.suppress(Exception):
         db.engine.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _disable_rate_limiter() -> Generator[None, None, None]:
+    """测试环境禁用限流（避免依赖 Redis，加速测试）.
+
+    限流是基础设施关注点，单测验证业务逻辑而非限流行为。
+    生产环境降级由 in_memory_fallback_enabled 保障。
+    """
+    from utils.common import limiter  # noqa: PLC0415
+
+    limiter.enabled = False
+    yield
+    limiter.enabled = True
 
 
 @pytest.fixture(scope="session")

@@ -40,6 +40,8 @@
   清理已删除项目的合同记录，允许合同编号在项目软删除后被复用
 - migrate_permission_system: 幂等创建权限系统三张表（permissions/role_permissions/operation_logs），
   初始化系统权限点，为 4 个内置角色分配默认权限集
+- migrate_uploads_to_oss: 将本地 uploads 文件迁移到 OSS 并改写 DB URL（仅 storage_backend=oss 时执行，
+  幂等：已上传文件跳过，已是 OSS URL 的记录跳过）
 
 """
 
@@ -53,6 +55,7 @@ from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
 from migrations.migrate_installation_stage import migrate_installation_stage_to_delivery
+from migrations.migrate_uploads_to_oss import migrate_uploads_to_oss
 from migrations.rebuild_contract_no_index import rebuild_contract_no_index
 from utils.crypto import decrypt, encrypt, hash_phone
 
@@ -1595,6 +1598,8 @@ def run_startup_migrations(engine: Engine) -> None:
         migrate_project_business_permission(engine)
         add_permission_foreign_indexes(engine)
         add_reports_indexes(engine)
+        # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
+        migrate_uploads_to_oss(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

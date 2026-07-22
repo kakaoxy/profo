@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 _base_dir = Path(__file__).resolve().parent
@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # 数据库配置
     database_url: str  # 必填，从环境变量读取（PostgreSQL: postgresql+psycopg://user:pass@host:5432/dbname）
     database_echo: bool = False  # 是否打印 SQL 语句
+
+    # Redis 配置（限流与缓存后端，多 worker 部署必需）
+    redis_url: str  # 必填，从 REDIS_URL 环境变量读取
 
     # API 配置
     api_prefix: str = "/api"
@@ -72,10 +75,28 @@ class Settings(BaseSettings):
                 return {i.strip() for i in v.split(",")}
         return v
 
+    # 存储后端配置（local=本地文件系统，oss=阿里云OSS）
+    storage_backend: str = "local"
+
+    @field_validator("storage_backend")
+    @classmethod
+    def validate_storage_backend(cls, v: str) -> str:
+        """校验存储后端为合法值，避免拼写错误静默回退到 local."""
+        if v not in ("local", "oss"):
+            msg = f"storage_backend 必须为 'local' 或 'oss'，实际收到: {v!r}"
+            raise ValueError(msg)
+        return v
+
+    oss_access_key_id: str | None = None
+    oss_access_key_secret: str | None = None
+    oss_bucket_name: str | None = None
+    oss_endpoint: str | None = None  # 内网endpoint，如 oss-cn-shanghai-internal.aliyuncs.com
+    oss_public_base_url: str | None = None  # 公网/CDN访问基址，无尾斜杠
+
     # 文件上传配置
     upload_dir: str = str(_base_dir / "static" / "uploads")
-    max_upload_size: int = 100 * 1024 * 1024  # 100MB
-    # 支持的文件类型：图片、PDF、Excel、Word文档、Markdown
+    max_upload_size: int = 524288000  # 500MB，支持视频上传
+    # 支持的文件类型：图片、PDF、Excel、Word文档、Markdown、视频
     allowed_extensions: set[str] = {
         ".jpg",
         ".jpeg",
@@ -88,6 +109,9 @@ class Settings(BaseSettings):
         ".doc",
         ".docx",  # Word文档
         ".md",  # Markdown
+        ".mp4",
+        ".mov",
+        ".webm",  # 视频
     }
     allowed_mime_types: set[str] = {
         "image/jpeg",
@@ -100,6 +124,9 @@ class Settings(BaseSettings):
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
         "application/msword",  # .doc
         "text/markdown",  # .md
+        "video/mp4",
+        "video/quicktime",
+        "video/webm",  # 视频
     }
 
     # 分页配置
@@ -138,6 +165,23 @@ class Settings(BaseSettings):
     wechat_token_url: str = "https://api.weixin.qq.com/sns/oauth2/access_token"  # noqa: S105
     wechat_userinfo_url: str = "https://api.weixin.qq.com/sns/userinfo"
     wechat_jscode2session_url: str = "https://api.weixin.qq.com/sns/jscode2session"
+
+    @model_validator(mode="after")
+    def validate_oss_config(self) -> "Settings":
+        """当 storage_backend=oss 时，校验 OSS 必填配置."""
+        if self.storage_backend == "oss":
+            required_fields = {
+                "oss_access_key_id": self.oss_access_key_id,
+                "oss_access_key_secret": self.oss_access_key_secret,
+                "oss_bucket_name": self.oss_bucket_name,
+                "oss_endpoint": self.oss_endpoint,
+                "oss_public_base_url": self.oss_public_base_url,
+            }
+            missing = [name for name, value in required_fields.items() if not value]
+            if missing:
+                msg = f"storage_backend=oss 时以下配置必填: {', '.join(missing)}"
+                raise ValueError(msg)
+        return self
 
     class Config:
         """Pydantic Settings 配置类."""

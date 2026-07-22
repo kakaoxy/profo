@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from redis.exceptions import RedisError
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.exc import SQLAlchemyError
@@ -54,6 +55,7 @@ from routers.system import (
 from services.system.exceptions import ServiceException
 from settings import settings
 from utils.common import limiter
+from utils.redis_client import get_redis_client
 
 logging.basicConfig(
     level=logging.INFO,
@@ -92,6 +94,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     from migrations import run_startup_migrations  # noqa: PLC0415
 
     run_startup_migrations(engine)
+
+    # 初始化并验证 Redis 连接（限流与缓存后端，多 worker 部署必需）
+    # 启动期 Redis 不可用 → fail loud（sys.exit(1)），防止应用在无 Redis 状态下启动
+    try:
+        get_redis_client()
+    except RedisError:
+        logger.exception("Redis 连接失败，应用无法启动")
+        sys.exit(1)
 
     logger.info("Application started successfully: %s v%s", settings.app_name, settings.app_version)
 
