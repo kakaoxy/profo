@@ -9,6 +9,7 @@ BACKEND_TAR="profo-backend.tar.gz"
 FRONTEND_TAR="profo-frontend.tar.gz"
 HEALTH_TIMEOUT=120          # 等待 backend 健康的最大秒数
 HEALTH_INTERVAL=3           # 每次检查间隔（秒）
+REDIS_TIMEOUT=30            # 等待 redis 健康的最大秒数
 FRONTEND_WAIT=10            # 前端启动后简单等待（无健康检查时）
 BACKUP_DIR="$PROJECT_DIR/backups"  # 数据库备份目录
 BACKUP_RETENTION=7          # 保留最近 N 份备份
@@ -95,7 +96,24 @@ log_info "准备 uploads 目录..."
 mkdir -p "$PROJECT_DIR/uploads"
 chown -R 1001:1001 "$PROJECT_DIR/uploads"
 
-# 3. 启动 backend（容器内会自动运行迁移）
+# 3. 启动 redis 服务（backend depends_on redis，需先就绪）
+log_info "启动 redis 服务..."
+docker compose up -d redis
+
+# 等待 redis 健康
+log_info "等待 redis 健康检查通过（超时 ${REDIS_TIMEOUT}s）..."
+REDIS_ELAPSED=0
+while ! docker compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; do
+    REDIS_ELAPSED=$((REDIS_ELAPSED + 1))
+    if [ "$REDIS_ELAPSED" -ge "$REDIS_TIMEOUT" ]; then
+        log_error "redis 健康检查超时（${REDIS_TIMEOUT}s）"
+        exit 1
+    fi
+    sleep 1
+done
+log_info "✅ redis 服务健康（${REDIS_ELAPSED}s）"
+
+# 4. 启动 backend（容器内会自动运行迁移）
 log_info "重启 backend（迁移将自动运行）..."
 docker compose up -d --force-recreate --no-build backend
 
@@ -142,7 +160,7 @@ if [ $elapsed -ge $HEALTH_TIMEOUT ]; then
     exit 1
 fi
 
-# 4. 启动 frontend
+# 5. 启动 frontend
 log_info "重启 frontend..."
 docker compose up -d --force-recreate --no-build frontend
 
@@ -154,7 +172,7 @@ else
     log_warn "frontend 未运行，请检查日志: docker compose logs frontend"
 fi
 
-# 5. 清理压缩包
+# 6. 清理压缩包
 log_info "清理本地 tar 包..."
 rm -f "$BACKEND_TAR" "$FRONTEND_TAR"
 

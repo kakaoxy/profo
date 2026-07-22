@@ -19,6 +19,7 @@ from settings import settings
 from utils.common import RateLimits, limiter
 from utils.file_security import get_safe_file_path, sanitize_filename
 from utils.image_processing import generate_thumbnail
+from utils.storage import get_storage_backend
 
 router = APIRouter(prefix="/files", tags=["files"])
 logger = logging.getLogger(__name__)
@@ -92,17 +93,37 @@ def save_upload_file(
         upload_path.mkdir(parents=True, exist_ok=True)
         file_path = get_safe_file_path(settings.upload_dir, filename)
 
+        # 先写到本地（安全校验 + 缩略图生成需要本地文件）
         with Path(file_path).open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        url = f"/static/uploads/{filename}"
+        # 通过存储后端上传，返回访问 URL
+        # OSS 模式下若上传失败需清理本地临时文件，防止孤儿文件堆积
+        storage = get_storage_backend()
+        thumb_path: Path | None = None
+        try:
+            url = storage.upload_file(Path(file_path), filename)
 
-        thumbnail_url: str | None = None
-        if ext in IMAGE_EXTENSIONS:
-            thumb_filename = f"{Path(filename).stem}.webp"
-            thumb_path = upload_path / "thumbs" / thumb_filename
-            if generate_thumbnail(file_path, thumb_path):
-                thumbnail_url = f"/static/uploads/thumbs/{thumb_filename}"
+            # 缩略图（仅图片）：本地生成后同样通过存储后端上传
+            thumbnail_url: str | None = None
+            if ext in IMAGE_EXTENSIONS:
+                thumb_filename = f"{Path(filename).stem}.webp"
+                thumb_path = upload_path / "thumbs" / thumb_filename
+                if generate_thumbnail(file_path, thumb_path):
+                    thumbnail_url = storage.upload_file(thumb_path, f"thumbs/{thumb_filename}")
+        except Exception:
+            # 上传失败时清理已写入的本地临时文件
+            if settings.storage_backend == "oss":
+                Path(file_path).unlink(missing_ok=True)
+                if thumb_path is not None:
+                    thumb_path.unlink(missing_ok=True)
+            raise
+
+        # OSS 模式下删除本地临时文件；local 模式下文件已在目标位置（copy2 检测同文件跳过）
+        if settings.storage_backend == "oss":
+            Path(file_path).unlink(missing_ok=True)
+            if thumb_path is not None:
+                thumb_path.unlink(missing_ok=True)
 
         return FileUploadResponse(url=url, filename=filename, thumbnail_url=thumbnail_url)
 

@@ -85,6 +85,8 @@ limiter = Limiter(
     # 6000/hour 保证一天业务不受影响。安全敏感端点已在 RateLimits 中显式覆盖。
     default_limits=["6000/hour", "600/minute"],
     strategy="moving-window",
+    storage_uri=settings.redis_url,  # Redis 后端，多 worker 一致
+    in_memory_fallback_enabled=True,  # Redis 宕机时降级到进程内限流，避免全站 500
     config_filename=".slowapi.env",
 )
 
