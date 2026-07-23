@@ -78,7 +78,7 @@ def derive_thumbnail_url(url: str | None) -> str | None:
 
 
 def _derive_local_thumbnail_url(url: str) -> str | None:
-    """local 模式: 检查本地缩略图文件是否存在."""
+    """Local 模式: 检查本地缩略图文件是否存在."""
     if "/static/uploads/" not in url:
         return None
     # 去除 query string（如 /static/uploads/xxx.jpg?v=1），避免污染文件名提取
@@ -95,7 +95,7 @@ def _derive_local_thumbnail_url(url: str) -> str | None:
 
 
 def _derive_oss_thumbnail_url(url: str) -> str | None:
-    """oss 模式: 按 OSS 命名约定推导缩略图 URL（不做存在性检查）.
+    """OSS 模式: 按 OSS 命名约定推导缩略图 URL（不做存在性检查）.
 
     OSS URL 格式: {oss_public_base_url}/{key}, key 形如 20260722_abc.jpg.
     缩略图 key: thumbs/{stem}.webp, 对应 URL: {base}/thumbs/{stem}.webp.

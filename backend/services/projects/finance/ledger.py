@@ -66,16 +66,12 @@ def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:  # noqa: P
             logger.warning("拒绝下载非白名单 hostname 票据文件: %s", url)
             return None
         try:
-            with httpx.stream(
-                "GET", url, timeout=_RECEIPT_DOWNLOAD_TIMEOUT, follow_redirects=True
-            ) as resp:
+            with httpx.stream("GET", url, timeout=_RECEIPT_DOWNLOAD_TIMEOUT, follow_redirects=True) as resp:
                 resp.raise_for_status()
                 # 校验重定向后最终 URL 的 hostname 仍在白名单内
                 final_host = urlparse(str(resp.url)).hostname
                 if final_host != base_host:
-                    logger.warning(
-                        "拒绝下载重定向至非白名单 hostname 的票据文件: %s -> %s", url, resp.url
-                    )
+                    logger.warning("拒绝下载重定向至非白名单 hostname 的票据文件: %s -> %s", url, resp.url)
                     return None
                 # 预检 Content-Length（恶意服务端可省略/伪造，仍需流式兜底）
                 content_length = resp.headers.get("content-length")
@@ -86,7 +82,8 @@ def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:  # noqa: P
                 if cl is not None and cl > _RECEIPT_MAX_BYTES:
                     logger.warning(
                         "票据文件超过大小上限 %d 字节（Content-Length）: %s",
-                        _RECEIPT_MAX_BYTES, url,
+                        _RECEIPT_MAX_BYTES,
+                        url,
                     )
                     return None
                 # 流式读取并累计，超限即中止
@@ -97,7 +94,8 @@ def _fetch_receipt_bytes(url: str, upload_dir: Path) -> bytes | None:  # noqa: P
                     if total > _RECEIPT_MAX_BYTES:
                         logger.warning(
                             "票据文件超过大小上限 %d 字节，中止下载: %s",
-                            _RECEIPT_MAX_BYTES, url,
+                            _RECEIPT_MAX_BYTES,
+                            url,
                         )
                         return None
                     chunks.append(chunk)
