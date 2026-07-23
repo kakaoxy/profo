@@ -35,10 +35,13 @@ services:
     # 启用密码认证：防止未授权访问/缓存投毒（M2 安全加固）
     # 密码经环境变量传入，compose 不展开 ${REDIS_PASSWORD} 至 .Config.Cmd（避免 docker inspect 泄漏）；
     # 空值时 test -n 失败拒绝启动，防止 --requirepass "" 静默关闭认证
-    command: >-
-      test -n "$$REDIS_PASSWORD"
-      && redis-server --requirepass "$$REDIS_PASSWORD"
-      || { echo "[FATAL] REDIS_PASSWORD 未设置，拒绝启动（空值会静默关闭认证）" >&2; exit 1; }
+    # 注意：compose 字符串 command 会被按空格拆分为 exec 形式数组（不走 shell），
+    # 因此 &&/||/$VAR 均失效；必须显式 sh -c 让 shell 展开 $$REDIS_PASSWORD
+    # （$$ 在 compose 中转义为 $，再由容器内 sh 从环境变量展开）
+    command:
+      - sh
+      - -c
+      - 'test -n "$$REDIS_PASSWORD" && redis-server --requirepass "$$REDIS_PASSWORD" || { echo "[FATAL] REDIS_PASSWORD 未设置，拒绝启动（空值会静默关闭认证）" >&2; exit 1; }'
     environment:
       # 供启动脚本读取密码
       REDIS_PASSWORD: ${REDIS_PASSWORD}

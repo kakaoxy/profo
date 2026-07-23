@@ -18,6 +18,7 @@ import json
 import logging
 from pathlib import Path
 
+from redis import Redis
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
@@ -269,8 +270,8 @@ def _rewrite_json_array_field(engine: Engine, table: str, column: str, oss_base:
     with engine.begin() as conn:
         # table/column 来自硬编码元组，无注入风险
         rows = conn.execute(
-            text(  # noqa: S608
-                f"SELECT id, {column} FROM {table} "
+            text(
+                f"SELECT id, {column} FROM {table} "  # noqa: S608
                 f"WHERE CAST({column} AS text) LIKE :pat"
             ),
             {"pat": "%/static/uploads/%"},
@@ -286,8 +287,8 @@ def _rewrite_json_array_field(engine: Engine, table: str, column: str, oss_base:
                 continue
             # 序列化为 JSON 文本后 CAST 为 json 类型（PG 隐式 text -> json）
             conn.execute(
-                text(  # noqa: S608
-                    f"UPDATE {table} SET {column} = CAST(:value AS json) WHERE id = :id"
+                text(
+                    f"UPDATE {table} SET {column} = CAST(:value AS json) WHERE id = :id"  # noqa: S608
                 ),
                 {"value": json.dumps(fixed), "id": row[0]},
             )
@@ -313,7 +314,7 @@ def _rewrite_db_urls(engine: Engine, oss_base: str) -> tuple[int, int]:
     return simple_rewritten, json_rewritten
 
 
-def _get_redis_client_safe():
+def _get_redis_client_safe() -> Redis | None:
     """获取 Redis 客户端，失败返回 None（迁移本身幂等，Redis 故障时正常执行）."""
     try:
         from utils.redis_client import get_redis_client  # noqa: PLC0415
@@ -454,7 +455,7 @@ def run_out_of_band_migration(engine: Engine) -> None:
 
 if __name__ == "__main__":
     # 带外执行入口：python -m migrations.migrate_uploads_to_oss
-    from db import engine  # noqa: PLC0415
+    from db import engine
 
     logging.basicConfig(
         level=logging.INFO,
