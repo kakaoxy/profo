@@ -51,7 +51,7 @@ class PropertyImportTask(Base):
     progress_percent: Mapped[float] = mapped_column(Float, default=0.0, comment="进度百分比(0-100)")
 
     # 结果信息
-    failed_file_url: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="失败记录文件URL")
+    failed_file_url: Mapped[str | None] = mapped_column(Text, nullable=True, comment="失败记录文件URL")
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True, comment="错误信息(失败时)")
 
     # 时间戳

@@ -35,9 +35,8 @@ import type { UploadResponse } from "@/components/common/upload";
 import type { Project, AttachmentInfo } from "../../../../../types";
 import {
   ATTACHMENT_CATEGORIES,
-  ALLOWED_EXTENSIONS,
   ALLOWED_MIME_TYPES,
-  MAX_FILE_SIZE,
+  attachmentValidateFile,
   getFileType,
   type AttachmentCategory,
 } from "../../../../create-project/attachment-types";
@@ -468,25 +467,15 @@ export function DocumentsTab({ project, onUploadAttachment }: DocumentsTabProps)
           </div>
           <CommonFileUploader
             options={{
-              maxSize: MAX_FILE_SIZE,
               allowedTypes: ALLOWED_MIME_TYPES,
               multiple: true,
-              validateFile: (file) => {
-                const ext = file.name
-                  .toLowerCase()
-                  .slice(file.name.lastIndexOf("."));
-                const allowedExts = ALLOWED_EXTENSIONS.split(",");
-                if (!allowedExts.includes(ext)) {
-                  return "不支持的文件格式";
-                }
-                return null;
-              },
+              validateFile: attachmentValidateFile,
               beforeUpload: (file) =>
                 file.type.startsWith("image/") ? compressImage(file) : file,
             }}
             onUploadComplete={handleUploadComplete}
             title="点击或拖拽文件到此处上传"
-            description="支持多文件上传，Excel、图片、PDF、Word 格式，单文件最大 10MB"
+            description="支持多文件上传，Excel、图片、PDF、Word、视频格式，文档/图片最大 10MB，视频最大 500MB"
           />
         </DialogContent>
       </Dialog>

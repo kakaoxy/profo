@@ -38,7 +38,7 @@ const attachmentSchema = z.object({
   filename: z.string(),
   url: z.string(),
   category: attachmentCategoryEnum,
-  fileType: z.enum(["excel", "image", "pdf", "word"]),
+  fileType: z.enum(["excel", "image", "pdf", "word", "video"]),
   size: z.number(),
   uploadedAt: z.string(),
 });

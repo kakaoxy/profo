@@ -54,19 +54,36 @@ def generate_thumbnail(
 def derive_thumbnail_url(url: str | None) -> str | None:
     """从原图 URL 推导缩略图 URL.
 
-    缩略图命名规则: /static/uploads/xxx.jpg → /static/uploads/thumbs/xxx.webp
-    若 URL 不指向 uploads 目录或缩略图文件不存在，返回 None.
+    缩略图命名规则:
+    - local 模式: /static/uploads/xxx.jpg → /static/uploads/thumbs/xxx.webp
+    - oss 模式:   {oss_public_base_url}/xxx.jpg → {oss_public_base_url}/thumbs/xxx.webp
+
+    local 模式下检查本地文件是否存在; oss 模式下按命名约定推导（缩略图在
+    上传时同步生成, 无需也不应在此发起 OSS HEAD 请求, 避免列表接口延迟）.
 
     Args:
         url: 原图 URL（相对路径或绝对路径）
 
     Returns:
-        缩略图 URL，或 None
+        缩略图 URL，或 None（URL 不属于已知存储后端、文件名无扩展名、
+        或 local 模式下缩略图文件不存在时）
 
     """
-    if not url or "/static/uploads/" not in url:
+    if not url:
         return None
-    filename = url.rsplit("/", 1)[-1]
+
+    if settings.storage_backend == "oss":
+        return _derive_oss_thumbnail_url(url)
+    return _derive_local_thumbnail_url(url)
+
+
+def _derive_local_thumbnail_url(url: str) -> str | None:
+    """local 模式: 检查本地缩略图文件是否存在."""
+    if "/static/uploads/" not in url:
+        return None
+    # 去除 query string（如 /static/uploads/xxx.jpg?v=1），避免污染文件名提取
+    path = url.split("?", 1)[0]
+    filename = path.rsplit("/", 1)[-1]
     if not filename or "." not in filename:
         return None
     stem = Path(filename).stem
@@ -75,3 +92,25 @@ def derive_thumbnail_url(url: str | None) -> str | None:
     if thumb_path.exists():
         return thumb_rel
     return None
+
+
+def _derive_oss_thumbnail_url(url: str) -> str | None:
+    """oss 模式: 按 OSS 命名约定推导缩略图 URL（不做存在性检查）.
+
+    OSS URL 格式: {oss_public_base_url}/{key}, key 形如 20260722_abc.jpg.
+    缩略图 key: thumbs/{stem}.webp, 对应 URL: {base}/thumbs/{stem}.webp.
+
+    注：会先剥离 query string（签名 URL 的 ?Expires=...&Signature=...、
+    图片处理参数 ?x-oss-process=...），否则 stem 提取会包含查询串导致
+    推导出错误的缩略图 URL。
+    """
+    base_url = (settings.oss_public_base_url or "").rstrip("/")
+    if not base_url or not url.startswith(base_url):
+        return None
+    # 提取 key: https://cdn.example.com/{key} -> {key}，并剥离 query string
+    key = url[len(base_url) :].lstrip("/").split("?", 1)[0]
+    filename = key.rsplit("/", 1)[-1]
+    if not filename or "." not in filename:
+        return None
+    stem = Path(filename).stem
+    return f"{base_url}/thumbs/{stem}.webp"

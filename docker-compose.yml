@@ -32,6 +32,18 @@ services:
     volumes:
       - redisdata:/data
     mem_limit: 32m
+    # 启用密码认证：防止未授权访问/缓存投毒（M2 安全加固）
+    # 密码经环境变量传入，compose 不展开 ${REDIS_PASSWORD} 至 .Config.Cmd（避免 docker inspect 泄漏）；
+    # 空值时 test -n 失败拒绝启动，防止 --requirepass "" 静默关闭认证
+    command: >-
+      test -n "$$REDIS_PASSWORD"
+      && redis-server --requirepass "$$REDIS_PASSWORD"
+      || { echo "[FATAL] REDIS_PASSWORD 未设置，拒绝启动（空值会静默关闭认证）" >&2; exit 1; }
+    environment:
+      # 供启动脚本读取密码
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # 供 healthcheck 的 redis-cli 自动鉴权（exec 形式 CMD 不展开 $VAR）
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -48,6 +60,8 @@ services:
     environment:
       # 显式覆盖 .env 中的 DATABASE_URL，保证使用 compose 内 db 服务主机名
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # 显式覆盖 .env 中的 REDIS_URL，注入密码保证与 redis 服务的 requirepass 一致
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       db:
         condition: service_healthy

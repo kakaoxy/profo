@@ -9,15 +9,30 @@
 from __future__ import annotations
 
 import functools
+import json
 import logging
-import pickle
 from collections.abc import Callable
 from typing import Any, TypeVar
 
+from pydantic import BaseModel
 from redis import Redis
 from redis.exceptions import RedisError
 from sqlalchemy.orm import Session
 
+from schemas.reports.common import KpiCard
+from schemas.reports.communities import CommunityRow
+from schemas.reports.market import (
+    BusinessDistrictRow,
+    ComparisonData,
+    ComparisonFloorStructure,
+    ComparisonRoomStructure,
+    ComparisonSummaryRow,
+    ComparisonTrendPoint,
+    DistributionBucket,
+    KpiData,
+    PriceBucket,
+    TrendDataPoint,
+)
 from utils.redis_client import get_redis_client
 
 logger = logging.getLogger(__name__)
@@ -30,6 +45,78 @@ _DEFAULT_TTL_SECONDS = 300
 # Redis key 前缀，避免与其他 Redis key 冲突
 _CACHE_PREFIX = "reports:cache:"
 
+# Pydantic 模型注册表: 类名 -> 类, 用于 JSON 反序列化时恢复类型.
+# 缓存值可能包含嵌套的 Pydantic 模型 (如 KpiData / list[TrendDataPoint] /
+# dict 含 list[PriceBucket] 等), 用类名标记保证反序列化后类型保真.
+_PYDANTIC_REGISTRY: dict[str, type[BaseModel]] = {
+    cls.__name__: cls
+    for cls in (
+        KpiCard,
+        KpiData,
+        TrendDataPoint,
+        PriceBucket,
+        DistributionBucket,
+        BusinessDistrictRow,
+        CommunityRow,
+        ComparisonData,
+        ComparisonSummaryRow,
+        ComparisonTrendPoint,
+        ComparisonFloorStructure,
+        ComparisonRoomStructure,
+    )
+}
+
+# Pydantic 模型在 JSON 中的类型标记键 (与普通 dict 区分, 避免误判)
+# 使用 dunder 前缀降低与业务字段碰撞概率
+_PYDANTIC_MARKER = "__pydantic__"
+
+# 标记 payload 的键数量 (仅 __pydantic__ + data), 用于精确识别模型 dict
+_PYDANTIC_PAYLOAD_LEN = 2
+
+
+class _PydanticEncoder(json.JSONEncoder):
+    """JSON 编码器: 将 Pydantic BaseModel 实例包装为带类型标记的 dict.
+
+    输出形如 ``{"__pydantic__": "KpiData", "data": {...}}``,
+    反序列化时通过 ``_PYDANTIC_REGISTRY`` 恢复为对应模型实例.
+    """
+
+    def default(self, o: Any) -> Any:  # noqa: ANN401
+        if isinstance(o, BaseModel):
+            return {
+                _PYDANTIC_MARKER: o.__class__.__name__,
+                "data": o.model_dump(mode="json"),
+            }
+        return super().default(o)
+
+
+def _pydantic_object_hook(obj: dict[str, Any]) -> Any:  # noqa: ANN401
+    """JSON object_hook: 检测带 ``__pydantic__`` 标记的 dict 并恢复为对应模型实例.
+
+    仅当 dict 恰好包含 ``__pydantic__`` 与 ``data`` 两个键时触发,
+    避免与业务字段冲突. object_hook 自底向上调用, 内层模型先被重建,
+    外层 model_validate 接收的 dict 中已包含模型实例, Pydantic v2 原生支持.
+    """
+    if len(obj) == _PYDANTIC_PAYLOAD_LEN and _PYDANTIC_MARKER in obj and "data" in obj:
+        cls = _PYDANTIC_REGISTRY.get(obj[_PYDANTIC_MARKER])
+        if cls is not None:
+            return cls.model_validate(obj["data"])
+    return obj
+
+
+def _dumps(value: Any) -> bytes:  # noqa: ANN401
+    """将缓存值序列化为 JSON bytes.
+
+    Pydantic 模型实例会被包装为 ``{"__pydantic__": "ClassName", "data": {...}}``
+    以保留类型信息, 反序列化时通过 ``_PYDANTIC_REGISTRY`` 恢复.
+    """
+    return json.dumps(value, cls=_PydanticEncoder, ensure_ascii=False).encode("utf-8")
+
+
+def _loads(data: bytes) -> Any:  # noqa: ANN401
+    """从 JSON bytes 反序列化缓存值, 恢复嵌套的 Pydantic 模型实例."""
+    return json.loads(data, object_hook=_pydantic_object_hook)
+
 
 def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """5 分钟缓存装饰器（Redis 后端）.
@@ -38,9 +125,12 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
 
     - key 格式：``reports:cache:{module}.{qualname}:{repr(args/kwargs 序列化)}``，
       包含函数限定名以避免不同函数同签名时 key 碰撞
-    - 命中：``redis.get(key)`` → pickle 反序列化（异常时删除损坏 key 并回退重算）
-    - 未命中：执行函数 → ``redis.set(key, pickle.dumps(result), ex=ttl_seconds)``
-    - 缓存值可能是 Pydantic 模型、list、dict 等任意 Python 对象，用 pickle 序列化
+    - 命中：``redis.get(key)`` → JSON 反序列化（异常时删除损坏 key 并回退重算）
+    - 未命中：执行函数 → ``redis.set(key, _dumps(result), ex=ttl_seconds)``
+    - 缓存值可能是 Pydantic 模型、list、dict 等任意 Python 对象，
+      通过自定义 JSON 编解码器保留 Pydantic 类型保真
+
+    安全性：使用 JSON 替代 pickle，避免 Redis 被注入恶意 pickle 字节导致的 RCE 风险。
 
     Args:
         ttl_seconds: 缓存存活秒数，默认 300（5 分钟）
@@ -77,10 +167,12 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
                 cached = redis_client.get(key)
                 if cached is not None:
                     try:
-                        return pickle.loads(cached)  # noqa: S301
+                        return _loads(cached)
                     except Exception:  # noqa: BLE001
-                        # 捕获所有反序列化异常（UnpicklingError/EOFError/AttributeError/
-                        # TypeError/ModuleNotFoundError 等），删除损坏 key 并回退重算
+                        # 捕获所有反序列化异常（JSONDecodeError/ValidationError/
+                        # KeyError 等），删除损坏 key 并回退重算.
+                        # 同时兼容历史 pickle 缓存: 切换到 JSON 后首次读取
+                        # pickle 字节会触发异常, 自动失效并重算.
                         logger.warning("缓存反序列化失败，key=%s，将重新计算", key, exc_info=True)
                         redis_client.delete(key)
             except RedisError:
@@ -90,7 +182,7 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
 
             # 写入缓存：Redis 故障时跳过（不影响返回值）
             try:
-                redis_client.set(key, pickle.dumps(result), ex=ttl_seconds)
+                redis_client.set(key, _dumps(result), ex=ttl_seconds)
             except RedisError:
                 logger.warning("报表缓存写入失败，跳过缓存 (key=%s)", key, exc_info=True)
             return result
