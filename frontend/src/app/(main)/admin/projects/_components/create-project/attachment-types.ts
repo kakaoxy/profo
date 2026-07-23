@@ -25,6 +25,7 @@ export const ATTACHMENT_CATEGORIES = [
 export type AttachmentCategory = (typeof ATTACHMENT_CATEGORIES)[number]["value"];
 
 // 支持的文件类型及其 MIME 类型
+// 项目附件场景子集（不含 .csv/.md 等导入/通用类型）；后端全局 allowed_extensions 更宽
 export const ALLOWED_FILE_TYPES = {
   excel: {
     extensions: [".xlsx", ".xls"],
@@ -34,8 +35,9 @@ export const ALLOWED_FILE_TYPES = {
     ],
   },
   image: {
-    extensions: [".jpg", ".jpeg", ".png", ".gif", ".webp"],
-    mimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+    // 后端 settings.allowed_extensions 不含 .gif，前端对齐移除
+    extensions: [".jpg", ".jpeg", ".png", ".webp"],
+    mimeTypes: ["image/jpeg", "image/png", "image/webp"],
   },
   pdf: {
     extensions: [".pdf"],
@@ -47,6 +49,10 @@ export const ALLOWED_FILE_TYPES = {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/msword",
     ],
+  },
+  video: {
+    extensions: [".mp4", ".mov", ".webm"],
+    mimeTypes: ["video/mp4", "video/quicktime", "video/webm"],
   },
 } as const;
 
@@ -62,7 +68,18 @@ export const ALLOWED_MIME_TYPES = Object.values(ALLOWED_FILE_TYPES).flatMap(
   (type) => type.mimeTypes
 );
 
-// 最大文件大小：10MB
+// 各文件类型大小上限（字节）
+// 文档/图片/PDF/Word/Excel：10MB；视频：500MB（与后端 settings.max_upload_size 对齐）
+// M6 修复：按业务面拆分限额，避免视频被 10MB 误拦或文档被 500MB 放过
+export const MAX_FILE_SIZE_BY_TYPE: Record<FileType, number> = {
+  excel: 10 * 1024 * 1024,
+  image: 10 * 1024 * 1024,
+  pdf: 10 * 1024 * 1024,
+  word: 10 * 1024 * 1024,
+  video: 500 * 1024 * 1024,
+};
+
+// 默认大小上限：10MB（文档类，向后兼容现有引用）
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // 附件接口
@@ -85,6 +102,32 @@ export function getFileType(filename: string): FileType | null {
     if ((config.extensions as readonly string[]).includes(ext)) {
       return type as FileType;
     }
+  }
+  return null;
+}
+
+/**
+ * 根据文件名返回对应类型的大小上限（字节）
+ * 用于按业务面拆分限额：文档/图片 10MB，视频 500MB
+ */
+export function getMaxFileSizeForFile(filename: string): number {
+  const fileType = getFileType(filename);
+  return fileType ? MAX_FILE_SIZE_BY_TYPE[fileType] : MAX_FILE_SIZE;
+}
+
+/**
+ * 项目附件上传校验：扩展名白名单 + 按类型大小上限
+ * 供 CommonFileUploader 的 validateFile 选项使用
+ */
+export function attachmentValidateFile(file: File): string | null {
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  const allowedExts = ALLOWED_EXTENSIONS.split(",");
+  if (!allowedExts.includes(ext)) {
+    return "不支持的文件格式";
+  }
+  const maxSize = getMaxFileSizeForFile(file.name);
+  if (file.size > maxSize) {
+    return `文件大小超过限制（最大 ${formatFileSize(maxSize)}）`;
   }
   return null;
 }

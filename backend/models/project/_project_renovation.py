@@ -87,7 +87,7 @@ class ProjectRenovation(BaseModel):
     )
 
     soft_budget: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="软装预算金额")
-    soft_detail_attachment: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="软装明细附件")
+    soft_detail_attachment: Mapped[str | None] = mapped_column(Text, nullable=True, comment="软装明细附件")
 
     # 定制柜/窗户/墙面扩展金额
     custom_cabinet_amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True, comment="定制柜定额")
@@ -124,7 +124,7 @@ class RenovationPhoto(BaseModel):
         nullable=False,
         comment="改造阶段",
     )
-    url: Mapped[str] = mapped_column(String(500), nullable=False, comment="图片/视频URL")
+    url: Mapped[str] = mapped_column(Text, nullable=False, comment="图片/视频URL")
     media_type: Mapped[str] = mapped_column(
         SQLEnum(MediaKind, values_callable=lambda x: [e.value for e in x], create_constraint=True),
         nullable=False,

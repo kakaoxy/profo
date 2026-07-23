@@ -1,9 +1,12 @@
 """FastAPI 应用入口."""
 
 import logging
+import re
 import sys
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -57,13 +60,42 @@ from settings import settings
 from utils.common import limiter
 from utils.redis_client import get_redis_client
 
+# L1 修复：请求 ID 上下文变量，用于跨 worker 日志关联
+request_id_var: ContextVar[str] = ContextVar("request_id", default="")
+
+# 请求 ID 合法格式：字母数字与连字符，长度 1-64（防日志注入）
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
+
+
+def _sanitize_request_id(raw: str | None) -> str:
+    """校验客户端传入的 X-Request-ID，非法或缺失时生成新 UUID.
+
+    防止攻击者通过 X-Request-ID 头注入换行/控制字符污染日志。
+    """
+    if raw and _REQUEST_ID_PATTERN.match(raw):
+        return raw
+    return str(uuid.uuid4())
+
+
+class RequestIDFilter(logging.Filter):
+    """将当前请求 ID 注入日志记录，便于跨 worker 排障（L1 修复）。"""  # noqa: D400, D415
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "request_id"):
+            record.request_id = request_id_var.get()
+        return True
+
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format="%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
     ],
 )
+# 为 root handler 添加请求 ID 过滤器（filter 在 format 前执行，确保 request_id 属性已注入）
+for _handler in logging.root.handlers:
+    _handler.addFilter(RequestIDFilter())
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +206,24 @@ app.add_middleware(
 )
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):  # noqa: ANN001, ANN201
+    """请求 ID 中间件：为每个请求注入唯一 ID，用于跨 worker 日志关联（L1 修复）。
+
+    优先读取上游（nginx/CDN）传入的 X-Request-ID，未提供时生成 UUID。
+    对客户端传入的 ID 做白名单校验（字母数字与连字符，长度 1-64），非法时重新生成，
+    防止换行/控制字符污染日志。响应头回写 X-Request-ID，便于前端/客户端关联。
+    """  # noqa: D400, D415
+    rid = _sanitize_request_id(request.headers.get("X-Request-ID"))
+    token = request_id_var.set(rid)
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = rid
+        return response
+    finally:
+        request_id_var.reset(token)
 
 
 @app.middleware("http")

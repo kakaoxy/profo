@@ -4,16 +4,23 @@
 - 文件上传：upload_file 前调 file_exists 检查，已存在则跳过
 - DB URL 改写：已是 OSS URL（以 oss_public_base_url 开头）的记录跳过
 - 仅当 settings.storage_backend == "oss" 时执行
+
+执行时机（修复 H2/H3）：
+- **启动期**（`migrate_uploads_to_oss`）：仅做 DB URL 改写（快，无网络往返），
+  避免逐文件 `object_exists` 的 N 次网络往返阻塞服务就绪。
+  多 worker 下由 `run_startup_migrations` 的 advisory lock 串行化。
+- **带外**（`upload_local_files_to_oss` / `python -m migrations.migrate_uploads_to_oss`）：
+  执行本地文件批量上传到 OSS，应在切换到 OSS 后、对外提供服务前运行一次。
+  启动期若发现文件上传未完成，会打印醒目日志提示运行本脚本。
 """
 
 import json
 import logging
 from pathlib import Path
 
-from sqlalchemy import inspect, select, text, update
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
-from models.marketing import L4MarketingProject
 from settings import settings
 from utils.storage import get_storage_backend
 
@@ -25,20 +32,36 @@ _STATIC_UPLOADS_PREFIX = "/static/uploads/"
 _JSON_URL_KEYS: tuple[str, ...] = ("url", "thumbnail_url", "file_url")
 # 进度日志间隔
 _PROGRESS_INTERVAL = 100
-# Redis 完成标记 key（迁移成功后写入，后续启动跳过重复扫描）
-_MIGRATION_DONE_KEY = "profo:migration:oss_uploads_done"
+
+# Redis 完成标记 key
+# 文件上传标记（带外执行，避免每次启动重复扫描所有文件——file_exists 网络开销）
+_FILE_UPLOAD_DONE_KEY = "profo:migration:oss_uploads_done"
+# DB URL 改写标记（启动期执行，改写完成后写入，后续启动跳过）
+_DB_REWRITE_DONE_KEY = "profo:migration:oss_db_rewrite_done"
 
 # 需要改写 URL 的普通字符串字段 (table, column)
 _SIMPLE_URL_FIELDS: list[tuple[str, str]] = [
     ("renovation_photos", "url"),
+    ("renovation_photos", "thumbnail_url"),
     ("property_media", "url"),
+    ("property_media", "thumbnail_url"),
     ("l4_marketing_media", "file_url"),
     ("l4_marketing_media", "thumbnail_url"),
+    # 软装明细附件（单字段 URL，与今日附件修复直接相关）
+    ("project_renovations", "soft_detail_attachment"),
 ]
 
-# JSON 数组字段
-_JSON_ARRAY_TABLE = "l4_marketing_projects"
-_JSON_ARRAY_COLUMN = "images"
+# 需要改写 URL 的 JSON 数组字段 (table, column)
+# 元素可为 str URL，或含 url/thumbnail_url/file_url 键的 dict（如 SigningMaterial）
+_JSON_ARRAY_FIELDS: list[tuple[str, str]] = [
+    ("l4_marketing_projects", "images"),
+    # 签约附件列表（JSON 数组，元素含 url 字段）
+    ("project_contracts", "signing_materials"),
+    # 财务票据 URL 列表（JSON 字符串数组）
+    ("finance_records", "receipt_urls"),
+    # 线索图片列表（JSON 字符串数组）
+    ("leads", "images"),
+]
 
 
 def _column_exists(engine: Engine, table: str, column: str) -> bool:
@@ -190,7 +213,7 @@ def _rewrite_simple_url_fields(engine: Engine, oss_base: str) -> int:
     """
     total_rewritten = 0
 
-    # 按表分组（l4_marketing_media 有两个字段，在同一事务处理）
+    # 按表分组（同一表多字段在同一事务处理）
     fields_by_table: dict[str, list[str]] = {}
     for table, col in _SIMPLE_URL_FIELDS:
         fields_by_table.setdefault(table, []).append(col)
@@ -228,55 +251,88 @@ def _rewrite_simple_url_fields(engine: Engine, oss_base: str) -> int:
     return total_rewritten
 
 
-def _rewrite_json_array_field(engine: Engine, oss_base: str) -> int:
-    """改写 l4_marketing_projects.images JSON 数组字段.
+def _rewrite_json_array_field(engine: Engine, table: str, column: str, oss_base: str) -> int:
+    """改写指定表的 JSON 数组字段中的 URL.
 
-    用 Core select/update 让 SQLAlchemy 按 JSON 列类型反序列化/序列化。
+    使用 raw text() SQL，兼容 String/Integer 主键与不同 JSON 列类型。
+    SELECT 返回的 JSON 值可能是已反序列化的 list 或 text 字符串，
+    `_rewrite_json_array_urls` 两种情况均处理。
 
     Returns:
         改写记录数
 
     """
-    if not _column_exists(engine, _JSON_ARRAY_TABLE, _JSON_ARRAY_COLUMN):
-        logger.warning("迁移：%s.%s 列不存在，跳过", _JSON_ARRAY_TABLE, _JSON_ARRAY_COLUMN)
+    if not _column_exists(engine, table, column):
+        logger.warning("迁移：%s.%s 列不存在，跳过", table, column)
         return 0
 
     with engine.begin() as conn:
-        # CAST(images AS text) LIKE 用于过滤含 /static/uploads/ 的 JSON 行
-        stmt = select(L4MarketingProject.id, L4MarketingProject.images).where(
-            text("CAST(images AS text) LIKE '%/static/uploads/%'"),
-        )
-        rows = conn.execute(stmt).fetchall()
+        # table/column 来自硬编码元组，无注入风险
+        rows = conn.execute(
+            text(  # noqa: S608
+                f"SELECT id, {column} FROM {table} "
+                f"WHERE CAST({column} AS text) LIKE :pat"
+            ),
+            {"pat": "%/static/uploads/%"},
+        ).fetchall()
 
         rewritten = 0
         for row in rows:
-            if row[1] is None:
+            value = row[1]
+            if value is None:
                 continue
-            fixed = _rewrite_json_array_urls(row[1], oss_base)
+            fixed = _rewrite_json_array_urls(value, oss_base)
             if fixed is None:
                 continue
+            # 序列化为 JSON 文本后 CAST 为 json 类型（PG 隐式 text -> json）
             conn.execute(
-                update(L4MarketingProject).where(L4MarketingProject.id == row[0]).values(images=fixed),
+                text(  # noqa: S608
+                    f"UPDATE {table} SET {column} = CAST(:value AS json) WHERE id = :id"
+                ),
+                {"value": json.dumps(fixed), "id": row[0]},
             )
             rewritten += 1
 
         if rewritten:
-            logger.info(
-                "迁移：%s.%s: 改写 %d 条 JSON URL",
-                _JSON_ARRAY_TABLE,
-                _JSON_ARRAY_COLUMN,
-                rewritten,
-            )
+            logger.info("迁移：%s.%s: 改写 %d 条 JSON URL", table, column, rewritten)
 
     return rewritten
 
 
-def migrate_uploads_to_oss(engine: Engine) -> None:
-    """迁移本地 uploads 到 OSS 并改写 DB URL.
+def _rewrite_db_urls(engine: Engine, oss_base: str) -> tuple[int, int]:
+    """改写 DB 中所有本地 uploads URL 为 OSS URL.
 
-    幂等：已上传到 OSS 的文件跳过，已是 OSS URL 的记录跳过。
-    仅当 settings.storage_backend == "oss" 时执行。
-    完成后写入 Redis 标记，后续启动跳过重复扫描。
+    Returns:
+        (simple_rewritten, json_rewritten)
+
+    """
+    simple_rewritten = _rewrite_simple_url_fields(engine, oss_base)
+    json_rewritten = 0
+    for table, column in _JSON_ARRAY_FIELDS:
+        json_rewritten += _rewrite_json_array_field(engine, table, column, oss_base)
+    return simple_rewritten, json_rewritten
+
+
+def _get_redis_client_safe():
+    """获取 Redis 客户端，失败返回 None（迁移本身幂等，Redis 故障时正常执行）."""
+    try:
+        from utils.redis_client import get_redis_client  # noqa: PLC0415
+
+        return get_redis_client()
+    except Exception:  # noqa: BLE001
+        logger.debug("Redis 不可用，无法读写迁移标记，继续执行")
+        return None
+
+
+def migrate_uploads_to_oss(engine: Engine) -> None:
+    """启动期迁移：仅改写 DB URL（不含文件上传）.
+
+    文件上传改为带外执行（见 `upload_local_files_to_oss` / `__main__`），
+    避免启动期 N 次 `object_exists` 网络往返阻塞服务就绪。
+
+    幂等：已是 OSS URL 的记录跳过。
+    完成后写入 Redis 标记，后续启动跳过重复 DB 扫描。
+    若文件上传标记缺失，打印醒目日志提示运行带外脚本。
     """
     if settings.storage_backend != "oss":
         logger.info("跳过 OSS 迁移：storage_backend=%s", settings.storage_backend)
@@ -287,41 +343,121 @@ def migrate_uploads_to_oss(engine: Engine) -> None:
         logger.warning("迁移：oss_public_base_url 未配置，跳过 OSS 迁移")
         return
 
-    # 完成标记：避免每次启动重复扫描所有文件（file_exists 网络开销）
-    # Redis 不可用时降级为正常执行（迁移本身幂等，重复执行无副作用）
-    try:
-        from utils.redis_client import get_redis_client  # noqa: PLC0415
+    redis_client = _get_redis_client_safe()
 
-        redis_client = get_redis_client()
-        if redis_client.get(_MIGRATION_DONE_KEY):
-            logger.info("跳过 OSS 迁移：已完成（Redis 标记存在）")
-            return
-    except Exception:  # noqa: BLE001
-        logger.debug("Redis 不可用，无法检查迁移标记，继续执行迁移")
-        redis_client = None
+    # DB 改写完成标记：避免每次启动重复扫描（改写本身幂等，标记仅为省 DB 往返）
+    if redis_client is not None and redis_client.get(_DB_REWRITE_DONE_KEY):
+        logger.info("跳过 OSS DB URL 改写：已完成（Redis 标记存在）")
+    else:
+        logger.info("迁移：开始改写 DB URL 为 OSS URL（base_url=%s）", oss_base)
+        simple_rewritten, json_rewritten = _rewrite_db_urls(engine, oss_base)
+        logger.info(
+            "迁移：DB URL 改写完成（普通字段 %d，JSON 字段 %d）",
+            simple_rewritten,
+            json_rewritten,
+        )
+        try:
+            if redis_client is not None:
+                redis_client.set(_DB_REWRITE_DONE_KEY, "1")
+        except Exception:  # noqa: BLE001
+            logger.warning("迁移：无法写入 Redis DB 改写标记，下次启动将重新检查")
 
-    logger.info("迁移：开始将本地 uploads 迁移到 OSS（base_url=%s）", oss_base)
+    # 文件上传未完成 → 醒目提示运行带外脚本（不阻塞启动）
+    if redis_client is not None:
+        try:
+            file_uploaded = redis_client.get(_FILE_UPLOAD_DONE_KEY)
+        except Exception:  # noqa: BLE001
+            file_uploaded = None
+        if not file_uploaded:
+            logger.warning(
+                "迁移：本地文件上传到 OSS 尚未完成，请运行带外脚本："
+                "docker compose exec backend .venv/bin/python -m migrations.migrate_uploads_to_oss"
+            )
 
-    # A. 上传本地文件到 OSS
+
+def upload_local_files_to_oss() -> tuple[int, int]:
+    """带外迁移：上传本地 uploads 文件到 OSS.
+
+    幂等：upload_file 前调 file_exists 检查，已存在则跳过。
+    完成后写入 Redis 标记，后续运行跳过重复扫描。
+
+    Returns:
+        (uploaded_count, skipped_count)
+
+    """
+    if settings.storage_backend != "oss":
+        logger.warning("跳过文件上传：storage_backend=%s（非 oss）", settings.storage_backend)
+        return 0, 0
+
+    oss_base = settings.oss_public_base_url
+    if not oss_base:
+        logger.warning("文件上传：oss_public_base_url 未配置，跳过")
+        return 0, 0
+
+    redis_client = _get_redis_client_safe()
+    if redis_client is not None:
+        try:
+            if redis_client.get(_FILE_UPLOAD_DONE_KEY):
+                logger.info("跳过文件上传：已完成（Redis 标记存在）")
+                return 0, 0
+        except Exception:  # noqa: BLE001
+            logger.debug("无法读取文件上传标记，继续执行")
+
     uploaded, skipped = _upload_local_files()
 
-    # B. 改写 DB URL
-    # B1. 普通字符串 URL 字段
-    simple_rewritten = _rewrite_simple_url_fields(engine, oss_base)
-    # B2. JSON 数组 URL 字段
-    json_rewritten = _rewrite_json_array_field(engine, oss_base)
+    try:
+        if redis_client is not None:
+            redis_client.set(_FILE_UPLOAD_DONE_KEY, "1")
+    except Exception:  # noqa: BLE001
+        logger.warning("迁移：无法写入 Redis 文件上传标记，下次运行将重新检查")
+
+    return uploaded, skipped
+
+
+def run_out_of_band_migration(engine: Engine) -> None:
+    """带外完整迁移：上传本地文件 + 改写 DB URL.
+
+    供 `python -m migrations.migrate_uploads_to_oss` 调用，应在切换到 OSS 后、
+    对外提供服务前运行一次。幂等，可重复执行。
+    """
+    if settings.storage_backend != "oss":
+        logger.error("storage_backend 非 oss，退出（当前=%s）", settings.storage_backend)
+        return
+
+    oss_base = settings.oss_public_base_url
+    if not oss_base:
+        logger.error("oss_public_base_url 未配置，退出")
+        return
+
+    logger.info("带外迁移：开始（base_url=%s）", oss_base)
+
+    # A. 上传本地文件到 OSS
+    uploaded, skipped = upload_local_files_to_oss()
+
+    # B. 改写 DB URL（与启动期逻辑一致，幂等）
+    redis_client = _get_redis_client_safe()
+    simple_rewritten, json_rewritten = _rewrite_db_urls(engine, oss_base)
+    try:
+        if redis_client is not None:
+            redis_client.set(_DB_REWRITE_DONE_KEY, "1")
+    except Exception:  # noqa: BLE001
+        logger.warning("迁移：无法写入 Redis DB 改写标记")
 
     logger.info(
-        "迁移：OSS 迁移完成（文件上传 %d，跳过 %d，DB URL 改写 %d，JSON 改写 %d）",
+        "带外迁移：完成（文件上传 %d，跳过 %d，DB URL 改写 %d，JSON 改写 %d）",
         uploaded,
         skipped,
         simple_rewritten,
         json_rewritten,
     )
 
-    # 写入完成标记（无 TTL，持久化；Redis 数据丢失时迁移会重新执行，幂等无副作用）
-    try:
-        if redis_client is not None:
-            redis_client.set(_MIGRATION_DONE_KEY, "1")
-    except Exception:  # noqa: BLE001
-        logger.warning("迁移：无法写入 Redis 完成标记，下次启动将重新检查")
+
+if __name__ == "__main__":
+    # 带外执行入口：python -m migrations.migrate_uploads_to_oss
+    from db import engine  # noqa: PLC0415
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    run_out_of_band_migration(engine)

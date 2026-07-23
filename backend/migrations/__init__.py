@@ -30,6 +30,8 @@
   timestamp without time zone 的列统一迁移为 timestamptz（通用时区修复，幂等）
 - migrate_encrypted_columns_to_text: 将 EncryptedString 列从 character varying 迁移为 text
   （Fernet 密文远超声明长度，PG 严格强制 VARCHAR 长度会报错，幂等）
+- widen_url_columns_to_text: 将 URL 列从 VARCHAR(500) 迁移为 text
+  （OSS/CDN URL 含 query string 时可能超 500 字符，PG 严格强制 VARCHAR 长度会报错，幂等）
 - create_wechat_oauth_tables: 幂等创建微信 OAuth state/temp_code 表并清理过期记录
 - create_user_roles_table: 幂等创建 user_roles 关联表（用户附加角色多对多）
 - migrate_installation_stage_to_delivery: 将 projects/renovation_photos/l4_marketing_media 中"安装"阶段
@@ -40,8 +42,9 @@
   清理已删除项目的合同记录，允许合同编号在项目软删除后被复用
 - migrate_permission_system: 幂等创建权限系统三张表（permissions/role_permissions/operation_logs），
   初始化系统权限点，为 4 个内置角色分配默认权限集
-- migrate_uploads_to_oss: 将本地 uploads 文件迁移到 OSS 并改写 DB URL（仅 storage_backend=oss 时执行，
-  幂等：已上传文件跳过，已是 OSS URL 的记录跳过）
+- migrate_uploads_to_oss: 启动期仅改写 DB URL 为 OSS URL（仅 storage_backend=oss 时执行，幂等：
+  已是 OSS URL 的记录跳过）；本地文件上传由带外脚本 `python -m migrations.migrate_uploads_to_oss`
+  执行（upload_local_files_to_oss），切换到 OSS 后对外提供服务前运行一次
 
 """
 
@@ -1156,6 +1159,60 @@ def migrate_encrypted_columns_to_text(engine: Engine) -> None:
             conn.execute(text(alter_sql))
 
 
+def widen_url_columns_to_text(engine: Engine) -> None:
+    """将 URL 列从 VARCHAR(500) 迁移为 text（M5 安全加固）.
+
+    修复：OSS/CDN URL 含 query string、长 CDN 路径时可能超过 500 字符，
+    PG 严格强制 VARCHAR 长度会触发 "value too long for type character varying(500)"。
+    模型层已改为 Text，此迁移同步已存在的 PG 表列类型为 text。
+
+    涉及列：
+    - property_media.url
+    - renovation_photos.url
+    - project_renovations.soft_detail_attachment
+    - property_import_tasks.failed_file_url
+
+    - PostgreSQL: ALTER COLUMN ... TYPE text（VARCHAR → text 隐式可转换，无需 USING）
+    - 幂等：通过 information_schema.columns 判断 data_type，已是 text 则跳过
+    - 表名/列名为硬编码字符串，未用 f-string 拼接变量（规范11）
+    """
+    inspector = inspect(engine)
+    if engine.dialect.name != "postgresql":
+        return
+
+    # 每列对应一段硬编码 ALTER SQL（避免 f-string 拼接表名/列名）
+    alter_statements = {
+        ("property_media", "url"): "ALTER TABLE property_media ALTER COLUMN url TYPE text",
+        ("renovation_photos", "url"): "ALTER TABLE renovation_photos ALTER COLUMN url TYPE text",
+        ("project_renovations", "soft_detail_attachment"): (
+            "ALTER TABLE project_renovations ALTER COLUMN soft_detail_attachment TYPE text"
+        ),
+        ("property_import_tasks", "failed_file_url"): (
+            "ALTER TABLE property_import_tasks ALTER COLUMN failed_file_url TYPE text"
+        ),
+    }
+
+    existing_tables = set(inspector.get_table_names())
+    for (table_name, column_name), alter_sql in alter_statements.items():
+        if table_name not in existing_tables:
+            continue
+        with engine.connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT data_type FROM information_schema.columns WHERE table_name = :table AND column_name = :col",
+                ),
+                {"table": table_name, "col": column_name},
+            ).first()
+        if row is None:
+            continue
+        # PostgreSQL 类型：text / character varying
+        if row[0] == "text":
+            continue
+        logger.info("迁移：%s.%s → text（当前类型 %s）", table_name, column_name, row[0])
+        with engine.begin() as conn:
+            conn.execute(text(alter_sql))
+
+
 def migrate_all_datetime_columns_to_timestamptz(engine: Engine) -> None:
     """将所有模型 DateTime 列在 PostgreSQL 中统一迁移为 timestamptz.
 
@@ -1561,7 +1618,42 @@ def add_reports_indexes(engine: Engine) -> None:
             )
 
 
+# 多 worker 部署下迁移串行化用的 advisory lock key（固定 bigint，任意取值）
+# 不同应用应取不同值避免冲突；此处仅 Profo 使用
+_MIGRATION_ADVISORY_LOCK_KEY = 20260722130001
+
+
 def run_startup_migrations(engine: Engine) -> None:
+    """执行所有启动时迁移（幂等）.
+
+    多 worker 部署（``--workers 2``）下，每个 Uvicorn worker 独立跑 lifespan →
+    各自调用本函数。若不加互斥，两 worker 会并发执行 schema/数据迁移，导致：
+    1. 并发上传/改写 OSS（虽有 Redis 标记但存在 check-then-set 竞态）；
+    2. 非严格幂等的 schema 迁移竞态放大；
+    3. 启动时间翻倍，易触发部署健康检查超时。
+
+    解决：PostgreSQL session-level advisory lock 串行化。第一个 worker 获取锁后
+    执行全部迁移，其余 worker 阻塞等待；锁释放后依次执行（迁移幂等，重复执行
+    为快速 no-op：``_column_exists`` 检查 + Redis 完成标记跳过）。
+    非 PostgreSQL 后端（开发/测试 SQLite 等）直接执行，无并发问题。
+    """
+    if engine.dialect.name != "postgresql":
+        _run_all_migrations(engine)
+        return
+
+    # 在独立连接上持有 session-level advisory lock，跨 worker 互斥
+    # （迁移事务借用连接池中其他连接，锁仅用于互斥，不影响事务隔离）
+    with engine.connect() as lock_conn:
+        lock_conn.execute(text("SELECT pg_advisory_lock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
+        try:
+            logger.info("已获取迁移 advisory lock，开始执行启动迁移")
+            _run_all_migrations(engine)
+        finally:
+            lock_conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": _MIGRATION_ADVISORY_LOCK_KEY})
+            logger.info("已释放迁移 advisory lock")
+
+
+def _run_all_migrations(engine: Engine) -> None:
     """执行所有启动时迁移（幂等）."""
     try:
         add_token_version_column(engine)
@@ -1586,6 +1678,7 @@ def run_startup_migrations(engine: Engine) -> None:
         migrate_project_date_columns_to_date(engine)
         migrate_user_datetime_columns_to_timestamptz(engine)
         migrate_encrypted_columns_to_text(engine)
+        widen_url_columns_to_text(engine)
         migrate_all_datetime_columns_to_timestamptz(engine)
         create_wechat_oauth_tables(engine)
         create_user_roles_table(engine)
