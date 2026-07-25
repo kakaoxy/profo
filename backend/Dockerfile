@@ -44,4 +44,8 @@ USER app
 
 EXPOSE 8000
 
-CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# WEB_CONCURRENCY: uvicorn 原生支持的环境变量，控制 worker 进程数（默认 2）
+# 部署时可通过 docker-compose environment 或 .env 覆盖，无需重建镜像
+ENV WEB_CONCURRENCY=2
+
+CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

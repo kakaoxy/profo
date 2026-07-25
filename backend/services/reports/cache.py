@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import functools
+import hashlib
 import json
 import logging
 from collections.abc import Callable
@@ -123,8 +124,10 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
 
     基于 Redis get/set + TTL 实现缓存，多 worker 共享。
 
-    - key 格式：``reports:cache:{module}.{qualname}:{repr(args/kwargs 序列化)}``，
-      包含函数限定名以避免不同函数同签名时 key 碰撞
+    - key 格式：``reports:cache:{module}.{qualname}:{sha256(args/kwargs)[:32]}``，
+      包含函数限定名以避免不同函数同签名时 key 碰撞；
+      args 部分取 SHA256 前 32 位（128bit）固定长度，避免 filter 含大量
+      community_ids 时 key 长达数 KB 浪费 Redis 内存
     - 命中：``redis.get(key)`` → JSON 反序列化（异常时删除损坏 key 并回退重算）
     - 未命中：执行函数 → ``redis.set(key, _dumps(result), ex=ttl_seconds)``
     - 缓存值可能是 Pydantic 模型、list、dict 等任意 Python 对象，
@@ -160,7 +163,11 @@ def cached_report(ttl_seconds: int = _DEFAULT_TTL_SECONDS) -> Callable[[Callable
 
             # 缓存键包含函数限定名，避免不同函数同签名时 key 碰撞
             # （如 get_kpi_data 与 get_price_distribution 均接受 (db, filter)）
-            key = f"{_CACHE_PREFIX}{func.__module__}.{func.__qualname__}:{_make_cache_key(args, kwargs)!r}"
+            # args 部分做 SHA256 hash 固定长度，避免 filter 含大量 community_ids 时
+            # key 过长浪费 Redis 内存（32MB 限制）
+            raw_key = repr(_make_cache_key(args, kwargs))
+            key_hash = hashlib.sha256(raw_key.encode()).hexdigest()[:32]
+            key = f"{_CACHE_PREFIX}{func.__module__}.{func.__qualname__}:{key_hash}"
 
             # 读取缓存：Redis 故障时降级为直接计算（缓存是优化手段，不应导致业务 500）
             try:
@@ -204,13 +211,18 @@ def invalidate_reports_cache() -> None:
     except RedisError:
         logger.warning("Redis 不可用，跳过报表缓存清空")
         return
-    cursor = 0
-    while True:
-        cursor, keys = redis_client.scan(cursor=cursor, match=f"{_CACHE_PREFIX}*", count=100)
-        if keys:
-            redis_client.delete(*keys)
-        if cursor == 0:
-            break
+    try:
+        cursor = 0
+        while True:
+            cursor, keys = redis_client.scan(cursor=cursor, match=f"{_CACHE_PREFIX}*", count=100)
+            if keys:
+                redis_client.delete(*keys)
+            if cursor == 0:
+                break
+    except RedisError:
+        # SCAN 中途 Redis 断开：已删除的 key 生效，剩余 key 将在 TTL 后自然过期。
+        # 缓存清空是优化手段，不应导致业务数据变更操作返回 500。
+        logger.warning("报表缓存清空中途 Redis 断开，剩余 key 将在 TTL 后自然过期", exc_info=True)
 
 
 def _make_cache_key(args: tuple, kwargs: dict) -> tuple:

@@ -7,6 +7,7 @@ cached_report 装饰器捕获后降级为直接计算。
 """
 
 import logging
+import time
 from urllib.parse import urlparse, urlunparse
 
 from redis import Redis
@@ -17,6 +18,11 @@ from settings import settings
 logger = logging.getLogger(__name__)
 
 _redis_client: Redis | None = None
+
+# 连接失败冷却期（秒）：Redis 不可达时避免每次调用都等待 socket_connect_timeout（5s）
+_COOLDOWN_SECONDS = 10.0
+_last_failure_time: float = 0.0
+_last_failure_exc: RedisError | None = None
 
 
 def _redact_redis_url(url: str) -> str:
@@ -40,10 +46,17 @@ def get_redis_client() -> Redis:
     cached_report 装饰器捕获后降级为直接计算，避免在 threadpool 中
     调用 sys.exit(1) 导致 worker 线程静默死亡、主线程永久阻塞。
     多 worker 下每个 worker 进程独立持有客户端实例。
+
+    连接失败后进入冷却期（_COOLDOWN_SECONDS），期间直接抛出缓存的异常，
+    避免 Redis 不可达时每次调用都等待 socket_connect_timeout（5s）。
     """
-    global _redis_client  # noqa: PLW0603
+    global _redis_client, _last_failure_time, _last_failure_exc  # noqa: PLW0603
     if _redis_client is not None:
         return _redis_client
+
+    # 冷却期内直接抛出缓存的异常，避免重复等待连接超时
+    if _last_failure_exc is not None and (time.monotonic() - _last_failure_time) < _COOLDOWN_SECONDS:
+        raise _last_failure_exc
 
     _redis_client = Redis.from_url(
         settings.redis_url,
@@ -54,9 +67,13 @@ def get_redis_client() -> Redis:
     try:
         _redis_client.ping()
     except RedisError as e:
-        # 重置为 None，使后续调用可重试
+        # 重置为 None，使后续调用可重试（冷却期后）
         _redis_client = None
+        _last_failure_time = time.monotonic()
+        _last_failure_exc = e
         logger.error("Redis 连接失败 (url=%s): %s", _redact_redis_url(settings.redis_url), e)  # noqa: TRY400
         raise
+    # 连接成功，清除失败状态
+    _last_failure_exc = None
     logger.info("Redis 连接成功 (url=%s)", _redact_redis_url(settings.redis_url))
     return _redis_client
