@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { Session } from "../types";
+import type { ResolvedAuthConfig, Session } from "../types";
 import { getSession } from "./session";
 import { getGlobalAuthConfig } from "../config";
 
@@ -9,6 +9,8 @@ import { getGlobalAuthConfig } from "../config";
  *
  * @param callback - Function to run with the resolved session.
  * @param defaultValue - Optional fallback returned when there is no session. Defaults to `null`.
+ * @param config - Optional resolved auth config. When omitted, falls back to the
+ *   module-level singleton. Pass explicitly when multiple `Auth()` instances coexist.
  * @returns The callback's return value, or `defaultValue` / `null` if unauthenticated.
  *
  * @example
@@ -17,8 +19,9 @@ import { getGlobalAuthConfig } from "../config";
 export async function withSession<TResult>(
   callback: (session: Session) => TResult | Promise<TResult>,
   defaultValue?: TResult,
+  config?: ResolvedAuthConfig,
 ): Promise<TResult | null> {
-  const session = await getSession();
+  const session = await getSession(config);
   if (!session) {
     return defaultValue !== undefined ? defaultValue : null;
   }
@@ -30,6 +33,7 @@ export async function withSession<TResult>(
  * Use in Server Components or server actions where authentication is required.
  *
  * @param callback - Function to run with the resolved session.
+ * @param config - Optional resolved auth config (see {@link withSession}).
  * @returns The callback's return value.
  * @throws Always throws Next.js's `NEXT_REDIRECT` error when unauthenticated.
  *
@@ -38,9 +42,10 @@ export async function withSession<TResult>(
  */
 export async function withRequiredSession<TResult>(
   callback: (session: Session) => TResult | Promise<TResult>,
+  config?: ResolvedAuthConfig,
 ): Promise<TResult> {
-  const config = getGlobalAuthConfig();
-  const session = await getSession();
-  if (!session) redirect(config.pages.signIn);
+  const resolvedConfig = config ?? getGlobalAuthConfig();
+  const session = await getSession(resolvedConfig);
+  if (!session) redirect(resolvedConfig.pages.signIn);
   return callback(session);
 }

@@ -1,6 +1,7 @@
 import { logger } from "@/lib/logger";
 import { cache } from "react";
 import { fetchClient } from "@/lib/api-server";
+import { isRedirectError } from "@/lib/auth/server/session";
 import type { components, paths } from "@/lib/api-types";
 import type { FunnelData, RawDashboardLead } from "../types";
 import { getStatusLabel } from "@/lib/status-colors";
@@ -188,6 +189,15 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
   ]);
 
   const errors: DashboardDataResult["errors"] = {};
+
+  // Task 8: 放行 NEXT_REDIRECT 错误。fetchClient 在 Server Component 上下文遇到
+  // 401 时会 redirect("/api/auth/refresh?next=...")，Promise.allSettled 会将该
+  // 抛错捕获为 rejected。若不放行，用户会看到空数据而非触发刷新跳转。
+  for (const result of results) {
+    if (result.status === "rejected" && isRedirectError(result.reason)) {
+      throw result.reason;
+    }
+  }
 
   const [
     projectStatsRes,

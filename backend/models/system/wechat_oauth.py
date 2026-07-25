@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from models.common.base import Base
 
 
+# @deprecated 已迁移至 Redis，保留表结构一轮过渡期
 class WeChatOAuthState(Base):
     """微信 OAuth state 记录（防 CSRF）.
 
@@ -31,6 +32,7 @@ class WeChatOAuthState(Base):
     )
 
 
+# @deprecated 已迁移至 Redis，保留表结构一轮过渡期
 class WeChatTempCode(Base):
     """微信登录临时授权码.
 

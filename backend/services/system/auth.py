@@ -27,6 +27,7 @@ from utils.auth import (
     validate_token,
     verify_password,
 )
+from utils.security_logger import log_auth_event
 
 from .exceptions import (
     AuthenticationError,
@@ -36,6 +37,12 @@ from .exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+# 时序攻击防护：用户不存在时以此哈希执行一次伪校验，使响应时间与用户存在的情况接近。
+# 模块加载时用 get_password_hash 计算，确保 Argon2 参数（memory_cost/time_cost/parallelism）
+# 始终与 pwdlib 当前配置一致，避免未来参数漂移导致两条路径耗时差异反向泄露用户存在性。
+# 仅用于消耗相近的 CPU 时间，不泄露任何真实用户信息。
+DUMMY_HASH = get_password_hash("dummy-password-12345")
 
 
 class NormalTokenResult(TypedDict):
@@ -154,7 +161,9 @@ class AuthService:
     def authenticate_user(db: Session, username: str, password: str) -> User:
         """验证用户名密码 (Sync - Blocking).
 
-        包含 bcrypt 验证（CPU密集型）.
+        包含 Argon2/Bcrypt 密码校验（CPU密集型）。旧 Bcrypt 哈希校验通过后会
+        自动升级为 Argon2 并写回数据库；用户不存在时执行一次 DUMMY_HASH 伪校验
+        以抵御时序攻击。
 
         Args:
             db: 数据库会话
@@ -187,9 +196,26 @@ class AuthService:
             .filter(User.username == username)
             .first()
         )
-        if not user or not verify_password(password, user.password):
+        if user is None:
+            # 时序攻击防护：用户不存在时也执行一次密码校验（结果丢弃），
+            # 使响应时间与用户存在但密码错误的场景接近，避免通过耗时差异枚举用户名。
+            verify_password(password, DUMMY_HASH)
             msg = "用户名或密码错误"
             raise AuthenticationError(msg)
+
+        verified, updated_hash = verify_password(password, user.password)
+        if not verified:
+            msg = "用户名或密码错误"
+            raise AuthenticationError(msg)
+
+        # Bcrypt → Argon2 平滑升级：旧 Bcrypt 哈希校验通过后，pwdlib 返回 Argon2 升级哈希，
+        # 写回数据库完成迁移（后续校验将直接走 Argon2，且不再触发升级）。
+        if updated_hash is not None:
+            user.password = updated_hash
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
         if user.status != "active":
             msg = "账号已被禁用，请联系管理员"
             raise PermissionDeniedError(msg)
@@ -281,9 +307,9 @@ class AuthService:
             msg = "用户不存在"
             raise AuthenticationError(msg)
 
-        # 校验 token_version：不匹配说明已签发 Token 已被撤销
+        # 严格校验 token_version：缺失或不匹配一律拒绝（已签发 Token 被撤销或伪造）
         token_ver = payload.get("ver")
-        if token_ver is not None and user.token_version != token_ver:
+        if token_ver != user.token_version:
             msg = "凭据已失效，请重新登录"
             raise AuthenticationError(msg)
 
@@ -426,9 +452,9 @@ class AuthService:
             msg = "用户不存在"
             raise AuthenticationError(msg)
 
-        # 校验 token_version：旧 Token 在密码修改/禁用后应无法刷新
+        # 严格校验 token_version：缺失或不匹配一律拒绝（旧 Token 在密码修改/禁用后应无法刷新）
         token_ver = payload.get("ver")
-        if token_ver is not None and user.token_version != token_ver:
+        if token_ver != user.token_version:
             msg = "凭据已失效，请重新登录"
             raise AuthenticationError(msg)
 
@@ -486,6 +512,9 @@ class AuthService:
             RefreshToken.revoked.is_(False),
         ).update({RefreshToken.revoked: True})
         db.commit()
+        # reason 在此层不可知（调用方场景：改密/重置/禁用/删除/角色变更），
+        # 操作上下文由调用方的审计日志 operation_log_service.log_action 记录
+        log_auth_event("token_invalidated", user_id=user.id)
 
     @staticmethod
     def revoke_refresh_token(

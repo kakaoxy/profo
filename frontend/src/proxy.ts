@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { randomUUID } from "crypto";
-import { apiPaths, getApiUrl } from "@/lib/config";
 import { auth } from "@/auth";
+import { adminAuth } from "@/admin-auth";
 import { debugLog } from "@/lib/auth/config";
-import { dedupServerRefresh } from "@/lib/auth/server/refresh-dedup";
 
-// Module-level singleton: library design intends one resolver reused across requests
+// Module-level singletons: library design intends one resolver reused across requests.
+// C端与 admin 各自捕获自己的 resolved config，互不干扰（Task 5 singleton 修复）。
 const resolveAuth = auth.createMiddleware();
+const resolveAdminAuth = adminAuth.createMiddleware();
 
 const PROTECTED_C_PREFIXES = ["/valuation", "/leads", "/my", "/profile"];
 
@@ -22,34 +23,22 @@ function isProtectedCPath(pathname: string): boolean {
   );
 }
 
-function decodeJWTPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64 = token.split(".")[1];
-    if (!base64) return null;
-    const padded = base64.replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(padded));
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function isTokenExpired(token: string, bufferMs = 5 * 60 * 1000): boolean {
-  const payload = decodeJWTPayload(token);
-  if (!payload || typeof payload.exp !== "number") return true;
-  return payload.exp * 1000 - Date.now() < bufferMs;
-}
-
 /**
- * 创建带 nonce 请求头的 NextResponse.next()。
+ * 创建带 nonce 与 pathname 请求头的 NextResponse.next()。
  *
  * 将 nonce 写入 **请求头**（而非响应头），使 Server Components 可通过
  * `headers()` 读取。Next.js 会自动将 `x-nonce` 请求头注入到框架自身
  * 生成的内联脚本（RSC payload 等），切换到 CSP 强制模式时不会误拦。
+ *
+ * Task 8.1: 同时注入 `x-pathname`，让 Server Component 内的工具（如
+ * `api-server.ts` 的 401 自动刷新）能读取当前路径以构造 `?next=<path>`
+ * 重定向 URL。Next.js 16 已移除自动 `x-invoke-path`/`x-pathname`，
+ * 必须由 middleware 显式注入。
  */
 function nextWithNonce(request: NextRequest, nonce: string): NextResponse {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
   return NextResponse.next({
     request: { headers: requestHeaders },
   });
@@ -106,7 +95,7 @@ export default async function proxy(request: NextRequest) {
       debugLog("proxy: C-side unauthenticated — redirecting to login", { pathname });
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return session.redirect(loginUrl);
+      return applyCsp(session.redirect(loginUrl), nonce);
     }
 
     // 已认证：写回可能刷新后的 token cookies
@@ -130,88 +119,25 @@ export default async function proxy(request: NextRequest) {
     return applyCsp(nextWithNonce(request, nonce), nonce);
   }
 
-  // ── 4. Admin-side token refresh ──
-  const accessToken = request.cookies.get("access_token")?.value;
-  const refreshToken = request.cookies.get("refresh_token")?.value;
-
-  if (!refreshToken || refreshToken === "") {
-    debugLog("proxy: admin no refresh_token — redirecting to /admin/login", { pathname });
-    return NextResponse.redirect(new URL("/admin/login", request.url));
-  }
-
-  const shouldRefresh = !accessToken || isTokenExpired(accessToken);
-
-  // 仅对 HTML 页面请求执行 proxy 层刷新，避免并发 API 请求多次触发刷新
-  // 客户端 API 请求的 401 由 api-client.ts / swr.ts 的刷新重试机制处理
+  // ── 4. Admin-side auth (HTML requests only) ──
+  // 仅对 HTML 页面请求执行 proxy 层刷新，避免并发 API 请求多次触发刷新。
+  // 客户端 API 请求的 401 由 api-server.ts 的 forceRefreshToken 重试机制处理
+  // （内部走 adminAuth.adapter.refreshToken + setTokenCookies，复用统一 dedup）。
+  // adminAuth.createMiddleware() 已捕获 admin resolved config，不依赖 singleton。
   const isHtmlRequest = request.headers.get("accept")?.includes("text/html");
 
-  if (shouldRefresh && refreshToken && isHtmlRequest) {
-    debugLog("proxy: admin refreshing token", { pathname, reason: !accessToken ? "no access_token" : "expired" });
-
-    // Dedup concurrent refresh calls for the same refresh_token: refresh
-    // token rotation revokes the old token on each refresh, so without
-    // dedup, concurrent HTML requests (multi-tab) would each fire an
-    // independent refresh and all but one would fail.
-    const refreshResult = await dedupServerRefresh(refreshToken, async () => {
-      try {
-        const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        });
-        if (!response.ok) {
-          return { ok: false as const, status: response.status };
-        }
-        const data = await response.json();
-        return { ok: true as const, data };
-      } catch {
-        return { ok: false as const, networkError: true };
-      }
-    });
-
-    if (refreshResult.ok) {
-      const data = refreshResult.data;
-      const nextResponse = nextWithNonce(request, nonce);
-
-      nextResponse.cookies.set("access_token", data.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: data.expires_in || 36000,
-        sameSite: "lax",
-      });
-
-      nextResponse.cookies.set("refresh_token", data.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: "lax",
-      });
-
-      debugLog("proxy: admin token refresh successful", { pathname });
-      return applyCsp(nextResponse, nonce);
-    }
-
-    if ("networkError" in refreshResult) {
-      debugLog("proxy: admin refresh network error — continuing", { pathname });
-    } else if (refreshResult.status === 401 || refreshResult.status === 403) {
-      debugLog("proxy: admin refresh rejected — redirecting to /admin/login", {
-        pathname,
-        status: refreshResult.status,
-      });
-      const redirectResponse = NextResponse.redirect(
-        new URL("/admin/login", request.url)
-      );
-      redirectResponse.cookies.delete("access_token");
-      redirectResponse.cookies.delete("refresh_token");
-      return redirectResponse;
-    } else {
-      debugLog("proxy: admin refresh non-ok status", { pathname, status: refreshResult.status });
-    }
+  if (!isHtmlRequest) {
+    return applyCsp(nextWithNonce(request, nonce), nonce);
   }
 
-  return applyCsp(nextWithNonce(request, nonce), nonce);
+  const session = await resolveAdminAuth(request);
+
+  if (!session.isAuthenticated) {
+    debugLog("proxy: admin unauthenticated — redirecting to /admin/login", { pathname });
+    return applyCsp(session.redirect(new URL("/admin/login", request.url)), nonce);
+  }
+
+  return applyCsp(session.response(nextWithNonce(request, nonce)), nonce);
 }
 
 export const config = {

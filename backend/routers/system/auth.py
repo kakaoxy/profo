@@ -25,10 +25,15 @@ from schemas.user import (
     WechatLoginRequest,
 )
 from services.system import ApiKeyService, AuthService, WeChatAuthService, permission_service
-from services.system.exceptions import AuthenticationError, BusinessLogicError
+from services.system.exceptions import (
+    AuthenticationError,
+    BusinessLogicError,
+    PermissionDeniedError,
+)
 from settings import settings
 from utils.auth import AUDIENCE_ADMIN
 from utils.common import RateLimits, limiter
+from utils.security_logger import log_auth_event
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +61,25 @@ def login_for_access_token(
     速率限制：5次/分钟.
     拒绝 C 端 customer 角色登录后台.
     """
-    user = AuthService.authenticate_backend_user(db, form_data.username, form_data.password)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    try:
+        user = AuthService.authenticate_backend_user(db, form_data.username, form_data.password)
+    except (AuthenticationError, PermissionDeniedError) as e:
+        log_auth_event(
+            "login_failure",
+            client_ip=client_ip,
+            user_agent=user_agent,
+            username=form_data.username,
+            reason=type(e).__name__,
+        )
+        raise
+    log_auth_event(
+        "login_success",
+        user_id=user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
+    )
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
@@ -91,7 +114,25 @@ def login(
     速率限制：5次/分钟.
     拒绝 C 端 customer 角色登录后台；统一处理强制改密策略.
     """
-    user = AuthService.authenticate_backend_user(db, login_data.username, login_data.password)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    try:
+        user = AuthService.authenticate_backend_user(db, login_data.username, login_data.password)
+    except (AuthenticationError, PermissionDeniedError) as e:
+        log_auth_event(
+            "login_failure",
+            client_ip=client_ip,
+            user_agent=user_agent,
+            username=login_data.username,
+            reason=type(e).__name__,
+        )
+        raise
+    log_auth_event(
+        "login_success",
+        user_id=user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
+    )
 
     result = AuthService.create_tokens_for_user(db, user, force_temp_token=True)
 
@@ -124,11 +165,29 @@ def refresh_access_token(
     速率限制：10次/分钟.
     仅接受后台受众(aud=admin)的刷新令牌，拒绝C端Token.
     """
-    return AuthService.refresh_user_token(
-        db,
-        refresh_data.refresh_token,
-        expected_audience=AUDIENCE_ADMIN,
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    try:
+        result = AuthService.refresh_user_token(
+            db,
+            refresh_data.refresh_token,
+            expected_audience=AUDIENCE_ADMIN,
+        )
+    except AuthenticationError as e:
+        log_auth_event(
+            "refresh_failure",
+            client_ip=client_ip,
+            user_agent=user_agent,
+            reason=type(e).__name__,
+        )
+        raise
+    log_auth_event(
+        "refresh_success",
+        user_id=result["user"].id,
+        client_ip=client_ip,
+        user_agent=user_agent,
     )
+    return result
 
 
 @router.post(
@@ -154,11 +213,19 @@ def logout(
     refresh_token 按 jti 撤销，防止退出后被重放刷新。
     归属校验：refresh_token 必须属于当前登录用户，否则静默跳过（防 DoS）。
     """
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     AuthService.revoke_refresh_token(
         db,
         refresh_data.refresh_token,
         expected_audience=AUDIENCE_ADMIN,
         expected_user_id=str(current_user.id),
+    )
+    log_auth_event(
+        "logout",
+        user_id=current_user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
     )
     return LogoutResponse(message="退出登录成功")
 
@@ -187,7 +254,7 @@ async def wechat_callback(
 
     严格校验 state 与服务端签发的一致，防止 CSRF / 登录态劫持。
     """
-    if not WeChatAuthService.consume_wechat_state(db, state):
+    if not await run_in_threadpool(WeChatAuthService.consume_wechat_state, db, state):
         logger.warning("微信回调 state 校验失败，疑似 CSRF 攻击")
         msg = "state 校验失败，请重新发起微信登录"
         raise BusinessLogicError(msg)
@@ -210,7 +277,8 @@ async def wechat_callback(
 
     result = await run_in_threadpool(AuthService.create_tokens_for_user, db, user)
 
-    auth_code = WeChatAuthService.store_temp_token(
+    auth_code = await run_in_threadpool(
+        WeChatAuthService.store_temp_token,
         db,
         access_token=result["access_token"],
         refresh_token=result["refresh_token"],
@@ -238,6 +306,9 @@ def exchange_token(
     速率限制：10次/分钟.
     """
     entry = WeChatAuthService.exchange_temp_code(db, exchange_data.code)
+    if entry is None:
+        msg = "授权码无效"
+        raise AuthenticationError(msg)
     return TokenResponse(
         access_token=entry["access_token"],
         refresh_token=entry["refresh_token"],

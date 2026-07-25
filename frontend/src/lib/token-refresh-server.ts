@@ -1,33 +1,42 @@
 /**
- * 服务端Token刷新管理器
+ * 服务端 Token 刷新管理器
  * 每个请求独立读取自己的 cookie，不跨用户共享 token
  *
- * 并发刷新通过 dedupServerRefresh 去重：refresh_token rotation 每次撤销旧 jti，
- * 不去重会导致并发请求中除第一个外全部失败（旧 refresh_token 已被撤销）。
+ * 内部通过 `adminAuth.adapter.refreshToken` 调用后端 `/api/v1/auth/refresh`，
+ * 通过 `setTokenCookies(adminAuth.config)` 写入 cookie（maxAge 从 exp claim 读取，
+ * 不再使用 `data.expires_in` 硬编码）。并发刷新通过 `dedupServerRefresh` 去重：
+ * refresh_token rotation 每次撤销旧 jti，不去重会导致并发请求中除第一个外全部失败。
+ *
+ * Task 7.3 评估结论：本模块不可整体删除。`api-server.ts` 的 `fetchWithAutoRefresh`
+ * 依赖 `getAccessTokenFromCookie` / `forceRefreshToken` 进行 401 重试。auth 库的
+ * `createMiddleware` 适合在 proxy 层使用（操作 NextRequest/NextResponse），但
+ * Server Component 内的 fetch 重试需要更细粒度的控制（只返回新 access_token，
+ * 不操作 NextResponse），因此保留此模块作为 api-server 与 adminAuth adapter
+ * 之间的薄封装。
+ *
+ * Task 8.3: 移除「Server Component 无法写 cookie」的内存 token 兜底逻辑。
+ * 此前在 Server Component 上下文调用 `setTokenCookies` 会抛错，旧代码 catch
+ * 后仍返回新 access_token 给本次请求重试，但后端 rotation 已撤销旧 refresh_token，
+ * 浏览器下次请求会因 cookie 中 refresh_token 失效而被登出 —— 即「内存 token」
+ * 仅本次请求有效，无法持久化。
+ *
+ * 新流程：`api-server.ts` 在调用 `forceRefreshToken` 之前通过 `next-action`
+ * 请求头检测上下文，Server Component 上下文直接 `redirect("/api/auth/refresh?next=...")`
+ * 由 Route Handler 落盘 cookie；只有 Server Action 上下文（可写 cookie）才走本模块。
+ * 因此本模块的 `setTokenCookies` 调用应当总是成功，若失败则交由外层 catch
+ * 返回 `null`，由调用方（api-server.ts）返回原 401 响应由上层处理。
  */
 
+import { adminAuth } from "@/admin-auth";
 import { dedupServerRefresh } from "@/lib/auth/server/refresh-dedup";
+import { setTokenCookies } from "@/lib/auth/core";
 import { logger } from "@/lib/logger";
 import { cookies } from "next/headers";
 
-interface RefreshResult {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
-/** Access Token cookie 名（Admin 端，无前缀） */
+/** Access Token cookie 名（Admin 端，无前缀，与 adminAuth.config.cookieNames.accessToken 一致） */
 const ACCESS_TOKEN_COOKIE = "access_token";
-/** Refresh Token cookie 名（Admin 端，无前缀） */
+/** Refresh Token cookie 名（Admin 端，无前缀，与 adminAuth.config.cookieNames.refreshToken 一致） */
 const REFRESH_TOKEN_COOKIE = "refresh_token";
-
-/** Cookie 通用配置（与 proxy.ts / route.ts 保持一致） */
-const TOKEN_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  path: "/",
-  sameSite: "lax" as const,
-};
 
 /**
  * 从 Cookie 中读取 access_token
@@ -43,14 +52,23 @@ export async function getAccessTokenFromCookie(): Promise<string | null> {
 }
 
 /**
- * 服务端Token刷新函数
- * 使用当前请求的 refresh_token cookie 向 /auth/refresh 换取新的 token pair
+ * 服务端 Token 刷新函数
  *
- * 通过 dedupServerRefresh 以 refresh_token 为 key 去重：
- * 同一 refresh_token 在 2 秒内的多次调用共享同一 Promise，
- * 避免并发触发后端 rotation 导致后续请求失败。
+ * 使用当前请求的 refresh_token cookie，通过 `adminAuth.adapter.refreshToken`
+ * 向后端 `/auth/refresh` 换取新的 token pair，再用 `setTokenCookies` 写入 cookie
+ * （maxAge 从 token exp claim 读取）。
+ *
+ * 通过 `dedupServerRefresh` 以 refresh_token 为 key 去重：同一 refresh_token 在
+ * 2 秒内的多次调用共享同一 Promise，避免并发触发后端 rotation 导致后续请求失败。
+ *
+ * Task 8.3: 仅在 Server Action / Route Handler 上下文调用（可写 cookie）。
+ * Server Component 上下文应由 `api-server.ts` 重定向到 `/api/auth/refresh` 路由
+ * 处理，不应调用本函数 —— 后端 rotation 撤销旧 refresh_token 后无法落盘新 token，
+ * 会导致浏览器下次请求被登出。
+ *
+ * @returns `{ accessToken }` 或 `null`（刷新失败/无 refresh_token/cookie 写入失败）
  */
-export async function refreshTokenServer(): Promise<RefreshResult | null> {
+export async function refreshTokenServer(): Promise<{ accessToken: string } | null> {
   try {
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
@@ -60,58 +78,25 @@ export async function refreshTokenServer(): Promise<RefreshResult | null> {
       return null;
     }
 
-    // 动态导入避免循环依赖
-    const { apiPaths, getApiUrl } = await import("./config");
+    // 以 refresh_token 为 key 去重，防止并发刷新触发 rotation 竞态。
+    // adminAuth.adapter.refreshToken 返回 TokenPair 或抛错（错误信息由 extractApiError 提取）。
+    const tokens = await dedupServerRefresh(refreshToken, () =>
+      adminAuth.adapter.refreshToken(refreshToken),
+    );
 
-    // 以 refresh_token 为 key 去重，防止并发刷新触发 rotation 竞态
-    const result = await dedupServerRefresh(refreshToken, async () => {
-      const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
+    // setTokenCookies 从 token exp claim 计算 maxAge，不再依赖 expires_in 字段。
+    // 仅在 Server Action / Route Handler 上下文可写 cookie；若在 Server Component
+    // 上下文调用会抛错，由外层 catch 捕获并返回 null（Task 8.3：不再保留内存 token）。
+    // 调用方（api-server.ts）应通过 `next-action` 头检测上下文，Server Component
+    // 上下文走 /api/auth/refresh 路由而非本函数。
+    await setTokenCookies(tokens, adminAuth.config);
 
-      if (!response.ok) {
-        return { ok: false as const, status: response.status };
-      }
-
-      const data: RefreshResult = await response.json();
-      return { ok: true as const, data };
-    });
-
-    if (!result.ok) {
-      logger.error("Token 刷新失败", { status: result.status });
-      return null;
-    }
-
-    const data = result.data;
-
-    try {
-      cookieStore.set(ACCESS_TOKEN_COOKIE, data.access_token, {
-        ...TOKEN_COOKIE_OPTIONS,
-        maxAge: data.expires_in,
-      });
-
-      cookieStore.set(REFRESH_TOKEN_COOKIE, data.refresh_token, {
-        ...TOKEN_COOKIE_OPTIONS,
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    } catch {
-      // Server Component 上下文（非 Server Action / Route Handler）无法修改 cookie
-      // 后端 rotation 已撤销旧 refresh_token，新 token 仅内存有效用于本次请求重试
-      // 浏览器仍持旧 refresh_token（已失效），下次请求触发刷新会失败并被 Route Handler 清 cookie
-      // 此为 Next.js Server Component 已知限制，由 Proxy 层（HTML 请求）或 Server Action 上下文兜底
-      logger.error(
-        "Server Component 上下文无法写入 cookie：新 token 仅本次内存有效，浏览器下次请求将触发登出",
-        {
-          hint: "确保此 Server Component 改为 Server Action，或由 Proxy 层提前刷新 HTML 请求的 token",
-        },
-      );
-    }
-
-    return data;
+    return { accessToken: tokens.accessToken };
   } catch (error) {
-    logger.error("刷新 Token 时发生网络错误", error);
+    // adminAuth.adapter.refreshToken 抛错（HTTP 非 2xx 或网络错误），
+    // 或 setTokenCookies 在不可写 cookie 的上下文调用抛错。
+    // 返回 null 由调用方（api-server.ts）返回原 401 响应由上层处理。
+    logger.error("Token 刷新失败", error);
     return null;
   }
 }
@@ -125,7 +110,7 @@ export async function getValidAccessToken(): Promise<string | null> {
   if (cookieToken) return cookieToken;
 
   const result = await refreshTokenServer();
-  return result?.access_token ?? null;
+  return result?.accessToken ?? null;
 }
 
 /**
@@ -134,5 +119,5 @@ export async function getValidAccessToken(): Promise<string | null> {
  */
 export async function forceRefreshToken(): Promise<string | null> {
   const result = await refreshTokenServer();
-  return result?.access_token ?? null;
+  return result?.accessToken ?? null;
 }

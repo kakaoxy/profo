@@ -1,4 +1,5 @@
 import { fetchClient } from "@/lib/api-server";
+import { isRedirectError } from "@/lib/auth/server/session";
 import type { components } from "@/lib/api-types";
 import type { paths } from "@/lib/api-types";
 
@@ -53,6 +54,15 @@ export async function batchGetMarketData(
 
   const data: MarketDataMap = {};
   const errors: string[] = [];
+
+  // Task 8: 放行 NEXT_REDIRECT 错误，与 dashboard-data.ts 保持一致。
+  // Promise.allSettled 会将 fetchClient 抛出的 NEXT_REDIRECT 捕获为 rejected，
+  // 若不放行会落入下方 else 分支被当作普通错误吞掉，导致刷新跳转不触发。
+  for (const result of results) {
+    if (result.status === "rejected" && isRedirectError(result.reason)) {
+      throw result.reason;
+    }
+  }
 
   results.forEach((result) => {
     if (result.status === "fulfilled") {

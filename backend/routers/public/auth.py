@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from constants.role_codes import RoleCode
-from dependencies.auth import CurrentCustomerUserDep, DbSessionDep, require_roles
+from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from models import User
 from schemas.public import (
     PublicLoginResponse,
@@ -21,10 +21,11 @@ from schemas.public import (
 )
 from services.system import permission_service
 from services.system.auth import AuthService
-from services.system.exceptions import PermissionDeniedError
+from services.system.exceptions import AuthenticationError, PermissionDeniedError
 from utils.auth import AUDIENCE_C
 from utils.common import RateLimits, limiter
 from utils.formatters import mask_phone
+from utils.security_logger import log_auth_event
 
 router = APIRouter(prefix="/public/auth", tags=["public-auth"])
 
@@ -87,12 +88,20 @@ def register(
     db: DbSessionDep,
 ) -> PublicRegisterResponse:
     """C端用户注册，自动分配customer角色."""
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     db_user = AuthService.register_public_user(
         db,
         username=body.username,
         password=body.password,
         phone=body.phone,
         nickname=body.nickname,
+    )
+    log_auth_event(
+        "register_success",
+        user_id=db_user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
     )
 
     token_data = AuthService.create_tokens_for_user(db, db_user)
@@ -123,11 +132,28 @@ def login_for_access_token(
     db: DbSessionDep,
 ) -> PublicLoginResponse:
     """C端用户登录，验证用户名密码后返回JWT令牌."""
-    user = AuthService.authenticate_user(db, form_data.username, form_data.password)
-
-    if not has_customer_identity(user):
-        msg = "此接口仅限C端用户登录"
-        raise PermissionDeniedError(msg)
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    try:
+        user = AuthService.authenticate_user(db, form_data.username, form_data.password)
+        if not has_customer_identity(user):
+            msg = "此接口仅限C端用户登录"
+            raise PermissionDeniedError(msg)
+    except (AuthenticationError, PermissionDeniedError) as e:
+        log_auth_event(
+            "login_failure",
+            client_ip=client_ip,
+            user_agent=user_agent,
+            username=form_data.username,
+            reason=type(e).__name__,
+        )
+        raise
+    log_auth_event(
+        "login_success",
+        user_id=user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
+    )
 
     # C 端登录固定签发 aud=c, role=customer 的令牌：
     # 即使主角色为 admin 但具备 customer 附加角色，C 端身份下 role claim 固定为 customer
@@ -166,10 +192,27 @@ def refresh_access_token(
 
     仅接受C端受众(aud=c)的刷新令牌，拒绝后台Token.
     """
-    token_data = AuthService.refresh_user_token(
-        db,
-        refresh_data.refresh_token,
-        expected_audience="c",
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    try:
+        token_data = AuthService.refresh_user_token(
+            db,
+            refresh_data.refresh_token,
+            expected_audience="c",
+        )
+    except AuthenticationError as e:
+        log_auth_event(
+            "refresh_failure",
+            client_ip=client_ip,
+            user_agent=user_agent,
+            reason=type(e).__name__,
+        )
+        raise
+    log_auth_event(
+        "refresh_success",
+        user_id=token_data["user"].id,
+        client_ip=client_ip,
+        user_agent=user_agent,
     )
 
     return PublicLoginResponse(
@@ -214,7 +257,7 @@ def get_current_user_info(
 def logout(
     request: Request,
     body: PublicRefreshTokenRequest,
-    current_user: Annotated[User, Depends(require_roles(["customer"]))],
+    current_user: CurrentCustomerUserDep,
     db: DbSessionDep,
 ) -> PublicLogoutResponse:
     """C端退出登录，撤销当前 refresh_token.
@@ -223,10 +266,18 @@ def logout(
     refresh_token 按 jti 撤销，防止退出后被重放刷新。
     归属校验：refresh_token 必须属于当前登录用户，否则静默跳过（防 DoS）。
     """
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     AuthService.revoke_refresh_token(
         db,
         body.refresh_token,
         expected_audience="c",
         expected_user_id=str(current_user.id),
+    )
+    log_auth_event(
+        "logout",
+        user_id=current_user.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
     )
     return PublicLogoutResponse(message="退出登录成功")
