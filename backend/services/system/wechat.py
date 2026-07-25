@@ -83,7 +83,7 @@ class WeChatAuthService:
         """校验并消费微信 OAuth state（一次性，原子 GETDEL）.
 
         Returns:
-            反序列化的 session 数据（state 有效且已被消费）；None 表示无效/过期/缺失。
+            反序列化的 session 数据（state 有效且已被消费）；None 表示无效/过期/缺失/数据损坏。
 
         """
         if not state:
@@ -92,7 +92,12 @@ class WeChatAuthService:
         data = redis_client.getdel(f"{_STATE_KEY_PREFIX}{state}")
         if data is None:
             return None
-        return json.loads(data)
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError:
+            # 数据损坏（外部篡改/写入部分失败）：视为 state 无效，避免请求崩溃
+            logger.warning("wechat state 反序列化失败，数据损坏", exc_info=True)
+            return None
 
     @staticmethod
     def store_temp_token(db: Session, access_token: str, refresh_token: str) -> str:  # noqa: ARG004
@@ -116,7 +121,7 @@ class WeChatAuthService:
         """用临时授权码换取令牌（原子 GETDEL）.
 
         Returns:
-            反序列化的 token 数据；None 表示授权码无效/过期/缺失。
+            反序列化的 token 数据；None 表示授权码无效/过期/缺失/数据损坏。
             调用方需自行处理 None（如抛 AuthenticationError 返回 401）。
 
         """
@@ -124,7 +129,12 @@ class WeChatAuthService:
         data = redis_client.getdel(f"{_TEMPCODE_KEY_PREFIX}{code}")
         if data is None:
             return None
-        return json.loads(data)
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError:
+            # 数据损坏（外部篡改/写入部分失败）：视为授权码无效，避免请求崩溃
+            logger.warning("wechat temp_code 反序列化失败，数据损坏", exc_info=True)
+            return None
 
     @staticmethod
     async def fetch_wechat_access_token(code: str) -> dict[str, object]:
