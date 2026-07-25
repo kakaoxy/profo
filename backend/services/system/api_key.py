@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from models import ApiKey, User
 from settings import settings
+from utils.security_logger import log_auth_event
 
 from .exceptions import AuthenticationError, ResourceNotFoundError, ServiceException
 
@@ -194,6 +195,8 @@ class ApiKeyService:
         """
         parts = api_key.split("_")
         if len(parts) != _API_KEY_PART_COUNT or parts[0] != "profo":
+            # 格式非法时无法提取 prefix，仅记录 reason
+            log_auth_event("api_key_auth_failure", reason="invalid_format")
             msg = "API Key 格式无效"
             raise AuthenticationError(msg)
 
@@ -229,6 +232,7 @@ class ApiKeyService:
                 is_legacy = True
 
         if not key_record:
+            log_auth_event("api_key_auth_failure", key_prefix=prefix, reason="invalid_key")
             msg = "API Key 无效"
             raise AuthenticationError(msg)
 
@@ -238,6 +242,7 @@ class ApiKeyService:
             db.flush()
 
         if key_record.expires_at and key_record.expires_at < datetime.now(timezone.utc):
+            log_auth_event("api_key_auth_failure", key_prefix=prefix, reason="expired")
             msg = "API Key 已过期"
             raise AuthenticationError(msg)
 
@@ -254,7 +259,17 @@ class ApiKeyService:
         )
 
         if not user:
+            log_auth_event(
+                "api_key_auth_failure",
+                key_prefix=prefix,
+                reason="user_inactive",
+            )
             msg = "用户不存在或已被禁用"
             raise AuthenticationError(msg)
 
+        log_auth_event(
+            "api_key_auth_success",
+            user_id=user.id,
+            key_prefix=prefix,
+        )
         return user

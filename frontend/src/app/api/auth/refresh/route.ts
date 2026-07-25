@@ -1,95 +1,96 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { apiPaths, getApiUrl } from "@/lib/config";
+import { adminAuth } from "@/admin-auth";
+import { clearTokenCookies, setTokenCookies } from "@/lib/auth/core";
+import { sanitizeCallbackUrl } from "@/lib/auth/utils/sanitize-callback-url";
 import { debugLog } from "@/lib/auth/config";
 
-interface RefreshResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
 /**
- * POST /api/v1/auth/refresh
+ * POST /api/auth/refresh[?next=<root-relative-path>]
  *
  * 客户端调用此路由来刷新 Token。
  * 由于 refresh_token 存储在 httpOnly cookie 中，客户端无法直接读取，
  * 所以需要通过这个 API 路由来代理刷新请求。
  *
- * [修复] 改进错误处理和日志记录
+ * 通过 `adminAuth.adapter.refreshToken` 调用后端 `/api/v1/auth/refresh`，
+ * 再用 `setTokenCookies(tokens, adminAuth.config)` 写入 cookie（maxAge 从
+ * token exp claim 读取，不再硬编码 `expires_in || 36000` / `60*60*24*7`）。
+ * 刷新失败时 `clearTokenCookies` 清除 cookie 并返回 401，强制用户重新登录
+ * （fail-closed：不再区分 401/403/500，任何刷新失败都视为会话失效）。
+ *
+ * Task 8.2: 支持 `?next=<path>` 查询参数，用于 Server Component 401 重定向流程：
+ *  - **导航请求**（`Accept: text/html`）：刷新成功后 303 重定向到 `next`，
+ *    浏览器重新加载原页面并带上新 cookie。
+ *  - **API 请求**（`Accept: application/json` 或 `X-Requested-With: XMLHttpRequest`）：
+ *    返回 `{ success: true, redirect: next }` JSON，由客户端 JS 自行跳转/重试。
+ *  - **无 `next` 参数**：保持旧行为，返回 `{ success: true }`。
+ *
+ * `next` 必须是 root-relative 路径（`/` 开头且非 `//`），由
+ * `sanitizeCallbackUrl` 校验，防止 open redirect 攻击。
  */
-export async function POST() {
+export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const refreshToken = cookieStore.get("refresh_token")?.value;
+  const refreshToken = cookieStore.get(adminAuth.config.cookieNames.refreshToken)?.value;
 
   if (!refreshToken) {
     debugLog("[admin refresh route] 无 refresh_token 可用");
     return NextResponse.json(
       { error: "No refresh token available" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
+  // Task 8.2: 解析并校验 `next` 参数（仅允许 root-relative 路径）
+  const url = new URL(request.url);
+  const rawNext = url.searchParams.get("next") ?? undefined;
+  const nextPath = sanitizeCallbackUrl(rawNext);
+
   try {
-    debugLog("[admin refresh route] 向后端请求刷新 token...");
-
-    const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      debugLog("[admin refresh route] 后端刷新失败", {
-        status: response.status,
-        error: errorText,
-      });
-
-      // 只有401/403错误才清除 cookies（token确实无效）
-      // 500错误保留cookies，可能是临时问题
-      if (response.status === 401 || response.status === 403) {
-        cookieStore.delete("access_token");
-        cookieStore.delete("refresh_token");
-        debugLog("[admin refresh route] 已清除无效 cookies");
-      }
-
-      return NextResponse.json(
-        { error: "Token refresh failed" },
-        { status: response.status }
-      );
-    }
-
-    const data: RefreshResponse = await response.json();
-
-    // 更新 cookies
-    cookieStore.set("access_token", data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: data.expires_in || 36000,
-      sameSite: "lax",
-    });
-
-    cookieStore.set("refresh_token", data.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: "lax",
-    });
-
+    debugLog("[admin refresh route] 向后端请求刷新 token...", { next: nextPath });
+    const tokens = await adminAuth.adapter.refreshToken(refreshToken);
+    await setTokenCookies(tokens, adminAuth.config);
     debugLog("[admin refresh route] Token 刷新成功");
 
+    // Task 8.2: 有 `next` 参数时按请求类型决定返回方式
+    if (nextPath) {
+      const accept = request.headers.get("accept") ?? "";
+      const isHtmlRequest = accept.includes("text/html");
+      const isAjaxRequest =
+        accept.includes("application/json") ||
+        request.headers.get("x-requested-with") === "XMLHttpRequest";
+
+      if (isHtmlRequest) {
+        // 导航请求：303 重定向回原路径（POST → GET 语义），浏览器带上新 cookie 重新加载
+        debugLog("[admin refresh route] HTML 请求 — 303 重定向到", nextPath);
+        return NextResponse.redirect(new URL(nextPath, request.url), {
+          status: 303,
+        });
+      }
+
+      if (isAjaxRequest) {
+        // API 请求：返回 JSON，由客户端 JS 决定是否跳转/重试
+        debugLog("[admin refresh route] AJAX 请求 — 返回 JSON 含 redirect");
+        return NextResponse.json({ success: true, redirect: nextPath });
+      }
+
+      // 未明确请求类型但有 next：保守返回 JSON（含 redirect 字段），
+      // 避免对未知 Accept 误触发浏览器导航
+      debugLog("[admin refresh route] 未识别 Accept 但有 next — 返回 JSON");
+      return NextResponse.json({ success: true, redirect: nextPath });
+    }
+
+    // 无 next 参数：保持旧行为
     // [安全修复] Token 仅通过 httpOnly cookie 传递，不返回到 JS 可读的响应体
     return NextResponse.json({ success: true });
   } catch (error) {
-    debugLog("[admin refresh route] 刷新时发生异常", {
+    debugLog("[admin refresh route] 刷新失败", {
       error: error instanceof Error ? error.message : String(error),
     });
+    // 刷新失败：清除 cookies，强制用户重新登录（fail-closed）
+    await clearTokenCookies(adminAuth.config);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: "Token refresh failed" },
+      { status: 401 },
     );
   }
 }

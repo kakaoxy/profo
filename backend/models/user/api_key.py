@@ -16,7 +16,7 @@ class ApiKey(BaseModel):
 
     每个用户只能有一个有效 Key
     Key 格式: profo_<prefix>_<random>
-    存储 SHA-256 哈希值.
+    存储 HMAC-SHA256 哈希值（带 server pepper）.
     """
 
     __tablename__ = "api_keys"
@@ -26,7 +26,7 @@ class ApiKey(BaseModel):
 
     # Key 信息
     key_prefix: Mapped[str] = mapped_column(String(8), nullable=False, comment="Key前缀(显示用)")
-    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="Key的SHA-256哈希值")
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="HMAC-SHA256 with server pepper")
 
     # 状态: active(有效), revoked(已撤销)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False, comment="Key状态")

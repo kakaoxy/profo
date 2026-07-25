@@ -5,9 +5,11 @@
 
 设计：
 - 方法保持 static/classmethod 风格，与原 AuthService 一致，无需实例化。
-- state / temp_code 存储在数据库表中（带 TTL），支持多 Worker 部署。
+- state / temp_code 存储在 Redis（带 TTL，原子 GETDEL 消费），支持多 Worker 部署；
+  原 DB 表（WeChatOAuthState / WeChatTempCode）保留一轮过渡期后移除。
 """
 
+import json
 import logging
 import secrets
 import uuid
@@ -18,9 +20,9 @@ import httpx
 from sqlalchemy.orm import Session
 
 from models import Role, User
-from models.system import WeChatOAuthState, WeChatTempCode
 from settings import settings
 from utils.auth import get_password_hash
+from utils.redis_client import get_redis_client
 
 from .exceptions import AuthenticationError, ResourceNotFoundError, ValidationError
 
@@ -28,6 +30,10 @@ logger = logging.getLogger(__name__)
 
 _STATE_TTL_SECONDS = 600  # 10 分钟
 _CODE_TTL_SECONDS = 60
+
+# Redis key 前缀，避免与其他模块的 key 冲突
+_STATE_KEY_PREFIX = "wechat:state:"
+_TEMPCODE_KEY_PREFIX = "wechat:tempcode:"
 
 
 class WeChatAuthService:
@@ -38,16 +44,30 @@ class WeChatAuthService:
     """
 
     @staticmethod
-    def generate_wechat_auth_url(db: Session, redirect_uri: str | None = None) -> tuple[str, str]:
+    def generate_wechat_auth_url(db: Session, redirect_uri: str | None = None) -> tuple[str, str]:  # noqa: ARG004
         """生成微信授权 URL 与随机 state.
 
-        返回 (auth_url, state)。state 同时存入数据库，回调时必须校验。
+        返回 (auth_url, state)。state 同时写入 Redis（TTL 600s），回调时必须校验。
         避免固定 state 导致的 CSRF / 登录态劫持。
 
+        db 参数保留以维持签名兼容（其余方法仍需 DB 查询），本方法不再写 DB。
         """
         callback_url = redirect_uri or settings.wechat_redirect_uri
         state = secrets.token_urlsafe(16)
-        WeChatAuthService._store_wechat_state(db, state)
+        now = datetime.now(timezone.utc)
+        # session 数据：保留原 DB 行字段（state/created_at/expires_at），expires_at 仅供审计，
+        # 实际过期由 Redis TTL 强制。
+        session_data = {
+            "state": state,
+            "created_at": now.isoformat(),
+            "expires_at": (now + timedelta(seconds=_STATE_TTL_SECONDS)).isoformat(),
+        }
+        redis_client = get_redis_client()
+        redis_client.set(
+            f"{_STATE_KEY_PREFIX}{state}",
+            json.dumps(session_data).encode("utf-8"),
+            ex=_STATE_TTL_SECONDS,
+        )
         params = {
             "appid": settings.wechat_appid,
             "redirect_uri": callback_url,
@@ -59,85 +79,52 @@ class WeChatAuthService:
         return settings.wechat_auth_url_base + "?" + urlencode(params) + "#wechat_redirect", state
 
     @staticmethod
-    def _store_wechat_state(db: Session, state: str) -> None:
-        """存储微信 OAuth state（带 TTL），顺带清理过期记录."""
-        now = datetime.now(timezone.utc)
-        # 清理过期 state（避免积压）
-        db.query(WeChatOAuthState).filter(WeChatOAuthState.expires_at < now).delete()
-        db.add(
-            WeChatOAuthState(
-                state=state,
-                expires_at=now + timedelta(seconds=_STATE_TTL_SECONDS),
-            )
-        )
-        db.commit()
-
-    @staticmethod
-    def consume_wechat_state(db: Session, state: str | None) -> bool:
-        """校验并消费微信 OAuth state（一次性）.
+    def consume_wechat_state(db: Session, state: str | None) -> dict[str, object] | None:  # noqa: ARG004
+        """校验并消费微信 OAuth state（一次性，原子 GETDEL）.
 
         Returns:
-            True 表示 state 有效且已被消费；False 表示无效/过期/缺失。
+            反序列化的 session 数据（state 有效且已被消费）；None 表示无效/过期/缺失。
 
         """
         if not state:
-            return False
-        now = datetime.now(timezone.utc)
-        record = (
-            db.query(WeChatOAuthState)
-            .filter(
-                WeChatOAuthState.state == state,
-                WeChatOAuthState.expires_at > now,
-            )
-            .first()
-        )
-        if record is None:
-            return False
-        db.delete(record)
-        db.commit()
-        return True
+            return None
+        redis_client = get_redis_client()
+        data = redis_client.getdel(f"{_STATE_KEY_PREFIX}{state}")
+        if data is None:
+            return None
+        return json.loads(data)
 
     @staticmethod
-    def store_temp_token(db: Session, access_token: str, refresh_token: str) -> str:
-        """存储临时令牌并返回临时授权码，顺带清理过期记录."""
-        now = datetime.now(timezone.utc)
-        # 清理过期临时码
-        db.query(WeChatTempCode).filter(WeChatTempCode.expires_at < now).delete()
-
+    def store_temp_token(db: Session, access_token: str, refresh_token: str) -> str:  # noqa: ARG004
+        """存储临时令牌到 Redis（TTL 60s）并返回临时授权码."""
         code = str(uuid.uuid4())
-        db.add(
-            WeChatTempCode(
-                code=code,
-                access_token=access_token,
-                refresh_token=refresh_token,
-                expires_at=now + timedelta(seconds=_CODE_TTL_SECONDS),
-            )
+        token_data = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        redis_client = get_redis_client()
+        redis_client.set(
+            f"{_TEMPCODE_KEY_PREFIX}{code}",
+            json.dumps(token_data).encode("utf-8"),
+            ex=_CODE_TTL_SECONDS,
         )
-        db.commit()
         return code
 
     @staticmethod
-    def exchange_temp_code(db: Session, code: str) -> dict[str, object]:
-        """用临时授权码换取令牌."""
-        now = datetime.now(timezone.utc)
-        record = (
-            db.query(WeChatTempCode)
-            .filter(
-                WeChatTempCode.code == code,
-                WeChatTempCode.expires_at > now,
-            )
-            .first()
-        )
-        if record is None:
-            msg = "授权码无效"
-            raise AuthenticationError(msg)
-        entry: dict[str, object] = {
-            "access_token": record.access_token,
-            "refresh_token": record.refresh_token,
-        }
-        db.delete(record)
-        db.commit()
-        return entry
+    def exchange_temp_code(db: Session, code: str) -> dict[str, object] | None:  # noqa: ARG004
+        """用临时授权码换取令牌（原子 GETDEL）.
+
+        Returns:
+            反序列化的 token 数据；None 表示授权码无效/过期/缺失。
+            调用方需自行处理 None（如抛 AuthenticationError 返回 401）。
+
+        """
+        redis_client = get_redis_client()
+        data = redis_client.getdel(f"{_TEMPCODE_KEY_PREFIX}{code}")
+        if data is None:
+            return None
+        return json.loads(data)
 
     @staticmethod
     async def fetch_wechat_access_token(code: str) -> dict[str, object]:

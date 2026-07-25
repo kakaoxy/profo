@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
+import { isRedirectError } from "@/lib/auth/server/session";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PermissionGuard } from "@/components/permission-guard";
 import { AdminMobileTabBar } from "@/components/admin-mobile-tab-bar";
@@ -34,6 +35,11 @@ async function getUser() {
     }
     return data;
   } catch (e) {
+    // Task 8: fetchClient 在 Server Component 上下文遇到 401 时会调用
+    // redirect("/api/auth/refresh?next=...") 抛出 NEXT_REDIRECT 错误。
+    // 必须放行该错误交由 Next.js 渲染层处理 303 跳转，否则用户会被误判
+    // 为未登录并重定向到 /admin/login，丢失原本可刷新的 refresh_token。
+    if (isRedirectError(e)) throw e;
     // 捕获网络错误 (例如后端没启动)，返回 null 防止页面崩溃
     logger.error("获取用户信息失败 (可能是后端未启动):", e);
     return null;

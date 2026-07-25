@@ -29,6 +29,16 @@ import { createOAuthHandler } from "./handlers";
  * stored in a module-level singleton so every internal module can access it
  * without prop drilling.
  *
+ * **Multiple instances:** When two `Auth()` instances coexist in the same
+ * Node process (e.g. C端 `auth.ts` + admin `admin-auth.ts`), the singleton
+ * holds whichever was loaded last. To avoid this conflict, all returned
+ * helpers (`getSession`, `getUser`, `createMiddleware`, ...) capture their
+ * own `resolved` config via closure and pass it explicitly to the underlying
+ * server/middleware functions. The singleton is kept only for backward
+ * compatibility with the bundled server actions in `actions` (used by
+ * `<AuthProvider>`) — admin code should NOT use `adminAuth.actions.*` and
+ * should instead call `adminAuth.adapter.*` + `setTokenCookies` directly.
+ *
  * @param config - Your auth configuration: adapter (required), plus optional
  *   cookies, refresh, pages, debug, and providers settings.
  * @returns An object containing:
@@ -37,7 +47,7 @@ import { createOAuthHandler } from "./handlers";
  *   - `createMiddleware`, `matchesPath` — middleware factory and path matcher
  *   - `handlers` — `{ GET }` for the OAuth catch-all route handler
  *   - `config` — the resolved configuration object
- *   - `actions` — bundled server actions to pass to `<AuthProvider>`
+ *   - `actions` — bundled server actions to pass to `<AuthProvider>` (singleton-based, C端 only)
  *
  * @example
  * // auth.ts
@@ -55,31 +65,45 @@ import { createOAuthHandler } from "./handlers";
 export function Auth(config: AuthConfig) {
   const resolved = createAuthConfig(config);
 
-  // Store in the module-level singleton — every internal call to
-  // getGlobalAuthConfig() will return this resolved config.
+  // Backward compat: store in the module-level singleton so the bundled
+  // server actions in `actions` (which still call `getGlobalAuthConfig()`
+  // because "use server" exports cannot be closures) continue to work for
+  // the C端 auth instance. Instance-bound helpers below prefer the captured
+  // `resolved` config and never read from the singleton.
   setGlobalAuthConfig(resolved);
 
   return {
     // ── Server-side session helpers ────────────────────────────────────────
+    // Each helper is bound to `resolved` via closure so multiple `Auth()`
+    // instances do not collide via the singleton.
     /** Returns the current session, or null if unauthenticated. */
-    getSession,
+    getSession: () => getSession(resolved),
     /** Returns the current user, or null if unauthenticated. */
-    getUser,
+    getUser: () => getUser(resolved),
     /** Returns the current access token, or null if unauthenticated. */
-    getAccessToken,
+    getAccessToken: () => getAccessToken(resolved),
     /** Returns the current refresh token, or null if unauthenticated. */
-    getRefreshToken,
+    getRefreshToken: () => getRefreshToken(resolved),
     /** Returns the current session, or redirects to the sign-in page. */
-    requireSession,
+    requireSession: (options?: { includeCallbackUrl?: boolean }) =>
+      requireSession(options, resolved),
 
     // ── Fetch utilities ────────────────────────────────────────────────────
     /** Run a callback with the session if it exists, otherwise return null. */
-    withSession,
+    withSession: <TResult>(
+      callback: Parameters<typeof withSession<TResult>>[0],
+      defaultValue?: TResult,
+    ) => withSession<TResult>(callback, defaultValue, resolved),
     /** Run a callback with the session, or redirect to sign-in. */
-    withRequiredSession,
+    withRequiredSession: <TResult>(
+      callback: Parameters<typeof withRequiredSession<TResult>>[0],
+    ) => withRequiredSession<TResult>(callback, resolved),
     // ── Middleware ─────────────────────────────────────────────────────────
-    /** Returns a middleware resolver function for use in middleware.ts. */
-    createMiddleware: () => createAuthMiddleware(),
+    /**
+     * Returns a middleware resolver function bound to this instance's config.
+     * Use in middleware.ts: `const resolveAuth = auth.createMiddleware();`
+     */
+    createMiddleware: () => createAuthMiddleware(resolved),
     /** Returns true if pathname matches any of the given path patterns. */
     matchesPath,
 
@@ -100,11 +124,27 @@ export function Auth(config: AuthConfig) {
     // ── Config ─────────────────────────────────────────────────────────────
     /** The resolved configuration object (rarely needed directly). */
     config: resolved,
+    /**
+     * Direct access to the configured adapter. Admin code (Server Actions,
+     * Route Handlers, token refresh utilities) uses this to call the backend
+     * directly without going through the singleton-bound `actions` bundle:
+     *   const tokens = await adminAuth.adapter.login(credentials);
+     *   await setTokenCookies(tokens, adminAuth.config);
+     */
+    adapter: resolved.adapter,
 
     // ── Server Actions ─────────────────────────────────────────────────────
-    // Bundled here so your root layout can pass them to <AuthProvider>.
-    // Since auth.ts is imported by layout.tsx, the singleton is guaranteed
-    // to be initialized before any of these actions ever run.
+    // ⚠️  These are the bare server actions from `server/actions.ts`, which
+    // internally call `getGlobalAuthConfig()`. They are therefore tied to the
+    // singleton and ONLY correct for the C端 auth instance (the one passed to
+    // `<AuthProvider actions={auth.actions}>` in the C端 root layout).
+    //
+    // Admin code must NOT use `adminAuth.actions.*` — when both `auth.ts`
+    // and `admin-auth.ts` are loaded, the singleton reflects whichever was
+    // imported last, so `adminAuth.actions.login` would silently use the
+    // C端 config (wrong cookie names, wrong adapter endpoints). Admin should
+    // instead call `adminAuth.adapter.*` + `setTokenCookies(tokens, adminAuth.config)`
+    // directly from its own "use server" action files.
     actions: {
       login: loginAction,
       logout: logoutAction,

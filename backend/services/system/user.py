@@ -296,23 +296,18 @@ class UserService:
                 user_roles_to_add = self._build_additional_user_roles(db, user, additional_role_ids)
                 db.add_all(user_roles_to_add)
 
-        # 判断是否需要因角色变更递增 token_version（触发权限缓存失效）
+        # 判断是否需要因角色变更撤销 Token
         # role_id 在 update_data 中 或 additional_role_ids 显式传入（含空列表）均视为变更
         needs_token_invalidation: bool = "role_id" in update_data or additional_role_ids is not None
 
-        # 用户由启用变为禁用时，立即撤销已签发 Token，避免旧 Token 在过期前继续访问
-        if was_active and user.status != "active":
+        # 用户由启用变为禁用 或 角色变更时，调用 invalidate_user_tokens 原子地
+        # 递增 token_version 并撤销所有未撤销 refresh_token，与密码修改/重置行为一致。
+        # 角色变更后旧 access_token 凭 token_version 立即失效，refresh_token 也无法
+        # 再换取新 access_token，避免旧凭据在新角色权限下继续访问。
+        # invalidate_user_tokens 内部 commit，需先 commit 当前 user 变更再调用
+        if (was_active and user.status != "active") or needs_token_invalidation:
             db.commit()
-            # invalidate_user_tokens 已递增 token_version，无需再次递增
             AuthService.invalidate_user_tokens(db, user)
-        elif needs_token_invalidation:
-            db.commit()
-            # 角色变更：仅递增 token_version 使权限缓存失效，不撤销 refresh_token。
-            # 用户可继续用 refresh_token 换取新 access_token（携带新 token_version）。
-            db.query(User).filter(User.id == user_id).update(
-                {User.token_version: User.token_version + 1}, synchronize_session=False
-            )
-            db.commit()
         else:
             db.commit()
         db.refresh(user)
@@ -405,7 +400,7 @@ class UserService:
 
     def change_password(self, db: Session, current_user: User, password_data: PasswordChange) -> dict[str, str]:
         """修改密码."""
-        if not verify_password(password_data.current_password, current_user.password):
+        if not verify_password(password_data.current_password, current_user.password)[0]:
             msg = "当前密码错误"
             raise ValidationError(msg)
 
@@ -490,7 +485,7 @@ class UserService:
             ValidationError: 手机号已被其他账号绑定
 
         """
-        if not verify_password(password, user.password):
+        if not verify_password(password, user.password)[0]:
             msg = "密码错误"
             raise AuthenticationError(msg)
 

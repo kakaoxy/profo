@@ -311,7 +311,7 @@ def admin_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]
     session = seeded_db["session"]
     admin_user = seeded_db["users"]["admin"]
 
-    token = create_access_token(data={"sub": admin_user.id, "role": "admin"})
+    token = create_access_token(data={"sub": admin_user.id, "role": "admin", "ver": admin_user.token_version})
 
     def _override_get_db() -> Generator[Session, None, None]:
         yield session
@@ -330,7 +330,7 @@ def user_client(seeded_db: dict[str, Any]) -> Generator[TestClient, None, None]:
     session = seeded_db["session"]
     normal_user = seeded_db["users"]["normal"]
 
-    token = create_access_token(data={"sub": normal_user.id, "role": "user"})
+    token = create_access_token(data={"sub": normal_user.id, "role": "user", "ver": normal_user.token_version})
 
     def _override_get_db() -> Generator[Session, None, None]:
         yield session

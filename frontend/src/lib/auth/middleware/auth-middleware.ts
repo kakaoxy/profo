@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSecondsUntilExpiry, isTokenValid } from "../core/jwt";
+import type { ResolvedAuthConfig } from "../types";
 import { getGlobalAuthConfig, debugLog } from "../config";
 import { dedupServerRefresh } from "../server/refresh-dedup";
 
@@ -75,8 +76,8 @@ function writeTokensToResponse(
   response: NextResponse,
   accessToken: string,
   refreshToken: string,
+  config: ResolvedAuthConfig,
 ): void {
-  const config = getGlobalAuthConfig();
   const accessExpiry = getSecondsUntilExpiry(accessToken);
   const refreshExpiry = getSecondsUntilExpiry(refreshToken);
 
@@ -101,8 +102,10 @@ function writeTokensToResponse(
   });
 }
 
-function clearTokensFromResponse(response: NextResponse): void {
-  const config = getGlobalAuthConfig();
+function clearTokensFromResponse(
+  response: NextResponse,
+  config: ResolvedAuthConfig,
+): void {
   response.cookies.set(config.cookieNames.accessToken, "", { maxAge: 0 });
   response.cookies.set(config.cookieNames.refreshToken, "", { maxAge: 0 });
 }
@@ -115,6 +118,11 @@ function clearTokensFromResponse(response: NextResponse): void {
  * is expired or close to expiry, it calls `adapter.refreshToken()` and
  * returns the new tokens. Always use `session.response()` to write them to cookies.
  *
+ * @param config - Optional resolved auth config. When omitted, falls back to
+ *   the module-level singleton (`getGlobalAuthConfig()`). Pass explicitly when
+ *   multiple `Auth()` instances coexist (e.g. C端 `auth` + admin `adminAuth`)
+ *   so the resolver reads the correct cookie names and uses the correct adapter.
+ *
  * @returns An async function `(request: NextRequest) => Promise<AuthMiddlewareResult>`.
  *
  * @example
@@ -124,17 +132,17 @@ function clearTokensFromResponse(response: NextResponse): void {
  * if (!session.isAuthenticated) return session.redirect(new URL("/login", request.url));
  * return session.response(NextResponse.next());
  */
-export function createAuthMiddleware() {
+export function createAuthMiddleware(config?: ResolvedAuthConfig) {
   return async function resolveAuth(
     request: NextRequest,
   ): Promise<AuthMiddlewareResult> {
-    const config = getGlobalAuthConfig();
+    const resolvedConfig = config ?? getGlobalAuthConfig();
     const { pathname } = request.nextUrl;
 
     let accessToken =
-      request.cookies.get(config.cookieNames.accessToken)?.value ?? null;
+      request.cookies.get(resolvedConfig.cookieNames.accessToken)?.value ?? null;
     const refreshToken =
-      request.cookies.get(config.cookieNames.refreshToken)?.value ?? null;
+      request.cookies.get(resolvedConfig.cookieNames.refreshToken)?.value ?? null;
 
     let refreshedTokens: { accessToken: string; refreshToken: string } | null =
       null;
@@ -150,7 +158,7 @@ export function createAuthMiddleware() {
     const needsRefresh =
       !accessToken ||
       !isTokenValid(accessToken) ||
-      secondsRemaining <= config.refreshThresholdSeconds;
+      secondsRemaining <= resolvedConfig.refreshThresholdSeconds;
 
     if (needsRefresh && refreshToken && isTokenValid(refreshToken)) {
       debugLog("Middleware: access token needs refresh — attempting", {
@@ -168,7 +176,7 @@ export function createAuthMiddleware() {
       // an independent refresh and all but one would fail.
       try {
         refreshedTokens = await dedupServerRefresh(refreshToken, () =>
-          config.adapter.refreshToken(refreshToken),
+          resolvedConfig.adapter.refreshToken(refreshToken),
         );
         accessToken = refreshedTokens.accessToken;
         debugLog("Middleware: token refresh successful", { pathname });
@@ -194,6 +202,7 @@ export function createAuthMiddleware() {
           base,
           refreshedTokens.accessToken,
           refreshedTokens.refreshToken,
+          resolvedConfig,
         );
       }
       return base;
@@ -205,7 +214,7 @@ export function createAuthMiddleware() {
         destination: url.pathname,
       });
       const redirectResponse = NextResponse.redirect(url);
-      clearTokensFromResponse(redirectResponse);
+      clearTokensFromResponse(redirectResponse, resolvedConfig);
       return redirectResponse;
     }
 

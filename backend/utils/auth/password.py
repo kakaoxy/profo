@@ -1,14 +1,25 @@
-"""密码相关工具函数."""
+"""密码相关工具函数.
+
+使用 pwdlib 提供 Argon2 + Bcrypt 双哈希支持：
+- 新密码统一用 Argon2（password_hash 列表中首个哈希器）签发
+- 校验时按列表顺序尝试，Bcrypt 旧哈希校验通过后自动返回 Argon2 升级哈希
+  （由调用方写回数据库，实现平滑迁移）
+"""
 
 import logging
 import re
 
-import bcrypt
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 logger = logging.getLogger(__name__)
 
 _MIN_PASSWORD_LENGTH = 8
 _BCRYPT_MAX_BYTES = 72
+
+# 双哈希器：Argon2 优先（新签发），Bcrypt 兜底（校验旧库哈希并触发升级）
+password_hash = PasswordHash((Argon2Hasher(), BcryptHasher()))
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:  # noqa: PLR0911
@@ -51,25 +62,29 @@ def validate_password_strength(password: str) -> tuple[bool, str]:  # noqa: PLR0
     return True, ""
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码是否匹配.
+def verify_password(plain: str, hashed: str) -> tuple[bool, str | None]:
+    """验证密码是否匹配，并返回需要时升级后的哈希.
 
     Args:
-        plain_password: 明文密码
-        hashed_password: 哈希密码
+        plain: 明文密码
+        hashed: 已存储的哈希密码（Argon2 或 Bcrypt 均可）
 
     Returns:
-        bool: 密码是否匹配
+        Tuple[bool, str | None]: (是否匹配, 升级后的哈希或 None)
+        - 校验失败返回 (False, None)
+        - 校验通过且哈希为最新算法（Argon2）返回 (True, None)
+        - 校验通过但哈希为旧算法（Bcrypt）返回 (True, <Argon2 哈希>)，
+          调用方应将 updated_hash 写回数据库以完成平滑升级
 
     """
     try:
-        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        return password_hash.verify_and_update(plain, hashed)
     except (ValueError, TypeError) as e:
         logger.warning("密码哈希验证失败，可能为损坏的哈希：%s", e)
-        return False
-    except Exception:  # 兜底捕获 bcrypt 内部未预期异常
+        return False, None
+    except Exception:  # 兜底捕获 pwdlib 内部未预期异常
         logger.exception("密码验证发生未预期异常")
-        return False
+        return False, None
 
 
 def _truncate_password_safely(password: str, max_bytes: int = _BCRYPT_MAX_BYTES) -> str:
@@ -78,6 +93,9 @@ def _truncate_password_safely(password: str, max_bytes: int = _BCRYPT_MAX_BYTES)
     bcrypt 底层限制为 72 字节。某些 bcrypt 后端在初始化时会用固定长度的测试密码
     做功能检测；如果截断逻辑仅按字符截断但字节长度仍超过 72，检测阶段就会抛出
     ValueError。因此本函数必须保证返回值的字节长度严格 <= max_bytes。
+
+    注意：当前 ``get_password_hash`` 已切换为 Argon2（无 72 字节限制），本函数
+    保留用于兼容历史调用方与潜在的未来 Bcrypt 直连场景。
 
     Args:
         password: 原始密码
@@ -122,13 +140,14 @@ def _truncate_password_safely(password: str, max_bytes: int = _BCRYPT_MAX_BYTES)
 def get_password_hash(password: str) -> str:
     """生成密码哈希.
 
+    使用 Argon2（password_hash 列表首个哈希器）签发新哈希。
     注意：此函数不进行密码强度验证，调用方应先使用 validate_password_strength() 验证。
 
     Args:
         password: 明文密码
 
     Returns:
-        str: 安全的 bcrypt 哈希密码
+        str: 安全的 Argon2 哈希密码
 
     Raises:
         TypeError: 密码格式无效
@@ -139,13 +158,17 @@ def get_password_hash(password: str) -> str:
         msg = "密码必须是字符串类型"
         raise TypeError(msg)
 
-    password = _truncate_password_safely(password)
-
     try:
-        hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-        return hashed.decode("utf-8")
+        return password_hash.hash(password)
     except Exception as e:
         error_msg = str(e)
         logger.critical("密码哈希生成过程中发生严重错误：%s", error_msg)
         msg = f"密码哈希生成失败，请联系系统管理员。错误详情：{error_msg}"
         raise RuntimeError(msg) from e
+
+
+__all__ = [
+    "get_password_hash",
+    "validate_password_strength",
+    "verify_password",
+]

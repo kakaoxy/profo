@@ -2,10 +2,16 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { LoginResponseSchema } from "@/lib/auth/schemas";
+import { z } from "zod";
+import { adminAuth, AdminPasswordChangeRequiredError } from "@/admin-auth";
+import {
+  clearTokenCookies,
+  getTokensFromCookies,
+  setTokenCookies,
+} from "@/lib/auth/core";
+import { TokenPairSchema } from "@/lib/auth/types";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { createActionLogger } from "@/lib/logger";
-import { z } from "zod";
 import { passwordSchema } from "@/app/(main)/admin/users/_components/password-schema";
 
 const logger = createActionLogger("login");
@@ -33,6 +39,19 @@ export type ChangePasswordState =
   | { success: true }
   | { success: false; error: string; mustChangePassword: true; username: string };
 
+/**
+ * Admin 登录 Server Action。
+ *
+ * 通过 `adminAuth.adapter.login` 调用后端 `/api/v1/auth/token`，再用
+ * `setTokenCookies(tokens, adminAuth.config)` 写入 admin 专用 cookie
+ * (`access_token` / `refresh_token`)。直接走 adapter + cookie 工具而不使用
+ * `adminAuth.actions.login`，因为后者依赖模块级 singleton，当 C 端 `auth.ts`
+ * 与 `admin-auth.ts` 同时加载时会读到错误的 config（Task 5 singleton 冲突）。
+ *
+ * 强制改密流程：后端首次登录返回 HTTP 422 + `X-Must-Change-Password: true`
+ * + `X-Temp-Token`，admin adapter 检测到此头后抛出 `AdminPasswordChangeRequiredError`，
+ * 这里通过 `instanceof` 捕获并返回 `{ mustChangePassword: true, tempToken, username }`。
+ */
 export async function loginAction(prevState: LoginState, formData: FormData): Promise<LoginState> {
   const username = formData.get("username") as string;
   const password = formData.get("password") as string;
@@ -42,86 +61,34 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
     return { error: loginParsed.error.issues[0]?.message ?? "登录参数不合法" };
   }
 
-  const apiUrl = getApiUrl(apiPaths.auth.token);
-
   try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: "password", username, password }),
-    });
+    const rawTokens = await adminAuth.adapter.login({ username, password });
 
-    // --- 错误处理：422 强制改密 / 通用错误 ---
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-
-      // 开发环境记录脱敏后的错误数据
-      logger.devDebug("Login Failed", { status: response.status, error: errorData });
-
-      // 后端返回: HTTP 422 + {"code":422,"message":"首次登录必须修改密码"} + Headers: X-Temp-Token, X-Must-Change-Password
-      const isForceChange =
-        response.status === 422 &&
-        response.headers.get("X-Must-Change-Password") === "true";
-
-      if (isForceChange) {
-        const tempToken = response.headers.get("X-Temp-Token");
-
-        if (!tempToken) {
-          logger.error("无法提取 temp_token，请检查后端响应头");
-          return { error: "系统错误：未获取到修改密码凭证" };
-        }
-
-        logger.devDebug("首次登录需修改密码，已获取临时 Token", { tokenPrefix: tempToken.substring(0, 10) });
-
-        return {
-          mustChangePassword: true,
-          username: username,
-          tempToken: tempToken
-        };
-      }
-
-      // 返回通用错误信息（后端统一格式: {"code":≠0, "message": "错误信息"}）
-      const errorMsg = typeof errorData.message === "string"
-        ? errorData.message
-        : "登录失败";
-
-      return { error: errorMsg };
-    }
-    // --- 核心修复逻辑结束 ---
-
-    const parsed = LoginResponseSchema.safeParse(await response.json());
-    if (!parsed.success) {
-      logger.error("登录响应格式异常", { issues: parsed.error.issues });
+    // 校验 adapter 返回的 token pair（防止后端响应格式异常时写入空 cookie）
+    const tokenParsed = TokenPairSchema.safeParse(rawTokens);
+    if (!tokenParsed.success) {
+      logger.error("登录响应格式异常", { issues: tokenParsed.error.issues });
       return { error: "登录响应格式异常" };
     }
-    const data = parsed.data;
 
-    // 3. 写入 Cookies (access_token 和 refresh_token)
-    const cookieStore = await cookies();
-
-    // Access Token: 有效期与后端返回的 expires_in 一致 (通常 30 分钟)
-    cookieStore.set("access_token", data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: data.expires_in, // 使用后端返回的实际过期秒数
-      sameSite: "lax",
-    });
-
-    // Refresh Token: 有效期 7 天 (与后端 jwt_refresh_token_expire_days 一致)
-    cookieStore.set("refresh_token", data.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      sameSite: "lax",
-    });
-
+    await setTokenCookies(tokenParsed.data, adminAuth.config);
     logger.info("登录成功，access_token 和 refresh_token 已写入 Cookie");
-
   } catch (error) {
+    // 强制改密：admin adapter 抛出 typed error，提取 tempToken / username 回传前端
+    if (error instanceof AdminPasswordChangeRequiredError) {
+      logger.devDebug("首次登录需修改密码，已获取临时 Token", {
+        tokenPrefix: error.tempToken.substring(0, 10),
+      });
+      return {
+        mustChangePassword: true,
+        username: error.username,
+        tempToken: error.tempToken,
+      };
+    }
+
     logger.error("登录异常", error);
-    return { error: "网络错误，请连接后端服务" };
+    // adapter 抛出的 Error 已包含后端返回的可读 message（extractApiError 提取）
+    return { error: error instanceof Error ? error.message : "登录失败" };
   }
 
   redirect("/admin");
@@ -195,30 +162,25 @@ export async function changePasswordAction(prevState: ChangePasswordState | null
   redirect("/admin/login");
 }
 
+/**
+ * Admin 登出 Server Action。
+ *
+ * 通过 `adminAuth.adapter.logout` 调用后端 `/api/v1/auth/logout` 撤销 refresh_token，
+ * 再用 `clearTokenCookies(adminAuth.config)` 清除 admin cookie。直接走 adapter +
+ * cookie 工具而不使用 `adminAuth.actions.logout`，原因同 `loginAction`。
+ */
 export async function logoutAction() {
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get("access_token")?.value;
-  const refreshToken = cookieStore.get("refresh_token")?.value;
+  const tokens = await getTokensFromCookies(adminAuth.config);
 
-  // 调后端 logout 撤销 refresh_token，防止登出后 refresh_token 7 天内被滥用
-  if (accessToken && refreshToken) {
+  if (tokens && adminAuth.adapter.logout) {
     try {
-      await fetch(getApiUrl(apiPaths.auth.logout), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
+      await adminAuth.adapter.logout(tokens);
     } catch (error) {
       // 后端调用失败不阻断登出流程，仍清前端 cookie 保证 UX
       logger.error("后端 logout 调用失败", error);
     }
   }
 
-  // 删除时必须指定与设置时相同的 path，否则浏览器不会匹配删除
-  cookieStore.delete({ name: "access_token", path: "/" });
-  cookieStore.delete({ name: "refresh_token", path: "/" });
+  await clearTokenCookies(adminAuth.config);
   redirect("/admin/login");
 }

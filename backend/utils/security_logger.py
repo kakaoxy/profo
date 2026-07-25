@@ -1,10 +1,14 @@
 """安全日志工具模块.
 
 提供请求体数据脱敏功能，防止敏感信息泄露到日志中.
+另提供认证事件结构化日志入口 ``log_auth_event``.
 """
 
 import json
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 # 敏感字段列表，这些字段在日志中会被脱敏
 SENSITIVE_FIELDS = {
@@ -163,3 +167,40 @@ def safe_log_request_body(body: bytes | str | None) -> dict[str, Any] | None:
         if isinstance(body, bytes) and len(body) > _LARGE_BODY_THRESHOLD:
             return {"raw_body": f"[Binary data: {len(body)} bytes]"}
         return None
+
+
+def log_auth_event(
+    event_type: str,
+    user_id: int | str | None = None,
+    client_ip: str | None = None,
+    user_agent: str | None = None,
+    **extra: object,
+) -> None:
+    """记录认证事件结构化日志.
+
+    统一认证事件日志入口，事件类型与上下文通过 ``extra`` 携带，
+    供日志收集系统按 ``event_type`` 检索与告警。不记录任何敏感数据
+    （密码、令牌、密钥等）。
+
+    Args:
+        event_type: 事件类型，如 ``login_success`` / ``login_failure`` /
+            ``refresh_success`` / ``refresh_failure`` / ``logout`` /
+            ``token_invalidated`` / ``api_key_auth_success`` /
+            ``api_key_auth_failure`` / ``register_success``.
+        user_id: 用户ID，认证失败且无法识别用户时为 None.
+        client_ip: 客户端IP.
+        user_agent: 客户端 User-Agent.
+        **extra: 附加结构化字段（如 ``reason`` / ``username`` / ``key_prefix``），
+            禁止传入密码、令牌等敏感值.
+
+    """
+    logger.info(
+        "auth_event",
+        extra={
+            "event_type": event_type,
+            "user_id": user_id,
+            "client_ip": client_ip,
+            "user_agent": user_agent,
+            **extra,
+        },
+    )
