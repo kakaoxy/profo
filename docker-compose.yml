@@ -38,10 +38,14 @@ services:
     # 注意：compose 字符串 command 会被按空格拆分为 exec 形式数组（不走 shell），
     # 因此 &&/||/$VAR 均失效；必须显式 sh -c 让 shell 展开 $$REDIS_PASSWORD
     # （$$ 在 compose 中转义为 $，再由容器内 sh 从环境变量展开）
+    #
+    # 内存淘汰策略：容器 mem_limit=32m，预留约 8MB 给 Redis 进程本身，
+    # 设置 --maxmemory 24m 使 --maxmemory-policy volatile-lru 在该阈值触发淘汰
+    # （否则 policy 为空操作：Redis 持续吃内存直至被 cgroup OOM-killed）
     command:
       - sh
       - -c
-      - 'test -n "$$REDIS_PASSWORD" && redis-server --requirepass "$$REDIS_PASSWORD" || { echo "[FATAL] REDIS_PASSWORD 未设置，拒绝启动（空值会静默关闭认证）" >&2; exit 1; }'
+      - 'test -n "$$REDIS_PASSWORD" && redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 24m --maxmemory-policy volatile-lru || { echo "[FATAL] REDIS_PASSWORD 未设置，拒绝启动（空值会静默关闭认证）" >&2; exit 1; }'
     environment:
       # 供启动脚本读取密码
       REDIS_PASSWORD: ${REDIS_PASSWORD}
