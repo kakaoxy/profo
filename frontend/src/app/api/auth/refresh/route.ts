@@ -94,3 +94,68 @@ export async function POST(request: Request) {
     );
   }
 }
+
+/**
+ * GET /api/auth/refresh?next=<root-relative-path>
+ *
+ * Server Component 渲染期收到 401 时，api-server.ts 调用
+ * `redirect("/api/auth/refresh?next=...")`，Next.js 把 NEXT_REDIRECT 转成
+ * 浏览器 303 跳转，浏览器以 GET 方法请求本路由。
+ *
+ * 行为：
+ *  - 无 refresh_token / 刷新失败：清 cookie 并 303 重定向到 /admin/login
+ *    （不能返回 JSON，因为浏览器导航无法处理 JSON 响应）
+ *  - 刷新成功：setTokenCookies 落盘新 token，303 重定向回 `next` 路径
+ *  - `next` 缺失或不合法：回退到 /admin
+ *
+ * 安全：
+ *  - 仅使用 httpOnly cookie 中的 refresh_token，JS 不可读
+ *  - `next` 经 sanitizeCallbackUrl 校验，仅允许 root-relative 路径，防 open redirect
+ *  - GET + cookie 认证符合项目 CSRF 规约（仅非 GET 方法需 X-Requested-With）
+ *
+ * 注意：`request.url` 在 Next.js standalone 模式下使用容器主机名（如
+ * `6697190d49c7:3000`），不能直接用于构造重定向 URL。改为从 `Host` +
+ * `X-Forwarded-Proto` 请求头构造公开 URL（nginx 反代已正确设置这两个头）。
+ */
+export async function GET(request: Request) {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get(adminAuth.config.cookieNames.refreshToken)?.value;
+
+  const url = new URL(request.url);
+  const rawNext = url.searchParams.get("next") ?? "/admin";
+  const nextPath = sanitizeCallbackUrl(rawNext) ?? "/admin";
+
+  // 构造公开 URL：优先从 Host + X-Forwarded-Proto 头构造（nginx 反代已设置），
+  // 避免 request.url 使用容器主机名导致浏览器无法访问重定向目标
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const host = request.headers.get("host");
+  const baseUrl = host ? `${proto}://${host}` : request.url;
+
+  // 无 refresh_token：清 cookie 并跳登录
+  if (!refreshToken) {
+    debugLog("[admin refresh route] GET: 无 refresh_token 可用，跳登录");
+    await clearTokenCookies(adminAuth.config);
+    return NextResponse.redirect(new URL("/admin/login", baseUrl), {
+      status: 303,
+    });
+  }
+
+  try {
+    debugLog("[admin refresh route] GET: 向后端请求刷新 token...", { next: nextPath });
+    const tokens = await adminAuth.adapter.refreshToken(refreshToken);
+    await setTokenCookies(tokens, adminAuth.config);
+    debugLog("[admin refresh route] GET: Token 刷新成功，303 重定向到", nextPath);
+    return NextResponse.redirect(new URL(nextPath, baseUrl), {
+      status: 303,
+    });
+  } catch (error) {
+    debugLog("[admin refresh route] GET: 刷新失败", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // fail-closed：清 cookie 并跳登录
+    await clearTokenCookies(adminAuth.config);
+    return NextResponse.redirect(new URL("/admin/login", baseUrl), {
+      status: 303,
+    });
+  }
+}
