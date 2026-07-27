@@ -30,7 +30,8 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
   useEffect(() => {
     if (!leadId) return;
     getEvalHistoriesAction(leadId).then((result) => {
-      if (result.success) setHistories(result.data);
+      // 失败时清空，避免显示陈旧数据（如线索被软删后 404）
+      setHistories(result.success ? result.data : []);
     });
   }, [leadId, refreshKey]);
 
