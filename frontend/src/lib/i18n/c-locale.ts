@@ -462,6 +462,8 @@ export const cLocale = {
     phoneSubmitting: "保存中...",
     phoneCancel: "取消",
     phoneSuccess: "手机号保存成功",
+    expectedPriceLabel: "心理预期价 (万)",
+    expectedPricePlaceholder: "请输入心理预期价",
     submit: "提交预审",
     submitting: "提交中...",
     privacyNote: "信息仅用于预审与上门看房安排，不外泄、不电话骚扰",

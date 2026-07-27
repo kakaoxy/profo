@@ -11,7 +11,7 @@ import { LeadStatus } from "../types";
  * - (c)/valuation/actions.ts::createLeadSchema
  * - ../types.ts::Lead
  *
- * 仅覆盖 lead-actions.ts::toLeadPayload 中转发的可写字段；
+ * 仅覆盖 lead-actions.ts::toCreatePayload / toUpdatePayload 中转发的可写字段；
  * creatorName/auditorId/auditTime/updatedAt/lastFollowUpAt 等由后端注入，不在此校验。
  */
 const leadStatusEnum = z.nativeEnum(LeadStatus);
@@ -25,12 +25,6 @@ export const createLeadSchema = z.object({
   area: z.number().positive("面积必须大于 0").max(100000),
   totalPrice: z.number().nonnegative("总价不能为负").max(1000000),
   unitPrice: z.number().nonnegative("单价不能为负").max(1000000),
-  evalPrice: z
-    .number()
-    .nonnegative("评估价不能为负")
-    .max(1000000)
-    .nullable()
-    .optional(),
   district: z.string().min(1, "区域不能为空").max(100),
   businessArea: z.string().min(1, "商圈不能为空").max(100),
   remarks: z.string().max(2000),

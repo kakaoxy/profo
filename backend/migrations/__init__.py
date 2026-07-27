@@ -42,6 +42,8 @@
   清理已删除项目的合同记录，允许合同编号在项目软删除后被复用
 - migrate_permission_system: 幂等创建权限系统三张表（permissions/role_permissions/operation_logs），
   初始化系统权限点，为 4 个内置角色分配默认权限集
+- add_lead_eval_history_and_expected_price: 幂等创建 lead_eval_histories 表（评估历史）+ 索引
+  idx_lead_eval_history_lead + 为 leads 表添加 expected_price 列（业主心理预期价）
 - migrate_uploads_to_oss: 启动期仅改写 DB URL 为 OSS URL（仅 storage_backend=oss 时执行，幂等：
   已是 OSS URL 的记录跳过）；本地文件上传由带外脚本 `python -m migrations.migrate_uploads_to_oss`
   执行（upload_local_files_to_oss），切换到 OSS 后对外提供服务前运行一次
@@ -54,6 +56,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
+from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
@@ -1691,6 +1694,7 @@ def _run_all_migrations(engine: Engine) -> None:
         migrate_project_business_permission(engine)
         add_permission_foreign_indexes(engine)
         add_reports_indexes(engine)
+        add_lead_eval_history_and_expected_price(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

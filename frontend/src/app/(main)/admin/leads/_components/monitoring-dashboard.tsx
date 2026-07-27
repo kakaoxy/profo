@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Lead } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Activity, Share2, Loader2, MapPinOff } from "lucide-react";
+import { ArrowLeft, Activity, Share2, Minimize2, Loader2, MapPinOff } from "lucide-react";
 import { ProjectData } from "../../projects/_components/monitor/types";
 
 // [性能优化] 使用动态导入延迟加载重型 Monitor 组件
@@ -70,10 +70,13 @@ function ComponentSkeleton({ height }: { height: string }) {
   );
 }
 
-interface Props {
+interface DashboardProps {
   lead: Lead;
-  onClose?: () => void;
-  embedded?: boolean;
+}
+
+interface MonitoringFullscreenProps {
+  lead: Lead;
+  onExit: () => void;
 }
 
 const CardWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -100,11 +103,10 @@ function EmptyState({ communityName }: { communityName: string }) {
   );
 }
 
-export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose, embedded = false }) => {
-  // 使用 lead 中的 communityId，空值转换为 undefined 确保组件参数有效
+// 抽取共用的看板卡片渲染逻辑，供 embedded 与 fullscreen 复用
+function DashboardCards({ lead }: { lead: Lead }) {
   const communityId = lead.communityId || undefined;
 
-  // Construct ProjectData from Lead to override HeroSection fetching
   const overrideData: ProjectData = {
     address: lead.communityName,
     community_name: lead.communityName,
@@ -124,65 +126,76 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose, embedded =
         ? Math.round((lead.totalPrice * 10000) / lead.area)
         : 0;
 
-  // 嵌入模式:仅渲染卡片内容,用于抽屉 Tab 内嵌展示
-  if (embedded) {
-    return (
-      <div className="font-sans py-2">
-        <CardWrapper>
-          <HeroSection overrideData={overrideData} />
-        </CardWrapper>
-
-        {!communityId ? (
-          <CardWrapper>
-            <EmptyState communityName={lead.communityName} />
-          </CardWrapper>
-        ) : (
-          <>
-            <CardWrapper>
-              <MarketSentiment communityId={communityId} />
-            </CardWrapper>
-
-            <CardWrapper>
-              <NeighborhoodRadar communityId={communityId} />
-            </CardWrapper>
-
-            <CardWrapper>
-              <TrendPositioning
-                communityId={communityId}
-                myOverridePrice={myOverridePrice}
-              />
-            </CardWrapper>
-
-            <CardWrapper>
-              <CompetitorsBrawl communityId={communityId} />
-            </CardWrapper>
-
-            <CardWrapper>
-              <AIStrategy communityId={communityId} />
-            </CardWrapper>
-          </>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 z-60 bg-background flex flex-col animate-in fade-in zoom-in-95 duration-300">
+    <>
+      <CardWrapper>
+        <HeroSection overrideData={overrideData} />
+      </CardWrapper>
+
+      {!communityId ? (
+        <CardWrapper>
+          <EmptyState communityName={lead.communityName} />
+        </CardWrapper>
+      ) : (
+        <>
+          <CardWrapper>
+            <MarketSentiment communityId={communityId} />
+          </CardWrapper>
+
+          <CardWrapper>
+            <NeighborhoodRadar communityId={communityId} />
+          </CardWrapper>
+
+          <CardWrapper>
+            <TrendPositioning
+              communityId={communityId}
+              myOverridePrice={myOverridePrice}
+            />
+          </CardWrapper>
+
+          <CardWrapper>
+            <CompetitorsBrawl communityId={communityId} />
+          </CardWrapper>
+
+          <CardWrapper>
+            <AIStrategy communityId={communityId} />
+          </CardWrapper>
+        </>
+      )}
+    </>
+  );
+}
+
+// 嵌入模式:仅渲染卡片内容,用于抽屉 Tab 内嵌展示
+export const MonitoringDashboard: React.FC<DashboardProps> = ({ lead }) => {
+  return (
+    <div className="font-sans py-2">
+      <DashboardCards lead={lead} />
+    </div>
+  );
+};
+
+// 全屏模式:使用 fixed 定位覆盖整屏，z-index 高于 Sheet(50)以确保置顶
+export const MonitoringFullscreen: React.FC<MonitoringFullscreenProps> = ({
+  lead,
+  onExit,
+}) => {
+  return (
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-in fade-in zoom-in-95 duration-300">
       {/* Header */}
-      <header className="h-16 border-b bg-card flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-4">
+      <header className="h-14 border-b bg-card flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
-            className="rounded-full"
+            onClick={onExit}
             aria-label="返回"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="h-8 w-px bg-border" />
+          <div className="h-6 w-px bg-border" />
           <div>
-            <h1 className="text-lg font-black font-sans tracking-tight">
+            <h1 className="text-base font-black font-sans tracking-tight">
               {lead.communityName} · 监控看板
             </h1>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
@@ -190,56 +203,26 @@ export const MonitoringDashboard: React.FC<Props> = ({ lead, onClose, embedded =
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Badge
             variant="outline"
-            className="bg-success-container text-emerald-700 border-emerald-100 font-bold"
+            className="bg-emerald-50 text-emerald-700 border-emerald-100 font-bold"
           >
             <Activity className="h-3 w-3 mr-1" /> 实时数据同步中
           </Badge>
-          <Button variant="outline" size="sm" className="h-9 px-4 rounded-full">
-            <Share2 className="h-4 w-4 mr-2" /> 导出报告
+          <Button variant="outline" size="sm" className="h-8">
+            <Share2 className="h-3.5 w-3.5 mr-1.5" />导出报告
+          </Button>
+          <Button variant="outline" size="sm" onClick={onExit}>
+            <Minimize2 className="h-3.5 w-3.5 mr-1.5" />退出全屏
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-muted pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 font-sans">
-          <CardWrapper>
-            <HeroSection overrideData={overrideData} />
-          </CardWrapper>
-
-          {!communityId ? (
-            <CardWrapper>
-              <EmptyState communityName={lead.communityName} />
-            </CardWrapper>
-          ) : (
-            <>
-              <CardWrapper>
-                <MarketSentiment communityId={communityId} />
-              </CardWrapper>
-
-              <CardWrapper>
-                <NeighborhoodRadar communityId={communityId} />
-              </CardWrapper>
-
-              <CardWrapper>
-                <TrendPositioning
-                  communityId={communityId}
-                  myOverridePrice={myOverridePrice}
-                />
-              </CardWrapper>
-
-              <CardWrapper>
-                <CompetitorsBrawl communityId={communityId} />
-              </CardWrapper>
-
-              <CardWrapper>
-                <AIStrategy communityId={communityId} />
-              </CardWrapper>
-            </>
-          )}
+      <main className="flex-1 overflow-y-auto bg-muted pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 font-sans space-y-4">
+          <DashboardCards lead={lead} />
         </div>
       </main>
     </div>

@@ -42,6 +42,7 @@ class Lead(Base):
     total_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), comment="当前授权总价(万)")
     unit_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), comment="单价(万/㎡)")
     eval_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), comment="评估价格(万)")
+    expected_price: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), comment="业主心理预期价(万)")
 
     # Status & Workflow
     status: Mapped[LeadStatus] = mapped_column(
@@ -97,6 +98,11 @@ class Lead(Base):
         "LeadPriceHistory",
         back_populates="lead",
         primaryjoin="Lead.id == foreign(LeadPriceHistory.lead_id)",
+    )
+    eval_histories = relationship(
+        "LeadEvalHistory",
+        back_populates="lead",
+        primaryjoin="Lead.id == foreign(LeadEvalHistory.lead_id)",
     )
 
     @property
@@ -188,3 +194,40 @@ class LeadPriceHistory(Base):
     def created_by_name(self) -> str | None:
         """获取记录人名称."""
         return self.created_by.nickname if self.created_by else None
+
+
+class LeadEvalHistory(Base):
+    """线索评估价格历史记录."""
+
+    __tablename__ = "lead_eval_histories"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), comment="UUID")
+    lead_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="线索ID")
+    eval_price: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, comment="评估价格(万)")
+    remark: Mapped[str | None] = mapped_column(Text, comment="评估备注")
+    evaluator_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="评估人ID")
+    evaluated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        comment="评估时间",
+    )
+
+    lead = relationship(
+        "Lead",
+        back_populates="eval_histories",
+        foreign_keys=[lead_id],
+        primaryjoin="foreign(LeadEvalHistory.lead_id) == Lead.id",
+    )
+    evaluator = relationship(
+        "User",
+        foreign_keys=[evaluator_id],
+        primaryjoin="foreign(LeadEvalHistory.evaluator_id) == User.id",
+    )
+
+    __table_args__ = (Index("idx_lead_eval_history_lead", "lead_id"),)
+
+    @property
+    def evaluator_name(self) -> str | None:
+        """获取评估人名称."""
+        return self.evaluator.nickname if self.evaluator else None

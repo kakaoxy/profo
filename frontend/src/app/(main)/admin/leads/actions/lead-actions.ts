@@ -20,8 +20,32 @@ type LeadCreatePayload =
 type LeadUpdatePayload =
   operations["update_lead_api_v1_leads__lead_id__put"]["requestBody"]["content"]["application/json"];
 
-function toLeadPayload(data: Partial<Lead>): Record<string, unknown> {
-  const payload: Record<string, unknown> = {};
+// 构造创建线索 payload（类型严格，无 as 强转）
+// LeadCreatePayload 必填 community_name / is_hot / status，其余可选
+function toCreatePayload(data: Omit<Lead, "id" | "createdAt">): LeadCreatePayload {
+  const payload: LeadCreatePayload = {
+    community_name: data.communityName,
+    is_hot: 0,
+    status: data.status,
+    images: data.images || [],
+  };
+  if (data.communityId !== undefined) payload.community_id = data.communityId;
+  if (data.layout !== undefined) payload.layout = data.layout;
+  if (data.orientation !== undefined) payload.orientation = data.orientation;
+  if (data.floorInfo !== undefined) payload.floor_info = data.floorInfo;
+  if (data.area !== undefined) payload.area = data.area;
+  if (data.totalPrice !== undefined) payload.total_price = data.totalPrice;
+  if (data.unitPrice !== undefined) payload.unit_price = data.unitPrice;
+  if (data.district !== undefined) payload.district = data.district;
+  if (data.businessArea !== undefined) payload.business_area = data.businessArea;
+  if (data.remarks !== undefined) payload.remarks = data.remarks;
+  return payload;
+}
+
+// 构造更新线索 payload（类型严格，无 as 强转）
+// LeadUpdatePayload 所有字段均可选，包含 audit_reason（LeadCreate 无此字段）
+function toUpdatePayload(data: Partial<Lead>): LeadUpdatePayload {
+  const payload: LeadUpdatePayload = {};
   if (data.communityName !== undefined) payload.community_name = data.communityName;
   if (data.communityId !== undefined) payload.community_id = data.communityId;
   if (data.layout !== undefined) payload.layout = data.layout;
@@ -30,7 +54,6 @@ function toLeadPayload(data: Partial<Lead>): Record<string, unknown> {
   if (data.area !== undefined) payload.area = data.area;
   if (data.totalPrice !== undefined) payload.total_price = data.totalPrice;
   if (data.unitPrice !== undefined) payload.unit_price = data.unitPrice;
-  if (data.evalPrice !== undefined) payload.eval_price = data.evalPrice;
   if (data.district !== undefined) payload.district = data.district;
   if (data.businessArea !== undefined) payload.business_area = data.businessArea;
   if (data.remarks !== undefined) payload.remarks = data.remarks;
@@ -59,11 +82,7 @@ export async function createLeadAction(
   try {
     const client = await fetchClient();
 
-    const payload: LeadCreatePayload = {
-      ...toLeadPayload(data),
-      is_hot: 0,
-      images: data.images || [],
-    } as LeadCreatePayload;
+    const payload: LeadCreatePayload = toCreatePayload(data);
 
     const { data: responseData, error } = await client.POST("/api/v1/leads", {
       body: payload,
@@ -109,7 +128,7 @@ export async function updateLeadAction(
   try {
     const client = await fetchClient();
 
-    const payload: LeadUpdatePayload = toLeadPayload(data) as LeadUpdatePayload;
+    const payload: LeadUpdatePayload = toUpdatePayload(data);
 
     const { data: responseData, error } = await client.PUT(
       "/api/v1/leads/{lead_id}",

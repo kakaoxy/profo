@@ -67,50 +67,38 @@ export async function addFollowUpAction(
 
 export async function getLeadFollowUpsAction(
   leadId: string,
-): Promise<FollowUp[]> {
-  const client = await fetchClient();
-  const { data, error } = await client.GET(
-    "/api/v1/leads/{lead_id}/follow-ups",
-    {
-      params: { path: { lead_id: leadId } },
-    },
-  );
+): Promise<ActionResult<FollowUp[]>> {
+  const permCheck = await requirePermission(PERMISSION_CODES.LEAD_READ);
+  if (!permCheck.ok) {
+    return { success: false, error: permCheck.message };
+  }
 
-  if (error || !data) {
+  try {
+    const client = await fetchClient();
+    const { data, error } = await client.GET(
+      "/api/v1/leads/{lead_id}/follow-ups",
+      {
+        params: { path: { lead_id: leadId } },
+      },
+    );
+
+    if (error || !data) {
+      logger.error("Get follow-ups error:", error);
+      return { success: false, error: extractErrorMessage(error) };
+    }
+
+    const mapped: FollowUp[] = data.map((f) => ({
+      id: f.id,
+      leadId: f.lead_id,
+      method: f.method,
+      content: f.content,
+      followUpTime: safeParseDate(f.followed_at)?.toLocaleString() ?? "-",
+      followedAt: f.followed_at,
+      createdBy: f.created_by_name || "Unknown",
+    }));
+    return { success: true, data: mapped };
+  } catch (error) {
     logger.error("Get follow-ups error:", error);
-    return [];
+    return { success: false, error: extractErrorMessage(error) };
   }
-
-  return data.map((f) => ({
-    id: f.id,
-    leadId: f.lead_id,
-    method: f.method,
-    content: f.content,
-    followUpTime: safeParseDate(f.followed_at)?.toLocaleString() ?? "-",
-    followedAt: f.followed_at,
-    createdBy: f.created_by_name || "Unknown",
-  }));
-}
-
-export async function getLeadPriceHistoryAction(
-  leadId: string,
-): Promise<import("../types").PriceHistory[]> {
-  const client = await fetchClient();
-  const { data, error } = await client.GET("/api/v1/leads/{lead_id}/prices", {
-    params: { path: { lead_id: leadId } },
-  });
-
-  if (error || !data) {
-    logger.error("Get price history error:", error);
-    return [];
-  }
-
-  return data.map((p) => ({
-    id: p.id,
-    leadId: p.lead_id,
-    price: p.price,
-    remark: p.remark ?? undefined,
-    recordedAt: safeParseDate(p.recorded_at)?.toLocaleString() ?? "-",
-    createdByName: p.created_by_name ?? undefined,
-  }));
 }

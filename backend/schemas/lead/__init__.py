@@ -60,6 +60,30 @@ class PriceHistoryResponse(PriceHistoryBase):
 
 
 # ----------------------
+# Lead Eval History Schemas
+# ----------------------
+class LeadEvalHistoryCreate(BaseModel):
+    """创建评估历史请求."""
+
+    eval_price: float = Field(gt=0, description="评估价格(万)")
+    remark: str | None = Field(None, max_length=500, description="评估备注")
+
+
+class LeadEvalHistoryResponse(BaseModel):
+    """评估历史响应."""
+
+    id: str
+    lead_id: str
+    eval_price: float
+    remark: str | None
+    evaluator_id: str
+    evaluator_name: str | None = None
+    evaluated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ----------------------
 # Lead Schemas
 # ----------------------
 class LeadBase(BaseModel):
@@ -75,6 +99,7 @@ class LeadBase(BaseModel):
     total_price: float | None = None
     unit_price: float | None = None
     eval_price: float | None = None
+    expected_price: float | None = Field(None, gt=0)
 
     district: str | None = None
     business_area: str | None = None
@@ -104,7 +129,7 @@ class LeadUpdate(BaseModel):
     area: float | None = None
     total_price: float | None = None
     unit_price: float | None = None
-    eval_price: float | None = None
+    expected_price: float | None = Field(None, gt=0)
 
     status: LeadStatus | None = None
     audit_reason: str | None = None
@@ -169,6 +194,7 @@ class LeadListItem(BaseModel):
     total_price: float | None = None
     unit_price: float | None = None
     eval_price: float | None = None
+    expected_price: float | None = None
     status: LeadStatus
     audit_reason: str | None = None
     auditor_id: str | None = None
@@ -225,6 +251,9 @@ __all__ = [
     # Lead
     "LeadBase",
     "LeadCreate",
+    # Lead Eval History
+    "LeadEvalHistoryCreate",
+    "LeadEvalHistoryResponse",
     # Funnel
     "LeadFunnelResponse",
     "LeadListItem",

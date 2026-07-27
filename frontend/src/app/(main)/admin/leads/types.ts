@@ -28,6 +28,16 @@ export interface PriceHistory {
   createdByName?: string;
 }
 
+export interface EvalHistory {
+  id: string;
+  leadId: string;
+  evalPrice: number;
+  remark?: string;
+  evaluatorId: string;
+  evaluatorName?: string;
+  evaluatedAt: string;
+}
+
 export interface Lead {
   id: string;
   communityName: string;
@@ -38,9 +48,11 @@ export interface Lead {
   area: number;        // in sqm
   totalPrice: number;  // User offer price in 10,000s
   unitPrice: number;   // Calculated or provided
-  
+
   status: LeadStatus;
   evalPrice?: number;  // Operator's evaluated price
+  expectedPrice?: number;  // 业主心理预期价（万）
+  evalHistories?: EvalHistory[];  // 评估历史（可选，详情接口返回）
   auditReason?: string;
   auditorId?: string;
   auditTime?: string;

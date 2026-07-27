@@ -81,10 +81,11 @@ export function LeadsView({
   const handleAudit = async (
     id: string,
     status: LeadStatus,
-    evalPrice?: number,
+    _evalPrice?: number,
     reason?: string,
   ) => {
-    const result = await updateLeadAction(id, { status, evalPrice, auditReason: reason });
+    // eval_price 由评估服务(POST /leads/{lead_id}/evaluations)管理，update 不再传递
+    const result = await updateLeadAction(id, { status, auditReason: reason });
     if (result.success) {
       refreshLeads();
       closeDetail();

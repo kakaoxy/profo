@@ -67,6 +67,7 @@ export function ValuationForm() {
     totalFloor: "",
     area: "",
     remarks: "",
+    expectedPrice: "",
     images: [] as string[],
   });
 
@@ -194,6 +195,19 @@ export function ValuationForm() {
 
           <FloorPlanUpload images={formData.images} onChange={setImages} />
           <input type="hidden" name="images" value={JSON.stringify(formData.images)} />
+
+          <FormItem label={cLocale.valuation.expectedPriceLabel}>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              name="expected_price"
+              className="w-full h-12 px-4 rounded-inputs border border-dove/30 bg-white text-base font-medium text-ink placeholder:text-graphite outline-none focus:border-rust transition-colors"
+              value={formData.expectedPrice}
+              onChange={(e) => updateField("expectedPrice", e.target.value)}
+              placeholder={cLocale.valuation.expectedPricePlaceholder}
+            />
+          </FormItem>
 
           <div className="space-y-1.5">
             <label className="text-[10px] sm:text-xs font-medium text-graphite uppercase tracking-widest ml-1">补充信息</label>

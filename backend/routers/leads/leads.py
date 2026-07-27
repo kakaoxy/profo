@@ -6,6 +6,7 @@
 from fastapi import APIRouter
 
 from .core import router as core_router
+from .evaluations import router as evaluations_router
 from .followups import router as followups_router
 from .prices import router as prices_router
 
@@ -17,3 +18,4 @@ router = APIRouter(
 router.include_router(core_router, prefix="/leads")
 router.include_router(followups_router, prefix="/leads", tags=["lead-followups"])
 router.include_router(prices_router, prefix="/leads", tags=["lead-prices"])
+router.include_router(evaluations_router, prefix="/leads", tags=["lead-evaluations"])

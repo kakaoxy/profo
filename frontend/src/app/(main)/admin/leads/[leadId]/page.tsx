@@ -16,7 +16,7 @@ export default async function LeadDetailPage({ params }: PageProps) {
   const client = await fetchClient();
 
   // 并行拉取线索详情 + 跟进记录，消除请求瀑布
-  const [leadResponse, followUps] = await Promise.all([
+  const [leadResponse, followUpsResult] = await Promise.all([
     client.GET("/api/v1/leads/{lead_id}", {
       params: { path: { lead_id: leadId } },
     }),
@@ -34,6 +34,12 @@ export default async function LeadDetailPage({ params }: PageProps) {
   }
 
   const lead = mapBackendToFrontend(data);
+
+  // 跟进记录获取失败时降级为空数组，UI 不阻塞
+  if (!followUpsResult.success) {
+    logger.error("获取跟进记录失败", { leadId, error: followUpsResult.error });
+  }
+  const followUps = followUpsResult.success ? followUpsResult.data : [];
 
   return <LeadDetailView lead={lead} initialFollowUps={followUps} />;
 }
