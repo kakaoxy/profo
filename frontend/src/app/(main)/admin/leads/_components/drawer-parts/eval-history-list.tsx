@@ -34,12 +34,7 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
     });
   }, [leadId, refreshKey]);
 
-  // 按 evaluatedAt 倒序排列（最新在最上方）
-  const sortedHistories = [...histories].sort(
-    (a, b) =>
-      new Date(b.evaluatedAt).getTime() - new Date(a.evaluatedAt).getTime()
-  );
-
+  // 服务端已按 evaluated_at DESC 返回，前端无需重复排序
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="bg-muted/30 px-4 py-2.5 border-b border-border flex items-center justify-between">
@@ -54,12 +49,12 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
         </span>
       </div>
       <div className="p-4 space-y-2">
-        {sortedHistories.length === 0 ? (
+        {histories.length === 0 ? (
           <div className="text-center py-6 text-xs text-muted-foreground italic">
             暂无评估历史
           </div>
         ) : (
-          sortedHistories.map((h, idx) => (
+          histories.map((h, idx) => (
             <div
               key={h.id}
               className="flex items-start gap-3 p-3 rounded-xl border border-border hover:border-primary/20 transition-colors"

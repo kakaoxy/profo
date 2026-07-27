@@ -653,6 +653,7 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | | `/leads/{id}` | GET/PUT/DELETE | 详情 / 更新 / 删除 |
 | | `/leads/{id}/follow-ups` | GET/POST | 跟进记录 |
 | | `/leads/{id}/prices` | GET/POST | 价格历史 |
+| | `/leads/{id}/evaluations` | GET/POST | 评估历史（GET 按 `evaluated_at` 倒序返回；POST 创建评估记录并同步 `Lead.eval_price`，请求体 `eval_price: Decimal(万) gt=0`、`remark ≤500字`） |
 | **市场情报** | `/properties` | GET | 房源列表（支持导出 CSV） |
 | | `/properties/communities/search` | GET | 小区搜索 |
 | | `/admin/communities` | GET/POST | 小区管理 |
@@ -753,6 +754,7 @@ erDiagram
     INVESTMENT ||--o{ INVESTMENT_LOG : "logged by"
     LEAD ||--o{ LEAD_FOLLOWUP : "has"
     LEAD ||--o{ LEAD_PRICE_HISTORY : "has"
+    LEAD ||--o{ LEAD_EVAL_HISTORY : "has"
     L4_MARKETING_PROJECT ||--o{ L4_MARKETING_MEDIA : "has"
     PROPERTY_CURRENT ||--o{ PROPERTY_HISTORY : "snapshots"
     PROPERTY_CURRENT ||--o{ PROPERTY_MEDIA : "has"
@@ -778,9 +780,10 @@ erDiagram
 | `property_current` | property | 房源当前数据 |
 | `property_history` | property | 房源历史快照 |
 | `property_media` | property | 房源媒体（含 `thumbnail_url`） |
-| `leads` | lead | 线索（含评估价、状态、来源 property_id） |
+| `leads` | lead | 线索（含评估价 `eval_price`、业主心理预期价 `expected_price`、状态、来源 property_id） |
 | `lead_followups` | lead | 线索跟进 |
 | `lead_price_history` | lead | 线索价格历史 |
+| `lead_eval_histories` | lead | 线索评估历史（含 `eval_price` Decimal(15,2)、`remark`、`evaluator_id`、`evaluated_at`；`idx_lead_eval_history_lead` 索引） |
 | `projects` | project | 项目主表（status: signing/renovating/selling/sold/deleted；含 `finance_settlement_status`/`finance_settled_date`/`finance_settled_note`/`business_form`/`commission_start_date`/`commission_end_date`） |
 | `project_contracts` | project | 合同（合同号部分唯一索引，`WHERE is_deleted=false`，允许软删后复用） |
 | `project_owners` | project | 业主（身份证 / 手机号 / 银行卡加密） |

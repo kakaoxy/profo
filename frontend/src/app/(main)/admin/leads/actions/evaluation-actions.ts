@@ -55,7 +55,9 @@ export async function createEvaluationAction(
       "/api/v1/leads/{lead_id}/evaluations",
       {
         params: { path: { lead_id: leadId } },
-        body: { eval_price: evalPrice, remark: remark ?? null },
+        // 端到端以字符串传输：契约类型为 `number | string`，
+        // 后端 Decimal 直接解析字符串避免 IEEE754 float 精度损失
+        body: { eval_price: String(evalPrice), remark: remark ?? null },
       },
     );
 

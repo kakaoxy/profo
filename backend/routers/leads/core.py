@@ -44,7 +44,7 @@ def _lead_to_list_item(lead) -> LeadListItem:  # noqa: ANN001
         total_price=float(lead.total_price) if lead.total_price else None,
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price else None,
-        expected_price=float(lead.expected_price) if lead.expected_price else None,
+        expected_price=float(lead.expected_price) if lead.expected_price is not None else None,
         status=lead.status,
         audit_reason=lead.audit_reason,
         auditor_id=lead.auditor_id,
