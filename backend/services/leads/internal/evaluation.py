@@ -42,7 +42,23 @@ class LeadEvalService:
         Returns:
             评估历史记录列表，按评估时间倒序
 
+        Raises:
+            ResourceNotFoundError: 当线索不存在或已软删除时
+
         """
+        # 校验线索存在性与软删除状态，保持与 POST /evaluations 语义一致
+        lead = (
+            self.db.query(Lead)
+            .filter(
+                Lead.id == lead_id,
+                Lead.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if not lead:
+            msg = "线索不存在"
+            raise ResourceNotFoundError(msg)
+
         return (
             self.db.query(LeadEvalHistory)
             .options(joinedload(LeadEvalHistory.evaluator))
