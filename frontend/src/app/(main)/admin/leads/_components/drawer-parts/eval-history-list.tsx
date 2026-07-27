@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { History, User } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { EvalHistory } from "../../types";
 import { getEvalHistoriesAction } from "../../actions";
@@ -30,8 +31,13 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
   useEffect(() => {
     if (!leadId) return;
     getEvalHistoriesAction(leadId).then((result) => {
-      // 失败时清空，避免显示陈旧数据（如线索被软删后 404）
-      setHistories(result.success ? result.data : []);
+      if (result.success) {
+        setHistories(result.data);
+      } else {
+        // 失败时清空，避免显示陈旧数据（如线索被软删后 404）
+        toast.error(result.error || "获取评估历史失败");
+        setHistories([]);
+      }
     });
   }, [leadId, refreshKey]);
 
