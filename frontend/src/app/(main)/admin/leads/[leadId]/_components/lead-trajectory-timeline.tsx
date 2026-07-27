@@ -1,10 +1,19 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { Plus, Gavel, Eye, History } from "lucide-react";
 
-import { Lead, FollowUp, LeadStatus, FollowUpMethod } from "../../types";
+import {
+  Lead,
+  FollowUp,
+  LeadStatus,
+  FollowUpMethod,
+  EvalHistory,
+} from "../../types";
 import { safeParseDate } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { getEvalHistoriesAction } from "../../actions";
 
 interface LeadTrajectoryTimelineProps {
   lead: Lead;
@@ -32,6 +41,20 @@ export function LeadTrajectoryTimeline({
   lead,
   followUps,
 }: LeadTrajectoryTimelineProps) {
+  // 评估历史：挂载时拉取，与 lead.evalHistories（若已传入）合并去重
+  const [evalHistories, setEvalHistories] = useState<EvalHistory[]>(
+    lead.evalHistories ?? [],
+  );
+
+  useEffect(() => {
+    if (!lead.id) return;
+    getEvalHistoriesAction(lead.id).then((result) => {
+      if (result.success) {
+        setEvalHistories(result.data);
+      }
+    });
+  }, [lead.id]);
+
   const events: TrailEvent[] = [];
 
   // 1. 录入事件（必有）
@@ -45,35 +68,44 @@ export function LeadTrajectoryTimeline({
     icon: Plus,
   });
 
-  // 2. 评估事件（条件：存在任意评估信息）
-  const hasAssessment =
-    lead.evalPrice != null || !!lead.auditReason || !!lead.auditTime;
-  if (hasAssessment) {
+  // 2. 评估历史事件（多条，按 evaluatedAt 倒序插入）
+  // 当 lead.status === REJECTED 时，仍展示评估历史（若有），便于回溯调整轨迹
+  evalHistories.forEach((h) => {
+    const d = safeParseDate(h.evaluatedAt);
+    const isLatest = h.id === evalHistories[0]?.id;
+    events.push({
+      key: `eval-${h.id}`,
+      title: isLatest ? "评估价调整 · 当前" : "评估价调整",
+      desc: `评估价 ¥${h.evalPrice} 万${
+        h.remark ? ` · ${h.remark}` : ""
+      }${h.evaluatorName ? ` · 由 ${h.evaluatorName} 调整` : ""}`,
+      time: safeFormatDate(h.evaluatedAt, "yyyy/MM/dd HH:mm:ss"),
+      sortTime: d?.getTime() ?? 0,
+      icon: Gavel,
+    });
+  });
+
+  // 3. 驳回事件（条件：已驳回且有 auditReason，且未在评估历史中体现）
+  // 评估历史已覆盖正常的评估价调整，这里仅补充"驳回"语义节点
+  if (
+    lead.status === LeadStatus.REJECTED &&
+    lead.auditReason &&
+    evalHistories.length === 0
+  ) {
     const raw = lead.auditTime ?? lead.updatedAt;
     const auditDate = safeParseDate(raw);
     const isFallback = !lead.auditTime;
-    const isRejected = lead.status === LeadStatus.REJECTED;
-    const approvalDesc =
-      lead.evalPrice != null
-        ? `拟收房评估价 ¥${lead.evalPrice} 万${
-            lead.auditReason ? " · " + lead.auditReason : ""
-          }`
-        : lead.auditReason
-          ? `评估意见：${lead.auditReason}`
-          : "评估通过，未填写评估价";
     events.push({
       key: "audit",
-      title: isRejected ? "评估驳回" : "收房评估通过",
-      desc: isRejected
-        ? `评估意见：${lead.auditReason || "未填写具体原因"}`
-        : approvalDesc,
+      title: "评估驳回",
+      desc: `评估意见：${lead.auditReason || "未填写具体原因"}`,
       time: `${isFallback ? "约 " : ""}${safeFormatDate(raw, "yyyy/MM/dd HH:mm:ss")}`,
       sortTime: auditDate?.getTime() ?? 0,
       icon: Gavel,
     });
   }
 
-  // 3. 看房事件 + 4. 沟通事件
+  // 4. 看房事件 + 5. 沟通事件
   followUps.forEach((f) => {
     const d = safeParseDate(f.followedAt);
     const isVisit = f.method === "visit";

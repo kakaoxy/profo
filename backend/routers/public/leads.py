@@ -68,6 +68,7 @@ def create_lead(
         floor_info=body.floor_info,
         orientation=body.orientation,
         remarks=body.remarks,
+        expected_price=body.expected_price,
         images=body.images,
     )
 
@@ -83,6 +84,7 @@ def create_lead(
         total_price=float(lead.total_price) if lead.total_price else None,
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price else None,
+        expected_price=float(lead.expected_price) if lead.expected_price else None,
         status=lead.status.value if hasattr(lead.status, "value") else str(lead.status),
         remarks=lead.remarks,
         images=lead.images or [],
@@ -117,6 +119,7 @@ def get_my_leads(
                 layout=lead.layout,
                 area=float(lead.area) if lead.area else None,
                 total_price=float(lead.total_price) if lead.total_price else None,
+                expected_price=float(lead.expected_price) if lead.expected_price else None,
                 status=status_code,
                 status_display=status_display,
                 status_color=status_color,
@@ -173,6 +176,7 @@ def get_lead_detail(
         total_price=float(lead.total_price) if lead.total_price else None,
         unit_price=float(lead.unit_price) if lead.unit_price else None,
         eval_price=float(lead.eval_price) if lead.eval_price else None,
+        expected_price=float(lead.expected_price) if lead.expected_price else None,
         status=status_code,
         status_display=status_display,
         status_color=status_color,

@@ -17,6 +17,11 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
       label: "评估价",
       value: lead.evalPrice != null ? formatPriceWan(lead.evalPrice) : "-",
     },
+    {
+      label: "心理预期价",
+      value:
+        lead.expectedPrice != null ? formatPriceWan(lead.expectedPrice) : "-",
+    },
     { label: "面积", value: `${lead.area}㎡` },
     { label: "户型", value: lead.layout || "-" },
     { label: "楼层", value: lead.floorInfo || "-" },

@@ -21,6 +21,7 @@ const createLeadSchema = z.object({
   floor_info: z.string().nullable().optional(),
   orientation: z.string().nullable().optional(),
   remarks: z.string().nullable().optional(),
+  expected_price: z.number().positive("心理预期价必须为正数").nullable().optional(),
   images: z.array(z.string().refine(isValidUrl, { message: "无效的图片 URL" })).max(6).default([]),
 });
 
@@ -53,6 +54,7 @@ export async function createLeadAction(_: ActionResult<{ id: string }>, formData
     floor_info: (formData.get("floor_info") as string) || null,
     orientation: (formData.get("orientation") as string) || null,
     remarks: (formData.get("remarks") as string) || null,
+    expected_price: formData.get("expected_price") ? parseFloat(formData.get("expected_price") as string) : null,
     images: (() => {
       try {
         const parsed = JSON.parse((formData.get("images") as string) || "[]");

@@ -60,8 +60,8 @@ export function LeadFollowUpForm({
       }
       handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);
       setContent("");
-      const updated = await getLeadFollowUpsAction(leadId);
-      onFollowUpsChange(updated);
+      const followUpsResult = await getLeadFollowUpsAction(leadId);
+      if (followUpsResult.success) onFollowUpsChange(followUpsResult.data);
     } catch {
       handleError(null, "LeadFollowUpForm.submit", {
         fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED,

@@ -16,6 +16,7 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     unitPrice: backendLead.unit_price ?? 0,
     status: backendLead.status as LeadStatus,
     evalPrice: backendLead.eval_price ?? undefined,
+    expectedPrice: backendLead.expected_price ?? undefined,
     auditReason: backendLead.audit_reason ?? undefined,
     auditorId: backendLead.auditor_id?.toString() ?? undefined,
     auditTime: backendLead.audit_time ?? undefined,

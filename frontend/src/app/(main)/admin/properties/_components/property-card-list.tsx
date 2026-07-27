@@ -29,14 +29,15 @@ function PropertyCardItemImpl({ property }: PropertyCardItemProps) {
     rooms,
     baths,
     floor_display,
+    build_area,
     total_price,
     unit_price,
   } = property;
 
   // 时间显示逻辑：成交用 sold_date，其他用 listed_date，与 columns.tsx time_display 列一致
-  // 使用 safeFormatDate 防止 Invalid Date 传播，格式与 dashboard-leads-card-list 对齐
+  // 使用 safeFormatDate 防止 Invalid Date 传播；yy/MM/dd 含两位年份便于跨年识别
   const dateStr = status === "成交" ? property.sold_date : property.listed_date;
-  const formattedDate = safeFormatDate(dateStr, "MM/dd", "");
+  const formattedDate = safeFormatDate(dateStr, "yy/MM/dd", "");
 
   return (
     <div
@@ -83,9 +84,9 @@ function PropertyCardItemImpl({ property }: PropertyCardItemProps) {
           </Badge>
         </div>
 
-        {/* 第二行：户型·楼层 */}
+        {/* 第二行：户型·楼层·面积 */}
         <div className="text-xs text-muted-foreground">
-          {rooms}室{baths}卫 · {floor_display}
+          {rooms}室{baths}卫 · {floor_display} · {build_area}㎡
         </div>
 
         {/* 第三行：价格 + 单价 */}

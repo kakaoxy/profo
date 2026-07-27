@@ -16,7 +16,7 @@ from schemas.lead import LeadCreate, LeadUpdate
 from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError
 from settings import settings
 
-from .internal import LeadFollowUpService, LeadPriceService, LeadQueryService
+from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService, LeadQueryService
 
 
 class LeadService:
@@ -42,6 +42,7 @@ class LeadService:
         self.query_service = LeadQueryService(db)
         self.price_service = LeadPriceService(db)
         self.followup_service = LeadFollowUpService(db)
+        self.eval_service = LeadEvalService(db)
 
     def create_lead(self, lead_data: LeadCreate, creator_id: str, *, creator: User | None = None) -> Lead:
         """创建线索.

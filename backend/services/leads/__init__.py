@@ -6,9 +6,10 @@
 """
 
 from .core import LeadService
-from .internal import LeadFollowUpService, LeadPriceService
+from .internal import LeadEvalService, LeadFollowUpService, LeadPriceService
 
 __all__ = [
+    "LeadEvalService",
     "LeadFollowUpService",
     "LeadPriceService",
     "LeadService",

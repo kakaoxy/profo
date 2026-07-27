@@ -374,6 +374,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/{lead_id}/evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Evaluations
+         * @description 获取线索评估历史记录.
+         */
+        get: operations["get_evaluations_api_v1_leads__lead_id__evaluations_get"];
+        put?: never;
+        /**
+         * Create Evaluation
+         * @description 创建评估记录.
+         *
+         *     同时更新线索的当前评估价（Lead.eval_price）与 updated_at.
+         *     速率限制：100次/小时（LEAD_UPDATE）.
+         */
+        post: operations["create_evaluation_api_v1_leads__lead_id__evaluations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/documents": {
         parameters: {
             query?: never;
@@ -5552,6 +5579,8 @@ export interface components {
             unit_price?: number | null;
             /** Eval Price */
             eval_price?: number | null;
+            /** Expected Price */
+            expected_price?: number | null;
             /** District */
             district?: string | null;
             /** Business Area */
@@ -5566,6 +5595,45 @@ export interface components {
             images?: string[];
             /** Created At */
             created_at?: string | null;
+        };
+        /**
+         * LeadEvalHistoryCreate
+         * @description 创建评估历史请求.
+         */
+        LeadEvalHistoryCreate: {
+            /**
+             * Eval Price
+             * @description 评估价格(万)
+             */
+            eval_price: number;
+            /**
+             * Remark
+             * @description 评估备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * LeadEvalHistoryResponse
+         * @description 评估历史响应.
+         */
+        LeadEvalHistoryResponse: {
+            /** Id */
+            id: string;
+            /** Lead Id */
+            lead_id: string;
+            /** Eval Price */
+            eval_price: number;
+            /** Remark */
+            remark: string | null;
+            /** Evaluator Id */
+            evaluator_id: string;
+            /** Evaluator Name */
+            evaluator_name?: string | null;
+            /**
+             * Evaluated At
+             * Format: date-time
+             */
+            evaluated_at: string;
         };
         /**
          * LeadFunnelResponse
@@ -5630,6 +5698,8 @@ export interface components {
             unit_price?: number | null;
             /** Eval Price */
             eval_price?: number | null;
+            /** Expected Price */
+            expected_price?: number | null;
             status: components["schemas"]["LeadStatus"];
             /** Audit Reason */
             audit_reason?: string | null;
@@ -5692,6 +5762,8 @@ export interface components {
             unit_price?: number | null;
             /** Eval Price */
             eval_price?: number | null;
+            /** Expected Price */
+            expected_price?: number | null;
             /** District */
             district?: string | null;
             /** Business Area */
@@ -5788,8 +5860,8 @@ export interface components {
             total_price?: number | null;
             /** Unit Price */
             unit_price?: number | null;
-            /** Eval Price */
-            eval_price?: number | null;
+            /** Expected Price */
+            expected_price?: number | null;
             status?: components["schemas"]["LeadStatus"] | null;
             /** Audit Reason */
             audit_reason?: string | null;
@@ -7939,6 +8011,11 @@ export interface components {
              */
             remarks?: string | null;
             /**
+             * Expected Price
+             * @description 业主心理预期价(万)
+             */
+            expected_price?: number | null;
+            /**
              * Images
              * @description 户型图URL列表
              */
@@ -7994,6 +8071,11 @@ export interface components {
              * @description 评估价格(万)
              */
             eval_price?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价(万)
+             */
+            expected_price?: number | null;
             /**
              * Status
              * @description 状态代码
@@ -8073,6 +8155,11 @@ export interface components {
              * @description 当前授权总价(万)
              */
             total_price?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价(万)
+             */
+            expected_price?: number | null;
             /**
              * Status
              * @description 状态代码
@@ -8178,6 +8265,11 @@ export interface components {
              * @description 评估价格(万)
              */
             eval_price?: number | null;
+            /**
+             * Expected Price
+             * @description 业主心理预期价(万)
+             */
+            expected_price?: number | null;
             /**
              * Status
              * @description 状态
@@ -11014,6 +11106,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PriceHistoryResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_evaluations_api_v1_leads__lead_id__evaluations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadEvalHistoryResponse"][];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_evaluation_api_v1_leads__lead_id__evaluations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 线索ID */
+                lead_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadEvalHistoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadEvalHistoryResponse"];
                 };
             };
             /** @description Not found */
