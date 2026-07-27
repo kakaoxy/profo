@@ -39,6 +39,8 @@ interface LeadsViewProps {
   total: number;
   stats: LeadStats;
   initialSelectedLeadId?: string;
+  creatorId?: string;
+  creatorName?: string;
 }
 
 export function LeadsView({
@@ -46,6 +48,8 @@ export function LeadsView({
   total,
   stats,
   initialSelectedLeadId,
+  creatorId,
+  creatorName,
 }: LeadsViewProps) {
   const router = useRouter();
   const {
@@ -56,6 +60,7 @@ export function LeadsView({
     setActiveTab,
     searchQuery,
     setSearchQuery,
+    clearCreatorId,
   } = useLeadsFilter(initialLeads);
 
   const {
@@ -167,6 +172,9 @@ export function LeadsView({
             viewMode={viewMode}
             onViewModeChange={setViewMode}
             onAddLead={startAddLead}
+            creatorId={creatorId}
+            creatorName={creatorName}
+            onClearCreatorId={clearCreatorId}
           />
 
           {viewMode === "table" ? (

@@ -53,6 +53,7 @@ export function useLeadsFilter(initialLeads: Lead[]) {
   // 服务端筛选状态从 URL 读取
   const searchQuery = searchParams.get("search") || "";
   const statusesParam = searchParams.get("statuses") || "";
+  const creatorId = searchParams.get("creator_id") || "";
   const activeTab: LeadTabValue = statusesParam
     ? (statusesParam.split(",")[0] as LeadTabValue)
     : "all";
@@ -111,6 +112,11 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     [updateUrlParams],
   );
 
+  /** 清除创建人筛选（移除 URL 中的 creator_id 参数） */
+  const clearCreatorId = useCallback(() => {
+    updateUrlParams({ creator_id: undefined });
+  }, [updateUrlParams]);
+
   /** 客户端过滤（仅 layouts/floors/creator，search/statuses/district 已由服务端处理） */
   const filteredLeads = useMemo(() => {
     return initialLeads.filter((lead) => {
@@ -142,6 +148,7 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     params.delete("search");
     params.delete("statuses");
     params.delete("district");
+    params.delete("creator_id");
     params.set("page", "1");
     router.push(`/admin/leads?${params.toString()}`);
   }, [searchParams, router, debouncedSearchUpdate]);
@@ -162,5 +169,7 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     setActiveTab,
     searchQuery: searchInput,
     setSearchQuery,
+    creatorId,
+    clearCreatorId,
   };
 }

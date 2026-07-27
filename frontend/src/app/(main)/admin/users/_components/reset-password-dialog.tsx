@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 import { resetUserPasswordAction } from "../actions/index";
 import type { UserResponse } from "../actions/index";
@@ -79,8 +80,13 @@ export function ResetPasswordDialog({ open, onOpenChange, user }: ResetPasswordD
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>重置密码</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="flex items-center gap-2">
             正在重置用户 <b>{user?.nickname || user?.username}</b> 的密码
+            {user?.role?.code && (
+              <Badge variant="outline" className="text-xs">
+                {user.role.name}
+              </Badge>
+            )}
           </DialogDescription>
         </DialogHeader>
 

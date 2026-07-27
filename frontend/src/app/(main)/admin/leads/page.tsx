@@ -9,6 +9,7 @@ interface PageProps {
     search?: string;
     statuses?: string;
     district?: string;
+    creator_id?: string;
     leadId?: string;
     page?: string;
     page_size?: string;
@@ -48,6 +49,10 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     queryParams.district = params.district;
   }
 
+  if (params.creator_id) {
+    queryParams.creator_id = params.creator_id;
+  }
+
   // 并行获取线索列表和状态统计（统计不受分页影响）
   const [listRes, statsRes] = await Promise.all([
     client.GET("/api/v1/leads", {
@@ -67,6 +72,11 @@ export default async function LeadsPage({ searchParams }: PageProps) {
       rejected: 0,
     };
 
+  // 创建人筛选标签展示名：取当前页首条线索的 creator_name（后端已按 creator_id 过滤）
+  const creatorName = params.creator_id
+    ? leads[0]?.creatorName
+    : undefined;
+
   return (
     <div className="min-h-screen bg-background">
       <LeadsView
@@ -74,6 +84,8 @@ export default async function LeadsPage({ searchParams }: PageProps) {
         total={total}
         stats={stats}
         initialSelectedLeadId={params.leadId}
+        creatorId={params.creator_id}
+        creatorName={creatorName}
       />
     </div>
   );

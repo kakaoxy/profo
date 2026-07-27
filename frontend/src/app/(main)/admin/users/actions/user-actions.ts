@@ -72,6 +72,8 @@ export async function getUsersAction(params: {
   nickname?: string;
   role_id?: string;
   status?: string;
+  sort?: string;
+  dir?: string;
 }) {
   try {
     const client = await fetchClient();
