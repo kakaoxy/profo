@@ -47,8 +47,16 @@ def get_users(
     nickname: Annotated[str | None, Query(max_length=100, description="昵称搜索")] = None,
     role_id: Annotated[str | None, Query(max_length=100, description="角色ID筛选")] = None,
     status: Annotated[str | None, Query(max_length=100, description="用户状态筛选")] = None,
+    sort: Annotated[
+        str | None,
+        Query(max_length=20, description="排序字段：nickname/role/leads_count/last_login_at/created_at"),
+    ] = None,
+    sort_dir: Annotated[
+        str | None,
+        Query(alias="dir", max_length=4, description="排序方向：asc/desc，默认 desc"),
+    ] = None,
 ) -> UserListResponse:
-    """获取用户列表，支持搜索和筛选.
+    """获取用户列表，支持搜索、筛选和排序.
 
     速率限制：60次/分钟.
     """
@@ -60,6 +68,8 @@ def get_users(
         status,
         pagination.page,
         pagination.page_size,
+        sort=sort,
+        sort_dir=sort_dir,
     )
 
     return UserListResponse(
@@ -92,11 +102,11 @@ def get_users_simple(
 
 @router.get("/me")
 def get_current_user(
-    _db: DbSessionDep,
+    db: DbSessionDep,
     current_user: CurrentActiveUserDep,
 ) -> UserResponse:
     """获取当前登录用户信息."""
-    return current_user
+    return user_service.attach_leads_count(db, current_user)
 
 
 @router.get("/{user_id}")

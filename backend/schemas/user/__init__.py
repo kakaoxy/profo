@@ -197,6 +197,8 @@ class UserResponse(BaseUser):
         default_factory=list,
         description="用户有效权限代码列表（主角色+附加角色权限并集）",
     )
+    # 用户作为 Lead.creator_id 提交的线索总数，由 user_service 聚合填充
+    leads_count: int = Field(default=0, description="用户作为 Lead.creator_id 提交的线索总数")
 
     @field_validator("additional_roles", mode="before")
     @classmethod
@@ -209,6 +211,12 @@ class UserResponse(BaseUser):
     def _normalize_permissions(cls, v: Any) -> Any:  # noqa: ANN401
         """NULL/None 转为空列表，避免非 Optional 字段触发 500."""
         return v if v is not None else []
+
+    @field_validator("leads_count", mode="before")
+    @classmethod
+    def _normalize_leads_count(cls, v: Any) -> Any:  # noqa: ANN401
+        """NULL/None 转为 0，避免非 Optional 字段触发 500."""
+        return v if v is not None else 0
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

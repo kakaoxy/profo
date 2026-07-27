@@ -1951,7 +1951,7 @@ export interface paths {
         };
         /**
          * Get Users
-         * @description 获取用户列表，支持搜索和筛选.
+         * @description 获取用户列表，支持搜索、筛选和排序.
          *
          *     速率限制：60次/分钟.
          */
@@ -10116,6 +10116,12 @@ export interface components {
              * @description 用户有效权限代码列表（主角色+附加角色权限并集）
              */
             permissions?: string[];
+            /**
+             * Leads Count
+             * @description 用户作为 Lead.creator_id 提交的线索总数
+             * @default 0
+             */
+            leads_count: number;
         };
         /**
          * UserSimpleListResponse
@@ -14262,6 +14268,10 @@ export interface operations {
                 role_id?: string | null;
                 /** @description 用户状态筛选 */
                 status?: string | null;
+                /** @description 排序字段：nickname/role/leads_count/last_login_at/created_at */
+                sort?: string | null;
+                /** @description 排序方向：asc/desc，默认 desc */
+                dir?: string | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */

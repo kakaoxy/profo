@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from constants.role_codes import RoleCode
-from models import Role, User, UserRole
+from models import Lead, Role, User, UserRole
 from schemas.user import PasswordChange, PasswordResetRequest, UserCreate, UserUpdate
 from settings import settings
 from utils.auth import get_password_hash, validate_password_strength, verify_password
@@ -24,6 +24,14 @@ from .operation_log import operation_log_service
 
 # 允许更新的用户字段白名单（防止设置 password/wechat_*/id 等敏感字段）
 _USER_ALLOWED_FIELDS = {"nickname", "phone", "avatar", "role_id", "status"}
+
+# 排序字段白名单 → SQLAlchemy 列/表达式（leads_count 由子查询单独处理）
+_SORT_FIELDS: dict[str, Any] = {
+    "nickname": User.nickname,
+    "role": Role.code,
+    "last_login_at": User.last_login_at,
+    "created_at": User.created_at,
+}
 
 
 def _user_snapshot(user: User) -> dict[str, Any]:
@@ -52,8 +60,19 @@ class UserService:
         user_status: str | None = None,
         page: int = 1,
         page_size: int | None = None,
+        sort: str | None = None,
+        sort_dir: str | None = None,
     ) -> tuple[int, list[User]]:
-        """获取用户列表."""
+        """获取用户列表，支持搜索、筛选和排序.
+
+        通过相关子查询在单条 SQL 中填充 leads_count（避免 LEFT JOIN + GROUP BY
+        与 joinedload(User.role) 冲突——PostgreSQL 严格要求 GROUP BY 包含
+        所有非聚合列，而 joinedload 会向 SELECT 注入 roles 表的列）。
+        total 为匹配筛选条件的用户数（不含 lead 子查询）。
+
+        sort 白名单：nickname/role/leads_count/last_login_at/created_at，
+        None 或非法值时回退到 created_at；sort_dir 默认 desc。
+        """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = db.query(User).options(joinedload(User.role), selectinload(User.roles))
 
@@ -67,17 +86,65 @@ class UserService:
         if user_status:
             query = query.filter(User.status == user_status)
 
+        # total 为匹配筛选条件的用户数（不含 lead 子查询）
         total = query.count()
         offset = (page - 1) * effective_page_size
-        users = query.order_by(User.created_at.desc()).offset(offset).limit(effective_page_size).all()
+
+        # 单条 SQL：相关子查询计算 leads_count，避免 N+1（不引入 LEFT JOIN + GROUP BY）
+        # 必须过滤 is_deleted，与线索列表页查询保持一致
+        leads_count_subq = (
+            db.query(func.count(Lead.id))
+            .filter(Lead.creator_id == User.id, Lead.is_deleted.is_(False))
+            .scalar_subquery()
+            .label("leads_count")
+        )
+
+        # 排序方向：仅 asc 降序反转为升序，其余一律按 desc 处理（fail-closed）
+        direction = "asc" if sort_dir == "asc" else "desc"
+        # 排序字段白名单校验：非法值回退到 created_at
+        order_expr = leads_count_subq if sort == "leads_count" else _SORT_FIELDS.get(sort, User.created_at)
+        order_clause = order_expr.asc() if direction == "asc" else order_expr.desc()
+
+        rows = (
+            query.with_entities(User, leads_count_subq)
+            .order_by(order_clause)
+            .offset(offset)
+            .limit(effective_page_size)
+            .all()
+        )
+        # 每行返回 (User, leads_count_int)，将聚合值挂到 User 实例上，
+        # Pydantic from_attributes=True 会自动拾取该属性
+        users: list[User] = []
+        for user, leads_count in rows:
+            user.leads_count = int(leads_count or 0)
+            users.append(user)
 
         return total, users
 
+    def attach_leads_count(self, db: Session, user: User) -> User:
+        """查询并设置 user.leads_count，供 UserResponse.from_attributes 拾取.
+
+        用于 get_user_by_id/create_user/update_user/get_current_user 等需要
+        返回 UserResponse 的场景，保持 leads_count 在所有响应路径一致。
+        """
+        leads_count = (
+            db.query(func.count(Lead.id)).filter(Lead.creator_id == user.id, Lead.is_deleted.is_(False)).scalar() or 0
+        )
+        user.leads_count = int(leads_count)
+        return user
+
     def get_user_by_id(self, db: Session, user_id: str) -> User | None:
-        """根据ID获取用户."""
-        return (
+        """根据ID获取用户.
+
+        单独查询该用户的 leads_count 并 setattr 到返回的 User 实例上，
+        供 UserResponse.from_attributes 拾取。
+        """
+        user = (
             db.query(User).options(joinedload(User.role), selectinload(User.roles)).filter(User.id == user_id).first()
         )
+        if user is None:
+            return None
+        return self.attach_leads_count(db, user)
 
     def _build_additional_user_roles(
         self,
@@ -212,6 +279,8 @@ class UserService:
             after=_user_snapshot(db_user),
             request=request,
         )
+        # 新用户无线索，显式置 0 保持响应一致性
+        db_user.leads_count = 0
         return db_user
 
     def update_user(
@@ -323,7 +392,8 @@ class UserService:
             after=_user_snapshot(user),
             request=request,
         )
-        return user
+        # 补齐 leads_count，保持与 get_user_by_id 响应一致
+        return self.attach_leads_count(db, user)
 
     def reset_password(
         self,

@@ -1,8 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, List, LayoutGrid, Plus } from "lucide-react";
+import { Download, List, LayoutGrid, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { SearchBar } from "@/components/common";
@@ -25,6 +26,9 @@ interface LeadsToolbarProps {
   viewMode: "table" | "grid";
   onViewModeChange: (mode: "table" | "grid") => void;
   onAddLead: () => void;
+  creatorId?: string;
+  creatorName?: string;
+  onClearCreatorId: () => void;
 }
 
 export function LeadsToolbar({
@@ -35,11 +39,18 @@ export function LeadsToolbar({
   viewMode,
   onViewModeChange,
   onAddLead,
+  creatorId,
+  creatorName,
+  onClearCreatorId,
 }: LeadsToolbarProps) {
+  const creatorLabel = creatorName
+    ? `创建人: ${creatorName}`
+    : `创建人: #${creatorId}`;
+
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
       {/* Left: Filter Area */}
-      <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-center">
+      <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-start sm:items-center">
         <SearchBar
           value={searchQuery}
           onChange={onSearchChange}
@@ -92,6 +103,24 @@ export function LeadsToolbar({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* 创建人筛选标签（URL 含 creator_id 时展示） */}
+        {creatorId && (
+          <Badge
+            variant="secondary"
+            className="h-9 px-3 gap-1.5 rounded-lg bg-primary/10 text-primary"
+          >
+            {creatorLabel}
+            <button
+              type="button"
+              onClick={onClearCreatorId}
+              className="ml-0.5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 p-0.5 transition-colors"
+              aria-label="清除创建人筛选"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        )}
       </div>
 
       {/* Right: Actions */}
