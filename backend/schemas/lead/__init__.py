@@ -1,6 +1,7 @@
 """Leads Management Pydantic Schemas."""
 
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -65,7 +66,7 @@ class PriceHistoryResponse(PriceHistoryBase):
 class LeadEvalHistoryCreate(BaseModel):
     """创建评估历史请求."""
 
-    eval_price: float = Field(gt=0, description="评估价格(万)")
+    eval_price: Decimal = Field(gt=0, decimal_places=2, description="评估价格(万)")
     remark: str | None = Field(None, max_length=500, description="评估备注")
 
 

@@ -54,7 +54,7 @@ class LeadEvalService:
     def create_evaluation(
         self,
         lead_id: str,
-        eval_price: float,
+        eval_price: Decimal,
         remark: str | None,
         evaluator_id: str,
     ) -> LeadEvalHistory:
@@ -62,7 +62,7 @@ class LeadEvalService:
 
         Args:
             lead_id: 线索ID
-            eval_price: 评估价格(万)
+            eval_price: 评估价格(万)，由 Pydantic Decimal 字段直接解析，避免 float 精度损失
             remark: 评估备注
             evaluator_id: 评估人ID
 
@@ -88,13 +88,13 @@ class LeadEvalService:
         rec = LeadEvalHistory(
             id=str(uuid.uuid4()),
             lead_id=lead_id,
-            eval_price=Decimal(str(eval_price)),
+            eval_price=eval_price,
             remark=remark,
             evaluator_id=evaluator_id,
         )
         self.db.add(rec)
 
-        lead.eval_price = Decimal(str(eval_price))
+        lead.eval_price = eval_price
         lead.updated_at = datetime.now(timezone.utc)
         self.db.add(lead)
 

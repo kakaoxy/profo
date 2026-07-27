@@ -5605,7 +5605,7 @@ export interface components {
              * Eval Price
              * @description 评估价格(万)
              */
-            eval_price: number;
+            eval_price: number | string;
             /**
              * Remark
              * @description 评估备注
