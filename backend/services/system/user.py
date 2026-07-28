@@ -6,7 +6,7 @@
 from typing import Any
 
 from fastapi import Request
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -28,7 +28,10 @@ _USER_ALLOWED_FIELDS = {"nickname", "phone", "avatar", "role_id", "status"}
 # 排序字段白名单 → SQLAlchemy 列/表达式（leads_count 由子查询单独处理）
 _SORT_FIELDS: dict[str, Any] = {
     "nickname": User.nickname,
-    "role": Role.code,
+    # joinedload(User.role) 会把 roles 表别名为 roles_1，直接用 Role.code 会生成
+    # ORDER BY roles.code，引用未别名的 roles 表导致 PostgreSQL UndefinedTable 错误。
+    # 改用相关标量子查询（自带 FROM roles），避免与 joinedload 别名冲突。
+    "role": select(Role.code).where(Role.id == User.role_id).scalar_subquery(),
     "last_login_at": User.last_login_at,
     "created_at": User.created_at,
 }
