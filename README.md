@@ -300,8 +300,7 @@ backend/
 ├── error_handlers.py           # 全局异常处理器
 ├── init_admin.py               # 初始化角色与管理员脚本（首次部署手动执行）
 ├── init_db.py                  # 建表脚本
-├── conftest.py                 # pytest 配置（PostgreSQL + SAVEPOINT 隔离）
-└── openapi.json                # OpenAPI 3.0 schema 副本
+└── conftest.py                 # pytest 配置（PostgreSQL + SAVEPOINT 隔离）
 ```
 
 #### 关键设计模式
@@ -598,7 +597,7 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 
 ### 主要端点
 
-所有接口前缀 `/api/v1`，文档地址 `http://localhost/docs`（Docker，需 `DEBUG=true`）或 `http://127.0.0.1:8000/docs`（本地开发）。完整端点见 `backend/openapi.json`（117 路径 / 152 方法）。
+所有接口前缀 `/api/v1`，文档地址 `http://localhost/docs`（Docker，需 `DEBUG=true`）或 `http://127.0.0.1:8000/docs`（本地开发）。完整端点见运行中的 `/docs`（DEBUG=true 时暴露）或 `frontend/src/lib/api-types.d.ts`。
 
 | 模块 | 路径 | 方法 | 说明 |
 |------|------|------|------|
@@ -1197,7 +1196,6 @@ ProFo/
 │   ├── init_db.py                 # 建表脚本
 │   ├── init_admin.py              # 初始化角色和管理员
 │   ├── conftest.py                # pytest 配置（PostgreSQL + SAVEPOINT 隔离）
-│   ├── openapi.json               # OpenAPI 3.0 schema 副本
 │   ├── Dockerfile                 # 多阶段构建（builder → runner）
 │   ├── pyproject.toml             # 依赖与工具配置（ruff select=ALL）
 │   └── uv.lock

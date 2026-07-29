@@ -3660,6 +3660,11 @@ export interface components {
              * @description 价格趋势方向: true=上涨, false=下跌, null=持平
              */
             is_price_up?: boolean | null;
+            /**
+             * Data As Of
+             * @description 统计窗口右端点(对齐数据最新成交日后的基准日期)
+             */
+            data_as_of?: string | null;
         };
         /**
          * CommunityMergeRequest

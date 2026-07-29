@@ -10,7 +10,6 @@ import { ProjectDetailSheet } from "../projects/_components/project-detail-sheet
 import { updateProjectAction } from "../projects/actions/core";
 import type { SigningMaterial } from "../projects/_components/project-detail/types";
 import { ProjectStatsSection } from "./project-stats-section";
-import { DealInfoSection } from "./deal-info-section";
 import { mapProjectResponseToProject } from "./project-card-utils";
 import { validateSalesRecords } from "./project-card-types";
 import type { Project } from "../projects/types/project";
@@ -125,35 +124,11 @@ export function ProjectCardClient({
             <ProjectStatsSection salesRecords={salesRecords} />
           </div>
 
-          {/* 成交信息区块：仅已售项目或存在 sold_price 时渲染 */}
-          {(project.status === "sold" || project.sold_price) && (
-            <>
-              <div className="py-2">
-                <div className="border-t border-dashed border-border"></div>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 block">
-                  成交信息
-                </span>
-                <DealInfoSection
-                  soldPrice={project.sold_price}
-                  soldDate={project.sold_date}
-                  transactionStatus={project.transaction_status}
-                  daysOnMarket={project.days_on_market}
-                  area={project.area}
-                />
-              </div>
-            </>
-          )}
-
           <div className="py-2">
             <div className="border-t border-dashed border-border"></div>
           </div>
 
           <div>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 block">
-              市场数据
-            </span>
             <MarketDataSection
               hasCommunityId={hasCommunityId}
               isLoading={false}
