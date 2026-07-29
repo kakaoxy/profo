@@ -1,5 +1,7 @@
 """监控和市场分析相关Schema."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 # --- Market Sentiment ---
@@ -141,6 +143,7 @@ class CommunityMarketStatsResponse(BaseModel):
     volume_30d: int = Field(0, description="30日成交量")
     price_trend_30d: float = Field(0.0, description="30日价格趋势百分比")
     is_price_up: bool | None = Field(None, description="价格趋势方向: true=上涨, false=下跌, null=持平")
+    data_as_of: datetime | None = Field(None, description="统计窗口右端点(对齐数据最新成交日后的基准日期)")
 
     model_config = ConfigDict(from_attributes=True)
 

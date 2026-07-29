@@ -23,6 +23,9 @@ from schemas.monitor import (
 
 from .neighborhood import NeighborhoodRadarService
 
+# 成交数据新鲜度阈值:最新成交日距今 ≤ 该天数时视为数据仍新鲜,统计窗口右端点用 now()
+_SOLD_DATA_FRESH_DAYS = 7
+
 
 class MonitorService:
     """市场监控服务."""
@@ -340,13 +343,39 @@ class MonitorService:
         - 成交均价 (元/㎡)
         - 30日成交量
         - 30日价格趋势
+
+        统计窗口右端点对齐"该小区最新成交日":成交数据存在约 30 天延迟,
+        若用 now() 会导致窗口整段落在数据空窗期。当最新成交日距今 > 7 天时,
+        以最新成交日为右端点;否则(无成交或距今 ≤ 7 天)用 now()。
+        响应中 data_as_of 字段返回实际使用的右端点。
         """
         db = self.db
-        now = datetime.now(timezone.utc)
-        thirty_days_ago = now - timedelta(days=30)
-        sixty_days_ago = now - timedelta(days=60)
 
-        # 1. 查询当前在售数量
+        # 1. 查询该小区最新成交日,据此对齐统计窗口右端点
+        latest_sold_date = (
+            db.query(func.max(PropertyCurrent.sold_date))
+            .filter(
+                PropertyCurrent.community_id == community_id,
+                PropertyCurrent.status == PropertyStatus.SOLD,
+            )
+            .scalar()
+        )
+
+        now = datetime.now(timezone.utc)
+        # 边界:无成交记录或最新成交距今 ≤ 7 天,用 now();否则用 latest_sold_date
+        if latest_sold_date is None:
+            as_of = now
+        else:
+            # 注意时区:latest_sold_date 可能是 offset-naive 或 aware,需统一为 aware (UTC) 比较
+            if latest_sold_date.tzinfo is None:
+                latest_sold_date = latest_sold_date.replace(tzinfo=timezone.utc)
+            delta = now - latest_sold_date
+            as_of = latest_sold_date if delta.days > _SOLD_DATA_FRESH_DAYS else now
+
+        thirty_days_ago = as_of - timedelta(days=30)
+        sixty_days_ago = as_of - timedelta(days=60)
+
+        # 2. 查询当前在售数量
         on_sale_count = (
             db.query(func.count(PropertyCurrent.id))
             .filter(
@@ -357,32 +386,34 @@ class MonitorService:
             or 0
         )
 
-        # 2. 查询最近30天成交均价（同时用于显示和趋势计算）
+        # 3. 查询最近30天成交均价（同时用于显示和趋势计算）
         avg_price_query = db.query(
             func.avg(func.cast(PropertyCurrent.sold_price_wan, Float) / PropertyCurrent.build_area * 10000),
         ).filter(
             PropertyCurrent.community_id == community_id,
             PropertyCurrent.status == PropertyStatus.SOLD,
             PropertyCurrent.sold_date >= thirty_days_ago,
+            PropertyCurrent.sold_date <= as_of,
             PropertyCurrent.build_area > 0,
         )
         avg_price_result = avg_price_query.scalar()
         avg_price = float(avg_price_result) if avg_price_result else 0.0
 
-        # 3. 查询30日成交量
+        # 4. 查询30日成交量
         volume_30d = (
             db.query(func.count(PropertyCurrent.id))
             .filter(
                 PropertyCurrent.community_id == community_id,
                 PropertyCurrent.status == PropertyStatus.SOLD,
                 PropertyCurrent.sold_date >= thirty_days_ago,
+                PropertyCurrent.sold_date <= as_of,
             )
             .scalar()
             or 0
         )
 
-        # 4. 计算30日价格趋势 (比较最近30天 vs 前30天)
-        # 复用第2步的查询结果
+        # 5. 计算30日价格趋势 (比较最近30天 vs 前30天)
+        # 复用第3步的查询结果
         recent_avg = avg_price
 
         # 前30天成交均价 (30-60天前)
@@ -419,4 +450,5 @@ class MonitorService:
             volume_30d=int(volume_30d),
             price_trend_30d=round(price_trend_30d, 2),
             is_price_up=is_price_up,
+            data_as_of=as_of,
         )

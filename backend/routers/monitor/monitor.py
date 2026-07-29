@@ -131,5 +131,6 @@ def get_community_market_stats(
     - volume_30d: 30日成交量
     - price_trend_30d: 30日价格趋势百分比
     - is_price_up: 价格趋势方向
+    - data_as_of: 统计窗口右端点(对齐数据最新成交日后的基准日期)
     """
     return service.get_community_market_stats(community_id)
