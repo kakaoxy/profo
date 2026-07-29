@@ -41,7 +41,7 @@ log_info "开始服务器端部署..."
 
 # 磁盘空间预检：避免在磁盘将满时继续部署导致备份/迁移失败
 log_info "检查磁盘空间..."
-DISK_USAGE=$(df - / | awk 'NR==2 {print $5}')
+DISK_USAGE=$(df / | awk 'NR==2 {print $5}')
 DISK_USAGE_NUM=${DISK_USAGE%\%}
 if [ -z "$DISK_USAGE_NUM" ]; then
     log_error "无法读取磁盘使用率，已中止部署"
@@ -182,10 +182,12 @@ docker compose up -d --force-recreate --no-build frontend
 
 # 简单等待前端启动（若前端也有 healthcheck，可类似轮询，但通常前端只是服务）
 sleep "$FRONTEND_WAIT"
-if docker compose ps --filter "status=running" --format "table {{.Name}}" | grep -q "frontend"; then
-    log_info "✅ frontend 运行中"
+# 直接查 frontend 服务的 Status 字段，避免 --filter status 在部分 compose 版本下行为不一致
+FRONTEND_STATUS=$(docker compose ps frontend --format "{{.Status}}" 2>/dev/null | head -1)
+if echo "$FRONTEND_STATUS" | grep -qE "^Up"; then
+    log_info "✅ frontend 运行中（$FRONTEND_STATUS）"
 else
-    log_warn "frontend 未运行，请检查日志: docker compose logs frontend"
+    log_warn "frontend 未运行（状态：${FRONTEND_STATUS:-空}），请检查日志: docker compose logs frontend"
 fi
 
 # 6. 清理压缩包
