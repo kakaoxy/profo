@@ -2,9 +2,9 @@
 
 import { useState, memo } from "react";
 import Image from "next/image";
-import { UploadCloud, Plus, Loader2, Trash2, Eye, ImageIcon } from "lucide-react";
+import { UploadCloud, Plus, Loader2, Trash2, Eye, ImageIcon, Download } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
-import { getThumbnailUrl } from "../../../utils";
+import { getThumbnailUrl, getFileUrl } from "../../../utils";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -24,8 +24,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
+import { downloadFile, downloadFilesInBatch } from "@/lib/file-utils";
 
 // [New] Define the structure for a photo currently being uploaded
 export interface UploadingPhoto {
@@ -155,6 +157,19 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, canEditRenovation, 
             </div>
           )}
         </div>
+        {isValidUrl(getFileUrl(photo.url)) && (
+          <div className="flex justify-center pt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-card/90 backdrop-blur-sm"
+              onClick={() => downloadFile(getFileUrl(photo.url), photo.filename ?? "")}
+            >
+              <Download className="h-4 w-4 mr-1.5" />
+              下载原图
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -213,47 +228,69 @@ export function PhotoGrid({
   onUpload,
   onDelete,
 }: PhotoGridProps) {
+  const downloadablePhotos = photos.filter((p) => p.media_type === "image");
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
-      {/* 1. Server Photos - [优化] 使用 memoized 组件 */}
-      {photos.map((photo) => (
-        <PhotoItem
-          key={photo.id}
-          photo={photo}
-          isFuture={isFuture}
-          canEditRenovation={canEditRenovation}
-          onDelete={onDelete}
-        />
-      ))}
-
-      {/* 2. Uploading Photos */}
-      {uploadingPhotos.map((item) => (
-        <UploadingItem key={item.id} item={item} />
-      ))}
-
-      {/* 3. Upload Button */}
-      {!isFuture && canEditRenovation && (
-        <label className="aspect-square rounded-md border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={onUpload}
-            disabled={isLoading}
+    <div>
+      <div className="flex items-center justify-end mb-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={downloadablePhotos.length === 0}
+          onClick={() =>
+            downloadFilesInBatch(
+              downloadablePhotos.map((p) => ({
+                url: getFileUrl(p.url),
+                filename: p.filename ?? "",
+              })),
+            )
+          }
+        >
+          <Download className="h-4 w-4 mr-1.5" />
+          下载本阶段全部（{downloadablePhotos.length}）
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
+        {/* 1. Server Photos - [优化] 使用 memoized 组件 */}
+        {photos.map((photo) => (
+          <PhotoItem
+            key={photo.id}
+            photo={photo}
+            isFuture={isFuture}
+            canEditRenovation={canEditRenovation}
+            onDelete={onDelete}
           />
-          {isLoading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          ) : isCurrent ? (
-            <UploadCloud className="h-6 w-6" />
-          ) : (
-            <Plus className="h-6 w-6" />
-          )}
-          <span className="text-xs font-medium">
-            {isLoading ? "Processing" : isCurrent ? "Upload" : "Add More"}
-          </span>
-        </label>
-      )}
+        ))}
+
+        {/* 2. Uploading Photos */}
+        {uploadingPhotos.map((item) => (
+          <UploadingItem key={item.id} item={item} />
+        ))}
+
+        {/* 3. Upload Button */}
+        {!isFuture && canEditRenovation && (
+          <label className="aspect-square rounded-md border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={onUpload}
+              disabled={isLoading}
+            />
+            {isLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            ) : isCurrent ? (
+              <UploadCloud className="h-6 w-6" />
+            ) : (
+              <Plus className="h-6 w-6" />
+            )}
+            <span className="text-xs font-medium">
+              {isLoading ? "Processing" : isCurrent ? "Upload" : "Add More"}
+            </span>
+          </label>
+        )}
+      </div>
     </div>
   );
 }
