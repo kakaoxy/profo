@@ -10,6 +10,7 @@ export interface RenovationPhoto {
   thumbnail_url?: string | null;
   filename?: string;
   description?: string;
+  media_type: string;
   created_at: string;
 }
 

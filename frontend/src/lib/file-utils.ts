@@ -1,5 +1,40 @@
 // src/lib/file-utils.ts
 
+import { toast } from "sonner";
+
+/**
+ * 通用单文件下载：通过临时 <a> 触发浏览器下载。
+ * filename 为空时由浏览器从 URL 自动推断文件名。
+ */
+export function downloadFile(url: string, filename?: string | null): void {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename ?? "";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast.success("开始下载", filename ? { description: filename } : undefined);
+}
+
+/**
+ * 批量下载：依次触发每个文件下载，相邻两次间隔 300ms
+ * 以规避浏览器"多文件下载拦截"弹窗。
+ */
+export function downloadFilesInBatch(
+  items: Array<{ url: string; filename?: string | null }>,
+): void {
+  if (items.length === 0) {
+    toast.info("暂无可下载的照片");
+    return;
+  }
+  items.forEach((item, idx) => {
+    setTimeout(() => downloadFile(item.url, item.filename), idx * 300);
+  });
+  setTimeout(() => {
+    toast.success(`已开始下载 ${items.length} 张照片`);
+  }, items.length * 300);
+}
+
 export function downloadCsvTemplate() {
   const headers = [
     '数据源','房源ID','状态','小区名','室','厅','卫','朝向','楼层','面积','套内面积',
