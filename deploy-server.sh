@@ -13,6 +13,7 @@ REDIS_TIMEOUT=30            # 等待 redis 健康的最大秒数
 FRONTEND_WAIT=10            # 前端启动后简单等待（无健康检查时）
 BACKUP_DIR="$PROJECT_DIR/backups"  # 数据库备份目录
 BACKUP_RETENTION=7          # 保留最近 N 份备份
+DISK_THRESHOLD=90           # 磁盘使用率阈值（%），超过则中止部署
 # ===============================================
 
 # 颜色输出
@@ -37,6 +38,21 @@ done
 cd "$PROJECT_DIR" || { log_error "项目目录 $PROJECT_DIR 不存在"; exit 1; }
 
 log_info "开始服务器端部署..."
+
+# 磁盘空间预检：避免在磁盘将满时继续部署导致备份/迁移失败
+log_info "检查磁盘空间..."
+DISK_USAGE=$(df - / | awk 'NR==2 {print $5}')
+DISK_USAGE_NUM=${DISK_USAGE%\%}
+if [ -z "$DISK_USAGE_NUM" ]; then
+    log_error "无法读取磁盘使用率，已中止部署"
+    exit 1
+fi
+if [ "$DISK_USAGE_NUM" -ge "$DISK_THRESHOLD" ]; then
+    log_error "磁盘使用率 ${DISK_USAGE}（根分区 /）超过阈值 ${DISK_THRESHOLD}%，已中止部署"
+    log_error "请先清理磁盘空间，例如执行：docker system prune -a -f"
+    exit 1
+fi
+log_info "✅ 磁盘使用率 ${DISK_USAGE}（阈值 ${DISK_THRESHOLD}%）"
 
 # 0. 数据库备份（在重建容器前执行，防止迁移失败或意外导致数据丢失）
 # 首次部署时 db 容器未运行，跳过备份；后续部署强制备份，失败则中止
@@ -175,6 +191,11 @@ fi
 # 6. 清理压缩包
 log_info "清理本地 tar 包..."
 rm -f "$BACKEND_TAR" "$FRONTEND_TAR"
+
+# 清理被新镜像覆盖的悬挂镜像（dangling），防止反复部署堆积占满磁盘
+log_info "清理悬挂镜像..."
+PRUNE_OUTPUT=$(docker image prune -f)
+log_info "$PRUNE_OUTPUT"
 
 log_info "🎉 部署完成！"
 log_info "当前容器状态："

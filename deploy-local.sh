@@ -43,4 +43,9 @@ ssh -o BatchMode=yes "$SERVER_USER@$SERVER_IP" "bash $SERVER_PATH/deploy-server.
 echo ">> 清理本地 tar 包..."
 rm -f profo-backend.tar.gz profo-frontend.tar.gz
 
+# ---- 清理本地悬挂镜像 ----
+# 反复构建同标签镜像会产生 <none> 悬挂镜像，清理防止本地磁盘累积
+echo ">> 清理本地悬挂镜像..."
+docker image prune -f
+
 echo "✅ 全流程部署完成！"
