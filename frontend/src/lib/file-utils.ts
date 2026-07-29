@@ -5,20 +5,28 @@ import { toast } from "sonner";
 /**
  * 通用单文件下载：通过临时 <a> 触发浏览器下载。
  * filename 为空时由浏览器从 URL 自动推断文件名。
+ * silent=true 时不弹 toast，供批量下载复用避免通知刷屏。
  */
-export function downloadFile(url: string, filename?: string | null): void {
+export function downloadFile(
+  url: string,
+  filename?: string | null,
+  silent: boolean = false,
+): void {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename ?? "";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  toast.success("开始下载", filename ? { description: filename } : undefined);
+  if (!silent) {
+    toast.success("开始下载", filename ? { description: filename } : undefined);
+  }
 }
 
 /**
  * 批量下载：依次触发每个文件下载，相邻两次间隔 300ms
  * 以规避浏览器"多文件下载拦截"弹窗。
+ * 单个文件下载静默处理，仅在末尾弹出一次汇总提示。
  */
 export function downloadFilesInBatch(
   items: Array<{ url: string; filename?: string | null }>,
@@ -28,7 +36,7 @@ export function downloadFilesInBatch(
     return;
   }
   items.forEach((item, idx) => {
-    setTimeout(() => downloadFile(item.url, item.filename), idx * 300);
+    setTimeout(() => downloadFile(item.url, item.filename, true), idx * 300);
   });
   setTimeout(() => {
     toast.success(`已开始下载 ${items.length} 张照片`);
