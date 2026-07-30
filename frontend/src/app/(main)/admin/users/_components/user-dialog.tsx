@@ -52,10 +52,7 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
 
   const selectedRoleIsCustomer =
     roles.find((r) => r.id === form.watch("role_id"))?.code === ROLE_CODES.CUSTOMER;
-  // 编辑 C 端用户时主角色被锁定为 customer，主角色 Select 禁用
-  const isEditingCustomer = isEdit && user?.role?.code === ROLE_CODES.CUSTOMER;
-  const eyebrowText =
-    selectedRoleIsCustomer || isEditingCustomer ? "C 端用户" : "内部用户";
+  const eyebrowText = selectedRoleIsCustomer ? "C 端用户" : "内部用户";
 
   return (
     <>
@@ -175,7 +172,6 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                           <Select
                             onValueChange={field.onChange}
                             value={field.value || ""}
-                            disabled={isEditingCustomer}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -190,9 +186,6 @@ export function UserDialog({ open, onOpenChange, user, roles }: UserDialogProps)
                               ))}
                             </SelectContent>
                           </Select>
-                          {isEditingCustomer && (
-                            <FormDescription>C 端用户主角色不可更改</FormDescription>
-                          )}
                           <FormMessage />
                         </FormItem>
                       )}

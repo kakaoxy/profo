@@ -28,7 +28,6 @@ export function useRenovationUpload({
 
   const { upload: baseUpload } = useUpload({
     maxSize: MAX_FILE_SIZE,
-    beforeUpload: (file) => compressImage(file),
     onSuccess: async (response, file) => {
       const dbRes = await addRenovationPhotoAction({
         projectId,
@@ -77,36 +76,41 @@ export function useRenovationUpload({
   });
 
   const handleUpload = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files;
       if (!files || files.length === 0) return;
+
+      // 提前重置 input.value，避免 await 压缩期间用户无法再次选择同名文件
+      e.target.value = "";
 
       const validFiles: File[] = [];
       const newUploads: UploadingPhoto[] = [];
 
-      Array.from(files).forEach((file) => {
+      for (const file of Array.from(files)) {
         if (file.size > MAX_FILE_SIZE) {
           toast.error(`${file.name} 过大，已跳过`);
-          return;
+          continue;
         }
-        validFiles.push(file);
-        const previewUrl = URL.createObjectURL(file);
+        // 预先压缩：让 uploadQueue 存储的 file 引用与 useUpload 回调里收到的引用一致，
+        // 否则 compressImage 返回新 File 对象后，回调按 p.file === file 匹配会失败，
+        // 导致上传成功的队列项无法被移除（残留"上传中"占位）
+        const processedFile = await compressImage(file);
+        const previewUrl = URL.createObjectURL(processedFile);
+        validFiles.push(processedFile);
         newUploads.push({
           id: Math.random().toString(36).substring(7),
-          file,
+          file: processedFile,
           previewUrl,
           progress: 0,
           status: "uploading",
         });
-      });
+      }
 
       if (newUploads.length === 0) {
-        e.target.value = "";
         return;
       }
 
       setUploadQueue((prev) => [...prev, ...newUploads]);
-      e.target.value = "";
       baseUpload(validFiles);
     },
     [baseUpload]
