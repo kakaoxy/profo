@@ -18,10 +18,35 @@ import { toast } from "sonner"; // 引入 toast
 
 export default function LoginPage() {
   // useSearchParams 要求 Suspense 边界，否则 Next.js 构建期会报错
+  // fallback 用骨架屏而非 null，避免 hydration 前短暂白屏闪烁
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoginSkeleton />}>
       <LoginPageContent />
     </Suspense>
+  );
+}
+
+function LoginSkeleton() {
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-muted px-4 py-8 sm:px-6">
+      <div className="w-full max-w-sm rounded-xl border bg-card shadow-lg">
+        <div className="p-6 space-y-2">
+          <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-48 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="p-6 grid gap-4">
+          <div className="grid gap-2">
+            <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded border" />
+          </div>
+          <div className="grid gap-2">
+            <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+            <div className="h-10 w-full animate-pulse rounded border" />
+          </div>
+          <div className="mt-4 h-10 w-full animate-pulse rounded bg-primary/80" />
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -135,7 +135,10 @@ export default async function proxy(request: NextRequest) {
       // 无 token 或刷新失败：清 cookies 并重定向到登录页
       debugLog("proxy: C-side unauthenticated — redirecting to login", { pathname });
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      // 与 refresh/route.ts 对齐：仅当 pathname 非默认首页时透传 redirect，避免冗余参数
+      if (pathname !== "/") {
+        loginUrl.searchParams.set("redirect", pathname);
+      }
       return applyCsp(session.redirect(loginUrl), nonce);
     }
 
@@ -176,7 +179,10 @@ export default async function proxy(request: NextRequest) {
   if (!session.isAuthenticated) {
     debugLog("proxy: admin unauthenticated — redirecting to /admin/login", { pathname });
     const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    // 与 refresh/route.ts 对齐：仅当 pathname 非默认 /admin 时透传 redirect，避免冗余参数
+    if (pathname !== "/admin") {
+      loginUrl.searchParams.set("redirect", pathname);
+    }
     return applyCsp(session.redirect(loginUrl), nonce);
   }
 
