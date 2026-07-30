@@ -231,8 +231,9 @@ REDIS_URL_VAL="$(read_env_var REDIS_URL)"
 REDIS_PASS="$(read_env_var REDIS_PASSWORD)"
 
 # 从 REDIS_URL 中提取密码部分：redis://:PASS@HOST:PORT/DB
+# 无密码 URL（redis://host:port/db）或空密码 URL（redis://:@host:port/db）返回空串
 extract_redis_password() {
-  echo "$1" | sed -E 's|^redis://:([^@]+)@.*$|\1|'
+  echo "$1" | sed -E 's|^redis://(:([^@]+)@)?.*$|\2|'
 }
 
 NEED_REDIS_SYNC=false
