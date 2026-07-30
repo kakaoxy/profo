@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { adminAuth } from "@/admin-auth";
 import { debugLog } from "@/lib/auth/config";
+import type { AuthMiddlewareResult } from "@/lib/auth/middleware/auth-middleware";
 
 // Module-level singletons: library design intends one resolver reused across requests.
 // C端与 admin 各自捕获自己的 resolved config，互不干扰（Task 5 singleton 修复）。
@@ -42,6 +43,46 @@ function nextWithNonce(request: NextRequest, nonce: string): NextResponse {
   return NextResponse.next({
     request: { headers: requestHeaders },
   });
+}
+
+/**
+ * 构建 admin 请求头：注入 nonce/pathname，并用 session 中可能已刷新的 token
+ * 覆盖请求 cookie。
+ *
+ * 必要性：proxy 层刷新 token 后只写响应 Set-Cookie，但 Server Component 通过
+ * `cookies()` 读的是**请求 cookie**（旧值）。若不覆盖，Server Component 会用
+ * 过期 access_token 请求 `/api/v1/auth/me` → 401 → redirect 到 `/api/auth/refresh`，
+ * 而该 redirect 响应会丢弃 proxy 设置的 Set-Cookie，浏览器仍带已被 rotation
+ * 撤销的旧 refresh_token → 二次刷新失败 → 登出。
+ *
+ * 覆盖安全性：未刷新时 session token 与请求 cookie 相同，覆盖等于无操作；
+ * JWT 仅含 base64url + `.`，可直接拼接 cookie header。
+ */
+function buildAdminRequestHeaders(
+  request: NextRequest,
+  session: AuthMiddlewareResult,
+  nonce: string,
+): Headers {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+  if (session.accessToken && session.refreshToken) {
+    const accessName = adminAuth.config.cookieNames.accessToken;
+    const refreshName = adminAuth.config.cookieNames.refreshToken;
+    const otherCookies = (requestHeaders.get("cookie") ?? "")
+      .split(";")
+      .map((c) => c.trim())
+      .filter((c) => {
+        const name = c.split("=")[0];
+        return name !== accessName && name !== refreshName;
+      });
+    otherCookies.push(`${accessName}=${session.accessToken}`);
+    otherCookies.push(`${refreshName}=${session.refreshToken}`);
+    requestHeaders.set("cookie", otherCookies.join("; "));
+  }
+
+  return requestHeaders;
 }
 
 /**
@@ -134,10 +175,16 @@ export default async function proxy(request: NextRequest) {
 
   if (!session.isAuthenticated) {
     debugLog("proxy: admin unauthenticated — redirecting to /admin/login", { pathname });
-    return applyCsp(session.redirect(new URL("/admin/login", request.url)), nonce);
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return applyCsp(session.redirect(loginUrl), nonce);
   }
 
-  return applyCsp(session.response(nextWithNonce(request, nonce)), nonce);
+  // 用 session 中可能已刷新的 token 覆盖请求 cookie，让 Server Component
+  // 通过 cookies() 读到新 token，避免 401 → redirect → 二次刷新失败链路。
+  const requestHeaders = buildAdminRequestHeaders(request, session, nonce);
+  const nextResponse = NextResponse.next({ request: { headers: requestHeaders } });
+  return applyCsp(session.response(nextResponse), nonce);
 }
 
 export const config = {

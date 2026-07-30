@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useState } from "react";
+import { startTransition, useActionState, useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { loginAction, changePasswordAction } from "./actions"; // 引入两个 Action
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +17,24 @@ import {
 import { toast } from "sonner"; // 引入 toast
 
 export default function LoginPage() {
+  // useSearchParams 要求 Suspense 边界，否则 Next.js 构建期会报错
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   // 登录表单验证错误
   const [validationErrors, setValidationErrors] = useState<{
     username?: string;
     password?: string;
   }>({});
+
+  // 读取 ?redirect= 用于登录成功后回跳到来源页面
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("redirect") || "";
 
   // 登录表单状态
   const [loginState, loginFormAction, isLoginPending] = useActionState(
@@ -147,6 +161,8 @@ export default function LoginPage() {
               }}
             >
               <CardContent className="grid gap-4">
+                {/* 透传来源路径，登录成功后由 loginAction 回跳 */}
+                <input type="hidden" name="callback_url" value={callbackUrl} />
                 <div className="grid gap-2">
                   <Label htmlFor="username">用户名</Label>
                   {/* 注意：actions.ts 已经改成了取 username，所以这里 name="username" */}

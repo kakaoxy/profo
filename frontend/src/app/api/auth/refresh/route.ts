@@ -135,7 +135,11 @@ export async function GET(request: Request) {
   if (!refreshToken) {
     debugLog("[admin refresh route] GET: 无 refresh_token 可用，跳登录");
     await clearTokenCookies(adminAuth.config);
-    return NextResponse.redirect(new URL("/admin/login", baseUrl), {
+    const loginUrl = new URL("/admin/login", baseUrl);
+    if (nextPath && nextPath !== "/admin") {
+      loginUrl.searchParams.set("redirect", nextPath);
+    }
+    return NextResponse.redirect(loginUrl, {
       status: 303,
     });
   }
@@ -154,7 +158,11 @@ export async function GET(request: Request) {
     });
     // fail-closed：清 cookie 并跳登录
     await clearTokenCookies(adminAuth.config);
-    return NextResponse.redirect(new URL("/admin/login", baseUrl), {
+    const loginUrl = new URL("/admin/login", baseUrl);
+    if (nextPath && nextPath !== "/admin") {
+      loginUrl.searchParams.set("redirect", nextPath);
+    }
+    return NextResponse.redirect(loginUrl, {
       status: 303,
     });
   }
