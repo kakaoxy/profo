@@ -7,13 +7,14 @@
   <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python" />
   <img src="https://img.shields.io/badge/TailwindCSS-4.3+-38B2AC?style=flat-square&logo=tailwind-css" />
   <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql" />
+  <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis" />
   <img src="https://img.shields.io/badge/Docker_Compose-2-2496ED?style=flat-square&logo=docker" />
   <img src="https://img.shields.io/badge/app-0.9.0-blue?style=flat-square" />
 </p>
 
 <p align="center">
   <b>轻量级、本地化、高性能的房产数据中心</b><br/>
-  <sub>四层领域架构 · B端ERP + C端营销 · JWT + API Key 双认证 · PostgreSQL + Docker 一键部署</sub>
+  <sub>四层领域架构 · B端ERP + C端营销 · JWT + API Key 双认证 · PostgreSQL + Redis + Docker 一键部署</sub>
 </p>
 
 ---
@@ -53,8 +54,10 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 | **L3 跟投管理** | 跟投记录、投资方管理、分配比例调整、结算流转、操作日志 | 核心 ERP |
 | **L4 营销层** | 营销房源 CMS、照片拖拽排序、媒体库（图/视频）、预览发布 | 门面展示 |
 | **市场监控** | 竞品对比、小区雷达、趋势定位、市场情绪、AI 策略 | 决策辅助 |
+| **数据报表** | 成交趋势、户型/楼层分布、小区对比、市场情绪、涨跌颜色（中国习惯） | 决策辅助 |
+| **权限管理** | 角色-权限点关联、操作审计日志、token_version 失效、业务身份双通道校验 | 安全基建 |
 | **C 端公开站点** | 房源浏览、估价提交、用户注册/登录、微信 OAuth、个人中心 | 客户触达 |
-| **系统管理** | 用户、角色、API Key、刷新令牌、文件上传、数据导入任务 | 基础设施 |
+| **系统管理** | 用户、角色、权限、API Key、刷新令牌、操作审计、文件上传、数据导入任务 | 基础设施 |
 
 ### 技术亮点
 
@@ -62,17 +65,21 @@ ProFo 是一个面向房地产翻新与销售业务的全流程管理系统，�
 - ⚡ **FastAPI + SQLAlchemy 2.0** — 异步 Python 后端，分层架构（Router → Service → Model）
 - 🎨 **TailwindCSS v4 + Radix UI / shadcn** — 现代化 UI 组件库
 - 🔐 **JWT + API Key 双认证** — httpOnly Cookie 存 Token，`X-API-Key` 头用于服务间调用
+- 🔐 **精细化权限系统** — Permission / OperationLog / role_permissions 三表，权限点动态配置，变更触发 `token_version` 递增强制 token 失效；业务身份双通道校验（权限点 + 业务身份标志），Service 层双重防御
 - 🛡️ **CSRF 防护中间件** — 纯 Cookie 认证的非安全方法必须携带 `X-Requested-With` 头，Server Action / API Key 不受影响
 - 🔒 **Fernet 对称加密** — 身份证 / 手机号 / 微信会话密钥等敏感字段加密存储；`phone_hash` 列承载唯一约束
 - 📊 **四层领域架构** — 清晰的业务边界，层间写时复制（CoW）
 - 🐘 **PostgreSQL 16** — `TIMESTAMP WITH TIME ZONE` 全量统一（启动迁移自动修复旧列），`psycopg` 高性能驱动
-- 🐳 **Docker Compose 一键部署** — db / backend / frontend 三服务编排（`linux/amd64` 跨平台构建），由宿主 nginx 反代，开发与生产同构
+- 🧠 **Redis 7 多 worker 支持** — 限流后端从进程内存升级为 Redis，支持多 worker 部署；密码认证 + maxmemory 24m volatile-lru
+- ☁️ **OSS 存储抽象** — `storage_backend=local|oss` 切换，启动迁移自动改写 DB URL 为 OSS URL；本地文件系统与阿里云 OSS 统一接口
+- 🐳 **Docker Compose 一键部署** — db / redis / backend / frontend 四服务编排（`linux/amd64` 跨平台构建），由宿主 nginx 反代，开发与生产同构
 - 🖱️ **dnd-kit 拖拽排序** — 营销照片虚拟列表 + 拖拽排序 + 性能监控
 - 🛡️ **slowapi 速率限制** — 接口级防滥用；可信代理网段（`TRUSTED_PROXIES`）支持 CIDR，防 XFF 伪造
 - 📒 **资金账本 / 跟投管理** — 完整的财务流水账本与跟投结算体系，支持多票据、应收应付、分配比例调整、Excel 导出
+- 📈 **数据报表模块** — 成交趋势、户型/楼层分布、小区对比、市场情绪，中国习惯涨跌颜色（红涨绿跌）
 - ⚙️ **统一异常处理** — Service 层 `ServiceException`，全局 handler 统一捕获；**禁止在 Service 层抛 `HTTPException`**
 - 🔁 **Refresh Token 持久化** — `refresh_tokens` 表存储刷新令牌，支持登出吊销
-- 📚 **幂等启动迁移** — `migrations/` 目录下 25+ 个幂等迁移函数，应用启动时自动执行（建表、加列、加密、列类型修复、枚举同步等）
+- 📚 **幂等启动迁移** — `migrations/` 目录下 37 个幂等迁移函数，应用启动时自动执行（建表、加列、加密、列类型修复、枚举同步、权限系统初始化、OSS 迁移等）
 
 ---
 
@@ -132,17 +139,22 @@ graph LR
     NX -->|http://127.0.0.1:3000/| FE[Frontend 容器]
     NX -->|/static/uploads/*| UP[(uploads volume)]
     BE -->|postgres:5432| DB[(PostgreSQL 容器)]
+    BE -->|redis:6379| Redis[(Redis 容器)]
     BE -.->|挂载| UP
     DB -.->|持久化| PG[(pgdata volume)]
+    Redis -.->|持久化| RD[(redisdata volume)]
     FE -->|Server Action 直连 backend:8000| BE
 
     style DB fill:#4169E1,color:#fff
     style PG fill:#4169E1,color:#fff
+    style Redis fill:#DC382D,color:#fff
+    style RD fill:#DC382D,color:#fff
     style UP fill:#f59e0b,color:#fff
 ```
 
 - **db**: `postgres:16-alpine` + `pgdata` 卷持久化
-- **backend**: FastAPI + uvicorn，挂载 `uploads` 卷
+- **redis**: `redis:7-alpine`，密码认证 + `maxmemory 24m volatile-lru` + `redisdata` 卷持久化
+- **backend**: FastAPI + uvicorn，挂载 `uploads` 卷，依赖 db + redis healthcheck
 - **frontend**: Next.js standalone 模式，Server Action 通过 `http://backend:8000` 直连后端容器
 - **nginx**: 反代 + 静态资源缓存，挂载 `uploads` 卷直服上传文件
 
@@ -186,8 +198,17 @@ graph TB
 | SWR | 2.4.1 | 服务端状态获取与缓存 |
 | nuqs | 2.8.6 | URL 查询参数状态 |
 | React Hook Form + Zod | 7.71 / 4.3 | 表单状态与校验 |
+| @hookform/resolvers | 5.2 | Zod resolver 桥接 RHF |
 | dnd-kit | 6.3 / 10.0 | 拖拽排序 |
 | Recharts | 3.7 | 图表可视化 |
+| @tanstack/react-table | 8.21 | 表格（跟投/账本详情） |
+| framer-motion | 12.38 | 动画库 |
+| sonner | 2.0 | Toast 通知 |
+| lucide-react | 0.559 | 图标库 |
+| react-markdown | 10.1 | Markdown 渲染（AI 策略展示） |
+| react-day-picker | 9.13 | 日期选择 |
+| date-fns | 4.1 | 日期工具 |
+| next-themes | 0.4 | 主题切换 |
 | openapi-fetch + openapi-typescript | 0.15 / 7.10 | 类型安全 API 客户端 |
 | Vitest + Playwright | 3.2 / 1.59 | 单元测试 + E2E 测试 |
 
@@ -243,8 +264,11 @@ graph LR
 | slowapi | ≥ 0.1.9 | 速率限制 |
 | python-jose | ≥ 3.3 | JWT |
 | bcrypt | ≥ 4.0 | 密码哈希（直连 bcrypt，不依赖 passlib） |
+| pwdlib[argon2,bcrypt] | ≥ 0.2 | 密码哈希库（与 bcrypt 并存） |
 | cryptography (Fernet) | - | 敏感字段加密 |
 | psycopg[binary] | ≥ 3.1 | PostgreSQL 高性能驱动 |
+| redis | ≥ 5.0 | Redis 客户端（多 worker 限流后端） |
+| oss2 | ≥ 2.18 | 阿里云 OSS SDK（存储后端抽象） |
 | httpx | ≥ 0.25 | HTTP 客户端（微信 OAuth / API 调用） |
 | openpyxl | ≥ 3.1 | Excel 导出（账本/跟投/项目） |
 | filetype | ≥ 1.2 | 文件类型嗅探（上传安全） |
@@ -261,38 +285,40 @@ backend/
 ├── routers/                    # API 路由层（薄，仅参数校验/依赖注入）
 │   ├── common/                 # 通用路由（files / push / upload）
 │   ├── market/                 # 市场情报（properties / communities + 字典）
-│   ├── leads/                  # 线索（core / followups / prices）
+│   ├── leads/                  # 线索（core / leads / followups / prices / evaluations）
 │   ├── projects/               # 项目（core / documents / renovation / sales / cashflow）
-│   ├── finance/                # 资金账本（ledger，含统计 / 结算 / 日志 / 导出）
+│   ├── finance/                # 资金账本（ledger，含统计 / 结算 / 日志 / 导出 / 应收应付）
 │   ├── investment/             # 跟投管理（列表 / 详情 / 投资方 / 分配比例 / 结算 / 复制）
 │   ├── marketing/              # 营销（projects / import_）
 │   ├── monitor/                # 市场监控
+│   ├── reports/                # 数据报表（communities / market：成交趋势 / 户型楼层分布 / 小区对比）
 │   ├── public/                 # C 端公开接口（auth / users / projects / leads / communities / files）
-│   └── system/                 # 系统（auth / users / roles）
+│   └── system/                 # 系统（auth / users / roles / permissions / operation_logs）
 ├── services/                   # 业务逻辑层（按领域模块化）
 │   ├── market/                 # 房源查询 / 导入 / 小区合并 / CSV 解析 / 导入任务 / 失败处理
-│   ├── leads/                  # 线索核心 / 跟进 / 价格（internal/）
+│   ├── leads/                  # 线索核心 / 跟进 / 价格 / 评估（internal/）
 │   ├── projects/               # Facade + core / renovation / sales
 │   │   ├── finance/            # 资金账本（base / ledger / records / receivable_payable / settlement / statistics / statistics_builder / summary）
 │   │   └── internal/           # builder / contract_number / creator / documents / owners / query / state / updater
 │   ├── investment/             # 跟投管理（base / records / investors / settlement / exporter / service）
 │   ├── marketing/              # 营销项目 / 媒体 / 导入 / 公开
 │   ├── monitor/                # 监控服务 + neighborhood
-│   ├── system/                 # auth / user / role / api_key / wechat / error / exceptions / init_service
+│   ├── reports/                # 报表聚合（aggregations / bucketing / cache / dictionaries / filter_builder / exceptions）
+│   ├── system/                 # auth / user / role / api_key / permission / operation_log / wechat / error / exceptions / init_service
 │   └── utils/                  # 日期解析等工具
 ├── models/                     # 数据模型层（按领域模块化）
 │   ├── common/                 # Base / BaseModel / 枚举 / encrypted 字段
 │   ├── property/               # Community / CommunityAlias / CommunityCompetitor / PropertyCurrent / PropertyHistory / PropertyMedia
-│   ├── lead/                   # Lead / LeadFollowUp / LeadPriceHistory
+│   ├── lead/                   # Lead / LeadFollowUp / LeadPriceHistory / LeadEvalHistory
 │   ├── project/                # Project + 10 个子模型（合同/文书/业主/销售/跟进/互动/财务/财务日志/状态日志/装修/装修照片）
 │   ├── investment/             # Investment / Investor / ReturnAdjustment / InvestmentLog
 │   ├── marketing/              # L4MarketingProject / L4MarketingMedia
-│   ├── system/                 # FailedRecord / PropertyImportTask / WeChatOAuthState / WeChatTempCode
-│   └── user/                   # User / Role / ApiKey / RefreshToken
+│   ├── system/                 # FailedRecord / PropertyImportTask / WeChatOAuthState / WeChatTempCode / OperationLog
+│   └── user/                   # User / Role / ApiKey / RefreshToken / Permission / UserRole
 ├── schemas/                    # Pydantic Schema（按领域分模块，含 *Create / *Update / *Response / *Filter）
-├── dependencies/               # FastAPI 依赖注入（auth / common / projects）
-├── utils/                      # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger / mask / error_formatters / image_processing / common(limiter + XFF)
-├── migrations/                 # 启动时幂等迁移（25+ 个函数：列变更 / 明文加密 / 列类型修复 / 枚举同步 / 表创建 / 索引重建）
+├── dependencies/               # FastAPI 依赖注入（auth / common / projects，含 *PermDep 权限依赖类）
+├── utils/                      # auth(password+token) / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger / mask / error_formatters / image_processing / redis_client / storage / common(limiter + XFF)
+├── migrations/                 # 启动时幂等迁移（37 个函数：列变更 / 明文加密 / 列类型修复 / 枚举同步 / 表创建 / 索引重建 / 权限系统初始化 / OSS 迁移）
 ├── scripts/                    # 一次性脚本（当前为空）
 ├── main.py                     # 应用入口（含 CSRF 中间件 + 健康检查 + openapi_tags）
 ├── db.py                       # SQLAlchemy 引擎 + 会话工厂 + init_db()
@@ -305,7 +331,8 @@ backend/
 
 #### 关键设计模式
 
-- **依赖注入**：`DbSessionDep = Annotated[Session, Depends(get_db)]`，`CurrentUserDep`、`CurrentAdminUserDep`、`CurrentInternalUserDep` 等预定义鉴权依赖；`PaginationDep`、`ProjectServiceDep` 等领域依赖
+- **依赖注入**：`DbSessionDep = Annotated[Session, Depends(get_db)]`，`CurrentUserDep`、`CurrentAdminUserDep`、`CurrentInternalUserDep` 等预定义鉴权依赖；`PaginationDep`、`ProjectServiceDep` 等领域依赖；权限依赖类命名约定 `[Resource][Action]PermDep`（如 `UserReadPermDep`），匹配权限码 `[resource]:[action]`
+- **权限系统**：`PermissionService` + `require_permission` 依赖注入；权限点动态配置（`permissions` 表），角色-权限点关联（`role_permissions` 表），操作审计日志（`operation_logs` 表）；权限变更触发 `token_version` 递增强制 token 失效；业务身份双通道校验（权限点 + 业务身份标志），Service 层双重防御
 - **服务异常**：Service 层抛出 `ServiceException` / `AuthenticationError` / `ResourceNotFoundError` / `ValidationError` / `BusinessLogicError` 等（`services/system/exceptions.py`），由全局 handler 捕获。**禁止在 Service 层抛 `HTTPException`**
 - **响应格式**：直接返回 Pydantic 模型；分页用 `PaginatedResponse[T]`；列表查询带过滤+排序（`*Filter` Schema + `Depends()`）
 - **逻辑外键**：关联用 `user_id: int` 等软外键，级联由 Service 控制
@@ -548,6 +575,14 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | `POSTGRES_PASSWORD` | ✅ | - | PostgreSQL 强密码（**生产环境务必使用强密码**，仅字母数字，避免 `# @ : /` 等 URL 保留字符） |
 | `POSTGRES_DB` | ✅ | `profo` | PostgreSQL 数据库名 |
 | `DATABASE_URL` | - | 见 `.env.docker.example` | 数据库连接串；compose 会用 `${POSTGRES_*}` 重新拼装覆盖指向 `db:5432`，此处仅占位 |
+| `REDIS_PASSWORD` | ✅ | - | Redis 密码（**生产环境务必使用强密码**，仅字母数字；compose 会注入 `redis-server --requirepass` 与 backend `REDIS_URL`） |
+| `REDIS_URL` | - | 见 `.env.docker.example` | Redis 连接串；compose 会用 `${REDIS_PASSWORD}` 重新拼装覆盖指向 `redis:6379`，此处仅占位 |
+| `STORAGE_BACKEND` | - | `local` | 存储后端：`local`=本地文件系统，`oss`=阿里云 OSS |
+| `OSS_ACCESS_KEY_ID` | 条件必填 | - | OSS AccessKey ID（`STORAGE_BACKEND=oss` 时必填，建议使用 RAM 子账号） |
+| `OSS_ACCESS_KEY_SECRET` | 条件必填 | - | OSS AccessKey Secret（`STORAGE_BACKEND=oss` 时必填） |
+| `OSS_BUCKET_NAME` | 条件必填 | - | OSS Bucket 名称（`STORAGE_BACKEND=oss` 时必填） |
+| `OSS_ENDPOINT` | 条件必填 | - | OSS Endpoint（ECS 同地域用内网 endpoint 免流量费，如 `oss-cn-shanghai-internal.aliyuncs.com`） |
+| `OSS_PUBLIC_BASE_URL` | 条件必填 | - | OSS 公网/CDN 访问基址（无尾斜杠，如 `https://cdn.example.com`） |
 | `JWT_SECRET_KEY` | ✅ | - | JWT 签名密钥，`openssl rand -hex 32` 生成 |
 | `ENCRYPTION_KEY` | ✅ | - | Fernet 对称加密密钥，`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` 生成（**生成后不可更改**，否则已加密数据无法解密） |
 | `WECHAT_APPID` | ✅ | - | 微信 AppID（不使用微信登录也需填占位符） |
@@ -562,7 +597,7 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | `TRUSTED_PROXIES` | - | `["127.0.0.1","::1"]` | 可信代理 IP/CIDR 列表（用于 slowapi 读取 X-Forwarded-For，Docker 部署需补 `172.16.0.0/12` 网段；list 类型用 JSON 数组格式） |
 | `API_PREFIX` | - | `/api` | API 前缀 |
 | `UPLOAD_DIR` | - | `/app/static/uploads` | 上传目录（容器内路径，勿改） |
-| `MAX_UPLOAD_SIZE` | - | `104857600` | 上传大小上限（100 MB） |
+| `MAX_UPLOAD_SIZE` | - | `524288000` | 上传大小上限（500 MB，支持视频上传） |
 | `DEBUG` | - | `false` | 调试模式（生产必须 false；为 false 时 `/docs` `/redoc` `/openapi.json` 不暴露） |
 | `PRODUCTION_DOMAIN` | - | - | 生产域名（可选，作为 frontend 构建参数 `--build-arg PRODUCTION_DOMAIN=...` 注入；nginx 正确传递 Host 头时非必需） |
 
@@ -571,9 +606,10 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 > - `frontend.build.args.SERVER_API_URL` — 构建时注入 `next.config.ts` 的 rewrites，让 SSR 阶段代理直连 backend 容器
 > - `frontend.build.args.PRODUCTION_DOMAIN` — 构建时注入生产域名（可选）
 > - `db.command` — PostgreSQL 调优（`shared_buffers=128MB`、`work_mem=4MB`、`maintenance_work_mem=64MB`、`max_connections=50`，适配 1.6G 服务器）
-> - 各服务均设 `mem_limit`：db 384m / backend 512m / frontend 256m
+> - `redis.command` — Redis 密码认证 + `maxmemory 24m` + `maxmemory-policy volatile-lru`（容器 `mem_limit=32m`，预留 8MB 给进程本身）；空 `REDIS_PASSWORD` 拒绝启动（防静默关闭认证）
+> - 各服务均设 `mem_limit`：db 384m / redis 32m / backend 512m / frontend 256m
 > - backend / frontend 服务均设 `platform: linux/amd64`（Mac arm64 开发机需构建 amd64 镜像才能在 x86_64 服务器运行）
-> - db / backend 均配置 `healthcheck`；frontend `depends_on: backend: service_healthy`（frontend 自身无 healthcheck，Next.js standalone 无内置健康探针）
+> - db / redis / backend 均配置 `healthcheck`；backend `depends_on: db + redis: service_healthy`；frontend `depends_on: backend: service_healthy`
 
 ### 前端环境变量（`frontend/.env.local`，仅本地开发）
 
@@ -631,6 +667,7 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | | `/admin/ledger/export` | GET | Excel 导出 |
 | | `/admin/ledger/{project_id}` | GET | 项目流水明细 |
 | | `/admin/ledger/{project_id}/statistics` | GET | 项目统计（含计算明细 dialog） |
+| | `/admin/ledger/{project_id}/receivable-payable` | GET | 应收应付表格（34 项科目元数据，按业务模式过滤） |
 | | `/admin/ledger/{project_id}/logs` | GET | 操作日志 |
 | | `/admin/ledger/{project_id}/export` | GET | 项目流水 Excel 导出 |
 | | `/admin/ledger/{project_id}/settle` | POST | 结算 |
@@ -668,6 +705,8 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | **监控** | `/monitor/communities/{id}/{sentiment,trends,radar,competitors,market-stats}` | GET | 监控数据 |
 | | `/monitor/communities/{id}/competitors/{competitor_id}` | POST/DELETE | 竞品管理 |
 | | `/monitor/ai-strategy` | GET | AI 策略 |
+| **数据报表** | `/admin/reports/market/{trend,distribution,comparison,sentiment}` | GET | 成交趋势 / 户型楼层分布 / 小区对比 / 市场情绪 |
+| | `/admin/reports/communities/{id}/...` | GET | 单小区报表详情 |
 | **C 端公开** | `/public/projects` `/public/projects/sold` | GET | 已发布 / 已售房源列表（无需登录） |
 | | `/public/projects/{id}` | GET | 房源详情 |
 | | `/public/projects/{id}/consultant` | GET | 顾问信息 |
@@ -677,6 +716,9 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 | | `/public/users/{profile,phone}` | GET/PATCH | 用户资料 / 修改手机号 |
 | | `/public/communities/search` | GET | C 端小区搜索 |
 | | `/public/files/upload` | POST | C 端文件上传 |
+| **权限管理** | `/admin/permissions` | GET | 权限点列表（按模块分组） |
+| | `/admin/roles/{id}/permissions` | GET/PUT | 查看 / 更新角色权限集 |
+| **操作审计** | `/admin/operation-logs` | GET | 操作审计日志列表（含用户 / 模块 / 动作 / 时间筛选） |
 | **系统** | `/users` `/users/simple` `/users/me` | GET/POST | 用户管理（含简化列表与当前用户） |
 | | `/users/{id}/reset-password` `/users/change-password` `/users/init-data` | POST | 密码管理 |
 | | `/roles` | GET/POST | 角色管理 |
@@ -723,7 +765,7 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 - **时区**：所有 `DateTime` 列使用 `DateTime(timezone=True)`，PG 存储为 `TIMESTAMP WITH TIME ZONE`
 - **编译缓存**：`execution_options={"compiled_cache": {}}`
 - **建表**：通过 `Base.metadata.create_all` 自动建表（应用启动时执行 `init_db()`）
-- **数据迁移**：`backend/migrations/` 目录下的 25+ 个幂等启动迁移函数（应用启动时 `lifespan` 自动执行，详见下方「数据迁移」章节）
+- **数据迁移**：`backend/migrations/` 目录下的 37 个幂等启动迁移函数（应用启动时 `lifespan` 自动执行，多 worker 部署通过 PostgreSQL advisory lock 互斥；详见下方「数据迁移」章节）
 
 ### ER 概览
 
@@ -731,10 +773,15 @@ pnpm gen-api            # 从后端 /openapi.json 重新生成类型（需后端
 erDiagram
     USER ||--o{ PROJECT : "manages"
     USER }|--|| ROLE : "has"
+    USER ||--o{ USER_ROLE : "has additional"
+    ROLE ||--o{ USER_ROLE : "has additional"
     USER ||--o{ API_KEY : "owns"
     USER ||--o{ REFRESH_TOKEN : "owns"
     USER ||--o{ WECHAT_OAUTH_STATE : "wechat state"
     USER ||--o{ WECHAT_TEMP_CODE : "wechat temp"
+    USER ||--o{ OPERATION_LOG : "logs"
+    ROLE ||--o{ ROLE_PERMISSION : "has"
+    PERMISSION ||--o{ ROLE_PERMISSION : "granted"
     PROJECT ||--|| PROJECT_CONTRACT : "has"
     PROJECT ||--o{ PROJECT_OWNER : "has"
     PROJECT ||--|| PROJECT_SALE : "has"
@@ -769,6 +816,10 @@ erDiagram
 |----|------|------|
 | `users` | user | 用户（含微信字段、加密手机号、`phone_hash` 唯一索引、`token_version`、`must_change_password` 标记） |
 | `roles` | user | 角色（admin / operator / user / customer） |
+| `user_roles` | user | 用户附加角色多对多关联（支持 C 端用户同时持有内部角色） |
+| `permissions` | user | 权限点（`code`/`name`/`module`/`category`/`sort_order`/`is_system`，按模块分组） |
+| `role_permissions` | user | 角色-权限点关联（动态配置角色权限集） |
+| `operation_logs` | system | 操作审计日志（用户 / 模块 / 动作 / 目标 ID / 变更前后） |
 | `api_keys` | user | API Key（哈希存储，过期时间，最后使用时间） |
 | `refresh_tokens` | user | Refresh Token 持久化（支持登出吊销） |
 | `wechat_oauth_states` | system | 微信 OAuth state（防 CSRF，TTL 清理） |
@@ -974,18 +1025,22 @@ docker compose up -d --build
 
 ### 启动时数据迁移（自动）
 
-`backend/migrations/` 目录下的迁移在应用启动时由 `main.py` 的 `lifespan` 调用 `run_startup_migrations(engine)` 自动执行，**全部幂等设计**，无需手动执行。当前包含 25+ 个迁移函数，主要分类如下：
+`backend/migrations/` 目录下的迁移在应用启动时由 `main.py` 的 `lifespan` 调用 `run_startup_migrations(engine)` 自动执行，**全部幂等设计**，无需手动执行。多 worker 部署（`uvicorn --workers N`）下通过 PostgreSQL session-level advisory lock 串行化，避免并发迁移竞态。当前包含 37 个迁移函数，主要分类如下：
 
 | 类别 | 迁移函数（节选） | 说明 |
 |------|------------------|------|
-| **加列 / 加索引** | `add_token_version_column`、`add_phone_hash_column`、`add_stage_completed_dates_column`、`add_thumbnail_url_to_photos`、`add_renovation_extra_amount_columns`、`add_contact_person_id_column`、`add_finance_record_counterparty_columns`、`add_finance_record_receipt_urls_column`、`add_project_finance_settlement_columns`、`add_media_type_to_renovation_photos`、`add_counterparty_type_to_finance_records` | 为既有表添加新列 / 索引（H-XXX 系列） |
+| **加列 / 加索引** | `add_token_version_column`、`add_phone_hash_column`、`add_stage_completed_dates_column`、`add_thumbnail_url_to_photos`、`add_renovation_extra_amount_columns`、`add_contact_person_id_column`、`add_finance_record_counterparty_columns`、`add_finance_record_receipt_urls_column`、`add_project_finance_settlement_columns`、`add_media_type_to_renovation_photos`、`add_counterparty_type_to_finance_records`、`add_lead_eval_history_and_expected_price` | 为既有表添加新列 / 索引（H-XXX 系列） |
 | **删列 / 重命名** | `drop_other_decoration_amount_column`、`drop_soft_actual_cost_column`、`rename_return_adjustment_columns` | 移除前端已弃用的字段，或语义重命名（旧数据清空） |
 | **加密 / 数据修复** | `encrypt_existing_phones`、`populate_phone_hash`、`run_fix_image_urls` | 将明文手机号加密为 Fernet 密文并回填 `phone_hash`；将绝对图片 URL 转为相对路径 |
-| **建表** | `create_investment_tables`、`create_finance_record_logs_table`、`create_wechat_oauth_tables` | 幂等创建跟投管理 4 表、资金账本日志表、微信 OAuth 2 表 |
+| **建表** | `create_investment_tables`、`create_finance_record_logs_table`、`create_wechat_oauth_tables`、`create_user_roles_table` | 幂等创建跟投管理 4 表、资金账本日志表、微信 OAuth 2 表、用户附加角色关联表 |
+| **权限系统建表** | `migrate_permission_system`、`migrate_project_business_permission`、`add_permission_foreign_indexes` | 幂等创建权限系统三表（`permissions` / `role_permissions` / `operation_logs`），初始化系统权限点种子数据，为 4 个内置角色分配默认权限集；业务身份权限增强；权限表外键索引优化 |
 | **PG enum 同步** | `add_cashflow_category_enum_values`、`add_project_finance_settlement_columns` | 将 Python 枚举新增值同步到 PostgreSQL `enum` 类型（`ALTER TYPE ... ADD VALUE IF NOT EXISTS`） |
 | **列类型修复** | `migrate_record_date_to_timestamptz`、`migrate_project_date_columns_to_date`、`migrate_user_datetime_columns_to_timestamptz`、`migrate_encrypted_columns_to_text`、`migrate_all_datetime_columns_to_timestamptz` | 将旧 `timestamp without time zone` 列统一迁移为 `timestamptz`；将 `VARCHAR(10)` 日期列迁移为 `date`；将 `EncryptedString` 列从 `varchar` 迁移为 `text`（Fernet 密文远超声明长度） |
+| **URL 列扩容** | `widen_url_columns_to_text` | URL 列从 `VARCHAR(500)` 迁移为 `text`（OSS/CDN URL 含 query string 可能超长，PG 严格强制 VARCHAR 长度会报错） |
 | **业务数据迁移** | `migrate_installation_stage_to_delivery` | 将 projects / renovation_photos / l4_marketing_media 中「安装」阶段数据迁移为「交付」（移除安装阶段） |
 | **索引重建** | `rebuild_contract_no_index`、`cleanup_reserved_contracts` | 重建 `idx_contract_no` 为部分唯一索引（`WHERE is_deleted=false`），清理已删除项目的合同记录，允许合同号在项目软删除后被复用 |
+| **报表索引** | `add_reports_indexes` | 报表模块复合索引优化（成交趋势 / 户型楼层分布 / 小区对比查询加速） |
+| **OSS 迁移** | `migrate_uploads_to_oss` | 启动期仅改写 DB URL 为 OSS URL（仅 `storage_backend=oss` 时执行，已是 OSS URL 的记录跳过）；本地文件上传由带外脚本 `python -m migrations.migrate_uploads_to_oss` 执行 |
 
 ---
 
@@ -1109,10 +1164,11 @@ cd frontend && pnpm gen-api
 
 ### Q7: 文件上传失败
 
-- 大小不超过 100 MB
-- 类型在允许列表：`.jpg .jpeg .png .pdf .xlsx .xls .csv .doc .docx .md`
+- 大小不超过 500 MB（默认 `MAX_UPLOAD_SIZE=524288000`，支持视频上传）
+- 类型在允许列表：`.jpg .jpeg .png .webp .pdf .xlsx .xls .csv .doc .docx .md .mp4 .mov .webm`
 - `uploads` volume 挂载正常：`docker compose exec backend ls /app/static/uploads`
 - `Content-Type: multipart/form-data`
+- 若 `STORAGE_BACKEND=oss`，检查 OSS 配置（见 Q11）
 
 ### Q8: 前端启动报 `Module not found`
 
@@ -1126,10 +1182,54 @@ pnpm install
 
 ```bash
 docker compose down              # 停止并删除容器
-docker compose down -v           # 同时删除 pgdata volume（数据丢失！）
+docker compose down -v           # 同时删除 pgdata / redisdata volume（数据丢失！）
 docker compose up -d --build     # 重新启动
 ./setup.sh --docker              # 重新初始化数据库 + 管理员
 ```
+
+### Q10: 后端启动报 `REDIS_URL not set` 或 Redis 连接失败
+
+**根因**：`backend/settings.py` 已将 `redis_url` 设为必填，限流后端从进程内存升级为 Redis（支持多 worker 部署）。`.env` 缺少 `REDIS_URL` / `REDIS_PASSWORD`，或 compose 中 redis 服务未启动。
+
+**修复**：
+
+```bash
+# 1. 确认 .env 包含 REDIS_PASSWORD（init-env.sh 已自动生成）
+grep REDIS_PASSWORD .env
+
+# 2. 确认 redis 容器健康
+docker compose ps redis
+docker compose logs redis
+
+# 3. 容器内验证连通性（带密码）
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD" ping
+# 应返回 PONG
+```
+
+> Docker 部署下 `REDIS_URL` 由 `docker-compose.yml` 自动拼装为 `redis://:${REDIS_PASSWORD}@redis:6379/0`，无需在 `.env` 中手动填写真实值。本地开发需在 `.env` 中设置 `REDIS_URL=redis://localhost:6379/0`（无密码）或对应密码串。
+
+### Q11: 切换到 OSS 存储后图片 / 视频 404
+
+**根因**：`STORAGE_BACKEND=oss` 时，启动迁移仅改写 DB 中已有的相对 URL 为 OSS URL，**不会自动上传本地文件**。本地 `./uploads` 中的历史文件需通过带外脚本上传到 OSS。
+
+**修复**：
+
+```bash
+# 1. 校验 .env 中 5 个 OSS_* 配置项均已填写（settings.py model_validator 强制校验）
+grep -E '^OSS_|^STORAGE_BACKEND' .env
+
+# 2. 切换前先上传本地文件到 OSS（在 backend 目录执行）
+cd backend
+uv run python -m migrations.migrate_uploads_to_oss
+# 该脚本的 upload_local_files_to_oss 会扫描本地 uploads 目录并上传到 OSS
+
+# 3. 重启 backend 让启动迁移改写 DB URL
+docker compose restart backend
+
+# 4. 验证：浏览器访问任一图片 URL，应跳转到 OSS / CDN 域名
+```
+
+> 切换回 `local` 时无需特殊操作——DB 中的 OSS URL 仍可被浏览器直接访问，新上传的文件会写入本地 `./uploads`。建议切换方向前先备份数据库。
 
 ---
 
@@ -1140,7 +1240,7 @@ ProFo/
 ├── README.md                      # 本文件
 ├── DESIGN.md                      # 设计风格参考（Steep 主题）
 │
-├── docker-compose.yml             # Docker Compose 编排（db / backend / frontend，含 healthcheck / mem_limit / platform）
+├── docker-compose.yml             # Docker Compose 编排（db / redis / backend / frontend，含 healthcheck / mem_limit / platform）
 ├── docker-compose.dev.yml         # 开发环境 override（映射 db 端口到本地）
 ├── .env.docker.example            # Docker 部署环境变量模板
 ├── init-env.sh                    # 一键生成密钥并初始化 .env（支持 --show / --force）
@@ -1153,13 +1253,14 @@ ProFo/
 ├── frontend/                      # 前端（Next.js 16，standalone 输出）
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── (main)/            # B 端受保护路由组
+│   │   │   ├── (main)/            # B 端受保护路由组（所有 B 端页面嵌套在 admin/ 下）
 │   │   │   │   ├── admin/         # 仪表盘 + 市场数据 + 快捷入口
-│   │   │   │   ├── investments/   # 跟投管理（列表 + 详情：投资方 / 分配比例 / 结算 / 复制 / 日志）
-│   │   │   │   ├── ledger/        # 资金账本（项目列表 + 流水明细 + 统计 + 结算）
-│   │   │   │   ├── projects/      # 项目管理（[id] 含 cashflow / renovation / selling + monitor / create-project / project-detail）
-│   │   │   │   ├── leads/         # 线索管理（含监控仪表盘 + 抽屉详情 + 跟进）
-│   │   │   │   ├── l4-marketing/  # 营销 CMS（照片 DnD + 预览 + 编辑）
+│   │   │   │   │   ├── audit-logs/      # 操作审计日志（按用户 / 模块 / 动作筛选）
+│   │   │   │   │   ├── investments/     # 跟投管理（列表 + 详情：投资方 / 分配比例 / 结算 / 复制 / 日志）
+│   │   │   │   │   ├── ledger/          # 资金账本（项目列表 + 流水明细 + 统计 + 结算）
+│   │   │   │   │   ├── projects/        # 项目管理（[id] 含 cashflow / renovation / selling + monitor / create-project / project-detail）
+│   │   │   │   │   ├── leads/           # 线索管理（含监控仪表盘 + 抽屉详情 + 跟进）
+│   │   │   │   │   └── l4-marketing/    # 营销 CMS（照片 DnD + 预览 + 编辑）
 │   │   │   │   └── layout.tsx     # 鉴权布局
 │   │   │   ├── (c)/               # C 端公开路由组
 │   │   │   │   ├── projects/      # 房源浏览
@@ -1179,19 +1280,18 @@ ProFo/
 │   └── package.json
 │
 ├── backend/                       # 后端（FastAPI）
-│   ├── constants/                 # 业务常量（documents 文书模板）
-│   ├── routers/                   # 按领域分模块（详见上文「服务分层」）
-│   ├── services/                  # 按领域分模块
-│   ├── models/                    # 按领域分模块
-│   ├── schemas/                   # 按领域分模块
-│   ├── dependencies/              # auth / common / projects
-│   ├── utils/                     # auth / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger / mask / error_formatters / image_processing / common(limiter + XFF)
-│   ├── migrations/                # 启动时幂等迁移（25+ 函数，详见「数据迁移」章节）
-│   ├── review/                    # 代码审查记录（11 个会话 + 总结 + 跟踪表）
+│   ├── constants/                 # 业务常量（documents 文书模板 / role_codes 角色码）
+│   ├── routers/                   # 按领域分模块（common / market / leads / projects / finance / investment / marketing / monitor / reports / public / system）
+│   ├── services/                  # 按领域分模块（含 reports / system/permission / system/operation_log / system/wechat）
+│   ├── models/                    # 按领域分模块（common / property / lead / project / investment / marketing / system / user）
+│   ├── schemas/                   # 按领域分模块（含 reports / permission / operation_log）
+│   ├── dependencies/              # auth / common / projects（含 *PermDep 权限依赖类）
+│   ├── utils/                     # auth/(password+token 子目录) / crypto / csv_exporter / file_security / formatters / jwt_validator / param_parser / query_params / security_logger / mask / error_formatters / image_processing / redis_client / storage / common(limiter + XFF)
+│   ├── migrations/                # 启动时幂等迁移（37 个函数，详见「数据迁移」章节）
 │   ├── scripts/                   # 一次性脚本（当前为空）
 │   ├── main.py                    # 应用入口（含 CSRF 中间件 + 健康检查 + openapi_tags）
 │   ├── db.py                      # SQLAlchemy 引擎 + 会话（PostgreSQL）
-│   ├── settings.py                # Pydantic Settings（app v0.9.0）
+│   ├── settings.py                # Pydantic Settings（app v0.9.0，含 Redis / OSS 配置）
 │   ├── error_handlers.py          # 全局异常 handler
 │   ├── init_db.py                 # 建表脚本
 │   ├── init_admin.py              # 初始化角色和管理员
