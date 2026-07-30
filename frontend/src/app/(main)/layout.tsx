@@ -1,5 +1,6 @@
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { fetchClient } from "@/lib/api-server";
@@ -66,7 +67,9 @@ export default async function DashboardLayout({
   }
 
   if (!user) {
-    redirect("/admin/login");
+    const headersList = await headers();
+    const pathname = headersList.get("x-pathname") ?? "/admin";
+    redirect(`/admin/login?redirect=${encodeURIComponent(pathname)}`);
   }
 
   // 客户端权限守卫：Next.js 16 中 Server Component 无法通过 headers() 获取

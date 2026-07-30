@@ -10,6 +10,7 @@ import {
   setTokenCookies,
 } from "@/lib/auth/core";
 import { TokenPairSchema } from "@/lib/auth/types";
+import { sanitizeCallbackUrl } from "@/lib/auth/utils/sanitize-callback-url";
 import { apiPaths, getApiUrl } from "@/lib/config";
 import { createActionLogger } from "@/lib/logger";
 import { passwordSchema } from "@/app/(main)/admin/users/_components/password-schema";
@@ -91,7 +92,10 @@ export async function loginAction(prevState: LoginState, formData: FormData): Pr
     return { error: error instanceof Error ? error.message : "登录失败" };
   }
 
-  redirect("/admin");
+  // 登录成功：优先回跳到来源页面（?redirect= 透传），无 redirect 时回 /admin
+  const callbackUrl = (formData.get("callback_url") as string) || undefined;
+  const destination = sanitizeCallbackUrl(callbackUrl) ?? "/admin";
+  redirect(destination);
 }
 
 // --- 新增：修改初始密码 Action ---
