@@ -5,9 +5,10 @@
 #   1. .env 不存在时自动从 .env.docker.example 复制模板
 #   2. 仅替换占位符/空值；已设置的真实密钥默认保留（避免覆盖 ENCRYPTION_KEY 导致已加密数据无法解密）
 #   3. DATABASE_URL 仍含 CHANGE_ME 时自动用新密码同步
-#   4. macOS / Linux 便携 sed
-#   5. 默认打码输出，--show 显示完整密钥
-#   6. --force 强制覆盖所有密钥（危险，需显式确认）
+#   4. REDIS_URL 仍含占位符时自动用新密码同步（redis://:PASS@redis:6379/0）
+#   5. macOS / Linux 便携 sed
+#   6. 默认打码输出，--show 显示完整密钥
+#   7. --force 强制覆盖所有密钥（危险，需显式确认）
 #
 # 用法:
 #   ./init-env.sh            智能初始化（仅替换占位符）
@@ -193,6 +194,7 @@ fi
 process_key "POSTGRES_PASSWORD" gen_postgres_pass "POSTGRES_PASSWORD"
 process_key "JWT_SECRET_KEY"    gen_jwt_secret    "JWT_SECRET_KEY"
 process_key "ENCRYPTION_KEY"    gen_fernet_key    "ENCRYPTION_KEY"
+process_key "REDIS_PASSWORD"    gen_postgres_pass "REDIS_PASSWORD"
 
 # ---------- 7. 同步 DATABASE_URL（占位符或密码不一致时） ----------
 DB_URL="$(read_env_var DATABASE_URL)"
@@ -222,13 +224,43 @@ if [ "$NEED_URL_SYNC" = true ] && [ -n "$PG_PASS" ] && [ -n "$PG_USER" ] && [ -n
   info "DATABASE_URL 已同步当前 POSTGRES_PASSWORD"
 fi
 
+# ---------- 7.5 同步 REDIS_URL（占位符或密码不一致时） ----------
+# docker-compose.yml 会用 ${REDIS_PASSWORD} 重新拼装 REDIS_URL 覆盖此值，
+# 此处同步仅为保持 .env 自洽（本地直连 backend 时也能读到带密码的 URL）。
+REDIS_URL_VAL="$(read_env_var REDIS_URL)"
+REDIS_PASS="$(read_env_var REDIS_PASSWORD)"
+
+# 从 REDIS_URL 中提取密码部分：redis://:PASS@HOST:PORT/DB
+extract_redis_password() {
+  echo "$1" | sed -E 's|^redis://:([^@]+)@.*$|\1|'
+}
+
+NEED_REDIS_SYNC=false
+if [[ "$REDIS_URL_VAL" == *"请替换"* ]] || [ -z "$REDIS_URL_VAL" ]; then
+  # 占位符或字段缺失（旧 .env 在 REDIS_URL 加入模板前创建）
+  NEED_REDIS_SYNC=true
+elif [ -n "$REDIS_PASS" ] && [ -n "$REDIS_URL_VAL" ]; then
+  # REDIS_URL 中密码与 REDIS_PASSWORD 不一致（含无密码占位的情况）
+  URL_REDIS_PASS="$(extract_redis_password "$REDIS_URL_VAL")"
+  if [ "$URL_REDIS_PASS" != "$REDIS_PASS" ]; then
+    NEED_REDIS_SYNC=true
+  fi
+fi
+
+if [ "$NEED_REDIS_SYNC" = true ] && [ -n "$REDIS_PASS" ]; then
+  NEW_REDIS_URL="redis://:${REDIS_PASS}@redis:6379/0"
+  upsert_env "REDIS_URL" "$NEW_REDIS_URL"
+  info "REDIS_URL 已同步当前 REDIS_PASSWORD"
+fi
+
 # ---------- 8. 完整性校验 ----------
 # 检查 .env 是否包含后端 Settings 所有必填字段（无默认值的字段）
 # 缺失会导致后端启动时 Settings() 失败 → sys.exit(1)
 echo ""
 MISSING_FIELDS=()
 for field in DATABASE_URL JWT_SECRET_KEY ENCRYPTION_KEY WECHAT_APPID WECHAT_SECRET \
-             POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB; do
+             POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB \
+             REDIS_PASSWORD REDIS_URL; do
   val="$(read_env_var "$field")"
   if [ -z "$val" ]; then
     MISSING_FIELDS+=("$field")
