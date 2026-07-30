@@ -76,6 +76,19 @@ export function useUserForm({ user, open, onOpenChange, roles }: UseUserFormProp
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, open]);
 
+  // 编辑 C 端用户时，若主角色由 customer 切换为内部角色，自动开启"启用 C 端身份"开关，
+  // 以保留其 C 端身份（附加 customer 角色作为附加角色）
+  const roleId = form.watch("role_id");
+  const wasCustomerUser = user?.role?.code === ROLE_CODES.CUSTOMER;
+  useEffect(() => {
+    if (!isEdit || !wasCustomerUser) return;
+    const selectedRole = roles.find((r) => r.id === roleId);
+    if (selectedRole && selectedRole.code !== ROLE_CODES.CUSTOMER) {
+      form.setValue("enable_customer_identity", true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleId, isEdit, wasCustomerUser, roles]);
+
   async function onSubmit(values: FormValues) {
     setIsPending(true);
     try {

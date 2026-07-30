@@ -188,8 +188,11 @@ class UserService:
             msg = "附加角色仅支持 customer"
             raise ValidationError(msg)
 
-        # 校验主角色 code != "customer"（直接使用已加载的 user.role 关系，避免重复查询）
-        main_role = user.role
+        # 校验主角色 code != "customer"
+        # 主动用 user.role_id 查询而非 user.role 关系：update_user 中先 setattr(user, "role_id", ...)
+        # 再调用本方法，已加载的 user.role relationship 不会自动刷新，仍指向旧角色，
+        # 会误判主角色为 customer。用 role_id 主动查询可读到最新主角色。
+        main_role = db.query(Role).filter(Role.id == user.role_id).first()
         if not main_role:
             msg = "主角色不存在"
             raise ValidationError(msg)
