@@ -55,11 +55,10 @@ export function TimelineItem({
     onPhotoUploaded,
   });
 
-  // [修改] 优先通过 renovationStageDates 判断是否已完成
+  // [修改] 优先通过 renovationStageDates 判断是否已完成（无序模式下只看完成日期）
   const stageFinishDateStr = project.renovationStageDates?.[stage.value];
-  const isCompleted = !!stageFinishDateStr || index < currentIndex;
+  const isCompleted = !!stageFinishDateStr;
   const isCurrent = !isCompleted && index === currentIndex;
-  const isFuture = !isCompleted && index > currentIndex;
 
   // 业务身份校验：权限码 OR 后端计算的业务身份标志
   const canEditByPermission = hasAnyPermission([
@@ -80,23 +79,17 @@ export function TimelineItem({
       toast.warning("请等待图片上传完成");
       return;
     }
-    if (photos.length === 0) {
-      toast.error("请至少上传一张验收照片");
-      return;
-    }
 
     setIsSubmittingStage(true);
     try {
-      const nextStage = RENOVATION_STAGES[index + 1];
-      // [修复] 即使是最后一个阶段也允许提交，传 "交付后" 或类似标志给后端
       const res = await updateRenovationStageAction({
         projectId: project.id,
-        renovation_stage: nextStage ? nextStage.value : "已完成",
+        completed_stage: stage.value,
         stage_completed_at: selectedDate?.toISOString(),
       });
 
       if (res.success) {
-        toast.success(`完成 ${stage.label}${nextStage ? `，进入 ${nextStage.label}` : ""}`);
+        toast.success(`完成 ${stage.label}`);
         router.refresh();
         if (onRefresh) await onRefresh();
       } else {
@@ -140,7 +133,7 @@ export function TimelineItem({
   };
 
   return (
-    <AccordionItem value={stage.key} className="border-none relative" disabled={isFuture}>
+    <AccordionItem value={stage.key} className="border-none relative">
       <div className="absolute left-0 top-1 z-10 bg-card p-1">
         {isCompleted ? (
           <CheckCircle2 className="h-6 w-6 text-status-selling fill-status-selling/10" />
@@ -151,7 +144,7 @@ export function TimelineItem({
         )}
       </div>
 
-      <AccordionTrigger className={cn("pl-12 py-1 hover:no-underline data-[state=open]:py-1 group", isFuture ? "cursor-not-allowed opacity-60" : "")}>
+      <AccordionTrigger className={cn("pl-12 py-1 hover:no-underline data-[state=open]:py-1 group")}>
         <div className="flex items-center gap-3 w-full">
           <span className={cn("text-lg transition-colors", isCurrent ? "font-bold text-foreground" : "font-medium text-muted-foreground group-hover:text-foreground")}>
             {stage.label}
@@ -166,8 +159,8 @@ export function TimelineItem({
 
       <AccordionContent className="pl-12 pt-4 pb-2">
         <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-card border-status-renovating/30 shadow-sm" : "bg-muted/50 border-border")}>
-          <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isCurrent={isCurrent} isFuture={isFuture} isLoading={isSubmittingStage} canEditRenovation={canEditRenovation} onUpload={handleUpload} onDelete={handleDelete} />
-          <ActionBar isCurrent={isCurrent} selectedDate={selectedDate} isLoading={isSubmittingStage} canComplete={canComplete} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
+          <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isLoading={isSubmittingStage} canEditRenovation={canEditRenovation} onUpload={handleUpload} onDelete={handleDelete} />
+          <ActionBar isCompleted={isCompleted} selectedDate={selectedDate} isLoading={isSubmittingStage} canComplete={canComplete} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
         </div>
       </AccordionContent>
     </AccordionItem>

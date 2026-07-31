@@ -65,13 +65,11 @@ interface MobileStageCardProps {
   projectId: string;
   photos: RenovationPhoto[];
   isExpanded: boolean;
-  isReadOnly: boolean;
   canEditRenovation: boolean;
   canComplete: boolean;
   stageFinishDate?: string | null;
   onToggle: () => void;
   onRefresh: () => void;
-  onStageCompleted: (nextStageKey: string) => void;
 }
 
 function MobileStageCard({
@@ -81,13 +79,11 @@ function MobileStageCard({
   projectId,
   photos,
   isExpanded,
-  isReadOnly,
   canEditRenovation,
   canComplete,
   stageFinishDate,
   onToggle,
   onRefresh,
-  onStageCompleted,
 }: MobileStageCardProps) {
   const router = useRouter();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
@@ -104,39 +100,29 @@ function MobileStageCard({
     onPhotoUploaded: onRefresh,
   });
 
-  const isCompleted = !!stageFinishDate || index < currentIndex;
+  const isCompleted = !!stageFinishDate;
   const isCurrent = !isCompleted && index === currentIndex;
   const isFuture = !isCompleted && index > currentIndex;
-  const canEdit = canEditRenovation && !isReadOnly && !isFuture;
+  const canEdit = canEditRenovation;
 
   const handleSubmit = async () => {
     if (uploadQueue.length > 0) {
       toast.warning("请等待图片上传完成");
       return;
     }
-    if (photos.length === 0) {
-      toast.error("请至少上传一张验收照片");
-      return;
-    }
 
     setIsSubmittingStage(true);
     try {
-      const nextStage = RENOVATION_STAGES[index + 1];
       const res = await updateRenovationStageAction({
         projectId,
-        renovation_stage: nextStage ? nextStage.value : "已完成",
+        completed_stage: stage.value,
         stage_completed_at: selectedDate?.toISOString(),
       });
 
       if (res.success) {
-        toast.success(
-          `完成 ${stage.label}${nextStage ? `，进入 ${nextStage.label}` : ""}`,
-        );
+        toast.success(`完成 ${stage.label}`);
         router.refresh();
         await onRefresh();
-        if (nextStage) {
-          onStageCompleted(nextStage.key);
-        }
       } else {
         toast.error(res.message);
       }
@@ -315,8 +301,8 @@ function MobileStageCard({
           </label>
         )}
 
-        {/* 完成阶段按钮（仅当前阶段且非只读且有权限） */}
-        {isCurrent && !isReadOnly && canComplete && (
+        {/* 完成阶段按钮（未完成且有权限） */}
+        {!isCompleted && canComplete && (
           <div className="flex flex-col gap-3 pt-1">
             <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
@@ -368,11 +354,9 @@ function MobileStageCard({
     >
       {/* 卡片头部 */}
       <button
-        onClick={() => !isFuture && onToggle()}
-        disabled={isFuture}
+        onClick={() => onToggle()}
         className={cn(
-          "flex items-center gap-3 w-full text-left",
-          isFuture ? "cursor-not-allowed" : "cursor-pointer",
+          "flex items-center gap-3 w-full text-left cursor-pointer",
         )}
       >
         {isCompleted ? (
@@ -398,18 +382,16 @@ function MobileStageCard({
             {photos.length + uploadQueue.length} 张
           </span>
         )}
-        {!isFuture && (
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform shrink-0",
-              isExpanded && "rotate-180",
-            )}
-          />
-        )}
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+            isExpanded && "rotate-180",
+          )}
+        />
       </button>
 
       {/* 卡片内容 */}
-      {isExpanded && !isFuture && (
+      {isExpanded && (
         <div className="mt-4">{renderExpandedContent()}</div>
       )}
       {!isExpanded && isCompleted && renderCollapsedThumbnails()}
@@ -444,7 +426,7 @@ export function MobileRenovationView({
   const canComplete =
     canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
-  // 计算当前阶段索引（与 kpi.tsx 逻辑一致）
+  // 计算当前阶段索引（仅用于 UI 视觉区分，不再用于禁用操作）
   const currentIndex = useMemo(() => {
     if (
       project.renovation_stage === "已完成" ||
@@ -459,13 +441,14 @@ export function MobileRenovationView({
     return idx === -1 ? 0 : idx;
   }, [project.renovation_stage, project.status]);
 
-  const isReadOnly = project.status !== "renovating";
-
-  // 默认展开当前阶段（全部完成时展开最后一个阶段）
-  const defaultExpandedKey =
-    currentIndex < RENOVATION_STAGES.length
-      ? RENOVATION_STAGES[currentIndex].key
-      : RENOVATION_STAGES[RENOVATION_STAGES.length - 1].key;
+  // 默认展开第一个未完成阶段（全完成时展开最后一个阶段）
+  const defaultExpandedKey = useMemo(() => {
+    const stageDates = project.renovationStageDates ?? {};
+    const firstUnfinished = RENOVATION_STAGES.find(
+      (s) => !stageDates[s.value],
+    );
+    return (firstUnfinished ?? RENOVATION_STAGES[RENOVATION_STAGES.length - 1]).key;
+  }, [project.renovationStageDates]);
   const [expandedStage, setExpandedStage] = useState<string>(defaultExpandedKey);
 
   const refreshPhotos = useCallback(async () => {
@@ -502,14 +485,13 @@ export function MobileRenovationView({
       ? RENOVATION_STAGES[currentIndex].label
       : "已完成";
 
-  const progressValue =
-    currentIndex >= RENOVATION_STAGES.length
-      ? 100
-      : Math.round(((currentIndex + 1) / RENOVATION_STAGES.length) * 100);
-
-  const handleStageCompleted = useCallback((nextStageKey: string) => {
-    setExpandedStage(nextStageKey);
-  }, []);
+  const progressValue = useMemo(() => {
+    const stageDates = project.renovationStageDates ?? {};
+    const completedCount = RENOVATION_STAGES.filter(
+      (s) => !!stageDates[s.value],
+    ).length;
+    return Math.round((completedCount / RENOVATION_STAGES.length) * 100);
+  }, [project.renovationStageDates]);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -581,7 +563,6 @@ export function MobileRenovationView({
                 projectId={projectId}
                 photos={stagePhotos}
                 isExpanded={isExpanded}
-                isReadOnly={isReadOnly}
                 canEditRenovation={canEditRenovation}
                 canComplete={canComplete}
                 stageFinishDate={stageFinishDate}
@@ -591,7 +572,6 @@ export function MobileRenovationView({
                   )
                 }
                 onRefresh={refreshPhotos}
-                onStageCompleted={handleStageCompleted}
               />
             );
           })

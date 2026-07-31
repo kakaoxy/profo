@@ -80,6 +80,11 @@ export function useRenovationUpload({
       const files = e.target.files;
       if (!files || files.length === 0) return;
 
+      // 必须在重置 input.value 之前将 FileList 转为数组快照，
+      // 否则 e.target.value = "" 会清空 FileList，files 引用也变为空，
+      // 导致后续 Array.from(files) 返回空数组，上传流程静默中止
+      const fileArray = Array.from(files);
+
       // 提前重置 input.value，避免 await 压缩期间用户无法再次选择同名文件
       e.target.value = "";
 
@@ -87,7 +92,7 @@ export function useRenovationUpload({
       // 否则 compressImage 返回新 File 对象后，回调按 p.file === file 匹配会失败，
       // 导致上传成功的队列项无法被移除（残留"上传中"占位）
       const processedResults = await Promise.all(
-        Array.from(files).map(async (file) => {
+        fileArray.map(async (file) => {
           if (file.size > MAX_FILE_SIZE) {
             toast.error(`${file.name} 过大，已跳过`);
             return null;

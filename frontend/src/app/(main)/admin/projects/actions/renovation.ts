@@ -5,6 +5,7 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
+import type { components } from "@/lib/api-types";
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
@@ -21,7 +22,8 @@ const addRenovationPhotoSchema = z.object({
 // updateRenovationStageAction 入参
 const updateRenovationStageSchema = z.object({
   projectId: projectIdSchema,
-  renovation_stage: z.string().min(1, "装修阶段不能为空"),
+  renovation_stage: z.string().min(1, "装修阶段不能为空").optional(),
+  completed_stage: z.string().min(1, "完成阶段不能为空").optional(),
   stage_completed_at: z.string().optional(),
 });
 
@@ -194,7 +196,8 @@ export async function addRenovationPhotoAction(payload: {
  */
 export async function updateRenovationStageAction(payload: {
   projectId: string;
-  renovation_stage: string;
+  renovation_stage?: string;
+  completed_stage?: string;
   stage_completed_at?: string;
 }) {
   const parsed = updateRenovationStageSchema.safeParse(payload);
@@ -214,10 +217,10 @@ export async function updateRenovationStageAction(payload: {
       {
         params: { path: { project_id: payload.projectId } },
         body: {
-          // @ts-expect-error - API 类型定义与后端实际接口不完全同步
           renovation_stage: payload.renovation_stage,
+          completed_stage: payload.completed_stage,
           stage_completed_at: payload.stage_completed_at,
-        },
+        } as components["schemas"]["RenovationUpdate"],
       },
     );
 

@@ -2604,6 +2604,7 @@ export interface paths {
          *     - volume_30d: 30日成交量
          *     - price_trend_30d: 30日价格趋势百分比
          *     - is_price_up: 价格趋势方向
+         *     - data_as_of: 统计窗口右端点(对齐数据最新成交日后的基准日期)
          */
         get: operations["get_community_market_stats_api_v1_monitor_communities__community_id__market_stats_get"];
         put?: never;
@@ -9289,8 +9290,10 @@ export interface components {
          * @description 更新改造阶段请求模型.
          */
         RenovationUpdate: {
-            /** @description 改造子阶段 */
-            renovation_stage: components["schemas"]["RenovationStage"];
+            /** @description 改造子阶段（目标阶段，不传则不流转） */
+            renovation_stage?: components["schemas"]["RenovationStage"] | null;
+            /** @description 要标记完成的阶段（支持无序完成） */
+            completed_stage?: components["schemas"]["RenovationStage"] | null;
             /**
              * Stage Completed At
              * @description 阶段完成时间
