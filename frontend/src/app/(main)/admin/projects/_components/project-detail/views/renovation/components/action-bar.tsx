@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 
 interface ActionBarProps {
-  isCurrent: boolean;
+  isCompleted: boolean;
   selectedDate: Date | undefined;
   isLoading: boolean;
   canComplete: boolean;
@@ -20,22 +20,22 @@ interface ActionBarProps {
 }
 
 export function ActionBar({
-  isCurrent,
+  isCompleted,
   selectedDate,
   isLoading,
   canComplete,
   onDateSelect,
   onSubmit,
 }: ActionBarProps) {
-  // 当前阶段且有权限时显示完整操作栏
-  if (isCurrent && canComplete) {
+  // 未完成且有权限时显示完整操作栏
+  if (!isCompleted && canComplete) {
     return (
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-md mt-4 border bg-status-renovating/10/30 border-orange-100">
         <div className="text-xs text-muted-foreground flex items-center gap-2">
           <span className="bg-orange-100 text-status-renovating px-1.5 py-0.5 rounded text-[10px] font-bold">
             提示
           </span>
-          完成后将自动进入下一阶段
+          标记该阶段完成
         </div>
 
         <div className="flex items-center gap-2">

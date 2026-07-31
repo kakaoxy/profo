@@ -50,11 +50,14 @@ export function RenovationKPIs({ project }: RenovationKPIsProps) {
     ? RENOVATION_STAGES[currentIndex].label 
     : "已完成";
 
-  // 3. 计算总体进度
-  // 如果已经完成，进度定死 100%
-  const progressValue = currentIndex >= RENOVATION_STAGES.length
-    ? 100
-    : Math.round(((currentIndex + 1) / RENOVATION_STAGES.length) * 100);
+  // 3. 计算总体进度（按已完成阶段数计算，支持无序完成）
+  const progressValue = (() => {
+    const stageDates = project.renovationStageDates ?? {};
+    const completedCount = RENOVATION_STAGES.filter(
+      (s) => !!stageDates[s.value],
+    ).length;
+    return Math.round((completedCount / RENOVATION_STAGES.length) * 100);
+  })();
 
   // 4. [关键修改] 异步获取照片总数
   useEffect(() => {

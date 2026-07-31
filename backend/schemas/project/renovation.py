@@ -20,7 +20,8 @@ from models.common import MediaKind, RenovationStage
 class RenovationUpdate(BaseModel):
     """更新改造阶段请求模型."""
 
-    renovation_stage: RenovationStage = Field(description="改造子阶段")
+    renovation_stage: RenovationStage | None = Field(None, description="改造子阶段（目标阶段，不传则不流转）")
+    completed_stage: RenovationStage | None = Field(None, description="要标记完成的阶段（支持无序完成）")
     stage_completed_at: datetime | None = Field(None, description="阶段完成时间")
     model_config = ConfigDict(from_attributes=True)
 

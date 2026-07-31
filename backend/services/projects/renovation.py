@@ -112,26 +112,29 @@ class RenovationService:
         # 获取或创建装修记录
         renovation = self._get_or_create_renovation(project_id)
 
-        # 记录当前阶段的完成时间
+        # 记录指定阶段的完成时间（支持无序完成）
         current_stage = project.renovation_stage
-        if current_stage and renovation_data.stage_completed_at:
+        stage_to_record = renovation_data.completed_stage or renovation_data.renovation_stage or current_stage
+        if stage_to_record and renovation_data.stage_completed_at:
             if not renovation.stage_completed_dates:
                 renovation.stage_completed_dates = {}
 
             dates = dict(renovation.stage_completed_dates)
-            dates[current_stage] = renovation_data.stage_completed_at.strftime("%Y-%m-%d")
+            dates[stage_to_record.value] = renovation_data.stage_completed_at.strftime("%Y-%m-%d")
             renovation.stage_completed_dates = dates
 
             flag_modified(renovation, "stage_completed_dates")
 
-        # 更新到下一个阶段
-        project.renovation_stage = renovation_data.renovation_stage.value
+        # 仅在传入 renovation_stage 时流转
+        target_stage = renovation_data.renovation_stage
+        if target_stage:
+            project.renovation_stage = target_stage.value
 
         # 如果有实际开始/结束日期，更新到装修记录
-        if renovation_data.renovation_stage.value == "拆除" and not renovation.actual_start_date:
+        if stage_to_record and stage_to_record.value == "拆除" and not renovation.actual_start_date:
             renovation.actual_start_date = datetime.now(timezone.utc)
 
-        if renovation_data.stage_completed_at and renovation_data.renovation_stage.value == "已完成":
+        if renovation_data.stage_completed_at and stage_to_record and stage_to_record.value == "已完成":
             renovation.actual_end_date = renovation_data.stage_completed_at
 
         renovation.updated_at = datetime.now(timezone.utc)

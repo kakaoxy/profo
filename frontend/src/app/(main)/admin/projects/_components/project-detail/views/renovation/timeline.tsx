@@ -52,7 +52,7 @@ export function RenovationTimeline({
     return map;
   }, [photos]);
 
-  // 计算索引用于传参
+  // 计算当前阶段索引（仅用于 UI 视觉区分，不再用于禁用操作）
   const currentIndex = useMemo(() => {
     if (project.renovation_stage === "已完成" || ["selling", "sold"].includes(project.status)) {
       return RENOVATION_STAGES.length;
@@ -63,9 +63,12 @@ export function RenovationTimeline({
     return idx === -1 ? 0 : idx;
   }, [project.renovation_stage, project.status]);
 
-  const currentStageKey = currentIndex < RENOVATION_STAGES.length 
-    ? RENOVATION_STAGES[currentIndex].key 
-    : "";
+  // 默认展开第一个未完成阶段（全完成时展开最后一个阶段）
+  const currentStageKey = useMemo(() => {
+    const stageDates = project.renovationStageDates ?? {};
+    const firstUnfinished = RENOVATION_STAGES.find((s) => !stageDates[s.value]);
+    return (firstUnfinished ?? RENOVATION_STAGES[RENOVATION_STAGES.length - 1]).key;
+  }, [project.renovationStageDates]);
 
   return (
     <div className="relative pl-4 space-y-6 pb-12">

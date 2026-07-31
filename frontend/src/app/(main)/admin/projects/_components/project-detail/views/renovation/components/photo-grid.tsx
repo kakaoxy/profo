@@ -2,7 +2,7 @@
 
 import { useState, memo } from "react";
 import Image from "next/image";
-import { UploadCloud, Plus, Loader2, Trash2, Eye, ImageIcon, Download } from "lucide-react";
+import { UploadCloud, Loader2, Trash2, Eye, ImageIcon, Download } from "lucide-react";
 import { RenovationPhoto } from "../../../../../types";
 import { getThumbnailUrl, getFileUrl } from "../../../utils";
 import { Progress } from "@/components/ui/progress";
@@ -41,8 +41,6 @@ export interface UploadingPhoto {
 interface PhotoGridProps {
   photos: RenovationPhoto[];
   uploadingPhotos?: UploadingPhoto[];
-  isCurrent: boolean;
-  isFuture: boolean;
   isLoading: boolean;
   canEditRenovation: boolean;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -52,12 +50,11 @@ interface PhotoGridProps {
 // [优化] 使用 memo 缓存照片项组件，避免不必要的重渲染
 interface PhotoItemProps {
   photo: RenovationPhoto;
-  isFuture: boolean;
   canEditRenovation: boolean;
   onDelete: (photoId: string) => void;
 }
 
-const PhotoItem = memo(function PhotoItem({ photo, isFuture, canEditRenovation, onDelete }: PhotoItemProps) {
+const PhotoItem = memo(function PhotoItem({ photo, canEditRenovation, onDelete }: PhotoItemProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   // 网格缩略图和大图预览统一使用缩略图（800px WebP），避免加载原图导致卡顿
   const displayUrl = getThumbnailUrl(photo.thumbnail_url, photo.url);
@@ -96,7 +93,7 @@ const PhotoItem = memo(function PhotoItem({ photo, isFuture, canEditRenovation, 
         </DialogTrigger>
 
         {/* Delete Button */}
-        {!isFuture && canEditRenovation && (
+        {canEditRenovation && (
           <div
             className="absolute top-1 right-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => e.stopPropagation()}
@@ -221,8 +218,6 @@ UploadingItem.displayName = "UploadingItem";
 export function PhotoGrid({
   photos,
   uploadingPhotos = [],
-  isCurrent,
-  isFuture,
   isLoading,
   canEditRenovation,
   onUpload,
@@ -256,7 +251,6 @@ export function PhotoGrid({
           <PhotoItem
             key={photo.id}
             photo={photo}
-            isFuture={isFuture}
             canEditRenovation={canEditRenovation}
             onDelete={onDelete}
           />
@@ -268,7 +262,7 @@ export function PhotoGrid({
         ))}
 
         {/* 3. Upload Button */}
-        {!isFuture && canEditRenovation && (
+        {canEditRenovation && (
           <label className="aspect-square rounded-md border-2 border-dashed border-border bg-card hover:bg-muted hover:border-primary/50 cursor-pointer flex flex-col items-center justify-center transition-colors text-muted-foreground hover:text-primary gap-1 relative overflow-hidden">
             <input
               type="file"
@@ -280,13 +274,11 @@ export function PhotoGrid({
             />
             {isLoading ? (
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            ) : isCurrent ? (
-              <UploadCloud className="h-6 w-6" />
             ) : (
-              <Plus className="h-6 w-6" />
+              <UploadCloud className="h-6 w-6" />
             )}
             <span className="text-xs font-medium">
-              {isLoading ? "Processing" : isCurrent ? "Upload" : "Add More"}
+              {isLoading ? "Processing" : "上传照片"}
             </span>
           </label>
         )}
