@@ -126,17 +126,20 @@ class RenovationService:
 
             flag_modified(renovation, "stage_completed_dates")
 
+            # 无序完成后自动检测：若所有实际阶段均已标记完成，自动设置竣工时间与终态
+            real_stage_values = {s.value for s in RenovationStage if s != RenovationStage.COMPLETED}
+            if real_stage_values.issubset(dates.keys()) and not renovation.actual_end_date:
+                renovation.actual_end_date = renovation_data.stage_completed_at
+                project.renovation_stage = RenovationStage.COMPLETED.value
+
         # 仅在传入 renovation_stage 时流转
         target_stage = renovation_data.renovation_stage
         if target_stage:
             project.renovation_stage = target_stage.value
 
-        # 如果有实际开始/结束日期，更新到装修记录
+        # 如果有实际开始日期，更新到装修记录
         if stage_to_record and stage_to_record.value == "拆除" and not renovation.actual_start_date:
             renovation.actual_start_date = datetime.now(timezone.utc)
-
-        if renovation_data.stage_completed_at and stage_to_record and stage_to_record.value == "已完成":
-            renovation.actual_end_date = renovation_data.stage_completed_at
 
         renovation.updated_at = datetime.now(timezone.utc)
 
@@ -196,6 +199,11 @@ class RenovationService:
                 renovation.actual_start_date = None
             elif stage.value == "已完成":
                 renovation.actual_end_date = None
+
+            # 清空阶段日期后，若不再满足全部完成条件，重置 renovation_stage
+            real_stage_values = {s.value for s in RenovationStage if s != RenovationStage.COMPLETED}
+            if project.renovation_stage == RenovationStage.COMPLETED.value and not real_stage_values.issubset(dates.keys()):
+                project.renovation_stage = RenovationStage.DELIVERY.value
         else:
             # 修改日期
             dates[stage.value] = stage_completed_at.strftime("%Y-%m-%d")

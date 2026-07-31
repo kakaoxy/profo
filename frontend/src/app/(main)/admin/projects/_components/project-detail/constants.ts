@@ -16,39 +16,48 @@ export interface AttachmentGroupConfig {
   categories: string[];
 }
 
+/**
+ * 文书 / 附件分类（6 类，与后端 documents.category 枚举对齐）
+ */
+export const DOCUMENT_CATEGORIES = [
+  { value: "contract_agreement", label: "合同及协议文件" },
+  { value: "property_rights", label: "产权及权属调查文件" },
+  { value: "identity_account", label: "身份及账户文件" },
+  { value: "finance_tax", label: "财务及税费文件" },
+  { value: "handover", label: "房屋交接文件" },
+  { value: "other", label: "其他文件" },
+] as const;
+
+export type DocumentCategory = (typeof DOCUMENT_CATEGORIES)[number]["value"];
+
 export const ATTACHMENT_GROUPS: Record<string, AttachmentGroupConfig> = {
-  contract: {
-    label: "合同类",
+  contract_agreement: {
+    label: "合同及协议文件",
     icon: FileText,
-    categories: ["signing_contract", "renovation_contract"],
+    categories: ["contract_agreement"],
   },
-  certificate: {
-    label: "证件类",
+  property_rights: {
+    label: "产权及权属调查文件",
     icon: File,
-    categories: [
-      "property_certificate",
-      "property_survey",
-      "owner_id_card",
-      "owner_bank_card",
-    ],
+    categories: ["property_rights"],
   },
-  document: {
-    label: "交接文件",
-    icon: FileSpreadsheet,
-    categories: [
-      "handover_document",
-      "cooperation_confirmation",
-      "store_investment_agreement",
-      "value_added_service",
-    ],
+  identity_account: {
+    label: "身份及账户文件",
+    icon: FileImage,
+    categories: ["identity_account"],
   },
-  finance: {
-    label: "财务类",
+  finance_tax: {
+    label: "财务及税费文件",
     icon: TrendingUp,
-    categories: ["receipt"],
+    categories: ["finance_tax"],
+  },
+  handover: {
+    label: "房屋交接文件",
+    icon: FileSpreadsheet,
+    categories: ["handover"],
   },
   other: {
-    label: "其他",
+    label: "其他文件",
     icon: File,
     categories: ["other"],
   },
@@ -58,19 +67,36 @@ export const ATTACHMENT_GROUPS: Record<string, AttachmentGroupConfig> = {
  * 附件分类中文标签
  */
 export const CATEGORY_LABELS: Record<string, string> = {
-  signing_contract: "签约合同",
-  property_certificate: "产证",
-  property_survey: "产调",
-  owner_id_card: "业主身份证",
-  owner_bank_card: "业主银行卡",
-  renovation_contract: "装修合同",
-  handover_document: "房屋交接书",
-  receipt: "收款收据",
-  cooperation_confirmation: "合作房源确认函",
-  store_investment_agreement: "门店跟投协议书",
-  value_added_service: "增值服务确认书",
-  other: "其他",
+  contract_agreement: "合同及协议文件",
+  property_rights: "产权及权属调查文件",
+  identity_account: "身份及账户文件",
+  finance_tax: "财务及税费文件",
+  handover: "房屋交接文件",
+  other: "其他文件",
 };
+
+/**
+ * 旧 12 类 → 新 6 类映射（向后兼容历史 signing_materials）
+ * 未知值统一归入 other
+ */
+const LEGACY_CATEGORY_MAP: Record<string, DocumentCategory> = {
+  signing_contract: "contract_agreement",
+  renovation_contract: "contract_agreement",
+  cooperation_confirmation: "contract_agreement",
+  store_investment_agreement: "contract_agreement",
+  value_added_service: "contract_agreement",
+  property_certificate: "property_rights",
+  property_survey: "property_rights",
+  owner_id_card: "identity_account",
+  owner_bank_card: "identity_account",
+  receipt: "finance_tax",
+  handover_document: "handover",
+  other: "other",
+};
+
+export function mapLegacyAttachmentCategory(category: string): string {
+  return LEGACY_CATEGORY_MAP[category] ?? "other";
+}
 
 /**
  * 根据文件类型获取图标

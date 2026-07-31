@@ -190,7 +190,7 @@ const FloorPlanPreviewImpl = ({
 
       {open && (
         <HoverCardContent
-          className="w-[400px] p-2 bg-card z-50 shadow-lg"
+          className="w-100 p-2 bg-card z-50 shadow-lg"
           side="bottom"
           align="start"
           sideOffset={10}
@@ -220,9 +220,9 @@ export const columns: ColumnDef<Property>[] = [
   // 1. 房源ID
   {
     accessorKey: "id",
-    header: () => <span className="inline hidden md:table-cell">ID</span>,
+    header: () => <span className="inline md:table-cell">ID</span>,
     cell: ({ row }) => (
-      <span className="inline text-xs text-muted-foreground hidden md:table-cell">
+      <span className="inline text-xs text-muted-foreground md:table-cell">
         #{row.getValue("id")}
       </span>
     ),
@@ -331,11 +331,11 @@ export const columns: ColumnDef<Property>[] = [
   // 5. 商圈
   {
     accessorKey: "business_circle",
-    header: () => <span className="inline hidden md:table-cell">商圈</span>,
+    header: () => <span className="inline md:table-cell">商圈</span>,
     cell: ({ row }) => {
       const val = row.getValue("business_circle") as string;
       return (
-        <span className="inline text-sm text-muted-foreground hidden md:table-cell">
+        <span className="inline text-sm text-muted-foreground md:table-cell">
           {val || "-"}
         </span>
       );
@@ -344,11 +344,11 @@ export const columns: ColumnDef<Property>[] = [
   // 6. 户型
   {
     id: "layout_custom",
-    header: () => <span className="inline text-xs hidden md:table-cell">户型</span>,
+    header: () => <span className="inline text-xs md:table-cell">户型</span>,
     cell: ({ row }) => {
       const { rooms, baths } = row.original;
       return (
-        <span className="inline whitespace-nowrap text-xs hidden md:table-cell">
+        <span className="inline whitespace-nowrap text-xs md:table-cell">
           {rooms}室{baths}卫
         </span>
       );
@@ -358,7 +358,7 @@ export const columns: ColumnDef<Property>[] = [
   {
     accessorKey: "floor_display",
     header: () => (
-      <div className="block hidden md:table-cell">
+      <div className="block md:table-cell">
         <SortableHeader title="楼层/朝向" value="floor_number" />
       </div>
     ),
@@ -366,7 +366,7 @@ export const columns: ColumnDef<Property>[] = [
       const floor = row.getValue("floor_display") as string;
       const orientation = row.original.orientation;
       return (
-        <div className="flex flex-col gap-1 py-2 whitespace-nowrap hidden md:table-cell">
+        <div className="flex flex-col gap-1 py-2 whitespace-nowrap md:table-cell">
           <span className="text-xs leading-tight">{floor}</span>
           <span className="text-[10px] text-muted-foreground leading-tight">
             {orientation}
@@ -379,12 +379,12 @@ export const columns: ColumnDef<Property>[] = [
   {
     accessorKey: "build_area",
     header: () => (
-      <div className="block hidden md:table-cell">
+      <div className="block md:table-cell">
         <SortableHeader title="面积" value="build_area" />
       </div>
     ),
     cell: ({ row }) => (
-      <div className="block text-xs hidden md:table-cell">
+      <div className="block text-xs md:table-cell">
         {row.getValue("build_area")}㎡
       </div>
     ),
@@ -444,7 +444,7 @@ export const columns: ColumnDef<Property>[] = [
   // 备注（与详情页"挂牌备注"同源 listing_remarks）
   {
     id: "listing_remarks",
-    header: () => <span className="inline text-xs hidden md:table-cell">备注</span>,
+    header: () => <span className="inline text-xs md:table-cell">备注</span>,
     cell: ({ row }) => {
       const remarks = row.original.listing_remarks;
       if (!remarks || remarks.trim() === "") {
@@ -455,12 +455,12 @@ export const columns: ColumnDef<Property>[] = [
           <TooltipProvider>
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
-                <div className="max-w-[200px] truncate text-xs text-muted-foreground cursor-help">
+                <div className="max-w-50 truncate text-xs text-muted-foreground cursor-help">
                   {remarks}
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="max-w-[400px]">
-                <p className="whitespace-pre-wrap break-words text-xs">{remarks}</p>
+              <TooltipContent className="max-w-100">
+                <p className="whitespace-pre-wrap wrap-break-word text-xs">{remarks}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -472,9 +472,9 @@ export const columns: ColumnDef<Property>[] = [
   // 13. 数据源
   {
     accessorKey: "data_source",
-    header: () => <span className="inline text-xs hidden md:table-cell">来源</span>,
+    header: () => <span className="inline text-xs md:table-cell">来源</span>,
     cell: ({ row }) => (
-      <Badge variant="outline" className="inline-flex text-[10px] hidden md:table-cell">
+      <Badge variant="outline" className="inline-flex text-[10px] md:table-cell">
         {row.getValue("data_source")}
       </Badge>
     ),

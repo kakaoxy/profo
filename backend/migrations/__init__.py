@@ -44,6 +44,7 @@
   初始化系统权限点，为 4 个内置角色分配默认权限集
 - add_lead_eval_history_and_expected_price: 幂等创建 lead_eval_histories 表（评估历史）+ 索引
   idx_lead_eval_history_lead + 为 leads 表添加 expected_price 列（业主心理预期价）
+- add_project_document_category: 为 project_documents 表添加 category 列（文书分类，6 大类）
 - migrate_uploads_to_oss: 启动期仅改写 DB URL 为 OSS URL（仅 storage_backend=oss 时执行，幂等：
   已是 OSS URL 的记录跳过）；本地文件上传由带外脚本 `python -m migrations.migrate_uploads_to_oss`
   执行（upload_local_files_to_oss），切换到 OSS 后对外提供服务前运行一次
@@ -58,6 +59,7 @@ from sqlalchemy.engine import Engine
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
+from migrations.add_project_document_category import add_project_document_category
 from migrations.cleanup_reserved_contracts import cleanup_reserved_contracts
 from migrations.fix_image_urls import run_fix_image_urls
 from migrations.migrate_installation_stage import migrate_installation_stage_to_delivery
@@ -1706,6 +1708,7 @@ def _run_all_migrations(engine: Engine) -> None:
         add_permission_foreign_indexes(engine)
         add_reports_indexes(engine)
         add_lead_eval_history_and_expected_price(engine)
+        add_project_document_category(engine)
         # 数据迁移（不改 schema，放在末尾）：仅 storage_backend=oss 时执行，local 模式跳过
         migrate_uploads_to_oss(engine)
     except Exception:

@@ -10,6 +10,7 @@ class DocumentCreate(BaseModel):
 
     document_name: str = Field(..., max_length=200, description="文书名称")
     display_order: int | None = Field(None, description="显示顺序（默认追加末尾）")
+    category: str = Field(default="other", max_length=50, description="文书分类")
 
 
 class DocumentUpdate(BaseModel):
@@ -45,6 +46,7 @@ class DocumentResponse(BaseModel):
     signoff_status: str = Field(description="签收状态")
     archive_date: str | None = Field(None, description="归档日期")
     display_order: int = Field(description="显示顺序")
+    category: str = Field(description="文书分类")
     created_at: datetime
     updated_at: datetime
 
