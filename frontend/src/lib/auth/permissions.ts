@@ -52,6 +52,7 @@ export const PERMISSION_CODES = {
   LEAD_WRITE: "lead:write",
   LEAD_EXPORT: "lead:export",
   LEAD_SUBMIT: "lead:submit",
+  LEAD_UPLOAD_PHOTO: "lead:upload_photo",
   // 项目管理
   PROJECT_READ: "project:read",
   PROJECT_WRITE: "project:write",
@@ -123,6 +124,8 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   // 由后端 ProjectReadOrBusinessPermDep（业务身份双通道）校验——普通用户被指派
   // 为项目业务负责人后可进入自己负责的项目详情，不被角色权限覆盖
   { prefix: "/admin/projects", permission: PERMISSION_CODES.PROJECT_READ, exact: true },
+  // 线索录入页 → 需 lead:write 权限（避免无权限用户填完表单才被拒）
+  { prefix: "/admin/leads/new", permission: PERMISSION_CODES.LEAD_WRITE, exact: true },
   // 数据报表 → 需 property:read 权限
   { prefix: "/admin/reports", permission: PERMISSION_CODES.PROPERTY_READ },
   // 资金账本 → 需 ledger:read 权限
