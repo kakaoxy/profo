@@ -4,13 +4,15 @@ from datetime import datetime
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
+from constants.documents import DocumentCategory
+
 
 class DocumentCreate(BaseModel):
     """创建文书请求."""
 
     document_name: str = Field(..., max_length=200, description="文书名称")
     display_order: int | None = Field(None, description="显示顺序（默认追加末尾）")
-    category: str = Field(default="other", max_length=50, description="文书分类")
+    category: DocumentCategory = Field(default="other", description="文书分类")
 
 
 class DocumentUpdate(BaseModel):
@@ -22,6 +24,7 @@ class DocumentUpdate(BaseModel):
         max_length=200,
         description="文书名称",
     )
+    category: DocumentCategory | None = Field(None, description="文书分类")
     signoff_status: str | None = Field(
         None,
         validation_alias=AliasChoices("signoff_status", "signoffStatus"),
@@ -46,7 +49,7 @@ class DocumentResponse(BaseModel):
     signoff_status: str = Field(description="签收状态")
     archive_date: str | None = Field(None, description="归档日期")
     display_order: int = Field(description="显示顺序")
-    category: str = Field(description="文书分类")
+    category: DocumentCategory = Field(description="文书分类")
     created_at: datetime
     updated_at: datetime
 

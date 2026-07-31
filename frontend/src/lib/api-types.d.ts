@@ -244,6 +244,8 @@ export interface paths {
         /**
          * Create Lead
          * @description 创建线索.
+         *
+         *     权限：lead:create（普通员工录入）或 lead:write（admin/operator 全权）。
          */
         post: operations["create_lead_api_v1_leads_post"];
         delete?: never;
@@ -511,7 +513,7 @@ export interface paths {
          * @description 修改/清空已完成阶段的完成时间（仅管理员）.
          *
          *     速率限制：100次/小时.
-         *     业务身份双通道注入 current_user，admin 角色校验由 Service 层强制执行。
+         *     Router 层强制 admin 角色，Service 层不再重复校验。
          */
         patch: operations["update_renovation_stage_date_api_v1_projects__project_id__renovation_stages__stage__patch"];
         trace?: never;
@@ -4094,8 +4096,9 @@ export interface components {
              * Category
              * @description 文书分类
              * @default other
+             * @enum {string}
              */
-            category: string;
+            category: "contract_agreement" | "property_rights" | "identity_account" | "finance_tax" | "handover" | "other";
         };
         /**
          * DocumentInitializeResponse
@@ -4146,8 +4149,9 @@ export interface components {
             /**
              * Category
              * @description 文书分类
+             * @enum {string}
              */
-            category: string;
+            category: "contract_agreement" | "property_rights" | "identity_account" | "finance_tax" | "handover" | "other";
             /**
              * Created At
              * Format: date-time
@@ -4169,6 +4173,11 @@ export interface components {
              * @description 文书名称
              */
             document_name?: string | null;
+            /**
+             * Category
+             * @description 文书分类
+             */
+            category?: ("contract_agreement" | "property_rights" | "identity_account" | "finance_tax" | "handover" | "other") | null;
             /**
              * Signoff Status
              * @description 签收状态: unsigned/signed/archived

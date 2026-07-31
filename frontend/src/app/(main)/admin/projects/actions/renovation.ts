@@ -5,15 +5,37 @@ import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { extractApiData } from "@/lib/api-helpers";
 import { z } from "zod";
-import type { components } from "@/lib/api-types";
 
 const projectIdSchema = z.string().min(1, "项目 ID 不能为空");
 const photoIdSchema = z.string().min(1, "照片 ID 不能为空");
 
+// 装修阶段枚举（与后端 RenovationStage 对齐，消除 as 强转）
+const renovationStageSchema = z.enum([
+  "拆除",
+  "设计",
+  "水电",
+  "木瓦",
+  "油漆",
+  "交付",
+  "已完成",
+]);
+
+/**
+ * 从后端错误响应体提取可读消息，提取失败返回 fallback。
+ * 统一处理 actions 内重复的 (error as { message?: string })?.message 模式。
+ */
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const msg = (error as { message?: unknown }).message;
+    if (typeof msg === "string" && msg) return msg;
+  }
+  return fallback;
+}
+
 // addRenovationPhotoAction 入参（JSON，文件已通过 useUpload 单独上传）
 const addRenovationPhotoSchema = z.object({
   projectId: projectIdSchema,
-  stage: z.string().min(1, "装修阶段不能为空"),
+  stage: renovationStageSchema,
   url: z.string().min(1, "照片 URL 不能为空"),
   thumbnail_url: z.string().optional(),
   filename: z.string().optional(),
@@ -25,8 +47,8 @@ const addRenovationPhotoSchema = z.object({
 const updateRenovationStageSchema = z
   .object({
     projectId: projectIdSchema,
-    renovation_stage: z.string().min(1, "装修阶段不能为空").optional(),
-    completed_stage: z.string().min(1, "完成阶段不能为空").optional(),
+    renovation_stage: renovationStageSchema.optional(),
+    completed_stage: renovationStageSchema.optional(),
     stage_completed_at: z.string().optional(),
   })
   .refine((data) => Boolean(data.renovation_stage || data.completed_stage), {
@@ -105,8 +127,7 @@ export async function deleteRenovationPhotoAction(
     );
 
     if (error) {
-      const errorMsg = (error as { message?: string })?.message || "删除照片失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "删除照片失败") };
     }
 
     revalidatePath("/admin/projects");
@@ -133,8 +154,7 @@ export async function getRenovationPhotosAction(projectId: string) {
     );
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || "获取照片失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "获取照片失败") };
     }
 
     const extracted = extractApiData<{ items: unknown[]; total: number }>(data);
@@ -172,21 +192,19 @@ export async function addRenovationPhotoAction(payload: {
       "/api/v1/projects/{project_id}/renovation/photos",
       {
         params: {
-          path: { project_id: payload.projectId },
+          path: { project_id: parsed.data.projectId },
           query: {
-            stage: payload.stage,
-            url: payload.url,
-            thumbnail_url: payload.thumbnail_url,
-            filename: payload.filename,
+            stage: parsed.data.stage,
+            url: parsed.data.url,
+            thumbnail_url: parsed.data.thumbnail_url,
+            filename: parsed.data.filename,
           },
         },
       },
     );
 
     if (error) {
-      const errorMsg =
-        (error as { message?: string }).message || "上传照片记录失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "上传照片记录失败") };
     }
 
     revalidatePath("/admin/projects");
@@ -221,18 +239,17 @@ export async function updateRenovationStageAction(payload: {
     const { error } = await client.PUT(
       "/api/v1/projects/{project_id}/renovation",
       {
-        params: { path: { project_id: payload.projectId } },
+        params: { path: { project_id: parsed.data.projectId } },
         body: {
-          renovation_stage: payload.renovation_stage,
-          completed_stage: payload.completed_stage,
-          stage_completed_at: payload.stage_completed_at,
-        } as components["schemas"]["RenovationUpdate"],
+          renovation_stage: parsed.data.renovation_stage,
+          completed_stage: parsed.data.completed_stage,
+          stage_completed_at: parsed.data.stage_completed_at,
+        },
       },
     );
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || "更新阶段失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "更新阶段失败") };
     }
 
     revalidatePath("/admin/projects");
@@ -246,7 +263,7 @@ export async function updateRenovationStageAction(payload: {
 // updateRenovationStageDateAction 入参
 const updateRenovationStageDateSchema = z.object({
   projectId: projectIdSchema,
-  stage: z.string().min(1, "装修阶段不能为空"),
+  stage: renovationStageSchema,
   stage_completed_at: z.string().nullable(),
 });
 
@@ -266,7 +283,7 @@ export async function updateRenovationStageDateAction(payload: {
     };
   }
 
-  // 权限校验由后端 ProjectRenovationCompleteStagePermDep 注入 + Service 层强制 admin 角色校验。
+  // 权限校验由后端 CurrentAdminUserDep 注入（仅 admin 可调用）。
 
   try {
     const client = await fetchClient();
@@ -275,19 +292,18 @@ export async function updateRenovationStageDateAction(payload: {
       {
         params: {
           path: {
-            project_id: payload.projectId,
-            stage: payload.stage as components["schemas"]["RenovationStage"],
+            project_id: parsed.data.projectId,
+            stage: parsed.data.stage,
           },
         },
         body: {
-          stage_completed_at: payload.stage_completed_at,
-        } as components["schemas"]["RenovationStageDateUpdate"],
+          stage_completed_at: parsed.data.stage_completed_at,
+        },
       },
     );
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || "修改阶段时间失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "修改阶段时间失败") };
     }
 
     revalidatePath("/admin/projects");
@@ -312,8 +328,7 @@ export async function getRenovationContractAction(projectId: string) {
     );
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || "获取装修合同信息失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "获取装修合同信息失败") };
     }
 
     const contract = extractApiData<Record<string, unknown>>(data);
@@ -329,7 +344,7 @@ export async function getRenovationContractAction(projectId: string) {
  */
 export async function updateRenovationContractAction(
   projectId: string,
-  payload: Record<string, unknown>
+  payload: z.infer<typeof updateRenovationContractSchema>
 ) {
   const idParsed = projectIdSchema.safeParse(projectId);
   if (!idParsed.success) {
@@ -355,13 +370,12 @@ export async function updateRenovationContractAction(
       "/api/v1/projects/{project_id}/renovation/contract",
       {
         params: { path: { project_id: projectId } },
-        body: payload as Record<string, never>,
+        body: parsed.data,
       },
     );
 
     if (error) {
-      const errorMsg = (error as { message?: string }).message || "更新装修合同信息失败";
-      return { success: false, message: errorMsg };
+      return { success: false, message: extractErrorMessage(error, "更新装修合同信息失败") };
     }
 
     const contract = extractApiData<Record<string, unknown>>(data);

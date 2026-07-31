@@ -146,7 +146,7 @@ def update_document(
         # 状态变 archived 且 payload 未提供 archive_date 时自动填今天（与前端 handleStatusChange 语义一致）
         elif new_status == DocumentSignoffStatus.ARCHIVED.value and "archive_date" not in updates:
             doc.archive_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    for field in ("document_name", "signoff_status", "archive_date"):
+    for field in ("document_name", "category", "signoff_status", "archive_date"):
         if field in updates and updates[field] is not None:
             setattr(doc, field, updates[field])
     doc.updated_at = datetime.now(timezone.utc)

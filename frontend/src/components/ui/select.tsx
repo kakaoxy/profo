@@ -1,5 +1,8 @@
 "use client"
 
+// 注意：本文件为 Tailwind v4 语法迁移版本（data-[disabled]→data-disabled、min-w-[8rem]→min-w-32 等），
+// 已偏离 shadcn 官方基线。后续 `pnpm dlx shadcn add` 覆盖时需重新应用 v4 迁移。
+
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"

@@ -12,11 +12,10 @@ from typing import Any
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from constants.role_codes import RoleCode
-from models import Project, ProjectRenovation, RenovationPhoto, User
+from models import Project, ProjectRenovation, RenovationPhoto
 from models.common import ProjectStatus, RenovationStage
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
-from services.system.exceptions import BusinessLogicError, PermissionDeniedError, ResourceNotFoundError
+from services.system.exceptions import BusinessLogicError, ResourceNotFoundError
 
 # 允许更新的装修字段白名单（防止设置 id/is_deleted 等敏感字段）
 _RENOVATION_ALLOWED_FIELDS = {
@@ -92,6 +91,27 @@ class RenovationService:
 
         return renovation
 
+    @staticmethod
+    def _derive_stage_from_completed_dates(dates: dict[str, str]) -> str:
+        """根据已完成的阶段日期推导当前主阶段.
+
+        按枚举顺序找到最后一个已完成的实际阶段作为当前主阶段；
+        若无任何已完成阶段，回退到首个阶段（拆除）。
+
+        Args:
+            dates: stage_completed_dates 映射（阶段值 -> 日期字符串）
+
+        Returns:
+            当前主阶段值（RenovationStage 的 value）
+
+        """
+        real_stages = [s for s in RenovationStage if s != RenovationStage.COMPLETED]
+        last_completed = real_stages[0]  # 默认回退到首个阶段（拆除）
+        for stage in real_stages:
+            if stage.value in dates:
+                last_completed = stage
+        return last_completed.value
+
     def update_stage(self, project_id: str, renovation_data: RenovationUpdate) -> Project:
         """更新改造阶段.
 
@@ -116,6 +136,7 @@ class RenovationService:
         # 记录指定阶段的完成时间（支持无序完成）
         current_stage = project.renovation_stage
         stage_to_record = renovation_data.completed_stage or renovation_data.renovation_stage or current_stage
+        auto_completed = False  # 标记是否触发自动竣工，避免被后续显式 renovation_stage 覆盖
         if stage_to_record and renovation_data.stage_completed_at:
             if not renovation.stage_completed_dates:
                 renovation.stage_completed_dates = {}
@@ -131,14 +152,15 @@ class RenovationService:
             if real_stage_values.issubset(dates.keys()) and not renovation.actual_end_date:
                 renovation.actual_end_date = renovation_data.stage_completed_at
                 project.renovation_stage = RenovationStage.COMPLETED.value
+                auto_completed = True
 
-        # 仅在传入 renovation_stage 时流转
+        # 仅在传入 renovation_stage 且未触发自动竣工时流转（避免覆盖自动竣工结果）
         target_stage = renovation_data.renovation_stage
-        if target_stage:
+        if target_stage and not auto_completed:
             project.renovation_stage = target_stage.value
 
         # 如果有实际开始日期，更新到装修记录
-        if stage_to_record and stage_to_record.value == "拆除" and not renovation.actual_start_date:
+        if stage_to_record == RenovationStage.DEMOLITION and not renovation.actual_start_date:
             renovation.actual_start_date = datetime.now(timezone.utc)
 
         renovation.updated_at = datetime.now(timezone.utc)
@@ -152,30 +174,24 @@ class RenovationService:
         project_id: str,
         stage: RenovationStage,
         stage_completed_at: datetime | None,
-        current_user: User,
     ) -> Project:
         """修改/清空已完成阶段的完成时间（仅管理员）.
 
-        权限校验由 Router 层注入 + 本层双重校验 admin 角色。
+        权限校验由 Router 层 CurrentAdminUserDep 注入（仅 admin 可调用），
+        Service 层不再重复校验角色。
         不流转 project.renovation_stage 主阶段，仅修改 stage_completed_dates。
+        清空日期时根据剩余已完成阶段回退主阶段，避免硬编码。
 
         Args:
             project_id: 项目ID
             stage: 要修改的阶段
             stage_completed_at: 新完成时间；None 表示清空回退未完成
-            current_user: 当前登录用户（必须为 admin）
 
         Raises:
-            PermissionDeniedError: 非管理员
             ResourceNotFoundError: 项目不存在
             BusinessLogicError: 项目状态不允许（非 renovating/selling/sold）
 
         """
-        # 显式 admin 校验（Fail Loud）
-        if not current_user.role or current_user.role.code != RoleCode.ADMIN.value:
-            msg = "仅管理员可修改已完成阶段的时间"
-            raise PermissionDeniedError(msg)
-
         project = self._get_project(project_id)
 
         allowed_statuses = [
@@ -195,22 +211,24 @@ class RenovationService:
             # 清空回退
             dates.pop(stage.value, None)
             # 联动清理实际开工/竣工时间
-            if stage.value == "拆除":
+            if stage == RenovationStage.DEMOLITION:
                 renovation.actual_start_date = None
-            elif stage.value == "已完成":
+            elif stage == RenovationStage.COMPLETED:
                 renovation.actual_end_date = None
 
-            # 清空阶段日期后，若不再满足全部完成条件，重置 renovation_stage
+            # 清空阶段日期后，若不再满足全部完成条件，根据剩余已完成阶段回退主阶段
             real_stage_values = {s.value for s in RenovationStage if s != RenovationStage.COMPLETED}
-            if project.renovation_stage == RenovationStage.COMPLETED.value and not real_stage_values.issubset(dates.keys()):
-                project.renovation_stage = RenovationStage.DELIVERY.value
+            if project.renovation_stage == RenovationStage.COMPLETED.value and not real_stage_values.issubset(
+                dates.keys()
+            ):
+                project.renovation_stage = self._derive_stage_from_completed_dates(dates)
         else:
             # 修改日期
             dates[stage.value] = stage_completed_at.strftime("%Y-%m-%d")
             # 联动：拆除/已完成 的实际时间同步更新
-            if stage.value == "拆除":
+            if stage == RenovationStage.DEMOLITION:
                 renovation.actual_start_date = stage_completed_at
-            elif stage.value == "已完成":
+            elif stage == RenovationStage.COMPLETED:
                 renovation.actual_end_date = stage_completed_at
 
         renovation.stage_completed_dates = dates or None

@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request
 
 from dependencies.auth import (
+    CurrentAdminUserDep,
     ProjectReadOrBusinessPermDep,
     ProjectRenovationCompleteStagePermDep,
     ProjectRenovationUploadPhotoPermDep,
@@ -48,12 +49,12 @@ def update_renovation_stage_date(
     stage: Annotated[RenovationStage, Path(description="改造阶段")],
     payload: RenovationStageDateUpdate,
     service: ProjectServiceDep,
-    current_user: ProjectRenovationCompleteStagePermDep,
+    current_user: CurrentAdminUserDep,
 ) -> ProjectResponse:
     """修改/清空已完成阶段的完成时间（仅管理员）.
 
     速率限制：100次/小时.
-    业务身份双通道注入 current_user，admin 角色校验由 Service 层强制执行。
+    Router 层强制 admin 角色，Service 层不再重复校验。
     """
     return service.update_renovation_stage_date(
         project_id,

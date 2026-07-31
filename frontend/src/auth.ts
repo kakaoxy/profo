@@ -88,9 +88,25 @@ async function fetchWithTimeout(
   }
 }
 
+/**
+ * 给 fetch 加超时保护，防止后端挂起时前端永久卡死。
+ *
+ * 后端 /token 或 /me 挂起时（如 admin /me 的权限慢查询），无超时会导致
+ * loginAction 永不返回，登录页 isPending 永久 true。超时后抛
+ * Error("登录服务响应超时")，由 loginAction catch 转为可读错误。
+ *
+ * 导出供 admin-auth.ts 复用，避免重复实现。
+ */
+export { fetchWithTimeout };
+
 // ─── 错误提取 ────────────────────────────────────────────────────────────────
 
-async function extractApiError(response: Response, fallback: string): Promise<string> {
+/**
+ * 从后端错误响应提取可读消息。
+ *
+ * 导出供 admin-auth.ts 复用，避免重复实现。
+ */
+export async function extractApiError(response: Response, fallback: string): Promise<string> {
   try {
     const data: unknown = await response.json();
     if (typeof data !== "object" || data === null) return fallback;
