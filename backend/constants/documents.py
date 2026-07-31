@@ -4,8 +4,19 @@
 """
 
 from dataclasses import dataclass
+from typing import Literal
 
 from models.common.base import BusinessForm
+
+# 文书分类枚举（前后端契约）
+DocumentCategory = Literal[
+    "contract_agreement",
+    "property_rights",
+    "identity_account",
+    "finance_tax",
+    "handover",
+    "other",
+]
 
 
 @dataclass(frozen=True)
@@ -14,7 +25,7 @@ class DocumentTemplate:
 
     document_name: str
     display_order: int
-    category: str
+    category: DocumentCategory
 
 
 # 文书分类：contract_agreement 签约合同 / property_rights 产权 / identity_account 身份与账户

@@ -1,5 +1,6 @@
 import { Auth } from "@/lib/auth";
 import { apiPaths, getApiUrl } from "@/lib/config";
+import { extractApiError, fetchWithTimeout } from "./auth";
 
 // ─── SessionUser 扩展 ────────────────────────────────────────────────────────
 // 后端 /api/v1/auth/me 返回 UserResponse，包含 role (RoleResponse)。
@@ -69,28 +70,6 @@ export class AdminPasswordChangeRequiredError extends Error {
   }
 }
 
-// ─── 错误提取 ────────────────────────────────────────────────────────────────
-
-async function extractApiError(
-  response: Response,
-  fallback: string,
-): Promise<string> {
-  try {
-    const data: unknown = await response.json();
-    if (typeof data !== "object" || data === null) return fallback;
-    const obj = data as Record<string, unknown>;
-    // 优先读新格式 {"code":≠0, "message":"..."} (AGENTS.md §2)
-    if (typeof obj.message === "string") return obj.message;
-    // 回退旧格式 {"detail": "..."} (FastAPI 默认)
-    if (typeof obj.detail === "string") return obj.detail;
-    const err = obj.error as Record<string, unknown> | undefined;
-    if (err && typeof err.message === "string") return err.message;
-    return fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 // ─── Admin Auth 配置 ─────────────────────────────────────────────────────────
 
 /**
@@ -116,7 +95,7 @@ export const adminAuth = Auth({
         throw new Error("请输入账号和密码");
       }
 
-      const response = await fetch(getApiUrl(apiPaths.auth.token), {
+      const response = await fetchWithTimeout(getApiUrl(apiPaths.auth.token), {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
@@ -152,7 +131,7 @@ export const adminAuth = Auth({
     },
 
     async refreshToken(refreshToken) {
-      const response = await fetch(getApiUrl(apiPaths.auth.refresh), {
+      const response = await fetchWithTimeout(getApiUrl(apiPaths.auth.refresh), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),
@@ -170,7 +149,7 @@ export const adminAuth = Auth({
     },
 
     async fetchUser(accessToken) {
-      const response = await fetch(getApiUrl(apiPaths.auth.me), {
+      const response = await fetchWithTimeout(getApiUrl(apiPaths.auth.me), {
         headers: { Authorization: `Bearer ${accessToken}` },
         cache: "no-store",
       });
@@ -193,7 +172,7 @@ export const adminAuth = Auth({
 
     async logout(tokens) {
       try {
-        await fetch(getApiUrl(apiPaths.auth.logout), {
+        await fetchWithTimeout(getApiUrl(apiPaths.auth.logout), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

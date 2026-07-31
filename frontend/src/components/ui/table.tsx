@@ -1,5 +1,8 @@
 "use client"
 
+// 注意：本文件为 Tailwind v4 语法迁移版本（w-[var(--x)]→w-(--x)、h-[var(--x)]→h-(--x) 等），
+// 已偏离 shadcn 官方基线。后续 `pnpm dlx shadcn add` 覆盖时需重新应用 v4 迁移。
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

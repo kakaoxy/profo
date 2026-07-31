@@ -159,7 +159,7 @@ class ProjectService:
         current_user: User,
     ) -> ProjectResponse:
         """修改/清空已完成阶段的完成时间（仅管理员）."""
-        project = self._renovation_service.update_stage_date(project_id, stage, stage_completed_at, current_user)
+        project = self._renovation_service.update_stage_date(project_id, stage, stage_completed_at)
         from .internal import ProjectResponseBuilder  # noqa: PLC0415
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))

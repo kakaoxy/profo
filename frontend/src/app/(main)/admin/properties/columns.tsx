@@ -220,7 +220,7 @@ export const columns: ColumnDef<Property>[] = [
   // 1. 房源ID
   {
     accessorKey: "id",
-    header: () => <span className="inline md:table-cell">ID</span>,
+    header: () => <span className="inline hidden md:table-cell">ID</span>,
     cell: ({ row }) => (
       <span className="inline text-xs text-muted-foreground md:table-cell">
         #{row.getValue("id")}
@@ -331,7 +331,7 @@ export const columns: ColumnDef<Property>[] = [
   // 5. 商圈
   {
     accessorKey: "business_circle",
-    header: () => <span className="inline md:table-cell">商圈</span>,
+    header: () => <span className="inline hidden md:table-cell">商圈</span>,
     cell: ({ row }) => {
       const val = row.getValue("business_circle") as string;
       return (

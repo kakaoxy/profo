@@ -6,6 +6,7 @@ from fastapi import APIRouter, Path, Query, Request
 
 from dependencies.auth import (
     DbSessionDep,
+    LeadCreatePermDep,
     LeadReadPermDep,
     LeadWritePermDep,
 )
@@ -105,10 +106,13 @@ def get_leads(
 def create_lead(
     request: Request,
     db: DbSessionDep,
-    current_user: LeadWritePermDep,
+    current_user: LeadCreatePermDep,
     lead_in: LeadCreate,
 ) -> LeadResponse:
-    """创建线索."""
+    """创建线索.
+
+    权限：lead:create（普通员工录入）或 lead:write（admin/operator 全权）。
+    """
     service = LeadService(db)
     return service.create_lead(lead_in, current_user.id, creator=current_user)
 

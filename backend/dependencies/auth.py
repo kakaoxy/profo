@@ -325,10 +325,7 @@ def require_any_permission(codes: list[str]) -> Callable[..., User]:
         user: CurrentActiveUserDep,
         db: DbSessionDep,
     ) -> User:
-        from services.system.permission import permission_service  # noqa: PLC0415
-
-        perms = permission_service.get_user_permission_codes(db, user)
-        if not (set(codes) & perms):
+        if not any(has_permission(user, code, db) for code in codes):
             msg = f"权限不足：缺少以下任一权限 {', '.join(codes)}"
             raise PermissionDeniedError(msg)
         return user
@@ -366,6 +363,8 @@ ProjectSalesManageTeamPermDep = Annotated[User, Depends(require_permission("proj
 # lead 模块
 LeadReadPermDep = Annotated[User, Depends(require_permission("lead:read"))]
 LeadWritePermDep = Annotated[User, Depends(require_permission("lead:write"))]
+# 创建线索双权限通道：lead:create（普通员工录入）OR lead:write（admin/operator 全权）
+LeadCreatePermDep = Annotated[User, Depends(require_any_permission(["lead:create", "lead:write"]))]
 LeadExportPermDep = Annotated[User, Depends(require_permission("lead:export"))]
 # 上传接口双权限通道：property:upload（房源批量上传）OR lead:upload_photo（线索录入上传）
 LeadUploadPhotoPermDep = Annotated[User, Depends(require_any_permission(["property:upload", "lead:upload_photo"]))]
