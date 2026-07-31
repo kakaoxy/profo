@@ -26,6 +26,13 @@ class RenovationUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class RenovationStageDateUpdate(BaseModel):
+    """修改/清空已完成阶段的完成时间（仅管理员）."""
+
+    stage_completed_at: datetime | None = Field(None, description="新的阶段完成时间；传 None 表示清空回退未完成")
+    model_config = ConfigDict(from_attributes=True)
+
+
 class RenovationPhotoUpload(BaseModel):
     """上传照片请求."""
 

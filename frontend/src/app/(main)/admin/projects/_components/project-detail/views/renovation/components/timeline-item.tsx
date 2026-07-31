@@ -12,6 +12,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 
 import { PhotoGrid } from "./photo-grid";
@@ -20,7 +30,11 @@ import { useRenovationUpload } from "./use-renovation-upload";
 
 import { Project, RenovationPhoto } from "../../../../../types";
 import { RENOVATION_STAGES } from "../../../constants";
-import { updateRenovationStageAction, deleteRenovationPhotoAction } from "../../../../../actions/renovation";
+import {
+  updateRenovationStageAction,
+  updateRenovationStageDateAction,
+  deleteRenovationPhotoAction,
+} from "../../../../../actions/renovation";
 import { usePermission } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
@@ -44,10 +58,17 @@ export function TimelineItem({
   onRefresh,
 }: TimelineItemProps) {
   const router = useRouter();
-  const { hasAnyPermission } = usePermission();
+  const { roleCode, hasAnyPermission } = usePermission();
   const [isSubmittingStage, setIsSubmittingStage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   useEffect(() => { setSelectedDate(new Date()); }, []);
+
+  // 已完成阶段修改/清空相关 state（仅 admin）
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [editDate, setEditDate] = useState<Date | undefined>(undefined);
+  const [isEditingSubmitting, setIsEditingSubmitting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const { uploadQueue, handleUpload } = useRenovationUpload({
     projectId: project.id,
@@ -74,6 +95,9 @@ export function TimelineItem({
   const canComplete =
     canCompleteByPermission || project.renovation?.can_edit_renovation === true;
 
+  // 仅 admin 可修改/清空已完成阶段的时间
+  const canEditDate = roleCode === "admin";
+
   const handleSubmit = async () => {
     if (uploadQueue.length > 0) {
       toast.warning("请等待图片上传完成");
@@ -99,6 +123,77 @@ export function TimelineItem({
       toast.error("操作失败");
     } finally {
       setIsSubmittingStage(false);
+    }
+  };
+
+  const handleStartEditDate = () => {
+    // 默认填充当前已完成日期
+    if (stageFinishDateStr) {
+      try {
+        const parsed = parseISO(stageFinishDateStr);
+        setEditDate(isValid(parsed) ? parsed : new Date());
+      } catch {
+        setEditDate(new Date());
+      }
+    } else {
+      setEditDate(new Date());
+    }
+    setIsEditingDate(true);
+  };
+
+  const handleCancelEditDate = () => {
+    setIsEditingDate(false);
+    setEditDate(undefined);
+  };
+
+  const handleSubmitEditDate = async () => {
+    if (!editDate) {
+      toast.warning("请选择新的完成日期");
+      return;
+    }
+    setIsEditingSubmitting(true);
+    try {
+      const res = await updateRenovationStageDateAction({
+        projectId: project.id,
+        stage: stage.value,
+        stage_completed_at: editDate.toISOString(),
+      });
+      if (res.success) {
+        toast.success("阶段时间已更新");
+        setIsEditingDate(false);
+        setEditDate(undefined);
+        router.refresh();
+        if (onRefresh) await onRefresh();
+      } else {
+        toast.error(res.message);
+      }
+    } catch {
+      toast.error("操作失败");
+    } finally {
+      setIsEditingSubmitting(false);
+    }
+  };
+
+  const handleClearDate = async () => {
+    setShowClearConfirm(false);
+    setIsClearing(true);
+    try {
+      const res = await updateRenovationStageDateAction({
+        projectId: project.id,
+        stage: stage.value,
+        stage_completed_at: null,
+      });
+      if (res.success) {
+        toast.success(`已清空 ${stage.label} 完成时间`);
+        router.refresh();
+        if (onRefresh) await onRefresh();
+      } else {
+        toast.error(res.message);
+      }
+    } catch {
+      toast.error("操作失败");
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -160,9 +255,47 @@ export function TimelineItem({
       <AccordionContent className="pl-12 pt-4 pb-2">
         <div className={cn("rounded-lg border p-4 space-y-4 transition-all", isCurrent ? "bg-card border-status-renovating/30 shadow-sm" : "bg-muted/50 border-border")}>
           <PhotoGrid photos={photos} uploadingPhotos={uploadQueue} isLoading={isSubmittingStage} canEditRenovation={canEditRenovation} onUpload={handleUpload} onDelete={handleDelete} />
-          <ActionBar isCompleted={isCompleted} selectedDate={selectedDate} isLoading={isSubmittingStage} canComplete={canComplete} onDateSelect={setSelectedDate} onSubmit={handleSubmit} />
+          <ActionBar
+            isCompleted={isCompleted}
+            selectedDate={selectedDate}
+            isLoading={isSubmittingStage}
+            canComplete={canComplete}
+            onDateSelect={setSelectedDate}
+            onSubmit={handleSubmit}
+            canEditDate={canEditDate}
+            isEditingDate={isEditingDate}
+            editDate={editDate}
+            isEditingSubmitting={isEditingSubmitting}
+            isClearing={isClearing}
+            onEditDateSelect={setEditDate}
+            onStartEditDate={handleStartEditDate}
+            onCancelEditDate={handleCancelEditDate}
+            onSubmitEditDate={handleSubmitEditDate}
+            onClearDate={() => setShowClearConfirm(true)}
+          />
         </div>
       </AccordionContent>
+
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认清空该阶段完成时间？</AlertDialogTitle>
+            <AlertDialogDescription>
+              清空后，{stage.label} 将回退为未完成状态。已上传的照片不受影响，可重新选择日期标记完成。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClearing}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearDate}
+              disabled={isClearing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认清空
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AccordionItem>
   );
 }

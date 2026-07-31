@@ -11,11 +11,13 @@ from dependencies.auth import (
     ProjectSalesManageTeamPermDep,
 )
 from dependencies.projects import ProjectServiceDep
+from models.common import RenovationStage
 from schemas.project import ProjectResponse, RenovationPhotoResponse, RenovationUpdate
 from schemas.project.renovation import (
     RenovationContractResponse,
     RenovationContractUpdate,
     RenovationPhotoListResponse,
+    RenovationStageDateUpdate,
 )
 from utils.common import RateLimits, limiter
 
@@ -36,6 +38,29 @@ def update_renovation_stage(
     速率限制：100次/小时.
     """
     return service.update_renovation_stage(project_id, renovation_data, current_user=current_user)
+
+
+@router.patch("/{project_id}/renovation/stages/{stage}")
+@limiter.limit(RateLimits.RENOVATION_UPDATE)
+def update_renovation_stage_date(
+    request: Request,
+    project_id: Annotated[str, Path(description="项目ID")],
+    stage: Annotated[RenovationStage, Path(description="改造阶段")],
+    payload: RenovationStageDateUpdate,
+    service: ProjectServiceDep,
+    current_user: ProjectRenovationCompleteStagePermDep,
+) -> ProjectResponse:
+    """修改/清空已完成阶段的完成时间（仅管理员）.
+
+    速率限制：100次/小时.
+    业务身份双通道注入 current_user，admin 角色校验由 Service 层强制执行。
+    """
+    return service.update_renovation_stage_date(
+        project_id,
+        stage,
+        payload.stage_completed_at,
+        current_user=current_user,
+    )
 
 
 @router.post("/{project_id}/renovation/photos")

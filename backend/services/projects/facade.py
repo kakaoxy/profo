@@ -11,13 +11,14 @@
 目前保留此类是为了让现有的 Router 代码无需修改即可运行。
 """
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 # 导入模型和 Schema 类型
 from models import ProjectInteraction, ProjectRenovation, RenovationPhoto, User
-from models.common import BusinessForm
+from models.common import BusinessForm, RenovationStage
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from schemas.project.renovation import RenovationContractUpdate, RenovationUpdate
 from schemas.project.sales import (
@@ -145,6 +146,20 @@ class ProjectService:
     ) -> ProjectResponse:
         """更新装修阶段."""
         project = self._renovation_service.update_stage(project_id, renovation_data)
+        from .internal import ProjectResponseBuilder  # noqa: PLC0415
+
+        return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
+
+    def update_renovation_stage_date(
+        self,
+        project_id: str,
+        stage: RenovationStage,
+        stage_completed_at: datetime | None,
+        *,
+        current_user: User,
+    ) -> ProjectResponse:
+        """修改/清空已完成阶段的完成时间（仅管理员）."""
+        project = self._renovation_service.update_stage_date(project_id, stage, stage_completed_at, current_user)
         from .internal import ProjectResponseBuilder  # noqa: PLC0415
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))

@@ -20,12 +20,18 @@ const addRenovationPhotoSchema = z.object({
 });
 
 // updateRenovationStageAction 入参
-const updateRenovationStageSchema = z.object({
-  projectId: projectIdSchema,
-  renovation_stage: z.string().min(1, "装修阶段不能为空").optional(),
-  completed_stage: z.string().min(1, "完成阶段不能为空").optional(),
-  stage_completed_at: z.string().optional(),
-});
+// renovation_stage（流转目标阶段）与 completed_stage（标记完成的阶段）至少传一个，
+// 否则后端 update_stage 会无意义 no-op（仅刷新 updated_at 不产生业务变更）。
+const updateRenovationStageSchema = z
+  .object({
+    projectId: projectIdSchema,
+    renovation_stage: z.string().min(1, "装修阶段不能为空").optional(),
+    completed_stage: z.string().min(1, "完成阶段不能为空").optional(),
+    stage_completed_at: z.string().optional(),
+  })
+  .refine((data) => Boolean(data.renovation_stage || data.completed_stage), {
+    message: "装修阶段和完成阶段至少需传入一个",
+  });
 
 // updateRenovationContractAction 入参
 // 参考 renovation/contract-form/schema.ts::renovationContractSchema
@@ -233,6 +239,61 @@ export async function updateRenovationStageAction(payload: {
     return { success: true, message: "阶段更新成功" };
   } catch (e) {
     logger.error("更新阶段异常:", e);
+    return { success: false, message: "网络错误" };
+  }
+}
+
+// updateRenovationStageDateAction 入参
+const updateRenovationStageDateSchema = z.object({
+  projectId: projectIdSchema,
+  stage: z.string().min(1, "装修阶段不能为空"),
+  stage_completed_at: z.string().nullable(),
+});
+
+/**
+ * 修改/清空已完成阶段的完成时间（仅管理员）
+ */
+export async function updateRenovationStageDateAction(payload: {
+  projectId: string;
+  stage: string;
+  stage_completed_at: string | null;
+}) {
+  const parsed = updateRenovationStageDateSchema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "参数不合法",
+    };
+  }
+
+  // 权限校验由后端 ProjectRenovationCompleteStagePermDep 注入 + Service 层强制 admin 角色校验。
+
+  try {
+    const client = await fetchClient();
+    const { error } = await client.PATCH(
+      "/api/v1/projects/{project_id}/renovation/stages/{stage}",
+      {
+        params: {
+          path: {
+            project_id: payload.projectId,
+            stage: payload.stage as components["schemas"]["RenovationStage"],
+          },
+        },
+        body: {
+          stage_completed_at: payload.stage_completed_at,
+        } as components["schemas"]["RenovationStageDateUpdate"],
+      },
+    );
+
+    if (error) {
+      const errorMsg = (error as { message?: string }).message || "修改阶段时间失败";
+      return { success: false, message: errorMsg };
+    }
+
+    revalidatePath("/admin/projects");
+    return { success: true, message: "阶段时间已更新" };
+  } catch (e) {
+    logger.error("修改阶段时间异常:", e);
     return { success: false, message: "网络错误" };
   }
 }
